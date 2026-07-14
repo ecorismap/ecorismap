@@ -56,6 +56,8 @@ export default function DataScreen() {
                 disabled={!isEditable}
                 trackColor={{ false: COLOR.GRAY2, true: COLOR.LIGHTBLUE }}
                 thumbColor={isLocationEnabled ? COLOR.BLUE : COLOR.GRAY1}
+                // iOSのSwitchはデフォルトでalignSelf: 'flex-start'を持つため、親のalignItems: 'center'が効かない
+                style={{ alignSelf: 'center' }}
               />
             </View>
           )}
@@ -110,7 +112,8 @@ const styles = StyleSheet.create({
   locationToggle: {
     alignItems: 'center',
     flexDirection: 'row',
-    height: 40,
+    // 辞書入力行の高さ（マイクボタン: アイコン30 + パディング8×2 = 46）に合わせて中心を揃える
+    height: 46,
     marginRight: 8,
   },
   tableContainer: {
