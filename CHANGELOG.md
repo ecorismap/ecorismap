@@ -2,19 +2,61 @@
 
 ## [0.5.6]　- Unreleased
 
+- Added personal project management using Google Drive
+- Added unified login with two methods: Google account link and organization account
+- Removed the feature purchase and license restrictions
+- Added member addition by project admins with a new encryption key scheme, including key recovery paths
+- Added automatic backup before data deletion and a restore feature
+- Changed backup file extension to standard .zip (deprecated the .ecorismap extension)
+- Added a one-tap location on/off toggle when adding data from the dictionary in the data list
+- Added elevation and coordinates (with tap-to-copy) to the long-press and POI popups
 - Added straight-line distance from the current location to the long-pressed point in the map popup when GPS is on
 - Improved track recording reliability and battery consumption during long recordings
+- Improved GPS on/off responsiveness, follow mode, and notification behavior
+- Improved GPS settings to open inside the bottom sheet
 - Improved map rendering performance with large datasets
+- Improved responsiveness with large numbers of records and fields
+- Improved group display design in the layer and map lists
 - Improved account-related screen navigation
+- Improved dictionary voice input (updated to Expo 56 / React Native 0.85)
+- Fixed lines and polygons being hidden under tile maps on Android
+- Fixed the current location showing a stale cached position on iOS
+- Fixed data loss when uploading from multiple devices with the same account
+- Fixed backup zip files failing to extract on Windows with long layer names
+- Fixed record numbering when adding data while columns are sorted
+- Fixed the dictionary input box appearing on layers without a dictionary field
 - Fixed an issue where the downloaded area was not saved per map in bulk map download
 - Fixed an issue where a feature was selected at the same time as the long-press popup
+- Added usage analytics (Firebase Analytics)
+- Other minor bug fixes
 
+- Google Drive による個人プロジェクト管理機能を追加
+- ログイン機能を単一ビルドに統合し、Google 連携と組織アカウントの 2 系統ログインに対応
+- 機能購入とライセンス制限を廃止
+- 管理者によるメンバー追加を新しい暗号鍵方式で追加（鍵喪失時の復旧経路も追加）
+- データ破棄直前の自動バックアップと復元機能を追加
+- 保存ファイルの拡張子を標準的な zip に統一（ecorismap 拡張子を廃止）
+- データ一覧に辞書からのデータ追加時の位置あり/なしワンタッチ切替トグルを追加
+- 長押し・POI ポップアップに標高と緯度経度（タップでコピー）を表示するように追加
 - GPS が ON のとき、地図長押しのポップアップに現在地からの直線距離を表示するように追加
 - GPS 軌跡記録の不具合と長時間記録時の電池消費を改善（react-native-background-geolocation v5 へ更新）
+- GPS の ON/OFF 応答性・追従モード・通知まわりを改善
+- GPS 設定をボトムシート内で開くように改善
 - 大量データ表示時の地図のパフォーマンスを改善
+- レコード・項目数が多いときの動作を軽量化
+- レイヤ一覧・地図一覧のグループ表示デザインを刷新
 - アカウント関連の画面遷移を改善
+- 辞書の音声入力を刷新（Expo 56 / React Native 0.85 へ移行）
+- Android でライン・ポリゴンがタイル地図の下に隠れる不具合を修正
+- iOS で現在地がキャッシュされた古い位置になる不具合を修正
+- 同一アカウント・複数端末でのアップロードでデータが消失する不具合を修正
+- 長いレイヤ名のバックアップ zip が Windows で解凍できない不具合を修正
+- 列を並べ替えた状態でのデータ追加時の連番採番を修正
+- 辞書未設定のレイヤに辞書入力欄が表示される不具合を修正
 - 地図の一括ダウンロードで取得範囲が地図ごとに記録されない不具合を修正
 - 長押しポップアップ表示時にフィーチャー選択が同時に起きる不具合を修正
+- アクセス解析（Firebase Analytics）を導入
+- その他細かなバグ修正
 
 ## [0.5.5]　- 2026-04-26
 
