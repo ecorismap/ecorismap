@@ -1,9 +1,12 @@
 import { useCallback, useMemo, useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import { CloudDataItem, CloudLayerGroup, LayerType, PermissionType, ProjectType, UserType } from '../types';
 import * as projectStore from '../lib/firebase/firestore';
 import * as projectStorage from '../lib/firebase/storage';
 import { t } from '../i18n/config';
 import { isLoggedIn } from '../utils/Account';
+import { updateProjectAction } from '../modules/projects';
+import { RootState } from '../store';
 
 interface CloudDataSummaryRaw {
   layerId: string;
@@ -128,6 +131,8 @@ const groupDataByLayer = (
 };
 
 export const useCloudDataManagement = (project: ProjectType, user: UserType): UseCloudDataManagementReturnType => {
+  const dispatch = useDispatch();
+  const projects = useSelector((state: RootState) => state.projects);
   const [isLoading, setIsLoading] = useState(false);
   const [layerGroups, setLayerGroups] = useState<CloudLayerGroup[]>([]);
   const [checkStates, setCheckStates] = useState<LayerCheckState[]>([]);
@@ -304,6 +309,11 @@ export const useCloudDataManagement = (project: ProjectType, user: UserType): Us
         if (!settingsResult.isOK) {
           return { isOK: false, message: settingsResult.message };
         }
+        // プロジェクト一覧の「更新日時」を再取得なしで反映する
+        const currentProject = projects.find((p) => p.id === project.id);
+        if (settingsResult.timestamp !== undefined && currentProject !== undefined) {
+          dispatch(updateProjectAction({ ...currentProject, settingsEncryptedAt: settingsResult.timestamp }));
+        }
       }
 
       // 2. 選択されたレイヤの全データを削除
@@ -322,7 +332,7 @@ export const useCloudDataManagement = (project: ProjectType, user: UserType): Us
       console.error('deleteLayerDefinition Error:', error);
       return { isOK: false, message: t('CloudDataManagement.message.failDeleteLayer') };
     }
-  }, [project.id, user, layerGroups, getSelectedLayerIds]);
+  }, [user, getSelectedLayerIds, layerGroups, project.id, projects, dispatch]);
 
   // レイヤのチェック状態を変更（子のデータも連動）
   const changeLayerChecked = useCallback((layerIndex: number, checked: boolean) => {
