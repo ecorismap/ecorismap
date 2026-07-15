@@ -1154,7 +1154,7 @@ export const deleteLayerFromSettings = async (
   projectId: string,
   editorUid: string,
   layerIdsToDelete: string[]
-): Promise<{ isOK: boolean; message: string }> => {
+): Promise<{ isOK: boolean; message: string; timestamp?: Date }> => {
   try {
     // 1. 現在のプロジェクト設定を取得
     const settingsResult = await downloadProjectSettings(projectId);
@@ -1176,7 +1176,7 @@ export const deleteLayerFromSettings = async (
       return { isOK: false, message: t('CloudDataManagement.message.failDeleteLayer') };
     }
 
-    return { isOK: true, message: '' };
+    return { isOK: true, message: '', timestamp: result.timestamp };
   } catch (error) {
     console.error('deleteLayerFromSettings Error:', error);
     return { isOK: false, message: t('CloudDataManagement.message.failDeleteLayer') };

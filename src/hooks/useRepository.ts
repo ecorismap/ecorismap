@@ -758,6 +758,10 @@ export const useRepository = (): UseRepositoryReturnType & {
         return { isOK: false, message };
       }
       dispatch(editSettingsAction({ updatedAt: timestamp?.toISOString() }));
+      if (timestamp !== undefined) {
+        // プロジェクト一覧の「更新日時」を再取得なしで反映する
+        dispatch(updateProjectAction({ ...project_, settingsEncryptedAt: timestamp }));
+      }
       return { isOK: true, message: '' };
     },
     [dispatch, mapRegion, mapType, plugins, tileMaps, updatedAt, uploadDictionary, uploadTileMaps, user]
