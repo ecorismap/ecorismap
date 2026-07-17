@@ -14345,6 +14345,43 @@ index 0000000..7a5b940
 +
 +@end
 \ No newline at end of file
+diff --git a/node_modules/react-native-maps/ios/AirGoogleMaps/RNMapsGooglePolygonView.mm b/node_modules/react-native-maps/ios/AirGoogleMaps/RNMapsGooglePolygonView.mm
+index 563c025..26c1af1 100644
+--- a/node_modules/react-native-maps/ios/AirGoogleMaps/RNMapsGooglePolygonView.mm
++++ b/node_modules/react-native-maps/ios/AirGoogleMaps/RNMapsGooglePolygonView.mm
+@@ -49,6 +49,13 @@ bool areHolesEqual(const std::vector<std::vector<RNMapsGooglePolygonHolesStruct>
+             return false;
+         }
+ 
++        for (size_t j = 0; j < newHole.size(); ++j) {
++            if (newHole.at(j).latitude != oldHole.at(j).latitude ||
++                newHole.at(j).longitude != oldHole.at(j).longitude) {
++                return false;
++            }
++        }
++
+     }
+ 
+     return true;
+@@ -168,7 +175,17 @@ - (void)updateProps:(Props::Shared const &)props oldProps:(Props::Shared const &
+     if(newViewProps.zIndex.has_value()){
+         _view.zIndex = newViewProps.zIndex.value();
+     }
+-    if (newViewProps.coordinates.size() != oldViewProps.coordinates.size()){
++    bool coordinatesChanged = newViewProps.coordinates.size() != oldViewProps.coordinates.size();
++    if (!coordinatesChanged) {
++        for (size_t i = 0; i < newViewProps.coordinates.size(); ++i) {
++            if (newViewProps.coordinates.at(i).latitude != oldViewProps.coordinates.at(i).latitude ||
++                newViewProps.coordinates.at(i).longitude != oldViewProps.coordinates.at(i).longitude) {
++                coordinatesChanged = true;
++                break;
++            }
++        }
++    }
++    if (coordinatesChanged){
+         GMSMutablePath *path = [GMSMutablePath path];
+         for(int i = 0; i < newViewProps.coordinates.size(); i++)
+         {
 diff --git a/node_modules/react-native-maps/ios/AirGoogleMaps/VectorTile/FeatureData.h b/node_modules/react-native-maps/ios/AirGoogleMaps/VectorTile/FeatureData.h
 new file mode 100644
 index 0000000..9148cf1
