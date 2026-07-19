@@ -11,7 +11,7 @@ EcorisMap is a cross-platform field survey application that records locations an
 
 ---
 
-## Setup (Without Login Features)
+## Basic Setup (No Firebase Required)
 
 ### Prerequisites
 - Node.js >= 22
@@ -69,6 +69,12 @@ yarn install
    ```
 3. Edit `ios/ecorismap/Maps.plist` and add your API key
 
+4. (Optional) For background geolocation tracking, save your Transistorsoft license key to `ios/ecorismap/Supporting/TSLicense.txt` (the key only, on a single line):
+   ```bash
+   echo "YOUR_LICENSE_KEY" > ios/ecorismap/Supporting/TSLicense.txt
+   ```
+   > An Xcode build phase injects the key into `TSLocationManagerLicense` in Info.plist at build time. If the file is missing, the build still succeeds with a warning and tracking features work in debug mode only.
+
 #### Web (MapTiler)
 1. Get [API key for MapTiler](https://cloud.maptiler.com/maps/)
 2. Copy APIKeys template:
@@ -77,7 +83,7 @@ yarn install
    ```
 3. Edit `src/constants/APIKeys.ts` and add your key (with quotes):
    ```typescript
-   export const MAPTILER_API_KEY = 'YOUR_MAPTILER_API_KEY';
+   export const maptilerKey = 'YOUR_MAPTILER_API_KEY';
    ```
 
 ### 3. Setup GDAL Module
@@ -89,18 +95,14 @@ cp -r react-native-gdalwarp modules/
 rm -rf react-native-gdalwarp react-native-gdalwarp.zip
 ```
 
-### 4. Disable Login Features
-For basic setup, disable login features in `src/constants/AppConstants.ts`:
-```typescript
-export const FUNC_LOGIN = false;  // Disable login features
-```
-
-### 5. Run Development Server
+### 4. Run Development Server
 ```bash
 yarn ios           # iOS simulator
 yarn android       # Android emulator  
 yarn web           # Web browser
 ```
+
+> **Note**: Login-related features are integrated into a single build, so the old `FUNC_LOGIN` build-time flag is no longer needed. The app works as-is without Firebase configuration — maps and local data recording are fully available. To use login and project sharing features, follow the Advanced Setup below.
 
 ---
 
@@ -108,15 +110,14 @@ yarn web           # Web browser
 
 Advanced setup adds Firebase-based user authentication, data storage, and server-side features.
 
+There are two login methods:
+
+- **Google account link**: Personal project management using Google Drive as storage (available from Settings → Save/Load data). No Firebase account required. See [docs/GOOGLE_DRIVE_SETUP.md](docs/GOOGLE_DRIVE_SETUP.md) for setup
+- **Organization account**: Project sharing via Firebase email/password authentication. Sign-up is restricted to allowed domains and email addresses by a Cloud Functions blocking function (`ORG_ALLOWED_DOMAINS` / `ORG_ALLOWED_EMAILS` in Secret Manager)
+
 > **Note**: The examples below use identifiers like `ecorismap` (project name) and `jp.co.ecoris.ecorismap` (bundle ID), but these should be replaced with your own project-specific values.
 
-### 1. Enable Login Features
-Edit `src/constants/AppConstants.ts` to enable login features:
-```typescript
-export const FUNC_LOGIN = true;  // Enable login features
-```
-
-### 2. Firebase Setup
+### 1. Firebase Setup
 
 #### Firebase Console Initial Setup
 
@@ -229,17 +230,30 @@ export const FUNC_LOGIN = true;  // Enable login features
 4. Copy the displayed configuration to src/constants/APIKeys.ts
 
 
-### 3. Firebase Functions Setup
+### 2. Firebase Functions Setup
 
-Firebase Functions provide server-side functionality and are required for Virgil E3Kit end-to-end encryption.
+Firebase Functions provide server-side functionality and are required for Virgil E3Kit end-to-end encryption and the organization sign-up restriction (blocking function).
 
-For detailed setup, deployment instructions, and troubleshooting, see [functions/README.md](../functions/README.md).
+For detailed setup, deployment instructions, and troubleshooting, see the README in the [ecorismap/functions](https://github.com/ecorismap/functions) repository.
 
-### 4. Firebase Hosting Setup
+### 3. Firebase Hosting Setup
 
 Firebase Hosting is used to host the web version of the application.
 
-For detailed setup and deployment instructions, see [website/README.md](../website/README.md).
+For detailed setup and deployment instructions, see the README in the [ecorismap/website](https://github.com/ecorismap/website) repository.
+
+### 4. Google Drive Integration Setup (Optional)
+
+To enable personal project management using Google Drive as storage, create an OAuth client ID in Google Cloud Console (with the `drive.file` scope only) and set it in `googleDriveOAuth` in `src/constants/APIKeys.ts`:
+
+```typescript
+export const googleDriveOAuth = {
+  webClientId: 'YOUR_WEB_CLIENT_ID',
+  iosClientId: 'YOUR_IOS_CLIENT_ID',
+};
+```
+
+If left as empty strings, Google Drive integration is safely disabled as "unavailable". See [docs/GOOGLE_DRIVE_SETUP.md](docs/GOOGLE_DRIVE_SETUP.md) for detailed instructions (Japanese).
 
 ## API Key Configuration Management
 
@@ -272,7 +286,8 @@ API keys and platform configuration files are kept in the gitignored `keys/` dir
    - `android/local.properties` (Maps API key, Transistorsoft license, Keystore config)
    - `ios/ecorismap/GoogleService-Info.plist`
    - `ios/ecorismap/Supporting/Maps.plist`
-   - `src/constants/APIKeys.ts`
+   - `ios/ecorismap/Supporting/TSLicense.txt` (Transistorsoft license)
+   - `src/constants/APIKeys.ts` (Firebase config, reCAPTCHA, MapTiler, Google Drive OAuth)
 
 **Important:** All environment-specific configuration files and backups are gitignored to prevent accidental commits of sensitive data.
 
