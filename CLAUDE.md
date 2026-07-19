@@ -154,7 +154,7 @@ yarn build:web     # Webビルド
 
 ### 状態管理
 - **Redux Toolkit**: グローバル状態（dataSet, layers, settings, user, projects, tileMaps, trackLog）
-- **React Context**: 機能特化状態（HomeContextから小さなContextへ移行中）
+- **React Context**: 機能特化状態（旧HomeContextは11の小さなContextへ分割済み）
 - **Redux Persist**: 永続化（Mobile: AsyncStorage, Web: sessionStorage）
 
 ### ディレクトリ構造
@@ -166,7 +166,7 @@ src/
 │   ├── organisms/   # 複雑なコンポーネント
 │   └── pages/       # フルページ
 ├── containers/      # ビジネスロジック（Redux/Context接続）
-├── contexts/        # React Context（HomeContextから移行中）
+├── contexts/        # React Context（機能別に11分割）
 ├── hooks/           # カスタムフック
 ├── modules/         # Reduxスライス
 ├── utils/           # ユーティリティ関数
@@ -221,19 +221,19 @@ src/
 
 ## 主要技術スタック
 
-- **React Native 0.81.5** + **Expo 54**（Bare Workflow）
-- **React 19.1.0**
-- **TypeScript 5.9**（strictモード）
+- **React Native 0.85** + **Expo 56**（Bare Workflow、New Architecture有効）
+- **React 19.2**
+- **TypeScript 6.0**（strictモード）
 - **Redux Toolkit 2.2** + Redux Persist
 - **Firebase 12**（Auth, Firestore, Storage, Functions）
-- **React Native Maps 1.14** / **MapLibre GL 4.6**（Web）
+- **React Native Maps 1.27**（Fabric） / **MapLibre GL 5**（Web）
 - **GDAL**（react-native-gdalwarp）
 - **i18next**（日本語/英語）
 - **PMTiles**
 
 ## 重要な開発ノート
 
-1. **Context移行**: HomeContext（86 props）から小さなContextへ移行中。詳細は`docs/MIGRATION_GUIDE.md`参照。
+1. **Context構成**: 旧HomeContext（86 props）は11の機能別Contextへ分割済み（2026-07完了）。構成と新規Context追加のベストプラクティスは`docs/MIGRATION_GUIDE.md`参照。
 
 2. **ネイティブモジュール**: `react-native-gdalwarp`は手動インストール必要（GitHub Releasesからダウンロード）。
 
@@ -241,6 +241,7 @@ src/
    - Google Maps: `local.properties`, `Maps.plist`
    - MapTiler: `src/constants/APIKeys.ts`
    - Firebase: `GoogleService-Info.plist`, `google-services.json`
+   - キー類は`keys/`ディレクトリ（gitignore対象）に配置し`yarn keys:apply`で一括反映
 
 4. **型安全性**: コミット前に`npx tsc --noEmit`必須。strictモード、implicit any禁止。
 
@@ -256,11 +257,14 @@ src/
 
 10. **Package Manager**: Yarn 3.6.4
 
+11. **ログイン**: 単一ビルド（旧`FUNC_LOGIN`フラグは廃止）。Google連携（Google Drive個人プロジェクト）と組織アカウント（Firebaseメール認証、blocking functionで登録制限）の2系統。
+
 ## Firebase Functions
 
-`/functions`ディレクトリ:
+別リポジトリ [ecorismap/functions](https://github.com/ecorismap/functions) で管理（ローカルでは`../functions`）:
 - `ecorismap-func.ts` - メイン関数
 - `virgil-func.ts` - 暗号化鍵管理
 - `generate-virgil-jwt.ts` - JWT生成
+- `auth-guard.ts` - 組織アカウント登録制限（`beforeUserCreated` blocking function、許可リストはSecret Managerの`ORG_ALLOWED_DOMAINS`/`ORG_ALLOWED_EMAILS`）
 - Node 20 runtime
 - デプロイ: `npm run deploy`（functionsディレクトリから）

@@ -1,5 +1,7 @@
 # New Architecture移行 + react-native-maps 1.27.2（スパイク→本格移行 記録）
 
+> **ステータス（2026-07）**: 移行完了。mainはReact Native 0.85 + Expo 56 + react-native-maps 1.27.2（New Arch/Fabric有効）で稼働中。以下は移行時点の記録であり、「現行」等の記述は当時のもの。
+
 ブランチ: `spike/new-arch-maps-1.27`
 目的: New Arch移行＋react-native-maps更新のGo/No-Go判断材料を作る。
 計画: `~/.claude/plans/react-native-maps-new-arch-react-prancy-charm.md`
