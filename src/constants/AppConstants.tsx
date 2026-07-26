@@ -16,6 +16,7 @@ export const ENABLE_DEK_MIGRATION = false;
 export const CURRENT_TERMS_VERSION = '2026-07-12';
 
 export const COLOR = {
+  TRANSPARENT: 'transparent',
   MAIN: '#f2f2f2',
   GRAY0: '#f9f9f9',
   GRAY1: '#ddd',

@@ -1,5 +1,6 @@
-import React from 'react';
-import { View, StyleSheet, Text, TextInput } from 'react-native';
+import React, { useState } from 'react';
+import { View, StyleSheet, Text, TextInput, Modal, Pressable } from 'react-native';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 import { Button } from '../atoms';
 import { COLOR } from '../../constants/AppConstants';
@@ -38,6 +39,9 @@ export const ProjectEditMembers = (props: Props) => {
     pressReshareMemberKey,
   } = props;
 
+  // 稀にしか使わない「暗号化キーの再共有」は3点リーダー(⋮)メニューに集約してUIをすっきりさせる。
+  const [menuVisible, setMenuVisible] = useState(false);
+
   return (
     <View style={styles.tr}>
       <View style={[styles.td, { flex: 12 }]}>
@@ -62,21 +66,6 @@ export const ProjectEditMembers = (props: Props) => {
         />
       </View>
 
-      {visibleReshareKey && (
-        <View style={[styles.td, { flex: 1 }]}>
-          <Button
-            style={{
-              backgroundColor: enableReshareKey ? COLOR.BLUE : COLOR.GRAY2,
-              padding: 0,
-            }}
-            disabled={!enableReshareKey}
-            name="key-change"
-            size={14}
-            onPress={pressReshareMemberKey}
-          />
-        </View>
-      )}
-
       <View style={[styles.td, { flex: 1 }]}>
         <Button
           style={{
@@ -89,6 +78,37 @@ export const ProjectEditMembers = (props: Props) => {
           onPress={pressDeleteMember}
         />
       </View>
+
+      {/* 3点リーダーは最終列に配置。DEK方式のプロジェクトでのみ表示し、列ズレ防止のため全行同じ幅の枠を確保する。 */}
+      {visibleReshareKey && (
+        <View style={[styles.td, { flex: 1 }]}>
+          <Button
+            style={{ backgroundColor: COLOR.TRANSPARENT, padding: 0 }}
+            color={enableReshareKey ? COLOR.GRAY3 : COLOR.GRAY2}
+            disabled={!enableReshareKey}
+            name="dots-vertical"
+            size={18}
+            onPress={() => setMenuVisible(true)}
+          />
+          <Modal visible={menuVisible} transparent animationType="fade" onRequestClose={() => setMenuVisible(false)}>
+            <Pressable style={styles.menuBackdrop} onPress={() => setMenuVisible(false)}>
+              <View style={styles.menuCard}>
+                {!!value && <Text style={styles.menuHeader}>{value.toString()}</Text>}
+                <Pressable
+                  style={styles.menuItem}
+                  onPress={() => {
+                    setMenuVisible(false);
+                    pressReshareMemberKey();
+                  }}
+                >
+                  <MaterialCommunityIcons name="key-change" size={18} color={COLOR.BLUE} />
+                  <Text style={styles.menuItemText}>{t('ProjectEdit.label.reshareKey')}</Text>
+                </Pressable>
+              </View>
+            </Pressable>
+          </Modal>
+        </View>
+      )}
     </View>
   );
 };
@@ -120,6 +140,40 @@ const styles = StyleSheet.create({
     fontSize: 16,
     height: 40,
     paddingHorizontal: 12,
+  },
+  menuBackdrop: {
+    alignItems: 'center',
+    backgroundColor: COLOR.ALFAGRAY,
+    flex: 1,
+    justifyContent: 'center',
+  },
+  menuCard: {
+    backgroundColor: COLOR.WHITE,
+    borderRadius: 8,
+    elevation: 5,
+    minWidth: 240,
+    paddingVertical: 6,
+    shadowColor: COLOR.BLACK,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+  },
+  menuHeader: {
+    color: COLOR.GRAY3,
+    fontSize: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+  },
+  menuItem: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  menuItemText: {
+    color: COLOR.TEXT_DARK,
+    fontSize: 15,
+    marginLeft: 12,
   },
   td: {
     alignItems: 'center',

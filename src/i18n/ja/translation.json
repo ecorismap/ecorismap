@@ -491,7 +491,8 @@
       "export": "DL",
       "delete": "削除",
       "save": "保存",
-      "dataManage": "データ管理"
+      "dataManage": "データ管理",
+      "reshareKey": "暗号化キーを再共有"
     }
   },
   "CloudDataManagement": {
