@@ -108,7 +108,68 @@ describe('backgroundGeolocationHeadlessTask', () => {
 
       await expect(headlessTask({ name: 'boot' })).resolves.toBeUndefined();
 
+      // 一時的でないエラーはリトライせず即ログする
+      expect(mockBackgroundGeolocation.changePace).toHaveBeenCalledTimes(1);
+      expect(consoleErrorSpy).toHaveBeenCalled();
       consoleErrorSpy.mockRestore();
+    });
+
+    it('changePaceが499で失敗し静止のままならリトライする', async () => {
+      jest.useFakeTimers();
+      const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+      (trackLogMMKV.getTrackingState as jest.Mock).mockReturnValue('on');
+      mockBackgroundGeolocation.getState
+        .mockResolvedValueOnce({ enabled: true }) // 初回のenabledチェック
+        .mockResolvedValueOnce({ enabled: true, isMoving: false }); // リトライ前の状態確認
+      mockBackgroundGeolocation.changePace.mockRejectedValueOnce(new Error('499')).mockResolvedValueOnce(undefined);
+
+      const taskPromise = headlessTask({ name: 'terminate' });
+      await jest.runAllTimersAsync();
+      await taskPromise;
+
+      expect(mockBackgroundGeolocation.changePace).toHaveBeenCalledTimes(2);
+      expect(consoleErrorSpy).not.toHaveBeenCalled();
+      consoleErrorSpy.mockRestore();
+      jest.useRealTimers();
+    });
+
+    it('changePaceが499で失敗しても既にmovingならリトライしない', async () => {
+      jest.useFakeTimers();
+      const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+      (trackLogMMKV.getTrackingState as jest.Mock).mockReturnValue('on');
+      mockBackgroundGeolocation.getState
+        .mockResolvedValueOnce({ enabled: true })
+        .mockResolvedValueOnce({ enabled: true, isMoving: true });
+      mockBackgroundGeolocation.changePace.mockRejectedValueOnce(new Error('499'));
+
+      const taskPromise = headlessTask({ name: 'terminate' });
+      await jest.runAllTimersAsync();
+      await taskPromise;
+
+      // moving切り替えは適用済みなので再試行もエラーログも不要
+      expect(mockBackgroundGeolocation.changePace).toHaveBeenCalledTimes(1);
+      expect(consoleErrorSpy).not.toHaveBeenCalled();
+      consoleErrorSpy.mockRestore();
+      jest.useRealTimers();
+    });
+
+    it('リトライも499で失敗した場合はエラーログを出す', async () => {
+      jest.useFakeTimers();
+      const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+      (trackLogMMKV.getTrackingState as jest.Mock).mockReturnValue('on');
+      mockBackgroundGeolocation.getState
+        .mockResolvedValueOnce({ enabled: true })
+        .mockResolvedValueOnce({ enabled: true, isMoving: false });
+      mockBackgroundGeolocation.changePace.mockRejectedValue(new Error('499'));
+
+      const taskPromise = headlessTask({ name: 'terminate' });
+      await jest.runAllTimersAsync();
+      await expect(taskPromise).resolves.toBeUndefined();
+
+      expect(mockBackgroundGeolocation.changePace).toHaveBeenCalledTimes(2);
+      expect(consoleErrorSpy).toHaveBeenCalled();
+      consoleErrorSpy.mockRestore();
+      jest.useRealTimers();
     });
   });
 

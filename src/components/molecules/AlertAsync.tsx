@@ -37,6 +37,46 @@ export const DataConflictConfirmAsync = async (): Promise<DataConflictChoice> =>
     );
   });
 
+export type StopDownloadChoice = 'continue' | 'pause' | 'discard';
+
+/**
+ * タイルダウンロード中断時の対処をユーザーに確認する。
+ * 続ける / 一時停止（後で続きから再開可能）/ 破棄（記録を削除）の3択。
+ */
+export const StopDownloadConfirmAsync = async (): Promise<StopDownloadChoice> =>
+  new Promise((resolve) => {
+    Alert.alert(
+      t('hooks.stopDownload.title'),
+      t('hooks.stopDownload.message'),
+      [
+        { text: t('hooks.stopDownload.continue'), swalType: 'confirm', onPress: () => resolve('continue') },
+        { text: t('hooks.stopDownload.pause'), swalType: 'deny', onPress: () => resolve('pause') },
+        { text: t('hooks.stopDownload.discard'), swalType: 'cancel', onPress: () => resolve('discard') },
+      ],
+      { cancelable: false }
+    );
+  });
+
+export type ResumeDownloadChoice = 'resume' | 'later' | 'discard';
+
+/**
+ * 未完了のタイルダウンロードをどうするかユーザーに確認する。
+ * 再開する / 後で（次回起動時に改めて確認）/ 破棄（未完了の記録を削除し以後確認しない）の3択。
+ */
+export const ResumeDownloadConfirmAsync = async (message: string): Promise<ResumeDownloadChoice> =>
+  new Promise((resolve) => {
+    Alert.alert(
+      t('hooks.resumeDownload.title'),
+      message,
+      [
+        { text: t('hooks.resumeDownload.resume'), swalType: 'confirm', onPress: () => resolve('resume') },
+        { text: t('hooks.resumeDownload.later'), swalType: 'deny', onPress: () => resolve('later') },
+        { text: t('hooks.resumeDownload.discard'), swalType: 'cancel', onPress: () => resolve('discard') },
+      ],
+      { cancelable: false }
+    );
+  });
+
 export const ConfirmAsync = async (
   message: string,
   text: { true: string; false: string } = { true: 'Yes', false: 'No' }
