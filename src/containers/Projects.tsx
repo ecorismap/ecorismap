@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert } from '../components/atoms/Alert';
-import { AlertAsync } from '../components/molecules/AlertAsync';
+import { AlertAsync, ConfirmAsync } from '../components/molecules/AlertAsync';
 import Projects from '../components/pages/Projects';
 import { useProjects } from '../hooks/useProjects';
 import { t } from '../i18n/config';
@@ -21,10 +21,14 @@ export default function ProjectsContainers({ navigation, route }: Props_Projects
     projects,
     favoriteProjectIds,
     showOnlyFavorites,
+    isShowArchive,
     fetchProjects,
     generateProject,
     toggleFavorite,
     toggleShowOnlyFavorites,
+    toggleShowArchive,
+    archiveProject,
+    unarchiveProject,
   } = useProjects();
   const { restoreEncryptKey, cleanupEncryptKey } = useAccount();
   const pressAddProject = useCallback(() => {
@@ -67,6 +71,45 @@ export default function ProjectsContainers({ navigation, route }: Props_Projects
       Alert.alert('error', e.message);
     }
   }, [fetchProjects]);
+
+  const onToggleShowArchive = useCallback(async () => {
+    try {
+      const { isOK, message } = await toggleShowArchive();
+      if (!isOK) {
+        await AlertAsync(message);
+      }
+    } catch (e: any) {
+      Alert.alert('error', e.message);
+    }
+  }, [toggleShowArchive]);
+
+  const pressArchiveProject = useCallback(
+    async (projectId: string) => {
+      const ret = await ConfirmAsync(t('Projects.confirm.archive'));
+      if (!ret) return;
+      try {
+        const { isOK, message } = await archiveProject(projectId);
+        if (!isOK) await AlertAsync(message);
+      } catch (e: any) {
+        Alert.alert('error', e.message);
+      }
+    },
+    [archiveProject]
+  );
+
+  const pressRestoreProject = useCallback(
+    async (projectId: string) => {
+      const ret = await ConfirmAsync(t('Projects.confirm.restore'));
+      if (!ret) return;
+      try {
+        const { isOK, message } = await unarchiveProject(projectId);
+        if (!isOK) await AlertAsync(message);
+      } catch (e: any) {
+        Alert.alert('error', e.message);
+      }
+    },
+    [unarchiveProject]
+  );
 
   const onPressGotoProject = useCallback(
     async (projectId: string) => {
@@ -130,6 +173,7 @@ export default function ProjectsContainers({ navigation, route }: Props_Projects
         isEncryptPasswordModalOpen,
         favoriteProjectIds,
         showOnlyFavorites,
+        isShowArchive,
         pressEncryptPasswordOK,
         pressEncryptPasswordCancel,
         onReloadProjects: reloadProjects,
@@ -138,6 +182,9 @@ export default function ProjectsContainers({ navigation, route }: Props_Projects
         gotoBack,
         toggleFavorite,
         toggleShowOnlyFavorites,
+        toggleShowArchive: onToggleShowArchive,
+        pressArchiveProject,
+        pressRestoreProject,
       }}
     >
       <Projects />

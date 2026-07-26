@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react';
 import { ProjectType, UserType } from '../types';
 import * as projectRepository from '../lib/firebase/firestore';
-import { setProjectsAction } from '../modules/projects';
+import { setProjectsAction, updateProjectAction } from '../modules/projects';
 import {
   toggleFavorite as toggleFavoriteAction,
   setShowOnlyFavorites as setShowOnlyFavoritesAction,
@@ -19,13 +19,17 @@ export type UseProjectsReturnType = {
   projects: ProjectType[];
   favoriteProjectIds: string[];
   showOnlyFavorites: boolean;
-  fetchProjects: () => Promise<{
+  isShowArchive: boolean;
+  fetchProjects: (includeArchived?: boolean) => Promise<{
     isOK: boolean;
     message: string;
   }>;
   generateProject: () => ProjectType;
   toggleFavorite: (projectId: string) => void;
   toggleShowOnlyFavorites: () => void;
+  toggleShowArchive: () => Promise<{ isOK: boolean; message: string }>;
+  archiveProject: (projectId: string) => Promise<{ isOK: boolean; message: string }>;
+  unarchiveProject: (projectId: string) => Promise<{ isOK: boolean; message: string }>;
 };
 
 export const useProjects = (): UseProjectsReturnType => {
@@ -35,6 +39,8 @@ export const useProjects = (): UseProjectsReturnType => {
   const favoriteProjectIds = useSelector((state: RootState) => state.favoriteProjects?.projectIds || []);
   const showOnlyFavorites = useSelector((state: RootState) => state.favoriteProjects?.showOnlyFavorites || false);
   const [isLoading, setIsLoading] = useState(false);
+  // アーカイブ済みも読み込むか（端末ローカルの一時状態。永続化しない）
+  const [isShowArchive, setIsShowArchive] = useState(false);
 
   const generateProject = useCallback(() => {
     if (!isLoggedIn(user)) throw new Error(t('hooks.message.pleaseLogin'));
@@ -51,7 +57,8 @@ export const useProjects = (): UseProjectsReturnType => {
     return project;
   }, [user]);
 
-  const fetchProjects = useCallback(async () => {
+  const fetchProjects = useCallback(
+    async (includeArchived: boolean = isShowArchive) => {
     if (!isLoggedIn(user)) return { isOK: false, message: t('hooks.message.pleaseLogin') };
 
     // const perfStart = performance.now();
@@ -72,7 +79,11 @@ export const useProjects = (): UseProjectsReturnType => {
 
       dispatch(setProjectsAction([]));
 
-      const { isOK, projects: updatedProjects, message } = await projectRepository.getAllProjects(user.uid);
+      const {
+        isOK,
+        projects: updatedProjects,
+        message,
+      } = await projectRepository.getAllProjects(user.uid, false, includeArchived);
       if (!isOK || updatedProjects === undefined) {
         return { isOK: false, message };
       }
@@ -92,7 +103,9 @@ export const useProjects = (): UseProjectsReturnType => {
     } finally {
       setIsLoading(false);
     }
-  }, [dispatch, user]);
+    },
+    [dispatch, isShowArchive, user]
+  );
 
   const toggleFavorite = useCallback(
     (projectId: string) => {
@@ -105,15 +118,50 @@ export const useProjects = (): UseProjectsReturnType => {
     dispatch(setShowOnlyFavoritesAction(!showOnlyFavorites));
   }, [dispatch, showOnlyFavorites]);
 
+  // アーカイブ表示のトグル。反転した値でそのまま再取得する（state更新の反映待ちを避ける）。
+  const toggleShowArchive = useCallback(async () => {
+    const next = !isShowArchive;
+    setIsShowArchive(next);
+    return fetchProjects(next);
+  }, [fetchProjects, isShowArchive]);
+
+  const archiveProject = useCallback(
+    async (projectId: string) => {
+      const project = projects.find((p) => p.id === projectId);
+      if (project === undefined) return { isOK: false, message: t('firebase.message.failUpdateProject') };
+      const { isOK, message } = await projectRepository.archiveProject(projectId);
+      if (!isOK) return { isOK, message };
+      dispatch(updateProjectAction({ ...project, archived: true }));
+      return { isOK: true, message: '' };
+    },
+    [dispatch, projects]
+  );
+
+  const unarchiveProject = useCallback(
+    async (projectId: string) => {
+      const project = projects.find((p) => p.id === projectId);
+      if (project === undefined) return { isOK: false, message: t('firebase.message.failUpdateProject') };
+      const { isOK, message } = await projectRepository.unarchiveProject(projectId);
+      if (!isOK) return { isOK, message };
+      dispatch(updateProjectAction({ ...project, archived: false }));
+      return { isOK: true, message: '' };
+    },
+    [dispatch, projects]
+  );
+
   return {
     user,
     isLoading,
     projects,
     favoriteProjectIds,
     showOnlyFavorites,
+    isShowArchive,
     fetchProjects,
     generateProject,
     toggleFavorite,
     toggleShowOnlyFavorites,
+    toggleShowArchive,
+    archiveProject,
+    unarchiveProject,
   } as const;
 };
