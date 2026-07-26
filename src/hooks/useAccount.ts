@@ -336,11 +336,12 @@ export const useAccount = (): UseAccountReturnType => {
       return { isOK: false, message: t('hooks.message.pleaseLogin') };
     }
 
+    // アカウント削除のクリーンアップではアーカイブ済みも対象にする（E3Kitグループ削除の漏れを防ぐ）。
     const {
       isOK: isProjectsOK,
       message: getProjectsMessage,
       projects,
-    } = await projectStore.getAllProjects(user.uid, true);
+    } = await projectStore.getAllProjects(user.uid, true, true);
     if (!isProjectsOK || projects === undefined) {
       return { isOK: false, message: getProjectsMessage };
     }
