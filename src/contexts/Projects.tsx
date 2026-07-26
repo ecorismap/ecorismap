@@ -8,6 +8,7 @@ interface ProjectsContextType {
   isEncryptPasswordModalOpen: boolean;
   favoriteProjectIds: string[];
   showOnlyFavorites: boolean;
+  isShowArchive: boolean;
   pressEncryptPasswordOK: (value: string) => void;
   pressEncryptPasswordCancel: () => void;
   onReloadProjects: () => void;
@@ -16,5 +17,8 @@ interface ProjectsContextType {
   gotoBack: () => void;
   toggleFavorite: (projectId: string) => void;
   toggleShowOnlyFavorites: () => void;
+  toggleShowArchive: () => void;
+  pressArchiveProject: (projectId: string) => void;
+  pressRestoreProject: (projectId: string) => void;
 }
 export const ProjectsContext = createContext({} as ProjectsContextType);

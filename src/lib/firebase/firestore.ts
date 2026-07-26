@@ -227,7 +227,7 @@ export const getUidsByEmails = async (emails: string[]) => {
   }
 };
 
-export const getAllProjects = async (uid: string, excludeMember = false) => {
+export const getAllProjects = async (uid: string, excludeMember = false, includeArchived = false) => {
   // const perfStart = performance.now();
   try {
     let q;
@@ -243,21 +243,27 @@ export const getAllProjects = async (uid: string, excludeMember = false) => {
     // const firebaseEnd = performance.now();
     // console.log(`[PERF] Firebase getDocsFromServer: ${(firebaseEnd - firebaseStart).toFixed(0)}ms (${querySnapshot.docs.length} projects)`);
 
+    // アーカイブ済みは平文フィールド archived で判別できるので、includeArchived が false のときは
+    // 設定取得(getSettingsUpdatedAt: 1読み取り/件)と復号(dec)の対象から外し、読み込みコストを下げる。
+    // ※ where('archived','==',false) はレガシーdoc(フィールド無し)が該当せず複合インデックスも要るため、
+    //   安価なdoc一覧クエリの結果をクライアント側の平文フィルタで振り分ける。
+    const targetDocs = includeArchived
+      ? querySnapshot.docs
+      : querySnapshot.docs.filter((docSnapshot) => (docSnapshot.data() as ProjectFS).archived !== true);
+
     // 設定取得と復号化を並列で実行（全プラットフォーム共通）
 
     // 1. 設定の更新日時を全並列で取得
     // const settingsStart = performance.now();
-    const settingsResults = await Promise.all(
-      querySnapshot.docs.map((docSnapshot) => getSettingsUpdatedAt(docSnapshot.id))
-    );
+    const settingsResults = await Promise.all(targetDocs.map((docSnapshot) => getSettingsUpdatedAt(docSnapshot.id)));
     // const settingsEnd = performance.now();
     // console.log(`[PERF] Settings fetch (parallel): ${(settingsEnd - settingsStart).toFixed(0)}ms`);
 
     // 2. 設定取得完了後、復号化を並列で実行
     // const decryptStart = performance.now();
-    const result = querySnapshot.docs.map(async (docSnapshot, index) => {
+    const result = targetDocs.map(async (docSnapshot, index) => {
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { encdata, ownerUid, encryptedAt, license, storage, cryptoScheme, dekPublicKey, ...others } =
+      const { encdata, ownerUid, encryptedAt, license, storage, cryptoScheme, dekPublicKey, archived, ...others } =
         docSnapshot.data() as ProjectFS;
       // group方式は方式が確定しているのでキャッシュへ事前登録し、dec内での余分なproject doc再読み取りを防ぐ
       // （既存プロジェクトの読み取り回数を従来どおりに保つ）。dek方式はDEK秘密鍵の遅延取得が要るので事前登録しない。
@@ -276,6 +282,7 @@ export const getAllProjects = async (uid: string, excludeMember = false) => {
           ...others,
           encryptedAt: toDate(encryptedAt),
           cryptoScheme: cryptoScheme ?? 'group',
+          archived: archived ?? false,
           // 事前に取得した設定の更新日時を使用
           settingsEncryptedAt: settingsResults[index],
         } as ProjectType;
@@ -360,6 +367,28 @@ export const updateProject = async (project: ProjectType) => {
       encryptedAt: Timestamp.now(),
     };
     await updateDoc(doc(firestore, 'projects', id), updateProjectFS);
+    return { isOK: true, message: '' };
+  } catch (error) {
+    console.log(error);
+    return { isOK: false, message: t('firebase.message.failUpdateProject') };
+  }
+};
+
+// プロジェクトのアーカイブ／復元。
+// archived は平文フィールドなので encdata を再暗号化せず、フラグだけを更新する（安価）。
+export const archiveProject = async (projectId: string) => {
+  try {
+    await updateDoc(doc(firestore, 'projects', projectId), { archived: true });
+    return { isOK: true, message: '' };
+  } catch (error) {
+    console.log(error);
+    return { isOK: false, message: t('firebase.message.failUpdateProject') };
+  }
+};
+
+export const unarchiveProject = async (projectId: string) => {
+  try {
+    await updateDoc(doc(firestore, 'projects', projectId), { archived: false });
     return { isOK: true, message: '' };
   } catch (error) {
     console.log(error);

@@ -19,11 +19,17 @@ service cloud.firestore {
         // 更新: オーナーは常に可。更新後がDEK方式(エンベロープ暗号)になるなら管理者も可。
         // request.resource(更新後)を見ることで、管理者による「メンバー追加(既にdek)」と
         // 「group→dekへの移行(Phase ii)」の両方を許可する。
+        // アーカイブ/復元は平文フラグ archived だけの更新（再暗号化不要）なので、
+        // 暗号方式に関わらず管理者にも許可する。
         allow update: if isSignedIn()
-        && verifyUpdateFields(["adminsUid", "membersUid","encdata","encryptedAt","cryptoScheme","dekPublicKey"])
+        && verifyUpdateFields(["adminsUid", "membersUid","encdata","encryptedAt","cryptoScheme","dekPublicKey","archived"])
         && (
              request.auth.uid == resource.data.ownerUid
           || (request.resource.data.cryptoScheme == "dek" && request.auth.uid in resource.data.adminsUid)
+          || (
+               request.resource.data.diff(resource.data).affectedKeys().hasOnly(["archived"])
+            && request.auth.uid in resource.data.adminsUid
+          )
         );
  
 

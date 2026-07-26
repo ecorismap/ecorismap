@@ -32,6 +32,7 @@ export default function Projects() {
     isEncryptPasswordModalOpen,
     favoriteProjectIds,
     showOnlyFavorites,
+    isShowArchive,
     pressEncryptPasswordOK,
     pressEncryptPasswordCancel,
     onReloadProjects,
@@ -40,6 +41,9 @@ export default function Projects() {
     gotoBack,
     toggleFavorite,
     toggleShowOnlyFavorites,
+    toggleShowArchive,
+    pressArchiveProject,
+    pressRestoreProject,
   } = useContext(ProjectsContext);
   const insets = useSafeAreaInsets();
   const { height: windowHeight } = useWindowDimensions();
@@ -63,11 +67,16 @@ export default function Projects() {
   );
 
   const filteredProjects = useMemo(() => {
-    if (showOnlyFavorites) {
-      return projects.filter((p) => favoriteProjectIds.includes(p.id));
+    let result = projects;
+    // アーカイブ表示OFFのときはアーカイブ済みを隠す（読み込み自体も除外済みなので基本は保険）
+    if (!isShowArchive) {
+      result = result.filter((p) => p.archived !== true);
     }
-    return projects;
-  }, [projects, showOnlyFavorites, favoriteProjectIds]);
+    if (showOnlyFavorites) {
+      result = result.filter((p) => favoriteProjectIds.includes(p.id));
+    }
+    return result;
+  }, [projects, isShowArchive, showOnlyFavorites, favoriteProjectIds]);
 
   const sortedProjects = useMemo(() => {
     if (sortOrder === 'UNSORTED') return filteredProjects;
@@ -152,12 +161,21 @@ export default function Projects() {
           <MaterialCommunityIcons name="sort-numeric-descending" size={16} color={COLOR.TEXT_DARK} />
         )}
       </Pressable>
+      {Platform.OS === 'web' && (
+        <View style={[styles.th, { width: 90 }]}>
+          <Text numberOfLines={1} style={{ color: COLOR.TEXT_DARK }}>{`${t('Projects.label.archive')}`}</Text>
+        </View>
+      )}
     </View>
   ), [handleSort, showOnlyFavorites, sortField, sortOrder, toggleShowOnlyFavorites]);
 
   // renderItemをメモ化（不要な再生成を防止）
   const renderItem = useCallback(
-    ({ item, index }: ListRenderItemInfo<ProjectType>) => (
+    ({ item, index }: ListRenderItemInfo<ProjectType>) => {
+      const isOwnerAdmin = !!user.uid && (item.ownerUid === user.uid || (item.adminsUid ?? []).includes(user.uid));
+      const showActions = Platform.OS === 'web' && isOwnerAdmin;
+      const textColor = item.archived ? COLOR.GRAY4 : COLOR.TEXT_DARK;
+      return (
       <Pressable
         key={index}
         style={{
@@ -183,7 +201,7 @@ export default function Projects() {
             numberOfLines={2}
             onPress={() => gotoProject(item.id)}
             testID={`project-${index}`}
-            style={{ color: COLOR.TEXT_DARK }}
+            style={{ color: textColor }}
           >
             {item.name}
           </Text>
@@ -216,9 +234,27 @@ export default function Projects() {
             {`${item.storage !== undefined ? (item.storage.count / (1024 * 1024 * 1024)).toFixed(2) : 0}GB`}
           </Text>
         </View>
+        {Platform.OS === 'web' && (
+          <View style={[styles.td, { width: 90, alignItems: 'center' }]}>
+            {showActions && (
+              <Pressable
+                style={{ padding: 5 }}
+                onPress={() => (item.archived ? pressRestoreProject(item.id) : pressArchiveProject(item.id))}
+                testID={`archive-toggle-${index}`}
+              >
+                <MaterialCommunityIcons
+                  name={item.archived ? 'archive-arrow-up' : 'archive-arrow-down'}
+                  size={20}
+                  color={item.archived ? COLOR.BLUE : COLOR.GRAY4}
+                />
+              </Pressable>
+            )}
+          </View>
+        )}
       </Pressable>
-    ),
-    [favoriteProjectIds, gotoProject, toggleFavorite, user.uid]
+      );
+    },
+    [favoriteProjectIds, gotoProject, pressArchiveProject, pressRestoreProject, toggleFavorite, user.uid]
   );
 
   return (
@@ -229,7 +265,24 @@ export default function Projects() {
           <MaterialCommunityIcons name="chevron-left" size={28} color={COLOR.BLACK} />
         </TouchableOpacity>
         <Text style={{ fontSize: 16, color: COLOR.TEXT_DARK }}>{t('Projects.navigation.title')}</Text>
-        <View style={{ width: 40 }} />
+        {Platform.OS === 'web' ? (
+          <TouchableOpacity
+            style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 5 }}
+            onPress={toggleShowArchive}
+            testID="toggle-show-archive"
+          >
+            <Text style={{ fontSize: 12, color: isShowArchive ? COLOR.BLUE : COLOR.GRAY4, marginRight: 2 }}>
+              {t('Projects.label.includeArchive')}
+            </Text>
+            <MaterialCommunityIcons
+              name={isShowArchive ? 'toggle-switch' : 'toggle-switch-off-outline'}
+              size={28}
+              color={isShowArchive ? COLOR.BLUE : COLOR.GRAY4}
+            />
+          </TouchableOpacity>
+        ) : (
+          <View style={{ width: 40 }} />
+        )}
       </View>
 
       {showOnlyFavorites && favoriteProjectIds.length === 0 && (

@@ -455,7 +455,16 @@
     "label": {
       "createProject": "作成",
       "reloadProjects": "更新",
-      "noFavorites": "お気に入りプロジェクトがありません"
+      "noFavorites": "お気に入りプロジェクトがありません",
+      "showArchive": "アーカイブを表示",
+      "hideArchive": "アーカイブを隠す",
+      "includeArchive": "アーカイブを含む",
+      "archive": "アーカイブ",
+      "restore": "復元"
+    },
+    "confirm": {
+      "archive": "このプロジェクトをアーカイブしますか？アーカイブすると通常の一覧に表示されなくなります。",
+      "restore": "このプロジェクトを復元しますか？"
     }
   },
   "ProjectEdit": {

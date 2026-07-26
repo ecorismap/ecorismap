@@ -324,6 +324,8 @@ export interface ProjectType {
   settingsEncryptedAt?: Date;
   /** 暗号方式（平文フィールド由来）。未設定は従来のグループ暗号として扱う。 */
   cryptoScheme?: 'group' | 'dek';
+  /** アーカイブ済みか（平文フィールド由来）。true のとき既定の一覧・読み込みから除外する。 */
+  archived?: boolean;
   // Grouping properties
   isGroup?: boolean;
   groupId?: string;
@@ -417,6 +419,8 @@ export interface ProjectFS {
   cryptoScheme?: 'group' | 'dek';
   /** DEK 公開鍵（base64・平文保存可）。cryptoScheme === 'dek' のときデータ暗号化に使う。 */
   dekPublicKey?: string;
+  /** アーカイブ済みフラグ（平文）。true のとき既定の一覧・読み込みから除外する。 */
+  archived?: boolean;
 }
 export type UpdateProjectFS = Omit<ProjectFS, 'ownerUid'>;
 

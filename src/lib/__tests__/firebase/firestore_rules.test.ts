@@ -312,6 +312,101 @@ describe('projects collection', () => {
       })
     );
   });
+
+  it('archive: オーナーはアーカイブできる', async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await setDoc(doc(context.firestore(), `projects/${documentId}`), {
+        encdata: '',
+        ownerUid: uid1,
+        adminsUid: [uid1, uid2],
+        membersUid: [uid1, uid2, uid3, uid4],
+        encryptedAt: '2022年1月2日',
+      });
+    });
+
+    const context1 = testEnv.authenticatedContext(uid1, {
+      email: 'test1@example.com',
+      email_verified: true,
+    });
+    await firebase.assertSucceeds(updateDoc(doc(context1.firestore(), `projects/${documentId}`), { archived: true }));
+  });
+
+  it('archive: DEK方式のプロジェクトは管理者もアーカイブできる', async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await setDoc(doc(context.firestore(), `projects/${documentId}`), {
+        encdata: '',
+        ownerUid: uid1,
+        adminsUid: [uid1, uid2],
+        membersUid: [uid1, uid2, uid3, uid4],
+        encryptedAt: '2022年1月2日',
+        cryptoScheme: 'dek',
+      });
+    });
+
+    const context2 = testEnv.authenticatedContext(uid2, {
+      email: 'test2@example.com',
+      email_verified: true,
+    });
+    await firebase.assertSucceeds(updateDoc(doc(context2.firestore(), `projects/${documentId}`), { archived: true }));
+  });
+
+  it('archive: グループ暗号方式でも管理者はアーカイブできる（archivedのみの更新）', async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await setDoc(doc(context.firestore(), `projects/${documentId}`), {
+        encdata: '',
+        ownerUid: uid1,
+        adminsUid: [uid1, uid2],
+        membersUid: [uid1, uid2, uid3, uid4],
+        encryptedAt: '2022年1月2日',
+      });
+    });
+
+    const context2 = testEnv.authenticatedContext(uid2, {
+      email: 'test2@example.com',
+      email_verified: true,
+    });
+    await firebase.assertSucceeds(updateDoc(doc(context2.firestore(), `projects/${documentId}`), { archived: true }));
+  });
+
+  it('archive: 管理者はarchived以外の更新は（グループ暗号では）できない', async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await setDoc(doc(context.firestore(), `projects/${documentId}`), {
+        encdata: '',
+        ownerUid: uid1,
+        adminsUid: [uid1, uid2],
+        membersUid: [uid1, uid2, uid3, uid4],
+        encryptedAt: '2022年1月2日',
+      });
+    });
+
+    const context2 = testEnv.authenticatedContext(uid2, {
+      email: 'test2@example.com',
+      email_verified: true,
+    });
+    // archived と一緒に他フィールドも変えるとグループ暗号では拒否される（archived単独更新のみ許可）
+    await firebase.assertFails(
+      updateDoc(doc(context2.firestore(), `projects/${documentId}`), { archived: true, membersUid: [uid1, uid2] })
+    );
+  });
+
+  it('archive: メンバーはアーカイブできない', async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await setDoc(doc(context.firestore(), `projects/${documentId}`), {
+        encdata: '',
+        ownerUid: uid1,
+        adminsUid: [uid1, uid2],
+        membersUid: [uid1, uid2, uid3, uid4],
+        encryptedAt: '2022年1月2日',
+        cryptoScheme: 'dek',
+      });
+    });
+
+    const context3 = testEnv.authenticatedContext(uid3, {
+      email: 'test3@example.com',
+      email_verified: true,
+    });
+    await firebase.assertFails(updateDoc(doc(context3.firestore(), `projects/${documentId}`), { archived: true }));
+  });
 });
 
 describe('settings subcollection', () => {

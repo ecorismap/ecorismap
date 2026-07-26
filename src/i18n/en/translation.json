@@ -498,7 +498,16 @@
     "label": {
       "reloadProjects": "reload",
       "createProject": "create",
-      "noFavorites": "No favorite projects"
+      "noFavorites": "No favorite projects",
+      "showArchive": "Show archived",
+      "hideArchive": "Hide archived",
+      "includeArchive": "Include archived",
+      "archive": "Archive",
+      "restore": "Restore"
+    },
+    "confirm": {
+      "archive": "Archive this project? Archived projects are hidden from the normal list.",
+      "restore": "Restore this project?"
     }
   },
   "ProjectEdit": {
