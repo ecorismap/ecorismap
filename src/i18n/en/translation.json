@@ -534,7 +534,8 @@
       "export": "DL",
       "delete": "delete",
       "save": "save",
-      "dataManage": "Data"
+      "dataManage": "Data",
+      "reshareKey": "Re-share encryption key"
     }
   },
   "CloudDataManagement": {
