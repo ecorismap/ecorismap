@@ -292,6 +292,10 @@ export interface TileRegionType {
     latitude: number;
     longitude: number;
   };
+  // ダウンロード未完了の状態。undefined = 完了（既存レコードとの後方互換のためoptional）
+  status?: 'downloading' | 'paused';
+  // ダウンロード開始時のズーム。再開時のタイル集合の再計算に必要
+  zoom?: number;
 }
 
 export interface PhotoType {

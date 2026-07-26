@@ -801,8 +801,23 @@
       "merge": "マージ",
       "overwrite": "上書き"
     },
+    "stopDownload": {
+      "title": "ダウンロードの中断",
+      "message": "ダウンロードを中断しますか？\n一時停止すると、あとで続きから再開できます。",
+      "continue": "続ける",
+      "pause": "一時停止",
+      "discard": "破棄"
+    },
+    "resumeDownload": {
+      "title": "ダウンロードの再開",
+      "resume": "再開する",
+      "later": "後で",
+      "discard": "破棄"
+    },
     "confirm": {
       "stopDownload": "ダウンロードを中止しますか?",
+      "resumeDownload": "ダウンロードが中断されました。続きから再開しますか?",
+      "resumeIncompleteDownload": "未完了の地図ダウンロードがあります。続きから再開しますか?",
       "sendMailForActivate": "アカウントがアクティベートされていません。アクティベート用のメールを送信しますか？"
     },
     "alert": {

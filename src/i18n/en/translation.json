@@ -614,8 +614,23 @@
       "merge": "Merge",
       "overwrite": "Overwrite"
     },
+    "stopDownload": {
+      "title": "Stop Download",
+      "message": "Do you want to stop the download?\nIf you pause, you can resume it later.",
+      "continue": "Continue",
+      "pause": "Pause",
+      "discard": "Discard"
+    },
+    "resumeDownload": {
+      "title": "Resume Download",
+      "resume": "Resume",
+      "later": "Later",
+      "discard": "Discard"
+    },
     "confirm": {
       "stopDownload": "Do you want to stop the download?",
+      "resumeDownload": "The download was interrupted. Resume from where it left off?",
+      "resumeIncompleteDownload": "There is an incomplete map download. Resume from where it left off?",
       "sendMailForActivate": "Your account has not been activated. \nWould you like to send an activation email?"
     },
     "alert": {

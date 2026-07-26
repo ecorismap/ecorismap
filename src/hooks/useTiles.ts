@@ -1,20 +1,28 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Platform } from 'react-native';
-import { shallowEqual, useDispatch, useSelector } from 'react-redux';
+import { AppState, Platform } from 'react-native';
+import { shallowEqual, useDispatch, useSelector, useStore } from 'react-redux';
 import { ulid } from 'ulid';
 import { RootState } from '../store';
 import { editSettingsAction } from '../modules/settings';
 import { tileGridForRegion } from '../utils/Tile';
-import { AlertAsync, ConfirmAsync } from '../components/molecules/AlertAsync';
+import { AlertAsync, ResumeDownloadConfirmAsync, StopDownloadConfirmAsync } from '../components/molecules/AlertAsync';
 import { TileMapType, TileRegionType } from '../types';
 import { TILE_FOLDER } from '../constants/AppConstants';
 import * as FileSystem from 'expo-file-system/legacy';
 import { t } from '../i18n/config';
 import { useWindow } from './useWindow';
-import { getExt } from '../utils/General';
 import * as pmtiles from 'pmtiles';
 import { Buffer } from 'buffer';
 import { cloneDeep } from 'lodash';
+import {
+  boundsFromCoords,
+  getTileType,
+  getZoomRange,
+  listExistingTiles,
+  markRegionsPaused,
+  removeIncompleteRegions,
+  toCompletedRegion,
+} from '../utils/tileDownloadHelpers';
 
 export type UseTilesReturnType = {
   isDownloading: boolean;
@@ -23,7 +31,13 @@ export type UseTilesReturnType = {
   downloadProgress: string;
   savedTileSize: string;
   downloadTiles: (zoom: number) => Promise<void>;
-  downloadMultipleTiles: (zoom: number, tileMaps: TileMapType[]) => Promise<void>;
+  downloadMultipleTiles: (
+    zoom: number,
+    tileMaps: TileMapType[],
+    resumeRegions?: (TileRegionType | undefined)[]
+  ) => Promise<void>;
+  resumeDownloadTiles: () => Promise<void>;
+  hasIncompleteDownload: boolean;
   stopDownloadTiles: () => void;
   clearTiles: (tileMap_: TileMapType) => Promise<void>;
 };
@@ -35,12 +49,24 @@ export const useTiles = (
 ): UseTilesReturnType => {
   //console.log(tileMap);
   const dispatch = useDispatch();
+  const store = useStore<RootState>();
   const { mapRegion } = useWindow();
   const pause = useRef(false);
+  const pauseReason = useRef<'user' | 'background' | null>(null);
+  const isDownloadingRef = useRef(false);
+  // バックグラウンド中断後、フォアグラウンド復帰時に再開確認を出すためのフラグ
+  const pendingResumePrompt = useRef(false);
+  // downloadMultipleTiles→resumeDownloadTilesの循環参照を避けるためrefで参照する
+  const resumeFnRef = useRef<(() => Promise<void>) | null>(null);
+  const checkedIncompleteOnLaunch = useRef(false);
   const [isDownloading, setIsDownloading] = useState(false);
   const [downloadProgress, setProgress] = useState('0');
   const [savedTileSize, setTileSize] = useState('0');
   const tileRegions = useSelector((state: RootState) => state.settings.tileRegions, shallowEqual);
+  // redux-persistの内部stateは型定義に現れないためキャストして参照する
+  const rehydrated = useSelector(
+    (state: RootState) => (state as unknown as { _persist?: { rehydrated?: boolean } })._persist?.rehydrated === true
+  );
   const downloadRegion = useMemo(() => {
     const minLon = mapRegion.longitude - mapRegion.latitudeDelta / 4;
     const minLat = mapRegion.latitude - mapRegion.latitudeDelta / 4;
@@ -87,42 +113,79 @@ export const useTiles = (
     return tileRegions;
   }, [tileMap?.id, tileRegions, selectedTileMapIds, tileMaps]);
 
+  const hasIncompleteDownload = useMemo(() => tileRegions.some((r) => r.status !== undefined), [tileRegions]);
+
+  useEffect(() => {
+    isDownloadingRef.current = isDownloading;
+  }, [isDownloading]);
+
   const stopDownloadTiles = useCallback(() => {
     pause.current = true;
+    pauseReason.current = 'user';
   }, []);
 
-  const addTileRegions = useCallback(() => {
-    if (tileMap === undefined) return;
-    const tileRegion = cloneDeep(downloadArea);
-    tileRegion.id = ulid();
-    tileRegion.tileMapId = tileMap.id;
+  // 未完了（status付き）の記録をすべて破棄する（保存済みタイルのファイル自体は残る）
+  const discardIncompleteDownloads = useCallback(() => {
+    const currentTileRegions = store.getState().settings.tileRegions;
+    dispatch(editSettingsAction({ tileRegions: currentTileRegions.filter((r) => r.status === undefined) }));
+  }, [dispatch, store]);
 
-    dispatch(editSettingsAction({ tileRegions: [...tileRegions, tileRegion] }));
-    return tileRegion.id;
-  }, [dispatch, downloadArea, tileMap, tileRegions]);
-
-  const removeTileRegion = useCallback(
-    (id: string) => {
-      const newTileRegions = tileRegions.filter((item) => item.id !== id);
-      dispatch(editSettingsAction({ tileRegions: newTileRegions }));
-    },
-    [dispatch, tileRegions]
-  );
+  const promptResumeAfterBackground = useCallback(async () => {
+    if (!pendingResumePrompt.current) return;
+    pendingResumePrompt.current = false;
+    const choice = await ResumeDownloadConfirmAsync(t('hooks.confirm.resumeDownload'));
+    if (choice === 'resume') {
+      await resumeFnRef.current?.();
+    } else if (choice === 'discard') {
+      discardIncompleteDownloads();
+    }
+    // 'later'はpausedのまま保持し、次回起動時に改めて確認する
+  }, [discardIncompleteDownloads]);
 
   const downloadTiles = useCallback(
     async (zoom: number) => {
-      const id = addTileRegions();
-      if (tileMap === undefined || id === undefined) return;
+      if (tileMap === undefined) return;
+      const tileRegion = cloneDeep(downloadArea);
+      tileRegion.id = ulid();
+      tileRegion.tileMapId = tileMap.id;
+      tileRegion.status = 'downloading';
+      tileRegion.zoom = zoom;
+      // 非同期ループ中はuseSelectorのtileRegionsが更新されないため、storeから直接読んでローカルに累積する。
+      // 同じ地図の古い未完了記録は新規ダウンロードで置き換える（残すと起動のたびに再開確認が出続ける）
+      let updatedTileRegions = [
+        ...store.getState().settings.tileRegions.filter((r) => !(r.status !== undefined && r.tileMapId === tileMap.id)),
+        tileRegion,
+      ];
+      dispatch(editSettingsAction({ tileRegions: updatedTileRegions }));
 
-      const tileType =
-        getExt(tileMap.url) === 'pbf'
-          ? 'pbf'
-          : getExt(tileMap.url) === 'pmtiles' || tileMap.url.startsWith('pmtiles://')
-          ? 'pmtiles'
-          : tileMap.url.startsWith('hillshade://')
-          ? 'hillshade'
-          : 'png';
+      // 中断要求の処理。trueを返したら呼び出し元はreturnする。
+      const handlePause = async (): Promise<boolean> => {
+        const reason = pauseReason.current;
+        pause.current = false;
+        pauseReason.current = null;
+        if (reason === 'background') {
+          // バックグラウンド移行による中断: ダイアログを出さず'paused'で保存して終了し、
+          // 復帰時（この時点で既にactiveなら今）に再開を確認する
+          updatedTileRegions = markRegionsPaused(updatedTileRegions, [tileRegion.id]);
+          dispatch(editSettingsAction({ tileRegions: updatedTileRegions }));
+          setIsDownloading(false);
+          pendingResumePrompt.current = true;
+          if (AppState.currentState === 'active') await promptResumeAfterBackground();
+          return true;
+        }
+        const choice = await StopDownloadConfirmAsync();
+        if (choice === 'continue') return false;
+        if (choice === 'pause') {
+          updatedTileRegions = markRegionsPaused(updatedTileRegions, [tileRegion.id]);
+        } else {
+          updatedTileRegions = removeIncompleteRegions(updatedTileRegions, [tileRegion.id]);
+        }
+        dispatch(editSettingsAction({ tileRegions: updatedTileRegions }));
+        setIsDownloading(false);
+        return true;
+      };
 
+      const tileType = getTileType(tileMap);
       const pmtile = tileType === 'pmtiles' ? new pmtiles.PMTiles(tileMap.url.replace('pmtiles://', '')) : undefined;
       setProgress('0');
       setIsDownloading(true);
@@ -135,6 +198,8 @@ export const useTiles = (
         });
         if (pmtile === undefined) {
           await AlertAsync(t('hooks.alert.failDownload'));
+          updatedTileRegions = removeIncompleteRegions(updatedTileRegions, [tileRegion.id]);
+          dispatch(editSettingsAction({ tileRegions: updatedTileRegions }));
           setIsDownloading(false);
           return;
         }
@@ -197,11 +262,7 @@ export const useTiles = (
         }
       }
 
-      const minZoom = tileType === 'png' || tileType === 'hillshade' ? 0 : zoom;
-      const maxZoom =
-        tileType === 'png' || tileType === 'hillshade' || !tileMap.isVector
-          ? Math.min(tileMap.overzoomThreshold, 16)
-          : 18;
+      const { minZoom, maxZoom } = getZoomRange(tileType, tileMap, zoom);
 
       const tiles = tileGridForRegion(downloadRegion, minZoom, maxZoom);
 
@@ -211,16 +272,7 @@ export const useTiles = (
       let d = 0;
       for (const tile of tiles) {
         if (pause.current) {
-          const ret = await ConfirmAsync(t('hooks.confirm.stopDownload'));
-
-          if (ret) {
-            removeTileRegion(id);
-            setIsDownloading(false);
-            pause.current = false;
-            return;
-          } else {
-            pause.current = false;
-          }
+          if (await handlePause()) return;
         }
         const folder = `${TILE_FOLDER}/${tileMap.id}/${tile.z}/${tile.x}`;
 
@@ -242,15 +294,7 @@ export const useTiles = (
 
       for (const tile of tiles) {
         if (pause.current) {
-          const ret = await ConfirmAsync(t('hooks.confirm.stopDownload'));
-          if (ret) {
-            removeTileRegion(id);
-            setIsDownloading(false);
-            pause.current = false;
-            return;
-          } else {
-            pause.current = false;
-          }
+          if (await handlePause()) return;
         }
 
         let tilePromise;
@@ -361,18 +405,21 @@ export const useTiles = (
           batchDownload = [];
         }
       }
-      await Promise.all(batch);
+      await Promise.all(batchDownload);
+
+      // 完了: 未完了マーカー（status/zoom）を外して保存する
+      updatedTileRegions = updatedTileRegions.map((r) => (r.id === tileRegion.id ? toCompletedRegion(r) : r));
+      dispatch(editSettingsAction({ tileRegions: updatedTileRegions }));
 
       setIsDownloading(false);
       //console.log('errorCoount', (errorCount / tiles.length) * 100);
-      if ((errorCount / tiles.length) * 100 > 20) {
-        //removeTileRegion(id);
+      if (tiles.length > 0 && (errorCount / tiles.length) * 100 > 20) {
         await AlertAsync(t('hooks.alert.errorDownload'));
         return;
       }
       await AlertAsync(t('hooks.alert.completeDownload'));
     },
-    [addTileRegions, downloadRegion, removeTileRegion, tileMap]
+    [dispatch, downloadArea, downloadRegion, promptResumeAfterBackground, store, tileMap]
   );
 
   const clearTiles = useCallback(
@@ -391,45 +438,77 @@ export const useTiles = (
   );
 
   const downloadMultipleTiles = useCallback(
-    async (zoom: number, tileMapsToDownload: TileMapType[]) => {
+    async (zoom: number, tileMapsToDownload: TileMapType[], resumeRegions?: (TileRegionType | undefined)[]) => {
       setIsDownloading(true);
       let totalCompleted = 0;
       const totalMaps = tileMapsToDownload.length;
       const errorMaps: string[] = [];
-      // 非同期ループ中はuseSelectorのtileRegionsが更新されないため、ローカルに累積して各地図の記録を保持する
-      let updatedTileRegions = [...tileRegions];
+      // 非同期ループ中はuseSelectorのtileRegionsが更新されないため、storeから直接読んでローカルに累積する
+      let updatedTileRegions = [...store.getState().settings.tileRegions];
+
+      // 全地図の領域レコードを開始時に'downloading'で作成する。
+      // 途中で強制終了されても未着手の地図が記録に残り、次回起動時の再開検出で拾える。
+      // 再開時は既存レコードを再利用し、保存済み座標・ズームからタイル集合を復元する。
+      const regions: TileRegionType[] = tileMapsToDownload.map((map, i) => {
+        const resumeRegion = resumeRegions?.[i];
+        if (resumeRegion) return { ...resumeRegion, status: 'downloading' as const };
+        const tileRegion = cloneDeep(downloadArea);
+        tileRegion.id = ulid();
+        tileRegion.tileMapId = map.id;
+        tileRegion.status = 'downloading';
+        tileRegion.zoom = zoom;
+        return tileRegion;
+      });
+      const regionIds = regions.map((r) => r.id);
+      // 同じ地図の古い未完了記録は今回のダウンロードで置き換える（残すと起動のたびに再開確認が出続ける）
+      const downloadingMapIds = tileMapsToDownload.map((m) => m.id);
+      updatedTileRegions = [
+        ...updatedTileRegions.filter(
+          (r) => !regionIds.includes(r.id) && !(r.status !== undefined && downloadingMapIds.includes(r.tileMapId))
+        ),
+        ...regions,
+      ];
+      dispatch(editSettingsAction({ tileRegions: updatedTileRegions }));
+
+      // 中断要求の処理。trueを返したら呼び出し元はreturnする。
+      const handlePause = async (): Promise<boolean> => {
+        const reason = pauseReason.current;
+        pause.current = false;
+        pauseReason.current = null;
+        if (reason === 'background') {
+          updatedTileRegions = markRegionsPaused(updatedTileRegions, regionIds);
+          dispatch(editSettingsAction({ tileRegions: updatedTileRegions }));
+          setIsDownloading(false);
+          pendingResumePrompt.current = true;
+          if (AppState.currentState === 'active') await promptResumeAfterBackground();
+          return true;
+        }
+        const choice = await StopDownloadConfirmAsync();
+        if (choice === 'continue') return false;
+        if (choice === 'pause') {
+          updatedTileRegions = markRegionsPaused(updatedTileRegions, regionIds);
+        } else {
+          // 破棄: 未完了（status付き）の記録のみ削除する（完了済み地図の記録は保持）
+          updatedTileRegions = removeIncompleteRegions(updatedTileRegions, regionIds);
+        }
+        dispatch(editSettingsAction({ tileRegions: updatedTileRegions }));
+        setIsDownloading(false);
+        return true;
+      };
 
       for (let i = 0; i < tileMapsToDownload.length; i++) {
         if (pause.current) {
-          const ret = await ConfirmAsync(t('hooks.confirm.stopDownload'));
-          if (ret) {
-            setIsDownloading(false);
-            pause.current = false;
-            return;
-          } else {
-            pause.current = false;
-          }
+          if (await handlePause()) return;
         }
 
         const currentTileMap = tileMapsToDownload[i];
+        const tileRegion = regions[i];
+        const isResume = resumeRegions?.[i] !== undefined;
         setProgress(
           t('hooks.progress.downloadingMap', { current: i + 1, total: totalMaps, name: currentTileMap.name, progress: 0 })
         );
 
-        const tileRegion = cloneDeep(downloadArea);
-        tileRegion.id = ulid();
-        tileRegion.tileMapId = currentTileMap.id;
-        updatedTileRegions = [...updatedTileRegions, tileRegion];
-        dispatch(editSettingsAction({ tileRegions: updatedTileRegions }));
-
-        const tileType =
-          getExt(currentTileMap.url) === 'pbf'
-            ? 'pbf'
-            : getExt(currentTileMap.url) === 'pmtiles' || currentTileMap.url.startsWith('pmtiles://')
-            ? 'pmtiles'
-            : currentTileMap.url.startsWith('hillshade://')
-            ? 'hillshade'
-            : 'png';
+        const tileType = getTileType(currentTileMap);
 
         const pmtile =
           tileType === 'pmtiles' ? new pmtiles.PMTiles(currentTileMap.url.replace('pmtiles://', '')) : undefined;
@@ -484,18 +563,32 @@ export const useTiles = (
             });
         }
 
-        const minZoom = tileType === 'png' || tileType === 'hillshade' ? 0 : zoom;
-        const maxZoom =
-          tileType === 'png' || tileType === 'hillshade' || !currentTileMap.isVector
-            ? Math.min(currentTileMap.overzoomThreshold, 16)
-            : 18;
+        const { minZoom, maxZoom } = getZoomRange(tileType, currentTileMap, tileRegion.zoom ?? zoom);
 
-        const tiles = tileGridForRegion(downloadRegion, minZoom, maxZoom);
+        // 再開時は現在の地図表示ではなく、保存された領域からタイル集合を復元する
+        const tiles = tileGridForRegion(boundsFromCoords(tileRegion.coords), minZoom, maxZoom);
+        // 再開時のみ、保存済みタイルをスキップして残りだけダウンロードする
+        const existingTiles = isResume ? await listExistingTiles(currentTileMap.id) : null;
+        const tilesToDownload = existingTiles
+          ? tiles.filter((tile) => !existingTiles.has(`${tile.z}/${tile.x}/${tile.y}`))
+          : tiles;
+        // 進捗は全タイル数を分母にする（再開時に中断時点のパーセントから表示が始まる）
+        const skippedCount = tiles.length - tilesToDownload.length;
+        if (skippedCount > 0 && tiles.length > 0) {
+          setProgress(
+            t('hooks.progress.downloadingMap', {
+              current: i + 1,
+              total: totalMaps,
+              name: currentTileMap.name,
+              progress: ((skippedCount / tiles.length) * 100).toFixed(),
+            })
+          );
+        }
         const BATCH_SIZE = 10;
 
         // フォルダ作成
         let batch: Promise<void>[] = [];
-        for (const tile of tiles) {
+        for (const tile of tilesToDownload) {
           const folder = `${TILE_FOLDER}/${currentTileMap.id}/${tile.z}/${tile.x}`;
           const folderPromise = FileSystem.makeDirectoryAsync(folder, { intermediates: true });
           batch.push(folderPromise);
@@ -511,19 +604,9 @@ export const useTiles = (
         let errorCount = 0;
         let d = 0;
 
-        for (const tile of tiles) {
+        for (const tile of tilesToDownload) {
           if (pause.current) {
-            const ret = await ConfirmAsync(t('hooks.confirm.stopDownload'));
-            if (ret) {
-              // ダウンロード未完了の地図の記録を削除（完了済み地図の記録は保持）
-              updatedTileRegions = updatedTileRegions.filter((r) => r.id !== tileRegion.id);
-              dispatch(editSettingsAction({ tileRegions: updatedTileRegions }));
-              setIsDownloading(false);
-              pause.current = false;
-              return;
-            } else {
-              pause.current = false;
-            }
+            if (await handlePause()) return;
           }
 
           let tilePromise;
@@ -622,7 +705,7 @@ export const useTiles = (
           batchDownload.push(tilePromise);
           if (batchDownload.length >= BATCH_SIZE) {
             d = d + BATCH_SIZE;
-            const mapProgress = ((d / tiles.length) * 100).toFixed();
+            const mapProgress = (((skippedCount + d) / tiles.length) * 100).toFixed();
             setProgress(
               t('hooks.progress.downloadingMap', {
                 current: i + 1,
@@ -638,9 +721,13 @@ export const useTiles = (
         await Promise.all(batchDownload);
 
         // エラー率が80%を超える場合のみ警告（404などの正常な欠損タイルを考慮）
-        if ((errorCount / tiles.length) * 100 > 80) {
+        if (tilesToDownload.length > 0 && (errorCount / tilesToDownload.length) * 100 > 80) {
           errorMaps.push(currentTileMap.name);
         }
+
+        // この地図は完了: 未完了マーカー（status/zoom）を外して保存する
+        updatedTileRegions = updatedTileRegions.map((r) => (r.id === tileRegion.id ? toCompletedRegion(r) : r));
+        dispatch(editSettingsAction({ tileRegions: updatedTileRegions }));
 
         totalCompleted++;
       }
@@ -653,8 +740,70 @@ export const useTiles = (
       }
       await AlertAsync(message);
     },
-    [dispatch, downloadArea, downloadRegion, tileRegions]
+    [dispatch, downloadArea, promptResumeAfterBackground, store]
   );
+
+  const resumeDownloadTiles = useCallback(async () => {
+    const currentTileRegions = store.getState().settings.tileRegions;
+    const pendingRegions = currentTileRegions.filter((r) => r.status !== undefined);
+    if (pendingRegions.length === 0) return;
+    const maps = tileMaps && tileMaps.length > 0 ? tileMaps : store.getState().tileMaps;
+    const resumeMaps: TileMapType[] = [];
+    const resumeRegions: TileRegionType[] = [];
+    const orphanIds: string[] = [];
+    for (const region of pendingRegions) {
+      const map = maps.find((m) => m.id === region.tileMapId);
+      if (map) {
+        resumeMaps.push(map);
+        resumeRegions.push(region);
+      } else {
+        // 地図が削除されている場合は再開できないため記録を破棄する
+        orphanIds.push(region.id);
+      }
+    }
+    if (orphanIds.length > 0) {
+      dispatch(editSettingsAction({ tileRegions: currentTileRegions.filter((r) => !orphanIds.includes(r.id)) }));
+    }
+    if (resumeMaps.length === 0) return;
+    // zoomは各regionに保存された値を使うため、第1引数はフォールバックにすぎない
+    await downloadMultipleTiles(resumeRegions[0].zoom ?? 11, resumeMaps, resumeRegions);
+  }, [dispatch, downloadMultipleTiles, store, tileMaps]);
+
+  useEffect(() => {
+    resumeFnRef.current = resumeDownloadTiles;
+  }, [resumeDownloadTiles]);
+
+  // ダウンロード中にバックグラウンドへ移行したら安全に一時停止し、フォアグラウンド復帰時に再開を確認する
+  useEffect(() => {
+    if (Platform.OS === 'web') return;
+    const subscription = AppState.addEventListener('change', (nextAppState) => {
+      if (nextAppState === 'background' && isDownloadingRef.current) {
+        pause.current = true;
+        pauseReason.current = 'background';
+      } else if (nextAppState === 'active') {
+        promptResumeAfterBackground();
+      }
+    });
+    return () => subscription.remove();
+  }, [promptResumeAfterBackground]);
+
+  // 強制終了などで残った未完了ダウンロードを起動時に検出して再開を提案する
+  useEffect(() => {
+    if (Platform.OS === 'web') return;
+    if (!rehydrated || checkedIncompleteOnLaunch.current) return;
+    checkedIncompleteOnLaunch.current = true;
+    (async () => {
+      const hasPending = store.getState().settings.tileRegions.some((r) => r.status !== undefined);
+      if (!hasPending) return;
+      const choice = await ResumeDownloadConfirmAsync(t('hooks.confirm.resumeIncompleteDownload'));
+      if (choice === 'resume') {
+        await resumeFnRef.current?.();
+      } else if (choice === 'discard') {
+        discardIncompleteDownloads();
+      }
+      // 'later'はpausedのまま保持し、次回起動時に改めて確認する
+    })();
+  }, [discardIncompleteDownloads, rehydrated, store]);
 
   useEffect(() => {
     //ダウンロードしたタイルの情報
@@ -700,6 +849,8 @@ export const useTiles = (
     savedTileSize,
     downloadTiles,
     downloadMultipleTiles,
+    resumeDownloadTiles,
+    hasIncompleteDownload,
     stopDownloadTiles,
     clearTiles,
   } as const;
