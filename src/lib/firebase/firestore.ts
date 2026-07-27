@@ -93,7 +93,12 @@ const getProjectCrypto = async (projectId: string): Promise<ProjectCrypto> => {
   // dek: 公開鍵は平文、秘密鍵は keys/{uid} を unwrap して取得
   const dekPrivateKey = await loadProjectDEKForCurrentUser(projectId);
   const crypto: ProjectCrypto = { scheme: 'dek', dekPublicKey: pdata.dekPublicKey, dekPrivateKey };
-  projectCryptoCache.set(projectId, crypto);
+  // 開封失敗（キーリセット後・再共有待ち等）を負キャッシュすると、キャッシュをクリアできるのが
+  // ログアウトとプロジェクトを開く操作しかなく、再共有後も一覧再取得で回復できなくなる。
+  // 失敗時はキャッシュせず、次回の dec で keys/{uid} を再unwrapさせる。
+  if (dekPrivateKey !== undefined) {
+    projectCryptoCache.set(projectId, crypto);
+  }
   return crypto;
 };
 
