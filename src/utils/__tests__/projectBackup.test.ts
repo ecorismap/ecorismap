@@ -16,7 +16,8 @@ jest.mock('react-native-mmkv', () => {
   };
 });
 
-const createState = (recordCount: number, projectId?: string): BackupStateType =>
+//uid: null=未ログイン状態（user.uidをundefinedにする）
+const createState = (recordCount: number, projectId?: string, uid: string | null = 'user1'): BackupStateType =>
   ({
     settings: { projectId, projectName: projectId ? `name-${projectId}` : undefined },
     layers: [],
@@ -31,7 +32,7 @@ const createState = (recordCount: number, projectId?: string): BackupStateType =
             },
           ]
         : [],
-    user: { uid: 'user1' },
+    user: { uid: uid ?? undefined },
     projects: [],
     dataSync: {},
   } as unknown as BackupStateType);
@@ -52,6 +53,7 @@ describe('projectBackup', () => {
     expect(list[0].projectId).toBe('p1');
     expect(list[0].projectName).toBe('name-p1');
     expect(list[0].recordCount).toBe(3);
+    expect(list[0].uid).toBe('user1');
 
     const snapshot = loadBackup(list[0].id);
     expect(snapshot?.version).toBe(1);
@@ -111,6 +113,40 @@ describe('projectBackup', () => {
     const [meta] = listBackups();
     backupStorage.remove(`backup:snapshot:${meta.id}`);
     expect(loadBackup(meta.id)).toBeUndefined();
+    expect(listBackups()).toHaveLength(0);
+  });
+
+  test('未ログイン状態の保存はuidがnullになる', () => {
+    saveProjectBackup(createState(1, 'p1', null), 'projectClose');
+    const [meta] = listBackups();
+    expect(meta.uid).toBeNull();
+  });
+
+  test('uid導入前の旧メタはスナップショットからuidが補完される', () => {
+    saveProjectBackup(createState(1, 'p1'), 'projectClose');
+    //旧形式を再現するためインデックスからuidフィールドを取り除く
+    const rawIndex = JSON.parse(backupStorage.getString('backup:index') as string) as { uid?: string | null }[];
+    rawIndex.forEach((meta) => delete meta.uid);
+    backupStorage.set('backup:index', JSON.stringify(rawIndex));
+
+    const list = listBackups();
+    expect(list).toHaveLength(1);
+    expect(list[0].uid).toBe('user1');
+    //補完結果がインデックスに書き戻されている
+    const persisted = JSON.parse(backupStorage.getString('backup:index') as string);
+    expect(persisted[0].uid).toBe('user1');
+  });
+
+  test('旧メタで本体が読めないものは補完時にインデックスから除去される', () => {
+    saveProjectBackup(createState(1, 'p1'), 'projectClose');
+    const rawIndex = JSON.parse(backupStorage.getString('backup:index') as string) as {
+      id: string;
+      uid?: string | null;
+    }[];
+    rawIndex.forEach((meta) => delete meta.uid);
+    backupStorage.set('backup:index', JSON.stringify(rawIndex));
+    backupStorage.remove(`backup:snapshot:${rawIndex[0].id}`);
+
     expect(listBackups()).toHaveLength(0);
   });
 

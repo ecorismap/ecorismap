@@ -23,6 +23,8 @@ export type BackupMetaType = {
   projectId?: string;
   projectName?: string;
   recordCount: number;
+  //保存時のユーザー。null=未ログイン、undefined=uid導入前の旧メタ（listBackupsで補完される）
+  uid?: string | null;
 };
 
 export type BackupStateType = {
@@ -115,6 +117,8 @@ export const saveProjectBackup = (state: BackupStateType, trigger: BackupTrigger
       projectId: state.settings.projectId,
       projectName: state.settings.projectName,
       recordCount,
+      //undefinedはJSON化で消えて旧メタと区別できなくなるため、未ログインはnullで記録する
+      uid: state.user.uid ?? null,
     };
 
     backupStorage.set(snapshotKey(meta.id), snapshotString);
@@ -131,8 +135,28 @@ export const saveProjectBackup = (state: BackupStateType, trigger: BackupTrigger
   }
 };
 
-/** バックアップ一覧（新しい順）を返す。 */
-export const listBackups = (): BackupMetaType[] => readIndex();
+/**
+ * バックアップ一覧（新しい順）を返す。
+ * uid導入前の旧メタはスナップショット本体からuidを補完してインデックスを書き直す。
+ * 本体が読めない旧メタはloadBackup内でインデックスからも除去される。
+ */
+export const listBackups = (): BackupMetaType[] => {
+  const index = readIndex();
+  if (index.every((meta) => meta.uid !== undefined)) return index;
+
+  const backfilled: BackupMetaType[] = [];
+  for (const meta of index) {
+    if (meta.uid !== undefined) {
+      backfilled.push(meta);
+      continue;
+    }
+    const snapshot = loadBackup(meta.id);
+    if (snapshot === undefined) continue;
+    backfilled.push({ ...meta, uid: snapshot.state.user.uid ?? null });
+  }
+  writeIndex(backfilled);
+  return backfilled;
+};
 
 /**
  * スナップショット本体を読み込む。JSONが壊れている場合はundefinedを返し、

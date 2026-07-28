@@ -406,7 +406,8 @@
       "clearCache": "すべてのキャッシュをクリアしました。",
       "clearCacheError": "キャッシュのクリア中にエラーが発生しました。",
       "restoreBackupDone": "バックアップを復元しました。\nプロジェクトの同期（アップロード/ダウンロード）を行う場合は、オンラインで再ログインが必要なことがあります。",
-      "restoreBackupFailed": "バックアップの復元に失敗しました。"
+      "restoreBackupFailed": "バックアップの復元に失敗しました。",
+      "restoreBackupDifferentUser": "このバックアップは別のユーザーのものです。\n復元するには、バックアップを作成したユーザーでログインし直してください。"
     },
     "termsOfUse": {},
     "version": {},

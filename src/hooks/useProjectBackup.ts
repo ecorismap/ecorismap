@@ -16,12 +16,15 @@ import {
   saveProjectBackup,
   isBackupAvailable,
 } from '../utils/projectBackup';
+import { getAuthUid } from '../lib/firebase/sign-in';
+
+export type RestoreBackupResultType = { isOK: boolean; region?: RegionType; reason?: 'differentUser' };
 
 export type UseProjectBackupReturnType = {
   isBackupAvailable: boolean;
   backupList: BackupMetaType[];
   refreshBackupList: () => void;
-  restoreBackup: (id: string) => { isOK: boolean; region?: RegionType };
+  restoreBackup: (id: string) => RestoreBackupResultType;
 };
 
 /**
@@ -29,6 +32,8 @@ export type UseProjectBackupReturnType = {
  * 復元はRedux全置換dispatchで行い、再起動不要で「プロジェクトに入っている状態」に戻す。
  * 注意: ログアウト後の復元ではFirebase認証・E3Kit鍵は戻らないため、
  * サーバー同期にはオンラインでの再ログイン（と鍵復元）が必要。ローカル記録は継続できる。
+ * 別ユーザーのログイン中は他ユーザーのバックアップを一覧に出さず、復元もブロックする
+ * （認証uidとRedux上のuidが食い違う「なりすまし状態」を防ぐ）。
  */
 export const useProjectBackup = (): UseProjectBackupReturnType => {
   const dispatch = useDispatch();
@@ -36,7 +41,11 @@ export const useProjectBackup = (): UseProjectBackupReturnType => {
   const [backupList, setBackupList] = useState<BackupMetaType[]>([]);
 
   const refreshBackupList = useCallback(() => {
-    setBackupList(listBackups());
+    const all = listBackups();
+    const authUid = getAuthUid();
+    //未ログイン時は救済（ログアウト直後の復元）のため全件表示する。
+    //ログイン中は自分のバックアップと未ログイン時（uid: null）のものだけを見せる。
+    setBackupList(authUid === undefined ? all : all.filter((meta) => meta.uid == null || meta.uid === authUid));
   }, []);
 
   useEffect(() => {
@@ -49,6 +58,14 @@ export const useProjectBackup = (): UseProjectBackupReturnType => {
       if (snapshot === undefined) {
         refreshBackupList();
         return { isOK: false };
+      }
+
+      //別ユーザーのログイン中に他ユーザーのスナップショットを復元すると、認証uidとRedux上の
+      //uidが食い違い、管理者権限では他人名義でCOMMON/TEMPLATEを上書きできてしまうためブロックする
+      const authUid = getAuthUid();
+      const snapshotUid = snapshot.state.user.uid;
+      if (authUid !== undefined && snapshotUid !== undefined && snapshotUid !== authUid) {
+        return { isOK: false, reason: 'differentUser' as const };
       }
 
       //復元で現在のデータが失われないよう、復元前の状態も自動バックアップする
