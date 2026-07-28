@@ -1,5 +1,7 @@
 import React, { useMemo, useRef, useEffect, useState, useCallback } from 'react';
+import { StyleSheet, View, useWindowDimensions } from 'react-native';
 import { Marker, Polyline, Circle } from 'react-native-maps';
+import { COLOR } from '../../constants/AppConstants';
 import { LocationType } from '../../types';
 
 // 表示角度を目標角度へ1フレーム分近づける指数平滑ステップ（角度ラップ考慮）。
@@ -52,6 +54,9 @@ const arePropsEqual = (prev: Props, next: Props) => {
 const CurrentMarkerComponent = (props: Props) => {
   const { currentLocation, azimuth, headingUp, onPress, showDirectionLine, isStale } = props;
   const accuracy = currentLocation.accuracy ?? 0;
+  const { width: windowWidth, height: windowHeight } = useWindowDimensions();
+  // 画面固定線の長さ: 画面のどこにマーカーがあっても画面端まで届く長さ（対角線）
+  const screenLineLength = Math.ceil(Math.sqrt(windowWidth * windowWidth + windowHeight * windowHeight));
   const fillColor = accuracy > 30 ? '#bbbbbbaa' : accuracy > 15 ? '#ff9900aa' : '#ff0000aa';
 
   // マーカー画像の選択（stale=キャッシュ由来の古い位置は精度に関わらず灰色）
@@ -132,13 +137,13 @@ const CurrentMarkerComponent = (props: Props) => {
 
   // redraw() は使用しない (iOS での初動ちらつき軽減)
 
-  // Calculate line coordinates for Polyline
+  // north-up時の方角線（地理座標のPolyline）。
+  // headingUp時は使わない: 地図回転はanimateCameraのアニメーションで遅れて追従するため、
+  // 地理座標の線では回転中に必ず位相ズレして揺れる。代わりに画面固定のMarker線を描く。
   const lineCoordinates = useMemo(() => {
-    if (!showDirectionLine) return [];
+    if (!showDirectionLine || headingUp) return [];
 
-    // headingUp時は地図がazimuth分回転するため、地理方位azimuth方向の線が
-    // 画面上では真上を向いて見える（azimuthはカメラ回転コマンドと同期済み）。
-    // north-up時は補間済みの表示角度で滑らかに回る。
+    // 補間済みの表示角度で滑らかに回る
     const lineAngle = displayAzimuth;
     const angleRad = ((90 - lineAngle) * Math.PI) / 180;
 
@@ -159,7 +164,7 @@ const CurrentMarkerComponent = (props: Props) => {
         longitude: endLon,
       },
     ];
-  }, [currentLocation, showDirectionLine, displayAzimuth]);
+  }, [currentLocation, showDirectionLine, headingUp, displayAzimuth]);
 
   return (
     <>
@@ -178,8 +183,27 @@ const CurrentMarkerComponent = (props: Props) => {
           zIndex={999}
         />
       )}
-      {showDirectionLine && lineCoordinates.length > 0 && (
+      {showDirectionLine && !headingUp && lineCoordinates.length > 0 && (
         <Polyline coordinates={lineCoordinates} strokeColor="#000000" strokeWidth={1} zIndex={1000} />
+      )}
+      {/* headingUp時の方角線: ビルボードMarker(rotation=0)は地図の回転アニメーションに
+          関わらず常に画面の真上を向いて描画されるため、同期処理なしで完全に真上固定になる。
+          anchor(bottom-center)で線の下端を現在地に合わせ、上方向へ画面対角線の長さだけ伸ばす */}
+      {showDirectionLine && headingUp && (
+        <Marker
+          coordinate={{
+            latitude: currentLocation.latitude,
+            longitude: currentLocation.longitude,
+          }}
+          anchor={{ x: 0.5, y: 1 }}
+          centerOffset={{ x: 0, y: -screenLineLength / 2 }}
+          rotation={0}
+          flat={false}
+          tracksViewChanges={false}
+          style={{ zIndex: 1000 }}
+        >
+          <View style={[styles.screenDirectionLine, { height: screenLineLength }]} />
+        </Marker>
       )}
       <Marker
         coordinate={{
@@ -195,5 +219,12 @@ const CurrentMarkerComponent = (props: Props) => {
     </>
   );
 };
+
+const styles = StyleSheet.create({
+  screenDirectionLine: {
+    backgroundColor: COLOR.BLACK,
+    width: 2,
+  },
+});
 
 export const CurrentMarker = React.memo(CurrentMarkerComponent, arePropsEqual);
