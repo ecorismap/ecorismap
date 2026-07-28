@@ -592,6 +592,98 @@ describe('heading購読のライフサイクル', () => {
   });
 });
 
+describe('コンパスモードのカメラ・方位同期', () => {
+  let store: any;
+  let wrapper: any;
+  let dateNowSpy: jest.SpyInstance;
+  let now: number;
+
+  beforeEach(() => {
+    store = createTestStore();
+    wrapper = createWrapper(store);
+    jest.clearAllMocks();
+    (ConfirmAsync as jest.Mock).mockResolvedValue(false);
+    mockBackgroundGeolocation.ready.mockResolvedValue({ enabled: false } as any);
+    mockBackgroundGeolocation.getState.mockResolvedValue({ enabled: false } as any);
+    mockBackgroundGeolocation.removeListeners.mockResolvedValue(undefined);
+    mockBackgroundGeolocation.requestPermission.mockResolvedValue(BackgroundGeolocation.AuthorizationStatus.Always);
+    mockNotifications.getPermissionsAsync.mockResolvedValue({ status: 'granted' } as any);
+    (AppState as any).currentState = 'active';
+    now = 1_000_000;
+    dateNowSpy = jest.spyOn(Date, 'now').mockImplementation(() => now);
+  });
+
+  afterEach(() => {
+    dateNowSpy.mockRestore();
+  });
+
+  // headingUpのwatchHeadingAsyncコールバックを捕捉してフックをセットアップする
+  const setupCompassMode = async () => {
+    let headingCb: ((pos: any) => void) | undefined;
+    mockLocation.watchHeadingAsync.mockImplementation((async (cb: any) => {
+      headingCb = cb;
+      return { remove: jest.fn() };
+    }) as any);
+    const animateCamera = jest.fn();
+    const mockMapRef = { current: { animateCamera } };
+    const { result } = renderHook(() => useLocation(mockMapRef as any), { wrapper });
+    await act(async () => {
+      await result.current.toggleHeadingUp(true);
+    });
+    return { result, animateCamera, fireHeading: (h: number) => act(() => headingCb!({ trueHeading: h })) };
+  };
+
+  it('初回コールバックでカメラが回転しazimuthが即座に同値になる', async () => {
+    const { result, animateCamera, fireHeading } = await setupCompassMode();
+
+    fireHeading(45);
+
+    expect(animateCamera).toHaveBeenCalledWith({ heading: 45 }, { duration: 200 });
+    expect(result.current.azimuth).toBe(45);
+  });
+
+  it('カメラ回転をスキップする間はazimuthも更新しない（静止時の方角線の揺れ防止）', async () => {
+    const { result, animateCamera, fireHeading } = await setupCompassMode();
+
+    fireHeading(45);
+    expect(result.current.azimuth).toBe(45);
+
+    // 250ms経過・1.5°変化: 旧実装ではpushAzimuth(1°/200ms)は通過するがカメラ(2°)は
+    // 回転せず、azimuthだけ46.5になって方角線がカメラとズレていた
+    now += 250;
+    fireHeading(46.5);
+
+    expect(animateCamera).toHaveBeenCalledTimes(1);
+    expect(result.current.azimuth).toBe(45);
+  });
+
+  it('カメラ回転時はazimuth間引き(200ms)を待たずに即時同期する', async () => {
+    const { result, animateCamera, fireHeading } = await setupCompassMode();
+
+    fireHeading(45);
+
+    // 120ms経過・15°変化: カメラは回転する(100ms/2°通過)。旧実装ではpushAzimuthの
+    // 200ms間引きに引っかかりazimuthが45のまま取り残されていた
+    now += 120;
+    fireHeading(60);
+
+    expect(animateCamera).toHaveBeenCalledTimes(2);
+    expect(animateCamera).toHaveBeenLastCalledWith({ heading: 60 }, { duration: 200 });
+    expect(result.current.azimuth).toBe(60);
+  });
+
+  it('trueHeadingが負(iOS不正値)のときはカメラもazimuthも不変', async () => {
+    const { result, animateCamera, fireHeading } = await setupCompassMode();
+
+    fireHeading(45);
+    now += 250;
+    fireHeading(-1);
+
+    expect(animateCamera).toHaveBeenCalledTimes(1);
+    expect(result.current.azimuth).toBe(45);
+  });
+});
+
 describe('GPS OFF時の通知残留対策', () => {
   let store: any;
   let wrapper: any;

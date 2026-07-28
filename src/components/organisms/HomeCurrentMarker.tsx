@@ -1,6 +1,24 @@
-import React, { useMemo, useRef, useEffect, useState } from 'react';
+import React, { useMemo, useRef, useEffect, useState, useCallback } from 'react';
 import { Marker, Polyline, Circle } from 'react-native-maps';
 import { LocationType } from '../../types';
+
+// 表示角度を目標角度へ1フレーム分近づける指数平滑ステップ（角度ラップ考慮）。
+// 係数を k = 1 - exp(-dt/τ) とすることで、フレーム落ちや更新間引きがあっても
+// 実時間ベースの収束速度が一定になる。
+export const stepAngleToward = (current: number, target: number, dtMs: number, tauMs: number): number => {
+  // 差を-180..180に正規化（359→1は+2として扱う）
+  const delta = ((target - current + 540) % 360) - 180;
+  const k = 1 - Math.exp(-dtMs / tauMs);
+  const next = current + delta * k;
+  return ((next % 360) + 360) % 360;
+};
+
+// 補間の時定数（小さいほど機敏、大きいほど滑らか）
+const SMOOTHING_TAU_MS = 180;
+// 目標との差がこの角度未満になったら補間ループを停止（静止時のCPU消費を抑える）
+const SNAP_EPSILON_DEG = 0.2;
+// Marker rotation / Polyline のネイティブ更新頻度の上限（Fabric負荷緩和のため実質30fps）
+const MIN_FRAME_INTERVAL_MS = 33;
 
 interface Props {
   currentLocation: LocationType;
@@ -44,34 +62,73 @@ const CurrentMarkerComponent = (props: Props) => {
     return require('../../assets/marker_red.png');
   }, [accuracy, isStale]);
 
-  // Low-pass filter to smooth azimuth values
-  const filteredAzimuthRef = useRef(azimuth);
-  const [filteredAzimuth, setFilteredAzimuth] = useState(azimuth);
-  const ALPHA = 0.2; // Lower value for more smoothing to reduce hand shake
+  // 方位の表示角度。azimuth propは間引かれて階段状に届くため、
+  // north-up時はrAFループで連続補間して滑らかに回す。
+  // headingUp時は補間せず即時スナップ（azimuthはカメラ回転コマンドと同期した値なので、
+  // 補間するとカメラとズレて方角線が揺れる）。
+  const targetAzimuthRef = useRef(azimuth);
+  const displayAzimuthRef = useRef(azimuth);
+  const rafIdRef = useRef<number | null>(null);
+  const lastFrameTsRef = useRef(0);
+  const [displayAzimuth, setDisplayAzimuth] = useState(azimuth);
+
+  const stopAnimation = useCallback(() => {
+    if (rafIdRef.current !== null) {
+      cancelAnimationFrame(rafIdRef.current);
+      rafIdRef.current = null;
+    }
+  }, []);
 
   useEffect(() => {
-    // Apply low-pass filter with angle wrapping
-    let delta = azimuth - filteredAzimuthRef.current;
+    targetAzimuthRef.current = azimuth;
 
-    // Handle angle wrapping (e.g., 359 to 1 should be +2, not -358)
-    if (delta > 180) delta -= 360;
-    if (delta < -180) delta += 360;
+    if (headingUp) {
+      // カメラと同値同タイミングで方角線を更新するため即時スナップ
+      stopAnimation();
+      displayAzimuthRef.current = azimuth;
+      setDisplayAzimuth(azimuth);
+      return;
+    }
 
-    // 微小揺れは無視して不要な再レンダー抑制
-    if (Math.abs(delta) < 0.05) return;
+    if (rafIdRef.current !== null) return; // ループ稼働中なら目標値の更新のみ
 
-    const newFilteredValue = filteredAzimuthRef.current + ALPHA * delta;
+    lastFrameTsRef.current = Date.now();
+    const tick = () => {
+      const now = Date.now();
+      const dt = now - lastFrameTsRef.current;
+      // ネイティブ更新を実質30fpsに間引く（次フレームで再評価）
+      if (dt < MIN_FRAME_INTERVAL_MS) {
+        rafIdRef.current = requestAnimationFrame(tick);
+        return;
+      }
+      lastFrameTsRef.current = now;
 
-    // Normalize to 0-360 range
-    const normalizedValue = ((newFilteredValue % 360) + 360) % 360;
+      const target = targetAzimuthRef.current;
+      const current = displayAzimuthRef.current;
+      const remaining = Math.abs(((target - current + 540) % 360) - 180);
+      if (remaining < SNAP_EPSILON_DEG) {
+        // 目標に到達したのでスナップしてループ停止
+        rafIdRef.current = null;
+        if (remaining > 0) {
+          displayAzimuthRef.current = target;
+          setDisplayAzimuth(target);
+        }
+        return;
+      }
 
-    filteredAzimuthRef.current = normalizedValue;
-    setFilteredAzimuth(normalizedValue);
-  }, [azimuth]);
+      const next = stepAngleToward(current, target, dt, SMOOTHING_TAU_MS);
+      displayAzimuthRef.current = next;
+      setDisplayAzimuth(next);
+      rafIdRef.current = requestAnimationFrame(tick);
+    };
+    rafIdRef.current = requestAnimationFrame(tick);
+  }, [azimuth, headingUp, stopAnimation]);
+
+  useEffect(() => stopAnimation, [stopAnimation]);
 
   const markerAngle = useMemo(() => {
-    return headingUp ? 0 : filteredAzimuth;
-  }, [headingUp, filteredAzimuth]);
+    return headingUp ? 0 : displayAzimuth;
+  }, [headingUp, displayAzimuth]);
 
   // redraw() は使用しない (iOS での初動ちらつき軽減)
 
@@ -79,10 +136,10 @@ const CurrentMarkerComponent = (props: Props) => {
   const lineCoordinates = useMemo(() => {
     if (!showDirectionLine) return [];
 
-    // When headingUp is true, the map rotates by azimuth degrees
-    // So the line should point in the azimuth direction (geographic)
-    // which will appear as pointing up on the rotated map
-    const lineAngle = headingUp ? filteredAzimuth : markerAngle;
+    // headingUp時は地図がazimuth分回転するため、地理方位azimuth方向の線が
+    // 画面上では真上を向いて見える（azimuthはカメラ回転コマンドと同期済み）。
+    // north-up時は補間済みの表示角度で滑らかに回る。
+    const lineAngle = displayAzimuth;
     const angleRad = ((90 - lineAngle) * Math.PI) / 180;
 
     // Calculate the end point (far away)
@@ -102,7 +159,7 @@ const CurrentMarkerComponent = (props: Props) => {
         longitude: endLon,
       },
     ];
-  }, [currentLocation, markerAngle, showDirectionLine, headingUp, filteredAzimuth]);
+  }, [currentLocation, showDirectionLine, displayAzimuth]);
 
   return (
     <>

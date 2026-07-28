@@ -91,6 +91,9 @@ const TRACK_META_UPDATE_INTERVAL_MS = 1000;
 // 方位(azimuth)の state 更新を間引くための設定。
 // 磁気センサーは毎秒数十回発火するため、そのまま setAzimuth すると Home 配下が高頻度再レンダリングして
 // 方位表示が「ふらふら」する/もたつく。頻度と最小角度差で間引いて再描画を抑制する。
+// ただしheadingUp（コンパスモード）中は、この間引きを使わずカメラ回転コマンドと同期した
+// 強制更新（setAzimuthImmediate）に一本化する。カメラと方角線・コンパスアイコンが別々の
+// 間引きを通ると角度がズレて「真上固定のはずの方角線が揺れる」ため。
 const AZIMUTH_THROTTLE_MS = 200; // 最大 5 回/秒
 const AZIMUTH_MIN_DELTA_DEG = 1; // 1°未満の変化は無視（静止時のノイズで再描画しない）
 
@@ -243,6 +246,15 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
     }
     lastAzimuthRef.current = heading;
     lastAzimuthTsRef.current = now;
+    setAzimuth(heading);
+  }, []);
+
+  // 間引きをバイパスして方位を即時反映する（headingUp中のカメラ回転と同期させる用）。
+  // スロットル用refも同時に更新しないと、north-upへ戻った直後のpushAzimuthが
+  // 古いprev値と比較して誤判定するため、必ず両refを同期する。
+  const setAzimuthImmediate = useCallback((heading: number) => {
+    lastAzimuthRef.current = heading;
+    lastAzimuthTsRef.current = Date.now();
     setAzimuth(heading);
   }, []);
 
@@ -768,7 +780,9 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
           const newHeading = pos.trueHeading % 360;
           const currentTime = Date.now();
 
-          // 角度の変化が小さい/間隔が短い場合はカメラ回転をスキップ（方位stateは更新）
+          // 角度の変化が小さい/間隔が短い場合はカメラ回転をスキップ。
+          // このとき方位stateも更新しない（カメラ静止中にセンサー生値を流すと、
+          // カメラ実ヘディングとズレて方角線が微妙に揺れ続けるため）。
           if (
             !shouldRotateCompassCamera(
               lastHeading,
@@ -778,7 +792,6 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
               COMPASS_CAMERA_MIN_DELTA_DEG
             )
           ) {
-            pushAzimuth(pos.trueHeading);
             return;
           }
 
@@ -792,7 +805,8 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
             { duration: 200 }
           );
 
-          pushAzimuth(pos.trueHeading);
+          // カメラに指示した値と同一値で即時更新し、方角線・コンパスアイコンをカメラと同期させる
+          setAzimuthImmediate(newHeading);
         });
       } else {
         // headingUpをfalseにする場合は権限不要
@@ -815,7 +829,7 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
       }
       setHeadingUp(headingUp_);
     },
-    [confirmLocationPermission, ensureHeadingSubscription, mapViewRef, pushAzimuth]
+    [confirmLocationPermission, ensureHeadingSubscription, mapViewRef, setAzimuthImmediate]
   );
 
   // フォアグラウンド復帰時にMMKVからデータを同期する関数
