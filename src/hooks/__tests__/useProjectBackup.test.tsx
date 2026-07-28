@@ -10,11 +10,12 @@ import settingsReducer, { settingsInitialState } from '../../modules/settings';
 import userReducer from '../../modules/user';
 import projectsReducer from '../../modules/projects';
 import dataSyncReducer from '../../modules/dataSync';
-import { BackupSnapshotType } from '../../utils/projectBackup';
+import { BackupMetaType, BackupSnapshotType } from '../../utils/projectBackup';
 
 const mockSaveProjectBackup = jest.fn();
 const mockLoadBackup = jest.fn();
-const mockListBackups = jest.fn(() => []);
+const mockListBackups = jest.fn<BackupMetaType[], []>(() => []);
+const mockGetAuthUid = jest.fn<string | undefined, []>(() => undefined);
 
 jest.mock('../../utils/projectBackup', () => ({
   isBackupAvailable: true,
@@ -22,6 +23,10 @@ jest.mock('../../utils/projectBackup', () => ({
   loadBackup: (id: string) => mockLoadBackup(id),
   listBackups: () => mockListBackups(),
   deleteBackup: jest.fn(),
+}));
+
+jest.mock('../../lib/firebase/sign-in', () => ({
+  getAuthUid: () => mockGetAuthUid(),
 }));
 
 const createTestStore = () =>
@@ -66,6 +71,9 @@ const createSnapshot = (): BackupSnapshotType =>
 describe('useProjectBackup', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    //mockReturnValueはclearAllMocksで消えないため毎回デフォルトに戻す
+    mockListBackups.mockReturnValue([]);
+    mockGetAuthUid.mockReturnValue(undefined);
   });
 
   test('restoreBackupで各sliceが復元されregionが返る', () => {
@@ -120,6 +128,80 @@ describe('useProjectBackup', () => {
     expect(restoreResult.isOK).toBe(false);
     expect(mockSaveProjectBackup).not.toHaveBeenCalled();
     expect(store.getState()).toEqual(before);
+  });
+
+  test('別ユーザーのログイン中はdifferentUserで復元をブロックし状態を変更しない', () => {
+    const store = createTestStore();
+    mockLoadBackup.mockReturnValue(createSnapshot()); //スナップショットのuidは'u1'
+    mockGetAuthUid.mockReturnValue('u2');
+    const before = store.getState();
+
+    const { result } = renderHook(() => useProjectBackup(), { wrapper: createWrapper(store) });
+    let restoreResult: { isOK: boolean; reason?: string } = { isOK: true };
+    act(() => {
+      restoreResult = result.current.restoreBackup('backup-id');
+    });
+
+    expect(restoreResult.isOK).toBe(false);
+    expect(restoreResult.reason).toBe('differentUser');
+    expect(mockSaveProjectBackup).not.toHaveBeenCalled();
+    expect(store.getState()).toEqual(before);
+  });
+
+  test('同一ユーザーのログイン中は復元できる', () => {
+    const store = createTestStore();
+    mockLoadBackup.mockReturnValue(createSnapshot());
+    mockGetAuthUid.mockReturnValue('u1');
+
+    const { result } = renderHook(() => useProjectBackup(), { wrapper: createWrapper(store) });
+    let restoreResult: { isOK: boolean } = { isOK: false };
+    act(() => {
+      restoreResult = result.current.restoreBackup('backup-id');
+    });
+
+    expect(restoreResult.isOK).toBe(true);
+    expect(store.getState().user.uid).toBe('u1');
+  });
+
+  test('認証セッションなし（ログアウト後の救済）は他ユーザーのスナップショットも復元できる', () => {
+    const store = createTestStore();
+    mockLoadBackup.mockReturnValue(createSnapshot());
+    mockGetAuthUid.mockReturnValue(undefined);
+
+    const { result } = renderHook(() => useProjectBackup(), { wrapper: createWrapper(store) });
+    let restoreResult: { isOK: boolean } = { isOK: false };
+    act(() => {
+      restoreResult = result.current.restoreBackup('backup-id');
+    });
+
+    expect(restoreResult.isOK).toBe(true);
+  });
+
+  test('ログイン中の一覧は自分と未ログイン時のバックアップのみ表示する', () => {
+    const store = createTestStore();
+    const metas = [
+      { id: 'b1', createdAt: 1, trigger: 'projectClose', recordCount: 1, uid: 'u1' },
+      { id: 'b2', createdAt: 2, trigger: 'projectClose', recordCount: 1, uid: 'u2' },
+      { id: 'b3', createdAt: 3, trigger: 'projectClose', recordCount: 1, uid: null },
+    ] as BackupMetaType[];
+    mockListBackups.mockReturnValue(metas);
+    mockGetAuthUid.mockReturnValue('u1');
+
+    const { result } = renderHook(() => useProjectBackup(), { wrapper: createWrapper(store) });
+    expect(result.current.backupList.map((m) => m.id)).toEqual(['b1', 'b3']);
+  });
+
+  test('未ログイン時の一覧は全てのバックアップを表示する', () => {
+    const store = createTestStore();
+    const metas = [
+      { id: 'b1', createdAt: 1, trigger: 'projectClose', recordCount: 1, uid: 'u1' },
+      { id: 'b2', createdAt: 2, trigger: 'projectClose', recordCount: 1, uid: 'u2' },
+    ] as BackupMetaType[];
+    mockListBackups.mockReturnValue(metas);
+    mockGetAuthUid.mockReturnValue(undefined);
+
+    const { result } = renderHook(() => useProjectBackup(), { wrapper: createWrapper(store) });
+    expect(result.current.backupList.map((m) => m.id)).toEqual(['b1', 'b2']);
   });
 
   test('プロジェクトなしのバックアップはmapRegionを返す', () => {

@@ -179,9 +179,13 @@ export default function SettingsContainers() {
       const ret = await ConfirmAsync(t('Settings.confirm.restoreBackup'));
       if (!ret) return;
       setIsBackupSelectOpen(false);
-      const { isOK, region } = restoreBackup(id);
+      const { isOK, region, reason } = restoreBackup(id);
       if (!isOK) {
-        await AlertAsync(t('Settings.alert.restoreBackupFailed'));
+        await AlertAsync(
+          reason === 'differentUser'
+            ? t('Settings.alert.restoreBackupDifferentUser')
+            : t('Settings.alert.restoreBackupFailed')
+        );
         return;
       }
       await AlertAsync(t('Settings.alert.restoreBackupDone'));

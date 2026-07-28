@@ -17,6 +17,8 @@ export type BackupMetaType = {
   projectId?: string;
   projectName?: string;
   recordCount: number;
+  //保存時のユーザー。null=未ログイン、undefined=uid導入前の旧メタ
+  uid?: string | null;
 };
 
 export type BackupStateType = {
