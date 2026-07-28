@@ -95,8 +95,14 @@ describe('CurrentMarker', () => {
     });
   };
 
-  const getMarkerRotation = (tree: RenderResult) =>
-    tree.container.queryAll((i) => i.type === 'Marker')[0].props.rotation;
+  // 現在地マーカー（image propあり）と画面固定線マーカー（子ビュー、image propなし）を区別する
+  const getCurrentMarker = (tree: RenderResult) =>
+    tree.container.queryAll((i) => i.type === 'Marker' && i.props.image !== undefined)[0];
+
+  const queryLineMarkers = (tree: RenderResult) =>
+    tree.container.queryAll((i) => i.type === 'Marker' && i.props.image === undefined);
+
+  const getMarkerRotation = (tree: RenderResult) => getCurrentMarker(tree).props.rotation;
 
   const getLineCoordinates = (tree: RenderResult) =>
     tree.container.queryAll((i) => i.type === 'Polyline')[0].props.coordinates;
@@ -129,7 +135,7 @@ describe('CurrentMarker', () => {
     expect(rafQueue.size).toBe(0);
   });
 
-  it('headingUp時: rotationは0固定で方角線はazimuthへ即時スナップ（補間ループなし）', async () => {
+  it('headingUp時: マーカーは真上固定・方角線は画面固定Marker(rotation=0)でPolylineと補間は使わない', async () => {
     const tree = await render(
       <CurrentMarker currentLocation={currentLocation} azimuth={0} headingUp={true} showDirectionLine={true} />
     );
@@ -138,15 +144,31 @@ describe('CurrentMarker', () => {
       <CurrentMarker currentLocation={currentLocation} azimuth={90} headingUp={true} showDirectionLine={true} />
     );
 
-    // マーカー自体は真上向きのまま
+    // 現在地マーカー自体は真上向きのまま
     expect(getMarkerRotation(tree)).toBe(0);
-    // 補間ループは起動しない（カメラ回転コマンドと同値同タイミングで更新するため）
+    // 補間ループは起動しない
     expect(rafQueue.size).toBe(0);
 
-    // 方角線はazimuth=90（東向き）を即時反映: 終点はendLat=lat, endLon=lon+10/cos(lat)
-    const line = getLineCoordinates(tree);
-    expect(line[1].latitude).toBeCloseTo(35, 5);
-    expect(line[1].longitude).toBeCloseTo(135 + 10 / Math.cos((35 * Math.PI) / 180), 5);
+    // 地理座標のPolylineは描画されない（回転アニメーションとの位相ズレで揺れるため）
+    expect(tree.container.queryAll((i) => i.type === 'Polyline').length).toBe(0);
+
+    // 代わりに画面固定の線Marker: rotation=0のビルボードは地図回転に関わらず画面真上を向く
+    const lineMarkers = queryLineMarkers(tree);
+    expect(lineMarkers.length).toBe(1);
+    const lineMarker = lineMarkers[0];
+    expect(lineMarker.props.rotation).toBe(0);
+    expect(lineMarker.props.flat).toBe(false);
+    // 線の下端が現在地に一致するようbottom-centerアンカー
+    expect(lineMarker.props.anchor).toEqual({ x: 0.5, y: 1 });
+    expect(lineMarker.props.coordinate).toEqual({ latitude: 35, longitude: 135 });
+  });
+
+  it('north-up時: 画面固定線Markerは使わずPolylineで描画する', async () => {
+    const tree = await render(
+      <CurrentMarker currentLocation={currentLocation} azimuth={0} headingUp={false} showDirectionLine={true} />
+    );
+    expect(queryLineMarkers(tree).length).toBe(0);
+    expect(tree.container.queryAll((i) => i.type === 'Polyline').length).toBe(1);
   });
 
   it('north-up時: 方角線もrotationと同じ補間角度から描画される', async () => {
