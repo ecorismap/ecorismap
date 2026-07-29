@@ -28,6 +28,7 @@ export default function ProjectEditScreen() {
     isOwner,
     isOwnerAdmin,
     isLoading,
+    migrationProgress,
     userUid,
     changeText,
     changeMemberText,
@@ -161,7 +162,7 @@ export default function ProjectEditScreen() {
           />
         </View>
 
-        <Loading visible={isLoading} text="" />
+        <Loading visible={isLoading} text={migrationProgress} />
         <ProjectEditButtons
           disabled={isEdited}
           isNew={isNew}

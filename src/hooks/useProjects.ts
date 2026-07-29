@@ -1,7 +1,8 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { ProjectType, UserType } from '../types';
 import * as projectRepository from '../lib/firebase/firestore';
 import { setProjectsAction, updateProjectAction } from '../modules/projects';
+import { FUNC_ENCRYPTION, ENABLE_DEK_MIGRATION } from '../constants/AppConstants';
 import {
   toggleFavorite as toggleFavoriteAction,
   setShowOnlyFavorites as setShowOnlyFavoritesAction,
@@ -30,6 +31,10 @@ export type UseProjectsReturnType = {
   toggleShowArchive: () => Promise<{ isOK: boolean; message: string }>;
   archiveProject: (projectId: string) => Promise<{ isOK: boolean; message: string }>;
   unarchiveProject: (projectId: string) => Promise<{ isOK: boolean; message: string }>;
+  dekMigratableProjects: ProjectType[];
+  migrateProjectsToDEK: (
+    onProgress?: (done: number, total: number, name: string) => void
+  ) => Promise<{ isOK: boolean; message: string; migratedCount: number; failedNames: string[] }>;
 };
 
 export const useProjects = (): UseProjectsReturnType => {
@@ -137,6 +142,51 @@ export const useProjects = (): UseProjectsReturnType => {
     [dispatch, projects]
   );
 
+  // 一括DEK移行(Phase ii)の対象: 自分がオーナーで、まだグループ暗号のプロジェクト。
+  // Rules上は管理者でも移行可能だが、責任範囲を明確にするため一括移行はオーナーに限定する。
+  const dekMigratableProjects = useMemo(() => {
+    if (!FUNC_ENCRYPTION || !ENABLE_DEK_MIGRATION || !isLoggedIn(user)) return [];
+    return projects.filter((p) => p.cryptoScheme !== 'dek' && p.ownerUid === user.uid);
+  }, [projects, user]);
+
+  const migrateProjectsToDEK = useCallback(
+    async (onProgress?: (done: number, total: number, name: string) => void) => {
+      if (!isLoggedIn(user)) {
+        return { isOK: false, message: t('hooks.message.pleaseLogin'), migratedCount: 0, failedNames: [] };
+      }
+      if (!e3kit.isInitialized()) {
+        const { isOK: initOK, message: initMessage } = await e3kit.initializeUser(user.uid);
+        if (!initOK) {
+          return {
+            isOK: false,
+            message: initMessage || t('hooks.message.failedInitializeEncrypt'),
+            migratedCount: 0,
+            failedNames: [],
+          };
+        }
+      }
+      const targets = dekMigratableProjects;
+      let migratedCount = 0;
+      const failedNames: string[] = [];
+      for (const [index, project] of targets.entries()) {
+        onProgress?.(index + 1, targets.length, project.name);
+        try {
+          const { isOK } = await projectRepository.migrateProjectToDEK(project);
+          if (isOK) {
+            dispatch(updateProjectAction({ ...project, cryptoScheme: 'dek' }));
+            migratedCount++;
+          } else {
+            failedNames.push(project.name);
+          }
+        } catch (e) {
+          failedNames.push(project.name);
+        }
+      }
+      return { isOK: failedNames.length === 0, message: '', migratedCount, failedNames };
+    },
+    [dekMigratableProjects, dispatch, user]
+  );
+
   const unarchiveProject = useCallback(
     async (projectId: string) => {
       const project = projects.find((p) => p.id === projectId);
@@ -163,5 +213,7 @@ export const useProjects = (): UseProjectsReturnType => {
     toggleShowArchive,
     archiveProject,
     unarchiveProject,
+    dekMigratableProjects,
+    migrateProjectsToDEK,
   } as const;
 };

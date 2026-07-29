@@ -21,7 +21,7 @@ import { ProjectsModalEncryptPassword } from '../organisms/ProjectsModalEncryptP
 import { ProjectType } from '../../types';
 import { ListRenderItemInfo } from 'react-native';
 
-type SortField = 'name' | 'abstract' | 'storage' | 'encryptedAt';
+type SortField = 'name' | 'abstract' | 'storage' | 'encryptedAt' | 'owner' | 'archived';
 type SortOrder = 'ASCENDING' | 'DESCENDING' | 'UNSORTED';
 
 export default function Projects() {
@@ -44,6 +44,9 @@ export default function Projects() {
     toggleShowArchive,
     pressArchiveProject,
     pressRestoreProject,
+    dekMigratableCount,
+    migrationProgress,
+    pressMigrateProjects,
   } = useContext(ProjectsContext);
   const insets = useSafeAreaInsets();
   const { height: windowHeight } = useWindowDimensions();
@@ -102,6 +105,22 @@ export default function Projects() {
           aValue = a.settingsEncryptedAt ? new Date(a.settingsEncryptedAt).getTime() : 0;
           bValue = b.settingsEncryptedAt ? new Date(b.settingsEncryptedAt).getTime() : 0;
           break;
+        case 'owner':
+          aValue = a.ownerUid === user.uid ? 1 : 0;
+          bValue = b.ownerUid === user.uid ? 1 : 0;
+          break;
+        case 'archived': {
+          // アーカイブ列はセルの表示内容の3状態で並べる:
+          // アーカイブできる(2) > 操作不可=空欄(1) > 復元できる=アーカイブ済み(0)
+          const archiveRank = (p: ProjectType) => {
+            const isOwnerAdmin = !!user.uid && (p.ownerUid === user.uid || (p.adminsUid ?? []).includes(user.uid));
+            if (!isOwnerAdmin) return 1;
+            return p.archived ? 0 : 2;
+          };
+          aValue = archiveRank(a);
+          bValue = archiveRank(b);
+          break;
+        }
       }
 
       if (aValue < bValue) return sortOrder === 'ASCENDING' ? -1 : 1;
@@ -110,7 +129,7 @@ export default function Projects() {
     });
 
     return sorted;
-  }, [filteredProjects, sortField, sortOrder]);
+  }, [filteredProjects, sortField, sortOrder, user.uid]);
 
   // テーブルヘッダー（カラム名）のレンダリング
   const renderTableHeader = useCallback(() => (
@@ -149,9 +168,15 @@ export default function Projects() {
           <MaterialCommunityIcons name="sort-calendar-descending" size={16} color={COLOR.TEXT_DARK} />
         )}
       </Pressable>
-      <View style={[styles.th, { flex: 2, width: 100 }]}>
+      <Pressable style={[styles.th, { flex: 2, width: 100 }]} onPress={() => handleSort('owner')}>
         <Text style={{ color: COLOR.TEXT_DARK }}>{`${t('common.owner')}`}</Text>
-      </View>
+        {sortField === 'owner' && sortOrder === 'ASCENDING' && (
+          <MaterialCommunityIcons name="sort-bool-ascending" size={16} color={COLOR.TEXT_DARK} />
+        )}
+        {sortField === 'owner' && sortOrder === 'DESCENDING' && (
+          <MaterialCommunityIcons name="sort-bool-descending" size={16} color={COLOR.TEXT_DARK} />
+        )}
+      </Pressable>
       <Pressable style={[styles.th, { flex: 2, width: 120 }]} onPress={() => handleSort('storage')}>
         <Text style={{ color: COLOR.TEXT_DARK }}>{`${t('common.usage')}`}</Text>
         {sortField === 'storage' && sortOrder === 'ASCENDING' && (
@@ -162,9 +187,15 @@ export default function Projects() {
         )}
       </Pressable>
       {Platform.OS === 'web' && (
-        <View style={[styles.th, { width: 90 }]}>
+        <Pressable style={[styles.th, { width: 90 }]} onPress={() => handleSort('archived')}>
           <Text numberOfLines={1} style={{ color: COLOR.TEXT_DARK }}>{`${t('Projects.label.archive')}`}</Text>
-        </View>
+          {sortField === 'archived' && sortOrder === 'ASCENDING' && (
+            <MaterialCommunityIcons name="sort-bool-ascending" size={16} color={COLOR.TEXT_DARK} />
+          )}
+          {sortField === 'archived' && sortOrder === 'DESCENDING' && (
+            <MaterialCommunityIcons name="sort-bool-descending" size={16} color={COLOR.TEXT_DARK} />
+          )}
+        </Pressable>
       )}
     </View>
   ), [handleSort, showOnlyFavorites, sortField, sortOrder, toggleShowOnlyFavorites]);
@@ -266,20 +297,34 @@ export default function Projects() {
         </TouchableOpacity>
         <Text style={{ fontSize: 16, color: COLOR.TEXT_DARK }}>{t('Projects.navigation.title')}</Text>
         {Platform.OS === 'web' ? (
-          <TouchableOpacity
-            style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 5 }}
-            onPress={toggleShowArchive}
-            testID="toggle-show-archive"
-          >
-            <Text style={{ fontSize: 12, color: isShowArchive ? COLOR.BLUE : COLOR.GRAY4, marginRight: 2 }}>
-              {t('Projects.label.includeArchive')}
-            </Text>
-            <MaterialCommunityIcons
-              name={isShowArchive ? 'toggle-switch' : 'toggle-switch-off-outline'}
-              size={28}
-              color={isShowArchive ? COLOR.BLUE : COLOR.GRAY4}
-            />
-          </TouchableOpacity>
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            {dekMigratableCount > 0 && (
+              <TouchableOpacity
+                style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 5, marginRight: 15 }}
+                onPress={pressMigrateProjects}
+                testID="migrate-dek-projects"
+              >
+                <MaterialCommunityIcons name="shield-refresh-outline" size={20} color={COLOR.BLUE} />
+                <Text style={{ fontSize: 12, color: COLOR.BLUE, marginLeft: 2 }}>
+                  {t('Projects.label.migrateDek', { num: dekMigratableCount })}
+                </Text>
+              </TouchableOpacity>
+            )}
+            <TouchableOpacity
+              style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 5 }}
+              onPress={toggleShowArchive}
+              testID="toggle-show-archive"
+            >
+              <Text style={{ fontSize: 12, color: isShowArchive ? COLOR.BLUE : COLOR.GRAY4, marginRight: 2 }}>
+                {t('Projects.label.includeArchive')}
+              </Text>
+              <MaterialCommunityIcons
+                name={isShowArchive ? 'toggle-switch' : 'toggle-switch-off-outline'}
+                size={28}
+                color={isShowArchive ? COLOR.BLUE : COLOR.GRAY4}
+              />
+            </TouchableOpacity>
+          </View>
         ) : (
           <View style={{ width: 40 }} />
         )}
@@ -310,6 +355,7 @@ export default function Projects() {
       </View>
 
       <ProjectsButtons createProject={pressAddProject} reloadProjects={onReloadProjects} />
+      <Loading visible={migrationProgress !== ''} text={migrationProgress} />
       <ProjectsModalEncryptPassword
         visible={isEncryptPasswordModalOpen}
         pressOK={pressEncryptPasswordOK}

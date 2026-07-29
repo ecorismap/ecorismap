@@ -504,11 +504,18 @@
       "hideArchive": "Hide archived",
       "includeArchive": "Include archived",
       "archive": "Archive",
-      "restore": "Restore"
+      "restore": "Restore",
+      "migrateDek": "Migrate encryption ({{num}})",
+      "migrating": "Migrating projects... ({{done}}/{{total}})"
     },
     "confirm": {
       "archive": "Archive this project? Archived projects are hidden from the normal list.",
-      "restore": "Restore this project?"
+      "restore": "Restore this project?",
+      "migrateDek": "Migrate {{num}} projects you own to the new encryption scheme (admins can add members). Older app versions will no longer be able to open these projects. Continue?"
+    },
+    "alert": {
+      "migrateDekDone": "Migrated {{num}} projects.",
+      "migrateDekFailed": "Migrated {{num}} projects, but the following projects failed: {{failed}}"
     }
   },
   "ProjectEdit": {
@@ -518,7 +525,8 @@
       "settingProject": "You can change the project settings.",
       "deleteProjectOpen": "Please close the project before running it.",
       "reshareKey": "The encryption key has been re-shared. Ask the member to reopen the project.",
-      "reshareKeyNoUid": "Cannot re-share because this member has not registered an account."
+      "reshareKeyNoUid": "Cannot re-share because this member has not registered an account.",
+      "migrateSelfDataFailed": "Some data could not be migrated to the new encryption. The project will open anyway (migration will be retried next time)."
     },
     "confirm": {
       "deleteProject": "Do you want to delete the project?",
@@ -536,7 +544,8 @@
       "delete": "delete",
       "save": "save",
       "dataManage": "Data",
-      "reshareKey": "Re-share encryption key"
+      "reshareKey": "Re-share encryption key",
+      "migratingData": "Migrating data to the new encryption... ({{done}}/{{total}})"
     }
   },
   "CloudDataManagement": {

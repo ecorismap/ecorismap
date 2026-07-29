@@ -9,6 +9,7 @@ interface ProjectEditContextType {
   isOwnerAdmin: boolean;
   isEdited: boolean;
   isLoading: boolean;
+  migrationProgress: string;
   userUid: string | undefined;
   changeText: (name: string, value: string) => void;
   changeMemberText: (value: string, idx: number) => void;
