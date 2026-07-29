@@ -4,6 +4,7 @@ import { AlertAsync, ConfirmAsync } from '../components/molecules/AlertAsync';
 import { useProjectEdit } from '../hooks/useProjectEdit';
 import { Props_ProjectEdit } from '../routes';
 import { Platform } from 'react-native';
+import NetInfo from '@react-native-community/netinfo';
 import { t } from '../i18n/config';
 import { ProjectEditContext } from '../contexts/ProjectEdit';
 import { useE3kitGroup } from '../hooks/useE3kitGroup';
@@ -138,12 +139,17 @@ export default function ProjectEditContainer({ navigation, route }: Props_Projec
           targetProject.cryptoScheme === 'dek' &&
           selfMigrationInput !== null
         ) {
-          const migrationResult = await migrateSelfDataToDEK(targetProject.id, selfMigrationInput, (done, total) =>
-            setMigrationProgress(t('ProjectEdit.label.migratingData', { done, total }))
-          );
-          setMigrationProgress('');
-          if (!migrationResult.isOK || migrationResult.failedCount > 0) {
-            await AlertAsync(t('ProjectEdit.alert.migrateSelfDataFailed'));
+          // セルラー回線では書き戻しを行わない（現場の弱い回線・通信量への配慮。
+          // Wi-Fi等で開いた時に自動で再試行される。Webはtypeがcellularにならないため常に実行）。
+          const netState = await NetInfo.fetch();
+          if (netState.type !== 'cellular') {
+            const migrationResult = await migrateSelfDataToDEK(targetProject.id, selfMigrationInput, (done, total) =>
+              setMigrationProgress(t('ProjectEdit.label.migratingData', { done, total }))
+            );
+            setMigrationProgress('');
+            if (!migrationResult.isOK || migrationResult.failedCount > 0) {
+              await AlertAsync(t('ProjectEdit.alert.migrateSelfDataFailed'));
+            }
           }
         }
 
