@@ -1,6 +1,12 @@
-import { migrateSelfDataToDEK, uploadDataHelper, clearProjectCryptoCache } from '../firestore';
-import { unwrapDEK, decryptEThree } from '../../virgilsecurity/e3kit';
-import { decryptWithDEK, encryptWithDEK } from '../../virgilsecurity/dek';
+import {
+  migrateSelfDataToDEK,
+  uploadDataHelper,
+  clearProjectCryptoCache,
+  collectUnmarkedDekGroups,
+  SelfMigrationInputType,
+} from '../firestore';
+import { unwrapDEK } from '../../virgilsecurity/e3kit';
+import { encryptWithDEK } from '../../virgilsecurity/dek';
 import { getDoc, getDocs, writeBatch } from '../firebase';
 
 jest.mock('../../../constants/AppConstants', () => ({
@@ -48,9 +54,7 @@ const mockedGetDoc = getDoc as jest.Mock;
 const mockedGetDocs = getDocs as jest.Mock;
 const mockedWriteBatch = writeBatch as jest.Mock;
 const mockedUnwrapDEK = unwrapDEK as jest.Mock;
-const mockedDecryptWithDEK = decryptWithDEK as jest.Mock;
 const mockedEncryptWithDEK = encryptWithDEK as jest.Mock;
-const mockedDecGroup = decryptEThree as jest.Mock;
 
 const PROJECT_ID = 'project-1';
 const UID = 'member-b';
@@ -85,33 +89,54 @@ const setupWriteBatch = () => {
 };
 const allSetCalls = () => batches.flatMap((b) => b.set.mock.calls);
 
+// migrateSelfDataToDEK への入力（ダウンロード済みデータの代役）
+const inputWith = (over: Partial<SelfMigrationInputType>): SelfMigrationInputType => ({
+  unmarkedGroups: [],
+  privateData: [],
+  publicData: [],
+  ...over,
+});
+
+describe('collectUnmarkedDekGroups (印なしグループの算出)', () => {
+  it('印なしdocを含むグループをuserId×layerIdで重複なく返す', () => {
+    const docs = [
+      dataDoc({ userId: UID, layerId: 'layer-1', permission: 'PRIVATE', chunkIndex: 0 }),
+      dataDoc({ userId: UID, layerId: 'layer-1', permission: 'PRIVATE', chunkIndex: 1 }), // 同一グループの別チャンク
+      dataDoc({ userId: 'other', layerId: 'layer-2', permission: 'PRIVATE', chunkIndex: 0 }),
+    ];
+    expect(collectUnmarkedDekGroups(docs, 'PRIVATE')).toEqual([
+      { userId: UID, layerId: 'layer-1', permission: 'PRIVATE' },
+      { userId: 'other', layerId: 'layer-2', permission: 'PRIVATE' },
+    ]);
+  });
+
+  it('全docに印があれば空配列を返す', () => {
+    const docs = [
+      dataDoc({ userId: UID, layerId: 'layer-1', permission: 'PUBLIC', chunkIndex: 0, cryptoScheme: 'dek' }),
+    ];
+    expect(collectUnmarkedDekGroups(docs, 'PUBLIC')).toEqual([]);
+  });
+});
+
 describe('migrateSelfDataToDEK (自己DEK移行)', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     clearProjectCryptoCache();
     setupDekProject();
     setupWriteBatch();
-    // DEK復号は旧グループ暗号データでは失敗し(dual-readでdecGroupへ)、暗号化はDEKで行われる
-    mockedDecryptWithDEK.mockRejectedValue(new Error('not dek data'));
-    mockedDecGroup.mockResolvedValue({ data: [{ id: 'r1' }] });
     mockedEncryptWithDEK.mockResolvedValue(['ENC_DEK_DATA']);
   });
 
-  it('印なしの自分のPRIVATEデータを移行し、cryptoScheme印付きで書き戻す', async () => {
-    const legacyDoc = dataDoc({
-      userId: UID,
-      layerId: 'layer-1',
-      permission: 'PRIVATE',
-      encdata: ['G'],
-      encryptedAt: TS,
-      chunkIndex: 0,
-    });
-    mockedGetDocs
-      .mockResolvedValueOnce({ docs: [legacyDoc] }) // 軽量チェック(自分のdoc列挙)
-      .mockResolvedValueOnce({ docs: [legacyDoc] }) // downloadPrivateData
-      .mockResolvedValueOnce({ docs: [legacyDoc] }); // deleteExistingData
+  it('印なしの自分のグループを移行し、cryptoScheme印付きで書き戻す（追加ダウンロードなし）', async () => {
+    mockedGetDocs.mockResolvedValueOnce({ docs: [] }); // uploadDataHelper内のdeleteExistingData
 
-    const res = await migrateSelfDataToDEK(PROJECT_ID);
+    const res = await migrateSelfDataToDEK(
+      PROJECT_ID,
+      inputWith({
+        unmarkedGroups: [{ userId: UID, layerId: 'layer-1', permission: 'PRIVATE' }],
+        privateData: [{ userId: UID, layerId: 'layer-1', data: [{ id: 'r1' }] as any }],
+      })
+    );
 
     expect(res).toEqual({ isOK: true, message: '', migratedCount: 1, failedCount: 0 });
     // 書き戻しはDEKで暗号化され、印が付く
@@ -126,39 +151,27 @@ describe('migrateSelfDataToDEK (自己DEK移行)', () => {
         cryptoScheme: 'dek',
       })
     );
+    // data サブコレクションへのクエリは書き戻し時の既存doc削除の1回だけ（判定用の追加ダウンロードが無い）
+    expect(mockedGetDocs).toHaveBeenCalledTimes(1);
   });
 
-  it('全docに印がある場合は高速パスで何もしない', async () => {
-    const markedDoc = dataDoc({
-      userId: UID,
-      layerId: 'layer-1',
-      permission: 'PRIVATE',
-      encdata: ['D'],
-      encryptedAt: TS,
-      chunkIndex: 0,
-      cryptoScheme: 'dek',
-    });
-    mockedGetDocs.mockResolvedValueOnce({ docs: [markedDoc] });
-
-    const res = await migrateSelfDataToDEK(PROJECT_ID);
+  it('対象グループが無ければ通信ゼロで即終了する', async () => {
+    const res = await migrateSelfDataToDEK(PROJECT_ID, inputWith({}));
 
     expect(res).toEqual({ isOK: true, message: '', migratedCount: 0, failedCount: 0 });
-    expect(mockedGetDocs).toHaveBeenCalledTimes(1); // 軽量チェックのみ
+    expect(mockedGetDoc).not.toHaveBeenCalled();
+    expect(mockedGetDocs).not.toHaveBeenCalled();
     expect(mockedWriteBatch).not.toHaveBeenCalled();
   });
 
-  it('COMMON/TEMPLATEの印なしdocは対象にしない', async () => {
-    const commonDoc = dataDoc({
-      userId: UID,
-      layerId: 'layer-1',
-      permission: 'COMMON',
-      encdata: ['G'],
-      encryptedAt: TS,
-      chunkIndex: 0,
-    });
-    mockedGetDocs.mockResolvedValueOnce({ docs: [commonDoc] });
-
-    const res = await migrateSelfDataToDEK(PROJECT_ID);
+  it('他人の印なしグループは対象にしない', async () => {
+    const res = await migrateSelfDataToDEK(
+      PROJECT_ID,
+      inputWith({
+        unmarkedGroups: [{ userId: 'other-user', layerId: 'layer-1', permission: 'PUBLIC' }],
+        publicData: [{ userId: 'other-user', layerId: 'layer-1', data: [{ id: 'r1' }] as any }],
+      })
+    );
 
     expect(res).toEqual({ isOK: true, message: '', migratedCount: 0, failedCount: 0 });
     expect(mockedWriteBatch).not.toHaveBeenCalled();
@@ -172,31 +185,49 @@ describe('migrateSelfDataToDEK (自己DEK移行)', () => {
       return { data: () => undefined };
     });
 
-    const res = await migrateSelfDataToDEK(PROJECT_ID);
+    const res = await migrateSelfDataToDEK(
+      PROJECT_ID,
+      inputWith({
+        unmarkedGroups: [{ userId: UID, layerId: 'layer-1', permission: 'PRIVATE' }],
+        privateData: [{ userId: UID, layerId: 'layer-1', data: [{ id: 'r1' }] as any }],
+      })
+    );
 
     expect(res).toEqual({ isOK: true, message: '', migratedCount: 0, failedCount: 0 });
-    expect(mockedGetDocs).not.toHaveBeenCalled();
+    expect(mockedWriteBatch).not.toHaveBeenCalled();
   });
 
-  it('復号できないグループはfailedCountに計上して継続し、isOKはtrueのまま', async () => {
-    const brokenDoc = dataDoc({
-      userId: UID,
-      layerId: 'layer-broken',
-      permission: 'PRIVATE',
-      encdata: ['?'],
-      encryptedAt: TS,
-      chunkIndex: 0,
-    });
-    // DEKでもグループでも復号不能 → projectDataSetToDataSetでnull落ち
-    mockedDecGroup.mockResolvedValue(undefined);
-    mockedGetDocs
-      .mockResolvedValueOnce({ docs: [brokenDoc] }) // 軽量チェック
-      .mockResolvedValueOnce({ docs: [brokenDoc] }); // downloadPrivateData
+  it('DEK秘密鍵を開封できない（再共有待ち等）場合は何もしない', async () => {
+    mockedUnwrapDEK.mockResolvedValue(undefined);
 
-    const res = await migrateSelfDataToDEK(PROJECT_ID);
+    const res = await migrateSelfDataToDEK(
+      PROJECT_ID,
+      inputWith({
+        unmarkedGroups: [{ userId: UID, layerId: 'layer-1', permission: 'PRIVATE' }],
+        privateData: [{ userId: UID, layerId: 'layer-1', data: [{ id: 'r1' }] as any }],
+      })
+    );
 
-    expect(res).toEqual({ isOK: true, message: '', migratedCount: 0, failedCount: 1 });
+    expect(res).toEqual({ isOK: true, message: '', migratedCount: 0, failedCount: 0 });
     expect(mockedWriteBatch).not.toHaveBeenCalled();
+  });
+
+  it('ダウンロード結果に無いグループ(復号失敗)はfailedCountに計上して継続し、isOKはtrueのまま', async () => {
+    mockedGetDocs.mockResolvedValueOnce({ docs: [] }); // 成功する方のdeleteExistingData
+
+    const res = await migrateSelfDataToDEK(
+      PROJECT_ID,
+      inputWith({
+        unmarkedGroups: [
+          { userId: UID, layerId: 'layer-broken', permission: 'PRIVATE' }, // 復号失敗でprivateDataに無い
+          { userId: UID, layerId: 'layer-ok', permission: 'PRIVATE' },
+        ],
+        privateData: [{ userId: UID, layerId: 'layer-ok', data: [{ id: 'r1' }] as any }],
+      })
+    );
+
+    expect(res).toEqual({ isOK: true, message: '', migratedCount: 1, failedCount: 1 });
+    expect(allSetCalls()).toHaveLength(1);
   });
 });
 

@@ -11,6 +11,7 @@ import {
 } from '../types';
 import { PHOTO_FOLDER, TILE_FOLDER } from '../constants/AppConstants';
 import * as projectStore from '../lib/firebase/firestore';
+import type { UnmarkedDekGroupType } from '../lib/firebase/firestore';
 import * as projectStorage from '../lib/firebase/storage';
 import { shallowEqual, useDispatch, useSelector, useStore } from 'react-redux';
 import { RootState } from '../store';
@@ -102,6 +103,7 @@ export type UseRepositoryReturnType = {
     isOK: boolean;
     message: string;
     data: DataType[];
+    unmarkedDekGroups?: UnmarkedDekGroupType[];
   }>;
   fetchPrivateData: (
     project: ProjectType,
@@ -111,6 +113,7 @@ export type UseRepositoryReturnType = {
     isOK: boolean;
     message: string;
     data: DataType[];
+    unmarkedDekGroups?: UnmarkedDekGroupType[];
   }>;
   fetchTemplateData: (
     project_: ProjectType,
@@ -1021,14 +1024,15 @@ export const useRepository = (): UseRepositoryReturnType & {
       if (mode === 'others') {
         options.excludeUserId = user.uid;
       }
-      const { isOK, message, data } = await projectStore.downloadPublicData(project_.id, options);
+      const { isOK, message, data, unmarkedDekGroups } = await projectStore.downloadPublicData(project_.id, options);
 
       if (!isOK || data === undefined) {
         return { isOK: false, message, data: [] };
       }
       const updatedData = shouldPhotoDownload ? await downloadPhotos(layers, data, project_) : data;
 
-      return { isOK: true, message: '', data: updatedData };
+      // unmarkedDekGroupsは自己DEK移行(Phase iii)用。ダウンロード済みdocから算出済みのため追加通信なしで返せる
+      return { isOK: true, message: '', data: updatedData, unmarkedDekGroups };
     },
     [downloadPhotos, layers, user]
   );
@@ -1046,13 +1050,14 @@ export const useRepository = (): UseRepositoryReturnType & {
         options.excludeUserId = user.uid;
       }
       const res = await projectStore.downloadPrivateData(project_.id, options);
-      const { isOK, message, data } = res;
+      const { isOK, message, data, unmarkedDekGroups } = res;
 
       if (!isOK || data === undefined) {
         return { isOK: false, message, data: [] };
       }
       const updatedData = shouldPhotoDownload ? await downloadPhotos(layers, data, project_) : data;
-      return { isOK: true, message: '', data: updatedData };
+      // unmarkedDekGroupsは自己DEK移行(Phase iii)用。ダウンロード済みdocから算出済みのため追加通信なしで返せる
+      return { isOK: true, message: '', data: updatedData, unmarkedDekGroups };
     },
     [downloadPhotos, layers, user]
   );

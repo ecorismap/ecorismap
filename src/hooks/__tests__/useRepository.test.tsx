@@ -451,7 +451,7 @@ describe('uploadDataToRepository（楽観的ロック）', () => {
     const dialogSpy = jest.spyOn(AlertAsyncModule, 'DataConflictConfirmAsync');
     const downloadSpy = jest
       .spyOn(projectStore, 'downloadPrivateData')
-      .mockResolvedValue({ isOK: true, message: '', data: [{ layerId: 'l1', userId: 'test-user', data: [localRecord] }] });
+      .mockResolvedValue({ isOK: true, message: '', data: [{ layerId: 'l1', userId: 'test-user', data: [localRecord] }], unmarkedDekGroups: [] });
     const uploadSpy = jest
       .spyOn(projectStore, 'uploadDataHelper')
       .mockResolvedValue({ isOK: true, message: '', encryptedAt: 999 });
@@ -501,7 +501,7 @@ describe('uploadDataToRepository（楽観的ロック）', () => {
     const dialogSpy = jest.spyOn(AlertAsyncModule, 'DataConflictConfirmAsync').mockResolvedValue('merge');
     const downloadSpy = jest
       .spyOn(projectStore, 'downloadPrivateData')
-      .mockResolvedValue({ isOK: true, message: '', data: [{ layerId: 'l1', userId: 'test-user', data: [cloudOnly] }] });
+      .mockResolvedValue({ isOK: true, message: '', data: [{ layerId: 'l1', userId: 'test-user', data: [cloudOnly] }], unmarkedDekGroups: [] });
     const uploadSpy = jest
       .spyOn(projectStore, 'uploadDataHelper')
       .mockResolvedValue({ isOK: true, message: '', encryptedAt: 999 });
@@ -528,7 +528,7 @@ describe('uploadDataToRepository（楽観的ロック）', () => {
     jest.spyOn(AlertAsyncModule, 'DataConflictConfirmAsync').mockResolvedValue('cancel');
     jest
       .spyOn(projectStore, 'downloadPrivateData')
-      .mockResolvedValue({ isOK: true, message: '', data: [{ layerId: 'l1', userId: 'test-user', data: [cloudOnly] }] });
+      .mockResolvedValue({ isOK: true, message: '', data: [{ layerId: 'l1', userId: 'test-user', data: [cloudOnly] }], unmarkedDekGroups: [] });
     const uploadSpy = jest.spyOn(projectStore, 'uploadDataHelper');
 
     const store = makeStore({ proj1: { [conflictKey]: 555 } });

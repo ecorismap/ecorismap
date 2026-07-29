@@ -12,7 +12,7 @@ import { exportGeoFile } from '../utils/File';
 import { truncateForFileName } from '../utils/General';
 import { ProjectType } from '../types';
 import { FUNC_ENCRYPTION, CREATE_DEK_PROJECTS, ENABLE_DEK_SELF_MIGRATION } from '../constants/AppConstants';
-import { migrateSelfDataToDEK } from '../lib/firebase/firestore';
+import { migrateSelfDataToDEK, SelfMigrationInputType } from '../lib/firebase/firestore';
 import dayjs from '../i18n/dayjs';
 import { useEcorisMapFile } from '../hooks/useEcorismapFile';
 import { ConflictResolverModal } from '../components/organisms/HomeModalConflictResolver';
@@ -70,7 +70,7 @@ export default function ProjectEditContainer({ navigation, route }: Props_Projec
   }, [downloadCommonData, downloadTemplateData, targetProject]);
 
   const downloadData = useCallback(
-    async ({ isAdmin = false, shouldPhotoDownload = false }) => {
+    async ({ isAdmin = false, shouldPhotoDownload = false }): Promise<SelfMigrationInputType> => {
       const mode = isAdmin ? 'all' : 'own';
 
       const commonDataResult = await downloadCommonData(targetProject, shouldPhotoDownload);
@@ -90,6 +90,14 @@ export default function ProjectEditContainer({ navigation, route }: Props_Projec
         templateData: templateRes.data,
       });
       if (!mergedDataResult.isOK) throw new Error(mergedDataResult.message);
+
+      // 自己DEK移行(Phase iii)の入力。ここで取得済みの判定情報と復号済みデータを返すことで、
+      // 移行処理からの追加ダウンロードをゼロにする
+      return {
+        unmarkedGroups: [...(privateRes.unmarkedDekGroups ?? []), ...(publicRes.unmarkedDekGroups ?? [])],
+        privateData: privateRes.data,
+        publicData: publicRes.data,
+      };
     },
     [createMergedDataSet, downloadCommonData, fetchPrivateData, fetchPublicData, fetchTemplateData, targetProject]
   );
@@ -113,16 +121,24 @@ export default function ProjectEditContainer({ navigation, route }: Props_Projec
         if (!projectSettingsResult.isOK || projectSettingsResult.region === undefined)
           throw new Error(projectSettingsResult.message);
 
+        // isSetting時はPRIVATE/PUBLICをダウンロードしないため自己移行の入力は無い（通常オープン時に実施される）
+        let selfMigrationInput: SelfMigrationInputType | null = null;
         if (isSetting) {
           await downloadDataForSetting();
         } else {
-          await downloadData({ isAdmin, shouldPhotoDownload: false });
+          selfMigrationInput = await downloadData({ isAdmin, shouldPhotoDownload: false });
         }
 
         // DEKプロジェクトなら自分のPRIVATE/PUBLICをDEKへ自己移行(Phase iii パートA)。
+        // 判定・復号ともダウンロード済みデータを使うため追加の通信は書き戻しのアップロードのみ。
         // 失敗しても開く処理は継続する(dual-readで復号可能。次回開いた時に自動で再試行される)。
-        if (FUNC_ENCRYPTION && ENABLE_DEK_SELF_MIGRATION && targetProject.cryptoScheme === 'dek') {
-          const migrationResult = await migrateSelfDataToDEK(targetProject.id, (done, total) =>
+        if (
+          FUNC_ENCRYPTION &&
+          ENABLE_DEK_SELF_MIGRATION &&
+          targetProject.cryptoScheme === 'dek' &&
+          selfMigrationInput !== null
+        ) {
+          const migrationResult = await migrateSelfDataToDEK(targetProject.id, selfMigrationInput, (done, total) =>
             setMigrationProgress(t('ProjectEdit.label.migratingData', { done, total }))
           );
           setMigrationProgress('');
