@@ -128,7 +128,7 @@ describe('migrateSelfDataToDEK (自己DEK移行)', () => {
   });
 
   it('印なしの自分のグループを移行し、cryptoScheme印付きで書き戻す（追加ダウンロードなし）', async () => {
-    mockedGetDocs.mockResolvedValueOnce({ docs: [] }); // uploadDataHelper内のdeleteExistingData
+    mockedGetDocs.mockResolvedValueOnce({ docs: [] }); // uploadDataHelper内の既存doc取得
 
     const res = await migrateSelfDataToDEK(
       PROJECT_ID,
@@ -213,7 +213,7 @@ describe('migrateSelfDataToDEK (自己DEK移行)', () => {
   });
 
   it('ダウンロード結果に無いグループ(復号失敗)はfailedCountに計上して継続し、isOKはtrueのまま', async () => {
-    mockedGetDocs.mockResolvedValueOnce({ docs: [] }); // 成功する方のdeleteExistingData
+    mockedGetDocs.mockResolvedValueOnce({ docs: [] }); // 成功する方の既存doc取得
 
     const res = await migrateSelfDataToDEK(
       PROJECT_ID,
@@ -239,9 +239,28 @@ describe('uploadDataHelper のcryptoScheme印付与', () => {
     mockedEncryptWithDEK.mockResolvedValue(['ENC_DEK_DATA']);
   });
 
+  it('既存docの削除と新チャンクの書き込みを同一バッチでコミットする（中断で消えない）', async () => {
+    setupDekProject();
+    const oldDoc = dataDoc({ userId: UID, layerId: 'layer-1', permission: 'PRIVATE', chunkIndex: 0 });
+    mockedGetDocs.mockResolvedValue({ docs: [oldDoc] });
+
+    const res = await uploadDataHelper(PROJECT_ID, {
+      userId: UID,
+      layerId: 'layer-1',
+      permission: 'PRIVATE',
+      data: [],
+    });
+
+    expect(res.isOK).toBe(true);
+    expect(batches).toHaveLength(1); // 削除と書き込みが1つのバッチ
+    expect(batches[0].delete).toHaveBeenCalledWith(oldDoc.ref);
+    expect(batches[0].set).toHaveBeenCalledTimes(1);
+    expect(batches[0].commit).toHaveBeenCalledTimes(1);
+  });
+
   it('DEKプロジェクトでは印が付く', async () => {
     setupDekProject();
-    mockedGetDocs.mockResolvedValue({ docs: [] }); // deleteExistingData
+    mockedGetDocs.mockResolvedValue({ docs: [] }); // 既存doc取得
 
     const res = await uploadDataHelper(PROJECT_ID, {
       userId: UID,
@@ -265,7 +284,7 @@ describe('uploadDataHelper のcryptoScheme印付与', () => {
     });
     const { encryptEThree } = jest.requireMock('../../virgilsecurity/e3kit');
     (encryptEThree as jest.Mock).mockResolvedValue(['ENC_GROUP_DATA']);
-    mockedGetDocs.mockResolvedValue({ docs: [] }); // deleteExistingData
+    mockedGetDocs.mockResolvedValue({ docs: [] }); // 既存doc取得
 
     const res = await uploadDataHelper(PROJECT_ID, {
       userId: UID,

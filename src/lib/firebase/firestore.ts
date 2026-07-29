@@ -691,80 +691,6 @@ const chunkData = (encdataArray: string[], chunkSize: number): string[][] => {
 const MAX_SIZE_KB = 5000;
 const CHUNK_SIZE = 900 * 1024; // 900KB
 
-export const uploadChunks = async (
-  projectId: string,
-  chunks: string[][],
-  userId: string,
-  layerId: string,
-  permission: PermissionType | 'TEMPLATE',
-  cryptoScheme?: 'dek'
-): Promise<Timestamp> => {
-  // モジュラー API でバッチを作成
-  const batch = writeBatch(firestore);
-
-  // data サブコレクション参照
-  const dataCol = collection(firestore, 'projects', projectId, 'data');
-
-  // 全チャンクで同一の encryptedAt を使う（楽観的ロックの基準値を決定的にするため）
-  const encryptedAt = Timestamp.now();
-
-  // 各チャンクをバッチに追加
-  chunks.forEach((chunk, index) => {
-    const dataFS: DataFS = {
-      userId,
-      layerId,
-      permission,
-      encdata: chunk,
-      encryptedAt,
-      chunkIndex: index,
-      // undefinedのフィールドはFirestoreに書けないため、印がある時だけ付与する
-      ...(cryptoScheme === 'dek' ? { cryptoScheme: 'dek' as const } : {}),
-    };
-    // 自動 ID のドキュメント参照を作成
-    const docRef = doc(dataCol);
-    batch.set(docRef, dataFS);
-  });
-
-  // コミットして一括書き込みを実行
-  await batch.commit();
-
-  return encryptedAt;
-};
-
-export const deleteExistingData = async (
-  projectId: string,
-  userId: string,
-  layerId: string,
-  permission: PermissionType | 'TEMPLATE'
-): Promise<void> => {
-  // 1. バッチ作成
-  const batch = writeBatch(firestore);
-
-  // 2. サブコレクションへの参照を作成
-  const dataCol = collection(firestore, 'projects', projectId, 'data');
-
-  // 3. クエリを組み立て
-  const q = query(
-    dataCol,
-    where('permission', '==', permission),
-    where('layerId', '==', layerId),
-    where('userId', '==', userId)
-  );
-
-  // 4. 一致するドキュメントを取得
-  const snapshot = await getDocs(q);
-
-  // 5. バッチに削除操作を登録
-  snapshot.docs.forEach(
-    (docSnap) => {
-      batch.delete(docSnap.ref);
-    }
-  );
-
-  // 6. 一括コミットで削除を実行
-  await batch.commit();
-};
-
 export const uploadDataHelper = async (
   projectId: string,
   data: ProjectDataType
@@ -778,18 +704,46 @@ export const uploadDataHelper = async (
   }
 
   const chunks = chunkData(encdataArray, CHUNK_SIZE);
-  await deleteExistingData(projectId, userId, layerId, permission);
   // DEKで暗号化した場合はper-docの方式印を付ける（enc直後なのでキャッシュヒット）。
   // 旧グループ暗号データのDEK化の完了判定と残量計測に使う。
   const crypto = await getProjectCrypto(projectId);
-  const encryptedAt = await uploadChunks(
-    projectId,
-    chunks,
-    userId,
-    layerId,
-    permission,
-    crypto.scheme === 'dek' ? 'dek' : undefined
+  const cryptoScheme = crypto.scheme === 'dek' ? ('dek' as const) : undefined;
+
+  // 既存docの取得
+  const dataCol = collection(firestore, 'projects', projectId, 'data');
+  const q = query(
+    dataCol,
+    where('permission', '==', permission),
+    where('layerId', '==', layerId),
+    where('userId', '==', userId)
   );
+  const existing = await getDocs(q);
+
+  // 既存docの削除と新チャンクの書き込みを1つのバッチで原子的にコミットする。
+  // 以前は削除→書き込みの2コミットで、その間に通信断・アプリ終了が起きると
+  // クラウド側のこのグループのデータが一時的に消えた（モバイルの自己DEK移行で露出が増えるため原子化）。
+  // データはMAX_SIZE_KB(5MB)以下に制限済みで、Firestoreのリクエスト上限(10MiB)に必ず収まる。
+  const batch = writeBatch(firestore);
+  existing.docs.forEach((docSnap) => {
+    batch.delete(docSnap.ref);
+  });
+  // 全チャンクで同一の encryptedAt を使う（楽観的ロックの基準値を決定的にするため）
+  const encryptedAt = Timestamp.now();
+  chunks.forEach((chunk, index) => {
+    const dataFS: DataFS = {
+      userId,
+      layerId,
+      permission,
+      encdata: chunk,
+      encryptedAt,
+      chunkIndex: index,
+      // undefinedのフィールドはFirestoreに書けないため、印がある時だけ付与する
+      ...(cryptoScheme === 'dek' ? { cryptoScheme: 'dek' as const } : {}),
+    };
+    // 自動 ID のドキュメント参照を作成してバッチに追加
+    batch.set(doc(dataCol), dataFS);
+  });
+  await batch.commit();
 
   // チャンクが無い（空データ）場合はクラウドにドキュメントが存在しないため基準値は未確立(undefined)とする
   return { isOK: true, message: '', encryptedAt: chunks.length > 0 ? encryptedAt.toMillis() : undefined };
