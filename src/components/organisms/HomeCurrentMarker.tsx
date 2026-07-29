@@ -26,7 +26,8 @@ interface Props {
   currentLocation: LocationType;
   azimuth: number;
   headingUp: boolean;
-  onPress?: () => void;
+  // 方角線の表示切り替えはコンパスボタンの長押しで行う（マーカーのnative onPressは
+  // MapViewのPanResponderとタッチ認識が競合して取りこぼすため使わない）
   showDirectionLine?: boolean;
   // キャッシュ由来の古い位置（衛星捕捉中）。灰色マーカーで表示し精度円は出さない。
   isStale?: boolean;
@@ -37,7 +38,6 @@ interface Props {
 const arePropsEqual = (prev: Props, next: Props) => {
   if (prev.isStale !== next.isStale) return false;
   if (prev.headingUp !== next.headingUp) return false;
-  if (prev.onPress !== next.onPress) return false;
   if (prev.showDirectionLine !== next.showDirectionLine) return false;
 
   const a = prev.currentLocation;
@@ -52,7 +52,7 @@ const arePropsEqual = (prev: Props, next: Props) => {
 };
 
 const CurrentMarkerComponent = (props: Props) => {
-  const { currentLocation, azimuth, headingUp, onPress, showDirectionLine, isStale } = props;
+  const { currentLocation, azimuth, headingUp, showDirectionLine, isStale } = props;
   const accuracy = currentLocation.accuracy ?? 0;
   const { width: windowWidth, height: windowHeight } = useWindowDimensions();
   // 画面固定線の長さ: 画面のどこにマーカーがあっても画面端まで届く長さ（対角線）
@@ -213,7 +213,6 @@ const CurrentMarkerComponent = (props: Props) => {
         rotation={markerAngle}
         anchor={{ x: 0.5, y: 0.5 }}
         style={{ zIndex: 1001 }}
-        onPress={onPress}
         image={markerImage}
       />
     </>
