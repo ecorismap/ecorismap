@@ -16,6 +16,8 @@ export const CREATE_DEK_PROJECTS = true;
 export const ENABLE_DEK_MIGRATION = true;
 // DEKプロジェクトを開く際に、自分のPRIVATE/PUBLICデータをDEKへ再暗号化して書き戻すか(Phase iii パートA)。
 // data docに cryptoScheme:'dek' の印を付け、印が揃えば以後スキップ(冪等)。
+// 判定・復号はオープン時のダウンロード結果を使い回すため追加ダウンロードは無く、
+// セルラー回線では書き戻しをスキップする(現場の弱い回線への配慮。Wi-Fi時に自動で再試行)。
 // firestore.rules の data verifyFields に cryptoScheme を追加デプロイしてから有効なビルドを配布すること。
 export const ENABLE_DEK_SELF_MIGRATION = true;
 export const CURRENT_TERMS_VERSION = '2026-07-12';
