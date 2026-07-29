@@ -453,6 +453,8 @@ export interface DataFS {
   encdata: string[];
   encryptedAt: Timestamp;
   chunkIndex: number;
+  /** このdocの暗号方式の印。'dek'ならDEKで暗号化済み。無印は旧グループ暗号または印付与開始前のDEK書き込み。 */
+  cryptoScheme?: 'dek';
 }
 
 export interface PositionFS {

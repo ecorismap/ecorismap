@@ -525,7 +525,8 @@
       "settingProject": "You can change the project settings.",
       "deleteProjectOpen": "Please close the project before running it.",
       "reshareKey": "The encryption key has been re-shared. Ask the member to reopen the project.",
-      "reshareKeyNoUid": "Cannot re-share because this member has not registered an account."
+      "reshareKeyNoUid": "Cannot re-share because this member has not registered an account.",
+      "migrateSelfDataFailed": "Some data could not be migrated to the new encryption. The project will open anyway (migration will be retried next time)."
     },
     "confirm": {
       "deleteProject": "Do you want to delete the project?",
@@ -543,7 +544,8 @@
       "delete": "delete",
       "save": "save",
       "dataManage": "Data",
-      "reshareKey": "Re-share encryption key"
+      "reshareKey": "Re-share encryption key",
+      "migratingData": "Migrating data to the new encryption... ({{done}}/{{total}})"
     }
   },
   "CloudDataManagement": {

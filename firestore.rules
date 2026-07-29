@@ -49,7 +49,7 @@ service cloud.firestore {
           || (request.auth.uid in get(/databases/$(database)/documents/projects/$(project)).data.adminsUid && request.resource.data.permission == "COMMON")
           || (request.auth.uid in get(/databases/$(database)/documents/projects/$(project)).data.adminsUid && request.resource.data.permission == "TEMPLATE"))
           && request.auth.uid == request.resource.data.userId
-          && verifyFields(["layerId", "userId", "permission","encdata","encryptedAt"],["chunkIndex"])
+          && verifyFields(["layerId", "userId", "permission","encdata","encryptedAt"],["chunkIndex","cryptoScheme"])
           || (
               request.method == "update"
               && request.auth.uid in get(/databases/$(database)/documents/projects/$(project)).data.adminsUid
@@ -60,7 +60,7 @@ service cloud.firestore {
           || (
               request.auth.uid in get(/databases/$(database)/documents/projects/$(project)).data.adminsUid
               && (request.resource.data.permission == "COMMON" || request.resource.data.permission == "TEMPLATE")
-              && verifyFields(["layerId", "userId", "permission","encdata","encryptedAt"],["chunkIndex"])
+              && verifyFields(["layerId", "userId", "permission","encdata","encryptedAt"],["chunkIndex","cryptoScheme"])
             )
           
           allow delete: if isSignedIn() 

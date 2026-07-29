@@ -485,7 +485,8 @@
       "settingProject": "プロジェクトの設定を変更できます。",
       "deleteProjectOpen": "プロジェクトを閉じてから実行してください。",
       "reshareKey": "暗号化キーを再共有しました。メンバーにはプロジェクトを開き直すよう伝えてください。",
-      "reshareKeyNoUid": "このメンバーはアカウント未登録のため再共有できません。"
+      "reshareKeyNoUid": "このメンバーはアカウント未登録のため再共有できません。",
+      "migrateSelfDataFailed": "一部のデータを新しい暗号方式へ移行できませんでした。プロジェクトはこのまま開きます（次回開いた時に再試行されます）。"
     },
     "confirm": {
       "deleteProject": "プロジェクトを削除しますか？",
@@ -500,7 +501,8 @@
       "delete": "削除",
       "save": "保存",
       "dataManage": "データ管理",
-      "reshareKey": "暗号化キーを再共有"
+      "reshareKey": "暗号化キーを再共有",
+      "migratingData": "データを新しい暗号方式へ移行中... ({{done}}/{{total}})"
     }
   },
   "CloudDataManagement": {

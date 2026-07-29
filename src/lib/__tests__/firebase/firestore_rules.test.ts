@@ -1011,6 +1011,97 @@ describe('data subcollection', () => {
     );
   });
 
+  it('create: メンバーは自分のPrivate/PublicデータをcryptoScheme印付きで作成できる（自己DEK移行）。', async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await setDoc(doc(context.firestore(), `projects/${documentId}`), {
+        ownerUid: uid1,
+        adminsUid: [uid1, uid2],
+        membersUid: [uid1, uid2, uid3, uid4],
+        encdata: '',
+        encryptedAt: '2022年1月2日',
+      });
+    });
+    const context3 = testEnv.authenticatedContext(uid3, {
+      email: 'test3@example.com',
+      email_verified: true,
+    });
+    await firebase.assertSucceeds(
+      setDoc(doc(context3.firestore(), `projects/${documentId}/data/${dataId1}`), {
+        encdata: '',
+        userId: uid3,
+        layerId: layerId,
+        permission: 'PRIVATE',
+        encryptedAt: '2022年1月2日',
+        cryptoScheme: 'dek',
+      })
+    );
+    await firebase.assertSucceeds(
+      setDoc(doc(context3.firestore(), `projects/${documentId}/data/${dataId2}`), {
+        encdata: '',
+        userId: uid3,
+        layerId: layerId,
+        permission: 'PUBLIC',
+        encryptedAt: '2022年1月2日',
+        cryptoScheme: 'dek',
+        chunkIndex: 0,
+      })
+    );
+  });
+
+  it('create: 管理者はCommon/TemplateデータをcryptoScheme印付きで作成できる（Phase ii移行の書き戻し）。', async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await setDoc(doc(context.firestore(), `projects/${documentId}`), {
+        ownerUid: uid1,
+        adminsUid: [uid1, uid2],
+        membersUid: [uid1, uid2, uid3, uid4],
+        encdata: '',
+        encryptedAt: '2022年1月2日',
+      });
+    });
+    const context2 = testEnv.authenticatedContext(uid2, {
+      email: 'test2@example.com',
+      email_verified: true,
+    });
+    // 管理者が他人(uid3)のuserIdでCOMMONを書き戻す（移行専用ルート）
+    await firebase.assertSucceeds(
+      setDoc(doc(context2.firestore(), `projects/${documentId}/data/${dataId1}`), {
+        encdata: '',
+        userId: uid3,
+        layerId: layerId,
+        permission: 'COMMON',
+        encryptedAt: '2022年1月2日',
+        cryptoScheme: 'dek',
+      })
+    );
+  });
+
+  it('create: cryptoScheme以外の未知フィールド付きでは作成できない（verifyFieldsの回帰）。', async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await setDoc(doc(context.firestore(), `projects/${documentId}`), {
+        ownerUid: uid1,
+        adminsUid: [uid1, uid2],
+        membersUid: [uid1, uid2, uid3, uid4],
+        encdata: '',
+        encryptedAt: '2022年1月2日',
+      });
+    });
+    const context3 = testEnv.authenticatedContext(uid3, {
+      email: 'test3@example.com',
+      email_verified: true,
+    });
+    await firebase.assertFails(
+      setDoc(doc(context3.firestore(), `projects/${documentId}/data/${dataId1}`), {
+        encdata: '',
+        userId: uid3,
+        layerId: layerId,
+        permission: 'PRIVATE',
+        encryptedAt: '2022年1月2日',
+        cryptoScheme: 'dek',
+        unknownField: true,
+      })
+    );
+  });
+
   it('delete: メンバーなら自分のデータを削除できる。', async () => {
     await testEnv.withSecurityRulesDisabled(async (context) => {
       await setDoc(doc(context.firestore(), `projects/${documentId}`), {

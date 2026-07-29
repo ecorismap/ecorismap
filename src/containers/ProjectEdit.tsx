@@ -11,7 +11,8 @@ import { useRepository } from '../hooks/useRepository';
 import { exportGeoFile } from '../utils/File';
 import { truncateForFileName } from '../utils/General';
 import { ProjectType } from '../types';
-import { FUNC_ENCRYPTION, CREATE_DEK_PROJECTS } from '../constants/AppConstants';
+import { FUNC_ENCRYPTION, CREATE_DEK_PROJECTS, ENABLE_DEK_SELF_MIGRATION } from '../constants/AppConstants';
+import { migrateSelfDataToDEK } from '../lib/firebase/firestore';
 import dayjs from '../i18n/dayjs';
 import { useEcorisMapFile } from '../hooks/useEcorismapFile';
 import { ConflictResolverModal } from '../components/organisms/HomeModalConflictResolver';
@@ -38,6 +39,7 @@ export default function ProjectEditContainer({ navigation, route }: Props_Projec
   } = useProjectEdit(route.params.project, route.params.isNew);
 
   const [isLoading, setIsLoading] = useState(false);
+  const [migrationProgress, setMigrationProgress] = useState('');
   const { loadE3kitGroup, deleteE3kitGroup, updateE3kitGroupMembers, createE3kitGroup, reshareMemberKey } =
     useE3kitGroup();
   const {
@@ -117,6 +119,18 @@ export default function ProjectEditContainer({ navigation, route }: Props_Projec
           await downloadData({ isAdmin, shouldPhotoDownload: false });
         }
 
+        // DEKプロジェクトなら自分のPRIVATE/PUBLICをDEKへ自己移行(Phase iii パートA)。
+        // 失敗しても開く処理は継続する(dual-readで復号可能。次回開いた時に自動で再試行される)。
+        if (FUNC_ENCRYPTION && ENABLE_DEK_SELF_MIGRATION && targetProject.cryptoScheme === 'dek') {
+          const migrationResult = await migrateSelfDataToDEK(targetProject.id, (done, total) =>
+            setMigrationProgress(t('ProjectEdit.label.migratingData', { done, total }))
+          );
+          setMigrationProgress('');
+          if (!migrationResult.isOK || migrationResult.failedCount > 0) {
+            await AlertAsync(t('ProjectEdit.alert.migrateSelfDataFailed'));
+          }
+        }
+
         openProject();
         setIsLoading(false);
 
@@ -128,6 +142,7 @@ export default function ProjectEditContainer({ navigation, route }: Props_Projec
         return true;
       } catch (e: any) {
         setIsLoading(false);
+        setMigrationProgress('');
         await AlertAsync(e.message);
         return false;
       }
@@ -333,6 +348,7 @@ export default function ProjectEditContainer({ navigation, route }: Props_Projec
         isOwner,
         isOwnerAdmin,
         isLoading,
+        migrationProgress,
         isNew,
         userUid: user.uid,
         changeText,

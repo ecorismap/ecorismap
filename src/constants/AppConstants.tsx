@@ -14,6 +14,10 @@ export const CREATE_DEK_PROJECTS = true;
 // 自体は常時有効なので、移行済みプロジェクトはこのフラグに関わらず読める。全クライアントにDEK読み込み対応版が
 // 行き渡ってから true にする。
 export const ENABLE_DEK_MIGRATION = true;
+// DEKプロジェクトを開く際に、自分のPRIVATE/PUBLICデータをDEKへ再暗号化して書き戻すか(Phase iii パートA)。
+// data docに cryptoScheme:'dek' の印を付け、印が揃えば以後スキップ(冪等)。
+// firestore.rules の data verifyFields に cryptoScheme を追加デプロイしてから有効なビルドを配布すること。
+export const ENABLE_DEK_SELF_MIGRATION = true;
 export const CURRENT_TERMS_VERSION = '2026-07-12';
 
 export const COLOR = {

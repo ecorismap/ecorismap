@@ -676,7 +676,8 @@ export const uploadChunks = async (
   chunks: string[][],
   userId: string,
   layerId: string,
-  permission: PermissionType | 'TEMPLATE'
+  permission: PermissionType | 'TEMPLATE',
+  cryptoScheme?: 'dek'
 ): Promise<Timestamp> => {
   // モジュラー API でバッチを作成
   const batch = writeBatch(firestore);
@@ -696,6 +697,8 @@ export const uploadChunks = async (
       encdata: chunk,
       encryptedAt,
       chunkIndex: index,
+      // undefinedのフィールドはFirestoreに書けないため、印がある時だけ付与する
+      ...(cryptoScheme === 'dek' ? { cryptoScheme: 'dek' as const } : {}),
     };
     // 自動 ID のドキュメント参照を作成
     const docRef = doc(dataCol);
@@ -756,7 +759,17 @@ export const uploadDataHelper = async (
 
   const chunks = chunkData(encdataArray, CHUNK_SIZE);
   await deleteExistingData(projectId, userId, layerId, permission);
-  const encryptedAt = await uploadChunks(projectId, chunks, userId, layerId, permission);
+  // DEKで暗号化した場合はper-docの方式印を付ける（enc直後なのでキャッシュヒット）。
+  // 旧グループ暗号データのDEK化の完了判定と残量計測に使う。
+  const crypto = await getProjectCrypto(projectId);
+  const encryptedAt = await uploadChunks(
+    projectId,
+    chunks,
+    userId,
+    layerId,
+    permission,
+    crypto.scheme === 'dek' ? 'dek' : undefined
+  );
 
   // チャンクが無い（空データ）場合はクラウドにドキュメントが存在しないため基準値は未確立(undefined)とする
   return { isOK: true, message: '', encryptedAt: chunks.length > 0 ? encryptedAt.toMillis() : undefined };
@@ -830,14 +843,21 @@ export const downloadPublicAndCommonData = async (projectId: string) => {
 /**
  * PUBLICデータを取得する
  * @param projectId プロジェクトID
- * @param options オプション: excludeUserId
+ * @param options オプション: userId, excludeUserId
  */
-export const downloadPublicData = async (projectId: string, { excludeUserId }: { excludeUserId?: string } = {}) => {
+export const downloadPublicData = async (
+  projectId: string,
+  { userId, excludeUserId }: { userId?: string; excludeUserId?: string } = {}
+) => {
   try {
     // 1. data サブコレクションへの参照を取得
     const dataCol = collection(firestore, 'projects', projectId, 'data');
     // 2. 'PUBLIC' 権限のドキュメントを絞り込むクエリを作成
-    const q = query(dataCol, where('permission', '==', 'PUBLIC'));
+    let q = query(dataCol, where('permission', '==', 'PUBLIC'));
+    // userId が指定されていれば自分の分だけに絞る（自己DEK移行用。全員分の復号を避ける）
+    if (userId) {
+      q = query(q, where('userId', '==', userId));
+    }
     // 3. クエリを実行してスナップショットを取得
     const projectDataSet = await getDocs(q);
 
@@ -991,6 +1011,77 @@ export const migrateProjectToDEK = async (
     // 失敗時はキャッシュを破棄し、次回読み込みでサーバの確定状態に同期させる。
     clearProjectCryptoCache();
     return { isOK: false, message: t('common.message.failGetProjects') };
+  }
+};
+
+/**
+ * DEK化済みプロジェクトで、自分の PRIVATE/PUBLIC データをDEKで再暗号化して書き戻す（Phase iii パートA / 自己移行）。
+ * cryptoScheme 印の無いチャンクを含む自分のグループ（layerId×permission）だけを対象にし、
+ * 書き戻しで印が付くため2回目以降は軽量クエリ1回でスキップされる（冪等）。
+ * 印なし＝旧グループ暗号とは限らない（印付与開始前のDEK書き込みも含む）が、DEKで再暗号化するだけなので無害。
+ * グループ単位の失敗は failedCount に計上して続行する（dual-readで読み続けられるため、呼び出し側は
+ * 失敗してもプロジェクトを開く処理を継続してよい。次回開いた時に自動で再試行される）。
+ */
+export const migrateSelfDataToDEK = async (
+  projectId: string,
+  onProgress?: (done: number, total: number) => void
+): Promise<{ isOK: boolean; message: string; migratedCount: number; failedCount: number }> => {
+  try {
+    const uid = auth?.currentUser?.uid;
+    if (!uid) return { isOK: false, message: t('hooks.message.pleaseLogin'), migratedCount: 0, failedCount: 0 };
+
+    // DEKプロジェクトで復号鍵が使える時だけ動く（group方式・鍵の再共有待ちでは何もしない）。
+    const crypto = await getProjectCrypto(projectId);
+    if (crypto.scheme !== 'dek' || crypto.dekPrivateKey === undefined) {
+      return { isOK: true, message: '', migratedCount: 0, failedCount: 0 };
+    }
+
+    // 軽量チェック: 自分のdata docを列挙し、印なしチャンクを含むPRIVATE/PUBLICグループを対象化。
+    const q = query(collection(firestore, 'projects', projectId, 'data'), where('userId', '==', uid));
+    const snapshot = await getDocs(q);
+    const targets = new Map<string, { layerId: string; permission: PermissionType }>();
+    snapshot.docs.forEach((docSnap) => {
+      const d = docSnap.data() as DataFS;
+      if (d.permission !== 'PRIVATE' && d.permission !== 'PUBLIC') return;
+      if (d.cryptoScheme === 'dek') return;
+      targets.set(`${d.layerId}_${d.permission}`, { layerId: d.layerId, permission: d.permission });
+    });
+    if (targets.size === 0) return { isOK: true, message: '', migratedCount: 0, failedCount: 0 };
+
+    // 対象のあるpermissionだけ自分の分をダウンロード（decのdual-readで方式問わず復号される）。
+    const targetList = [...targets.values()];
+    const dataByPermission = new Map<PermissionType, DataType[]>();
+    for (const permission of ['PRIVATE', 'PUBLIC'] as const) {
+      if (!targetList.some((v) => v.permission === permission)) continue;
+      const res =
+        permission === 'PRIVATE'
+          ? await downloadPrivateData(projectId, { userId: uid })
+          : await downloadPublicData(projectId, { userId: uid });
+      if (!res.isOK || res.data === undefined) {
+        return { isOK: false, message: res.message, migratedCount: 0, failedCount: 0 };
+      }
+      dataByPermission.set(permission, res.data);
+    }
+
+    // グループ単位で書き戻し（uploadDataHelperがDEKで再暗号化し、cryptoScheme印を付ける）。
+    let migratedCount = 0;
+    let failedCount = 0;
+    for (const [index, { layerId, permission }] of targetList.entries()) {
+      onProgress?.(index + 1, targetList.length);
+      const d = dataByPermission.get(permission)?.find((v) => v.layerId === layerId);
+      if (d === undefined) {
+        // 復号できず projectDataSetToDataSet で除外されたグループ。残量計測で検知して個別対応する。
+        failedCount++;
+        continue;
+      }
+      const res = await uploadDataHelper(projectId, { userId: uid, layerId, permission, data: d.data });
+      if (res.isOK) migratedCount++;
+      else failedCount++;
+    }
+    return { isOK: true, message: '', migratedCount, failedCount };
+  } catch (e) {
+    console.log('[migrateSelfDataToDEK] error', e);
+    return { isOK: false, message: t('firebase.message.failDownloadData'), migratedCount: 0, failedCount: 0 };
   }
 };
 
