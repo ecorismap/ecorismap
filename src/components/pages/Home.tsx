@@ -304,12 +304,12 @@ export default function HomeScreen() {
     },
   });
   //console.log('Home');
+  // 方角線の表示切り替え。コンパスボタンの長押しで呼ばれる。
+  // 以前は現在地マーカーのnative onPressを使っていたが、MapViewのPanResponderと
+  // タッチ認識が競合してタップを取りこぼすため、確実に反応するボタン操作に変更した。
   const toggleDirectionLine = useCallback(() => {
-    // ドローツールがアクティブでない時のみ方向線を表示
-    if (featureButton === 'NONE' && currentDrawTool === 'NONE') {
-      setShowDirectionLine((prev) => !prev);
-    }
-  }, [featureButton, currentDrawTool]);
+    setShowDirectionLine((prev) => !prev);
+  }, []);
 
   const headerRightButton = useCallback(() => {
     if (exportPDFMode) {
@@ -555,7 +555,6 @@ export default function HomeScreen() {
                 currentLocation={currentLocation}
                 azimuth={azimuth}
                 headingUp={headingUp}
-                onPress={toggleDirectionLine}
                 showDirectionLine={showDirectionLine}
                 isStale={isLocationStale}
               />
@@ -660,7 +659,13 @@ export default function HomeScreen() {
           {downloadMode || exportPDFMode ? null : <HomeAccountButton />}
 
           {!(downloadMode || exportPDFMode) && (
-            <HomeCompassButton azimuth={azimuth} headingUp={headingUp} onPressCompass={pressCompass} />
+            <HomeCompassButton
+              azimuth={azimuth}
+              headingUp={headingUp}
+              showDirectionLine={showDirectionLine}
+              onPressCompass={pressCompass}
+              onLongPressCompass={toggleDirectionLine}
+            />
           )}
           {!(downloadMode || exportPDFMode) && <HomeGPSButton gpsState={gpsState} onPressGPS={pressGPS} />}
           {<HomeAttributionText bottom={1 + insets.bottom} attribution={attribution} />}
