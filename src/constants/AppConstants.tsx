@@ -8,11 +8,12 @@ export const FUNC_ENCRYPTION = true;
 // false の間も DEK プロジェクトの「読み込み(復号)」は可能。安全なロールアウトのため、
 // 全クライアント(モバイル/Web)に読み込み対応版が行き渡ってから true にして展開する。
 export const CREATE_DEK_PROJECTS = true;
-// 既存のグループ暗号プロジェクトを、管理者のメンバー追加操作を引き金にDEK方式へ遅延移行(Phase ii)するか。
+// 既存のグループ暗号プロジェクトをDEK方式へ移行(Phase ii)するか。トリガーは
+// 管理者のメンバー追加操作（遅延移行）と、プロジェクト一覧の一括移行ボタン。
 // false の間は移行を行わず従来どおり（メンバー追加はオーナーのみ）。dual-read(DEK→グループのフォールバック)
 // 自体は常時有効なので、移行済みプロジェクトはこのフラグに関わらず読める。全クライアントにDEK読み込み対応版が
 // 行き渡ってから true にする。
-export const ENABLE_DEK_MIGRATION = false;
+export const ENABLE_DEK_MIGRATION = true;
 export const CURRENT_TERMS_VERSION = '2026-07-12';
 
 export const COLOR = {

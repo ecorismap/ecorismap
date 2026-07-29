@@ -504,11 +504,18 @@
       "hideArchive": "Hide archived",
       "includeArchive": "Include archived",
       "archive": "Archive",
-      "restore": "Restore"
+      "restore": "Restore",
+      "migrateDek": "Migrate encryption ({{num}})",
+      "migrating": "Migrating projects... ({{done}}/{{total}})"
     },
     "confirm": {
       "archive": "Archive this project? Archived projects are hidden from the normal list.",
-      "restore": "Restore this project?"
+      "restore": "Restore this project?",
+      "migrateDek": "Migrate {{num}} projects you own to the new encryption scheme (admins can add members). Older app versions will no longer be able to open these projects. Continue?"
+    },
+    "alert": {
+      "migrateDekDone": "Migrated {{num}} projects.",
+      "migrateDekFailed": "Migrated {{num}} projects, but the following projects failed: {{failed}}"
     }
   },
   "ProjectEdit": {

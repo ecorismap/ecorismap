@@ -14,6 +14,7 @@ import { isLoggedIn } from '../utils/Account';
 export default function ProjectsContainers({ navigation, route }: Props_Projects) {
   const [isEncryptPasswordModalOpen, setIsEncryptPasswordModalOpen] = useState(false);
   const [projectIndex, setProjectIndex] = useState(0);
+  const [migrationProgress, setMigrationProgress] = useState('');
   const { isSettingProject } = usePermission();
   const {
     user,
@@ -29,6 +30,8 @@ export default function ProjectsContainers({ navigation, route }: Props_Projects
     toggleShowArchive,
     archiveProject,
     unarchiveProject,
+    dekMigratableProjects,
+    migrateProjectsToDEK,
   } = useProjects();
   const { restoreEncryptKey, cleanupEncryptKey } = useAccount();
   const pressAddProject = useCallback(() => {
@@ -146,6 +149,31 @@ export default function ProjectsContainers({ navigation, route }: Props_Projects
     setIsEncryptPasswordModalOpen(false);
   }, []);
 
+  const pressMigrateProjects = useCallback(async () => {
+    if (dekMigratableProjects.length === 0) return;
+    const ret = await ConfirmAsync(
+      t('Projects.confirm.migrateDek', { num: dekMigratableProjects.length })
+    );
+    if (!ret) return;
+    try {
+      setMigrationProgress(t('Projects.label.migrating', { done: 0, total: dekMigratableProjects.length }));
+      const { migratedCount, failedNames } = await migrateProjectsToDEK((done, total) =>
+        setMigrationProgress(t('Projects.label.migrating', { done, total }))
+      );
+      setMigrationProgress('');
+      if (failedNames.length === 0) {
+        await AlertAsync(t('Projects.alert.migrateDekDone', { num: migratedCount }));
+      } else {
+        await AlertAsync(
+          t('Projects.alert.migrateDekFailed', { num: migratedCount, failed: failedNames.join(', ') })
+        );
+      }
+    } catch (e: any) {
+      setMigrationProgress('');
+      Alert.alert('error', e.message);
+    }
+  }, [dekMigratableProjects, migrateProjectsToDEK]);
+
   const didInitialLoadRef = useRef(false);
   useEffect(() => {
     // プロジェクト一覧の読み込み。
@@ -185,6 +213,9 @@ export default function ProjectsContainers({ navigation, route }: Props_Projects
         toggleShowArchive: onToggleShowArchive,
         pressArchiveProject,
         pressRestoreProject,
+        dekMigratableCount: dekMigratableProjects.length,
+        migrationProgress,
+        pressMigrateProjects,
       }}
     >
       <Projects />

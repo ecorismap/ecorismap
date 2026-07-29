@@ -44,6 +44,9 @@ export default function Projects() {
     toggleShowArchive,
     pressArchiveProject,
     pressRestoreProject,
+    dekMigratableCount,
+    migrationProgress,
+    pressMigrateProjects,
   } = useContext(ProjectsContext);
   const insets = useSafeAreaInsets();
   const { height: windowHeight } = useWindowDimensions();
@@ -266,20 +269,34 @@ export default function Projects() {
         </TouchableOpacity>
         <Text style={{ fontSize: 16, color: COLOR.TEXT_DARK }}>{t('Projects.navigation.title')}</Text>
         {Platform.OS === 'web' ? (
-          <TouchableOpacity
-            style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 5 }}
-            onPress={toggleShowArchive}
-            testID="toggle-show-archive"
-          >
-            <Text style={{ fontSize: 12, color: isShowArchive ? COLOR.BLUE : COLOR.GRAY4, marginRight: 2 }}>
-              {t('Projects.label.includeArchive')}
-            </Text>
-            <MaterialCommunityIcons
-              name={isShowArchive ? 'toggle-switch' : 'toggle-switch-off-outline'}
-              size={28}
-              color={isShowArchive ? COLOR.BLUE : COLOR.GRAY4}
-            />
-          </TouchableOpacity>
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            {dekMigratableCount > 0 && (
+              <TouchableOpacity
+                style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 5, marginRight: 15 }}
+                onPress={pressMigrateProjects}
+                testID="migrate-dek-projects"
+              >
+                <MaterialCommunityIcons name="shield-refresh-outline" size={20} color={COLOR.BLUE} />
+                <Text style={{ fontSize: 12, color: COLOR.BLUE, marginLeft: 2 }}>
+                  {t('Projects.label.migrateDek', { num: dekMigratableCount })}
+                </Text>
+              </TouchableOpacity>
+            )}
+            <TouchableOpacity
+              style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 5 }}
+              onPress={toggleShowArchive}
+              testID="toggle-show-archive"
+            >
+              <Text style={{ fontSize: 12, color: isShowArchive ? COLOR.BLUE : COLOR.GRAY4, marginRight: 2 }}>
+                {t('Projects.label.includeArchive')}
+              </Text>
+              <MaterialCommunityIcons
+                name={isShowArchive ? 'toggle-switch' : 'toggle-switch-off-outline'}
+                size={28}
+                color={isShowArchive ? COLOR.BLUE : COLOR.GRAY4}
+              />
+            </TouchableOpacity>
+          </View>
         ) : (
           <View style={{ width: 40 }} />
         )}
@@ -310,6 +327,7 @@ export default function Projects() {
       </View>
 
       <ProjectsButtons createProject={pressAddProject} reloadProjects={onReloadProjects} />
+      <Loading visible={migrationProgress !== ''} text={migrationProgress} />
       <ProjectsModalEncryptPassword
         visible={isEncryptPasswordModalOpen}
         pressOK={pressEncryptPasswordOK}
