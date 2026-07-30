@@ -2,6 +2,15 @@ import { PhotoType } from '../types';
 import { Alert } from '../components/atoms/Alert';
 import { t } from '../i18n/config';
 
+//同一数字（111111）と連番（123456/654321、循環含む 890123）を弱いPINとして判定する
+export const isWeakPin = (pin: string): boolean => {
+  const digits = pin.split('').map(Number);
+  const allSame = digits.every((d) => d === digits[0]);
+  const ascending = digits.every((d, i) => i === 0 || d === (digits[i - 1] + 1) % 10);
+  const descending = digits.every((d, i) => i === 0 || d === (digits[i - 1] + 9) % 10);
+  return allSame || ascending || descending;
+};
+
 //入力時は文字列を受け取ってtypeに沿った値を返す。
 //save時はそれぞれのtypeになっているが、入力後すぐsavedだと文字列
 export const formattedInputs = (
@@ -269,7 +278,8 @@ export const formattedInputs = (
       break;
     }
     case 'pin': {
-      const pattern = /^[0-9]{4}$/;
+      //既存PINの入力用。旧4桁と新6桁の両方を受け付ける
+      const pattern = /^([0-9]{4}|[0-9]{6})$/;
       const regMatch = value.toString().match(pattern);
       if (regMatch == null) {
         isOK = false;
@@ -277,6 +287,15 @@ export const formattedInputs = (
       } else {
         result = value;
       }
+      break;
+    }
+    case 'pin6': {
+      //新規PIN設定用。6桁必須＋弱いPIN（同一数字・連番）を拒否
+      const pin = value.toString();
+      if (pin.match(/^[0-9]{6}$/) == null || isWeakPin(pin)) {
+        isOK = false;
+      }
+      result = value;
       break;
     }
     case 'name': {

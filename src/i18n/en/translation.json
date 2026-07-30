@@ -381,7 +381,8 @@
       "changePassword": "Password before change",
       "newPassword": "After change (6 or more alphanumeric characters and symbols)",
       "password": "password (6 or more alphanumeric characters and symbols)",
-      "pin": "PIN (4 digits)",
+      "pin": "PIN (4 or 6 digits)",
+      "newPin": "PIN (6 digits)",
       "displayName": "display name",
       "iconURL": "icon image URL"
     },
@@ -686,6 +687,7 @@
       "inputValidIconURL": "icon Please enter the URL of the image correctly",
       "inputValidMail": "Please enter your e-mail address correctly",
       "inputValidPassword": "Please enter the password correctly",
+      "inputValidNewPin": "PIN must be 6 digits. Repeated or sequential digits are not allowed",
       "invalidAccount": "Contains an invalid account. \nPlease add after the member signs up.",
       "invalidCoordinate": "There is an invalid input in latitude and longitude.",
       "invalidDataFormat": "The data format is incorrect.",
