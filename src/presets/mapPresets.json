@@ -1,0 +1,122 @@
+[
+  {
+    "presetId": "preset-map-veg2024",
+    "presetName": "現存植生図2024",
+    "map": {
+      "name": "現存植生図2024",
+      "url": "https://map.ecoris.info/tiles/veg2024/{z}/{x}/{y}.png",
+      "styleURL": "",
+      "attribution": "エコリス、生物多様性センター",
+      "maptype": "none",
+      "visible": true,
+      "transparency": 0,
+      "overzoomThreshold": 15,
+      "highResolutionEnabled": false,
+      "minimumZ": 0,
+      "maximumZ": 22,
+      "flipY": false,
+      "isVector": true,
+      "isGroup": false
+    }
+  },
+  {
+    "presetId": "preset-map-spplantcomm",
+    "presetName": "特定植物群落",
+    "map": {
+      "name": "特定植物群落",
+      "url": "https://map.ecoris.info/tiles/spPlantComm.pmtiles",
+      "styleURL": "https://map.ecoris.info/tiles/spPlantComm.json",
+      "attribution": "",
+      "maptype": "none",
+      "visible": true,
+      "transparency": 0,
+      "overzoomThreshold": 15,
+      "highResolutionEnabled": false,
+      "minimumZ": 0,
+      "maximumZ": 22,
+      "flipY": false,
+      "isVector": true,
+      "isGroup": false
+    }
+  },
+  {
+    "presetId": "preset-map-kumataka",
+    "presetName": "クマタカ生息適地",
+    "map": {
+      "name": "クマタカ生息適地",
+      "url": "https://map.ecoris.info/tiles/kumataka/{z}/{x}/{y}.png",
+      "styleURL": "",
+      "attribution": "エコリス",
+      "maptype": "none",
+      "visible": true,
+      "transparency": 0,
+      "overzoomThreshold": 11,
+      "highResolutionEnabled": false,
+      "minimumZ": 0,
+      "maximumZ": 22,
+      "flipY": true,
+      "isVector": true,
+      "isGroup": false
+    }
+  },
+  {
+    "presetId": "preset-map-seamlessphoto",
+    "presetName": "地理院写真(最新)",
+    "map": {
+      "name": "地理院写真(最新)",
+      "url": "https://cyberjapandata.gsi.go.jp/xyz/seamlessphoto/{z}/{x}/{y}.jpg",
+      "styleURL": "",
+      "attribution": "国土地理院",
+      "maptype": "none",
+      "visible": true,
+      "transparency": 0,
+      "overzoomThreshold": 18,
+      "highResolutionEnabled": false,
+      "minimumZ": 0,
+      "maximumZ": 22,
+      "flipY": false,
+      "isVector": true,
+      "isGroup": false
+    }
+  },
+  {
+    "presetId": "preset-map-gazo1",
+    "presetName": "地理院写真(1974年～1978年)",
+    "map": {
+      "name": "地理院写真(1974年～1978年)",
+      "url": "https://cyberjapandata.gsi.go.jp/xyz/gazo1/{z}/{x}/{y}.jpg",
+      "styleURL": "",
+      "attribution": "国土地理院",
+      "maptype": "none",
+      "visible": true,
+      "transparency": 0,
+      "overzoomThreshold": 17,
+      "highResolutionEnabled": false,
+      "minimumZ": 0,
+      "maximumZ": 22,
+      "flipY": false,
+      "isVector": true,
+      "isGroup": false
+    }
+  },
+  {
+    "presetId": "preset-map-hillshade-vector",
+    "presetName": "陰影起伏図(回転対応)",
+    "map": {
+      "name": "陰影起伏図(回転対応)",
+      "url": "hillshade://https://tiles.gsj.jp/tiles/elev/land/{z}/{y}/{x}.png",
+      "styleURL": "",
+      "attribution": "国土地理院",
+      "maptype": "none",
+      "visible": true,
+      "transparency": 0.3,
+      "overzoomThreshold": 15,
+      "highResolutionEnabled": false,
+      "minimumZ": 0,
+      "maximumZ": 22,
+      "flipY": false,
+      "isVector": true,
+      "isGroup": false
+    }
+  }
+]

@@ -279,6 +279,21 @@ export interface TileMapType extends TileMapItemType {
   redraw?: boolean;
 }
 
+export type MapPresetType = {
+  presetId: string;
+  presetName: string;
+  map: Omit<TileMapType, 'id'>;
+};
+
+export type LayerPresetType = {
+  presetId: string;
+  presetName: string;
+  // dictionaryはSTRING_DICTIONARYフィールドの辞書語彙。適用時に新フィールドIDで辞書DBへ登録される
+  layer: Omit<LayerType, 'id' | 'field' | 'dictionaryFieldId'> & {
+    field: (Omit<FieldType, 'id'> & { dictionary?: string[] })[];
+  };
+};
+
 export interface TileRegionType {
   id: string;
   tileMapId: string;

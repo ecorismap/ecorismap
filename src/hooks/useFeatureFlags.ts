@@ -3,6 +3,7 @@ import { RootState } from '../store';
 
 export type UseFeatureFlagsReturnType = {
   hisyouTool: boolean;
+  mapLayerPresets: boolean;
 };
 
 /**
@@ -12,5 +13,6 @@ export type UseFeatureFlagsReturnType = {
  */
 export const useFeatureFlags = (): UseFeatureFlagsReturnType => {
   const uid = useSelector((state: RootState) => state.user.uid);
-  return { hisyouTool: uid !== undefined } as const;
+  const isOrgMember = uid !== undefined;
+  return { hisyouTool: isOrgMember, mapLayerPresets: isOrgMember } as const;
 };

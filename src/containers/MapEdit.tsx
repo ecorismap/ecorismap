@@ -34,6 +34,7 @@ export default function MapEditContainer() {
     changeOverzoomThreshold,
     changeHighResolutionEnabled,
     changeFlipY,
+    applyMapPreset,
     saveMap: saveMapToState,
   } = useMapEdit(params!.targetMap);
 
@@ -157,6 +158,7 @@ export default function MapEditContainer() {
         changeOverzoomThreshold,
         changeHighResolutionEnabled,
         changeFlipY,
+        changeMapPreset: applyMapPreset,
       }}
     >
       <MapEdit />

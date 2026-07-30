@@ -1,14 +1,25 @@
-import React, { useContext } from 'react';
+import React, { useContext, useMemo } from 'react';
 import { View, StyleSheet } from 'react-native';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+import ModalSelector from 'react-native-modal-selector';
 
 import { COLOR } from '../../constants/AppConstants';
+import { LAYER_PRESETS } from '../../constants/Presets';
 import { LayerEditContext } from '../../contexts/LayerEdit';
+import { useFeatureFlags } from '../../hooks/useFeatureFlags';
 import { t } from '../../i18n/config';
 import { TextInput } from '../atoms';
 
 export const LayerName = () => {
-  const { layer, onChangeLayerName, submitLayerName } = useContext(LayerEditContext);
+  const { layer, isNewLayer, onChangeLayerName, submitLayerName, onChangeLayerPreset } = useContext(LayerEditContext);
+  const { mapLayerPresets } = useFeatureFlags();
   const editable = true;
+  const showPresetSelector = isNewLayer && mapLayerPresets;
+  const presetItems = useMemo(
+    () => LAYER_PRESETS.map((p, index) => ({ key: index, label: p.presetName, value: p.presetId })),
+    []
+  );
+
   return (
     <View style={styles.tr}>
       <View style={styles.td}>
@@ -21,6 +32,18 @@ export const LayerName = () => {
           onEndEditing={submitLayerName}
           onBlur={submitLayerName}
         />
+        {showPresetSelector && (
+          <ModalSelector
+            data={presetItems}
+            animationType={'none'}
+            cancelText={t('common.cancel')}
+            onChange={(option) => onChangeLayerPreset(option.value)}
+          >
+            <View style={styles.presetButton}>
+              <MaterialCommunityIcons name={'chevron-down'} size={24} color={COLOR.GRAY4} />
+            </View>
+          </ModalSelector>
+        )}
       </View>
     </View>
   );
@@ -35,6 +58,13 @@ const styles = StyleSheet.create({
     height: 40,
     paddingHorizontal: 12,
     paddingLeft: 10,
+  },
+
+  presetButton: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 5,
+    paddingTop: 15,
   },
 
   td: {

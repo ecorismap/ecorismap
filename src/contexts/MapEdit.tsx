@@ -22,6 +22,7 @@ type MapEditContextType = {
   changeOverzoomThreshold: (overzoomThreshold: number) => void;
   changeHighResolutionEnabled: (enabled: boolean) => void;
   changeFlipY: (flipY: boolean) => void;
+  changeMapPreset: (presetId: string) => void;
 };
 
 export const MapEditContext = createContext<MapEditContextType>({
@@ -45,4 +46,5 @@ export const MapEditContext = createContext<MapEditContextType>({
   changeOverzoomThreshold: () => {},
   changeHighResolutionEnabled: () => {},
   changeFlipY: () => {},
+  changeMapPreset: () => {},
 });
