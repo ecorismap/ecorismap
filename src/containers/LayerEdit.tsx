@@ -36,6 +36,7 @@ export default function LayerEditContainer() {
     changeFieldFormat,
     deleteField,
     addField,
+    applyLayerPreset,
   } = useLayerEdit(
     params!.targetLayer,
     params!.isEdited,
@@ -135,9 +136,11 @@ export default function LayerEditContainer() {
       gotoLayerEditFieldItem,
       gotoBack,
       pressExportLayer,
+      onChangeLayerPreset: applyLayerPreset,
     }),
     [
       addField,
+      applyLayerPreset,
       changeFeatureType,
       changeFieldFormat,
       changeFieldName,

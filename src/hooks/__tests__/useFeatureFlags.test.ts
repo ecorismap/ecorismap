@@ -8,13 +8,17 @@ jest.mock('react-redux', () => ({
 const mockUseSelector = useSelector as unknown as jest.Mock;
 
 describe('useFeatureFlags', () => {
-  it('組織アカウントにログイン中はhisyouToolが有効', () => {
+  it('組織アカウントにログイン中はhisyouToolとmapLayerPresetsが有効', () => {
     mockUseSelector.mockImplementation((selector) => selector({ user: { uid: 'uid1' } }));
-    expect(useFeatureFlags().hisyouTool).toBe(true);
+    const flags = useFeatureFlags();
+    expect(flags.hisyouTool).toBe(true);
+    expect(flags.mapLayerPresets).toBe(true);
   });
 
-  it('未ログイン（Drive接続のみ含む）はhisyouToolが無効', () => {
+  it('未ログイン（Drive接続のみ含む）はhisyouToolとmapLayerPresetsが無効', () => {
     mockUseSelector.mockImplementation((selector) => selector({ user: { uid: undefined } }));
-    expect(useFeatureFlags().hisyouTool).toBe(false);
+    const flags = useFeatureFlags();
+    expect(flags.hisyouTool).toBe(false);
+    expect(flags.mapLayerPresets).toBe(false);
   });
 });

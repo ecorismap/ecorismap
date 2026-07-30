@@ -145,6 +145,10 @@ keys/
 *.development
 *.production
 
+# プリセット変換元のエクスポートファイル（レイヤZIPはdictionaryKeyの秘密鍵を含む）
+src/presets/maps/
+src/presets/layers/
+
 # Security
 SECURITY_TODO.md
 

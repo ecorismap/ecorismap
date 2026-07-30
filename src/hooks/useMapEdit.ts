@@ -5,6 +5,8 @@ import { RootState } from '../store';
 import { addTileMapAction, deleteTileMapAction, updateTileMapAction } from '../modules/tileMaps';
 import { editSettingsAction } from '../modules/settings';
 import { ulid } from 'ulid';
+import { MAP_PRESETS } from '../constants/Presets';
+import { createTileMapFromPreset } from '../utils/Preset';
 
 export const useMapEdit = (targetMap?: TileMapType | null) => {
   const dispatch = useDispatch();
@@ -101,6 +103,13 @@ export const useMapEdit = (targetMap?: TileMapType | null) => {
     setIsEdited(true);
   }, []);
 
+  const applyMapPreset = useCallback((presetId: string) => {
+    const preset = MAP_PRESETS.find((p) => p.presetId === presetId);
+    if (preset === undefined) return;
+    setMap((prev) => createTileMapFromPreset(preset, prev.id));
+    setIsEdited(true);
+  }, []);
+
   const saveMap = useCallback(() => {
     const index = maps.findIndex(({ id }) => id === map.id);
     if (index === -1) {
@@ -131,6 +140,7 @@ export const useMapEdit = (targetMap?: TileMapType | null) => {
     changeOverzoomThreshold,
     changeHighResolutionEnabled,
     changeFlipY,
+    applyMapPreset,
     saveMap,
     deleteMap,
   };

@@ -2,11 +2,15 @@ import React, { useContext } from 'react';
 import { View, StyleSheet, Text, TextInput, ScrollView } from 'react-native';
 import { MapEditContext } from '../../contexts/MapEdit';
 import { COLOR, MAPS_BTN } from '../../constants/AppConstants';
+import { MAP_PRESETS } from '../../constants/Presets';
 import { Button } from '../atoms';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+import ModalSelector from 'react-native-modal-selector';
 import { t } from '../../i18n/config';
 import { CheckBox } from '../molecules/CheckBox';
 import Slider from '../atoms/Slider';
 import { useWindow } from '../../hooks/useWindow';
+import { useFeatureFlags } from '../../hooks/useFeatureFlags';
 import { BottomSheetHeader } from '../molecules/BottomSheetHeader';
 
 export default function MapEditScreen() {
@@ -29,9 +33,11 @@ export default function MapEditScreen() {
     changeOverzoomThreshold,
     changeHighResolutionEnabled,
     changeFlipY,
+    changeMapPreset,
   } = useContext(MapEditContext);
 
   const { windowWidth, isLandscape } = useWindow();
+  const { mapLayerPresets } = useFeatureFlags();
 
   const rightComponent = (
     <Button
@@ -65,12 +71,26 @@ export default function MapEditScreen() {
 
           <View style={styles.inputContainer}>
             <Text style={styles.inputLabel}>{t('common.name')}</Text>
-            <TextInput
-              style={styles.textInput}
-              placeholderTextColor={COLOR.GRAY4}
-              value={map.name}
-              onChangeText={changeMapName}
-            />
+            <View style={{ flexDirection: 'row', alignItems: 'center', width: '100%' }}>
+              <TextInput
+                style={[styles.textInput, { flex: 1 }]}
+                placeholderTextColor={COLOR.GRAY4}
+                value={map.name}
+                onChangeText={changeMapName}
+              />
+              {isNewMap && mapLayerPresets && !map.isGroup && (
+                <ModalSelector
+                  data={MAP_PRESETS.map((p, index) => ({ key: index, label: p.presetName, value: p.presetId }))}
+                  animationType={'none'}
+                  cancelText={t('common.cancel')}
+                  onChange={(option) => changeMapPreset(option.value)}
+                >
+                  <View style={{ alignItems: 'center', justifyContent: 'center', paddingHorizontal: 5 }}>
+                    <MaterialCommunityIcons name={'chevron-down'} size={24} color={COLOR.GRAY4} />
+                  </View>
+                </ModalSelector>
+              )}
+            </View>
           </View>
 
           {!map.isGroup && (

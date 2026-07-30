@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ColorStyle, FeatureType, FieldType, FormatType, LayerType, PermissionType } from '../types';
 import { PHOTO_FOLDER } from '../constants/AppConstants';
 
@@ -13,6 +13,9 @@ import { addDataAction, deleteDataAction, updateDataAction } from '../modules/da
 import { addLayerAction, deleteLayerAction, setLayersAction, updateLayerAction } from '../modules/layers';
 import { editSettingsAction } from '../modules/settings';
 import { changeFieldValue, getInitialFieldValue } from '../utils/Data';
+import { LAYER_PRESETS } from '../constants/Presets';
+import { createLayerFromPreset, PresetDictionary } from '../utils/Preset';
+import { importPresetDictionaries } from '../utils/PresetDictionary';
 import sanitize from 'sanitize-filename';
 import { selectDataSet, selectIsNewLayer } from '../modules/selectors';
 
@@ -35,6 +38,7 @@ export type UseLayerEditReturnType = {
   changeFieldFormat: (index: number, itemValue: FormatType) => void;
   deleteField: (id: number) => void;
   addField: () => void;
+  applyLayerPreset: (presetId: string) => void;
 };
 
 export const useLayerEdit = (
@@ -55,6 +59,8 @@ export const useLayerEdit = (
 
   const [targetLayer, setTargetLayer] = useState<LayerType>(layer);
   const [isEdited, setIsEdited] = useState(isStyleEdited);
+  // プリセット適用で発生した辞書語彙。保存時に辞書DBへ登録する（保存せず戻った場合は破棄）
+  const pendingPresetDictionariesRef = useRef<PresetDictionary[]>([]);
 
   const dataUser = useMemo(
     () => (projectId === undefined ? { ...user, uid: undefined, displayName: null } : user),
@@ -178,6 +184,16 @@ export const useLayerEdit = (
     } else {
       dispatch(updateLayerAction(targetLayer));
     }
+
+    // プリセット適用時の辞書語彙を登録（フィールドが削除されていたら除外）
+    const dictionaries = pendingPresetDictionariesRef.current.filter((d) =>
+      targetLayer.field.some((f) => f.id === d.fieldId)
+    );
+    if (dictionaries.length > 0) {
+      pendingPresetDictionariesRef.current = [];
+      importPresetDictionaries(targetLayer.id, dictionaries).catch((e) => console.log(e));
+    }
+
     setIsEdited(false);
   }, [dataUser.uid, dispatch, isNewLayer, layers, targetLayer, updateDataOfTheLayer]);
 
@@ -347,6 +363,18 @@ export const useLayerEdit = (
     setIsEdited(true);
   }, [targetLayer]);
 
+  const applyLayerPreset = useCallback(
+    (presetId: string) => {
+      const preset = LAYER_PRESETS.find((p) => p.presetId === presetId);
+      if (preset === undefined) return;
+      const { layer: presetLayer, dictionaries } = createLayerFromPreset(preset, layer.id);
+      setTargetLayer(presetLayer);
+      pendingPresetDictionariesRef.current = dictionaries;
+      setIsEdited(true);
+    },
+    [layer.id]
+  );
+
   return {
     targetLayer,
     isEdited,
@@ -366,5 +394,6 @@ export const useLayerEdit = (
     changeFieldFormat,
     deleteField,
     addField,
+    applyLayerPreset,
   } as const;
 };
