@@ -662,7 +662,6 @@ export default function HomeScreen() {
             <HomeCompassButton
               azimuth={azimuth}
               headingUp={headingUp}
-              showDirectionLine={showDirectionLine}
               onPressCompass={pressCompass}
               onLongPressCompass={toggleDirectionLine}
             />
