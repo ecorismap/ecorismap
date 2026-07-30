@@ -10,7 +10,7 @@ import { Alert } from '../components/atoms/Alert';
 import { t } from '../i18n/config';
 import { DataContext } from '../contexts/Data';
 import { exportGeoFile } from '../utils/File';
-import { truncateForFileName } from '../utils/General';
+import { MAX_BACKUP_LABEL_LENGTH, truncateForFileName } from '../utils/General';
 import { usePermission } from '../hooks/usePermission';
 import { useGeoFile } from '../hooks/useGeoFile';
 import dayjs from 'dayjs';
@@ -89,11 +89,14 @@ export default function DataContainer() {
       }
 
       const time = dayjs().format('YYYY-MM-DD_HH-mm-ss');
-      const fileNameBase = `${truncateForFileName(params.targetLayer.name)}_${time}`;
+      // レイヤ名はzip名（=Windows展開時のフォルダ名）と内部ファイル名の2か所に入るため、
+      // バックアップzipと同じ42文字上限でMAX_PATH超過を防ぐ
+      const layerNameLabel = truncateForFileName(params.targetLayer.name, MAX_BACKUP_LABEL_LENGTH);
+      const fileNameBase = `${layerNameLabel}_${time}`;
       const exportData = await generateExportGeoData(params.targetLayer, exportedRecords, fileNameBase, {
         exportPhoto: true,
       });
-      const isOK = await exportGeoFile(exportData, `data_export_${time}`, 'zip');
+      const isOK = await exportGeoFile(exportData, `data_${layerNameLabel}_${time}`, 'zip');
       if (isOK) {
         await AlertAsync(t('hooks.message.successExportData'));
       } else {

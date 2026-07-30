@@ -10,7 +10,7 @@ import { LayerEditContext } from '../contexts/LayerEdit';
 import { checkLayerInputs } from '../utils/Layer';
 import { usePermission } from '../hooks/usePermission';
 import { exportGeoFile } from '../utils/File';
-import { truncateForFileName } from '../utils/General';
+import { MAX_BACKUP_LABEL_LENGTH, truncateForFileName } from '../utils/General';
 import { useGeoFile } from '../hooks/useGeoFile';
 import dayjs from 'dayjs';
 
@@ -76,14 +76,17 @@ export default function LayerEditContainer() {
 
   const pressExportLayer = useCallback(async () => {
     const time = dayjs().format('YYYY-MM-DD_HH-mm-ss');
-    const fileNameBase = `${truncateForFileName(targetLayer.name)}_${time}`;
+    // レイヤ名はzip名（=Windows展開時のフォルダ名）と内部ファイル名の2か所に入るため、
+    // バックアップzipと同じ42文字上限でMAX_PATH超過を防ぐ
+    const layerNameLabel = truncateForFileName(targetLayer.name, MAX_BACKUP_LABEL_LENGTH);
+    const fileNameBase = `${layerNameLabel}_${time}`;
     const exportData = await generateExportGeoData(targetLayer, [], fileNameBase, {
       settingsOnly: true,
       exportDictionary: true,
     });
-    const isOK = await exportGeoFile(exportData, `layer_export_${time}`, 'zip');
+    const isOK = await exportGeoFile(exportData, `layer_${layerNameLabel}_${time}`, 'zip');
     if (!isOK) await AlertAsync(t('hooks.message.failExport'));
-  }, [generateExportGeoData, targetLayer]);;
+  }, [generateExportGeoData, targetLayer]);
 
   const gotoLayerEditFeatureStyle = useCallback(() => {
     navigate('LayerEditFeatureStyle', {
