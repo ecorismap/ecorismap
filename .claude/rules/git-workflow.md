@@ -119,33 +119,6 @@ git commit --no-verify
 ### プッシュ実行
 - プッシュはユーザーからの明示的な指示がある場合のみ実行
 
-## .gitignore
-
-### 必須除外
-```
-# 環境設定
-.env*
-*.local
-
-# 認証情報
-google-services.json
-GoogleService-Info.plist
-src/constants/APIKeys.ts
-
-# ビルド成果物
-node_modules/
-dist/
-build/
-*.ipa
-*.apk
-*.aab
-
-# IDE
-.idea/
-.vscode/
-*.swp
-```
-
 ## マージ戦略
 
 ### feature/fix → main
@@ -161,17 +134,6 @@ build/
 ### hotfix → main
 - 同様にローカルで`--no-ff`マージ（履歴を保持）
 
-## バージョン管理
+## バージョン更新
 
-### セマンティックバージョニング
-```
-MAJOR.MINOR.PATCH
-```
-
-- MAJOR: 後方互換性のない変更
-- MINOR: 後方互換性のある機能追加
-- PATCH: バグ修正
-
-### 更新ファイル
-- `package.json`
-- `app.json` (Expo)
+セマンティックバージョニング。更新時は`package.json`と`app.json`（Expo）の両方を変更する。
