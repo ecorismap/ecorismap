@@ -762,10 +762,8 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
       if (mapViewRef.current === null) return;
 
       if (headingUp_) {
-        // headingUpをtrueにする場合のみ権限チェック
-        const permissionStatus = await confirmLocationPermission();
-        if (permissionStatus !== 'granted') return;
-
+        // 位置情報権限のチェックは呼び出し元（pressCompass）の責務。
+        // ここで再チェックするとネイティブ往復が重複し回転開始が遅れる。
         if (headingSubscriber.current !== null) {
           headingSubscriber.current.remove();
           headingSubscriber.current = null;
@@ -829,7 +827,7 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
       }
       setHeadingUp(headingUp_);
     },
-    [confirmLocationPermission, ensureHeadingSubscription, mapViewRef, setAzimuthImmediate]
+    [ensureHeadingSubscription, mapViewRef, setAzimuthImmediate]
   );
 
   // フォアグラウンド復帰時にMMKVからデータを同期する関数
