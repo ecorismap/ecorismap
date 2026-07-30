@@ -943,9 +943,16 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
   const pressCompass = useCallback(async () => {
     if (isInfoToolActive) return;
     if (featureButton !== 'NONE') return;
+    if (headingUp) {
+      // オフは権限チェック・GPSサービス再同期を通さず即座に北向きへ戻す。
+      // GPS状態は変更しない（follow中にshowへ降格させない）。
+      await toggleHeadingUp(false);
+      return;
+    }
     if ((await confirmLocationPermission()) !== 'granted') return;
+    // 回転（heading購読）を先に開始し、GPSサービス起動の完了を待たせない
+    await toggleHeadingUp(true);
     await toggleGPS('show');
-    await toggleHeadingUp(!headingUp);
   }, [confirmLocationPermission, featureButton, headingUp, isInfoToolActive, toggleGPS, toggleHeadingUp]);
 
   const pressTracking = useCallback(async () => {
