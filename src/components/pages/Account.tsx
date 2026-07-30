@@ -315,7 +315,9 @@ export default function Account() {
                       accountFormState === 'resetEncryptKey' ||
                       accountFormState === 'deleteAllProjects'
                     ? 'password'
-                    : t('Account.placeholder.pin')
+                    : accountFormState === 'restoreEncryptKey'
+                    ? t('Account.placeholder.pin')
+                    : t('Account.placeholder.newPin')
                 }
                 placeholderTextColor={COLOR.GRAY3}
                 value={password}

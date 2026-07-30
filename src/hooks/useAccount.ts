@@ -36,6 +36,9 @@ export type UseAccountReturnType = {
   checkEncryptPassword: (password: string) => {
     isOK: boolean;
   };
+  checkNewEncryptPassword: (password: string) => {
+    isOK: boolean;
+  };
   checkEmail: (email: string) => {
     isOK: boolean;
   };
@@ -121,6 +124,15 @@ export const useAccount = (): UseAccountReturnType => {
     const passwordCheck = formattedInputs(password, 'pin');
     if (!passwordCheck.isOK) {
       setAccountMessage(t('hooks.message.inputValidPassword'));
+      return { isOK: false };
+    }
+    return { isOK: true };
+  }, []);
+
+  const checkNewEncryptPassword = useCallback((password: string) => {
+    const passwordCheck = formattedInputs(password, 'pin6');
+    if (!passwordCheck.isOK) {
+      setAccountMessage(t('hooks.message.inputValidNewPin'));
       return { isOK: false };
     }
     return { isOK: true };
@@ -426,6 +438,7 @@ export const useAccount = (): UseAccountReturnType => {
     checkPassword,
     checkUserPassword,
     checkEncryptPassword,
+    checkNewEncryptPassword,
     checkEmail,
     checkProfile,
     initializeEncript,

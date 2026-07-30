@@ -758,7 +758,8 @@
       "changePassword": "変更前のパスワード",
       "newPassword": "変更後（半角英数記号6文字以上）",
       "password": "password（半角英数記号6文字以上）",
-      "pin": "PIN(数字4桁)",
+      "pin": "PIN(数字4桁または6桁)",
+      "newPin": "PIN(数字6桁)",
       "displayName": "表示名",
       "iconURL": "icon画像URL"
     },
@@ -871,6 +872,7 @@
       "invalidCoordinate": "緯度、経度に不正な入力があります。",
       "inputValidMail": "メールアドレスを正しく入力してください",
       "inputValidPassword": "パスワードを正しく入力してください",
+      "inputValidNewPin": "PINは数字6桁で入力してください。同一数字や連番は使用できません",
       "invalidEmailOrPassword": "emailまたはpasswordが間違っています。",
       "failExport": "エクスポートに失敗しました。",
       "noActivate": "アカウントがアクティベートされていません。",

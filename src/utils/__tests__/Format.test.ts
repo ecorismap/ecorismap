@@ -1,7 +1,41 @@
-import { formattedInputs } from '../Format';
+import { formattedInputs, isWeakPin } from '../Format';
 
 describe('Format', () => {
+  describe('isWeakPin', () => {
+    it('rejects repeated digits', () => {
+      expect(isWeakPin('111111')).toBe(true);
+      expect(isWeakPin('000000')).toBe(true);
+    });
+    it('rejects sequential digits (including wrap-around)', () => {
+      expect(isWeakPin('123456')).toBe(true);
+      expect(isWeakPin('654321')).toBe(true);
+      expect(isWeakPin('890123')).toBe(true);
+      expect(isWeakPin('210987')).toBe(true);
+    });
+    it('accepts non-weak pins', () => {
+      expect(isWeakPin('135792')).toBe(false);
+      expect(isWeakPin('271828')).toBe(false);
+      expect(isWeakPin('112233')).toBe(false);
+    });
+  });
+
   describe('formattedInputs', () => {
+    it('formats pin correctly (existing pin: 4 or 6 digits)', () => {
+      expect(formattedInputs('1234', 'pin', false)).toEqual({ isOK: true, result: '1234' });
+      expect(formattedInputs('123456', 'pin', false)).toEqual({ isOK: true, result: '123456' });
+      expect(formattedInputs('12345', 'pin', false)).toEqual({ isOK: false, result: '12345' });
+      expect(formattedInputs('12a4', 'pin', false)).toEqual({ isOK: false, result: '12a4' });
+      expect(formattedInputs('1234567', 'pin', false)).toEqual({ isOK: false, result: '1234567' });
+    });
+
+    it('formats pin6 correctly (new pin: 6 digits, weak pins rejected)', () => {
+      expect(formattedInputs('135792', 'pin6', false)).toEqual({ isOK: true, result: '135792' });
+      expect(formattedInputs('1234', 'pin6', false)).toEqual({ isOK: false, result: '1234' });
+      expect(formattedInputs('111111', 'pin6', false)).toEqual({ isOK: false, result: '111111' });
+      expect(formattedInputs('123456', 'pin6', false)).toEqual({ isOK: false, result: '123456' });
+      expect(formattedInputs('654321', 'pin6', false)).toEqual({ isOK: false, result: '654321' });
+    });
+
     it('formats email correctly', () => {
       expect(formattedInputs('test@example.com', 'email', false)).toEqual({
         isOK: true,

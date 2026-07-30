@@ -22,6 +22,7 @@ export default function AccountContainers({ navigation, route }: Props_Account) 
     checkPassword,
     checkUserPassword,
     checkEncryptPassword,
+    checkNewEncryptPassword,
     checkEmail,
     checkProfile,
     initializeEncript,
@@ -156,7 +157,7 @@ export default function AccountContainers({ navigation, route }: Props_Account) 
 
   const pressChangeEncryptPassword = useCallback(
     async (oldPassword: string, password: string) => {
-      const checkEncryptPasswordResult = checkEncryptPassword(password);
+      const checkEncryptPasswordResult = checkNewEncryptPassword(password);
       if (!checkEncryptPasswordResult.isOK) return;
       const { isOK } = await changeEncryptPassword(oldPassword, password);
       if (!isOK) return;
@@ -164,7 +165,7 @@ export default function AccountContainers({ navigation, route }: Props_Account) 
       await AlertAsync(t('Account.alert.changeEncryptPassword'));
       navigateToPrevious();
     },
-    [changeEncryptPassword, checkEncryptPassword, navigateToPrevious, setAccountMessage]
+    [changeEncryptPassword, checkNewEncryptPassword, navigateToPrevious, setAccountMessage]
   );
 
   const pressRestoreEncryptKey = useCallback(
@@ -185,7 +186,7 @@ export default function AccountContainers({ navigation, route }: Props_Account) 
 
   const pressRegistEncryptPassword = useCallback(
     async (password: string) => {
-      const checkEncryptPasswordResult = checkEncryptPassword(password);
+      const checkEncryptPasswordResult = checkNewEncryptPassword(password);
       if (!checkEncryptPasswordResult.isOK) return;
       const { isOK } = await registEncryptPassword(password);
 
@@ -197,12 +198,12 @@ export default function AccountContainers({ navigation, route }: Props_Account) 
         navigation.navigate('Home');
       }
     },
-    [checkEncryptPassword, logout, navigation, registEncryptPassword, setAccountMessage]
+    [checkNewEncryptPassword, logout, navigation, registEncryptPassword, setAccountMessage]
   );
 
   const pressBackupEncryptPassword = useCallback(
     async (password: string) => {
-      const checkEncryptPasswordResult = checkEncryptPassword(password);
+      const checkEncryptPasswordResult = checkNewEncryptPassword(password);
       if (!checkEncryptPasswordResult.isOK) return;
       const { isOK } = await backupEncryptPassword(password);
       setAccountMessage('');
@@ -220,7 +221,7 @@ export default function AccountContainers({ navigation, route }: Props_Account) 
         }
       }
     },
-    [backupEncryptPassword, checkEncryptPassword, logout, navigation, setAccountFormState, setAccountMessage]
+    [backupEncryptPassword, checkNewEncryptPassword, logout, navigation, setAccountFormState, setAccountMessage]
   );
 
   const pressResetEncryptKey = useCallback(
