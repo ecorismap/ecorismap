@@ -98,25 +98,5 @@
       "isVector": true,
       "isGroup": false
     }
-  },
-  {
-    "presetId": "preset-map-hillshade-vector",
-    "presetName": "陰影起伏図(回転対応)",
-    "map": {
-      "name": "陰影起伏図(回転対応)",
-      "url": "hillshade://https://tiles.gsj.jp/tiles/elev/land/{z}/{y}/{x}.png",
-      "styleURL": "",
-      "attribution": "国土地理院",
-      "maptype": "none",
-      "visible": true,
-      "transparency": 0.3,
-      "overzoomThreshold": 15,
-      "highResolutionEnabled": false,
-      "minimumZ": 0,
-      "maximumZ": 22,
-      "flipY": false,
-      "isVector": true,
-      "isGroup": false
-    }
   }
 ]

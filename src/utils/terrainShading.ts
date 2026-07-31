@@ -60,12 +60,29 @@ export function requiredHalo(options: ShadingOptions = DEFAULT_SHADING_OPTIONS):
 }
 
 /**
- * タイルURLに紛れ込んだフラグメントを落とす。
- * 標高タイルのURLに `#` が含まれることはないので、付いていれば取り除いてよい。
+ * 地図URLのプレフィックス。これが付いていると標高タイルとして扱い、陰影を計算する。
+ *
+ * 光源を使わない方式になり陰影起伏図ではなくなったため `relief://` を正とするが、
+ * ユーザーが追加した地図・エクスポート済みの地図JSON・共有プロジェクトの設定に
+ * 旧来の `hillshade://` が残っているので、そちらも受け付け続ける。
  */
-export function stripUrlFragment(url: string): string {
-  const hash = url.indexOf('#');
-  return hash < 0 ? url : url.slice(0, hash);
+export const RELIEF_URL_PREFIX = 'relief://';
+const ACCEPTED_PREFIXES = [RELIEF_URL_PREFIX, 'hillshade://'];
+
+/** 陰影を計算する地図か判定する */
+export function isReliefUrl(url: string | undefined): boolean {
+  return !!url && ACCEPTED_PREFIXES.some((prefix) => url.startsWith(prefix));
+}
+
+/**
+ * 地図URLから標高タイルのURLテンプレートを取り出す。
+ * プレフィックスと、動作確認時に付けた方式指定などのフラグメントを落とす。
+ */
+export function toDemUrl(url: string): string {
+  const prefix = ACCEPTED_PREFIXES.find((p) => url.startsWith(p));
+  const rest = prefix ? url.slice(prefix.length) : url;
+  const hash = rest.indexOf('#');
+  return hash < 0 ? rest : rest.slice(0, hash);
 }
 
 /**

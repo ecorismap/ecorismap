@@ -14,7 +14,6 @@ import {
   decodeElevation,
   metersPerPixel,
   requiredHalo,
-  stripUrlFragment,
   DEFAULT_SHADING_OPTIONS,
   ShadingOptions,
 } from './terrainShading';
@@ -34,7 +33,7 @@ type ShadingTileConfig = {
 
 /** タイルURLの先頭部分を作る。maplibre側で {z}/{x}/{y} が置換される */
 export function buildShadingTileUrl(demUrlTemplate: string, flipY?: boolean): string {
-  const config: ShadingTileConfig = { u: stripUrlFragment(demUrlTemplate) };
+  const config: ShadingTileConfig = { u: demUrlTemplate };
   if (flipY) config.f = true;
   return `${SHADING_PROTOCOL}://${encodeURIComponent(JSON.stringify(config))}/{z}/{x}/{y}`;
 }

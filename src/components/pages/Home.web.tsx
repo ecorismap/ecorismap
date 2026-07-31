@@ -68,6 +68,7 @@ import {
   createShadingProtocolHandler,
   SHADING_PROTOCOL,
 } from '../../utils/shadingTileProtocol.web';
+import { isReliefUrl, toDemUrl } from '../../utils/terrainShading';
 import { tileToWebMercator } from '../../utils/Tile';
 import { fromBlob } from 'geotiff';
 import { db } from '../../utils/db';
@@ -392,11 +393,11 @@ export default function HomeScreen() {
   }, []);
 
   /**
-   * ヒルシェードレイヤーの定義を生成
+   * 立体図レイヤーの定義を生成
    * @param tileMap 対象のタイルマップ
    * @returns ヒルシェードレイヤー定義
    */
-  const getHillshadeLayer = useCallback((tileMap: TileMapType): LayerSpecification | LayerSpecification[] => {
+  const getReliefLayer = useCallback((tileMap: TileMapType): LayerSpecification | LayerSpecification[] => {
     // 陰影はterrainshadeプロトコル側で焼き込んであるので、通常のラスタレイヤとして扱う
     const transparency = tileMap.transparency ?? 0;
 
@@ -495,9 +496,9 @@ export default function HomeScreen() {
         return null;
       }
 
-      // ヒルシェードタイルの判定と処理
-      if (tileMap.url && tileMap.url.startsWith('hillshade://')) {
-        return getHillshadeLayer(tileMap);
+      // 立体図タイル（標高から陰影を計算）の判定と処理
+      if (isReliefUrl(tileMap.url)) {
+        return getReliefLayer(tileMap);
       }
 
       // ベクタータイルの判定と処理
@@ -513,7 +514,7 @@ export default function HomeScreen() {
       // ラスタータイルの処理
       return getRasterLayer(tileMap);
     },
-    [getRasterLayer, getVectorLayers, getHillshadeLayer]
+    [getRasterLayer, getVectorLayers, getReliefLayer]
   );
 
   // ========== 動的レイヤー管理 ==========
@@ -717,14 +718,14 @@ export default function HomeScreen() {
                 attribution: tileMap.attribution,
               },
             };
-          } else if (tileMap.url.startsWith('hillshade://')) {
+          } else if (isReliefUrl(tileMap.url)) {
             // 標高タイルを自前で取得・計算するため、raster-demではなく通常のラスタとして扱う。
             // maxzoomは標高タイルが実在する最大ズーム。これを超える分はmaplibreが拡大表示する。
             return {
               ...result,
               [tileMap.id]: {
                 type: 'raster' as const,
-                tiles: [buildShadingTileUrl(tileMap.url.replace('hillshade://', ''), tileMap.flipY)],
+                tiles: [buildShadingTileUrl(toDemUrl(tileMap.url), tileMap.flipY)],
                 tileSize: 256,
                 minzoom: tileMap.minimumZ || 0,
                 maxzoom: Math.min(tileMap.overzoomThreshold ?? 15, tileMap.maximumZ ?? 15),

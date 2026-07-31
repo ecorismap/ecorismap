@@ -5,7 +5,7 @@ import { ulid } from 'ulid';
 import { RootState } from '../store';
 import { editSettingsAction } from '../modules/settings';
 import { tileGridForRegion } from '../utils/Tile';
-import { stripUrlFragment } from '../utils/terrainShading';
+import { toDemUrl } from '../utils/terrainShading';
 import { AlertAsync, ResumeDownloadConfirmAsync, StopDownloadConfirmAsync } from '../components/molecules/AlertAsync';
 import { TileMapType, TileRegionType } from '../types';
 import { TILE_FOLDER } from '../constants/AppConstants';
@@ -374,9 +374,9 @@ export const useTiles = (
               errorCount++;
               //console.error(error);
             });
-        } else if (tileType === 'hillshade') {
-          // hillshadeの場合は元のDEMタイルURLを構築
-          const cleanUrl = stripUrlFragment(tileMap.url.replace('hillshade://', ''));
+        } else if (tileType === 'relief') {
+          // 立体図の場合は元のDEMタイルURLを構築
+          const cleanUrl = toDemUrl(tileMap.url);
           const fetchUrl = cleanUrl
             .replace('{z}', tile.z.toString())
             .replace('{x}', tile.x.toString())
@@ -680,8 +680,8 @@ export const useTiles = (
               .catch(() => {
                 errorCount++;
               });
-          } else if (tileType === 'hillshade') {
-            const cleanUrl = stripUrlFragment(currentTileMap.url.replace('hillshade://', ''));
+          } else if (tileType === 'relief') {
+            const cleanUrl = toDemUrl(currentTileMap.url);
             const fetchUrl = cleanUrl
               .replace('{z}', tile.z.toString())
               .replace('{x}', tile.x.toString())
