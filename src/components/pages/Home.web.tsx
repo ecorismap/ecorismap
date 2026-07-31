@@ -63,6 +63,7 @@ import { HomeModalColorPicker } from '../organisms/HomeModalColorPicker';
 
 // import { HomeInfoToolButton } from '../organisms/HomeInfoToolButton';
 import { encode as fastPngEncode } from 'fast-png';
+import { buildSvfTileUrl, createSvfProtocolHandler, SVF_PROTOCOL } from '../../utils/svfTileProtocol.web';
 import { tileToWebMercator } from '../../utils/Tile';
 import { fromBlob } from 'geotiff';
 import { db } from '../../utils/db';
@@ -193,6 +194,10 @@ export default function HomeScreen() {
   };
 
   maplibregl.addProtocol('pdf', loadPDF);
+
+  // 標高タイルから全方向陰影（SVF）を生成するプロトコル。
+  // maplibre内蔵のhillshadeは光源方位に依存し地図を回すと凹凸が反転するため使わない。
+  maplibregl.addProtocol(SVF_PROTOCOL, createSvfProtocolHandler());
 
   //console.log('Home');
 
@@ -388,33 +393,24 @@ export default function HomeScreen() {
    * @returns ヒルシェードレイヤー定義
    */
   const getHillshadeLayer = useCallback((tileMap: TileMapType): LayerSpecification | LayerSpecification[] => {
-    // transparencyが未定義の場合は0（不透明）をデフォルトとする
+    // 陰影はsvfaoプロトコル側で黒＋αとして焼き込んであるので、通常のラスタレイヤとして重ねる
     const transparency = tileMap.transparency ?? 0;
-    const opacity = 1 - transparency;
 
-    // グレースケールの陰影図として設定（透明度を適用）
-    const shadowColor = `rgba(0, 0, 0, ${opacity})`; // 黒
-    const highlightColor = `rgba(255, 255, 255, ${opacity})`; // 白
-    const accentColor = `rgba(0, 0, 0, ${opacity})`; // 黒
-
-    // 背景レイヤーとヒルシェードレイヤーの2つを返す
     return [
-      // ヒルシェードレイヤー
       {
         id: `${tileMap.id}_0`,
-        type: 'hillshade' as const,
+        type: 'raster' as const,
         source: tileMap.id,
-        minzoom: tileMap.minimumZ || 2,
-        maxzoom: tileMap.maximumZ || 17,
+        minzoom: tileMap.minimumZ || 0,
+        maxzoom: 24,
         layout: {
           visibility: 'visible' as const,
         },
         paint: {
-          'hillshade-shadow-color': shadowColor,
-          'hillshade-highlight-color': highlightColor,
-          'hillshade-accent-color': accentColor,
-          'hillshade-exaggeration': 0.8,
-          'hillshade-illumination-anchor': 'viewport' as const,
+          'raster-opacity': 1 - transparency,
+          // 陰影の細部をズーム中に潰さない
+          'raster-resampling': 'linear' as const,
+          'raster-fade-duration': 0,
         },
       } as LayerSpecification,
     ];
@@ -718,15 +714,17 @@ export default function HomeScreen() {
               },
             };
           } else if (tileMap.url.startsWith('hillshade://')) {
+            // 標高タイルを自前で取得・計算するため、raster-demではなく通常のラスタとして扱う。
+            // maxzoomは標高タイルが実在する最大ズーム。これを超える分はmaplibreが拡大表示する。
             return {
               ...result,
               [tileMap.id]: {
-                type: 'raster-dem' as const,
-                tiles: [tileMap.url.replace('hillshade://', '')],
-                tileSize: tileMap.tileSize || 256,
-                minzoom: tileMap.minimumZ || 2,
-                maxzoom: tileMap.maximumZ || 14,
-                encoding: 'terrarium' as const,
+                type: 'raster' as const,
+                tiles: [buildSvfTileUrl(tileMap.url.replace('hillshade://', ''), tileMap.flipY)],
+                tileSize: 256,
+                minzoom: tileMap.minimumZ || 0,
+                maxzoom: Math.min(tileMap.overzoomThreshold ?? 15, tileMap.maximumZ ?? 15),
+                scheme: 'xyz' as const,
                 attribution: tileMap.attribution,
               },
             };
