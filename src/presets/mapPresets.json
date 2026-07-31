@@ -101,9 +101,9 @@
   },
   {
     "presetId": "preset-map-relief",
-    "presetName": "立体図(全方向陰影)",
+    "presetName": "陰影起伏図(全方位対応)",
     "map": {
-      "name": "立体図",
+      "name": "陰影起伏図(全方位対応)",
       "url": "hillshade://https://tiles.gsj.jp/tiles/elev/land/{z}/{y}/{x}.png",
       "styleURL": "",
       "attribution": "産総研シームレス標高タイル",
