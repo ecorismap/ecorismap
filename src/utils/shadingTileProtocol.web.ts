@@ -4,11 +4,8 @@
  * maplibre内蔵の hillshade レイヤは光源方位に依存するため、地図を回すと凹凸が反転する。
  * ここでは標高タイルを自前で取得・デコードし、陰影を計算した通常のラスタタイルを返す。
  *
- * 計算方式は地図URLの末尾にフラグメントで指定する（省略時はsvf）:
- *   hillshade://https://example/{z}/{x}/{y}.png#opendiff
- *
  * 内部のタイルURLの形式:
- *   svfao://<encodeURIComponent(JSON設定)>/{z}/{x}/{y}
+ *   terrainshade://<encodeURIComponent(JSON設定)>/{z}/{x}/{y}
  */
 import { encode as fastPngEncode } from 'fast-png';
 import type { RequestParameters } from 'maplibre-gl';
@@ -16,38 +13,33 @@ import {
   computeShading,
   decodeElevation,
   metersPerPixel,
-  parseShadingMethod,
   requiredHalo,
+  stripUrlFragment,
   DEFAULT_SHADING_OPTIONS,
-  ShadingMethod,
   ShadingOptions,
 } from './terrainShading';
 
-export const SVF_PROTOCOL = 'svfao';
+export const SHADING_PROTOCOL = 'terrainshade';
 
 const TILE_SIZE = 256;
 /** デコード済み標高のキャッシュ枚数。1枚あたり 256×256×4B = 256KB */
 const MAX_CACHED_TILES = 128;
 
-type SvfTileConfig = {
+type ShadingTileConfig = {
   /** 標高タイルのURLテンプレート。{z}/{x}/{y} を含む */
   u: string;
   /** Y軸反転（TMS形式） */
   f?: boolean;
-  /** 計算方式 */
-  m?: ShadingMethod;
 };
 
 /** タイルURLの先頭部分を作る。maplibre側で {z}/{x}/{y} が置換される */
-export function buildSvfTileUrl(hillshadeUrl: string, flipY?: boolean): string {
-  const { demUrl, method } = parseShadingMethod(hillshadeUrl);
-  const config: SvfTileConfig = { u: demUrl };
+export function buildShadingTileUrl(demUrlTemplate: string, flipY?: boolean): string {
+  const config: ShadingTileConfig = { u: stripUrlFragment(demUrlTemplate) };
   if (flipY) config.f = true;
-  if (method !== DEFAULT_SHADING_OPTIONS.method) config.m = method;
-  return `${SVF_PROTOCOL}://${encodeURIComponent(JSON.stringify(config))}/{z}/{x}/{y}`;
+  return `${SHADING_PROTOCOL}://${encodeURIComponent(JSON.stringify(config))}/{z}/{x}/{y}`;
 }
 
-function resolveDemUrl(config: SvfTileConfig, z: number, x: number, y: number): string {
+function resolveDemUrl(config: ShadingTileConfig, z: number, x: number, y: number): string {
   const ty = config.f ? Math.pow(2, z) - 1 - y : y;
   return config.u.replace('{z}', String(z)).replace('{x}', String(x)).replace('{y}', String(ty));
 }
@@ -74,13 +66,13 @@ function cacheSet(key: string, value: Float32Array | null): void {
   }
 }
 
-export function clearSvfTileCache(): void {
+export function clearShadingTileCache(): void {
   elevationCache.clear();
 }
 
 /** 標高タイル1枚を取得してFloat32Arrayへデコードする。取得できなければ null */
 async function loadElevationTile(
-  config: SvfTileConfig,
+  config: ShadingTileConfig,
   z: number,
   x: number,
   y: number,
@@ -165,20 +157,19 @@ function assembleWithHalo(tiles: (Float32Array | null)[], halo: number): Float32
  * addProtocol に渡すハンドラを作る。
  * @param baseOptions 陰影のパラメータ。方式はタイルURLの指定が優先される
  */
-export function createSvfProtocolHandler(baseOptions: ShadingOptions = DEFAULT_SHADING_OPTIONS) {
+export function createShadingProtocolHandler(baseOptions: ShadingOptions = DEFAULT_SHADING_OPTIONS) {
   return async (params: RequestParameters, abortController: AbortController) => {
     try {
       const parts = params.url.split('/');
       const [rawConfig, rawZ, rawX, rawY] = parts.slice(-4);
-      const config: SvfTileConfig = JSON.parse(decodeURIComponent(rawConfig));
+      const config: ShadingTileConfig = JSON.parse(decodeURIComponent(rawConfig));
       const z = Number(rawZ);
       const x = Number(rawX);
       const y = Number(rawY);
       if (!Number.isFinite(z) || !Number.isFinite(x) || !Number.isFinite(y)) return { data: null };
 
-      const options: ShadingOptions = { ...baseOptions, method: config.m ?? baseOptions.method };
-      // マルチスケールは粗い層のぶん広い袖が要る。タイル1枚分(256px)を超えない範囲で確保する
-      const halo = Math.min(requiredHalo(options), TILE_SIZE);
+      // 袖はタイル1枚分(256px)を超えないようにする
+      const halo = Math.min(requiredHalo(baseOptions), TILE_SIZE);
 
       const signal = abortController.signal;
       const max = Math.pow(2, z);
@@ -205,7 +196,7 @@ export function createSvfProtocolHandler(baseOptions: ShadingOptions = DEFAULT_S
         halo,
         TILE_SIZE,
         metersPerPixel(z, y),
-        options
+        baseOptions
       );
 
       return {

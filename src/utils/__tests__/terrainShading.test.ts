@@ -3,37 +3,13 @@ import {
   decodeElevation,
   metersPerPixel,
   requiredHalo,
+  stripUrlFragment,
   DEFAULT_SHADING_OPTIONS,
-  SHADING_METHODS,
-  ShadingMethod,
-  ShadingOptions,
 } from '../terrainShading';
 
 const SIZE = 64;
-/** 全方式で足りる袖（multiscaleが最大の128を要求する） */
-const HALO = 128;
+const HALO = requiredHalo();
 const BUFFER = SIZE + 2 * HALO;
-
-const optionsFor = (method: ShadingMethod): ShadingOptions => ({ ...DEFAULT_SHADING_OPTIONS, method });
-
-/**
- * 平坦地でのふるまい。
- * - transparent: α=0。下の地図がそのまま透ける
- * - white:       不透明な白。乗算で重ねても下地を変えない
- * - uniform:     不透明な一様色。RRIMは開度差の明度層が平坦で中間グレーになるため
- *                下地をやや暗くする。重要なのは偽の構造が出ないこと
- */
-const FLAT_BEHAVIOR: Record<ShadingMethod, 'transparent' | 'white' | 'uniform'> = {
-  svf: 'transparent',
-  opendiff: 'transparent',
-  'opendiff-slope': 'transparent',
-  multiscale: 'transparent',
-  'mpi-gray': 'transparent',
-  rrim: 'uniform',
-  'mpi-rrim': 'white',
-  'mpi-blue': 'white',
-  'mpi-mono': 'white',
-};
 
 /** 袖付きバッファを生成する。fnは(x, y)を中央領域基準の座標として標高を返す */
 function makeBuffer(fn: (x: number, y: number) => number): Float32Array {
@@ -52,26 +28,21 @@ function rotate180(buffer: Float32Array): Float32Array {
   return out;
 }
 
-function rotate90(buffer: Float32Array, width: number): Float32Array {
+function rotate90(buffer: Float32Array): Float32Array {
   const out = new Float32Array(buffer.length);
-  for (let y = 0; y < width; y++) {
-    for (let x = 0; x < width; x++) out[x * width + (width - 1 - y)] = buffer[y * width + x];
+  for (let y = 0; y < BUFFER; y++) {
+    for (let x = 0; x < BUFFER; x++) out[x * BUFFER + (BUFFER - 1 - y)] = buffer[y * BUFFER + x];
   }
   return out;
 }
 
-function shade(buffer: Float32Array, method: ShadingMethod): Uint8ClampedArray {
-  return computeShading(buffer, BUFFER, HALO, SIZE, 10, optionsFor(method));
-}
+const shade = (buffer: Float32Array) => computeShading(buffer, BUFFER, HALO, SIZE, 10);
 
 /** RGBAを180度回す（画素単位で入れ替える） */
 function rotateRgba180(rgba: Uint8ClampedArray): Uint8ClampedArray {
   const n = rgba.length / 4;
   const out = new Uint8ClampedArray(rgba.length);
-  for (let i = 0; i < n; i++) {
-    const src = (n - 1 - i) * 4;
-    out.set(rgba.subarray(src, src + 4), i * 4);
-  }
+  for (let i = 0; i < n; i++) out.set(rgba.subarray((n - 1 - i) * 4, (n - 1 - i) * 4 + 4), i * 4);
   return out;
 }
 
@@ -80,8 +51,7 @@ function rotateRgba90(rgba: Uint8ClampedArray): Uint8ClampedArray {
   for (let y = 0; y < SIZE; y++) {
     for (let x = 0; x < SIZE; x++) {
       const src = (y * SIZE + x) * 4;
-      const dst = (x * SIZE + (SIZE - 1 - y)) * 4;
-      out.set(rgba.subarray(src, src + 4), dst);
+      out.set(rgba.subarray(src, src + 4), (x * SIZE + (SIZE - 1 - y)) * 4);
     }
   }
   return out;
@@ -93,15 +63,13 @@ function maxDiff(a: Uint8ClampedArray, b: Uint8ClampedArray): number {
   return m;
 }
 
-const alphaOf = (rgba: Uint8ClampedArray) => {
-  const out = new Uint8Array(rgba.length / 4);
-  for (let i = 0; i < out.length; i++) out[i] = rgba[i * 4 + 3];
-  return out;
-};
+const grayAt = (rgba: Uint8ClampedArray, x: number, y: number) => rgba[(y * SIZE + x) * 4];
 
 /** 起伏に富んだ試験地形 */
 const TEST_TERRAIN = (x: number, y: number) =>
   50 * Math.sin(x / 7) + 30 * Math.cos(y / 5) + 0.4 * x + 12 * Math.sin((x + y) / 11);
+
+const CX = SIZE / 2;
 
 describe('decodeElevation', () => {
   it('国土地理院方式でデコードする', () => {
@@ -130,217 +98,104 @@ describe('metersPerPixel', () => {
     expect(metersPerPixel(14, 6414)).toBeGreaterThan(8.9);
     expect(metersPerPixel(14, 6414)).toBeLessThan(9.2);
   });
-});
 
-describe('requiredHalo', () => {
-  it('マルチスケールは粗い層のぶん広い袖を要求する', () => {
-    expect(requiredHalo(optionsFor('multiscale'))).toBe(128);
-  });
-
-  it('単一スケールは探索半径+1で足りる', () => {
-    expect(requiredHalo(optionsFor('svf'))).toBe(DEFAULT_SHADING_OPTIONS.searchRadius + 1);
+  it('z=14の探索半径16pxはMPI-RRIMの推奨値150mに近い', () => {
+    const radius = DEFAULT_SHADING_OPTIONS.searchRadius * metersPerPixel(14, 6414);
+    expect(radius).toBeGreaterThan(120);
+    expect(radius).toBeLessThan(180);
   });
 });
 
-// 本方式の存在理由そのもの。従来の陰影図はここで失敗する
-describe.each(SHADING_METHODS)('方向非依存性 (%s)', (method) => {
-  // 単一スケールの方式はバイト単位で完全一致する。
-  // multiscaleだけは縮小・拡大の浮動小数演算で丸めが1階調ずれることがある。
-  // 方位バイアスではないので1階調まで許容する（光源依存なら数十階調ずれる）。
-  const tolerance = method === 'multiscale' ? 1 : 0;
+describe('stripUrlFragment', () => {
+  it('フラグメントを落とす', () => {
+    expect(stripUrlFragment('https://e/{z}/{x}/{y}.png#mpi')).toBe('https://e/{z}/{x}/{y}.png');
+  });
 
+  it('フラグメントがなければそのまま返す', () => {
+    expect(stripUrlFragment('https://e/{z}/{x}/{y}.png')).toBe('https://e/{z}/{x}/{y}.png');
+  });
+});
+
+// 本方式の存在理由そのもの。光源を使う従来の陰影図はここで失敗する
+describe('方向非依存性', () => {
   it('地形を180度回すと陰影も同じだけ回る', () => {
     const buffer = makeBuffer(TEST_TERRAIN);
-    const expected = rotateRgba180(shade(buffer, method));
-    expect(maxDiff(shade(rotate180(buffer), method), expected)).toBeLessThanOrEqual(tolerance);
+    expect(maxDiff(shade(rotate180(buffer)), rotateRgba180(shade(buffer)))).toBe(0);
   });
 
   it('地形を90度回すと陰影も同じだけ回る', () => {
     const buffer = makeBuffer(TEST_TERRAIN);
-    const expected = rotateRgba90(shade(buffer, method));
-    expect(maxDiff(shade(rotate90(buffer, BUFFER), method), expected)).toBeLessThanOrEqual(tolerance);
+    expect(maxDiff(shade(rotate90(buffer)), rotateRgba90(shade(buffer)))).toBe(0);
+  });
+});
+
+describe('computeShading', () => {
+  it('平坦地は白になり、乗算で重ねても下地を変えない', () => {
+    const rgba = shade(makeBuffer(() => 100));
+    for (let i = 0; i < rgba.length; i += 4) {
+      expect([rgba[i], rgba[i + 1], rgba[i + 2], rgba[i + 3]]).toEqual([255, 255, 255, 255]);
+    }
   });
 
   it('NoDataは透明にする', () => {
-    expect(Math.max(...alphaOf(shade(makeBuffer(() => NaN), method)))).toBe(0);
+    const rgba = shade(makeBuffer(() => NaN));
+    for (let i = 0; i < rgba.length; i += 4) expect(rgba[i + 3]).toBe(0);
   });
 
-  it('平坦地に偽の構造を作らない', () => {
-    const rgba = shade(makeBuffer(() => 100), method);
-    const behavior = FLAT_BEHAVIOR[method];
-
-    if (behavior === 'transparent') {
-      expect(Math.max(...alphaOf(rgba))).toBe(0);
-      return;
-    }
-    // 不透明な方式は、平坦地では全画素が同じ無彩色になること
-    const expected = [rgba[0], rgba[1], rgba[2], rgba[3]];
-    for (let i = 0; i < rgba.length; i += 4) {
-      expect([rgba[i], rgba[i + 1], rgba[i + 2], rgba[i + 3]]).toEqual(expected);
-    }
-    expect(rgba[0]).toBe(rgba[1]);
-    expect(rgba[1]).toBe(rgba[2]);
-    if (behavior === 'white') expect(rgba[0]).toBe(255);
-  });
-});
-
-describe('svf', () => {
-  it('窪地は不透明になり、平坦な周囲は透明のまま', () => {
-    const cx = SIZE / 2;
-    const alpha = alphaOf(
-      shade(
-        makeBuffer((x, y) => {
-          const r = Math.hypot(x - cx, y - cx);
-          return r < 20 ? (r - 20) * 5 : 0;
-        }),
-        'svf'
-      )
-    );
-    expect(alpha[cx * SIZE + cx]).toBeGreaterThan(100);
-    expect(alpha[0]).toBe(0);
-  });
-
-  it('一様な斜面には偽の凹凸を作らず、濃度が一定になる', () => {
-    // 斜面上では登り方向の空が実際に遮られるのでα>0になる。
-    // 重要なのは場所によらず一定であること（＝勾配だけで明暗差を作らないこと）。
-    const alpha = alphaOf(shade(makeBuffer((x) => x * 3), 'svf'));
-    expect(Math.min(...alpha)).toBe(Math.max(...alpha));
-    expect(alpha[0]).toBeGreaterThan(0);
-  });
-
-  it('斜面が急なほど濃くなる（量感が自然に出る）', () => {
-    const gentle = alphaOf(shade(makeBuffer((x) => x * 1), 'svf'));
-    const steep = alphaOf(shade(makeBuffer((x) => x * 5), 'svf'));
-    expect(steep[0]).toBeGreaterThan(gentle[0]);
-  });
-
-  it('色は黒でαだけが変化する', () => {
-    const cx = SIZE / 2;
-    const rgba = shade(makeBuffer((x, y) => (Math.hypot(x - cx, y - cx) < 20 ? -50 : 0)), 'svf');
-    for (let i = 0; i < rgba.length; i += 4) {
-      expect(rgba[i]).toBe(0);
-      expect(rgba[i + 1]).toBe(0);
-      expect(rgba[i + 2]).toBe(0);
-    }
-  });
-});
-
-describe('opendiff', () => {
-  it('凸部は明るく、凹部は暗くなる', () => {
-    const cx = SIZE / 2;
-    // 中央に円錐状の丘、その周りに環状の窪み
-    const rgba = shade(
-      makeBuffer((x, y) => {
-        const r = Math.hypot(x - cx, y - cx);
-        return r < 15 ? (15 - r) * 4 : r < 25 ? -(25 - r) * 3 : 0;
-      }),
-      'opendiff'
-    );
-    const grayAt = (x: number, y: number) => rgba[(y * SIZE + x) * 4];
-    // 丘の肩（凸）と窪みの底（凹）を比べる
-    expect(grayAt(cx + 13, cx)).toBeGreaterThan(grayAt(cx + 22, cx));
-  });
-
-  it('一様な斜面はほぼ透明のまま（凹凸がないので描かない）', () => {
-    const alpha = alphaOf(shade(makeBuffer((x) => x * 3), 'opendiff'));
-    expect(Math.max(...alpha)).toBeLessThan(8);
-  });
-});
-
-describe('opendiff-slope', () => {
-  it('一様な斜面にも濃度が乗る（opendiffとの違い）', () => {
-    const both = alphaOf(shade(makeBuffer((x) => x * 3), 'opendiff'));
-    const slopeOnly = alphaOf(shade(makeBuffer((x) => x * 3), 'opendiff-slope'));
-    expect(Math.max(...slopeOnly)).toBeGreaterThan(Math.max(...both));
-  });
-});
-
-describe('mpi-rrim / mpi-blue', () => {
-  const cx = SIZE / 2;
-  /** 中央に円錐状の窪み（谷）、周囲は平坦 */
-  const pit = () =>
-    makeBuffer((x, y) => {
-      const r = Math.hypot(x - cx, y - cx);
-      return r < 20 ? (r - 20) * 5 : 0;
-    });
-
-  it('窪地はシアンに寄る（R成分だけが落ちる）', () => {
-    const rgba = shade(pit(), 'mpi-rrim');
-    const p = (cx * SIZE + cx) * 4;
-    expect(rgba[p]).toBeLessThan(rgba[p + 1]);
-    expect(rgba[p + 1]).toBe(rgba[p + 2]);
-  });
-
-  it('急斜面はmpi-rrimでは赤に、mpi-blueでは黒に寄る', () => {
-    // 一様な急斜面。MPIは一定なので傾斜の層の違いだけが出る
-    const slope = makeBuffer((x) => x * 8);
-    const red = shade(slope, 'mpi-rrim');
-    const blue = shade(slope, 'mpi-blue');
-    // mpi-rrimはR成分を落とさない（赤が残る）が、mpi-blueは3成分とも落とす
-    expect(red[0]).toBeGreaterThan(blue[0]);
-    expect(red[1]).toBe(blue[1]);
-  });
-
-  it('ガンマを下げると谷が濃くなる', () => {
-    // 深い谷は既にR=0まで飽和していてガンマの効果が見えないので、浅い窪みで確かめる
-    const buffer = makeBuffer((x, y) => {
-      const r = Math.hypot(x - cx, y - cx);
-      return r < 20 ? (r - 20) * 0.5 : 0;
-    });
-    const base = computeShading(buffer, BUFFER, HALO, SIZE, 10, {
-      ...DEFAULT_SHADING_OPTIONS,
-      method: 'mpi-rrim',
-    });
-    const strong = computeShading(buffer, BUFFER, HALO, SIZE, 10, {
-      ...DEFAULT_SHADING_OPTIONS,
-      method: 'mpi-rrim',
-      mpiGamma: 0.5,
-    });
-    const p = (cx * SIZE + cx) * 4;
-    expect(strong[p]).toBeLessThan(base[p]);
-  });
-});
-
-describe('mpi-gray', () => {
-  const cx = SIZE / 2;
-
-  it('尾根は明るく、谷は暗く、平坦地は中間になる', () => {
-    const grayAt = (rgba: Uint8ClampedArray, x: number, y: number) => rgba[(y * SIZE + x) * 4];
-    const ridge = shade(makeBuffer((x, y) => Math.max(0, 200 - 8 * Math.abs(y - cx))), 'mpi-gray');
-    const valley = shade(makeBuffer((x, y) => Math.min(0, -200 + 8 * Math.abs(y - cx))), 'mpi-gray');
-    const flat = shade(makeBuffer(() => 0), 'mpi-gray');
-    expect(grayAt(ridge, cx, cx)).toBeGreaterThan(grayAt(flat, cx, cx));
-    expect(grayAt(valley, cx, cx)).toBeLessThan(grayAt(flat, cx, cx));
-  });
-
-  // SVFは仰角の負側を0に丸めるため尾根と平坦地がどちらも「開けている」で飽和する。
-  // MPIは負値を保つのでここに差が出る。これがグレーでMPIを使う利点。
-  it('SVFでは区別できない尾根と平坦地を区別できる', () => {
-    const ridgeBuf = makeBuffer((x, y) => Math.max(0, 200 - 8 * Math.abs(y - cx)));
-    const flatBuf = makeBuffer(() => 0);
-    const at = (rgba: Uint8ClampedArray) => rgba[(cx * SIZE + cx) * 4];
-
-    const svfRidge = alphaOf(shade(ridgeBuf, 'svf'))[cx * SIZE + cx];
-    const svfFlat = alphaOf(shade(flatBuf, 'svf'))[cx * SIZE + cx];
-    expect(svfRidge).toBe(svfFlat); // どちらも透明で区別できない
-
-    expect(at(shade(ridgeBuf, 'mpi-gray'))).not.toBe(at(shade(flatBuf, 'mpi-gray')));
-  });
-});
-
-describe('mpi-mono', () => {
   it('無彩色になる（R=G=B）', () => {
-    const cx = SIZE / 2;
-    const rgba = shade(
-      makeBuffer((x, y) => {
-        const r = Math.hypot(x - cx, y - cx);
-        return r < 20 ? (r - 20) * 5 : 0;
-      }),
-      'mpi-mono'
-    );
+    const rgba = shade(makeBuffer(TEST_TERRAIN));
     for (let i = 0; i < rgba.length; i += 4) {
       expect(rgba[i]).toBe(rgba[i + 1]);
       expect(rgba[i + 1]).toBe(rgba[i + 2]);
     }
+  });
+
+  it('窪地は暗く、周囲の平坦地は白のまま', () => {
+    const rgba = shade(
+      makeBuffer((x, y) => {
+        const r = Math.hypot(x - CX, y - CX);
+        return r < 20 ? (r - 20) * 5 : 0;
+      })
+    );
+    expect(grayAt(rgba, CX, CX)).toBeLessThan(120);
+    expect(grayAt(rgba, 0, 0)).toBe(255);
+  });
+
+  it('尾根は平坦地と同じく明るい（MPIが負になり暗さに寄与しない）', () => {
+    const ridge = shade(makeBuffer((x, y) => Math.max(0, 200 - 8 * Math.abs(y - CX))));
+    // 稜線上は傾斜も0なのでどちらの暗さも効かない
+    expect(grayAt(ridge, CX, CX)).toBe(255);
+  });
+
+  it('一様な斜面は傾斜のぶんだけ一様に暗くなる', () => {
+    const gentle = shade(makeBuffer((x) => x * 1));
+    const steep = shade(makeBuffer((x) => x * 5));
+    expect(grayAt(steep, CX, CX)).toBeLessThan(grayAt(gentle, CX, CX));
+    // 一様なので場所によらず同じ濃さ（偽の凹凸を作らない）
+    expect(grayAt(steep, 5, 5)).toBe(grayAt(steep, CX, CX));
+  });
+
+  it('急峻な谷は傾斜と窪みの両方が効いて最も暗くなる', () => {
+    const buffer = makeBuffer((x, y) => {
+      const r = Math.hypot(x - CX, y - CX);
+      return r < 20 ? (r - 20) * 5 : 0;
+    });
+    const valleyWall = grayAt(shade(buffer), CX + 12, CX);
+    const uniformSlope = grayAt(shade(makeBuffer((x) => x * 5)), CX, CX);
+    expect(valleyWall).toBeLessThan(uniformSlope);
+  });
+
+  it('ガンマを下げると谷が濃くなる', () => {
+    // 深い谷は既に飽和しているので浅い窪みで確かめる
+    const buffer = makeBuffer((x, y) => {
+      const r = Math.hypot(x - CX, y - CX);
+      return r < 20 ? (r - 20) * 0.5 : 0;
+    });
+    const base = computeShading(buffer, BUFFER, HALO, SIZE, 10);
+    const strong = computeShading(buffer, BUFFER, HALO, SIZE, 10, {
+      ...DEFAULT_SHADING_OPTIONS,
+      mpiGamma: 0.5,
+    });
+    expect(grayAt(strong, CX, CX)).toBeLessThan(grayAt(base, CX, CX));
   });
 });

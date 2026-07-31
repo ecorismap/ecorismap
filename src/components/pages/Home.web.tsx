@@ -63,7 +63,11 @@ import { HomeModalColorPicker } from '../organisms/HomeModalColorPicker';
 
 // import { HomeInfoToolButton } from '../organisms/HomeInfoToolButton';
 import { encode as fastPngEncode } from 'fast-png';
-import { buildSvfTileUrl, createSvfProtocolHandler, SVF_PROTOCOL } from '../../utils/svfTileProtocol.web';
+import {
+  buildShadingTileUrl,
+  createShadingProtocolHandler,
+  SHADING_PROTOCOL,
+} from '../../utils/shadingTileProtocol.web';
 import { tileToWebMercator } from '../../utils/Tile';
 import { fromBlob } from 'geotiff';
 import { db } from '../../utils/db';
@@ -195,9 +199,9 @@ export default function HomeScreen() {
 
   maplibregl.addProtocol('pdf', loadPDF);
 
-  // 標高タイルから全方向陰影（SVF）を生成するプロトコル。
+  // 標高タイルから全方向陰影を生成するプロトコル。
   // maplibre内蔵のhillshadeは光源方位に依存し地図を回すと凹凸が反転するため使わない。
-  maplibregl.addProtocol(SVF_PROTOCOL, createSvfProtocolHandler());
+  maplibregl.addProtocol(SHADING_PROTOCOL, createShadingProtocolHandler());
 
   //console.log('Home');
 
@@ -393,7 +397,7 @@ export default function HomeScreen() {
    * @returns ヒルシェードレイヤー定義
    */
   const getHillshadeLayer = useCallback((tileMap: TileMapType): LayerSpecification | LayerSpecification[] => {
-    // 陰影はsvfaoプロトコル側で黒＋αとして焼き込んであるので、通常のラスタレイヤとして重ねる
+    // 陰影はterrainshadeプロトコル側で焼き込んであるので、通常のラスタレイヤとして扱う
     const transparency = tileMap.transparency ?? 0;
 
     return [
@@ -720,7 +724,7 @@ export default function HomeScreen() {
               ...result,
               [tileMap.id]: {
                 type: 'raster' as const,
-                tiles: [buildSvfTileUrl(tileMap.url.replace('hillshade://', ''), tileMap.flipY)],
+                tiles: [buildShadingTileUrl(tileMap.url.replace('hillshade://', ''), tileMap.flipY)],
                 tileSize: 256,
                 minzoom: tileMap.minimumZ || 0,
                 maxzoom: Math.min(tileMap.overzoomThreshold ?? 15, tileMap.maximumZ ?? 15),
