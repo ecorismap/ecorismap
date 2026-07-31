@@ -1,7 +1,8 @@
 import React from 'react';
+import { Platform, StyleSheet } from 'react-native';
 import { render, act } from '@testing-library/react-native';
 import type { RenderResult } from '@testing-library/react-native';
-import { CurrentMarker, stepAngleToward } from '../HomeCurrentMarker';
+import { CurrentMarker, stepAngleToward, usesScreenFixedLine } from '../HomeCurrentMarker';
 import { LocationType } from '../../../types';
 
 // プロップを検査しやすいホスト要素として描画するローカルモック
@@ -52,6 +53,18 @@ describe('stepAngleToward', () => {
   });
 });
 
+describe('usesScreenFixedLine', () => {
+  it('Androidのコンパスモードのみ画面固定Marker', () => {
+    expect(usesScreenFixedLine(true, 'android')).toBe(true);
+    expect(usesScreenFixedLine(false, 'android')).toBe(false);
+  });
+
+  it('iOSは常にPolyline（Markerの子ビューは高さ制限で描画されないため）', () => {
+    expect(usesScreenFixedLine(true, 'ios')).toBe(false);
+    expect(usesScreenFixedLine(false, 'ios')).toBe(false);
+  });
+});
+
 describe('CurrentMarker', () => {
   const currentLocation: LocationType = {
     latitude: 35,
@@ -95,14 +108,21 @@ describe('CurrentMarker', () => {
     });
   };
 
-  // 現在地マーカー（image propあり）と画面固定線マーカー（子ビュー、image propなし）を区別する
+  // 現在地マーカー（アンカーが中央）と画面固定線マーカー（アンカーが下端）を区別する
   const getCurrentMarker = (tree: RenderResult) =>
-    tree.container.queryAll((i) => i.type === 'Marker' && i.props.image !== undefined)[0];
+    tree.container.queryAll((i) => i.type === 'Marker' && i.props.anchor?.y === 0.5)[0];
 
   const queryLineMarkers = (tree: RenderResult) =>
-    tree.container.queryAll((i) => i.type === 'Marker' && i.props.image === undefined);
+    tree.container.queryAll((i) => i.type === 'Marker' && i.props.anchor?.y === 1);
 
-  const getMarkerRotation = (tree: RenderResult) => getCurrentMarker(tree).props.rotation;
+  // 表示角度: iOSは子ビューのtransform、Androidはrotationプロップで回す
+  const getMarkerRotation = (tree: RenderResult) => {
+    const marker = getCurrentMarker(tree);
+    if (marker.props.rotation !== undefined) return marker.props.rotation;
+    const image = marker.props.children.props.children;
+    const transform = StyleSheet.flatten(image.props.style).transform as { rotate: string }[];
+    return parseFloat(transform[0].rotate);
+  };
 
   const getLineCoordinates = (tree: RenderResult) =>
     tree.container.queryAll((i) => i.type === 'Polyline')[0].props.coordinates;
@@ -135,7 +155,9 @@ describe('CurrentMarker', () => {
     expect(rafQueue.size).toBe(0);
   });
 
-  it('headingUp時: マーカーは真上固定・方角線は画面固定Marker(rotation=0)でPolylineと補間は使わない', async () => {
+  it('headingUp時(iOS): マーカーは真上固定・方角線はPolylineで描く（画面固定Markerは使わない）', async () => {
+    // テスト環境のPlatform.OSはios
+    expect(Platform.OS).toBe('ios');
     const tree = await render(
       <CurrentMarker currentLocation={currentLocation} azimuth={0} headingUp={true} showDirectionLine={true} />
     );
@@ -146,24 +168,19 @@ describe('CurrentMarker', () => {
 
     // 現在地マーカー自体は真上向きのまま
     expect(getMarkerRotation(tree)).toBe(0);
-    // 補間ループは起動しない
+    // 補間ループは起動しない（azimuthはカメラ指示値と同期しているため即時スナップ）
     expect(rafQueue.size).toBe(0);
 
-    // 地理座標のPolylineは描画されない（回転アニメーションとの位相ズレで揺れるため）
-    expect(tree.container.queryAll((i) => i.type === 'Polyline').length).toBe(0);
+    // 画面固定Markerは高さ制限でiOSでは描画されないため使わない
+    expect(queryLineMarkers(tree).length).toBe(0);
 
-    // 代わりに画面固定の線Marker: rotation=0のビルボードは地図回転に関わらず画面真上を向く
-    const lineMarkers = queryLineMarkers(tree);
-    expect(lineMarkers.length).toBe(1);
-    const lineMarker = lineMarkers[0];
-    expect(lineMarker.props.rotation).toBe(0);
-    expect(lineMarker.props.flat).toBe(false);
-    // 線の下端が現在地に一致するようbottom-centerアンカー
-    expect(lineMarker.props.anchor).toEqual({ x: 0.5, y: 1 });
-    expect(lineMarker.props.coordinate).toEqual({ latitude: 35, longitude: 135 });
+    // 地図がazimuthぶん回るので、地理方位azimuth方向の線が画面上では真上に見える
+    const line = getLineCoordinates(tree);
+    const angleRad = ((90 - 90) * Math.PI) / 180;
+    expect(line[1].latitude).toBeCloseTo(35 + 10 * Math.sin(angleRad), 5);
   });
 
-  it('north-up時: 画面固定線Markerは使わずPolylineで描画する', async () => {
+  it('north-up時(iOS): Polylineで描く', async () => {
     const tree = await render(
       <CurrentMarker currentLocation={currentLocation} azimuth={0} headingUp={false} showDirectionLine={true} />
     );
@@ -184,6 +201,77 @@ describe('CurrentMarker', () => {
     const line = getLineCoordinates(tree);
     const angleRad = ((90 - rotation) * Math.PI) / 180;
     expect(line[1].latitude).toBeCloseTo(35 + 10 * Math.sin(angleRad), 5);
+  });
+
+  it('iOS: 現在地マーカーはrotationプロップを使わず子ビューのtransformで回す', async () => {
+    // GMSMarker.rotationは"Animated."で暗黙のCore Animationが入り、Polylineの方角線に対して
+    // 遅れて回る（＝時差）。transformならアイコンの内容が変わるだけなので即時反映される。
+    expect(Platform.OS).toBe('ios');
+    const tree = await render(
+      <CurrentMarker currentLocation={currentLocation} azimuth={0} headingUp={false} showDirectionLine={true} />
+    );
+    const marker = getCurrentMarker(tree);
+    expect(marker.props.rotation).toBeUndefined();
+    expect(marker.props.image).toBeUndefined();
+
+    await tree.rerender(
+      <CurrentMarker currentLocation={currentLocation} azimuth={90} headingUp={false} showDirectionLine={true} />
+    );
+    await flushFrame();
+
+    // transformの角度が方角線の角度と一致する
+    const rotation = getMarkerRotation(tree);
+    expect(rotation).toBeGreaterThan(0);
+    const line = getLineCoordinates(tree);
+    const angleRad = ((90 - rotation) * Math.PI) / 180;
+    expect(line[1].latitude).toBeCloseTo(35 + 10 * Math.sin(angleRad), 5);
+  });
+
+  describe('Android (headingUp)', () => {
+    const originalOS = Platform.OS;
+    beforeEach(() => {
+      Object.defineProperty(Platform, 'OS', { value: 'android', configurable: true });
+    });
+    afterEach(() => {
+      Object.defineProperty(Platform, 'OS', { value: originalOS, configurable: true });
+    });
+
+    it('Polylineではなく画面固定Marker(rotation=0)で描画する', async () => {
+      const tree = await render(
+        <CurrentMarker currentLocation={currentLocation} azimuth={0} headingUp={true} showDirectionLine={true} />
+      );
+
+      // 地理座標のPolylineは描画されない（回転アニメーションとの位相ズレで揺れるため）
+      expect(tree.container.queryAll((i) => i.type === 'Polyline').length).toBe(0);
+
+      // rotation=0のビルボードは地図回転に関わらず画面真上を向く
+      const lineMarkers = queryLineMarkers(tree);
+      expect(lineMarkers.length).toBe(1);
+      const lineMarker = lineMarkers[0];
+      expect(lineMarker.props.rotation).toBe(0);
+      expect(lineMarker.props.flat).toBe(false);
+      expect(lineMarker.props.tracksViewChanges).toBe(false);
+      // 線の下端が現在地に一致するようbottom-centerアンカー
+      expect(lineMarker.props.anchor).toEqual({ x: 0.5, y: 1 });
+      expect(lineMarker.props.coordinate).toEqual({ latitude: 35, longitude: 135 });
+    });
+
+    it('north-upではPolylineで描画する', async () => {
+      const tree = await render(
+        <CurrentMarker currentLocation={currentLocation} azimuth={0} headingUp={false} showDirectionLine={true} />
+      );
+      expect(queryLineMarkers(tree).length).toBe(0);
+      expect(tree.container.queryAll((i) => i.type === 'Polyline').length).toBe(1);
+    });
+
+    it('現在地マーカーは従来どおりrotation/imageプロップで描画する', async () => {
+      const tree = await render(
+        <CurrentMarker currentLocation={currentLocation} azimuth={0} headingUp={false} showDirectionLine={false} />
+      );
+      const marker = getCurrentMarker(tree);
+      expect(marker.props.rotation).toBe(0);
+      expect(marker.props.image).toBeDefined();
+    });
   });
 
   it('unmountで補間ループがキャンセルされる', async () => {

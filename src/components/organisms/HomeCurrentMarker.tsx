@@ -1,5 +1,5 @@
 import React, { useMemo, useRef, useEffect, useState, useCallback } from 'react';
-import { StyleSheet, View, useWindowDimensions } from 'react-native';
+import { Image, Platform, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { Marker, Polyline, Circle } from 'react-native-maps';
 import { COLOR } from '../../constants/AppConstants';
 import { LocationType } from '../../types';
@@ -21,6 +21,30 @@ const SMOOTHING_TAU_MS = 180;
 const SNAP_EPSILON_DEG = 0.2;
 // Marker rotation / Polyline のネイティブ更新頻度の上限（Fabric負荷緩和のため実質30fps）
 const MIN_FRAME_INTERVAL_MS = 33;
+
+// 方角線を画面固定Marker（子ビューの縦線）で描くか、地理座標のPolylineで描くかの判定。
+// - Androidのコンパスモードは画面固定Marker: 地図回転はanimateCameraのアニメーションで
+//   遅れて追従するため、地理座標の線では回転中に位相ズレして揺れる。ビルボードMarkerなら
+//   ネイティブ側で常に画面真上を向くので揺れない。
+// - iOSは常にPolyline: iOS(Google Maps)はMarkerの子ビューを1枚のアイコンにラスタライズ
+//   する際に高さの上限があり、画面端まで届く長さの線は全く描画されない
+//   （実機確認: 300pt=OK / 約500pt以上=NG。幅を12ptに絞ってもNGで高さが要因）。
+//   Polylineには長さの制限がないため、コンパスモードでもPolylineで描く。
+export const usesScreenFixedLine = (headingUp: boolean, os: typeof Platform.OS = Platform.OS): boolean =>
+  headingUp && os !== 'ios';
+
+// 現在地マーカーの回転をMarkerのrotationプロップで行うか、子ビューのtransformで行うか。
+// iOSはtransform: GMSMarker.rotationはSDKヘッダに "Animated." と明記されており、変更が
+// 暗黙のCore Animation（約0.25秒）で補間される。方角線(Polyline)は即時反映されるため、
+// マーカーだけが遅れて回り時差として見える。子ビューのtransformならアイコンのラスタライズ
+// 内容が変わるだけで、アニメーション対象のプロパティを触らないので即時反映される。
+// AndroidはMarker.setRotation()が即時反映で時差が出ないため、従来どおりrotationプロップを使う。
+export const rotatesImageByTransform = (os: typeof Platform.OS = Platform.OS): boolean => os === 'ios';
+
+// 現在地マーカー画像の表示サイズ（pt）。アセットは80x80(@1x)。
+const MARKER_IMAGE_SIZE = 80;
+// 回転しても四隅が切れないよう、画像を囲むコンテナは対角線ぶんの大きさにする
+const MARKER_CONTAINER_SIZE = Math.ceil(MARKER_IMAGE_SIZE * Math.SQRT2);
 
 interface Props {
   currentLocation: LocationType;
@@ -137,11 +161,11 @@ const CurrentMarkerComponent = (props: Props) => {
 
   // redraw() は使用しない (iOS での初動ちらつき軽減)
 
-  // north-up時の方角線（地理座標のPolyline）。
-  // headingUp時は使わない: 地図回転はanimateCameraのアニメーションで遅れて追従するため、
-  // 地理座標の線では回転中に必ず位相ズレして揺れる。代わりに画面固定のMarker線を描く。
+  const usesScreenLine = !!showDirectionLine && usesScreenFixedLine(headingUp);
+
+  // north-up時の方角線（地理座標のPolyline）。画面固定線を使う場合は描かない。
   const lineCoordinates = useMemo(() => {
-    if (!showDirectionLine || headingUp) return [];
+    if (!showDirectionLine || usesScreenFixedLine(headingUp)) return [];
 
     // 補間済みの表示角度で滑らかに回る
     const lineAngle = displayAzimuth;
@@ -183,13 +207,14 @@ const CurrentMarkerComponent = (props: Props) => {
           zIndex={999}
         />
       )}
-      {showDirectionLine && !headingUp && lineCoordinates.length > 0 && (
+      {!usesScreenLine && lineCoordinates.length > 0 && (
         <Polyline coordinates={lineCoordinates} strokeColor="#000000" strokeWidth={1} zIndex={1000} />
       )}
-      {/* headingUp時の方角線: ビルボードMarker(rotation=0)は地図の回転アニメーションに
-          関わらず常に画面の真上を向いて描画されるため、同期処理なしで完全に真上固定になる。
-          anchor(bottom-center)で線の下端を現在地に合わせ、上方向へ画面対角線の長さだけ伸ばす */}
-      {showDirectionLine && headingUp && (
+      {/* Androidのコンパスモードの方角線: ビルボードMarker(rotation=0)は地図の回転
+          アニメーションに関わらず常に画面の真上を向いて描画されるため、同期処理なしで
+          完全に真上固定になる。anchor(bottom-center)で線の下端を現在地に合わせ、
+          上方向へ画面対角線の長さだけ伸ばす */}
+      {usesScreenLine && (
         <Marker
           coordinate={{
             latitude: currentLocation.latitude,
@@ -205,16 +230,36 @@ const CurrentMarkerComponent = (props: Props) => {
           <View style={[styles.screenDirectionLine, { height: screenLineLength }]} />
         </Marker>
       )}
-      <Marker
-        coordinate={{
-          latitude: currentLocation.latitude,
-          longitude: currentLocation.longitude,
-        }}
-        rotation={markerAngle}
-        anchor={{ x: 0.5, y: 0.5 }}
-        style={{ zIndex: 1001 }}
-        image={markerImage}
-      />
+      {rotatesImageByTransform() ? (
+        // iOS: rotationプロップ（アニメーション付き）を使わず、子ビューのtransformで回す
+        <Marker
+          coordinate={{
+            latitude: currentLocation.latitude,
+            longitude: currentLocation.longitude,
+          }}
+          anchor={{ x: 0.5, y: 0.5 }}
+          tracksViewChanges={true}
+          style={{ zIndex: 1001 }}
+        >
+          <View style={styles.markerImageContainer}>
+            <Image
+              source={markerImage}
+              style={[styles.markerImage, { transform: [{ rotate: `${markerAngle}deg` }] }]}
+            />
+          </View>
+        </Marker>
+      ) : (
+        <Marker
+          coordinate={{
+            latitude: currentLocation.latitude,
+            longitude: currentLocation.longitude,
+          }}
+          rotation={markerAngle}
+          anchor={{ x: 0.5, y: 0.5 }}
+          style={{ zIndex: 1001 }}
+          image={markerImage}
+        />
+      )}
     </>
   );
 };
@@ -223,6 +268,16 @@ const styles = StyleSheet.create({
   screenDirectionLine: {
     backgroundColor: COLOR.BLACK,
     width: 2,
+  },
+  markerImageContainer: {
+    alignItems: 'center',
+    height: MARKER_CONTAINER_SIZE,
+    justifyContent: 'center',
+    width: MARKER_CONTAINER_SIZE,
+  },
+  markerImage: {
+    height: MARKER_IMAGE_SIZE,
+    width: MARKER_IMAGE_SIZE,
   },
 });
 
