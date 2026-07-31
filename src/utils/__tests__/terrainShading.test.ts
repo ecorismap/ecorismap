@@ -16,8 +16,24 @@ const BUFFER = SIZE + 2 * HALO;
 
 const optionsFor = (method: ShadingMethod): ShadingOptions => ({ ...DEFAULT_SHADING_OPTIONS, method });
 
-/** 陰影を焼き込んだ不透明な図として出力する方式（αに逃がさない） */
-const OPAQUE_METHODS: ShadingMethod[] = ['mpi-rrim', 'mpi-blue', 'mpi-mono'];
+/**
+ * 平坦地でのふるまい。
+ * - transparent: α=0。下の地図がそのまま透ける
+ * - white:       不透明な白。乗算で重ねても下地を変えない
+ * - uniform:     不透明な一様色。RRIMは開度差の明度層が平坦で中間グレーになるため
+ *                下地をやや暗くする。重要なのは偽の構造が出ないこと
+ */
+const FLAT_BEHAVIOR: Record<ShadingMethod, 'transparent' | 'white' | 'uniform'> = {
+  svf: 'transparent',
+  opendiff: 'transparent',
+  'opendiff-slope': 'transparent',
+  multiscale: 'transparent',
+  'mpi-gray': 'transparent',
+  rrim: 'uniform',
+  'mpi-rrim': 'white',
+  'mpi-blue': 'white',
+  'mpi-mono': 'white',
+};
 
 /** 袖付きバッファを生成する。fnは(x, y)を中央領域基準の座標として標高を返す */
 function makeBuffer(fn: (x: number, y: number) => number): Float32Array {
@@ -149,16 +165,22 @@ describe.each(SHADING_METHODS)('方向非依存性 (%s)', (method) => {
     expect(Math.max(...alphaOf(shade(makeBuffer(() => NaN), method)))).toBe(0);
   });
 
-  it('平坦地は下の地図を隠さない', () => {
+  it('平坦地に偽の構造を作らない', () => {
     const rgba = shade(makeBuffer(() => 100), method);
-    if (OPAQUE_METHODS.includes(method)) {
-      // MPI-RRIM系は不透明な図なので、平坦地は真っ白（乗算で下地を変えない色）になる
-      for (let i = 0; i < rgba.length; i += 4) {
-        expect([rgba[i], rgba[i + 1], rgba[i + 2], rgba[i + 3]]).toEqual([255, 255, 255, 255]);
-      }
-    } else {
+    const behavior = FLAT_BEHAVIOR[method];
+
+    if (behavior === 'transparent') {
       expect(Math.max(...alphaOf(rgba))).toBe(0);
+      return;
     }
+    // 不透明な方式は、平坦地では全画素が同じ無彩色になること
+    const expected = [rgba[0], rgba[1], rgba[2], rgba[3]];
+    for (let i = 0; i < rgba.length; i += 4) {
+      expect([rgba[i], rgba[i + 1], rgba[i + 2], rgba[i + 3]]).toEqual(expected);
+    }
+    expect(rgba[0]).toBe(rgba[1]);
+    expect(rgba[1]).toBe(rgba[2]);
+    if (behavior === 'white') expect(rgba[0]).toBe(255);
   });
 });
 

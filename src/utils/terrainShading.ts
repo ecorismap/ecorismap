@@ -20,12 +20,17 @@ const SIGNED_BASE = 16777216;
  * - opendiff:       開度差を明度に、傾斜×凹凸をαに。凹凸のある斜面だけに乗る
  * - opendiff-slope: 開度差を明度に、傾斜をαに。一様な急斜面にもベールが乗る
  * - multiscale:     3つの空間スケールの開度差を合成。山容から微地形まで拾う
+ * - rrim:           赤色立体地図。開度差のグレーに傾斜の赤を乗算
  * - mpi-rrim:       MPI赤色立体地図。傾斜を赤、MPI(保護指数)をシアンにして乗算
  * - mpi-blue:       同上の傾斜を黒にしたもの。他の情報を重ねるとき赤の煩雑さを避ける
  * - mpi-gray:       MPIを明度、傾斜をαに。色相を使わずに2つの量を分けて持つ
  * - mpi-mono:       mpi-rrimをそのまま脱色したもの。傾斜とMPIが同じ明度に畳まれる
  *
- * mpi-rrim / mpi-blue は Kaneda and Chiba (2019) の手法。
+ * rrim は千葉・鈴木(2002)の赤色立体地図。凸凹を開度差、傾斜を赤の彩度で表す。
+ * 基本特許(アジア航測)は期限満了しているが、関連特許には有効なものもある。
+ *
+ * mpi-rrim / mpi-blue は上記を改良した Kaneda and Chiba (2019) の手法。
+ * 開度差（地上開度−地下開度）ではなく地上側のMPIだけを使う点が異なる。
  * Kaneda, H., and T. Chiba (2019), Stereopaired morphometric protection index red relief
  * image maps (Stereo MPI-RRIMs), Bull. Seismol. Soc. Am., 109, 99-109.
  * https://doi.org/10.1785/0120180166
@@ -37,6 +42,7 @@ export type ShadingMethod =
   | 'opendiff'
   | 'opendiff-slope'
   | 'multiscale'
+  | 'rrim'
   | 'mpi-rrim'
   | 'mpi-blue'
   | 'mpi-gray'
@@ -47,6 +53,7 @@ export const SHADING_METHODS: ShadingMethod[] = [
   'opendiff',
   'opendiff-slope',
   'multiscale',
+  'rrim',
   'mpi-rrim',
   'mpi-blue',
   'mpi-gray',
@@ -97,6 +104,9 @@ export const DEFAULT_SHADING_OPTIONS: ShadingOptions = {
   mpiGamma: 1,
   mpiRidgeDeg: 5,
 };
+
+/** 赤色立体地図の赤の最大濃度。1.0だとG,Bが0まで落ちて彩度が飽和しすぎる */
+const RRIM_RED_DEPTH = 0.85;
 
 /** マルチスケール開度差の各層。粗い層ほどKを大きくしないと飽和して白黒二値になる */
 const MULTISCALE_LAYERS = [
@@ -344,6 +354,33 @@ export function computeShading(
 ): Uint8ClampedArray {
   const { method, numDirections, searchRadius, svfMin, openK, slopeMaxDeg } = options;
   const out = new Uint8ClampedArray(size * size * 4);
+
+  if (method === 'rrim') {
+    // 千葉・鈴木(2002)。開度差のグレー層に傾斜の赤層を乗算する。
+    // 明度が凹凸（尾根で明・谷で暗）、赤の彩度が傾斜を表す。
+    const { openDiff } = scanHorizon(
+      elevation, bufferWidth, offset, size, metersPerPx, numDirections, searchRadius, true
+    );
+    const slope = computeSlope(elevation, bufferWidth, offset, size, metersPerPx);
+    for (let i = 0; i < slope.length; i++) {
+      const p = i * 4;
+      const sl = slope[i];
+      const od = openDiff![i];
+      // eslint-disable-next-line no-self-compare
+      if (sl !== sl || od !== od) {
+        out[p + 3] = 0;
+        continue;
+      }
+      const gray = clamp01(0.5 + 0.5 * Math.tanh(od / openK));
+      // 傾斜の層は白→赤。急なほどG,Bが落ちる
+      const t = clamp01(sl / options.rrimSlopeMaxDeg) * RRIM_RED_DEPTH;
+      out[p] = 255 * gray;
+      out[p + 1] = 255 * gray * (1 - t);
+      out[p + 2] = 255 * gray * (1 - t);
+      out[p + 3] = 255;
+    }
+    return out;
+  }
 
   if (method === 'mpi-gray') {
     // 明度=MPI、不透明度=傾斜。色相を使わずに2つの量を別チャンネルに分ける。
