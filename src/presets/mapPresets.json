@@ -98,5 +98,25 @@
       "isVector": true,
       "isGroup": false
     }
+  },
+  {
+    "presetId": "preset-map-relief",
+    "presetName": "立体図(全方向陰影)",
+    "map": {
+      "name": "立体図",
+      "url": "hillshade://https://tiles.gsj.jp/tiles/elev/land/{z}/{y}/{x}.png",
+      "styleURL": "",
+      "attribution": "産総研シームレス標高タイル",
+      "maptype": "none",
+      "visible": true,
+      "transparency": 0,
+      "overzoomThreshold": 14,
+      "highResolutionEnabled": false,
+      "minimumZ": 0,
+      "maximumZ": 22,
+      "flipY": false,
+      "isVector": false,
+      "isGroup": false
+    }
   }
 ]
