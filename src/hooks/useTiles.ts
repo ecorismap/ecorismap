@@ -374,7 +374,7 @@ export const useTiles = (
               errorCount++;
               //console.error(error);
             });
-        } else if (tileType === 'relief') {
+        } else if (tileType === 'hillshade') {
           // 立体図の場合は元のDEMタイルURLを構築
           const cleanUrl = toDemUrl(tileMap.url);
           const fetchUrl = cleanUrl
@@ -680,7 +680,7 @@ export const useTiles = (
               .catch(() => {
                 errorCount++;
               });
-          } else if (tileType === 'relief') {
+          } else if (tileType === 'hillshade') {
             const cleanUrl = toDemUrl(currentTileMap.url);
             const fetchUrl = cleanUrl
               .replace('{z}', tile.z.toString())

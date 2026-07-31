@@ -2,23 +2,23 @@ import * as FileSystem from 'expo-file-system/legacy';
 import { TileMapType, TileRegionType } from '../types';
 import { TILE_FOLDER } from '../constants/AppConstants';
 import { getExt } from './General';
-import { isReliefUrl } from './terrainShading';
+import { isShadingUrl } from './terrainShading';
 
-export type TileType = 'pbf' | 'pmtiles' | 'relief' | 'png';
+export type TileType = 'pbf' | 'pmtiles' | 'hillshade' | 'png';
 
 export const getTileType = (tileMap: TileMapType): TileType =>
   getExt(tileMap.url) === 'pbf'
     ? 'pbf'
     : getExt(tileMap.url) === 'pmtiles' || tileMap.url.startsWith('pmtiles://')
     ? 'pmtiles'
-    : isReliefUrl(tileMap.url)
-    ? 'relief'
+    : isShadingUrl(tileMap.url)
+    ? 'hillshade'
     : 'png';
 
 export const getZoomRange = (tileType: TileType, tileMap: TileMapType, zoom: number) => {
-  const minZoom = tileType === 'png' || tileType === 'relief' ? 0 : zoom;
+  const minZoom = tileType === 'png' || tileType === 'hillshade' ? 0 : zoom;
   const maxZoom =
-    tileType === 'png' || tileType === 'relief' || !tileMap.isVector ? Math.min(tileMap.overzoomThreshold, 16) : 18;
+    tileType === 'png' || tileType === 'hillshade' || !tileMap.isVector ? Math.min(tileMap.overzoomThreshold, 16) : 18;
   return { minZoom, maxZoom };
 };
 

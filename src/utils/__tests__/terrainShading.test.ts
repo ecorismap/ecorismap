@@ -3,9 +3,9 @@ import {
   decodeElevation,
   metersPerPixel,
   requiredHalo,
-  isReliefUrl,
+  isShadingUrl,
   toDemUrl,
-  RELIEF_URL_PREFIX,
+  SHADING_URL_PREFIX,
   DEFAULT_SHADING_OPTIONS,
 } from '../terrainShading';
 
@@ -111,25 +111,23 @@ describe('metersPerPixel', () => {
 describe('地図URLの判定', () => {
   const DEM = 'https://e/{z}/{x}/{y}.png';
 
-  it('relief:// を立体図として扱う', () => {
-    expect(isReliefUrl(RELIEF_URL_PREFIX + DEM)).toBe(true);
-    expect(toDemUrl(RELIEF_URL_PREFIX + DEM)).toBe(DEM);
+  it('プレフィックスは hillshade:// のまま据え置き（既存の地図設定を壊さないため）', () => {
+    expect(SHADING_URL_PREFIX).toBe('hillshade://');
   });
 
-  // 旧プレフィックス。ユーザーが追加済みの地図や共有プロジェクトの設定に残っている
-  it('旧来の hillshade:// も受け付ける', () => {
-    expect(isReliefUrl('hillshade://' + DEM)).toBe(true);
-    expect(toDemUrl('hillshade://' + DEM)).toBe(DEM);
+  it('hillshade:// を立体図として扱い、標高タイルURLを取り出す', () => {
+    expect(isShadingUrl(SHADING_URL_PREFIX + DEM)).toBe(true);
+    expect(toDemUrl(SHADING_URL_PREFIX + DEM)).toBe(DEM);
   });
 
   it('通常のタイルURLは立体図として扱わない', () => {
-    expect(isReliefUrl(DEM)).toBe(false);
-    expect(isReliefUrl(undefined)).toBe(false);
-    expect(isReliefUrl('')).toBe(false);
+    expect(isShadingUrl(DEM)).toBe(false);
+    expect(isShadingUrl(undefined)).toBe(false);
+    expect(isShadingUrl('')).toBe(false);
   });
 
   it('動作確認時の方式指定フラグメントが残っていても落とす', () => {
-    expect(toDemUrl('hillshade://' + DEM + '#mpi-gray')).toBe(DEM);
+    expect(toDemUrl(SHADING_URL_PREFIX + DEM + '#mpi-gray')).toBe(DEM);
   });
 });
 

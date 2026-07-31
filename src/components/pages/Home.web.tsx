@@ -68,7 +68,7 @@ import {
   createShadingProtocolHandler,
   SHADING_PROTOCOL,
 } from '../../utils/shadingTileProtocol.web';
-import { isReliefUrl, toDemUrl } from '../../utils/terrainShading';
+import { isShadingUrl, toDemUrl } from '../../utils/terrainShading';
 import { tileToWebMercator } from '../../utils/Tile';
 import { fromBlob } from 'geotiff';
 import { db } from '../../utils/db';
@@ -397,7 +397,7 @@ export default function HomeScreen() {
    * @param tileMap 対象のタイルマップ
    * @returns ヒルシェードレイヤー定義
    */
-  const getReliefLayer = useCallback((tileMap: TileMapType): LayerSpecification | LayerSpecification[] => {
+  const getShadingLayer = useCallback((tileMap: TileMapType): LayerSpecification | LayerSpecification[] => {
     // 陰影はterrainshadeプロトコル側で焼き込んであるので、通常のラスタレイヤとして扱う
     const transparency = tileMap.transparency ?? 0;
 
@@ -497,8 +497,8 @@ export default function HomeScreen() {
       }
 
       // 立体図タイル（標高から陰影を計算）の判定と処理
-      if (isReliefUrl(tileMap.url)) {
-        return getReliefLayer(tileMap);
+      if (isShadingUrl(tileMap.url)) {
+        return getShadingLayer(tileMap);
       }
 
       // ベクタータイルの判定と処理
@@ -514,7 +514,7 @@ export default function HomeScreen() {
       // ラスタータイルの処理
       return getRasterLayer(tileMap);
     },
-    [getRasterLayer, getVectorLayers, getReliefLayer]
+    [getRasterLayer, getVectorLayers, getShadingLayer]
   );
 
   // ========== 動的レイヤー管理 ==========
@@ -718,7 +718,7 @@ export default function HomeScreen() {
                 attribution: tileMap.attribution,
               },
             };
-          } else if (isReliefUrl(tileMap.url)) {
+          } else if (isShadingUrl(tileMap.url)) {
             // 標高タイルを自前で取得・計算するため、raster-demではなく通常のラスタとして扱う。
             // maxzoomは標高タイルが実在する最大ズーム。これを超える分はmaplibreが拡大表示する。
             return {

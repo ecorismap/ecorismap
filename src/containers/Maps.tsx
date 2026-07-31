@@ -117,8 +117,7 @@ export default function MapContainer() {
         protocol === 'https' ||
         protocol === 'pmtiles' ||
         protocol === 'pdf' ||
-        protocol === 'relief' ||
-        protocol === 'hillshade' // 旧プレフィックス
+        protocol === 'hillshade'
       ) {
         const ext = getExt(item.url)?.toLowerCase();
         if (ext === 'pdf' || item.url.startsWith('pdf://')) {

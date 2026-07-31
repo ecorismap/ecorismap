@@ -55,12 +55,8 @@ describe('getTileType', () => {
     expect(getTileType({ ...baseMap, url: 'https://example.com/map.pmtiles' })).toBe('pmtiles');
   });
 
-  it('relief://スキームはrelief', () => {
-    expect(getTileType({ ...baseMap, url: 'relief://https://example.com/{z}/{x}/{y}.png' })).toBe('relief');
-  });
-
-  it('旧来のhillshade://スキームもreliefとして扱う', () => {
-    expect(getTileType({ ...baseMap, url: 'hillshade://https://example.com/{z}/{x}/{y}.png' })).toBe('relief');
+  it('hillshade://スキームはhillshade', () => {
+    expect(getTileType({ ...baseMap, url: 'hillshade://https://example.com/{z}/{x}/{y}.png' })).toBe('hillshade');
   });
 
   it('それ以外はpng', () => {

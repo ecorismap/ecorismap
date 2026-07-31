@@ -62,16 +62,15 @@ export function requiredHalo(options: ShadingOptions = DEFAULT_SHADING_OPTIONS):
 /**
  * 地図URLのプレフィックス。これが付いていると標高タイルとして扱い、陰影を計算する。
  *
- * 光源を使わない方式になり陰影起伏図ではなくなったため `relief://` を正とするが、
- * ユーザーが追加した地図・エクスポート済みの地図JSON・共有プロジェクトの設定に
- * 旧来の `hillshade://` が残っているので、そちらも受け付け続ける。
+ * 計算内容は光源を使わない立体図に変わったが、プレフィックスは `hillshade://` のまま
+ * 据え置いている。ユーザーが追加した地図・エクスポート済みの地図JSON・共有プロジェクトの
+ * 設定に既に埋め込まれており、変えると認識されず標高タイルの生の色が表示されるため。
  */
-export const RELIEF_URL_PREFIX = 'relief://';
-const ACCEPTED_PREFIXES = [RELIEF_URL_PREFIX, 'hillshade://'];
+export const SHADING_URL_PREFIX = 'hillshade://';
 
 /** 陰影を計算する地図か判定する */
-export function isReliefUrl(url: string | undefined): boolean {
-  return !!url && ACCEPTED_PREFIXES.some((prefix) => url.startsWith(prefix));
+export function isShadingUrl(url: string | undefined): boolean {
+  return !!url && url.startsWith(SHADING_URL_PREFIX);
 }
 
 /**
@@ -79,8 +78,7 @@ export function isReliefUrl(url: string | undefined): boolean {
  * プレフィックスと、動作確認時に付けた方式指定などのフラグメントを落とす。
  */
 export function toDemUrl(url: string): string {
-  const prefix = ACCEPTED_PREFIXES.find((p) => url.startsWith(p));
-  const rest = prefix ? url.slice(prefix.length) : url;
+  const rest = url.startsWith(SHADING_URL_PREFIX) ? url.slice(SHADING_URL_PREFIX.length) : url;
   const hash = rest.indexOf('#');
   return hash < 0 ? rest : rest.slice(0, hash);
 }
