@@ -21,6 +21,8 @@ import {
 export const SHADING_PROTOCOL = 'terrainshade';
 
 const TILE_SIZE = 256;
+/** 標高タイルが無いとき、何段まで粗いズームへ降りるか */
+const MAX_ZOOM_FALLBACK = 4;
 /** デコード済み標高のキャッシュ枚数。1枚あたり 256×256×4B = 256KB */
 const MAX_CACHED_TILES = 128;
 
@@ -153,6 +155,37 @@ function assembleWithHalo(tiles: (Float32Array | null)[], halo: number): Float32
 }
 
 /**
+ * 粗いズームで計算した陰影から該当部分を切り出して拡大する。
+ * shift はズーム差、offsetX/Y は親タイル内の位置（0 〜 2^shift-1）。
+ * 拡大はニアレストネイバー。陰影は連続的なので線形補間でなくても目立たない。
+ */
+function cropAndScale(
+  rgba: Uint8ClampedArray,
+  shift: number,
+  offsetX: number,
+  offsetY: number
+): Uint8ClampedArray {
+  const scale = 1 << shift;
+  const cropSize = TILE_SIZE / scale;
+  const originX = offsetX * cropSize;
+  const originY = offsetY * cropSize;
+  const out = new Uint8ClampedArray(TILE_SIZE * TILE_SIZE * 4);
+  for (let y = 0; y < TILE_SIZE; y++) {
+    const srcY = originY + ((y / scale) | 0);
+    for (let x = 0; x < TILE_SIZE; x++) {
+      const srcX = originX + ((x / scale) | 0);
+      const src = (srcY * TILE_SIZE + srcX) * 4;
+      const dst = (y * TILE_SIZE + x) * 4;
+      out[dst] = rgba[src];
+      out[dst + 1] = rgba[src + 1];
+      out[dst + 2] = rgba[src + 2];
+      out[dst + 3] = rgba[src + 3];
+    }
+  }
+  return out;
+}
+
+/**
  * addProtocol に渡すハンドラを作る。
  * @param baseOptions 陰影のパラメータ。方式はタイルURLの指定が優先される
  */
@@ -169,38 +202,48 @@ export function createShadingProtocolHandler(baseOptions: ShadingOptions = DEFAU
 
       // 袖はタイル1枚分(256px)を超えないようにする
       const halo = Math.min(requiredHalo(baseOptions), TILE_SIZE);
-
       const signal = abortController.signal;
-      const max = Math.pow(2, z);
-      // 3×3タイルを取得する。隣接タイルはキャッシュに載るので実質1枚あたり1回の取得で済む
-      const tiles = await Promise.all(
-        [-1, 0, 1].flatMap((dy) =>
-          [-1, 0, 1].map((dx) => {
-            const nx = (((x + dx) % max) + max) % max; // 経度方向は巻き戻す
-            const ny = y + dy;
-            if (ny < 0 || ny >= max) return Promise.resolve(null);
-            return loadElevationTile(config, z, nx, ny, signal);
-          })
-        )
-      );
 
-      // 中央タイルが取れなければ描くものがない
-      if (!tiles[4]) return { data: null };
-      if (signal.aborted) return { data: null };
+      // 標高タイルの提供範囲はズームによって地域差がある（例えば産総研の陸域統合DEMは
+      // z14は全国にあるがz15は佐渡島・知床・屋久島などで欠ける）。要求されたズームで
+      // 取れなければ粗いズームへ降り、該当部分を切り出して拡大する。
+      for (let sourceZ = z; sourceZ >= Math.max(0, z - MAX_ZOOM_FALLBACK); sourceZ--) {
+        const shift = z - sourceZ;
+        const sx = x >> shift;
+        const sy = y >> shift;
+        const max = Math.pow(2, sourceZ);
 
-      const buffer = assembleWithHalo(tiles, halo);
-      const rgba = computeShading(
-        buffer,
-        TILE_SIZE + 2 * halo,
-        halo,
-        TILE_SIZE,
-        metersPerPixel(z, y),
-        baseOptions
-      );
+        // 3×3タイルを取得する。隣接タイルはキャッシュに載るので実質1枚あたり1回の取得で済む
+        const tiles = await Promise.all(
+          [-1, 0, 1].flatMap((dy) =>
+            [-1, 0, 1].map((dx) => {
+              const nx = (((sx + dx) % max) + max) % max; // 経度方向は巻き戻す
+              const ny = sy + dy;
+              if (ny < 0 || ny >= max) return Promise.resolve(null);
+              return loadElevationTile(config, sourceZ, nx, ny, signal);
+            })
+          )
+        );
+        if (signal.aborted) return { data: null };
+        // 中央タイルが取れなければ、さらに粗いズームを試す
+        if (!tiles[4]) continue;
 
-      return {
-        data: fastPngEncode({ width: TILE_SIZE, height: TILE_SIZE, data: rgba, channels: 4, depth: 8 }),
-      };
+        const buffer = assembleWithHalo(tiles, halo);
+        const rgba = computeShading(
+          buffer,
+          TILE_SIZE + 2 * halo,
+          halo,
+          TILE_SIZE,
+          metersPerPixel(sourceZ, sy),
+          baseOptions
+        );
+
+        const output = shift === 0 ? rgba : cropAndScale(rgba, shift, x - (sx << shift), y - (sy << shift));
+        return {
+          data: fastPngEncode({ width: TILE_SIZE, height: TILE_SIZE, data: output, channels: 4, depth: 8 }),
+        };
+      }
+      return { data: null };
     } catch {
       return { data: null };
     }

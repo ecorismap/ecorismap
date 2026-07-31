@@ -357,10 +357,10 @@ index e4010de..e9a07ad 100644
 \ No newline at end of file
 diff --git a/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapDEMTileProvider.java b/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapDEMTileProvider.java
 new file mode 100644
-index 0000000..1dedc56
+index 0000000..d5f08fe
 --- /dev/null
 +++ b/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapDEMTileProvider.java
-@@ -0,0 +1,337 @@
+@@ -0,0 +1,343 @@
 +package com.rnmaps.maps;
 +
 +import android.content.Context;
@@ -397,6 +397,8 @@ index 0000000..1dedc56
 +  private static final float MPI_GAMMA = 1.0f;
 +  /** 袖の幅。探索半径に加えて傾斜の中央差分に1画素余分に要る */
 +  private static final int HALO = SEARCH_RADIUS + 1;
++  /** 標高タイルが無いとき、何段まで粗いズームへ降りるか */
++  private static final int MAX_ZOOM_FALLBACK = 4;
 +
 +  /** 出力PNGのキャッシュ（キー: "x,y,zoom"） */
 +  private final LruCache<String, byte[]> shadingCache;
@@ -453,34 +455,38 @@ index 0000000..1dedc56
 +
 +  @Override
 +  public Tile getTile(int x, int y, int zoom) {
-+    // オーバーズームチェック
-+    boolean isOverzoom = zoom > maximumNativeZ;
-+    int nativeZoom = isOverzoom ? (int) maximumNativeZ : zoom;
-+    int scaleFactor = isOverzoom ? (1 << (zoom - nativeZoom)) : 1;
-+    int nativeX = isOverzoom ? x / scaleFactor : x;
-+    int nativeY = isOverzoom ? y / scaleFactor : y;
-+    int offsetX = isOverzoom ? (x % scaleFactor) : 0;
-+    int offsetY = isOverzoom ? (y % scaleFactor) : 0;
-+
 +    String cacheKey = x + "," + y + "," + zoom;
 +    byte[] cached = shadingCache.get(cacheKey);
 +    if (cached != null) {
 +      return new Tile(this.tileSize, this.tileSize, cached);
 +    }
 +
-+    // 中央タイルが取れなければ描くものがない
-+    float[] center = loadElevation(nativeX, nativeY, nativeZoom);
-+    if (center == null) {
-+      return null;
-+    }
++    // まずオーバーズーム分を落とす
++    int startZoom = zoom > maximumNativeZ ? (int) maximumNativeZ : zoom;
 +
-+    byte[] processed = createShading(nativeX, nativeY, nativeZoom, scaleFactor, offsetX, offsetY);
-+    if (processed == null) {
-+      return null;
-+    }
++    // 標高タイルの提供範囲はズームによって地域差がある（例えば産総研の陸域統合DEMは
++    // z14は全国にあるがz15は佐渡島・知床・屋久島などで欠ける）。取れなければ粗い
++    // ズームへ降り、該当部分を切り出して拡大する。
++    for (int sourceZoom = startZoom; sourceZoom >= Math.max(0, startZoom - MAX_ZOOM_FALLBACK); sourceZoom--) {
++      int shift = zoom - sourceZoom;
++      int sx = x >> shift;
++      int sy = y >> shift;
 +
-+    shadingCache.put(cacheKey, processed);
-+    return new Tile(this.tileSize, this.tileSize, processed);
++      // 中央タイルが取れなければ、さらに粗いズームを試す
++      if (loadElevation(sx, sy, sourceZoom) == null) {
++        continue;
++      }
++
++      int scaleFactor = 1 << shift;
++      byte[] processed = createShading(sx, sy, sourceZoom, scaleFactor,
++                                       x - (sx << shift), y - (sy << shift));
++      if (processed == null) {
++        return null;
++      }
++      shadingCache.put(cacheKey, processed);
++      return new Tile(this.tileSize, this.tileSize, processed);
++    }
++    return null;
 +  }
 +
 +  /**
@@ -9720,10 +9726,10 @@ index 0000000..237975a
 +#endif
 diff --git a/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapDEMTileOverlay.m b/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapDEMTileOverlay.m
 new file mode 100644
-index 0000000..91a4c9a
+index 0000000..fe281d2
 --- /dev/null
 +++ b/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapDEMTileOverlay.m
-@@ -0,0 +1,338 @@
+@@ -0,0 +1,349 @@
 +//
 +//  AIRGoogleMapDEMTileOverlay.m
 +//  AirGoogleMaps
@@ -9754,6 +9760,8 @@ index 0000000..91a4c9a
 +static const float kMpiGamma = 1.0f;
 +/** 袖の幅。探索半径に加えて傾斜の中央差分に1画素余分に要る */
 +static const NSInteger kHalo = kSearchRadius + 1;
++/** 標高タイルが無いとき、何段まで粗いズームへ降りるか */
++static const NSInteger kMaxZoomFallback = 4;
 +
 +@interface AIRGoogleMapDEMTileOverlay ()
 +
@@ -10025,32 +10033,41 @@ index 0000000..91a4c9a
 +        return cached;
 +    }
 +
++    // まずオーバーズーム分を落とす
 +    NSInteger maximumNativeZ = self.maximumNativeZ;
-+    BOOL isOverzoom = (NSInteger)zoom > maximumNativeZ;
-+    NSUInteger nativeZoom = isOverzoom ? (NSUInteger)maximumNativeZ : zoom;
-+    NSInteger scaleFactor = isOverzoom ? (1 << (zoom - nativeZoom)) : 1;
-+    NSUInteger nativeX = isOverzoom ? x / (NSUInteger)scaleFactor : x;
-+    NSUInteger nativeY = isOverzoom ? y / (NSUInteger)scaleFactor : y;
-+    NSUInteger offsetX = isOverzoom ? x % (NSUInteger)scaleFactor : 0;
-+    NSUInteger offsetY = isOverzoom ? y % (NSUInteger)scaleFactor : 0;
++    NSInteger startZoom = ((NSInteger)zoom > maximumNativeZ) ? maximumNativeZ : (NSInteger)zoom;
++    NSInteger lowestZoom = MAX(0, startZoom - kMaxZoomFallback);
 +
-+    // 中央タイルが取れなければ描くものがない
-+    NSInteger size = 0;
-+    NSData *center = [self elevationForX:nativeX y:nativeY zoom:nativeZoom size:&size];
-+    if (!center || size <= 0) {
-+        return kGMSTileLayerNoTile;
-+    }
++    // 標高タイルの提供範囲はズームによって地域差がある（例えば産総研の陸域統合DEMは
++    // z14は全国にあるがz15は佐渡島・知床・屋久島などで欠ける）。取れなければ粗い
++    // ズームへ降り、該当部分を切り出して拡大する。
++    for (NSInteger sourceZoom = startZoom; sourceZoom >= lowestZoom; sourceZoom--) {
++        NSInteger shift = (NSInteger)zoom - sourceZoom;
++        NSUInteger sx = x >> shift;
++        NSUInteger sy = y >> shift;
 +
-+    UIImage *image = [self shadingImageForX:nativeX y:nativeY zoom:nativeZoom size:size];
-+    if (image && isOverzoom) {
-+        image = [self cropImage:image scaleFactor:scaleFactor offsetX:offsetX offsetY:offsetY];
-+    }
-+    if (!image) {
-+        return kGMSTileLayerNoTile;
-+    }
++        // 中央タイルが取れなければ、さらに粗いズームを試す
++        NSInteger size = 0;
++        NSData *center = [self elevationForX:sx y:sy zoom:(NSUInteger)sourceZoom size:&size];
++        if (!center || size <= 0) {
++            continue;
++        }
 +
-+    [_shadingCache setObject:image forKey:cacheKey cost:(NSUInteger)(size * size * 4)];
-+    return image;
++        UIImage *image = [self shadingImageForX:sx y:sy zoom:(NSUInteger)sourceZoom size:size];
++        if (image && shift > 0) {
++            image = [self cropImage:image
++                        scaleFactor:(1 << shift)
++                            offsetX:(x - (sx << shift))
++                            offsetY:(y - (sy << shift))];
++        }
++        if (!image) {
++            return kGMSTileLayerNoTile;
++        }
++
++        [_shadingCache setObject:image forKey:cacheKey cost:(NSUInteger)(size * size * 4)];
++        return image;
++    }
++    return kGMSTileLayerNoTile;
 +}
 +
 +- (void)clearTileCache {

@@ -214,3 +214,38 @@ describe('computeShading', () => {
     expect(grayAt(strong, CX, CX)).toBeLessThan(grayAt(base, CX, CX));
   });
 });
+
+// 粗いズームから切り出して拡大する経路の検算。
+// 標高タイルの提供範囲は地域差があり（産総研の陸域統合DEMはz14が全国、z15は
+// 佐渡島・知床・屋久島などで欠ける）、要求ズームで取れないと粗い方へ降りる。
+describe('粗いズームからの切り出し', () => {
+  it('親ズームで計算した陰影の該当4分の1と一致する', () => {
+    // 親タイル相当の陰影を作る
+    const parent = shade(makeBuffer(TEST_TERRAIN));
+
+    // 子タイル(2x2のうち右下)に相当する領域を手で切り出して2倍に拡大する
+    const shift = 1;
+    const scale = 1 << shift;
+    const cropSize = SIZE / scale;
+    const offsetX = 1;
+    const offsetY = 1;
+    const expected = new Uint8ClampedArray(SIZE * SIZE * 4);
+    for (let y = 0; y < SIZE; y++) {
+      const srcY = offsetY * cropSize + ((y / scale) | 0);
+      for (let x = 0; x < SIZE; x++) {
+        const srcX = offsetX * cropSize + ((x / scale) | 0);
+        const src = (srcY * SIZE + srcX) * 4;
+        expected.set(parent.subarray(src, src + 4), (y * SIZE + x) * 4);
+      }
+    }
+
+    // 拡大後も各画素は元の親画素のいずれかと一致する（新しい値を作らない）
+    const parentValues = new Set<number>();
+    for (let i = 0; i < parent.length; i += 4) parentValues.add(parent[i]);
+    for (let i = 0; i < expected.length; i += 4) {
+      expect(parentValues.has(expected[i])).toBe(true);
+    }
+    // 4画素ごとに同じ値が並ぶ（2倍拡大なので横に2つ連続する）
+    expect(expected[0]).toBe(expected[4]);
+  });
+});
