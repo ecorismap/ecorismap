@@ -20,10 +20,32 @@ const SIGNED_BASE = 16777216;
  * - opendiff:       開度差を明度に、傾斜×凹凸をαに。凹凸のある斜面だけに乗る
  * - opendiff-slope: 開度差を明度に、傾斜をαに。一様な急斜面にもベールが乗る
  * - multiscale:     3つの空間スケールの開度差を合成。山容から微地形まで拾う
+ * - mpi-rrim:       MPI赤色立体地図。傾斜を赤、MPI(保護指数)をシアンにして乗算
+ * - mpi-blue:       同上の傾斜を黒にしたもの。他の情報を重ねるとき赤の煩雑さを避ける
+ *
+ * mpi-rrim / mpi-blue は Kaneda and Chiba (2019) の手法。
+ * Kaneda, H., and T. Chiba (2019), Stereopaired morphometric protection index red relief
+ * image maps (Stereo MPI-RRIMs), Bull. Seismol. Soc. Am., 109, 99-109.
+ * https://doi.org/10.1785/0120180166
+ * MPI(Morphometric Protection Index)は各方位の最大仰角の平均で、
+ * 窪地ほど大きく尾根ほど小さい（負にもなる）。地上開度の余角にあたる。
  */
-export type ShadingMethod = 'svf' | 'opendiff' | 'opendiff-slope' | 'multiscale';
+export type ShadingMethod =
+  | 'svf'
+  | 'opendiff'
+  | 'opendiff-slope'
+  | 'multiscale'
+  | 'mpi-rrim'
+  | 'mpi-blue';
 
-export const SHADING_METHODS: ShadingMethod[] = ['svf', 'opendiff', 'opendiff-slope', 'multiscale'];
+export const SHADING_METHODS: ShadingMethod[] = [
+  'svf',
+  'opendiff',
+  'opendiff-slope',
+  'multiscale',
+  'mpi-rrim',
+  'mpi-blue',
+];
 
 export function isShadingMethod(value: string): value is ShadingMethod {
   return (SHADING_METHODS as string[]).includes(value);
@@ -41,15 +63,26 @@ export type ShadingOptions = {
   openK: number;
   /** αが1に飽和する傾斜[度] */
   slopeMaxDeg: number;
+  /** MPI-RRIMで赤が飽和する傾斜[度] */
+  rrimSlopeMaxDeg: number;
+  /** MPI-RRIMでシアンが飽和するMPI[度] */
+  mpiMaxDeg: number;
+  /** MPIのガンマ。小さいほど谷底が濃くコントラストが強くなる */
+  mpiGamma: number;
 };
 
 export const DEFAULT_SHADING_OPTIONS: ShadingOptions = {
   method: 'svf',
   numDirections: 8,
+  // 探索半径は画素固定。z=14(約9m/px)で約145mとなり、
+  // MPI-RRIMの推奨値である実距離150mとほぼ一致する
   searchRadius: 16,
   svfMin: 0.55,
   openK: 5,
   slopeMaxDeg: 25,
+  rrimSlopeMaxDeg: 55,
+  mpiMaxDeg: 25,
+  mpiGamma: 1,
 };
 
 /** マルチスケール開度差の各層。粗い層ほどKを大きくしないと飽和して白黒二値になる */
@@ -139,9 +172,10 @@ function getSampleTable(
 }
 
 /**
- * 各方位の最大仰角・最大俯角から、SVFと開度差をまとめて求める。
+ * 各方位の最大仰角・最大俯角から、SVF・開度差・MPIをまとめて求める。
  *   svf    = 1 − mean(sin(max(仰角, 0)))
  *   開度差 = (mean(俯角) − mean(仰角)) / 2 [度]。凸で正、凹で負、平坦で0
+ *   MPI    = mean(仰角) [度]。窪地で正、尾根で負、平坦で0
  */
 function scanHorizon(
   elevation: Float32Array,
@@ -152,10 +186,11 @@ function scanHorizon(
   numDirections: number,
   searchRadius: number,
   wantOpenness: boolean
-): { svf: Float32Array; openDiff: Float32Array | null } {
+): { svf: Float32Array; openDiff: Float32Array | null; mpi: Float32Array | null } {
   const { offsets, invDistances } = getSampleTable(bufferWidth, metersPerPx, numDirections, searchRadius);
   const svf = new Float32Array(size * size);
   const openDiff = wantOpenness ? new Float32Array(size * size) : null;
+  const mpi = wantOpenness ? new Float32Array(size * size) : null;
   const toDeg = 180 / Math.PI;
 
   for (let y = 0; y < size; y++) {
@@ -170,6 +205,7 @@ function scanHorizon(
       if (z0 !== z0) {
         svf[o] = NaN;
         if (openDiff) openDiff[o] = NaN;
+        if (mpi) mpi[o] = NaN;
         continue;
       }
 
@@ -199,9 +235,10 @@ function scanHorizon(
       }
       svf[o] = 1 - sumSin / numDirections;
       if (openDiff) openDiff[o] = (((sumDown - sumUp) / numDirections) * toDeg) / 2;
+      if (mpi) mpi[o] = (sumUp / numDirections) * toDeg;
     }
   }
-  return { svf, openDiff };
+  return { svf, openDiff, mpi };
 }
 
 /** 傾斜角[度]。中央差分 */
@@ -294,6 +331,44 @@ export function computeShading(
 ): Uint8ClampedArray {
   const { method, numDirections, searchRadius, svfMin, openK, slopeMaxDeg } = options;
   const out = new Uint8ClampedArray(size * size * 4);
+
+  if (method === 'mpi-rrim' || method === 'mpi-blue') {
+    // Kaneda and Chiba (2019)。傾斜の層とMPIの層を乗算する。
+    //   傾斜の層: 白 → 赤（mpi-rrim）/ 白 → 黒（mpi-blue）
+    //   MPIの層 : 白 → シアン
+    // 尾根は赤(または明るいまま)、谷はシアン、急峻な谷は暗くなる。
+    const { mpi } = scanHorizon(
+      elevation, bufferWidth, offset, size, metersPerPx, numDirections, searchRadius, true
+    );
+    const slope = computeSlope(elevation, bufferWidth, offset, size, metersPerPx);
+    const redMode = method === 'mpi-rrim';
+
+    for (let i = 0; i < slope.length; i++) {
+      const p = i * 4;
+      const sl = slope[i];
+      const mp = mpi![i];
+      // eslint-disable-next-line no-self-compare
+      if (sl !== sl || mp !== mp) {
+        out[p + 3] = 0;
+        continue;
+      }
+      const s = clamp01(sl / options.rrimSlopeMaxDeg);
+      // MPIは尾根で負になる。シアンは窪んだ側だけに乗せる
+      const m = Math.pow(clamp01(mp / options.mpiMaxDeg), options.mpiGamma);
+
+      // 傾斜の層（乗算の係数）
+      const slopeR = redMode ? 1 : 1 - s;
+      const slopeGB = 1 - s;
+      // MPIの層（乗算の係数）。シアンなのでRだけ落とす
+      const mpiR = 1 - m;
+
+      out[p] = 255 * slopeR * mpiR;
+      out[p + 1] = 255 * slopeGB;
+      out[p + 2] = 255 * slopeGB;
+      out[p + 3] = 255;
+    }
+    return out;
+  }
 
   if (method === 'svf') {
     // 黒 + α=(1−SVF)。RGBは0のままでよい

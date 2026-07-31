@@ -16,6 +16,9 @@ const BUFFER = SIZE + 2 * HALO;
 
 const optionsFor = (method: ShadingMethod): ShadingOptions => ({ ...DEFAULT_SHADING_OPTIONS, method });
 
+/** 陰影を焼き込んだ不透明な図として出力する方式（αに逃がさない） */
+const OPAQUE_METHODS: ShadingMethod[] = ['mpi-rrim', 'mpi-blue'];
+
 /** 袖付きバッファを生成する。fnは(x, y)を中央領域基準の座標として標高を返す */
 function makeBuffer(fn: (x: number, y: number) => number): Float32Array {
   const buffer = new Float32Array(BUFFER * BUFFER);
@@ -142,12 +145,20 @@ describe.each(SHADING_METHODS)('方向非依存性 (%s)', (method) => {
     expect(maxDiff(shade(rotate90(buffer, BUFFER), method), expected)).toBeLessThanOrEqual(tolerance);
   });
 
-  it('平坦地は完全に透明になる', () => {
-    expect(Math.max(...alphaOf(shade(makeBuffer(() => 100), method)))).toBe(0);
-  });
-
   it('NoDataは透明にする', () => {
     expect(Math.max(...alphaOf(shade(makeBuffer(() => NaN), method)))).toBe(0);
+  });
+
+  it('平坦地は下の地図を隠さない', () => {
+    const rgba = shade(makeBuffer(() => 100), method);
+    if (OPAQUE_METHODS.includes(method)) {
+      // MPI-RRIM系は不透明な図なので、平坦地は真っ白（乗算で下地を変えない色）になる
+      for (let i = 0; i < rgba.length; i += 4) {
+        expect([rgba[i], rgba[i + 1], rgba[i + 2], rgba[i + 3]]).toEqual([255, 255, 255, 255]);
+      }
+    } else {
+      expect(Math.max(...alphaOf(rgba))).toBe(0);
+    }
   });
 });
 
@@ -219,5 +230,51 @@ describe('opendiff-slope', () => {
     const both = alphaOf(shade(makeBuffer((x) => x * 3), 'opendiff'));
     const slopeOnly = alphaOf(shade(makeBuffer((x) => x * 3), 'opendiff-slope'));
     expect(Math.max(...slopeOnly)).toBeGreaterThan(Math.max(...both));
+  });
+});
+
+describe('mpi-rrim / mpi-blue', () => {
+  const cx = SIZE / 2;
+  /** 中央に円錐状の窪み（谷）、周囲は平坦 */
+  const pit = () =>
+    makeBuffer((x, y) => {
+      const r = Math.hypot(x - cx, y - cx);
+      return r < 20 ? (r - 20) * 5 : 0;
+    });
+
+  it('窪地はシアンに寄る（R成分だけが落ちる）', () => {
+    const rgba = shade(pit(), 'mpi-rrim');
+    const p = (cx * SIZE + cx) * 4;
+    expect(rgba[p]).toBeLessThan(rgba[p + 1]);
+    expect(rgba[p + 1]).toBe(rgba[p + 2]);
+  });
+
+  it('急斜面はmpi-rrimでは赤に、mpi-blueでは黒に寄る', () => {
+    // 一様な急斜面。MPIは一定なので傾斜の層の違いだけが出る
+    const slope = makeBuffer((x) => x * 8);
+    const red = shade(slope, 'mpi-rrim');
+    const blue = shade(slope, 'mpi-blue');
+    // mpi-rrimはR成分を落とさない（赤が残る）が、mpi-blueは3成分とも落とす
+    expect(red[0]).toBeGreaterThan(blue[0]);
+    expect(red[1]).toBe(blue[1]);
+  });
+
+  it('ガンマを下げると谷が濃くなる', () => {
+    // 深い谷は既にR=0まで飽和していてガンマの効果が見えないので、浅い窪みで確かめる
+    const buffer = makeBuffer((x, y) => {
+      const r = Math.hypot(x - cx, y - cx);
+      return r < 20 ? (r - 20) * 0.5 : 0;
+    });
+    const base = computeShading(buffer, BUFFER, HALO, SIZE, 10, {
+      ...DEFAULT_SHADING_OPTIONS,
+      method: 'mpi-rrim',
+    });
+    const strong = computeShading(buffer, BUFFER, HALO, SIZE, 10, {
+      ...DEFAULT_SHADING_OPTIONS,
+      method: 'mpi-rrim',
+      mpiGamma: 0.5,
+    });
+    const p = (cx * SIZE + cx) * 4;
+    expect(strong[p]).toBeLessThan(base[p]);
   });
 });
