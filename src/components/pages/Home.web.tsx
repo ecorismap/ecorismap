@@ -63,6 +63,12 @@ import { HomeModalColorPicker } from '../organisms/HomeModalColorPicker';
 
 // import { HomeInfoToolButton } from '../organisms/HomeInfoToolButton';
 import { encode as fastPngEncode } from 'fast-png';
+import {
+  buildShadingTileUrl,
+  createShadingProtocolHandler,
+  SHADING_PROTOCOL,
+} from '../../utils/shadingTileProtocol.web';
+import { isShadingUrl, toDemUrl } from '../../utils/terrainShading';
 import { tileToWebMercator } from '../../utils/Tile';
 import { fromBlob } from 'geotiff';
 import { db } from '../../utils/db';
@@ -193,6 +199,10 @@ export default function HomeScreen() {
   };
 
   maplibregl.addProtocol('pdf', loadPDF);
+
+  // 標高タイルから全方向陰影を生成するプロトコル。
+  // maplibre内蔵のhillshadeは光源方位に依存し地図を回すと凹凸が反転するため使わない。
+  maplibregl.addProtocol(SHADING_PROTOCOL, createShadingProtocolHandler());
 
   //console.log('Home');
 
@@ -383,38 +393,29 @@ export default function HomeScreen() {
   }, []);
 
   /**
-   * ヒルシェードレイヤーの定義を生成
+   * 立体図レイヤーの定義を生成
    * @param tileMap 対象のタイルマップ
    * @returns ヒルシェードレイヤー定義
    */
-  const getHillshadeLayer = useCallback((tileMap: TileMapType): LayerSpecification | LayerSpecification[] => {
-    // transparencyが未定義の場合は0（不透明）をデフォルトとする
+  const getShadingLayer = useCallback((tileMap: TileMapType): LayerSpecification | LayerSpecification[] => {
+    // 陰影はterrainshadeプロトコル側で焼き込んであるので、通常のラスタレイヤとして扱う
     const transparency = tileMap.transparency ?? 0;
-    const opacity = 1 - transparency;
 
-    // グレースケールの陰影図として設定（透明度を適用）
-    const shadowColor = `rgba(0, 0, 0, ${opacity})`; // 黒
-    const highlightColor = `rgba(255, 255, 255, ${opacity})`; // 白
-    const accentColor = `rgba(0, 0, 0, ${opacity})`; // 黒
-
-    // 背景レイヤーとヒルシェードレイヤーの2つを返す
     return [
-      // ヒルシェードレイヤー
       {
         id: `${tileMap.id}_0`,
-        type: 'hillshade' as const,
+        type: 'raster' as const,
         source: tileMap.id,
-        minzoom: tileMap.minimumZ || 2,
-        maxzoom: tileMap.maximumZ || 17,
+        minzoom: tileMap.minimumZ || 0,
+        maxzoom: 24,
         layout: {
           visibility: 'visible' as const,
         },
         paint: {
-          'hillshade-shadow-color': shadowColor,
-          'hillshade-highlight-color': highlightColor,
-          'hillshade-accent-color': accentColor,
-          'hillshade-exaggeration': 0.8,
-          'hillshade-illumination-anchor': 'viewport' as const,
+          'raster-opacity': 1 - transparency,
+          // 陰影の細部をズーム中に潰さない
+          'raster-resampling': 'linear' as const,
+          'raster-fade-duration': 0,
         },
       } as LayerSpecification,
     ];
@@ -495,9 +496,9 @@ export default function HomeScreen() {
         return null;
       }
 
-      // ヒルシェードタイルの判定と処理
-      if (tileMap.url && tileMap.url.startsWith('hillshade://')) {
-        return getHillshadeLayer(tileMap);
+      // 立体図タイル（標高から陰影を計算）の判定と処理
+      if (isShadingUrl(tileMap.url)) {
+        return getShadingLayer(tileMap);
       }
 
       // ベクタータイルの判定と処理
@@ -513,7 +514,7 @@ export default function HomeScreen() {
       // ラスタータイルの処理
       return getRasterLayer(tileMap);
     },
-    [getRasterLayer, getVectorLayers, getHillshadeLayer]
+    [getRasterLayer, getVectorLayers, getShadingLayer]
   );
 
   // ========== 動的レイヤー管理 ==========
@@ -717,16 +718,18 @@ export default function HomeScreen() {
                 attribution: tileMap.attribution,
               },
             };
-          } else if (tileMap.url.startsWith('hillshade://')) {
+          } else if (isShadingUrl(tileMap.url)) {
+            // 標高タイルを自前で取得・計算するため、raster-demではなく通常のラスタとして扱う。
+            // maxzoomは標高タイルが実在する最大ズーム。これを超える分はmaplibreが拡大表示する。
             return {
               ...result,
               [tileMap.id]: {
-                type: 'raster-dem' as const,
-                tiles: [tileMap.url.replace('hillshade://', '')],
-                tileSize: tileMap.tileSize || 256,
-                minzoom: tileMap.minimumZ || 2,
-                maxzoom: tileMap.maximumZ || 14,
-                encoding: 'terrarium' as const,
+                type: 'raster' as const,
+                tiles: [buildShadingTileUrl(toDemUrl(tileMap.url), tileMap.flipY)],
+                tileSize: 256,
+                minzoom: tileMap.minimumZ || 0,
+                maxzoom: Math.min(tileMap.overzoomThreshold ?? 15, tileMap.maximumZ ?? 15),
+                scheme: 'xyz' as const,
                 attribution: tileMap.attribution,
               },
             };

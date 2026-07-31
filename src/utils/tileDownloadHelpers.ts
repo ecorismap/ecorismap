@@ -2,6 +2,7 @@ import * as FileSystem from 'expo-file-system/legacy';
 import { TileMapType, TileRegionType } from '../types';
 import { TILE_FOLDER } from '../constants/AppConstants';
 import { getExt } from './General';
+import { isShadingUrl } from './terrainShading';
 
 export type TileType = 'pbf' | 'pmtiles' | 'hillshade' | 'png';
 
@@ -10,7 +11,7 @@ export const getTileType = (tileMap: TileMapType): TileType =>
     ? 'pbf'
     : getExt(tileMap.url) === 'pmtiles' || tileMap.url.startsWith('pmtiles://')
     ? 'pmtiles'
-    : tileMap.url.startsWith('hillshade://')
+    : isShadingUrl(tileMap.url)
     ? 'hillshade'
     : 'png';
 
