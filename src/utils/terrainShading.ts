@@ -22,6 +22,8 @@ const SIGNED_BASE = 16777216;
  * - multiscale:     3つの空間スケールの開度差を合成。山容から微地形まで拾う
  * - mpi-rrim:       MPI赤色立体地図。傾斜を赤、MPI(保護指数)をシアンにして乗算
  * - mpi-blue:       同上の傾斜を黒にしたもの。他の情報を重ねるとき赤の煩雑さを避ける
+ * - mpi-gray:       MPIを明度、傾斜をαに。色相を使わずに2つの量を分けて持つ
+ * - mpi-mono:       mpi-rrimをそのまま脱色したもの。傾斜とMPIが同じ明度に畳まれる
  *
  * mpi-rrim / mpi-blue は Kaneda and Chiba (2019) の手法。
  * Kaneda, H., and T. Chiba (2019), Stereopaired morphometric protection index red relief
@@ -36,7 +38,9 @@ export type ShadingMethod =
   | 'opendiff-slope'
   | 'multiscale'
   | 'mpi-rrim'
-  | 'mpi-blue';
+  | 'mpi-blue'
+  | 'mpi-gray'
+  | 'mpi-mono';
 
 export const SHADING_METHODS: ShadingMethod[] = [
   'svf',
@@ -45,6 +49,8 @@ export const SHADING_METHODS: ShadingMethod[] = [
   'multiscale',
   'mpi-rrim',
   'mpi-blue',
+  'mpi-gray',
+  'mpi-mono',
 ];
 
 export function isShadingMethod(value: string): value is ShadingMethod {
@@ -69,6 +75,12 @@ export type ShadingOptions = {
   mpiMaxDeg: number;
   /** MPIのガンマ。小さいほど谷底が濃くコントラストが強くなる */
   mpiGamma: number;
+  /**
+   * mpi-grayで白に振り切るMPIの負側の幅[度]。
+   * MPIは実測でほぼ全域が正（p5でも0以上）で開度差のような零点を持たないため、
+   * 対称なカーブでは中央値が暗側に寄って潰れる。負側だけ狭く取って尾根を明るく出す。
+   */
+  mpiRidgeDeg: number;
 };
 
 export const DEFAULT_SHADING_OPTIONS: ShadingOptions = {
@@ -83,6 +95,7 @@ export const DEFAULT_SHADING_OPTIONS: ShadingOptions = {
   rrimSlopeMaxDeg: 55,
   mpiMaxDeg: 25,
   mpiGamma: 1,
+  mpiRidgeDeg: 5,
 };
 
 /** マルチスケール開度差の各層。粗い層ほどKを大きくしないと飽和して白黒二値になる */
@@ -332,7 +345,35 @@ export function computeShading(
   const { method, numDirections, searchRadius, svfMin, openK, slopeMaxDeg } = options;
   const out = new Uint8ClampedArray(size * size * 4);
 
-  if (method === 'mpi-rrim' || method === 'mpi-blue') {
+  if (method === 'mpi-gray') {
+    // 明度=MPI、不透明度=傾斜。色相を使わずに2つの量を別チャンネルに分ける。
+    // MPIは尾根で負・窪地で正なので、明度は尾根で明るく谷で暗くなり平坦地は中間になる。
+    // SVFと違い仰角の負側を丸めないため、尾根と平坦地が区別できる。
+    const { mpi } = scanHorizon(
+      elevation, bufferWidth, offset, size, metersPerPx, numDirections, searchRadius, true
+    );
+    const slope = computeSlope(elevation, bufferWidth, offset, size, metersPerPx);
+    for (let i = 0; i < slope.length; i++) {
+      const p = i * 4;
+      const sl = slope[i];
+      const mp = mpi![i];
+      // eslint-disable-next-line no-self-compare
+      if (sl !== sl || mp !== mp) {
+        out[p + 3] = 0;
+        continue;
+      }
+      // カラー版のシアン層と同じ写像を全成分に使う。窪地ほど暗く、尾根は白に寄る
+      const t = clamp01((mp + options.mpiRidgeDeg) / (options.mpiMaxDeg + options.mpiRidgeDeg));
+      const gray = (1 - Math.pow(t, options.mpiGamma)) * 255;
+      out[p] = gray;
+      out[p + 1] = gray;
+      out[p + 2] = gray;
+      out[p + 3] = clamp01(Math.sqrt(Math.min(sl / slopeMaxDeg, 1))) * 255;
+    }
+    return out;
+  }
+
+  if (method === 'mpi-rrim' || method === 'mpi-blue' || method === 'mpi-mono') {
     // Kaneda and Chiba (2019)。傾斜の層とMPIの層を乗算する。
     //   傾斜の層: 白 → 赤（mpi-rrim）/ 白 → 黒（mpi-blue）
     //   MPIの層 : 白 → シアン
@@ -356,15 +397,16 @@ export function computeShading(
       // MPIは尾根で負になる。シアンは窪んだ側だけに乗せる
       const m = Math.pow(clamp01(mp / options.mpiMaxDeg), options.mpiGamma);
 
-      // 傾斜の層（乗算の係数）
+      // 傾斜の層（乗算の係数）。mpi-rrimは赤なのでRを落とさない
       const slopeR = redMode ? 1 : 1 - s;
       const slopeGB = 1 - s;
-      // MPIの層（乗算の係数）。シアンなのでRだけ落とす
+      // MPIの層（乗算の係数）。シアンなのでRだけ落とす。mpi-monoは無彩色なので全成分
       const mpiR = 1 - m;
+      const mpiGB = method === 'mpi-mono' ? 1 - m : 1;
 
       out[p] = 255 * slopeR * mpiR;
-      out[p + 1] = 255 * slopeGB;
-      out[p + 2] = 255 * slopeGB;
+      out[p + 1] = 255 * slopeGB * mpiGB;
+      out[p + 2] = 255 * slopeGB * mpiGB;
       out[p + 3] = 255;
     }
     return out;

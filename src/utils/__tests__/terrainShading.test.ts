@@ -17,7 +17,7 @@ const BUFFER = SIZE + 2 * HALO;
 const optionsFor = (method: ShadingMethod): ShadingOptions => ({ ...DEFAULT_SHADING_OPTIONS, method });
 
 /** 陰影を焼き込んだ不透明な図として出力する方式（αに逃がさない） */
-const OPAQUE_METHODS: ShadingMethod[] = ['mpi-rrim', 'mpi-blue'];
+const OPAQUE_METHODS: ShadingMethod[] = ['mpi-rrim', 'mpi-blue', 'mpi-mono'];
 
 /** 袖付きバッファを生成する。fnは(x, y)を中央領域基準の座標として標高を返す */
 function makeBuffer(fn: (x: number, y: number) => number): Float32Array {
@@ -276,5 +276,49 @@ describe('mpi-rrim / mpi-blue', () => {
     });
     const p = (cx * SIZE + cx) * 4;
     expect(strong[p]).toBeLessThan(base[p]);
+  });
+});
+
+describe('mpi-gray', () => {
+  const cx = SIZE / 2;
+
+  it('尾根は明るく、谷は暗く、平坦地は中間になる', () => {
+    const grayAt = (rgba: Uint8ClampedArray, x: number, y: number) => rgba[(y * SIZE + x) * 4];
+    const ridge = shade(makeBuffer((x, y) => Math.max(0, 200 - 8 * Math.abs(y - cx))), 'mpi-gray');
+    const valley = shade(makeBuffer((x, y) => Math.min(0, -200 + 8 * Math.abs(y - cx))), 'mpi-gray');
+    const flat = shade(makeBuffer(() => 0), 'mpi-gray');
+    expect(grayAt(ridge, cx, cx)).toBeGreaterThan(grayAt(flat, cx, cx));
+    expect(grayAt(valley, cx, cx)).toBeLessThan(grayAt(flat, cx, cx));
+  });
+
+  // SVFは仰角の負側を0に丸めるため尾根と平坦地がどちらも「開けている」で飽和する。
+  // MPIは負値を保つのでここに差が出る。これがグレーでMPIを使う利点。
+  it('SVFでは区別できない尾根と平坦地を区別できる', () => {
+    const ridgeBuf = makeBuffer((x, y) => Math.max(0, 200 - 8 * Math.abs(y - cx)));
+    const flatBuf = makeBuffer(() => 0);
+    const at = (rgba: Uint8ClampedArray) => rgba[(cx * SIZE + cx) * 4];
+
+    const svfRidge = alphaOf(shade(ridgeBuf, 'svf'))[cx * SIZE + cx];
+    const svfFlat = alphaOf(shade(flatBuf, 'svf'))[cx * SIZE + cx];
+    expect(svfRidge).toBe(svfFlat); // どちらも透明で区別できない
+
+    expect(at(shade(ridgeBuf, 'mpi-gray'))).not.toBe(at(shade(flatBuf, 'mpi-gray')));
+  });
+});
+
+describe('mpi-mono', () => {
+  it('無彩色になる（R=G=B）', () => {
+    const cx = SIZE / 2;
+    const rgba = shade(
+      makeBuffer((x, y) => {
+        const r = Math.hypot(x - cx, y - cx);
+        return r < 20 ? (r - 20) * 5 : 0;
+      }),
+      'mpi-mono'
+    );
+    for (let i = 0; i < rgba.length; i += 4) {
+      expect(rgba[i]).toBe(rgba[i + 1]);
+      expect(rgba[i + 1]).toBe(rgba[i + 2]);
+    }
   });
 });
