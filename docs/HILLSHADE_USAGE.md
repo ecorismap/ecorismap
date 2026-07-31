@@ -64,18 +64,26 @@ MPI赤色立体地図で推奨される実距離 150m とほぼ一致します�
 
 ## 実装
 
-| | |
+| プラットフォーム | 実装 |
 |---|---|
-| 計算 | `src/utils/terrainShading.ts` |
-| Web のタイル生成 | `src/utils/shadingTileProtocol.web.ts`（maplibre の `addProtocol`） |
-| 内部プロトコル | `terrainshade://` |
+| 計算（Web） | `src/utils/terrainShading.ts` |
+| タイル生成（Web） | `src/utils/shadingTileProtocol.web.ts`（maplibre の `addProtocol`、内部プロトコル `terrainshade://`） |
+| Android | `MapDEMTileProvider.java`（`patches/react-native-maps+1.27.2.patch`） |
+| iOS | `AIRGoogleMapDEMTileOverlay.m`（同上） |
+
+3プラットフォームとも同じ計算をしています。**変更するときは3つとも揃えてください。**
+移植が正しいことは、同一の合成地形に対する出力を突き合わせて確認しています
+（4096画素すべて完全一致）。
 
 Web では maplibre 内蔵の hillshade レイヤは使いません（光源方位に依存するため）。
 標高タイルを自前で取得・デコードし、陰影を計算した通常のラスタタイルとして返します。
 
-- 探索半径のぶんの袖が要るので、1タイル描くのに周囲8タイルの標高を参照します。
-  デコード済みの標高を128枚までキャッシュするので、実質1枚あたり1回の取得で済みます
+いずれのプラットフォームでも共通する要点:
+
+- 探索半径のぶんの袖が要るので、1タイル描くのに**周囲8タイルの標高を参照**します。
+  デコード済みの標高をキャッシュするので、実質1枚あたり1回の取得で済みます
 - NoData と取得失敗は透明にします
+- オーバーズーム時は標高が実在する最大ズームで計算してから切り出して拡大します
 
 オフライン用にダウンロードされるのは**陰影の計算結果ではなく生の標高タイル**です。
 表示のたびに計算します。
@@ -84,7 +92,9 @@ Web では maplibre 内蔵の hillshade レイヤは使いません（光源方�
 
 - 平坦地は白になります。乗算で重ねる前提の図なので、ベースマップに重ねるより
   単体（透過 0）で背景として使う方が本来の姿です
-- ネイティブ（iOS/Android）は未対応です
+- ネイティブのパッチを変更したら `npx patch-package react-native-maps
+  --exclude '(^|/)(\.gradle|build|\.cxx)/'` で再生成してください。
+  除外を付けないと `node_modules` に残ったビルド生成物を巻き込みます
 
 ## 参考
 

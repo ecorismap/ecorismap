@@ -357,42 +357,54 @@ index e4010de..e9a07ad 100644
 \ No newline at end of file
 diff --git a/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapDEMTileProvider.java b/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapDEMTileProvider.java
 new file mode 100644
-index 0000000..6da8001
+index 0000000..1dedc56
 --- /dev/null
 +++ b/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapDEMTileProvider.java
-@@ -0,0 +1,444 @@
+@@ -0,0 +1,337 @@
 +package com.rnmaps.maps;
 +
 +import android.content.Context;
 +import android.graphics.Bitmap;
 +import android.graphics.BitmapFactory;
-+import android.graphics.Canvas;
-+import android.graphics.Color;
-+import android.graphics.Paint;
 +import android.util.Log;
 +import android.util.LruCache;
-+import com.google.android.gms.maps.GoogleMap;
-+import com.google.android.gms.maps.model.CameraPosition;
 +import com.google.android.gms.maps.model.Tile;
 +import java.io.ByteArrayOutputStream;
-+import java.lang.ref.WeakReference;
 +
 +/**
-+ * DEM（数値標高モデル）タイル用のカスタムタイルプロバイダー
-+ * MapTileProviderを継承し、DEMタイルのデコード機能を追加
++ * 標高タイルから全方向陰影（立体図）を計算するタイルプロバイダー。
++ *
++ * 従来の陰影起伏図は勾配ベクトルと光源ベクトルの内積で求めるため光源方位に依存し、
++ * 地図を180度回すと凹凸が反転して見えた。ここでは MPI赤色立体地図
++ * （Kaneda and Chiba 2019）を無彩色化した方式を使う。式に光源が現れないため、
++ * 地図をどの向きに回しても見え方が変わらない。
++ *
++ *   MPI  = 各方位の最大仰角の平均[度]。周囲の地形にどれだけ囲まれているかを表す
++ *   傾斜 = 中央差分による勾配の大きさ[度]
++ *   明度 = 255 * (1 - clamp(傾斜/55度)) * (1 - clamp(MPI/25度)^ガンマ)
++ *
++ * Web版の src/utils/terrainShading.ts と同じ計算をしている。変更時は両方を揃えること。
 + */
 +public class MapDEMTileProvider extends MapTileProvider {
-+  
++
 +  private static final String TAG = "MapDEMTileProvider";
-+  private WeakReference<GoogleMap> googleMapRef; // メモリリーク防止のためWeakReference使用
-+  private int lastQuantizedBearing = 0; // 前回の量子化された回転角度
-+  private float lastActualBearing = 0; // 前回の実際の回転角度（ヒステリシス用）
-+  private static final float HYSTERESIS_THRESHOLD = 45.0f; // ヒステリシス閾値（45度）
-+  private static final float QUANTIZATION_UNIT = 90.0f; // 量子化単位（90度）
-+  
-+  // ヒルシェードタイルのキャッシュ（キー: "x,y,zoom,bearing"）
-+  private final LruCache<String, byte[]> hillshadeCache;
-+  
++
++  // --- 陰影のパラメータ（Web版の DEFAULT_SHADING_OPTIONS と対応）---
++  private static final int NUM_DIRECTIONS = 8;
++  private static final int SEARCH_RADIUS = 16;
++  private static final float SLOPE_MAX_DEG = 55.0f;
++  private static final float MPI_MAX_DEG = 25.0f;
++  private static final float MPI_GAMMA = 1.0f;
++  /** 袖の幅。探索半径に加えて傾斜の中央差分に1画素余分に要る */
++  private static final int HALO = SEARCH_RADIUS + 1;
++
++  /** 出力PNGのキャッシュ（キー: "x,y,zoom"） */
++  private final LruCache<String, byte[]> shadingCache;
++  /** デコード済み標高のキャッシュ（キー: "x,y,zoom"）。袖のために隣接タイルを何度も引くため */
++  private final LruCache<String, float[]> elevationCache;
++  /** 標高配列の一辺。全タイル同じ前提で最初に見たタイルから決まる */
++  private volatile int demTileSize = 0;
++
 +  public MapDEMTileProvider(
 +    int tileSizet,
 +    boolean doubleTileSize,
@@ -408,404 +420,284 @@ index 0000000..6da8001
 +    boolean customMode
 +  ) {
 +    // superの呼び出しは最初に行う必要がある
-+    super(tileSizet, doubleTileSize, 
-+          cleanUrlTemplate(urlTemplate), 
++    super(tileSizet, doubleTileSize,
++          cleanUrlTemplate(urlTemplate),
 +          maximumZ, maximumNativeZ, minimumZ, flipY, tileCachePath, tileCacheMaxAge, offlineMode, context, customMode);
-+        
-+    // キャッシュの初期化（最大50MBのメモリを使用）
-+    final int maxMemory = (int) (Runtime.getRuntime().maxMemory() / 1024);
-+    final int cacheSize = Math.min(maxMemory / 8, 50 * 1024); // 最大50MB
-+    
-+    this.hillshadeCache = new LruCache<String, byte[]>(cacheSize) {
++
++    final int maxMemoryKb = (int) (Runtime.getRuntime().maxMemory() / 1024);
++    final int shadingCacheKb = Math.min(maxMemoryKb / 8, 50 * 1024);
++    // 標高1枚は 256*256*4 = 256KB。袖のために周囲8枚を参照するので少し多めに持つ
++    final int elevationCacheKb = Math.min(maxMemoryKb / 8, 32 * 1024);
++
++    this.shadingCache = new LruCache<String, byte[]>(shadingCacheKb) {
 +      @Override
 +      protected int sizeOf(String key, byte[] value) {
-+        // キャッシュサイズをKB単位で返す
-+        return value.length / 1024;
++        return Math.max(1, value.length / 1024);
 +      }
 +    };
-+    
-+    Log.d(TAG, "Cleaned URL: " + cleanUrlTemplate(urlTemplate) + ", Cache size: " + cacheSize + "KB");
++    this.elevationCache = new LruCache<String, float[]>(elevationCacheKb) {
++      @Override
++      protected int sizeOf(String key, float[] value) {
++        return Math.max(1, value.length * 4 / 1024);
++      }
++    };
 +  }
-+  
-+  // URLテンプレートからプレフィックスを除去するヘルパーメソッド
++
++  /** URLテンプレートからプレフィックスを除去する */
 +  private static String cleanUrlTemplate(String urlTemplate) {
-+    if (urlTemplate.startsWith("hillshade://")) {
++    if (urlTemplate != null && urlTemplate.startsWith("hillshade://")) {
 +      return urlTemplate.substring("hillshade://".length());
-+    } 
++    }
 +    return urlTemplate;
 +  }
-+  
-+  /**
-+   * GoogleMapの参照を設定
-+   * @param googleMap GoogleMapインスタンス（nullも可）
-+   */
-+  public void setGoogleMap(GoogleMap googleMap) {
-+    this.googleMapRef = googleMap != null ? new WeakReference<>(googleMap) : null;
-+    Log.d(TAG, "GoogleMap reference set: " + (googleMap != null ? "not null" : "null"));
-+  }
-+  
-+  /**
-+   * 回転角度を更新（メインスレッドから呼び出される）
-+   * @param bearing 新しい回転角度
-+   */
-+  public void updateBearing(float bearing) {
-+    // ヒステリシスチェック：前回の実際の角度から十分に変化したかを確認
-+    float bearingDiff = Math.abs(bearing - lastActualBearing);
-+    
-+    // 360度境界を跨ぐ場合の処理
-+    if (bearingDiff > 180) {
-+      bearingDiff = 360 - bearingDiff;
-+    }
-+    
-+    // ヒステリシス閾値を超えていない場合は更新しない
-+    if (bearingDiff < HYSTERESIS_THRESHOLD) {
-+      return;
-+    }
-+    
-+    // 実際の角度を更新
-+    lastActualBearing = bearing;
-+    
-+    // 量子化（90度単位）
-+    int newQuantizedBearing = Math.round(bearing / QUANTIZATION_UNIT) * (int)QUANTIZATION_UNIT;
-+    
-+    // 量子化された値が変わった場合のみ処理
-+    if (newQuantizedBearing != lastQuantizedBearing) {
-+      Log.d(TAG, String.format("Bearing updated from %d to %d (actual: %.1f, diff: %.1f)", 
-+                               lastQuantizedBearing, newQuantizedBearing, bearing, bearingDiff));
-+      
-+      // 45度以上の変化があった場合はキャッシュをクリア
-+      int quantizedDiff = Math.abs(newQuantizedBearing - lastQuantizedBearing);
-+      if (quantizedDiff > 180) {
-+        quantizedDiff = 360 - quantizedDiff;
-+      }
-+      
-+      if (quantizedDiff >= 45) {
-+        Log.d(TAG, "Large rotation detected, clearing cache");
-+        hillshadeCache.evictAll();
-+      }
-+      
-+      lastQuantizedBearing = newQuantizedBearing;
-+    }
-+  }
-+  
-+  /**
-+   * 現在の地図の回転角度を取得（量子化済み）
-+   * @return 90度単位で量子化された回転角度
-+   */
-+  public int getQuantizedBearing() {
-+    // 前回更新された量子化角度を返すだけ
-+    // 実際の更新はupdateBearing()が呼ばれた時のみ行う
-+    return lastQuantizedBearing;
-+  }
-+  
-+  
++
 +  @Override
 +  public Tile getTile(int x, int y, int zoom) {
 +    // オーバーズームチェック
 +    boolean isOverzoom = zoom > maximumNativeZ;
-+    int nativeZoom = isOverzoom ? (int)maximumNativeZ : zoom;
++    int nativeZoom = isOverzoom ? (int) maximumNativeZ : zoom;
 +    int scaleFactor = isOverzoom ? (1 << (zoom - nativeZoom)) : 1;
-+    
-+    // ネイティブズームレベルでのタイル座標を計算
 +    int nativeX = isOverzoom ? x / scaleFactor : x;
 +    int nativeY = isOverzoom ? y / scaleFactor : y;
-+    
-+    // オーバーズーム時のタイル内オフセットを計算
 +    int offsetX = isOverzoom ? (x % scaleFactor) : 0;
 +    int offsetY = isOverzoom ? (y % scaleFactor) : 0;
-+    
-+    // 現在の回転角度を取得
-+    int quantizedBearing = getQuantizedBearing();
-+    
-+    // キャッシュキーを生成（オーバーズームの場合も考慮）
-+    String cacheKey = String.format("%d,%d,%d,%d", x, y, zoom, quantizedBearing);
-+    
-+    // キャッシュから取得を試みる
-+    byte[] cachedData = hillshadeCache.get(cacheKey);
-+    if (cachedData != null) {
-+      Log.d(TAG, "Using cached hillshade for: " + cacheKey);
-+      return new Tile(this.tileSize, this.tileSize, cachedData);
++
++    String cacheKey = x + "," + y + "," + zoom;
++    byte[] cached = shadingCache.get(cacheKey);
++    if (cached != null) {
++      return new Tile(this.tileSize, this.tileSize, cached);
 +    }
-+    
-+    // ネイティブ解像度でDEMタイルデータを取得
-+    Tile demTile = super.getTile(nativeX, nativeY, nativeZoom);
-+    
-+    if (demTile == null) {
-+      Log.d(TAG, "No DEM tile available from parent");
++
++    // 中央タイルが取れなければ描くものがない
++    float[] center = loadElevation(nativeX, nativeY, nativeZoom);
++    if (center == null) {
 +      return null;
 +    }
-+    
-+    // NO_TILEの場合はdataがnullなのでチェック
-+    if (demTile.data == null) {
-+      Log.d(TAG, "DEM tile has no data (NO_TILE)");
-+      return demTile;
-+    }
-+    
-+    Log.d(TAG, String.format("Getting DEM tile: x=%d, y=%d, zoom=%d, bearing=%d, overzoom=%b, scale=%d, offset=(%d,%d)", 
-+                             x, y, zoom, quantizedBearing, isOverzoom, scaleFactor, offsetX, offsetY));
-+    
-+    // 陰影図を作成（オーバーズームの場合は部分を切り出す）
-+    byte[] processedData = isOverzoom ?
-+      createHillshadeWithCrop(demTile.data, nativeZoom, nativeY, quantizedBearing, scaleFactor, offsetX, offsetY) :
-+      createHillshade(demTile.data, zoom, y, quantizedBearing);
-+    
-+    if (processedData == null) {
-+      Log.e(TAG, "Failed to create hillshade");
++
++    byte[] processed = createShading(nativeX, nativeY, nativeZoom, scaleFactor, offsetX, offsetY);
++    if (processed == null) {
 +      return null;
 +    }
-+    
-+    // キャッシュに保存
-+    hillshadeCache.put(cacheKey, processedData);
-+    
-+    // 処理済みのタイルを返す（サイズは常にtileSize）
-+    return new Tile(this.tileSize, this.tileSize, processedData);
++
++    shadingCache.put(cacheKey, processed);
++    return new Tile(this.tileSize, this.tileSize, processed);
 +  }
-+  
++
 +  /**
-+   * DEMタイルから陰影起伏図を作成（通常版）
-+   * @param tileData 元のDEMタイルデータ
-+   * @param zoom ズームレベル
-+   * @param tileY タイルのY座標
-+   * @param mapBearing 地図の回転角度（度、量子化済み）
-+   * @return 陰影起伏図のタイルデータ
++   * 標高タイル1枚を取得してデコードする。取得できなければ null。
++   * 隣接タイルは周囲のタイルを描くときにも使うのでキャッシュする。
 +   */
-+  private byte[] createHillshade(byte[] tileData, int zoom, int tileY, int mapBearing) {
-+    try {
-+      // タイルデータをBitmapに変換
-+      Bitmap sourceBitmap = BitmapFactory.decodeByteArray(tileData, 0, tileData.length);
-+      if (sourceBitmap == null) {
-+        Log.e(TAG, "Failed to decode tile data to bitmap");
-+        return null;
-+      }
-+      
-+      int width = sourceBitmap.getWidth();
-+      int height = sourceBitmap.getHeight();
-+      Log.d(TAG, String.format("Creating hillshade: width=%d, height=%d", width, height));
-+      
-+      // 標高データを2次元配列に格納
-+      float[][] elevations = new float[height][width];
-+      for (int y = 0; y < height; y++) {
-+        for (int x = 0; x < width; x++) {
-+          int pixel = sourceBitmap.getPixel(x, y);
-+          int r = (pixel >> 16) & 0xff;
-+          int g = (pixel >> 8) & 0xff;
-+          int b = pixel & 0xff;
-+          elevations[y][x] = decodeElevation(r, g, b);
++  private float[] loadElevation(int x, int y, int zoom) {
++    String key = x + "," + y + "," + zoom;
++    float[] cached = elevationCache.get(key);
++    if (cached != null) {
++      return cached;
++    }
++
++    Tile demTile = super.getTile(x, y, zoom);
++    if (demTile == null || demTile.data == null) {
++      return null;
++    }
++
++    Bitmap bitmap = BitmapFactory.decodeByteArray(demTile.data, 0, demTile.data.length);
++    if (bitmap == null) {
++      Log.e(TAG, "Failed to decode DEM tile: " + key);
++      return null;
++    }
++
++    int width = bitmap.getWidth();
++    int height = bitmap.getHeight();
++    int[] pixels = new int[width * height];
++    bitmap.getPixels(pixels, 0, width, 0, 0, width, height);
++    bitmap.recycle();
++
++    float[] elevation = new float[width * height];
++    for (int i = 0; i < pixels.length; i++) {
++      int p = pixels[i];
++      elevation[i] = decodeElevation((p >> 16) & 0xff, (p >> 8) & 0xff, p & 0xff);
++    }
++
++    if (demTileSize == 0) {
++      demTileSize = width;
++    }
++    elevationCache.put(key, elevation);
++    return elevation;
++  }
++
++  /**
++   * 国土地理院・産総研方式の標高デコード。
++   * x = 2^16*R + 2^8*G + B、NoDataは2^23、単位は0.01m。
++   */
++  private static float decodeElevation(int r, int g, int b) {
++    float x = r * 65536.0f + g * 256.0f + b;
++    if (x == 8388608.0f) {
++      return Float.NaN; // NoData
++    }
++    return x < 8388608.0f ? x / 100.0f : (x - 16777216.0f) / 100.0f;
++  }
++
++  /** タイル中心緯度における1画素あたりのメートル数 */
++  private static double metersPerPixel(int zoom, int tileY, int tileSize) {
++    double normalizedTileY = (tileY + 0.5) / Math.pow(2, zoom);
++    double lat = 85.05112878 - 2.0 * 85.05112878 * normalizedTileY;
++    return 40075017.0 * Math.cos(Math.toRadians(lat)) / (tileSize * Math.pow(2, zoom));
++  }
++
++  /**
++   * 中央タイルと周囲8タイルから袖付きの標高バッファを組み立てる。
++   * 袖はHALO画素分だけあればよいので、隣接タイルは必要な帯だけ写す。
++   */
++  private float[] assembleWithHalo(int x, int y, int zoom, int size) {
++    int bufferSize = size + 2 * HALO;
++    float[] buffer = new float[bufferSize * bufferSize];
++    java.util.Arrays.fill(buffer, Float.NaN);
++
++    int max = 1 << zoom;
++    for (int ty = -1; ty <= 1; ty++) {
++      int ny = y + ty;
++      if (ny < 0 || ny >= max) continue;
++      for (int tx = -1; tx <= 1; tx++) {
++        int nx = ((x + tx) % max + max) % max; // 経度方向は巻き戻す
++        float[] tile = loadElevation(nx, ny, zoom);
++        if (tile == null || tile.length != size * size) continue;
++
++        // このタイルのうちバッファに入る範囲をタイル内座標で求める
++        int srcX0 = tx == -1 ? size - HALO : 0;
++        int srcX1 = tx == 1 ? HALO : size;
++        int srcY0 = ty == -1 ? size - HALO : 0;
++        int srcY1 = ty == 1 ? HALO : size;
++        int dstX = HALO + tx * size + srcX0;
++        int dstY = HALO + ty * size + srcY0;
++        int runLength = srcX1 - srcX0;
++
++        for (int row = srcY0; row < srcY1; row++) {
++          System.arraycopy(tile, row * size + srcX0,
++                           buffer, (dstY + (row - srcY0)) * bufferSize + dstX, runLength);
 +        }
 +      }
-+      
-+      // 陰影起伏図を作成
-+      Bitmap shadedReliefBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
-+      
-+      // ShadedReliefImageMapのパラメータ（layer-hillshade.js互換）
-+      final float NO_DATA_VALUE = -99999.0f;
-+      final float SHADED_ELV = 45.0f; // 光源の仰角（度）
-+      final float GAMMA = 1.0f; // ガンマ補正値
-+      final float HF = 100.0f; // 高さ係数
-+      
-+      Log.d(TAG, String.format("Creating shaded relief map: width=%d, height=%d, zoom=%d, tileY=%d, bearing=%d", 
-+                               width, height, zoom, tileY, mapBearing));
-+      
-+      // ピクセル解像度の計算（layer-hillshade.jsと同じ）
-+      double normalizedTileY = (tileY + 0.5) / Math.pow(2, zoom);
-+      double lat = 85.05112878 - 2.0 * 85.05112878 * normalizedTileY;
-+      float nz = (float)(40075017.0 * Math.cos(Math.toRadians(lat)) / Math.pow(2, zoom + 8) * 100.0);
-+      
-+      // bearingの変換（layer-hillshade.jsと同じ）
-+      float convertedBearing;
-+      if (mapBearing < 0) {
-+        convertedBearing = Math.abs(mapBearing);
-+      } else {
-+        convertedBearing = 180.0f + (180.0f - mapBearing);
++    }
++    return buffer;
++  }
++
++  /**
++   * 陰影を計算してPNGを返す。オーバーズーム時は該当部分を切り出して拡大する。
++   */
++  private byte[] createShading(int x, int y, int zoom, int scaleFactor, int offsetX, int offsetY) {
++    try {
++      int size = demTileSize;
++      if (size <= 0) return null;
++
++      int bufferSize = size + 2 * HALO;
++      float[] buffer = assembleWithHalo(x, y, zoom, size);
++      double metersPerPx = metersPerPixel(zoom, y, size);
++
++      // レイキャストの標本位置は全画素で共通なので、添字差分と距離の逆数を先に作る
++      int samples = NUM_DIRECTIONS * SEARCH_RADIUS;
++      int[] offsets = new int[samples];
++      float[] invDistances = new float[samples];
++      for (int d = 0; d < NUM_DIRECTIONS; d++) {
++        double theta = 2.0 * Math.PI * d / NUM_DIRECTIONS;
++        double dx = Math.cos(theta);
++        double dy = Math.sin(theta);
++        for (int s = 1; s <= SEARCH_RADIUS; s++) {
++          int i = d * SEARCH_RADIUS + (s - 1);
++          offsets[i] = (int) Math.round(dy * s) * bufferSize + (int) Math.round(dx * s);
++          invDistances[i] = (float) (1.0 / (s * metersPerPx));
++        }
 +      }
-+      
-+      // 方位角の計算（az = -bearing - 45）
-+      float az = -convertedBearing - 45.0f;
-+      if (az < 0.0f) az = 360.0f + az;
-+      
-+      // 光源の単位ベクトル
-+      double elvRad = Math.toRadians(SHADED_ELV);
-+      double azRad = Math.toRadians(az);
-+      float ix = (float)(Math.cos(elvRad) * Math.sin(azRad));
-+      float iy = -(float)(Math.cos(elvRad) * Math.cos(azRad));
-+      float iz = (float)Math.sin(elvRad);
-+      
-+      // 各ピクセルの陰影を計算（layer-hillshade.jsアルゴリズム）
-+      for (int y = 0; y < height; y++) {
-+        for (int x = 0; x < width; x++) {
-+          float h = elevations[y][x];
-+          
-+          // NoDataチェック
-+          if (h == NO_DATA_VALUE) {
-+            shadedReliefBitmap.setPixel(x, y, Color.TRANSPARENT);
++
++      final float toDeg = (float) (180.0 / Math.PI);
++      final float slopeInv = (float) (1.0 / (2.0 * metersPerPx));
++      int[] pixels = new int[size * size];
++
++      for (int py = 0; py < size; py++) {
++        int rowBase = (HALO + py) * bufferSize + HALO;
++        for (int px = 0; px < size; px++) {
++          int center = rowBase + px;
++          float z0 = buffer[center];
++          if (Float.isNaN(z0)) {
++            pixels[py * size + px] = 0; // 透明
 +            continue;
 +          }
-+          
-+          // 右と下の標高値を取得（エッジ処理改善）
-+          float rh, bh;
-+          
-+          // 右の標高値
-+          if (x < width - 1) {
-+            rh = elevations[y][x + 1];
-+          } else if (x > 0) {
-+            // 右端の場合：左側の勾配を外挿
-+            rh = h - (elevations[y][x - 1] - h);
-+          } else {
-+            // 左上隅の場合
-+            rh = h;
++
++          // MPI: 各方位の最大仰角の平均
++          float sumUp = 0.0f;
++          for (int d = 0; d < NUM_DIRECTIONS; d++) {
++            int base = d * SEARCH_RADIUS;
++            float maxTan = Float.NEGATIVE_INFINITY;
++            for (int s = 0; s < SEARCH_RADIUS; s++) {
++              int k = base + s;
++              float zp = buffer[center + offsets[k]];
++              if (Float.isNaN(zp)) continue;
++              float t = (zp - z0) * invDistances[k];
++              if (t > maxTan) maxTan = t;
++            }
++            // 有効な標本がなければ水平とみなす。尾根では負になるので丸めない
++            sumUp += (maxTan == Float.NEGATIVE_INFINITY) ? 0.0f : (float) Math.atan(maxTan);
 +          }
-+          
-+          // 下の標高値
-+          if (y < height - 1) {
-+            bh = elevations[y + 1][x];
-+          } else if (y > 0) {
-+            // 下端の場合：上側の勾配を外挿
-+            bh = h - (elevations[y - 1][x] - h);
-+          } else {
-+            // 左上隅の場合
-+            bh = h;
++          float mpi = (sumUp / NUM_DIRECTIONS) * toDeg;
++
++          // 傾斜: 中央差分
++          float gx = (buffer[center + 1] - buffer[center - 1]) * slopeInv;
++          float gy = (buffer[center + bufferSize] - buffer[center - bufferSize]) * slopeInv;
++          float slope = (float) Math.atan(Math.sqrt(gx * gx + gy * gy)) * toDeg;
++          if (Float.isNaN(slope)) {
++            pixels[py * size + px] = 0; // 透明
++            continue;
 +          }
-+          
-+          // 標高差を計算（layer-hillshadeと同じ）
-+          float hx = (rh != NO_DATA_VALUE) ? (h - rh) : 0.0f;
-+          float hy = (bh != NO_DATA_VALUE) ? (h - bh) : 0.0f;
-+          
-+          // 陰影値の計算（layer-hillshadeと同じ）
-+          float l = (float)Math.sqrt(hx * hx + hy * hy + Math.pow(nz / HF, 2.0));
-+          float c = Math.max(0.0f, (hx * ix + hy * iy + (nz * iz) / HF) / l);
-+          
-+          // ガンマ補正を適用
-+          c = (float)Math.pow(c, 1.0f / GAMMA);
-+          
-+          // グレースケールの陰影（着色なし）
-+          int gray = (int)(c * 255);
-+          gray = Math.max(0, Math.min(255, gray));
-+          
-+          int color = Color.argb(255, gray, gray, gray);
-+          shadedReliefBitmap.setPixel(x, y, color);
++
++          // 2つの暗さを乗算する
++          float sTerm = clamp01(slope / SLOPE_MAX_DEG);
++          float mTerm = (float) Math.pow(clamp01(mpi / MPI_MAX_DEG), MPI_GAMMA);
++          int gray = Math.round(255.0f * (1.0f - sTerm) * (1.0f - mTerm));
++          if (gray < 0) gray = 0;
++          if (gray > 255) gray = 255;
++
++          pixels[py * size + px] = 0xff000000 | (gray << 16) | (gray << 8) | gray;
 +        }
 +      }
-+      
-+      // Bitmapをbyte配列に変換
-+      ByteArrayOutputStream stream = new ByteArrayOutputStream();
-+      shadedReliefBitmap.compress(Bitmap.CompressFormat.PNG, 100, stream);
-+      byte[] result = stream.toByteArray();
-+      
-+      // リソースをクリーンアップ
-+      sourceBitmap.recycle();
-+      shadedReliefBitmap.recycle();
-+      
-+      Log.d(TAG, "Successfully created shaded relief map");
-+      return result;
-+      
-+    } catch (Exception e) {
-+      Log.e(TAG, "Error creating hillshade", e);
-+      return null;
-+    }
-+  }
-+  
-+  /**
-+   * RGB値から標高を計算（GSI標準エンコーディング）
-+   * @param r Red値
-+   * @param g Green値
-+   * @param b Blue値
-+   * @return 標高（メートル）
-+   */
-+  private float decodeElevation(int r, int g, int b) {
 +
-+      // GSI標準エンコーディング: x = 2^16 * R + 2^8 * G + B
-+      float x = r * 65536.0f + g * 256.0f + b;
-+      
-+      // 「値なし」データ(x = 2^23 = 8388608) のチェック
-+      if (x == 8388608.0f) {
-+        return -99999.0f; // NoData
++      Bitmap result = Bitmap.createBitmap(pixels, size, size, Bitmap.Config.ARGB_8888);
++
++      // オーバーズーム時は該当部分を切り出して拡大する
++      if (scaleFactor > 1) {
++        int cropSize = Math.max(1, size / scaleFactor);
++        Bitmap cropped = Bitmap.createBitmap(result, offsetX * cropSize, offsetY * cropSize, cropSize, cropSize);
++        Bitmap scaled = Bitmap.createScaledBitmap(cropped, (int) this.tileSize, (int) this.tileSize, true);
++        byte[] bytes = toPng(scaled);
++        result.recycle();
++        cropped.recycle();
++        scaled.recycle();
++        return bytes;
 +      }
-+      
-+      // 標高値の計算
-+      float h;
-+      if (x < 8388608.0f) { // 2^23
-+        h = x / 100.0f;
-+      } else {
-+        h = (x - 16777216.0f) / 100.0f; // 2^24
-+      }
-+      
-+      return h;
-+    
-+  }
-+  
-+  /**
-+   * DEMタイルから陰影起伏図を作成（オーバーズーム用・部分切り出し版）
-+   * @param tileData 元のDEMタイルデータ
-+   * @param zoom ズームレベル（ネイティブ解像度）
-+   * @param tileY タイルのY座標（ネイティブ解像度）
-+   * @param mapBearing 地図の回転角度（度、量子化済み）
-+   * @param scaleFactor スケールファクター（2のべき乗）
-+   * @param offsetX タイル内のX方向オフセット
-+   * @param offsetY タイル内のY方向オフセット
-+   * @return 陰影起伏図のタイルデータ
-+   */
-+  private byte[] createHillshadeWithCrop(byte[] tileData, int zoom, int tileY, int mapBearing, 
-+                                         int scaleFactor, int offsetX, int offsetY) {
-+    try {
-+      // まず通常の陰影図を作成
-+      byte[] fullHillshade = createHillshade(tileData, zoom, tileY, mapBearing);
-+      if (fullHillshade == null) {
-+        return null;
-+      }
-+      
-+      // 陰影図をBitmapに変換
-+      Bitmap fullBitmap = BitmapFactory.decodeByteArray(fullHillshade, 0, fullHillshade.length);
-+      if (fullBitmap == null) {
-+        Log.e(TAG, "Failed to decode hillshade to bitmap");
-+        return null;
-+      }
-+      
-+      int fullWidth = fullBitmap.getWidth();
-+      int fullHeight = fullBitmap.getHeight();
-+      int tileSize = fullWidth / scaleFactor;
-+      
-+      // 切り出し位置を計算
-+      int cropX = offsetX * tileSize;
-+      int cropY = offsetY * tileSize;
-+      
-+      Log.d(TAG, String.format("Cropping hillshade: full=%dx%d, tile=%d, crop=(%d,%d)", 
-+                               fullWidth, fullHeight, tileSize, cropX, cropY));
-+      
-+      // 該当部分を切り出して拡大
-+      Bitmap croppedBitmap = Bitmap.createBitmap(fullBitmap, cropX, cropY, tileSize, tileSize);
-+      Bitmap scaledBitmap = Bitmap.createScaledBitmap(croppedBitmap, (int)this.tileSize, (int)this.tileSize, true);
-+      
-+      // Bitmapをbyte配列に変換
-+      ByteArrayOutputStream stream = new ByteArrayOutputStream();
-+      scaledBitmap.compress(Bitmap.CompressFormat.PNG, 100, stream);
-+      byte[] result = stream.toByteArray();
-+      
-+      // リソースをクリーンアップ
-+      fullBitmap.recycle();
-+      croppedBitmap.recycle();
-+      scaledBitmap.recycle();
-+      
-+      return result;
-+      
++
++      byte[] bytes = toPng(result);
++      result.recycle();
++      return bytes;
++
 +    } catch (Exception e) {
-+      Log.e(TAG, "Error creating cropped hillshade", e);
++      Log.e(TAG, "Error creating shading", e);
 +      return null;
 +    }
 +  }
-+  
++
++  private static float clamp01(float v) {
++    return v < 0.0f ? 0.0f : (v > 1.0f ? 1.0f : v);
++  }
++
++  private static byte[] toPng(Bitmap bitmap) {
++    ByteArrayOutputStream stream = new ByteArrayOutputStream();
++    bitmap.compress(Bitmap.CompressFormat.PNG, 100, stream);
++    return stream.toByteArray();
++  }
++
 +  @Override
 +  public void setUrlTemplate(String urlTemplate) {
-+    // URLテンプレートからプレフィックスを除去
-+    String cleanedUrl = urlTemplate;
-+    if (urlTemplate.startsWith("hillshade://")) {
-+      cleanedUrl = urlTemplate.substring("hillshade://".length());
-+    } 
-+    
-+    super.setUrlTemplate(cleanedUrl);
-+    Log.d(TAG, "URL template updated: " + cleanedUrl);
++    super.setUrlTemplate(cleanUrlTemplate(urlTemplate));
++    shadingCache.evictAll();
++    elevationCache.evictAll();
 +  }
 +}
-\ No newline at end of file
 diff --git a/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapLocalTile.java b/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapLocalTile.java
 index fe9b4cc..c5b683c 100644
 --- a/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapLocalTile.java
@@ -3472,7 +3364,7 @@ index a974311..044c72e 100644
  }
 \ No newline at end of file
 diff --git a/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapUrlTile.java b/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapUrlTile.java
-index 8c0a76c..fc1a78a 100644
+index 8c0a76c..c47c3ce 100644
 --- a/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapUrlTile.java
 +++ b/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapUrlTile.java
 @@ -183,9 +183,16 @@ public class MapUrlTile extends MapFeature {
@@ -3482,7 +3374,7 @@ index 8c0a76c..fc1a78a 100644
 -    this.tileProvider = new MapTileProvider((int)this.tileSize, this.doubleTileSize, this.urlTemplate,
 -      this.maximumZ, this.maximumNativeZ, this.minimumZ, this.flipY, this.tileCachePath,
 -      this.tileCacheMaxAge, this.offlineMode, this.context, this.customTileProviderNeeded);
-+    // EcorisMap: hillshade://はDEMタイル（陰影起伏のクライアント描画）として扱う
++    // EcorisMap: hillshade://は標高タイル（立体図のクライアント描画）として扱う
 +    if (this.urlTemplate != null && this.urlTemplate.startsWith("hillshade://")) {
 +      this.tileProvider = new MapDEMTileProvider((int)this.tileSize, this.doubleTileSize, this.urlTemplate,
 +        this.maximumZ, this.maximumNativeZ, this.minimumZ, this.flipY, this.tileCachePath,
@@ -3495,7 +3387,7 @@ index 8c0a76c..fc1a78a 100644
      options.tileProvider(this.tileProvider);
      return options;
    }
-@@ -197,11 +204,42 @@ public class MapUrlTile extends MapFeature {
+@@ -197,11 +204,21 @@ public class MapUrlTile extends MapFeature {
  
    @Override
    public void addToMap(Object map) {
@@ -3508,60 +3400,22 @@ index 8c0a76c..fc1a78a 100644
 +      this.tileOverlay = null;
 +    }
 +    TileOverlayOptions overlayOptions = getTileOverlayOptions();
-+    // DEMタイルは回転に応じた再描画のためGoogleMap参照が必要
-+    if (tileProvider instanceof MapDEMTileProvider) {
-+      ((MapDEMTileProvider) tileProvider).setGoogleMap(googleMap);
-+    }
 +    this.tileOverlay = googleMap.addTileOverlay(overlayOptions);
-+  }
-+
-+  /**
-+   * EcorisMap: カメラ変更時にMapViewから呼ばれる。DEMタイルの回転連動更新。
-+   */
-+  public void onCameraChange(float bearing) {
-+    if (tileProvider instanceof MapDEMTileProvider) {
-+      MapDEMTileProvider demProvider = (MapDEMTileProvider) tileProvider;
-+      int oldQuantizedBearing = demProvider.getQuantizedBearing();
-+      demProvider.updateBearing(bearing);
-+      if (oldQuantizedBearing != demProvider.getQuantizedBearing() && tileOverlay != null) {
-+        tileOverlay.clearTileCache();
-+      }
-+    }
    }
  
    @Override
    public void removeFromMap(Object map) {
 -    tileOverlay.remove();
-+    if (tileProvider instanceof MapDEMTileProvider) {
-+      ((MapDEMTileProvider) tileProvider).setGoogleMap(null);
-+    }
 +    if (tileOverlay != null) {
 +      tileOverlay.remove();
 +    }
    }
  }
 diff --git a/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapView.java b/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapView.java
-index ebf8780..c5325f1 100644
+index ebf8780..f4f1ee6 100644
 --- a/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapView.java
 +++ b/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapView.java
-@@ -685,6 +685,16 @@ public class MapView extends com.google.android.gms.maps.MapView implements Goog
-             LatLngBounds bounds = map.getProjection().getVisibleRegion().latLngBounds;
-             WritableMap payload = OnRegionChangeEvent.payLoadFor(bounds, isGesture);
-             dispatchEvent(payload, OnRegionChangeCompleteEvent::new);
-+
-+            // EcorisMap: DEMタイル（hillshade://）の回転連動更新
-+            CameraPosition cameraPosition = map.getCameraPosition();
-+            if (cameraPosition != null) {
-+                for (MapFeature feature : features) {
-+                    if (feature instanceof MapUrlTile) {
-+                        ((MapUrlTile) feature).onCameraChange(cameraPosition.bearing);
-+                    }
-+                }
-+            }
-         });
- 
-         map.setOnMapLoadedCallback(() -> {
-@@ -1166,12 +1176,16 @@ public class MapView extends com.google.android.gms.maps.MapView implements Goog
+@@ -1166,12 +1166,16 @@ public class MapView extends com.google.android.gms.maps.MapView implements Goog
      }
  
      private void safeAddFeature(int index, MapFeature mapFeature){
@@ -3581,7 +3435,7 @@ index ebf8780..c5325f1 100644
              while(savedFeatures.size() <= index){
                  savedFeatures.add(null);
              }
-@@ -1179,11 +1193,12 @@ public class MapView extends com.google.android.gms.maps.MapView implements Goog
+@@ -1179,11 +1183,12 @@ public class MapView extends com.google.android.gms.maps.MapView implements Goog
              return;
          }
  
@@ -3599,7 +3453,7 @@ index ebf8780..c5325f1 100644
      }
  
      public void addFeature(View child, int index) {
-@@ -1242,6 +1257,10 @@ public class MapView extends com.google.android.gms.maps.MapView implements Goog
+@@ -1242,6 +1247,10 @@ public class MapView extends com.google.android.gms.maps.MapView implements Goog
              MapUrlTile urlTileView = (MapUrlTile) child;
              urlTileView.addToMap(map);
              safeAddFeature(index, urlTileView);
@@ -3610,7 +3464,7 @@ index ebf8780..c5325f1 100644
          } else if (child instanceof MapWMSTile) {
              MapWMSTile urlTileView = (MapWMSTile) child;
              urlTileView.addToMap(map);
-@@ -1284,6 +1303,10 @@ public class MapView extends com.google.android.gms.maps.MapView implements Goog
+@@ -1284,6 +1293,10 @@ public class MapView extends com.google.android.gms.maps.MapView implements Goog
      }
  
      public void removeFeatureAt(int index) {
@@ -9843,15 +9697,15 @@ index b375241..328d14e 100644
      tile.tileLayer.map = nil;
 diff --git a/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapDEMTileOverlay.h b/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapDEMTileOverlay.h
 new file mode 100644
-index 0000000..9419930
+index 0000000..237975a
 --- /dev/null
 +++ b/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapDEMTileOverlay.h
-@@ -0,0 +1,24 @@
+@@ -0,0 +1,17 @@
 +//
 +//  AIRGoogleMapDEMTileOverlay.h
 +//  AirGoogleMaps
 +//
-+//  DEM (Digital Elevation Model) tile overlay that converts elevation data to hillshade images
++//  標高タイルから全方向陰影（立体図）を計算するタイルオーバーレイ
 +//
 +
 +#ifdef HAVE_GOOGLE_MAPS
@@ -9861,469 +9715,359 @@ index 0000000..9419930
 +
 +@interface AIRGoogleMapDEMTileOverlay : AIRGoogleMapUrlTileOverlay
 +
-+@property (nonatomic, assign) CGFloat mapRotation;
-+
-+- (void)onCameraChange:(CGFloat)rotation;
-+
-+// Override parent methods for custom handling
-+- (NSData *)getTile:(NSUInteger)zoom x:(NSUInteger)x y:(NSUInteger)y;
-+
 +@end
 +
 +#endif
-\ No newline at end of file
 diff --git a/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapDEMTileOverlay.m b/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapDEMTileOverlay.m
 new file mode 100644
-index 0000000..1f53c0b
+index 0000000..91a4c9a
 --- /dev/null
 +++ b/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapDEMTileOverlay.m
-@@ -0,0 +1,439 @@
+@@ -0,0 +1,338 @@
 +//
 +//  AIRGoogleMapDEMTileOverlay.m
 +//  AirGoogleMaps
 +//
-+//  DEM (Digital Elevation Model) tile overlay that converts elevation data to hillshade images
++//  標高タイルから全方向陰影（立体図）を計算するタイルオーバーレイ。
++//
++//  従来の陰影起伏図は勾配ベクトルと光源ベクトルの内積で求めるため光源方位に依存し、
++//  地図を180度回すと凹凸が反転して見えた。ここでは MPI赤色立体地図
++//  （Kaneda and Chiba 2019）を無彩色化した方式を使う。式に光源が現れないため、
++//  地図をどの向きに回しても見え方が変わらない。
++//
++//    MPI  = 各方位の最大仰角の平均[度]。周囲の地形にどれだけ囲まれているかを表す
++//    傾斜 = 中央差分による勾配の大きさ[度]
++//    明度 = 255 * (1 - clamp(傾斜/55度)) * (1 - clamp(MPI/25度)^ガンマ)
++//
++//  Web版の src/utils/terrainShading.ts と同じ計算をしている。変更時は両方を揃えること。
 +//
 +
 +#ifdef HAVE_GOOGLE_MAPS
 +
 +#import "AIRGoogleMapDEMTileOverlay.h"
-+#import <CoreImage/CoreImage.h>
++
++// --- 陰影のパラメータ（Web版の DEFAULT_SHADING_OPTIONS と対応）---
++static const NSInteger kNumDirections = 8;
++static const NSInteger kSearchRadius = 16;
++static const float kSlopeMaxDeg = 55.0f;
++static const float kMpiMaxDeg = 25.0f;
++static const float kMpiGamma = 1.0f;
++/** 袖の幅。探索半径に加えて傾斜の中央差分に1画素余分に要る */
++static const NSInteger kHalo = kSearchRadius + 1;
 +
 +@interface AIRGoogleMapDEMTileOverlay ()
 +
-+@property (nonatomic, strong) NSCache *hillshadeCache;
-+@property (nonatomic, assign) CGFloat quantizedRotation;
-+@property (nonatomic, assign) CGFloat pendingRotation;
-+@property (nonatomic, assign) BOOL isUpdating;
++/** 出力画像のキャッシュ（キー: "x,y,zoom"） */
++@property (nonatomic, strong) NSCache *shadingCache;
++/** デコード済み標高のキャッシュ。袖のために隣接タイルを何度も引くため */
++@property (nonatomic, strong) NSCache *elevationCache;
 +
 +@end
 +
-+@implementation AIRGoogleMapDEMTileOverlay {
-+    CIContext *_ciContext;
-+    CGColorSpaceRef _colorspace;
-+}
-+
-+// Constants for hillshade calculation
-+static const CGFloat SHADED_ELV = 45.0f; // Light source elevation angle in degrees
-+static const CGFloat GAMMA = 1.0f;       // Gamma correction value
-+static const CGFloat HF = 100.0f;        // Height factor
-+static const CGFloat QUANTIZATION_UNIT = 90.0f;
++@implementation AIRGoogleMapDEMTileOverlay
 +
 +- (id)init {
 +    self = [super init];
 +    if (self) {
-+        _hillshadeCache = [[NSCache alloc] init];
-+        _hillshadeCache.totalCostLimit = 50 * 1024 * 1024; // 50MB cache
-+        _quantizedRotation = 0.0f;
-+        _pendingRotation = 0.0f;
-+        _isUpdating = NO;
-+        _mapRotation = 0.0f;
-+        
-+        // Enable fade-in for smoother tile updates
++        _shadingCache = [[NSCache alloc] init];
++        _shadingCache.totalCostLimit = 50 * 1024 * 1024;
++        _elevationCache = [[NSCache alloc] init];
++        _elevationCache.totalCostLimit = 32 * 1024 * 1024;
 +        self.fadeIn = YES;
-+        
-+        NSLog(@"AIRGoogleMapDEMTileOverlay: Initialized with rotation: %.1f", _quantizedRotation);
 +    }
 +    return self;
 +}
 +
-+- (void)dealloc {
-+    if (_colorspace) {
-+        CGColorSpaceRelease(_colorspace);
-+    }
-+}
++#pragma mark - 標高のデコード
 +
-+- (void)onCameraChange:(CGFloat)rotation {
-+    CGFloat newQuantized = [self quantizeAngle:rotation];
-+    
-+    NSLog(@"AIRGoogleMapDEMTileOverlay: onCameraChange - rotation: %.1f, quantized: %.1f, previous: %.1f", 
-+          rotation, newQuantized, _quantizedRotation);
-+    
-+    // Check if rotation changed to a different quantized value
-+    if (fabs(newQuantized - _quantizedRotation) > 1.0 && !_isUpdating) {
-+        NSLog(@"AIRGoogleMapDEMTileOverlay: Rotation changed significantly, preparing update");
-+        
-+        _pendingRotation = newQuantized;
-+        _isUpdating = YES;
-+        
-+        // Update with short delay for better responsiveness
-+        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.1 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-+            NSLog(@"AIRGoogleMapDEMTileOverlay: Updating tiles for new rotation");
-+            
-+            // Update rotation values
-+            _quantizedRotation = _pendingRotation;
-+            _mapRotation = rotation;
-+            
-+            // Clear cache and force tile refresh
-+            [_hillshadeCache removeAllObjects];
-+            [self clearTileCache];
-+            
-+            _isUpdating = NO;
-+        });
-+    }
-+}
-+
-+- (CGFloat)quantizeAngle:(CGFloat)angle {
-+    // Normalize angle to 0-360
-+    while (angle < 0) angle += 360;
-+    while (angle >= 360) angle -= 360;
-+    
-+    // Quantize to nearest 90 degrees
-+    return roundf(angle / QUANTIZATION_UNIT) * QUANTIZATION_UNIT;
-+}
-+
-+// Override clearTileCache
-+- (void)clearTileCache {
-+    NSLog(@"AIRGoogleMapDEMTileOverlay: clearTileCache called");
-+    
-+    // Call parent's clearTileCache
-+    [super clearTileCache];
-+}
-+
-+
-+- (UIImage *)tileForX:(NSUInteger)x y:(NSUInteger)y zoom:(NSUInteger)zoom {
-+    NSLog(@"AIRGoogleMapDEMTileOverlay: tileForX:%ld y:%ld zoom:%ld rotation:%.0f", 
-+          (long)x, (long)y, (long)zoom, _quantizedRotation);
-+    
-+    // Create cache key including rotation
-+    NSString *cacheKey = [NSString stringWithFormat:@"%ld,%ld,%ld,%.0f", 
-+                          (long)x, (long)y, (long)zoom, _quantizedRotation];
-+    
-+    // Check cache first
-+    UIImage *cachedImage = [_hillshadeCache objectForKey:cacheKey];
-+    if (cachedImage) {
-+        NSLog(@"AIRGoogleMapDEMTileOverlay: Using cached hillshade for: %@", cacheKey);
-+        return cachedImage;
-+    }
-+    
-+    // Check if this is overzoom
-+    NSInteger maximumNativeZ = self.maximumNativeZ;
-+    BOOL isOverzoom = zoom > maximumNativeZ;
-+    UIImage *hillshadeImage = nil;
-+    
-+    if (isOverzoom) {
-+        NSLog(@"AIRGoogleMapDEMTileOverlay: Overzoom detected - zoom:%ld > maximumNativeZ:%ld", 
-+              (long)zoom, (long)maximumNativeZ);
-+        
-+        // Calculate native zoom level tile coordinates
-+        NSInteger overZoomLevel = zoom - maximumNativeZ;
-+        NSInteger scaleFactor = 1 << overZoomLevel;
-+        NSUInteger nativeX = x / scaleFactor;
-+        NSUInteger nativeY = y / scaleFactor;
-+        NSUInteger offsetX = x % scaleFactor;
-+        NSUInteger offsetY = y % scaleFactor;
-+        
-+        NSLog(@"AIRGoogleMapDEMTileOverlay: Overzoom - scale:%ld, native:(%ld,%ld), offset:(%ld,%ld)", 
-+              (long)scaleFactor, (long)nativeX, (long)nativeY, (long)offsetX, (long)offsetY);
-+        
-+        // Check cache for native resolution hillshade
-+        NSString *nativeCacheKey = [NSString stringWithFormat:@"%ld,%ld,%ld,%.0f", 
-+                                    (long)nativeX, (long)nativeY, (long)maximumNativeZ, _quantizedRotation];
-+        UIImage *nativeHillshade = [_hillshadeCache objectForKey:nativeCacheKey];
-+        
-+        if (!nativeHillshade) {
-+            // Get native resolution DEM tile
-+            UIImage *nativeDemImage = [super tileForX:nativeX y:nativeY zoom:maximumNativeZ];
-+            if (nativeDemImage && nativeDemImage != kGMSTileLayerNoTile) {
-+                // Create hillshade at native resolution
-+                nativeHillshade = [self createHillshadeFromDEMImage:nativeDemImage zoom:maximumNativeZ y:nativeY];
-+                if (nativeHillshade) {
-+                    // Cache the native resolution hillshade
-+                    [_hillshadeCache setObject:nativeHillshade forKey:nativeCacheKey 
-+                                          cost:nativeHillshade.size.width * nativeHillshade.size.height * 4];
-+                }
-+            }
-+        }
-+        
-+        if (nativeHillshade) {
-+            // Crop and scale the hillshade
-+            hillshadeImage = [self cropAndScaleImage:nativeHillshade 
-+                                          scaleFactor:scaleFactor 
-+                                              offsetX:offsetX 
-+                                              offsetY:offsetY];
-+        }
-+    } else {
-+        // Normal zoom - use parent class method
-+        UIImage *demImage = [super tileForX:x y:y zoom:zoom];
-+        if (!demImage || demImage == kGMSTileLayerNoTile) {
-+            NSLog(@"AIRGoogleMapDEMTileOverlay: No DEM tile available");
-+            return kGMSTileLayerNoTile;
-+        }
-+        
-+        NSLog(@"AIRGoogleMapDEMTileOverlay: DEM tile loaded, size: %.0fx%.0f", demImage.size.width, demImage.size.height);
-+        
-+        // Convert DEM to hillshade
-+        hillshadeImage = [self createHillshadeFromDEMImage:demImage zoom:zoom y:y];
-+    }
-+    
-+    if (hillshadeImage) {
-+        NSLog(@"AIRGoogleMapDEMTileOverlay: Hillshade created successfully, size: %.0fx%.0f", 
-+              hillshadeImage.size.width, hillshadeImage.size.height);
-+        
-+        // Cache the result
-+        [_hillshadeCache setObject:hillshadeImage forKey:cacheKey cost:hillshadeImage.size.width * hillshadeImage.size.height * 4];
-+        
-+        return hillshadeImage;
-+    } else {
-+        NSLog(@"AIRGoogleMapDEMTileOverlay: Failed to create hillshade");
-+        return kGMSTileLayerNoTile;
-+    }
-+}
-+
-+- (CGFloat)decodeElevation:(CGFloat)r g:(CGFloat)g b:(CGFloat)b {
-+    // GSI標準エンコーディング: x = 2^16 * R + 2^8 * G + B
-+    CGFloat x = r * 65536.0f + g * 256.0f + b;
-+    
-+    // 「値なし」データ(x = 2^23 = 8388608) のチェック
++/**
++ * 国土地理院・産総研方式の標高デコード。
++ * x = 2^16*R + 2^8*G + B、NoDataは2^23、単位は0.01m。
++ */
++static inline float DecodeElevation(uint8_t r, uint8_t g, uint8_t b) {
++    float x = (float)r * 65536.0f + (float)g * 256.0f + (float)b;
 +    if (x == 8388608.0f) {
-+        return -99999.0f; // NoData
++        return NAN; // NoData
 +    }
-+    
-+    // 標高値の計算
-+    CGFloat h;
-+    if (x < 8388608.0f) { // 2^23
-+        h = x / 100.0f;
-+    } else {
-+        h = (x - 16777216.0f) / 100.0f; // 2^24
-+    }
-+    
-+    return h;
++    return x < 8388608.0f ? x / 100.0f : (x - 16777216.0f) / 100.0f;
 +}
 +
++/** タイル中心緯度における1画素あたりのメートル数 */
++static double MetersPerPixel(NSUInteger zoom, NSUInteger tileY, NSInteger tileSize) {
++    double normalizedTileY = ((double)tileY + 0.5) / pow(2.0, (double)zoom);
++    double lat = 85.05112878 - 2.0 * 85.05112878 * normalizedTileY;
++    return 40075017.0 * cos(lat * M_PI / 180.0) / ((double)tileSize * pow(2.0, (double)zoom));
++}
 +
-+- (UIImage *)createHillshadeFromDEMImage:(UIImage *)demImage zoom:(NSUInteger)zoom y:(NSUInteger)y {
-+    if (!demImage) {
-+        NSLog(@"AIRGoogleMapDEMTileOverlay: createHillshade - no DEM image");
++/**
++ * 標高タイル1枚を取得してfloat配列にデコードする。取得できなければ nil。
++ * 戻り値のNSDataはfloatの並び。sizeOut に一辺の画素数を返す。
++ */
++- (NSData *)elevationForX:(NSUInteger)x y:(NSUInteger)y zoom:(NSUInteger)zoom size:(NSInteger *)sizeOut {
++    NSString *key = [NSString stringWithFormat:@"%lu,%lu,%lu", (unsigned long)x, (unsigned long)y, (unsigned long)zoom];
++    NSData *cached = [_elevationCache objectForKey:key];
++    if (cached) {
++        *sizeOut = (NSInteger)lround(sqrt((double)(cached.length / sizeof(float))));
++        return cached;
++    }
++
++    UIImage *image = [super tileForX:x y:y zoom:zoom];
++    if (!image || image == kGMSTileLayerNoTile) {
 +        return nil;
 +    }
-+    
-+    CGSize imageSize = demImage.size;
-+    NSLog(@"AIRGoogleMapDEMTileOverlay: createHillshade - image size: %.0fx%.0f", imageSize.width, imageSize.height);
-+    
-+    // Get DEM pixel data
-+    CGImageRef demCGImage = demImage.CGImage;
-+    if (!demCGImage) {
-+        NSLog(@"AIRGoogleMapDEMTileOverlay: createHillshade - no CGImage");
++
++    CGImageRef cgImage = image.CGImage;
++    if (!cgImage) {
 +        return nil;
 +    }
-+    
-+    size_t width = CGImageGetWidth(demCGImage);
-+    size_t height = CGImageGetHeight(demCGImage);
-+    
-+    // Create bitmap context to read DEM data
++    NSInteger width = CGImageGetWidth(cgImage);
++    NSInteger height = CGImageGetHeight(cgImage);
++    if (width <= 0 || width != height) {
++        return nil;
++    }
++
++    // RGBA8888へ描き直してから画素値を読む
++    NSMutableData *rgba = [NSMutableData dataWithLength:(NSUInteger)(width * height * 4)];
 +    CGColorSpaceRef colorSpace = CGColorSpaceCreateDeviceRGB();
-+    unsigned char *demPixels = (unsigned char *)calloc(width * height * 4, sizeof(unsigned char));
-+    CGContextRef demContext = CGBitmapContextCreate(demPixels, width, height, 8, width * 4,
-+                                                    colorSpace, kCGImageAlphaNoneSkipLast);
-+    
-+    CGContextDrawImage(demContext, CGRectMake(0, 0, width, height), demCGImage);
-+    CGContextRelease(demContext);
-+    
-+    // Use UIGraphicsBeginImageContext for output
-+    UIGraphicsBeginImageContextWithOptions(imageSize, YES, 0.0); // YES = opaque
-+    CGContextRef context = UIGraphicsGetCurrentContext();
-+    
-+    
-+    // Calculate pixel resolution (same as Android)
-+    CGFloat normalizedTileY = (CGFloat)(y + 0.5) / powf(2.0f, zoom);
-+    CGFloat lat = 85.05112878f - 2.0f * 85.05112878f * normalizedTileY;
-+    CGFloat nz = 40075017.0f * cosf(lat * M_PI / 180.0f) / powf(2.0f, zoom + 8) * 100.0f;
-+    
-+    // Convert bearing (same as Android)
-+    CGFloat convertedBearing;
-+    if (_quantizedRotation < 0) {
-+        convertedBearing = fabs(_quantizedRotation);
-+    } else {
-+        convertedBearing = 180.0f + (180.0f - _quantizedRotation);
++    CGContextRef ctx = CGBitmapContextCreate(rgba.mutableBytes, (size_t)width, (size_t)height, 8,
++                                             (size_t)(width * 4), colorSpace,
++                                             kCGImageAlphaNoneSkipLast | kCGBitmapByteOrder32Big);
++    CGColorSpaceRelease(colorSpace);
++    if (!ctx) {
++        return nil;
 +    }
-+    
-+    // Calculate azimuth (az = -bearing - 45)
-+    CGFloat az = -convertedBearing - 45.0f;
-+    if (az < 0.0f) az = 360.0f + az;
-+    
-+    NSLog(@"AIRGoogleMapDEMTileOverlay: Rotation calculation - quantized: %.1f, converted: %.1f, az: %.1f",
-+          _quantizedRotation, convertedBearing, az);
-+    
-+    CGFloat azimuthRad = az * M_PI / 180.0f;
-+    CGFloat altitudeRad = SHADED_ELV * M_PI / 180.0f;
-+    
-+    // Light vector components (same as Android)
-+    CGFloat ix = cosf(altitudeRad) * sinf(azimuthRad);
-+    CGFloat iy = -cosf(altitudeRad) * cosf(azimuthRad);
-+    CGFloat iz = sinf(altitudeRad);
-+    
-+    NSInteger validPixels = 0;
-+    NSInteger noDataPixels = 0;
-+    CGFloat minIntensity = 1.0f;
-+    CGFloat maxIntensity = 0.0f;
-+    
-+    // Process each pixel
-+    BOOL debugFirstPixel = YES;
-+    NSInteger debugPixelCount = 0;
-+    for (size_t y = 0; y < height; y++) {
-+        for (size_t x = 0; x < width; x++) {
-+            size_t idx = (y * width + x) * 4;
-+            
-+            // Get RGB values
-+            CGFloat r = demPixels[idx];
-+            CGFloat g = demPixels[idx + 1];
-+            CGFloat b = demPixels[idx + 2];
-+            
-+            // Debug first few pixels
-+            if (debugPixelCount < 5) {
-+                NSLog(@"AIRGoogleMapDEMTileOverlay: Pixel[%ld,%ld] RGB=(%d,%d,%d)", 
-+                      (long)x, (long)y, (int)r, (int)g, (int)b);
-+                debugPixelCount++;
++    CGContextDrawImage(ctx, CGRectMake(0, 0, width, height), cgImage);
++    CGContextRelease(ctx);
++
++    NSMutableData *elevation = [NSMutableData dataWithLength:(NSUInteger)(width * height * (NSInteger)sizeof(float))];
++    const uint8_t *src = (const uint8_t *)rgba.bytes;
++    float *dst = (float *)elevation.mutableBytes;
++    for (NSInteger i = 0; i < width * height; i++) {
++        dst[i] = DecodeElevation(src[i * 4], src[i * 4 + 1], src[i * 4 + 2]);
++    }
++
++    [_elevationCache setObject:elevation forKey:key cost:(NSUInteger)elevation.length];
++    *sizeOut = width;
++    return elevation;
++}
++
++#pragma mark - 陰影の計算
++
++/**
++ * 中央タイルと周囲8タイルから袖付きの標高バッファを組み立てる。
++ * 袖はkHalo画素分だけあればよいので、隣接タイルは必要な帯だけ写す。
++ */
++- (NSMutableData *)assembleWithHaloX:(NSUInteger)x y:(NSUInteger)y zoom:(NSUInteger)zoom size:(NSInteger)size {
++    NSInteger bufferSize = size + 2 * kHalo;
++    NSMutableData *buffer = [NSMutableData dataWithLength:(NSUInteger)(bufferSize * bufferSize * (NSInteger)sizeof(float))];
++    float *dst = (float *)buffer.mutableBytes;
++    for (NSInteger i = 0; i < bufferSize * bufferSize; i++) {
++        dst[i] = NAN;
++    }
++
++    NSInteger max = 1 << zoom;
++    for (NSInteger ty = -1; ty <= 1; ty++) {
++        NSInteger ny = (NSInteger)y + ty;
++        if (ny < 0 || ny >= max) continue;
++        for (NSInteger tx = -1; tx <= 1; tx++) {
++            NSInteger nx = (((NSInteger)x + tx) % max + max) % max; // 経度方向は巻き戻す
++            NSInteger tileSize = 0;
++            NSData *tile = [self elevationForX:(NSUInteger)nx y:(NSUInteger)ny zoom:zoom size:&tileSize];
++            if (!tile || tileSize != size) continue;
++            const float *src = (const float *)tile.bytes;
++
++            // このタイルのうちバッファに入る範囲をタイル内座標で求める
++            NSInteger srcX0 = (tx == -1) ? size - kHalo : 0;
++            NSInteger srcX1 = (tx == 1) ? kHalo : size;
++            NSInteger srcY0 = (ty == -1) ? size - kHalo : 0;
++            NSInteger srcY1 = (ty == 1) ? kHalo : size;
++            NSInteger dstX = kHalo + tx * size + srcX0;
++            NSInteger dstY = kHalo + ty * size + srcY0;
++            size_t runBytes = (size_t)(srcX1 - srcX0) * sizeof(float);
++
++            for (NSInteger row = srcY0; row < srcY1; row++) {
++                memcpy(&dst[(dstY + (row - srcY0)) * bufferSize + dstX],
++                       &src[row * size + srcX0], runBytes);
 +            }
-+            
-+            // Decode elevation using the same method as Android
-+            CGFloat elevation = [self decodeElevation:r g:g b:b];
-+            
-+            // Get right and bottom elevations (same as Android)
-+            CGFloat rh, bh;
-+            
-+            // Right elevation
-+            if (x < width - 1) {
-+                size_t idxR = (y * width + (x + 1)) * 4;
-+                rh = [self decodeElevation:demPixels[idxR] g:demPixels[idxR + 1] b:demPixels[idxR + 2]];
-+            } else if (x > 0) {
-+                // Right edge: extrapolate from left gradient
-+                size_t idxL = (y * width + (x - 1)) * 4;
-+                CGFloat elevL = [self decodeElevation:demPixels[idxL] g:demPixels[idxL + 1] b:demPixels[idxL + 2]];
-+                rh = elevation - (elevL - elevation);
-+            } else {
-+                // Top-left corner
-+                rh = elevation;
-+            }
-+            
-+            // Bottom elevation
-+            if (y < height - 1) {
-+                size_t idxB = ((y + 1) * width + x) * 4;
-+                bh = [self decodeElevation:demPixels[idxB] g:demPixels[idxB + 1] b:demPixels[idxB + 2]];
-+            } else if (y > 0) {
-+                // Bottom edge: extrapolate from top gradient
-+                size_t idxT = ((y - 1) * width + x) * 4;
-+                CGFloat elevT = [self decodeElevation:demPixels[idxT] g:demPixels[idxT + 1] b:demPixels[idxT + 2]];
-+                bh = elevation - (elevT - elevation);
-+            } else {
-+                // Top-left corner
-+                bh = elevation;
-+            }
-+            
-+            // Calculate gradients (same as Android)
-+            CGFloat dx = (rh != -99999.0f) ? (elevation - rh) : 0.0f;
-+            CGFloat dy = (bh != -99999.0f) ? (elevation - bh) : 0.0f;
-+            
-+            // Check for NoData
-+            if (elevation == -99999.0f) {
-+                noDataPixels++;
-+                // Draw black pixel for NoData (since image is opaque)
-+                CGContextSetRGBFillColor(context, 0, 0, 0, 1.0);
-+                CGContextFillRect(context, CGRectMake(x, y, 1, 1));
++        }
++    }
++    return buffer;
++}
++
++/** 袖付きバッファから陰影画像を作る */
++- (UIImage *)shadingImageForX:(NSUInteger)x y:(NSUInteger)y zoom:(NSUInteger)zoom size:(NSInteger)size {
++    NSInteger bufferSize = size + 2 * kHalo;
++    NSMutableData *bufferData = [self assembleWithHaloX:x y:y zoom:zoom size:size];
++    const float *buffer = (const float *)bufferData.bytes;
++    double metersPerPx = MetersPerPixel(zoom, y, size);
++
++    // レイキャストの標本位置は全画素で共通なので、添字差分と距離の逆数を先に作る
++    NSInteger samples = kNumDirections * kSearchRadius;
++    NSInteger *offsets = (NSInteger *)malloc((size_t)samples * sizeof(NSInteger));
++    float *invDistances = (float *)malloc((size_t)samples * sizeof(float));
++    if (!offsets || !invDistances) {
++        free(offsets);
++        free(invDistances);
++        return nil;
++    }
++    for (NSInteger d = 0; d < kNumDirections; d++) {
++        double theta = 2.0 * M_PI * (double)d / (double)kNumDirections;
++        double dx = cos(theta);
++        double dy = sin(theta);
++        for (NSInteger s = 1; s <= kSearchRadius; s++) {
++            NSInteger i = d * kSearchRadius + (s - 1);
++            offsets[i] = (NSInteger)lround(dy * s) * bufferSize + (NSInteger)lround(dx * s);
++            invDistances[i] = (float)(1.0 / ((double)s * metersPerPx));
++        }
++    }
++
++    NSMutableData *rgbaData = [NSMutableData dataWithLength:(NSUInteger)(size * size * 4)];
++    uint8_t *rgba = (uint8_t *)rgbaData.mutableBytes;
++    const float toDeg = (float)(180.0 / M_PI);
++    const float slopeInv = (float)(1.0 / (2.0 * metersPerPx));
++
++    for (NSInteger py = 0; py < size; py++) {
++        NSInteger rowBase = (kHalo + py) * bufferSize + kHalo;
++        for (NSInteger px = 0; px < size; px++) {
++            NSInteger center = rowBase + px;
++            NSInteger out = (py * size + px) * 4;
++            float z0 = buffer[center];
++            if (isnan(z0)) {
++                rgba[out] = rgba[out + 1] = rgba[out + 2] = rgba[out + 3] = 0; // 透明
 +                continue;
 +            }
-+            
-+            // Calculate shading (same as Android)
-+            CGFloat l = sqrtf(dx * dx + dy * dy + powf(nz / HF, 2.0f));
-+            CGFloat c = fmaxf(0.0f, (dx * ix + dy * iy + (nz * iz) / HF) / l);
-+            
-+            // Apply gamma correction
-+            c = powf(c, 1.0f / GAMMA);
-+            
-+            // Convert to grayscale
-+            CGFloat intensity = c;
-+            
-+            // Debug first valid pixel
-+            if (debugFirstPixel && elevation != -99999.0f) {
-+                NSLog(@"AIRGoogleMapDEMTileOverlay: First pixel - elev: %.1f, dx: %.3f, dy: %.3f, l: %.3f, c: %.3f, intensity: %.3f",
-+                      elevation, dx, dy, l, c, intensity);
-+                debugFirstPixel = NO;
++
++            // MPI: 各方位の最大仰角の平均
++            float sumUp = 0.0f;
++            for (NSInteger d = 0; d < kNumDirections; d++) {
++                NSInteger base = d * kSearchRadius;
++                float maxTan = -INFINITY;
++                for (NSInteger s = 0; s < kSearchRadius; s++) {
++                    NSInteger k = base + s;
++                    float zp = buffer[center + offsets[k]];
++                    if (isnan(zp)) continue;
++                    float t = (zp - z0) * invDistances[k];
++                    if (t > maxTan) maxTan = t;
++                }
++                // 有効な標本がなければ水平とみなす。尾根では負になるので丸めない
++                sumUp += isinf(maxTan) ? 0.0f : atanf(maxTan);
 +            }
-+            
-+            // Track intensity range
-+            validPixels++;
-+            if (intensity < minIntensity) minIntensity = intensity;
-+            if (intensity > maxIntensity) maxIntensity = intensity;
-+            
-+            // Set pixel color (grayscale with full opacity)
-+            CGContextSetRGBFillColor(context, intensity, intensity, intensity, 1.0);
-+            CGContextFillRect(context, CGRectMake(x, y, 1, 1));
++            float mpi = (sumUp / (float)kNumDirections) * toDeg;
++
++            // 傾斜: 中央差分
++            float gx = (buffer[center + 1] - buffer[center - 1]) * slopeInv;
++            float gy = (buffer[center + bufferSize] - buffer[center - bufferSize]) * slopeInv;
++            float slope = atanf(sqrtf(gx * gx + gy * gy)) * toDeg;
++            if (isnan(slope)) {
++                rgba[out] = rgba[out + 1] = rgba[out + 2] = rgba[out + 3] = 0; // 透明
++                continue;
++            }
++
++            // 2つの暗さを乗算する
++            float sTerm = fmaxf(0.0f, fminf(1.0f, slope / kSlopeMaxDeg));
++            float mTerm = powf(fmaxf(0.0f, fminf(1.0f, mpi / kMpiMaxDeg)), kMpiGamma);
++            float gray = 255.0f * (1.0f - sTerm) * (1.0f - mTerm);
++            uint8_t value = (uint8_t)fmaxf(0.0f, fminf(255.0f, roundf(gray)));
++
++            rgba[out] = rgba[out + 1] = rgba[out + 2] = value;
++            rgba[out + 3] = 255;
 +        }
 +    }
-+    
-+    UIImage *resultImage = UIGraphicsGetImageFromCurrentImageContext();
-+    UIGraphicsEndImageContext();
-+    
-+    // Cleanup
-+    free(demPixels);
++
++    free(offsets);
++    free(invDistances);
++
++    CGColorSpaceRef colorSpace = CGColorSpaceCreateDeviceRGB();
++    CGContextRef ctx = CGBitmapContextCreate(rgba, (size_t)size, (size_t)size, 8, (size_t)(size * 4), colorSpace,
++                                             kCGImageAlphaPremultipliedLast | kCGBitmapByteOrder32Big);
 +    CGColorSpaceRelease(colorSpace);
-+    
-+    NSLog(@"AIRGoogleMapDEMTileOverlay: createHillshade - hillshade created");
-+    NSLog(@"AIRGoogleMapDEMTileOverlay: Pixel stats - valid: %ld, noData: %ld, intensity range: %.3f-%.3f",
-+          (long)validPixels, (long)noDataPixels, minIntensity, maxIntensity);
-+    NSLog(@"AIRGoogleMapDEMTileOverlay: Light params - az: %.1f (from rotation: %.1f), nz: %.3f, ix: %.3f, iy: %.3f, iz: %.3f",
-+          az, _quantizedRotation, nz, ix, iy, iz);
-+    
-+    return resultImage;
-+}
-+
-+
-+- (UIImage *)cropAndScaleImage:(UIImage *)sourceImage 
-+                    scaleFactor:(NSInteger)scaleFactor 
-+                        offsetX:(NSUInteger)offsetX 
-+                        offsetY:(NSUInteger)offsetY {
-+    if (!sourceImage) {
-+        NSLog(@"AIRGoogleMapDEMTileOverlay: cropAndScaleImage - no source image");
++    if (!ctx) {
 +        return nil;
 +    }
-+    
-+    CGSize sourceSize = sourceImage.size;
-+    CGFloat subTileSize = sourceSize.width / scaleFactor;
-+    
-+    NSLog(@"AIRGoogleMapDEMTileOverlay: cropAndScaleImage - source: %.0fx%.0f, scale: %ld, offset: (%ld,%ld), subTileSize: %.0f", 
-+          sourceSize.width, sourceSize.height, (long)scaleFactor, 
-+          (long)offsetX, (long)offsetY, subTileSize);
-+    
-+    // Create result image using UIGraphics (same approach as Android)
-+    CGSize targetSize = CGSizeMake(256, 256); // Standard tile size
-+    UIGraphicsBeginImageContextWithOptions(targetSize, YES, 0.0);
-+    
-+    // Calculate draw rect (similar to Android's drawRect calculation)
-+    CGRect drawRect = CGRectMake(0, 0, sourceSize.width, sourceSize.height);
-+    
-+    // Apply scale transform
-+    drawRect = CGRectApplyAffineTransform(drawRect, CGAffineTransformMakeScale(scaleFactor, scaleFactor));
-+    
-+    // Apply translation to show the correct tile portion
-+    drawRect = CGRectApplyAffineTransform(drawRect, 
-+        CGAffineTransformMakeTranslation(-sourceSize.width * offsetX, -sourceSize.height * offsetY));
-+    
-+    NSLog(@"AIRGoogleMapDEMTileOverlay: drawRect: (%.0f,%.0f,%.0f,%.0f)", 
-+          drawRect.origin.x, drawRect.origin.y, drawRect.size.width, drawRect.size.height);
-+    
-+    // Draw the scaled and translated image
-+    [sourceImage drawInRect:drawRect];
-+    
-+    UIImage *resultImage = UIGraphicsGetImageFromCurrentImageContext();
++    CGImageRef cgImage = CGBitmapContextCreateImage(ctx);
++    CGContextRelease(ctx);
++    if (!cgImage) {
++        return nil;
++    }
++    UIImage *image = [UIImage imageWithCGImage:cgImage];
++    CGImageRelease(cgImage);
++    return image;
++}
++
++/** オーバーズーム時に該当部分を切り出して拡大する */
++- (UIImage *)cropImage:(UIImage *)source scaleFactor:(NSInteger)scaleFactor
++               offsetX:(NSUInteger)offsetX offsetY:(NSUInteger)offsetY {
++    CGImageRef cgImage = source.CGImage;
++    if (!cgImage) return nil;
++
++    CGFloat width = (CGFloat)CGImageGetWidth(cgImage);
++    CGFloat subTileSize = width / (CGFloat)scaleFactor;
++    CGRect cropRect = CGRectMake((CGFloat)offsetX * subTileSize, (CGFloat)offsetY * subTileSize,
++                                 subTileSize, subTileSize);
++    CGImageRef cropped = CGImageCreateWithImageInRect(cgImage, cropRect);
++    if (!cropped) return nil;
++
++    // NoDataの透明を保つため不透明コンテキストは使わない
++    UIGraphicsBeginImageContextWithOptions(CGSizeMake(width, width), NO, 1.0);
++    [[UIImage imageWithCGImage:cropped] drawInRect:CGRectMake(0, 0, width, width)];
++    UIImage *result = UIGraphicsGetImageFromCurrentImageContext();
 +    UIGraphicsEndImageContext();
-+    
-+    NSLog(@"AIRGoogleMapDEMTileOverlay: cropAndScaleImage - result: %.0fx%.0f", 
-+          resultImage.size.width, resultImage.size.height);
-+    
-+    return resultImage;
++    CGImageRelease(cropped);
++    return result;
++}
++
++#pragma mark - タイル要求
++
++- (UIImage *)tileForX:(NSUInteger)x y:(NSUInteger)y zoom:(NSUInteger)zoom {
++    NSString *cacheKey = [NSString stringWithFormat:@"%lu,%lu,%lu", (unsigned long)x, (unsigned long)y, (unsigned long)zoom];
++    UIImage *cached = [_shadingCache objectForKey:cacheKey];
++    if (cached) {
++        return cached;
++    }
++
++    NSInteger maximumNativeZ = self.maximumNativeZ;
++    BOOL isOverzoom = (NSInteger)zoom > maximumNativeZ;
++    NSUInteger nativeZoom = isOverzoom ? (NSUInteger)maximumNativeZ : zoom;
++    NSInteger scaleFactor = isOverzoom ? (1 << (zoom - nativeZoom)) : 1;
++    NSUInteger nativeX = isOverzoom ? x / (NSUInteger)scaleFactor : x;
++    NSUInteger nativeY = isOverzoom ? y / (NSUInteger)scaleFactor : y;
++    NSUInteger offsetX = isOverzoom ? x % (NSUInteger)scaleFactor : 0;
++    NSUInteger offsetY = isOverzoom ? y % (NSUInteger)scaleFactor : 0;
++
++    // 中央タイルが取れなければ描くものがない
++    NSInteger size = 0;
++    NSData *center = [self elevationForX:nativeX y:nativeY zoom:nativeZoom size:&size];
++    if (!center || size <= 0) {
++        return kGMSTileLayerNoTile;
++    }
++
++    UIImage *image = [self shadingImageForX:nativeX y:nativeY zoom:nativeZoom size:size];
++    if (image && isOverzoom) {
++        image = [self cropImage:image scaleFactor:scaleFactor offsetX:offsetX offsetY:offsetY];
++    }
++    if (!image) {
++        return kGMSTileLayerNoTile;
++    }
++
++    [_shadingCache setObject:image forKey:cacheKey cost:(NSUInteger)(size * size * 4)];
++    return image;
++}
++
++- (void)clearTileCache {
++    [_shadingCache removeAllObjects];
++    [_elevationCache removeAllObjects];
++    [super clearTileCache];
 +}
 +
 +@end
 +
 +#endif
-\ No newline at end of file
 diff --git a/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapPMTile.h b/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapPMTile.h
 new file mode 100644
-index 0000000..e81c4c9
+index 0000000..9faf374
 --- /dev/null
 +++ b/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapPMTile.h
-@@ -0,0 +1,34 @@
+@@ -0,0 +1,33 @@
 +//
 +//  AIRGoogleMapPMTile.h
 +//
@@ -10353,17 +10097,16 @@ index 0000000..e81c4c9
 +@property(nonatomic, copy) NSString *tileCachePath;
 +@property(nonatomic, assign) NSInteger tileCacheMaxAge;
 +
-+- (void)onCameraChange:(CGFloat)rotation;
 +
 +@end
 +
 +#endif
 diff --git a/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapPMTile.m b/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapPMTile.m
 new file mode 100644
-index 0000000..64b2868
+index 0000000..08341df
 --- /dev/null
 +++ b/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapPMTile.m
-@@ -0,0 +1,179 @@
+@@ -0,0 +1,174 @@
 +//
 +//  AIRGoogleMapPMTile.m
 +//
@@ -10534,11 +10277,6 @@ index 0000000..64b2868
 +  }
 +}
 +
-+- (void)onCameraChange:(CGFloat)rotation {
-+    NSLog(@"AIRGoogleMapPMTile: onCameraChange called with rotation: %.1f", rotation);
-+    // PMTileの場合、回転の処理が必要であればここに実装
-+    // 現時点では特に処理なし
-+}
 +
 +@end
 +
@@ -12227,10 +11965,10 @@ index ee501d8..6851fd9 100644
  @end
  
 diff --git a/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapUrlTile.h b/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapUrlTile.h
-index 05b2afd..a494b12 100644
+index 05b2afd..83cf84e 100644
 --- a/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapUrlTile.h
 +++ b/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapUrlTile.h
-@@ -7,16 +7,27 @@
+@@ -7,16 +7,26 @@
  
  #import <Foundation/Foundation.h>
  #import <GoogleMaps/GoogleMaps.h>
@@ -12257,17 +11995,16 @@ index 05b2afd..a494b12 100644
 +@property (nonatomic, copy) NSString *tileCachePath;
 +@property (nonatomic, assign) NSInteger tileCacheMaxAge;
 +
-+- (void)onCameraChange:(CGFloat)rotation;
  
  @end
  
  #endif
 +
 diff --git a/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapUrlTile.m b/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapUrlTile.m
-index b2e1eea..a4a4b8c 100644
+index b2e1eea..cf3d369 100644
 --- a/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapUrlTile.m
 +++ b/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapUrlTile.m
-@@ -6,51 +6,214 @@
+@@ -6,51 +6,204 @@
  #ifdef HAVE_GOOGLE_MAPS
  
  #import "AIRGoogleMapUrlTile.h"
@@ -12332,11 +12069,7 @@ index b2e1eea..a4a4b8c 100644
 +    [self.tileLayer clearTileCache];
 +  }
 +}
-     
--    NSString *url = urlTemplate;
--    url = [url stringByReplacingOccurrencesOfString:@"{x}" withString:[NSString stringWithFormat: @"%ld", (long)x]];
--    url = [url stringByReplacingOccurrencesOfString:@"{y}" withString:[NSString stringWithFormat: @"%ld", (long)y]];
--    url = [url stringByReplacingOccurrencesOfString:@"{z}" withString:[NSString stringWithFormat: @"%ld", (long)zoom]];
++    
 +- (void)setMinimumZ:(NSInteger)minimumZ {
 +  _minimumZ = minimumZ;
 +  if (self.tileLayer && minimumZ) {
@@ -12344,10 +12077,7 @@ index b2e1eea..a4a4b8c 100644
 +    [self.tileLayer clearTileCache];
 +  }
 +}
- 
--   if(maximumZ && (long)zoom > (long)maximumZ) {
--      return nil;
--    }
++
 +- (void)setMaximumZ:(NSInteger)maximumZ {
 +  _maximumZ = maximumZ;
 +  if (self.tileLayer && maximumZ) {
@@ -12356,9 +12086,10 @@ index b2e1eea..a4a4b8c 100644
 +  }
 +}
  
--    if(minimumZ && (long)zoom < (long)minimumZ) {
--      return nil;
--    }
+-    NSString *url = urlTemplate;
+-    url = [url stringByReplacingOccurrencesOfString:@"{x}" withString:[NSString stringWithFormat: @"%ld", (long)x]];
+-    url = [url stringByReplacingOccurrencesOfString:@"{y}" withString:[NSString stringWithFormat: @"%ld", (long)y]];
+-    url = [url stringByReplacingOccurrencesOfString:@"{z}" withString:[NSString stringWithFormat: @"%ld", (long)zoom]];
 +- (void)setMaximumNativeZ:(NSInteger)maximumNativeZ {
 +  _maximumNativeZ = maximumNativeZ;
 +  if (self.tileLayer && maximumNativeZ) {
@@ -12366,11 +12097,17 @@ index b2e1eea..a4a4b8c 100644
 +    [self.tileLayer clearTileCache];
 +  }
 +}
-+    
+     
+-   if(maximumZ && (long)zoom > (long)maximumZ) {
+-      return nil;
+-    }
 +- (void)setDoubleTileSize:(BOOL)doubleTileSize {
 +  // iOSの場合tileSizeがディスプレイのスケール倍で通常のズームレベルの表示になる
 +  // tileSizeを小さくすると上のズームレベルのタイルで高解像度になる。（drawFromHigherZoomLevelと同じ効果）
-+
+ 
+-    if(minimumZ && (long)zoom < (long)minimumZ) {
+-      return nil;
+-    }
 +  // 256の整数倍になるようにしているっぽい。
 +  float screenTileSize =
 +      [[UIScreen mainScreen] nativeBounds].size.width / 256 * 256;
@@ -12386,15 +12123,18 @@ index b2e1eea..a4a4b8c 100644
 +    [self.tileLayer clearTileCache];
 +  }
 +}
-+
+ 
+-    return [NSURL URLWithString:url];
+-  };
+-  return urls;
 +- (void)setOpacity:(float)opacity {
 +  _opacity = opacity;
 +  if (self.tileLayer) {
 +    [self.tileLayer setOpacity:opacity];
 +    [self.tileLayer clearTileCache];
 +  }
-+}
-+
+ }
+ 
 +- (void)setUrlTemplate:(NSString *)urlTemplate {
 +
 +  _urlTemplate = urlTemplate;
@@ -12402,10 +12142,7 @@ index b2e1eea..a4a4b8c 100644
 +  // Check for hillshade:// prefix
 +  BOOL isHillshade = [urlTemplate hasPrefix:@"hillshade://"];
 +  NSString *actualUrlTemplate = urlTemplate;
- 
--    return [NSURL URLWithString:url];
--  };
--  return urls;
++
 +  if (isHillshade) {
 +    actualUrlTemplate = [urlTemplate substringFromIndex:12]; // Remove "hillshade://"
 +    NSLog(@"AIRGoogleMapUrlTile: Detected DEM tile URL: %@", actualUrlTemplate);
@@ -12462,17 +12199,7 @@ index b2e1eea..a4a4b8c 100644
 +  }
 +}
 +
-+- (void)onCameraChange:(CGFloat)rotation {
-+    NSLog(@"AIRGoogleMapUrlTile: onCameraChange called with rotation: %.1f", rotation);
-+    if ([self.tileLayer isKindOfClass:[AIRGoogleMapDEMTileOverlay class]]) {
-+        NSLog(@"AIRGoogleMapUrlTile: Forwarding to DEM overlay");
-+        AIRGoogleMapDEMTileOverlay *demOverlay = (AIRGoogleMapDEMTileOverlay *)self.tileLayer;
-+        [demOverlay onCameraChange:rotation];
-+    } else {
-+        NSLog(@"AIRGoogleMapUrlTile: tileLayer is not DEM overlay, class: %@", NSStringFromClass([self.tileLayer class]));
-+    }
- }
- 
++
  @end
  
 +// - (GMSTileURLConstructor)_getTileURLConstructor
