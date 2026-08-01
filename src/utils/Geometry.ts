@@ -210,6 +210,8 @@ export const gpx2Data = (
     const parser = new XMLParser({
       ignoreAttributes: false,
       attributeNamePrefix: '',
+      // GPXにエンティティ展開は不要。外部由来のファイルを読むため明示的に無効化する
+      processEntities: false,
     });
     const json = parser.parse(gpx);
     //console.log(json);
@@ -477,6 +479,17 @@ export const geoJson2Data = (
   }
 };
 
+// 先頭がこれらの文字だとExcel/Sheetsが数式として解釈する（フォーミュラインジェクション）
+const FORMULA_TRIGGER = /^[=+\-@\t\r]/;
+// -3.5 のような負数まで無害化するとExcelで数値として扱えなくなるため、数値は対象外にする
+const isNumericValue = (value: string) => value.trim() !== '' && Number.isFinite(Number(value));
+
+export const escapeCSVValue = (value: unknown): string => {
+  const str = value === null || value === undefined ? '' : String(value);
+  const guarded = FORMULA_TRIGGER.test(str) && !isNumericValue(str) ? `'${str}` : str;
+  return `"${guarded.replace(/"/g, '""')}"`;
+};
+
 export const generateCSV = (dataSet: RecordType[], field: LayerType['field'], type: FeatureType) => {
   const isMapMemoLayer = dataSet.some((d) => d.field._strokeColor !== undefined);
   const mapMemoHeader = ['_group', '_strokeWidth', '_strokeColor', '_strokeStyle', '_stamp', '_zoom', '_visible'];
@@ -493,18 +506,21 @@ export const generateCSV = (dataSet: RecordType[], field: LayerType['field'], ty
       .map(({ name }) => {
         const fieldValue = record.field[name];
         if (isPhotoField(fieldValue)) {
-          return `"${fieldValue.map((p) => p.name).join(',')}"`;
+          return escapeCSVValue(fieldValue.map((p) => p.name).join(','));
         } else {
-          return `"${fieldValue}"`;
+          return escapeCSVValue(fieldValue);
         }
       })
       .join(',');
 
-    fieldCSV = (record.displayName === null ? '' : record.displayName) + ',' + fieldCSV;
+    fieldCSV = escapeCSVValue(record.displayName === null ? '' : record.displayName) + ',' + fieldCSV;
     if (isMapMemoLayer) {
-      const mapMemoProperties = mapMemoHeader.map((name) => record.field[name] ?? '').join(',');
-      const id = record.id;
-      const qgisColor = record.field._strokeColor ? rgbaString2qgis(record.field._strokeColor as string) : '';
+      // _strokeColorのrgba(0,0,0,1)のようにカンマを含む値があるため必ずクォートする
+      const mapMemoProperties = mapMemoHeader.map((name) => escapeCSVValue(record.field[name] ?? '')).join(',');
+      const id = escapeCSVValue(record.id);
+      const qgisColor = escapeCSVValue(
+        record.field._strokeColor ? rgbaString2qgis(record.field._strokeColor as string) : ''
+      );
       fieldCSV = fieldCSV + ',' + id + ',' + mapMemoProperties + ',' + qgisColor;
     }
     return fieldCSV;

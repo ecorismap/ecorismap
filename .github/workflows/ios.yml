@@ -7,6 +7,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
 
       - name: Set up Node.js 22
         uses: actions/setup-node@v5
@@ -82,6 +84,26 @@ jobs:
         run: |
           cd ios && pod install
 
+      - name: Set build number
+        run: |
+          # App Store Connectは同一バージョンでのビルド番号重複を拒否するため、
+          # Androidと同じくコミット数で単調増加させる（pbxprojの値はビルド時に上書きするだけで変更しない）
+          VERSION_FROM_COMMITS=$(git rev-list --count HEAD)
+          VERSION_FROM_PBXPROJ=$(grep -m1 "CURRENT_PROJECT_VERSION" ios/ecorismap.xcodeproj/project.pbxproj | grep -o '[0-9]\+')
+
+          if [ "$VERSION_FROM_COMMITS" -gt "$VERSION_FROM_PBXPROJ" ]; then
+            BUILD_NUMBER=$VERSION_FROM_COMMITS
+          else
+            BUILD_NUMBER=$((VERSION_FROM_PBXPROJ + 1))
+          fi
+          echo "BUILD_NUMBER=$BUILD_NUMBER" >> $GITHUB_ENV
+          echo "Commit count: $VERSION_FROM_COMMITS / pbxproj: $VERSION_FROM_PBXPROJ / build number: $BUILD_NUMBER"
+
+      - name: Update AppConstants with build number
+        run: |
+          sed -i '' "s/export const VERSION = 'Version \([^']*\)';/export const VERSION = 'Version \1 (Build ${BUILD_NUMBER})';/" src/constants/AppConstants.tsx
+          grep "export const VERSION" src/constants/AppConstants.tsx
+
       - name: Archive Project
         env:
           NODE_BINARY: $(which node)
@@ -91,6 +113,7 @@ jobs:
                              -sdk iphoneos \
                              -configuration Release \
                              -archivePath ecorismap.xcarchive \
+                             CURRENT_PROJECT_VERSION=${BUILD_NUMBER} \
                              CODE_SIGN_STYLE=Manual \
                              PROVISIONING_PROFILE_SPECIFIER="$(/usr/libexec/PlistBuddy -c 'Print Name' /dev/stdin <<< $(security cms -D -i ~/Library/MobileDevice/Provisioning\ Profiles/ecorismap.mobileprovision))"
 

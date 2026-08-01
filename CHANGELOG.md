@@ -1,6 +1,6 @@
 # Change Log
 
-## [0.5.6]　- Unreleased
+## [0.5.6]　- 2026-08-01
 
 - Added personal project management using Google Drive
 - Added unified login with two methods: Google account link and organization account
