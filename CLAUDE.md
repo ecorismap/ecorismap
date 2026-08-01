@@ -32,6 +32,7 @@ yarn keys:apply    # keys/ディレクトリのAPIキー類を一括反映
    - MapTiler: `src/constants/APIKeys.ts`
    - Firebase: `GoogleService-Info.plist`, `google-services.json`
    - キー類は`keys/`ディレクトリ（gitignore対象）に配置し`yarn keys:apply`で一括反映
+   - Play配信: GitHub Secretsの`PLAY_STORE_CONFIG_JSON`は`play-publisher@ecorismap.iam.gserviceaccount.com`の鍵（2026-08-02に旧`just-metric-355108`のSAから移行）。Play Console側はアプリ権限のみ付与、「設定→APIアクセス」の紐づけプロジェクトは変更しない
 
 3. **型安全性**: コミット前に`npx tsc --noEmit`必須。strictモード、implicit any禁止。
 
