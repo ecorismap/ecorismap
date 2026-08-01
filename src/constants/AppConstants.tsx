@@ -20,7 +20,7 @@ export const ENABLE_DEK_MIGRATION = true;
 // セルラー回線では書き戻しをスキップする(現場の弱い回線への配慮。Wi-Fi時に自動で再試行)。
 // firestore.rules の data verifyFields に cryptoScheme を追加デプロイしてから有効なビルドを配布すること。
 export const ENABLE_DEK_SELF_MIGRATION = true;
-export const CURRENT_TERMS_VERSION = '2026-07-12';
+export const CURRENT_TERMS_VERSION = '2026-08-01';
 
 export const COLOR = {
   TRANSPARENT: 'transparent',
