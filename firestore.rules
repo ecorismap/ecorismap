@@ -42,27 +42,34 @@ service cloud.firestore {
           && verifyFields(["editorUid","encdata","encryptedAt"],[]);
         }
         match /data/{data} {
+          // isSignedIn()(email_verified検証)は全分岐に効かせる必要があるため、
+          // ||で並ぶ分岐全体を括弧で囲む（&&が||より優先されるので括弧が無いと後半分岐が検証を迂回する）
           allow create,update: if isSignedIn()
           && (
-             (request.auth.uid in get(/databases/$(database)/documents/projects/$(project)).data.membersUid && request.resource.data.permission == "PRIVATE")
-          || (request.auth.uid in get(/databases/$(database)/documents/projects/$(project)).data.membersUid && request.resource.data.permission == "PUBLIC")
-          || (request.auth.uid in get(/databases/$(database)/documents/projects/$(project)).data.adminsUid && request.resource.data.permission == "COMMON")
-          || (request.auth.uid in get(/databases/$(database)/documents/projects/$(project)).data.adminsUid && request.resource.data.permission == "TEMPLATE"))
-          && request.auth.uid == request.resource.data.userId
-          && verifyFields(["layerId", "userId", "permission","encdata","encryptedAt"],["chunkIndex","cryptoScheme"])
-          || (
-              request.method == "update"
-              && request.auth.uid in get(/databases/$(database)/documents/projects/$(project)).data.adminsUid
-              && verifyUpdateFields(["permission"])
-            )
-          // Phase ii(移行)用: 管理者は共有データ(COMMON/TEMPLATE)を任意ユーザーのuserIdで再暗号化・書き戻しできる。
-          // COMMON/TEMPLATEは管理者管理の共有データであり、所有者本人でなくても書ける（移行/再暗号化のため）。
-          || (
-              request.auth.uid in get(/databases/$(database)/documents/projects/$(project)).data.adminsUid
-              && (request.resource.data.permission == "COMMON" || request.resource.data.permission == "TEMPLATE")
-              && verifyFields(["layerId", "userId", "permission","encdata","encryptedAt"],["chunkIndex","cryptoScheme"])
-            )
-          
+              (
+                 (
+                    (request.auth.uid in get(/databases/$(database)/documents/projects/$(project)).data.membersUid && request.resource.data.permission == "PRIVATE")
+                 || (request.auth.uid in get(/databases/$(database)/documents/projects/$(project)).data.membersUid && request.resource.data.permission == "PUBLIC")
+                 || (request.auth.uid in get(/databases/$(database)/documents/projects/$(project)).data.adminsUid && request.resource.data.permission == "COMMON")
+                 || (request.auth.uid in get(/databases/$(database)/documents/projects/$(project)).data.adminsUid && request.resource.data.permission == "TEMPLATE")
+                 )
+                && request.auth.uid == request.resource.data.userId
+                && verifyFields(["layerId", "userId", "permission","encdata","encryptedAt"],["chunkIndex","cryptoScheme"])
+              )
+           || (
+                request.method == "update"
+                && request.auth.uid in get(/databases/$(database)/documents/projects/$(project)).data.adminsUid
+                && verifyUpdateFields(["permission"])
+              )
+           // Phase ii(移行)用: 管理者は共有データ(COMMON/TEMPLATE)を任意ユーザーのuserIdで再暗号化・書き戻しできる。
+           // COMMON/TEMPLATEは管理者管理の共有データであり、所有者本人でなくても書ける（移行/再暗号化のため）。
+           || (
+                request.auth.uid in get(/databases/$(database)/documents/projects/$(project)).data.adminsUid
+                && (request.resource.data.permission == "COMMON" || request.resource.data.permission == "TEMPLATE")
+                && verifyFields(["layerId", "userId", "permission","encdata","encryptedAt"],["chunkIndex","cryptoScheme"])
+              )
+          );
+
           allow delete: if isSignedIn() 
           && (request.auth.uid == resource.data.userId
           || request.auth.uid == get(/databases/$(database)/documents/projects/$(project)).data.ownerUid 

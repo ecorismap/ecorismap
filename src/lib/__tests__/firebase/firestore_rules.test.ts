@@ -1136,6 +1136,48 @@ describe('data subcollection', () => {
     });
     await firebase.assertSucceeds(deleteDoc(doc(context3.firestore(), `projects/${documentId}/data/${dataId1}`)));
   });
+
+  // permissionのみのupdate分岐がisSignedIn()(email_verified検証)を迂回しないことの回帰テスト
+  describe('update: permissionのみの更新', () => {
+    beforeEach(async () => {
+      await testEnv.withSecurityRulesDisabled(async (context) => {
+        await setDoc(doc(context.firestore(), `projects/${documentId}`), {
+          ownerUid: uid1,
+          adminsUid: [uid1, uid2, uid4],
+          membersUid: [uid1, uid2, uid3, uid4],
+          encdata: '',
+          encryptedAt: '2022年1月2日',
+        });
+        await setDoc(doc(context.firestore(), `projects/${documentId}/data/${dataId1}`), {
+          encdata: '',
+          userId: uid3,
+          layerId: layerId,
+          permission: 'PRIVATE',
+          encryptedAt: '2022年1月2日',
+        });
+      });
+    });
+
+    it('メール確認済みの管理者はpermissionを更新できる', async () => {
+      const context2 = testEnv.authenticatedContext(uid2, {
+        email: 'test2@example.com',
+        email_verified: true,
+      });
+      await firebase.assertSucceeds(
+        updateDoc(doc(context2.firestore(), `projects/${documentId}/data/${dataId1}`), { permission: 'COMMON' })
+      );
+    });
+
+    it('メール未確認の管理者はpermissionを更新できない', async () => {
+      const context4 = testEnv.authenticatedContext(uid4, {
+        email: 'test4@example.com',
+        email_verified: false,
+      });
+      await firebase.assertFails(
+        updateDoc(doc(context4.firestore(), `projects/${documentId}/data/${dataId1}`), { permission: 'COMMON' })
+      );
+    });
+  });
 });
 
 describe('DEK(エンベロープ暗号): keys サブコレクションと管理者によるメンバー追加', () => {
