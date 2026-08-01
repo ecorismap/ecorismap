@@ -440,7 +440,9 @@ describe('uploadDataToRepository（楽観的ロック）', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    jest.spyOn(projectStore, 'getSettingsUpdatedAt').mockResolvedValue(undefined);
+    // 設定の更新確認は uploadType==='PublicAndPrivate' のときだけ走る。
+    // ここのテストは 'All' なので呼ばれないが、実装が変わったときに実サーバーを叩かないよう塞いでおく。
+    jest.spyOn(projectStore, 'isSettingsUpdatedAtCurrent').mockResolvedValue(true);
   });
 
   test('基準値なし & クラウド内容がローカルに含まれる → 衝突なしでアップロード（内容確認のため取得はする）', async () => {

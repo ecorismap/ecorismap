@@ -26,7 +26,6 @@ import { cloneDeep } from 'lodash';
 import { getPhotoFields, getTargetLayers } from '../utils/Layer';
 import { isLoggedIn } from '../utils/Account';
 import { getTargetRecordSet, mergeLayerData } from '../utils/Data';
-import dayjs from '../i18n/dayjs';
 import { Platform } from 'react-native';
 import { t } from '../i18n/config';
 import { AlertAsync, ConfirmAsync, DataConflictConfirmAsync } from '../components/molecules/AlertAsync';
@@ -499,16 +498,11 @@ export const useRepository = (): UseRepositoryReturnType & {
       if (!isLoggedIn(user)) {
         return { isOK: false, message: t('hooks.message.pleaseLogin') };
       }
-      const storeUpdatedAt = await projectStore.getSettingsUpdatedAt(project.id);
-      // if (typeof updatedAt === 'string') {
-      //   return { isOK: false, message: '不明なエラーです。プロジェクトを開き直してください。' };
-      // }
-      //console.log(updatedAt, storeUpdatedAt);
-      if (
-        uploadType === 'PublicAndPrivate' &&
-        (storeUpdatedAt === undefined || dayjs(updatedAt).valueOf() !== dayjs(storeUpdatedAt).valueOf())
-      ) {
-        //console.log(updatedAt, storeUpdatedAt);
+      // 開いた時点の設定がクラウドの現在の設定と同じかを確認する。
+      // 旧 toDate() の不具合で書かれた updatedAt も同一とみなすため、判定は firestore 側に寄せてある。
+      const isSettingsCurrent =
+        uploadType === 'PublicAndPrivate' ? await projectStore.isSettingsUpdatedAtCurrent(project.id, updatedAt) : true;
+      if (uploadType === 'PublicAndPrivate' && !isSettingsCurrent) {
         const confirmMessage = t('hooks.message.cannotUploadData');
         const shouldContinue = await ConfirmAsync(confirmMessage);
         if (!shouldContinue) {

@@ -520,10 +520,27 @@ export const deleteData = async (
   }
 };
 
-export const uploadProjectSettings = async (projectId: string, editorUid: string, settings: ProjectSettingsType) => {
+/**
+ * プロジェクト設定を暗号化して保存する。
+ * @param timestampOverride 更新日時を明示指定する場合に渡す（省略時は現在時刻）。
+ *   DEK移行のように「中身は再暗号化するが更新日時は据え置きたい」ケースで使う。
+ *   平文の encryptedAt と暗号化ペイロード内の updatedAt は必ず同じ値にすること
+ *   （アップロード時の衝突検知が両者の一致を前提にしているため。useRepository の uploadDataToRepository 参照）。
+ */
+export const uploadProjectSettings = async (
+  projectId: string,
+  editorUid: string,
+  settings: ProjectSettingsType,
+  timestampOverride?: Timestamp
+) => {
   try {
-    const timestamp = Timestamp.now();
-    const encdata = await enc({ ...settings, updatedAt: toDate(timestamp) }, editorUid, projectId);
+    const timestamp = timestampOverride ?? Timestamp.now();
+    // 暗号化ペイロードの updatedAt は旧 toDate（nanoseconds/100000）と同じ値で書く。
+    // 旧クライアントは「暗号内のupdatedAt == 旧toDate(平文encryptedAt)」で設定の変更を検知するため、
+    // ここで正しい値を書くと旧クライアント側だけが常に不一致になり誤警告が出る（新旧混在中はこの形式を維持する）。
+    // 新クライアントは isSettingsUpdatedAtCurrent で新旧どちらの値も受け付ける。
+    // TODO: 全クライアントが更新されたら toDate(timestamp) に戻し、isSettingsUpdatedAtCurrent の legacy 判定も削除する。
+    const encdata = await enc({ ...settings, updatedAt: toLegacyDate(timestamp) }, editorUid, projectId);
     const settingsFS: ProjectSettingsFS = { editorUid, encdata, encryptedAt: timestamp };
     await setDoc(doc(firestore, 'projects', projectId, 'settings', 'default'), settingsFS);
     return { isOK: true, message: '', timestamp: toDate(timestamp) };
@@ -531,6 +548,59 @@ export const uploadProjectSettings = async (projectId: string, editorUid: string
     console.log(error);
     return { isOK: false, message: t('firebase.message.failUploadProjectSettings'), timestamp: undefined };
   }
+};
+
+/**
+ * 設定ドキュメントの平文メタ（更新日時・最終編集者）を生のまま返す。
+ * DEK移行のように「中身は再暗号化するが更新日時と編集者は据え置きたい」場合に、
+ * 再暗号化の前に控えておくために使う。toDate() を経由しないので値が歪まない。
+ */
+const getProjectSettingsMeta = async (
+  projectId: string,
+  fromServer = false
+): Promise<{ encryptedAt: Timestamp; editorUid: string } | undefined> => {
+  try {
+    const ref = doc(firestore, 'projects', projectId, 'settings', 'default');
+    let data: ProjectSettingsFS | undefined;
+    if (fromServer) {
+      // キャッシュを使わずサーバーの確定値を読む（衝突検知用）
+      const snap = await getDocsFromServer(
+        query(collection(firestore, 'projects', projectId, 'settings'), where('__name__', '==', 'default'))
+      );
+      data = snap.empty ? undefined : (snap.docs[0].data() as ProjectSettingsFS);
+    } else {
+      data = (await getDoc(ref)).data() as ProjectSettingsFS | undefined;
+    }
+    if (data === undefined) return undefined;
+    return { encryptedAt: data.encryptedAt, editorUid: data.editorUid };
+  } catch (error) {
+    console.error('設定メタ取得エラー:', error);
+    return undefined;
+  }
+};
+
+/**
+ * ローカルに保持している設定の updatedAt が、クラウドの現在の設定と同じ保存に由来するかを判定する。
+ * アップロード前の「他の人が設定を変更していないか」の確認に使う。
+ *
+ * 単純な一致比較にしないのは、暗号化ペイロード内の updatedAt が保存時点の toDate() の実装に依存するため。
+ * toDate() には nanoseconds を 100000 で割る不具合があり(修正済み)、それ以前に保存された設定には
+ * 小数部が10倍になった値が入っている。平文の encryptedAt は常に正しいので、
+ * 「正しい値」と「旧実装で書かれたであろう値」の両方を許容する。
+ * 全プロジェクトの設定が再保存されれば legacy 側の判定は削除してよい。
+ */
+export const isSettingsUpdatedAtCurrent = async (
+  projectId: string,
+  localUpdatedAt: string | undefined
+): Promise<boolean> => {
+  if (localUpdatedAt === undefined) return false;
+  const meta = await getProjectSettingsMeta(projectId, true);
+  if (meta === undefined) return false;
+  const local = new Date(localUpdatedAt).getTime();
+  if (Number.isNaN(local)) return false;
+  const current = meta.encryptedAt.seconds * 1000 + Math.floor(meta.encryptedAt.nanoseconds / 1000000);
+  const legacy = meta.encryptedAt.seconds * 1000 + Math.floor(meta.encryptedAt.nanoseconds / 100000);
+  return local === current || local === legacy;
 };
 
 export const getSettingsUpdatedAt = async (projectId: string): Promise<Date | undefined> => {
@@ -943,6 +1013,9 @@ export const migrateProjectToDEK = async (
 
     // 1. まだgroup方式のうちに、移行対象データを復号して取り出す（このdecはグループ暗号で動く）。
     const settingsRes = await downloadProjectSettings(id);
+    // 設定の更新日時・最終編集者は再暗号化後も据え置くため、上書きされる前に控えておく
+    // （プロジェクト一覧の「更新日時」がこの値。移行日時に置き換わると実際の作業履歴が失われる）。
+    const settingsMeta = await getProjectSettingsMeta(id);
     const commonRes = await downloadCommonData(id);
     const templateRes = await downloadTemplateData(id);
     if (!commonRes.isOK || !templateRes.isOK) {
@@ -970,7 +1043,13 @@ export const migrateProjectToDEK = async (
 
     // 5. 設定・COMMON・TEMPLATE をDEKで再暗号化して書き戻す。
     if (settingsRes.isOK) {
-      await uploadProjectSettings(id, wrapperUid, settingsRes.data);
+      // 中身はDEKで暗号化し直すが、更新日時と最終編集者は移行前の値のまま書く。
+      await uploadProjectSettings(
+        id,
+        settingsMeta?.editorUid ?? wrapperUid,
+        settingsRes.data,
+        settingsMeta?.encryptedAt
+      );
     }
     for (const d of commonRes.data ?? []) {
       if (d.userId === undefined) continue;
@@ -1098,8 +1177,20 @@ export const deleteCurrentPosition = async (userId: string, projectId: string) =
   }
 };
 
+/**
+ * 旧 toDate と同じ値（nanoseconds を 100000 で割る）を返す。小数部が10倍になり最大9秒進む。
+ * 新旧クライアントが混在する間、プロジェクト設定の暗号化ペイロードに書く updatedAt の互換のためだけに使う。
+ * 全クライアントが更新されたら削除してよい。
+ */
+const toLegacyDate = (timestamp: Timestamp) => {
+  return new Date(timestamp.seconds * 1000 + Math.floor(timestamp.nanoseconds / 100000));
+};
+
 export const toDate = (timestamp: Timestamp) => {
-  return new Date(timestamp.seconds * 1000 + timestamp.nanoseconds / 100000);
+  // 以前は nanoseconds を 100000 で割っており、小数部が10倍になって最大9秒ずれていた。
+  // ずれは表示だけでなく、getMyDataUpdatedAt と アップロード基準値(uploadDataHelper が返す
+  // toMillis の正確な値)との突き合わせも常に不一致にしていた（衝突検知の高速パスが死んでいた）。
+  return new Date(timestamp.seconds * 1000 + Math.floor(timestamp.nanoseconds / 1000000));
 };
 
 // 指定したlayerIdの全データのpermissionを一括で更新
