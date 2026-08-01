@@ -1,4 +1,4 @@
-import { gpx2Data, geoJson2Data, generateCSV, generateGPX, generateGeoJson } from '../Geometry';
+import { gpx2Data, geoJson2Data, generateCSV, generateGPX, generateGeoJson, escapeCSVValue } from '../Geometry';
 import { geoJsonString } from '../../__tests__/resources/geojson';
 import track_gpx from '../../__tests__/resources/track_gpx';
 import invalid_track_gpx from '../../__tests__/resources/invalid_track_gpx';
@@ -180,10 +180,41 @@ describe('generateCSV', () => {
   it('return csv from data', () => {
     const expected = [
       '\ufeff' + 'displayName,name,time,cmt,photo,geometry',
-      'mizutani,"St.1","2020-01-01T09:28:38+09:00","","","POINT(140.71658064854364 38.24715800176878)"',
-      ',"St.3","5時","","test.jpg","POINT(140.71548306286388 38.24101016421964)"',
+      '"mizutani","St.1","2020-01-01T09:28:38+09:00","","","POINT(140.71658064854364 38.24715800176878)"',
+      '"","St.3","5時","","test.jpg","POINT(140.71548306286388 38.24101016421964)"',
     ];
     expect(generateCSV(point_record, layers[0].field, 'POINT').split(String.fromCharCode(10))).toStrictEqual(expected);
+  });
+});
+
+describe('escapeCSVValue', () => {
+  it('quotes plain values', () => {
+    expect(escapeCSVValue('abc')).toBe('"abc"');
+    expect(escapeCSVValue('')).toBe('""');
+    expect(escapeCSVValue(null)).toBe('""');
+    expect(escapeCSVValue(undefined)).toBe('""');
+  });
+
+  it('escapes double quotes by doubling them', () => {
+    expect(escapeCSVValue('say "hi"')).toBe('"say ""hi"""');
+  });
+
+  it('keeps commas and newlines inside quotes', () => {
+    expect(escapeCSVValue('rgba(0,0,0,1)')).toBe('"rgba(0,0,0,1)"');
+    expect(escapeCSVValue('a\nb')).toBe('"a\nb"');
+  });
+
+  it('neutralizes formula injection', () => {
+    expect(escapeCSVValue('=1+1')).toBe('"\'=1+1"');
+    expect(escapeCSVValue('@SUM(A1)')).toBe('"\'@SUM(A1)"');
+    expect(escapeCSVValue('+HYPERLINK("http://evil")')).toBe('"\'+HYPERLINK(""http://evil"")"');
+    expect(escapeCSVValue("-2+3+cmd|' /C calc'!A0")).toBe('"\'-2+3+cmd|\' /C calc\'!A0"');
+  });
+
+  it('keeps negative numbers usable as numbers', () => {
+    expect(escapeCSVValue('-3.5')).toBe('"-3.5"');
+    expect(escapeCSVValue(-3.5)).toBe('"-3.5"');
+    expect(escapeCSVValue('-1e-3')).toBe('"-1e-3"');
   });
 });
 
