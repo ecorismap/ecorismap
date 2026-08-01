@@ -11,14 +11,24 @@
 - Added a one-tap location on/off toggle when adding data from the dictionary in the data list
 - Added elevation and coordinates (with tap-to-copy) to the long-press and POI popups
 - Added straight-line distance from the current location to the long-pressed point in the map popup when GPS is on
+- Added hillshade with omnidirectional shading (SVF) and red relief map styles, unified across iOS, Android, and Web
+- Added preset selection to map and layer editing, including terrain visualization presets
+- Added pause and resume for map tile downloads
+- Added project archiving, with sorting by owner and archive status in the project list
+- Added migration of existing projects to the new encryption key scheme (bulk migration, and automatic migration when opening a project)
 - Improved track recording reliability and battery consumption during long recordings
 - Improved GPS on/off responsiveness, follow mode, and notification behavior
 - Improved GPS settings to open inside the bottom sheet
 - Improved map rendering performance with large datasets
 - Improved responsiveness with large numbers of records and fields
+- Improved upload speed by removing an unnecessary data re-download during conflict detection
 - Improved group display design in the layer and map lists
 - Improved account-related screen navigation
 - Improved dictionary voice input (updated to Expo 56 / React Native 0.85)
+- Improved hillshade to fall back to coarser zoom levels where elevation tiles are unavailable
+- Improved export file names to include the layer name
+- Improved the encryption PIN to require 6 digits when newly set or changed
+- Improved the compass button: the bearing line now toggles with a long press, and map rotation responds faster
 - Fixed lines and polygons being hidden under tile maps on Android
 - Fixed the current location showing a stale cached position on iOS
 - Fixed data loss when uploading from multiple devices with the same account
@@ -27,6 +37,14 @@
 - Fixed the dictionary input box appearing on layers without a dictionary field
 - Fixed an issue where the downloaded area was not saved per map in bulk map download
 - Fixed an issue where a feature was selected at the same time as the long-press popup
+- Fixed project update dates being overwritten by the encryption key scheme migration
+- Fixed another user's automatic backup being restorable while signed in as a different user
+- Fixed decryption not recovering until re-login after an encryption key was re-shared
+- Fixed encryption groups remaining for archived projects when an account was deleted
+- Fixed the map download area not following map panning on iOS
+- Fixed the current location marker appearing very small on Android
+- Fixed the update date in the project list not refreshing after saving project settings
+- Fixed the bearing line jittering in compass mode and not appearing on iOS
 - Added usage analytics (Firebase Analytics)
 - Other minor bug fixes
 
@@ -39,14 +57,24 @@
 - データ一覧に辞書からのデータ追加時の位置あり/なしワンタッチ切替トグルを追加
 - 長押し・POI ポップアップに標高と緯度経度（タップでコピー）を表示するように追加
 - GPS が ON のとき、地図長押しのポップアップに現在地からの直線距離を表示するように追加
+- 陰影起伏図を全方位対応（SVF）に刷新し、赤色立体地図などの表現を追加（iOS / Android / Web で同じ方式に統一）
+- 地図・レイヤ編集にプリセット選択機能を追加（立体図のプリセットを含む）
+- 地図タイルダウンロードの中断・再開機能を追加
+- プロジェクトのアーカイブ機能を追加（一覧のオーナー・アーカイブ列で並べ替え可能）
+- 既存プロジェクトを新しい暗号鍵方式へ移行する機能を追加（一括移行と、プロジェクトを開いたときの自動移行）
 - GPS 軌跡記録の不具合と長時間記録時の電池消費を改善（react-native-background-geolocation v5 へ更新）
 - GPS の ON/OFF 応答性・追従モード・通知まわりを改善
 - GPS 設定をボトムシート内で開くように改善
 - 大量データ表示時の地図のパフォーマンスを改善
 - レコード・項目数が多いときの動作を軽量化
+- アップロード時の衝突チェックで不要なデータ再取得が起きていたのを解消し、アップロードを高速化
 - レイヤ一覧・地図一覧のグループ表示デザインを刷新
 - アカウント関連の画面遷移を改善
 - 辞書の音声入力を刷新（Expo 56 / React Native 0.85 へ移行）
+- 標高タイルが無いズームでは粗いズームの標高から陰影を描くように改善
+- エクスポートのファイル名にレイヤ名を含めるように改善
+- 暗号化 PIN を新規設定・変更時に 6 桁必須に強化
+- コンパスボタンを改善（方角線の切り替えを長押しに変更し、地図回転の反応を高速化）
 - Android でライン・ポリゴンがタイル地図の下に隠れる不具合を修正
 - iOS で現在地がキャッシュされた古い位置になる不具合を修正
 - 同一アカウント・複数端末でのアップロードでデータが消失する不具合を修正
@@ -55,6 +83,14 @@
 - 辞書未設定のレイヤに辞書入力欄が表示される不具合を修正
 - 地図の一括ダウンロードで取得範囲が地図ごとに記録されない不具合を修正
 - 長押しポップアップ表示時にフィーチャー選択が同時に起きる不具合を修正
+- 暗号鍵方式の移行でプロジェクトの更新日時が書き換わる不具合を修正
+- 別ユーザーのログイン中に他ユーザーの自動バックアップを復元できる不具合を修正
+- 暗号化キーの再共有後、再ログインしないと復号できない不具合を修正
+- アカウント削除時にアーカイブ済みプロジェクトの暗号化グループが残る不具合を修正
+- iOS で地図のダウンロード範囲が地図のパンに追従しない不具合を修正
+- Android で現在地マーカーが極端に小さく表示される不具合を修正
+- プロジェクト設定の保存後に一覧の更新日時が反映されない不具合を修正
+- コンパスモードで方角線が揺れる不具合と、iOS で方角線が表示されない不具合を修正
 - アクセス解析（Firebase Analytics）を導入
 - その他細かなバグ修正
 
