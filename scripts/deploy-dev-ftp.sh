@@ -1,9 +1,12 @@
 #!/bin/bash
 # 開発サーバー(WebARENA)へWeb版をFTPSでアップロードする。
 #
-#   yarn deploy:dev              ビルドしてアップロード
-#   bash scripts/deploy-dev-ftp.sh --dry-run   転送内容の確認のみ
-#   bash scripts/deploy-dev-ftp.sh --delete    ローカルに無いファイルをサーバーから削除
+#   yarn deploy:dev                             ビルドしてアップロード
+#   bash scripts/deploy-dev-ftp.sh --dry-run    転送・削除内容の確認のみ
+#   bash scripts/deploy-dev-ftp.sh --no-delete  サーバー側の余分なファイルを消さない
+#
+# 既定でサーバー側の余分なファイルを削除する（ハッシュ名が変わるたびに古いバンドルが
+# 蓄積するため）。.htaccess等のサーバー設定は EXCLUDES で保護している。
 #
 # パスワードはmacOSのキーチェーンから取得する。初回のみ下記で登録すること:
 #   security add-generic-password -a admin -s ecorismap-ftp -U -w
@@ -20,14 +23,20 @@ KEYCHAIN_SERVICE="${ECORISMAP_FTP_KEYCHAIN:-ecorismap-ftp}"
 LOCAL_DIR="${ECORISMAP_WEB_BUILD:-web-build}"
 
 DRY_RUN=""
-DELETE=""
+DELETE="--delete"
 for arg in "$@"; do
   case "$arg" in
     --dry-run) DRY_RUN="--dry-run" ;;
+    --no-delete) DELETE="" ;;
     --delete) DELETE="--delete" ;;
     *) echo "不明なオプション: $arg" >&2; exit 1 ;;
   esac
 done
+
+# 削除対象から除外するもの。web-build に含まれないため、--delete で消える位置にある。
+# 現状このディレクトリに .htaccess は無い（制限は親ディレクトリ）が、後から置かれても
+# 消さないよう保護しておく。
+EXCLUDES="--exclude-glob .htaccess --exclude-glob .htpasswd --exclude-glob .user.ini --exclude .well-known/"
 
 command -v lftp >/dev/null || { echo "lftpがありません。brew install lftp を実行してください。" >&2; exit 1; }
 
@@ -51,7 +60,11 @@ fi
 echo "アップロード先 : ftps://$FTP_USER@$HOST$REMOTE_DIR"
 echo "ローカル       : $LOCAL_DIR/ ($(du -sh "$LOCAL_DIR" | cut -f1))"
 [ -n "$DRY_RUN" ] && echo "モード         : ドライラン（実際には転送しません）"
-[ -n "$DELETE" ] && echo "モード         : --delete 有効（サーバー側の余分なファイルを削除します）"
+if [ -n "$DELETE" ]; then
+  echo "削除           : 有効（ローカルに無いファイルはサーバーから削除。.htaccess等は保護）"
+else
+  echo "削除           : 無効（サーバー側の余分なファイルはそのまま）"
+fi
 echo
 
 # lftpは--dry-runで「実行するはずのコマンド」をそのまま出力し、そこに認証情報付きURLが
@@ -79,7 +92,7 @@ open "$HOST"
 user "$FTP_USER" "$FTP_PASS"
 lcd "$LOCAL_DIR"
 cd "$REMOTE_DIR"
-mirror -R --only-newer --parallel=4 --no-perms $DRY_RUN $DELETE . .
+mirror -R --only-newer --parallel=4 --no-perms $EXCLUDES $DRY_RUN $DELETE . .
 bye
 LFTP
 
