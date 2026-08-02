@@ -350,6 +350,46 @@ function checkGeoJSONCRS(geojson: any) {
   return false;
 }
 
+// GeoJSONは外部ファイル由来なので、座標が数値であることと値域を検証する。
+// GeoJSONの座標は [経度, 緯度] の順（高度が続く場合がある）。
+export const isValidPosition = (pos: unknown): pos is Position =>
+  Array.isArray(pos) &&
+  pos.length >= 2 &&
+  typeof pos[0] === 'number' &&
+  Number.isFinite(pos[0]) &&
+  pos[0] >= -180 &&
+  pos[0] <= 180 &&
+  typeof pos[1] === 'number' &&
+  Number.isFinite(pos[1]) &&
+  pos[1] >= -90 &&
+  pos[1] <= 90;
+
+const isPositionArray = (v: unknown): boolean => Array.isArray(v) && v.length > 0 && v.every(isValidPosition);
+const isPositionArrayList = (v: unknown): boolean => Array.isArray(v) && v.length > 0 && v.every(isPositionArray);
+
+export const hasValidCoordinates = (geometry: Geometry | null): boolean => {
+  // geometryがnullのフィーチャ（属性のみ）は従来どおり許容する
+  if (geometry == null) return true;
+  switch (geometry.type) {
+    case 'Point':
+      return isValidPosition(geometry.coordinates);
+    case 'MultiPoint':
+    case 'LineString':
+      return isPositionArray(geometry.coordinates);
+    case 'MultiLineString':
+    case 'Polygon':
+      return isPositionArrayList(geometry.coordinates);
+    case 'MultiPolygon':
+      return (
+        Array.isArray(geometry.coordinates) &&
+        geometry.coordinates.length > 0 &&
+        geometry.coordinates.every(isPositionArrayList)
+      );
+    default:
+      return false;
+  }
+};
+
 export const geoJson2Data = (
   geojson: FeatureCollection<Geometry | null, GeoJsonProperties>,
   layer: LayerType,
@@ -364,9 +404,18 @@ export const geoJson2Data = (
     if (!isValidGeojson) {
       return undefined;
     }
+    // featuresが配列でないファイルは取り込めない
+    if (!Array.isArray(geojson.features)) {
+      return undefined;
+    }
+    // 座標が数値でない、範囲外などの壊れたフィーチャは取り込まない。
+    // 取り込むと緯度経度がNaNや(0,0)になり、地図がアフリカ沖へ飛ぶなどの実害が出る。
+    const validFeatures = geojson.features.filter(
+      (feature) => feature != null && hasValidCoordinates(feature.geometry ?? null)
+    );
     switch (type) {
       case 'POINT':
-        importedData = geojson.features
+        importedData = validFeatures
           .filter(
             (feature): feature is Feature<Point> => feature.geometry === null || feature.geometry.type === 'Point'
           )
@@ -379,7 +428,7 @@ export const geoJson2Data = (
           });
         break;
       case 'MULTIPOINT':
-        importedData = geojson.features
+        importedData = validFeatures
           .filter(
             (feature): feature is Feature<MultiPoint> =>
               feature.geometry === null || feature.geometry.type === 'MultiPoint'
@@ -402,7 +451,7 @@ export const geoJson2Data = (
           .flat();
         break;
       case 'LINE':
-        importedData = geojson.features
+        importedData = validFeatures
           .filter(
             (feature): feature is Feature<LineString> =>
               feature.geometry === null || feature.geometry.type === 'LineString'
@@ -414,7 +463,7 @@ export const geoJson2Data = (
           }));
         break;
       case 'MULTILINE':
-        importedData = geojson.features
+        importedData = validFeatures
           .filter(
             (feature): feature is Feature<MultiLineString> =>
               feature.geometry === null || feature.geometry.type === 'MultiLineString'
@@ -438,7 +487,7 @@ export const geoJson2Data = (
         break;
 
       case 'POLYGON':
-        importedData = geojson.features
+        importedData = validFeatures
           .filter(
             (feature): feature is Feature<Polygon> => feature.geometry === null || feature.geometry.type === 'Polygon'
           )
@@ -449,7 +498,7 @@ export const geoJson2Data = (
           }));
         break;
       case 'MULTIPOLYGON':
-        importedData = geojson.features
+        importedData = validFeatures
           .filter(
             (feature): feature is Feature<MultiPolygon> =>
               feature.geometry === null || feature.geometry.type === 'MultiPolygon'

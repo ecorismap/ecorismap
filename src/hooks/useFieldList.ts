@@ -7,7 +7,7 @@ import { t } from '../i18n/config';
 import { Platform } from 'react-native';
 import { decodeUri } from '../utils/File.web';
 import * as FileSystem from 'expo-file-system/legacy';
-import { getDatabase } from '../utils/SQLite';
+import { getDatabase, isValidTableName } from '../utils/SQLite';
 import { ulid } from 'ulid';
 
 export type UseFieldListReturnType = {
@@ -90,6 +90,7 @@ export const useFieldList = (
       try {
         setIsLoading(true);
         const tableName = `_${targetLayer.id}_${fieldItem.id}`;
+        if (!isValidTableName(tableName)) return;
         const db = await getDatabase();
         const allRows = db.getAllSync(`SELECT value FROM "${tableName}"`);
         //@ts-ignore
@@ -242,6 +243,7 @@ export const useFieldList = (
 
   const importDictionaryFromCSV = useCallback(async (uri: string, tableName: string) => {
     try {
+      if (!isValidTableName(tableName)) throw new Error(t('hooks.message.cannotOpenDB'));
       const db = await getDatabase();
       if (!db) throw new Error(t('hooks.message.cannotOpenDB'));
       setIsLoading(true);
