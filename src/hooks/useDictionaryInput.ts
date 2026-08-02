@@ -6,7 +6,7 @@ import levenshtein from 'fast-levenshtein';
 
 import { Alert } from '../components/atoms/Alert';
 import { t } from 'i18next';
-import { getDatabase } from '../utils/SQLite';
+import { getDatabase, isValidTableName } from '../utils/SQLite';
 import { SQLiteDatabase } from 'expo-sqlite';
 
 export type UseDictionaryInputReturnType = {
@@ -42,6 +42,8 @@ export const useDictionaryInput = (table: string, initialValue: string): UseDict
         //完全一致と部分一致で重複するものは完全一致のみにする
 
         if (db === undefined) return;
+        // テーブル名はSQLに直接埋め込むため、想定外の名前では問い合わせない
+        if (!isValidTableName(table)) return;
 
         // 音声入力では文章ごと認識され長くなることがある。
         // 2-gram展開でLIKE条件を大量にOR連結するとSQLiteの式深さ/変数数の上限を超えて

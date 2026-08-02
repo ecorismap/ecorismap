@@ -1,6 +1,19 @@
 import * as SQLite from 'expo-sqlite';
 import * as FileSystem from 'expo-file-system/legacy';
 
+// テーブル名はプレースホルダ(?)にできずSQLへ直接埋め込むしかないため、使用前に検証する。
+// 辞書テーブルは `_${layerId}_${fieldId}`（ULID）形式だが、インポートしたSQLiteファイルから
+// sqlite_schemaで読み取る名前は外部入力なので、想定外の文字を含むものは扱わない。
+// sqlite_で始まる名前はSQLiteの予約（sqlite_sequence等）なので除外する。
+const TABLE_NAME_PATTERN = /^[0-9A-Za-z_-]+$/;
+
+export const isValidTableName = (name: unknown): name is string =>
+  typeof name === 'string' &&
+  name.length > 0 &&
+  name.length <= 128 &&
+  TABLE_NAME_PATTERN.test(name) &&
+  !name.toLowerCase().startsWith('sqlite_');
+
 export async function getDatabase() {
   return SQLite.openDatabaseSync('dictionary.sqlite', { useNewConnection: true });
 }
@@ -51,6 +64,10 @@ export async function exportDatabase(layerId: string) {
     }[];
     for (const table of tables) {
       const tableName = table.name;
+      if (!isValidTableName(tableName)) {
+        console.warn(`Skipped table with unexpected name: ${tableName}`);
+        continue;
+      }
       const values = (await sourceDb.getAllAsync(`SELECT value FROM "${tableName}"`)) as { value: string }[];
       console.log(`Exporting table ${tableName}...`);
       const createTableSQL = `CREATE TABLE "${tableName}" (value TEXT)`;
@@ -98,6 +115,12 @@ export async function importDictionary(
     const oldTableName = table.name;
     const newTableName =
       layerIdMap !== null && fieldIdMap !== null ? `_${layerIdMap[layerId]}_${fieldIdMap[fieldId]}` : table.name;
+
+    // インポートしたファイル由来の名前をそのままSQLに埋めないよう、読み書き両方の名前を検証する
+    if (!isValidTableName(oldTableName) || !isValidTableName(newTableName)) {
+      console.warn(`Skipped table with unexpected name: ${oldTableName} -> ${newTableName}`);
+      continue;
+    }
 
     // テーブルを削除する（存在する場合）
     await sourceDb.execAsync(`DROP TABLE IF EXISTS "${newTableName}"`);
