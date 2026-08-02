@@ -1,4 +1,12 @@
-import { gpx2Data, geoJson2Data, generateCSV, generateGPX, generateGeoJson, escapeCSVValue } from '../Geometry';
+import {
+  gpx2Data,
+  geoJson2Data,
+  generateCSV,
+  generateGPX,
+  generateGeoJson,
+  escapeCSVValue,
+  hasValidCoordinates,
+} from '../Geometry';
 import { geoJsonString } from '../../__tests__/resources/geojson';
 import track_gpx from '../../__tests__/resources/track_gpx';
 import invalid_track_gpx from '../../__tests__/resources/invalid_track_gpx';
@@ -184,6 +192,59 @@ describe('generateCSV', () => {
       '"","St.3","5時","","test.jpg","POINT(140.71548306286388 38.24101016421964)"',
     ];
     expect(generateCSV(point_record, layers[0].field, 'POINT').split(String.fromCharCode(10))).toStrictEqual(expected);
+  });
+});
+
+describe('hasValidCoordinates', () => {
+  it('accepts valid geometries', () => {
+    expect(hasValidCoordinates({ type: 'Point', coordinates: [140.7, 38.2] })).toBe(true);
+    expect(hasValidCoordinates({ type: 'Point', coordinates: [140.7, 38.2, 120] })).toBe(true);
+    expect(
+      hasValidCoordinates({
+        type: 'LineString',
+        coordinates: [
+          [140.7, 38.2],
+          [140.8, 38.3],
+        ],
+      })
+    ).toBe(true);
+    expect(
+      hasValidCoordinates({
+        type: 'Polygon',
+        coordinates: [
+          [
+            [140.7, 38.2],
+            [140.8, 38.3],
+            [140.7, 38.2],
+          ],
+        ],
+      })
+    ).toBe(true);
+  });
+
+  it('accepts a null geometry (attributes only)', () => {
+    expect(hasValidCoordinates(null)).toBe(true);
+  });
+
+  it('rejects non-numeric coordinates', () => {
+    // @ts-expect-error 壊れたファイルを模した入力
+    expect(hasValidCoordinates({ type: 'Point', coordinates: ['140.7', '38.2'] })).toBe(false);
+    // @ts-expect-error 壊れたファイルを模した入力
+    expect(hasValidCoordinates({ type: 'Point', coordinates: [null, null] })).toBe(false);
+    expect(hasValidCoordinates({ type: 'Point', coordinates: [NaN, 38.2] })).toBe(false);
+  });
+
+  it('rejects out-of-range coordinates', () => {
+    expect(hasValidCoordinates({ type: 'Point', coordinates: [181, 38.2] })).toBe(false);
+    expect(hasValidCoordinates({ type: 'Point', coordinates: [140.7, 91] })).toBe(false);
+  });
+
+  it('rejects malformed structures', () => {
+    // Positionは number[] 型なので要素数不足は型エラーにならない。実行時に弾けることを確認する
+    expect(hasValidCoordinates({ type: 'Point', coordinates: [140.7] })).toBe(false);
+    expect(hasValidCoordinates({ type: 'LineString', coordinates: [] })).toBe(false);
+    // @ts-expect-error 壊れたファイルを模した入力
+    expect(hasValidCoordinates({ type: 'Unknown', coordinates: [140.7, 38.2] })).toBe(false);
   });
 });
 
