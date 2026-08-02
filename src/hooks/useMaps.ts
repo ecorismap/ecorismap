@@ -18,6 +18,7 @@ import { convert, warpedFileType } from 'react-native-gdalwarp';
 import { webMercatorToLatLon } from '../utils/Coords';
 import { Buffer } from 'buffer';
 import { unlink, exportFileFromData } from '../utils/File';
+import { withTileSignature } from '../utils/TileSignature';
 import { convertPDFToGeoTiff } from '../utils/PDF';
 import { db } from '../utils/db';
 import { generateTilesFromPDF } from '../utils/PDF';
@@ -118,6 +119,8 @@ export const useMaps = (): UseMapsReturnType => {
   const mapListURL = useSelector((state: RootState) => state.settings.mapListURL, shallowEqual);
   const maps = useSelector((state: RootState) => state.tileMaps);
   const tileRegions = useSelector((state: RootState) => state.settings.tileRegions, shallowEqual);
+  // 署名付き配信のPDFに対応する。既存のBasic認証(URLのuserinfo)とは排他ではなく併用できる。
+  const tileSignatures = useSelector((state: RootState) => state.tileSignatures);
   const [editedMap, setEditedMap] = useState({} as TileMapType);
   const [isMapEditorOpen, setMapEditorOpen] = useState(false);
   const [progress, setProgress] = useState(formatProgress(PDF_PROGRESS.idle));
@@ -812,7 +815,8 @@ export const useMaps = (): UseMapsReturnType => {
         if (Platform.OS !== 'web') {
           return { header: undefined, boundary: undefined };
         }
-        const pmtile = new pmtiles.PMTiles(url.replace('pmtiles://', ''));
+        // 保護レイヤのヘッダー取得にも署名が要る（地図名タップでの範囲ジャンプ等）
+        const pmtile = new pmtiles.PMTiles(withTileSignature(url, tileSignatures).replace('pmtiles://', ''));
         const header = await pmtile.getHeader();
         return {
           header: header,
@@ -834,7 +838,7 @@ export const useMaps = (): UseMapsReturnType => {
         return { header: undefined, boundary: undefined };
       }
     },
-    []
+    [tileSignatures]
   );
 
   const importPmtilesFile = useCallback(
@@ -924,7 +928,7 @@ export const useMaps = (): UseMapsReturnType => {
           }
           dataUri = result.data;
         } else if (Platform.OS === 'ios' || Platform.OS === 'android') {
-          const downloadUrl = uri;
+          const downloadUrl = withTileSignature(uri, tileSignatures);
           const download = FileSystem.createDownloadResumable(
             downloadUrl,
             tempPdf,
@@ -945,7 +949,7 @@ export const useMaps = (): UseMapsReturnType => {
           dataUri = response.uri;
         } else if (Platform.OS === 'web') {
           try {
-            const noAuthUri = uri.replace(/^(https?:\/\/)([^:]+):([^@]+)@/, '$1');
+            const noAuthUri = withTileSignature(uri.replace(/^(https?:\/\/)([^:]+):([^@]+)@/, '$1'), tileSignatures);
             const response = await fetch(noAuthUri, {
               mode: 'cors',
               headers: {
@@ -996,7 +1000,7 @@ export const useMaps = (): UseMapsReturnType => {
 
       return { isOK: false, message: '' };
     },
-    [importJsonMapFile, importPdfFile, importPmtilesFile]
+    [importJsonMapFile, importPdfFile, importPmtilesFile, tileSignatures]
   );
 
   return {

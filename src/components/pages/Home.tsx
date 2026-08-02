@@ -32,6 +32,7 @@ import { useWindow } from '../../hooks/useWindow';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../store';
 import { isMapMemoDrawTool } from '../../utils/General';
+import { withTileSignature } from '../../utils/TileSignature';
 import { TileMapType, PaperOrientationType, PaperSizeType, ScaleType } from '../../types';
 import { MapViewContext } from '../../contexts/MapView';
 import { DrawingToolsContext } from '../../contexts/DrawingTools';
@@ -72,6 +73,10 @@ interface TileMapsProps {
 // 変わらなければ再レンダリングされず、Fabric(New Arch)のchild再マウントループ
 // （featuresの破壊によりレイヤーが非表示にできなくなる問題）を防ぐ。
 const TileMaps = React.memo(({ tileMaps, isOffline }: TileMapsProps) => {
+  // 署名付きタイル配信の署名。変化はごく稀（90日に1回程度）なのでmemoの効果は損なわない。
+  // tileMap.url自体は書き換えず描画直前に合成する。urlを変えるとkeyが変わり、
+  // iOSでタイルキャッシュがクリアされてオフライン用のダウンロードが無駄になるため。
+  const tileSignatures = useSelector((state: RootState) => state.tileSignatures);
   return (
     <>
       {tileMaps
@@ -88,8 +93,8 @@ const TileMaps = React.memo(({ tileMaps, isOffline }: TileMapsProps) => {
                     ? `${tileMap.url}-${isOffline}-${tileMap.styleURL}`
                     : `${tileMap.id}-${tileMap.styleURL}`
                 } //オンラインとオフラインでキーを変更しないとキャッシュがクリアされない。urlの変更でキーを変更すると、キャッシュがクリアされる。
-                urlTemplate={tileMap.url.replace('pmtiles://', '')}
-                styleURL={tileMap.styleURL}
+                urlTemplate={withTileSignature(tileMap.url, tileSignatures).replace('pmtiles://', '')}
+                styleURL={tileMap.styleURL ? withTileSignature(tileMap.styleURL, tileSignatures) : tileMap.styleURL}
                 flipY={false}
                 opacity={1 - tileMap.transparency}
                 //tileSize={256} rasterは256、vectorは512で固定
@@ -117,7 +122,7 @@ const TileMaps = React.memo(({ tileMaps, isOffline }: TileMapsProps) => {
                 urlTemplate={
                   tileMap.url.endsWith('.pdf') || tileMap.url.startsWith('pdf://')
                     ? 'file://dummy/{z}/{x}/{y}.png'
-                    : tileMap.url
+                    : withTileSignature(tileMap.url, tileSignatures)
                 }
                 flipY={tileMap.flipY}
                 opacity={1 - tileMap.transparency}

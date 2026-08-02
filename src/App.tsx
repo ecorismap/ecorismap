@@ -9,6 +9,7 @@ import * as NavigationBar from 'expo-navigation-bar';
 import Routes from './routes';
 import { persistor, store } from './store';
 import { StatusBarOverlay } from './components/atoms/StatusBarOverlay';
+import { TileSignatureSync } from './components/atoms/TileSignatureSync';
 import { checkAsyncStorageData, isMigrationCompleted, isMigrationSkipped, StorageInfo } from './utils/storageMigration';
 
 const StorageMigrationDialog =
@@ -61,6 +62,7 @@ export default function App() {
           <PersistGate loading={null} persistor={persistor}>
             <>
               <Routes />
+              <TileSignatureSync />
               <StatusBarOverlay />
               {Platform.OS !== 'web' && storageInfo && StorageMigrationDialog && (
                 <StorageMigrationDialog

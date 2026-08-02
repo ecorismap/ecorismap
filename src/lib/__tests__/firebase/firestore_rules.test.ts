@@ -1427,3 +1427,41 @@ describe('DEK(エンベロープ暗号): keys サブコレクションと管理�
     );
   });
 });
+
+describe('tileAccess collection', () => {
+  // 署名付きタイル配信の許可リスト。Functions(getTileSignatures)がAdmin SDKで読むだけで、
+  // クライアントからは読み書きとも禁止。誰が許可されているかは秘匿情報のため。
+  const ctx = (uid: string, n: string) =>
+    testEnv.authenticatedContext(uid, { email: `${n}@example.com`, email_verified: true });
+  const layerName = 'R7_date_iwazizou';
+
+  const seedTileAccess = async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await setDoc(doc(context.firestore(), `tileAccess/${layerName}`), {
+        allowedDomains: ['example.com'],
+        allowedEmails: [],
+      });
+    });
+  };
+
+  it('get: 許可ドメインのユーザーでも読めない', async () => {
+    await seedTileAccess();
+    await firebase.assertFails(getDoc(doc(ctx(uid1, 'test1').firestore(), `tileAccess/${layerName}`)));
+  });
+
+  it('get: 未認証ユーザーは読めない', async () => {
+    await seedTileAccess();
+    await firebase.assertFails(
+      getDoc(doc(testEnv.unauthenticatedContext().firestore(), `tileAccess/${layerName}`))
+    );
+  });
+
+  it('set: 認証済みユーザーでも書けない', async () => {
+    await firebase.assertFails(
+      setDoc(doc(ctx(uid1, 'test1').firestore(), `tileAccess/${layerName}`), {
+        allowedDomains: ['attacker.example'],
+        allowedEmails: [],
+      })
+    );
+  });
+});

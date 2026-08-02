@@ -4,6 +4,7 @@ import layersReducer from './layers';
 import userReducer from './user';
 import projectsReducer from './projects';
 import tileMapsReducer from './tileMaps';
+import tileSignaturesReducer from './tileSignatures';
 import favoriteProjectsReducer from './favoriteProjects';
 import dataSyncReducer from './dataSync';
 import googleDriveReducer from './googleDrive';
@@ -16,6 +17,7 @@ export default combineReducers({
   user: userReducer,
   projects: projectsReducer,
   tileMaps: tileMapsReducer,
+  tileSignatures: tileSignaturesReducer,
   favoriteProjects: favoriteProjectsReducer,
   dataSync: dataSyncReducer,
   googleDrive: googleDriveReducer,

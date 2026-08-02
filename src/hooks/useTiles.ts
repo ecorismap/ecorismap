@@ -6,6 +6,7 @@ import { RootState } from '../store';
 import { editSettingsAction } from '../modules/settings';
 import { tileGridForRegion } from '../utils/Tile';
 import { toDemUrl } from '../utils/terrainShading';
+import { withTileSignature } from '../utils/TileSignature';
 import { AlertAsync, ResumeDownloadConfirmAsync, StopDownloadConfirmAsync } from '../components/molecules/AlertAsync';
 import { TileMapType, TileRegionType } from '../types';
 import { TILE_FOLDER } from '../constants/AppConstants';
@@ -64,6 +65,8 @@ export const useTiles = (
   const [downloadProgress, setProgress] = useState('0');
   const [savedTileSize, setTileSize] = useState('0');
   const tileRegions = useSelector((state: RootState) => state.settings.tileRegions, shallowEqual);
+  // 署名付きタイル配信の署名。ダウンロードもオンラインアクセスなので表示側と同様に必要。
+  const tileSignatures = useSelector((state: RootState) => state.tileSignatures);
   // redux-persistの内部stateは型定義に現れないためキャストして参照する
   const rehydrated = useSelector(
     (state: RootState) => (state as unknown as { _persist?: { rehydrated?: boolean } })._persist?.rehydrated === true
@@ -187,7 +190,10 @@ export const useTiles = (
       };
 
       const tileType = getTileType(tileMap);
-      const pmtile = tileType === 'pmtiles' ? new pmtiles.PMTiles(tileMap.url.replace('pmtiles://', '')) : undefined;
+      const pmtile =
+        tileType === 'pmtiles'
+          ? new pmtiles.PMTiles(withTileSignature(tileMap.url, tileSignatures).replace('pmtiles://', ''))
+          : undefined;
       setProgress('0');
       setIsDownloading(true);
 
@@ -216,7 +222,7 @@ export const useTiles = (
         } catch (error) {
           console.error('Error fetching metadata:', error);
         }
-        const fetchUrl = tileMap.styleURL ?? '';
+        const fetchUrl = tileMap.styleURL ? withTileSignature(tileMap.styleURL, tileSignatures) : '';
         const localLocation = `${folder}/style.json`;
 
         await fetch(fetchUrl)
@@ -242,7 +248,7 @@ export const useTiles = (
         });
 
         if (tileMap.styleURL) {
-          const fetchUrl = tileMap.styleURL;
+          const fetchUrl = withTileSignature(tileMap.styleURL, tileSignatures);
           const localLocation = `${folder}/style.json`;
 
           await fetch(fetchUrl)
@@ -330,7 +336,7 @@ export const useTiles = (
               //errorCount++;
             });
         } else if (tileType === 'pbf') {
-          const fetchUrl = tileMap.url
+          const fetchUrl = withTileSignature(tileMap.url, tileSignatures)
             .replace('{z}', tile.z.toString())
             .replace('{x}', tile.x.toString())
             .replace('{y}', tile.y.toString());
@@ -354,7 +360,7 @@ export const useTiles = (
               //console.error(error);
             });
         } else if (tileType === 'png') {
-          const fetchUrl = tileMap.url
+          const fetchUrl = withTileSignature(tileMap.url, tileSignatures)
             .replace('{z}', tile.z.toString())
             .replace('{x}', tile.x.toString())
             .replace('{y}', tile.y.toString());
@@ -376,7 +382,7 @@ export const useTiles = (
             });
         } else if (tileType === 'hillshade') {
           // 立体図の場合は元のDEMタイルURLを構築
-          const cleanUrl = toDemUrl(tileMap.url);
+          const cleanUrl = withTileSignature(toDemUrl(tileMap.url), tileSignatures);
           const fetchUrl = cleanUrl
             .replace('{z}', tile.z.toString())
             .replace('{x}', tile.x.toString())
@@ -420,7 +426,7 @@ export const useTiles = (
       }
       await AlertAsync(t('hooks.alert.completeDownload'));
     },
-    [dispatch, downloadArea, downloadRegion, promptResumeAfterBackground, store, tileMap]
+    [dispatch, downloadArea, downloadRegion, promptResumeAfterBackground, store, tileMap, tileSignatures]
   );
 
   const clearTiles = useCallback(
@@ -512,7 +518,9 @@ export const useTiles = (
         const tileType = getTileType(currentTileMap);
 
         const pmtile =
-          tileType === 'pmtiles' ? new pmtiles.PMTiles(currentTileMap.url.replace('pmtiles://', '')) : undefined;
+          tileType === 'pmtiles'
+            ? new pmtiles.PMTiles(withTileSignature(currentTileMap.url, tileSignatures).replace('pmtiles://', ''))
+            : undefined;
 
         // メタデータとスタイルのダウンロード
         if (tileType === 'pmtiles' && currentTileMap.isVector) {
@@ -535,7 +543,7 @@ export const useTiles = (
 
           if (currentTileMap.styleURL) {
             const localLocation = `${folder}/style.json`;
-            await fetch(currentTileMap.styleURL)
+            await fetch(withTileSignature(currentTileMap.styleURL, tileSignatures))
               .then((response) => response.text())
               .then(async (data) => {
                 await FileSystem.writeAsStringAsync(localLocation, data, {
@@ -552,7 +560,7 @@ export const useTiles = (
           await FileSystem.makeDirectoryAsync(folder, { intermediates: true });
 
           const localLocation = `${folder}/style.json`;
-          await fetch(currentTileMap.styleURL)
+          await fetch(withTileSignature(currentTileMap.styleURL, tileSignatures))
             .then((response) => response.text())
             .then(async (data) => {
               await FileSystem.writeAsStringAsync(localLocation, data, {
@@ -640,7 +648,7 @@ export const useTiles = (
                 console.log(e);
               });
           } else if (tileType === 'pbf') {
-            const fetchUrl = currentTileMap.url
+            const fetchUrl = withTileSignature(currentTileMap.url, tileSignatures)
               .replace('{z}', tile.z.toString())
               .replace('{x}', tile.x.toString())
               .replace('{y}', tile.y.toString());
@@ -661,7 +669,7 @@ export const useTiles = (
                 errorCount++;
               });
           } else if (tileType === 'png') {
-            const fetchUrl = currentTileMap.url
+            const fetchUrl = withTileSignature(currentTileMap.url, tileSignatures)
               .replace('{z}', tile.z.toString())
               .replace('{x}', tile.x.toString())
               .replace('{y}', tile.y.toString());
@@ -681,7 +689,7 @@ export const useTiles = (
                 errorCount++;
               });
           } else if (tileType === 'hillshade') {
-            const cleanUrl = toDemUrl(currentTileMap.url);
+            const cleanUrl = withTileSignature(toDemUrl(currentTileMap.url), tileSignatures);
             const fetchUrl = cleanUrl
               .replace('{z}', tile.z.toString())
               .replace('{x}', tile.x.toString())
@@ -741,7 +749,7 @@ export const useTiles = (
       }
       await AlertAsync(message);
     },
-    [dispatch, downloadArea, promptResumeAfterBackground, store]
+    [dispatch, downloadArea, promptResumeAfterBackground, store, tileSignatures]
   );
 
   const resumeDownloadTiles = useCallback(async () => {
