@@ -1,0 +1,14 @@
+# このディレクトリは _gate.php 経由でのみ読む。直アクセスは全て拒否する。
+# ここが開いていると署名検証が無意味になるので、変更しないこと。
+<IfModule mod_authz_core.c>
+  Require all denied
+</IfModule>
+<IfModule !mod_authz_core.c>
+  Order allow,deny
+  Deny from all
+</IfModule>
+
+# 親ディレクトリ(/map/.htaccess)のCORS許可をここでは打ち消す
+<IfModule mod_headers.c>
+  Header unset Access-Control-Allow-Origin
+</IfModule>

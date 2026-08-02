@@ -1,0 +1,21 @@
+# 署名付きタイル配信のゲートウェイ。
+# 公開URL:
+#   https://www.ecoris.co.jp/map/survey/<レイヤ名>/{z}/{x}/{y}.png?expires=..&sig=..
+#   https://www.ecoris.co.jp/map/survey/<レイヤ名>.pmtiles?expires=..&sig=..
+#   https://www.ecoris.co.jp/map/survey/<スタイル名>.json?expires=..&sig=..
+# 実体は /ssl/home/map/survey_tiles/ に置く（直アクセスは .htaccess で拒否）。
+#
+# 署名の対象は「拡張子を除いたファイル名」。スタイルJSONはタイルとファイル名が
+# 異なる（例: R7小田野沢_判読図.pmtiles と R7小田野沢_判読図_塗.json）ため、
+# それぞれ別のレイヤ名として署名を取ることになる。
+RewriteEngine On
+RewriteBase /map/survey/
+
+# z/x/y 形式のラスタタイル
+RewriteRule ^(.+)/([0-9]+)/([0-9]+)/([0-9]+)\.(png|jpg|jpeg|webp)$ _gate.php?layer=$1&z=$2&x=$3&y=$4&ext=$5 [QSA,L]
+
+# 単一ファイル系
+#   pmtiles : Rangeリクエストで部分取得される
+#   json    : ベクタタイルのスタイル
+#   pdf     : アプリがダウンロードしてローカルタイルに変換する
+RewriteRule ^(.+)\.(pmtiles|json|pdf)$ _gate.php?layer=$1&file=$2 [QSA,L]

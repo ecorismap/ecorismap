@@ -117,6 +117,13 @@ service cloud.firestore {
           );
         }
     }
-  
+
+    // 署名付きタイル配信の許可設定（レイヤ名 -> allowedDomains / allowedEmails）。
+    // Functions(getTileSignatures)がAdmin SDKで読む。Admin SDKはRulesをバイパスするため、
+    // クライアントからは読み書きとも一切許可しない。許可リストが誰に見えるかは秘匿情報。
+    match /tileAccess/{layer} {
+      allow read, write: if false;
+    }
+
   }
 }

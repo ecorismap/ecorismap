@@ -232,6 +232,36 @@ export const getUidsByEmails = async (emails: string[]) => {
   }
 };
 
+// 署名付きタイル配信の署名取得。どのURLが署名を要するかの判定はFunctions側にあるので、
+// アプリはタイル/スタイル/PDFのURLをそのまま渡して、3分類の応答を受け取る。
+export const getTileSignatures = async (urls: string[]) => {
+  await firebaseReady;
+  const call = httpsCallable(functions, 'getTileSignatures');
+  // Functions側の1リクエスト上限(100件)に合わせてチャンク分割する
+  const CHUNK_SIZE = 100;
+  const merged = {
+    signatures: {} as { [url: string]: string },
+    unsigned: [] as string[],
+    denied: [] as string[],
+    expires: 0,
+  };
+  for (let i = 0; i < urls.length; i += CHUNK_SIZE) {
+    const { data } = await call({ urls: urls.slice(i, i + CHUNK_SIZE) });
+    const chunk = data as {
+      signatures: { [url: string]: string };
+      unsigned: string[];
+      denied: string[];
+      expires: number;
+    };
+    Object.assign(merged.signatures, chunk.signatures);
+    merged.unsigned.push(...chunk.unsigned);
+    merged.denied.push(...chunk.denied);
+    // チャンクごとにexpiresは僅かにずれる。短い方に寄せて期限切れを避ける
+    merged.expires = merged.expires === 0 ? chunk.expires : Math.min(merged.expires, chunk.expires);
+  }
+  return merged;
+};
+
 export const getAllProjects = async (uid: string, excludeMember = false, includeArchived = false) => {
   // const perfStart = performance.now();
   try {

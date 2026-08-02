@@ -69,6 +69,7 @@ import {
   SHADING_PROTOCOL,
 } from '../../utils/shadingTileProtocol.web';
 import { isShadingUrl, toDemUrl } from '../../utils/terrainShading';
+import { withTileSignature } from '../../utils/TileSignature';
 import { tileToWebMercator } from '../../utils/Tile';
 import { fromBlob } from 'geotiff';
 import { db } from '../../utils/db';
@@ -88,6 +89,8 @@ export default function HomeScreen() {
     useContext(DataSelectionContext);
 
   // isEditingLayer, isEditingMap from Redux
+  // 署名付きタイル配信の署名。tileMap.urlは書き換えず、maplibreに渡す直前に合成する。
+  const tileSignatures = useSelector((state: RootState) => state.tileSignatures);
   const isEditingLayer = useSelector((state: RootState) => state.settings.isEditingLayer);
   const isEditingMap = useSelector((state: RootState) => state.settings.isEditingMap);
 
@@ -252,9 +255,11 @@ export default function HomeScreen() {
    * @param tileMap 対象のタイルマップ
    * @returns デフォルトのレイヤースタイル配列
    */
-  const getDefaultStyle = async (tileMap: TileMapType) => {
+  // 署名を参照するようになったため、useCallbackで依存を明示する
+  // （毎レンダリング作り直すとgetVectorLayersの同一性が壊れる）
+  const getDefaultStyle = useCallback(async (tileMap: TileMapType) => {
     try {
-      const pmtile = new pmtiles.PMTiles(tileMap.url.replace('pmtiles://', ''));
+      const pmtile = new pmtiles.PMTiles(withTileSignature(tileMap.url, tileSignatures).replace('pmtiles://', ''));
       const metadata: any = await pmtile.getMetadata();
 
       //const header = await pmtile.getHeader();
@@ -318,7 +323,7 @@ export default function HomeScreen() {
       console.log(e);
       return [];
     }
-  };
+  }, [tileSignatures]);
 
   /**
    * ローカルストレージ（IndexedDB）からベクタースタイルを取得
@@ -342,7 +347,7 @@ export default function HomeScreen() {
   const getStyleFromURL = useCallback(async (tileMap: TileMapType) => {
     const url = tileMap.styleURL;
     if (!url) return [];
-    const response = await fetch(url);
+    const response = await fetch(withTileSignature(url, tileSignatures));
     if (response.ok) {
       const json = await response.json();
       if (json) {
@@ -351,7 +356,8 @@ export default function HomeScreen() {
       }
     }
     return [];
-  }, []);
+    // 署名が届いたら取得し直す必要があるため依存に含める
+  }, [tileSignatures]);
 
   // ========== レイヤー生成関数 ==========
 
@@ -480,7 +486,7 @@ export default function HomeScreen() {
 
       return updatedLayers;
     },
-    [getStyleFromLocal, getStyleFromURL]
+    [getDefaultStyle, getStyleFromLocal, getStyleFromURL]
   );
 
   /**
@@ -684,7 +690,10 @@ export default function HomeScreen() {
               ...result,
               [tileMap.id]: {
                 type: tileMap.isVector ? 'vector' : 'raster',
-                url: tileMap.url.startsWith('pmtiles://') ? tileMap.url : 'pmtiles://' + tileMap.url,
+                url: withTileSignature(
+                  tileMap.url.startsWith('pmtiles://') ? tileMap.url : 'pmtiles://' + tileMap.url,
+                  tileSignatures
+                ),
                 minzoom: tileMap.minimumZ,
                 maxzoom: tileMap.overzoomThreshold,
                 scheme: 'xyz',
@@ -697,7 +706,7 @@ export default function HomeScreen() {
               ...result,
               [tileMap.id]: {
                 type: 'vector',
-                tiles: [tileMap.url],
+                tiles: [withTileSignature(tileMap.url, tileSignatures)],
                 minzoom: tileMap.minimumZ,
                 maxzoom: tileMap.maximumZ,
                 scheme: 'xyz',
@@ -725,7 +734,7 @@ export default function HomeScreen() {
               ...result,
               [tileMap.id]: {
                 type: 'raster' as const,
-                tiles: [buildShadingTileUrl(toDemUrl(tileMap.url), tileMap.flipY)],
+                tiles: [buildShadingTileUrl(withTileSignature(toDemUrl(tileMap.url), tileSignatures), tileMap.flipY)],
                 tileSize: 256,
                 minzoom: tileMap.minimumZ || 0,
                 maxzoom: Math.min(tileMap.overzoomThreshold ?? 15, tileMap.maximumZ ?? 15),
@@ -739,7 +748,7 @@ export default function HomeScreen() {
               [tileMap.id]: {
                 type: 'raster',
                 //tiles: ['custom://' + tileMap.url], //キャッシュを使う場合
-                tiles: [tileMap.url],
+                tiles: [withTileSignature(tileMap.url, tileSignatures)],
                 minzoom: tileMap.minimumZ,
                 maxzoom: tileMap.maximumZ,
                 scheme: tileMap.flipY ? 'tms' : 'xyz',
@@ -797,7 +806,7 @@ export default function HomeScreen() {
       sky: skyStyle,
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tileMaps]);
+  }, [tileMaps, tileSignatures]);
   //console.log(mapRegion);
   return !restored ? null : (
     <GestureHandlerRootView style={{ flex: 1 }}>
