@@ -11,8 +11,9 @@ import {
   updateRecordsAction,
 } from '../modules/dataSet';
 import { ulid } from 'ulid';
-import { getDefaultField, sortData, SortOrderType } from '../utils/Data';
+import { filterRecords, getDefaultField, sortData, SortOrderType } from '../utils/Data';
 
+import { setDataFilterForLayerAction } from '../modules/settings';
 import { updateLayerAction } from '../modules/layers';
 import { selectNonDeletedAllUserRecordSet } from '../modules/selectors';
 import { deleteRecordPhotos } from '../utils/Photo';
@@ -27,6 +28,12 @@ export type UseDataReturnType = {
   sortedOrder: SortOrderType;
   sortedName: string;
   isEditable: boolean;
+  filterText: string;
+  filterFieldName: string;
+  isFiltering: boolean;
+  setFilter: (text: string, fieldName: string) => void;
+  clearFilter: () => void;
+  showOnlyFilteredRecords: () => void;
   changeVisible: (record: RecordType) => void;
   changeVisibleAll: (visible: boolean) => void;
   changeChecked: (index: number, checked: boolean) => void;
@@ -38,6 +45,14 @@ export type UseDataReturnType = {
   ) => RecordType;
   deleteRecords: () => void;
   updateRecordSetOrder: (sortedRecordSet_: RecordType[]) => void;
+};
+
+//「絞り込み結果だけ地図に表示」を押した時点のvisible。解除時に戻すために使う。
+//絞り込み自体と違いアプリ再起動後は意味を持たないため、Reduxではなくメモリに置く
+const visibilitySnapshots: { [layerId: string]: { [recordId: string]: boolean } } = {};
+
+export const clearAllVisibilitySnapshots = () => {
+  Object.keys(visibilitySnapshots).forEach((key) => delete visibilitySnapshots[key]);
 };
 
 export const useData = (layerId: string): UseDataReturnType => {
@@ -53,8 +68,29 @@ export const useData = (layerId: string): UseDataReturnType => {
   const [checkList, setCheckList] = useState<CheckListItem[]>([]);
   const [sortedOrder, setSortedOrder] = useState<SortOrderType>('UNSORTED');
   const [sortedName, setSortedName] = useState<string>('');
+  //絞り込みは解除するまで維持する。画面遷移でこのhookはアンマウントされるためReduxに置く
+  //（fieldNameが空文字なら「すべてのフィールド」）
+  const dataFilter = useSelector((state: RootState) => state.settings.dataFilterPerLayer?.[layerId], shallowEqual);
+  const filterText = dataFilter?.text ?? '';
+  const filterFieldName = dataFilter?.fieldName ?? '';
+
+  //条件と対象列は必ず一緒に設定する（別々のsetterだと後の呼び出しが前の値を古い状態で上書きしてしまう）
+  const setFilter = useCallback(
+    (text: string, fieldName: string) => {
+      dispatch(setDataFilterForLayerAction({ layerId, text, fieldName }));
+    },
+    [dispatch, layerId]
+  );
 
   const allUserRecordSet = useSelector((state: RootState) => selectNonDeletedAllUserRecordSet(state, targetLayer?.id));
+
+  const isFiltering = useMemo(() => filterText.trim() !== '', [filterText]);
+
+  //一覧に出すレコード。チェックリストと並行配列にする必要があるため、表示側ではなくここで絞り込む
+  const filteredRecordSet = useMemo(() => {
+    if (targetLayer === undefined) return allUserRecordSet ?? [];
+    return filterRecords(allUserRecordSet ?? [], targetLayer, filterText, filterFieldName);
+  }, [allUserRecordSet, targetLayer, filterText, filterFieldName]);
 
   const dataUser = useMemo(
     () => (projectId === undefined ? { ...user, uid: undefined, displayName: null } : user),
@@ -68,9 +104,10 @@ export const useData = (layerId: string): UseDataReturnType => {
     [sortedRecordSet, checkList]
   );
 
+  //絞り込み中に列構成が変わらないよう、絞り込み前のレコードで判定する
   const isMapMemoLayer = useMemo(
-    () => sortedRecordSet.some((r) => r.field._strokeColor !== undefined),
-    [sortedRecordSet]
+    () => (allUserRecordSet ?? []).some((r) => r.field._strokeColor !== undefined),
+    [allUserRecordSet]
   );
 
   const isClosedProject = projectId === undefined;
@@ -82,7 +119,7 @@ export const useData = (layerId: string): UseDataReturnType => {
   const changeOrder = useCallback(
     (colName: string, order: SortOrderType, checkList_: CheckListItem[] = checkList) => {
       // allUserRecordSetが空またはundefinedの場合の処理
-      const recordSet = allUserRecordSet || [];
+      const recordSet = filteredRecordSet || [];
 
       if (order === 'UNSORTED') {
         const newCheckList = recordSet.map(
@@ -103,7 +140,7 @@ export const useData = (layerId: string): UseDataReturnType => {
         dispatch(updateLayerAction({ ...targetLayer, sortedOrder: order, sortedName: colName }));
       }
     },
-    [checkList, dispatch, allUserRecordSet, targetLayer]
+    [checkList, dispatch, filteredRecordSet, targetLayer]
   );
 
   const changeVisibleAll = useCallback(
@@ -147,6 +184,8 @@ export const useData = (layerId: string): UseDataReturnType => {
 
   const updateRecordSetOrder = useCallback(
     (sortedRecordSet_: RecordType[]) => {
+      //絞り込み中はストアのレコードを丸ごと置き換えると絞り込みから外れたレコードが消えるため受け付けない
+      if (isFiltering) return;
       changeCheckedAll(false);
       // userIdごとにグループ化（undefinedはキー'undefined'として処理）
       const userMap: { [userId: string]: RecordType[] } = {};
@@ -156,11 +195,55 @@ export const useData = (layerId: string): UseDataReturnType => {
         userMap[key].push(record);
       });
       Object.entries(userMap).forEach(([userId, data]) => {
-        dispatch(setRecordSetAction({ layerId: targetLayer.id, userId: userId === 'undefined' ? undefined : userId, data }));
+        dispatch(
+          setRecordSetAction({ layerId: targetLayer.id, userId: userId === 'undefined' ? undefined : userId, data })
+        );
       });
     },
-    [changeCheckedAll, dispatch, targetLayer]
+    [changeCheckedAll, dispatch, isFiltering, targetLayer]
   );
+
+  //レコードのvisibleをまとめて更新する（userIdごとにdispatchが必要）
+  const dispatchVisibility = useCallback(
+    (records: RecordType[]) => {
+      const userMap: { [userId: string]: RecordType[] } = {};
+      records.forEach((record) => {
+        const key = record.userId ?? 'undefined';
+        if (!userMap[key]) userMap[key] = [];
+        userMap[key].push(record);
+      });
+      Object.entries(userMap).forEach(([userId, data]) => {
+        dispatch(
+          updateRecordsAction({ layerId: targetLayer.id, userId: userId === 'undefined' ? undefined : userId, data })
+        );
+      });
+    },
+    [dispatch, targetLayer]
+  );
+
+  //絞り込み結果のレコードだけを地図に表示する
+  const showOnlyFilteredRecords = useCallback(() => {
+    //連続で押しても最初の状態を保つ（2回目に控えると絞り込み後の状態を覚えてしまう）
+    if (visibilitySnapshots[layerId] === undefined) {
+      visibilitySnapshots[layerId] = Object.fromEntries(allUserRecordSet.map((r) => [r.id, r.visible]));
+    }
+    dispatch(setAllRecordsVisibilityAction({ layerId: targetLayer.id, visible: false }));
+    dispatchVisibility(sortedRecordSet.map((record) => ({ ...record, visible: true })));
+  }, [allUserRecordSet, dispatch, dispatchVisibility, layerId, sortedRecordSet, targetLayer]);
+
+  //解除は対象列も一緒に戻す（列だけ残るとヘッダのフィルタアイコンが消えない）
+  const clearFilter = useCallback(() => {
+    dispatch(setDataFilterForLayerAction({ layerId, text: '', fieldName: '' }));
+
+    const snapshot = visibilitySnapshots[layerId];
+    if (snapshot === undefined) return;
+    delete visibilitySnapshots[layerId];
+    //スナップショット後に追加されたレコードは対象外。変化した分だけ戻す
+    const restored = allUserRecordSet
+      .filter((r) => snapshot[r.id] !== undefined && r.visible !== snapshot[r.id])
+      .map((r) => ({ ...r, visible: snapshot[r.id] }));
+    if (restored.length > 0) dispatchVisibility(restored);
+  }, [allUserRecordSet, dispatch, dispatchVisibility, layerId]);
 
   const addDefaultRecord = useCallback(
     (
@@ -227,7 +310,7 @@ export const useData = (layerId: string): UseDataReturnType => {
     // すべての画面で初期化を実行（DataEdit画面でREFERENCEフィールドが動作するように）
     changeOrder(targetLayer.sortedName || '', targetLayer.sortedOrder || 'UNSORTED');
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [allUserRecordSet, targetLayer]);
+  }, [filteredRecordSet, targetLayer]);
 
   return {
     sortedRecordSet,
@@ -238,6 +321,12 @@ export const useData = (layerId: string): UseDataReturnType => {
     sortedOrder,
     sortedName,
     isEditable,
+    filterText,
+    filterFieldName,
+    isFiltering,
+    setFilter,
+    clearFilter,
+    showOnlyFilteredRecords,
     changeVisible,
     changeVisibleAll,
     changeChecked,

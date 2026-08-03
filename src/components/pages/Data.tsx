@@ -10,14 +10,31 @@ import { DataContext } from '../../contexts/Data';
 import { ScrollView } from 'react-native-gesture-handler';
 import { DictionaryTextInput } from '../molecules/DictionaryTextInput';
 import { t } from '../../i18n/config';
-import { COLOR, DATA_BTN } from '../../constants/AppConstants';
+import { COLOR, DATA_BTN, DATAEDIT_BTN } from '../../constants/AppConstants';
 import { BottomSheetHeader } from '../molecules/BottomSheetHeader';
+import { Button } from '../atoms';
+import { Pressable } from '../atoms/Pressable';
 
 export default function DataScreen() {
   //console.log('render Data');
 
-  const { layer, gotoBack, addDataByDictionary, isExporting, isLocationEnabled, pressToggleLocation, isEditable } =
-    useContext(DataContext);
+  const {
+    layer,
+    gotoBack,
+    addDataByDictionary,
+    isExporting,
+    isLocationEnabled,
+    isLocationLocked,
+    pressToggleLocation,
+    pressToggleLocationLock,
+    isEditable,
+    filterText,
+    filterFieldName,
+    isFiltering,
+    clearFilter,
+    showOnlyFilteredRecords,
+    sortedRecordSet,
+  } = useContext(DataContext);
 
   // 過去の不具合でdictionaryFieldIdが残留したレイヤがあるため、辞書型フィールドの実在も確認する
   const hasValidDictionaryField =
@@ -59,6 +76,15 @@ export default function DataScreen() {
                 // iOSのSwitchはデフォルトでalignSelf: 'flex-start'を持つため、親のalignItems: 'center'が効かない
                 style={{ alignSelf: 'center' }}
               />
+              {/* ロック中は記録後も位置ONのままにする */}
+              <Button
+                name={isLocationLocked ? 'lock' : 'lock-open-variant'}
+                onPress={pressToggleLocationLock}
+                disabled={!isEditable}
+                color={isLocationLocked ? COLOR.BLUE : COLOR.GRAY3}
+                backgroundColor="transparent"
+                size={22}
+              />
             </View>
           )}
           <View style={styles.dictionaryInput}>
@@ -69,6 +95,29 @@ export default function DataScreen() {
               clearOnSelect
             />
           </View>
+        </View>
+      )}
+      {/* 絞り込みは列ヘッダの長押しから設定する。絞り込み中だけ状態と解除手段を出す */}
+      {isFiltering && (
+        <View style={styles.filterContainer}>
+          <MaterialCommunityIcons name="filter" size={18} color={COLOR.BLUE} />
+          <Text style={styles.filterLabel} numberOfLines={1}>
+            {filterFieldName === '' ? `${t('Data.label.filter')}: ${filterText}` : `${filterFieldName}: ${filterText}`}
+          </Text>
+          <Text style={styles.filterCount}>{t('Data.message.filterResult', { count: sortedRecordSet.length })}</Text>
+          <View style={styles.filterSpacer} />
+          <Pressable style={styles.filterMapButton} onPress={showOnlyFilteredRecords}>
+            <MaterialCommunityIcons name={DATAEDIT_BTN.JUMP} size={18} color={COLOR.BLUE} />
+            <Text style={styles.filterMapButtonText}>{t('Data.label.showOnMap')}</Text>
+          </Pressable>
+          <Button
+            name="close-circle"
+            onPress={clearFilter}
+            color={COLOR.GRAY3}
+            backgroundColor="transparent"
+            size={20}
+            style={styles.filterClearButton}
+          />
         </View>
       )}
       <View style={styles.tableContainer}>
@@ -115,6 +164,47 @@ const styles = StyleSheet.create({
     // 辞書入力行の高さ（マイクボタン: アイコン30 + パディング8×2 = 46）に合わせて中心を揃える
     height: 46,
     marginRight: 8,
+  },
+  filterContainer: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    height: 36,
+    marginBottom: 5,
+    marginHorizontal: 10,
+  },
+  filterClearButton: {
+    //ボタン自体の余白でアイコンが内側に寄って見えるため、右端へ少し出す
+    marginLeft: 4,
+    marginRight: -8,
+  },
+  filterCount: {
+    color: COLOR.GRAY4,
+    fontSize: 12,
+    marginLeft: 6,
+  },
+  filterLabel: {
+    color: COLOR.BLACK,
+    //長い条件は省略する。件数はアイコンのすぐ隣に置きたいので伸ばさない
+    flexShrink: 1,
+    fontSize: 14,
+    marginLeft: 4,
+  },
+  filterMapButton: {
+    alignItems: 'center',
+    borderColor: COLOR.BLUE,
+    borderRadius: 4,
+    borderWidth: 1,
+    flexDirection: 'row',
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+  },
+  filterMapButtonText: {
+    color: COLOR.BLUE,
+    fontSize: 12,
+    marginLeft: 3,
+  },
+  filterSpacer: {
+    flex: 1,
   },
   tableContainer: {
     flex: 1,

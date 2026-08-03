@@ -3,7 +3,7 @@ import { LayerType, RecordType } from '../types';
 import Data from '../components/pages/Data';
 import { shallowEqual, useDispatch, useSelector } from 'react-redux';
 import { RootState } from '../store';
-import { setAddLocationForLayerAction } from '../modules/settings';
+import { setAddLocationForLayerAction, setLockLocationForLayerAction } from '../modules/settings';
 import { useData } from '../hooks/useData';
 import { AlertAsync, ConfirmAsync } from '../components/molecules/AlertAsync';
 import { Alert } from '../components/atoms/Alert';
@@ -11,6 +11,9 @@ import { t } from '../i18n/config';
 import { DataContext } from '../contexts/Data';
 import { exportGeoFile } from '../utils/File';
 import { MAX_BACKUP_LABEL_LENGTH, truncateForFileName } from '../utils/General';
+import { boundingBoxFromRecords, resolveAddLocation } from '../utils/Data';
+import { deltaToZoom } from '../utils/Coords';
+import { useWindow } from '../hooks/useWindow';
 import { usePermission } from '../hooks/usePermission';
 import { useGeoFile } from '../hooks/useGeoFile';
 import dayjs from 'dayjs';
@@ -21,15 +24,21 @@ import { useBottomSheetNavigation, useBottomSheetRoute } from '../contexts/Botto
 
 export default function DataContainer() {
   //console.log('render DataContainer');
-  const { navigate } = useBottomSheetNavigation();
+  const { navigate, navigateToHome } = useBottomSheetNavigation();
+  const { isLandscape, windowWidth, mapRegion } = useWindow();
   const { params } = useBottomSheetRoute<'Data'>();
 
   const dispatch = useDispatch();
   const projectId = useSelector((state: RootState) => state.settings.projectId, shallowEqual);
   const [layer] = useState<LayerType>(params?.targetLayer as LayerType);
-  //レイヤごとの「追加時に現在地を付与するか」設定（デフォルトON）
+  //レイヤごとの「追加時に現在地を付与するか」設定。辞書追加後に自動OFFになるワンショット運用のためデフォルトOFF
   const isLocationEnabled = useSelector(
-    (state: RootState) => state.settings.addLocationPerLayer?.[params?.targetLayer?.id ?? ''] ?? true,
+    (state: RootState) => state.settings.addLocationPerLayer?.[params?.targetLayer?.id ?? ''] ?? false,
+    shallowEqual
+  );
+  //ロック中は記録後の自動OFFを行わず、位置ありのまま連続で追加できる
+  const isLocationLocked = useSelector(
+    (state: RootState) => state.settings.lockLocationPerLayer?.[params?.targetLayer?.id ?? ''] ?? false,
     shallowEqual
   );
   // Reduxから最新のレイヤーを取得（params.targetLayerは画面遷移時のスナップショットでactive状態が古くなるため）
@@ -51,6 +60,12 @@ export default function DataContainer() {
     sortedName,
     sortedOrder,
     isEditable,
+    filterText,
+    filterFieldName,
+    isFiltering,
+    setFilter,
+    clearFilter,
+    showOnlyFilteredRecords,
     changeVisible,
     changeVisibleAll,
     changeChecked,
@@ -153,8 +168,13 @@ export default function DataContainer() {
     }
 
     // 位置トグルがONかつGPSが有効で現在地が取得できている場合は、現在地を座標として使用
-    const locationToUse = isLocationEnabled && gpsState !== 'off' && currentLocation ? currentLocation : undefined;
-    const addedData = addDefaultRecord(undefined, locationToUse);
+    const { location } = resolveAddLocation({
+      layerType: liveTargetLayer.type,
+      isLocationEnabled,
+      gpsState,
+      currentLocation,
+    });
+    const addedData = addDefaultRecord(undefined, location);
     navigate('DataEdit', {
       previous: 'Data',
       targetData: addedData,
@@ -196,25 +216,103 @@ export default function DataContainer() {
       if (!fieldName) return;
 
       // 位置トグルがONかつGPSが有効で現在地が取得できている場合は、現在地を座標として使用
-      const locationToUse = isLocationEnabled && gpsState !== 'off' && currentLocation ? currentLocation : undefined;
-      addDefaultRecord({ [fieldName]: value }, locationToUse);
+      const { location, needsGpsWarning } = resolveAddLocation({
+        layerType: liveTargetLayer.type,
+        isLocationEnabled,
+        gpsState,
+        currentLocation,
+      });
+      const addedData = addDefaultRecord({ [fieldName]: value }, location);
+
+      //位置ONで1件追加したらトグルを戻す。座標が付かなかった場合も戻さないとOFFにし忘れたのと同じ状態になる
+      if ((addedData.coords !== undefined || needsGpsWarning) && !isLocationLocked) {
+        dispatch(setAddLocationForLayerAction({ layerId: liveTargetLayer.id, enabled: false }));
+      }
+
+      if (needsGpsWarning) {
+        //位置なしでの記録自体は許容し、付いていないことだけを知らせる
+        Alert.alert('', t('Data.alert.addWithoutLocation'));
+        return;
+      }
+      if (addedData.coords === undefined) return;
+
+      //続けて株数などを入力できるよう編集画面を開く
+      navigate('DataEdit', {
+        previous: 'Data',
+        targetData: addedData,
+        targetLayer: layer,
+      });
     },
     [
       addDefaultRecord,
       changeActiveLayer,
       checkRecordEditable,
+      dispatch,
+      layer,
       liveTargetLayer,
+      navigate,
       params?.targetLayer,
       gpsState,
       currentLocation,
       isLocationEnabled,
+      isLocationLocked,
     ]
   );
 
   const pressToggleLocation = useCallback(() => {
     if (!params?.targetLayer) return;
-    dispatch(setAddLocationForLayerAction({ layerId: params.targetLayer.id, enabled: !isLocationEnabled }));
-  }, [dispatch, isLocationEnabled, params?.targetLayer]);
+    const enabled = !isLocationEnabled;
+    dispatch(setAddLocationForLayerAction({ layerId: params.targetLayer.id, enabled }));
+    //手動でOFFにしたらロックも解除する（隠れたロック状態が残らないように）
+    if (!enabled && isLocationLocked) {
+      dispatch(setLockLocationForLayerAction({ layerId: params.targetLayer.id, locked: false }));
+    }
+  }, [dispatch, isLocationEnabled, isLocationLocked, params?.targetLayer]);
+
+  //絞り込み結果だけを地図に表示し、その範囲へ移動する
+  const pressShowFilteredOnMap = useCallback(() => {
+    const bounds = boundingBoxFromRecords(sortedRecordSet);
+    if (bounds === undefined) {
+      //地図に出るものが無いのに表示だけ切り替えると、他が消えて何も見えない状態になるため何もしない
+      Alert.alert('', t('Data.alert.noLocationData'));
+      return;
+    }
+    showOnlyFilteredRecords();
+
+    //1点だけ（または同一地点）の場合は現在の縮尺を保ったまま移動する
+    const latitudeDelta = bounds.north - bounds.south;
+    const longitudeDelta = bounds.east - bounds.west;
+    const hasExtent = latitudeDelta > 0 || longitudeDelta > 0;
+    const jumpTo = hasExtent
+      ? (() => {
+          const tempZoom = deltaToZoom(windowWidth, { latitudeDelta, longitudeDelta }).zoom;
+          const jumpZoom = Math.min(tempZoom, 20);
+          //DataEditのジャンプと同じく、ボトムシートで隠れる分をずらして中心を合わせる
+          const delta = longitudeDelta * 2 ** (tempZoom - jumpZoom);
+          return {
+            latitude: (isLandscape ? 0 : -delta / 4) + (bounds.north + bounds.south) / 2,
+            longitude: (isLandscape ? delta / 4 : 0) + (bounds.east + bounds.west) / 2,
+            latitudeDelta: delta,
+            longitudeDelta: delta,
+            zoom: jumpZoom,
+          };
+        })()
+      : {
+          latitude: bounds.north,
+          longitude: bounds.east,
+          latitudeDelta: mapRegion.latitudeDelta,
+          longitudeDelta: mapRegion.longitudeDelta,
+          zoom: mapRegion.zoom,
+        };
+
+    navigateToHome?.({ jumpTo, previous: 'Data', mode: 'jumpTo' });
+  }, [isLandscape, mapRegion, navigateToHome, showOnlyFilteredRecords, sortedRecordSet, windowWidth]);
+
+  const pressToggleLocationLock = useCallback(() => {
+    if (!params?.targetLayer) return;
+    //ロックONにすると位置トグルもONになる（reducer側でそろえる）
+    dispatch(setLockLocationForLayerAction({ layerId: params.targetLayer.id, locked: !isLocationLocked }));
+  }, [dispatch, isLocationLocked, params?.targetLayer]);
 
   const gotoDataEdit = useCallback(
     (index: number) => {
@@ -246,6 +344,13 @@ export default function DataContainer() {
       isEditable,
       isExporting,
       isLocationEnabled,
+      isLocationLocked,
+      filterText,
+      filterFieldName,
+      isFiltering,
+      setFilter,
+      clearFilter,
+      showOnlyFilteredRecords: pressShowFilteredOnMap,
       changeOrder,
       changeChecked,
       changeCheckedAll,
@@ -256,6 +361,7 @@ export default function DataContainer() {
       pressDeleteData,
       pressExportData,
       pressToggleLocation,
+      pressToggleLocationLock,
       gotoDataEdit,
       gotoBack,
       updateRecordSetOrder,
@@ -273,6 +379,13 @@ export default function DataContainer() {
       isEditable,
       isExporting,
       isLocationEnabled,
+      isLocationLocked,
+      filterText,
+      filterFieldName,
+      isFiltering,
+      setFilter,
+      clearFilter,
+      pressShowFilteredOnMap,
       changeOrder,
       changeChecked,
       changeCheckedAll,
@@ -283,6 +396,7 @@ export default function DataContainer() {
       pressDeleteData,
       pressExportData,
       pressToggleLocation,
+      pressToggleLocationLock,
       gotoDataEdit,
       gotoBack,
       updateRecordSetOrder,

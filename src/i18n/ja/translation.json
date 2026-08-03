@@ -662,7 +662,9 @@
     },
     "alert": {
       "exportData": "メンバーはデータのエクスポートは出来ません。",
-      "checkFieldInput": "以下の値を正しく入力してください。"
+      "checkFieldInput": "以下の値を正しく入力してください。",
+      "addWithoutLocation": "GPSがOFFになっているので、座標なしで追加します。",
+      "noLocationData": "位置情報のあるデータがありません。"
     },
     "confirm": {
       "deleteData": "データを削除しますか？"
@@ -670,10 +672,13 @@
     "label": {
       "export": "ｴｸｽﾎﾟｰﾄ",
       "delete": "削除",
-      "add": "追加"
+      "add": "追加",
+      "filter": "絞り込み",
+      "showOnMap": "地図で表示"
     },
     "message": {
-      "exporting": "データをエクスポートしています..."
+      "exporting": "データをエクスポートしています...",
+      "filterResult": "{{count}}件"
     }
   },
   "DataEdit": {

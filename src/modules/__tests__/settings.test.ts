@@ -4,6 +4,7 @@ import { MemberLocationType, RoleType, SettingsType, TileRegionType } from '../.
 import reducer, {
   editSettingsAction,
   setAddLocationForLayerAction,
+  setLockLocationForLayerAction,
   setSettingsAction,
   settingsInitialState,
 } from '../settings';
@@ -124,6 +125,25 @@ describe('modules/settings', () => {
     const first = reducer(state, setAddLocationForLayerAction({ layerId: 'layer1', enabled: false }));
     const second = reducer(first, setAddLocationForLayerAction({ layerId: 'layer2', enabled: true }));
     expect(second.addLocationPerLayer).toEqual({ layer1: false, layer2: true });
+  });
+
+  test('should turn on addLocationPerLayer when locking', () => {
+    const locked = reducer(state, setLockLocationForLayerAction({ layerId: 'layer1', locked: true }));
+    expect(locked.lockLocationPerLayer).toEqual({ layer1: true });
+    expect(locked.addLocationPerLayer).toEqual({ layer1: true });
+  });
+
+  test('should keep addLocationPerLayer as is when unlocking', () => {
+    const locked = reducer(state, setLockLocationForLayerAction({ layerId: 'layer1', locked: true }));
+    const unlocked = reducer(locked, setLockLocationForLayerAction({ layerId: 'layer1', locked: false }));
+    expect(unlocked.lockLocationPerLayer).toEqual({ layer1: false });
+    expect(unlocked.addLocationPerLayer).toEqual({ layer1: true });
+  });
+
+  test('should not affect other layers in lockLocationPerLayer', () => {
+    const first = reducer(state, setLockLocationForLayerAction({ layerId: 'layer1', locked: true }));
+    const second = reducer(first, setLockLocationForLayerAction({ layerId: 'layer2', locked: false }));
+    expect(second.lockLocationPerLayer).toEqual({ layer1: true, layer2: false });
   });
 
   test('should handle editSettingsAction with memberLocation', () => {

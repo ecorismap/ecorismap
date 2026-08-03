@@ -1868,6 +1868,10 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       //プロジェクトを開くときにプロジェクトのホームにジャンプする場合
       changeMapRegion(route.params.jumpTo, true);
       setTimeout(() => bottomSheetRef.current?.close(), 300);
+    } else if (route.params?.previous === 'Data') {
+      //絞り込んだデータの範囲にジャンプする場合
+      changeMapRegion(route.params.jumpTo, true);
+      bottomSheetRef.current?.snapToIndex(0);
     } else if (route.params?.previous === 'DataEdit') {
       if (route.params?.mode === 'jumpTo') {
         //データの範囲にジャンプする場合
