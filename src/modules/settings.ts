@@ -49,6 +49,7 @@ export const settingsInitialState: SettingsType = {
     distanceThreshold: 10,
   } as ProximityAlertSettingsType,
   addLocationPerLayer: {},
+  lockLocationPerLayer: {},
 };
 
 type SettingsEditType = Partial<SettingsType>;
@@ -66,6 +67,16 @@ const reducers = {
       addLocationPerLayer: { ...state.addLocationPerLayer, [action.payload.layerId]: action.payload.enabled },
     };
   },
+  //位置トグルのロック（記録後の自動OFFを止める）。ロック時は位置トグル自体もONにそろえる
+  setLockLocationForLayerAction: (state: SettingsType, action: PayloadAction<{ layerId: string; locked: boolean }>) => {
+    return {
+      ...state,
+      lockLocationPerLayer: { ...state.lockLocationPerLayer, [action.payload.layerId]: action.payload.locked },
+      addLocationPerLayer: action.payload.locked
+        ? { ...state.addLocationPerLayer, [action.payload.layerId]: true }
+        : state.addLocationPerLayer,
+    };
+  },
 };
 
 const settingsSlice = createSlice({
@@ -74,5 +85,10 @@ const settingsSlice = createSlice({
   reducers,
 });
 
-export const { setSettingsAction, editSettingsAction, setAddLocationForLayerAction } = settingsSlice.actions;
+export const {
+  setSettingsAction,
+  editSettingsAction,
+  setAddLocationForLayerAction,
+  setLockLocationForLayerAction,
+} = settingsSlice.actions;
 export default settingsSlice.reducer;

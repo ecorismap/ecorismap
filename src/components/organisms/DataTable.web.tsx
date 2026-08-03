@@ -53,22 +53,24 @@ const SortableDataRow = React.memo(
 
     const isGroupParent = item.field._group ? item.field._group === '' : true;
     if (!isGroupParent) return null;
+    //位置なしのレコードの背景を薄くし、位置ありのレコードが相対的に目立つようにする
+    const backgroundColor = isDragging || item.coords === undefined ? COLOR.WHITE : COLOR.MAIN;
 
     return (
       <div ref={setNodeRef} style={style}>
-        <View style={{ flex: 1, height: 45, flexDirection: 'row', backgroundColor: isDragging ? COLOR.WHITE : COLOR.MAIN }}>
+        <View style={{ flex: 1, height: 45, flexDirection: 'row', backgroundColor }}>
           <View style={[styles.td, { width: 50 }]}>
             <Button
               name={item.visible ? 'eye' : 'eye-off-outline'}
               onPress={() => changeVisible(item)}
               color={COLOR.GRAY4}
-              style={{ backgroundColor: COLOR.MAIN }}
+              style={{ backgroundColor }}
             />
           </View>
           <View style={[styles.td, { width: 60 }]}>
             <Button
               color={COLOR.GRAY4}
-              style={{ backgroundColor: isDragging ? COLOR.WHITE : COLOR.MAIN }}
+              style={{ backgroundColor }}
               borderRadius={0}
               name={checkList[index]?.checked ? 'checkbox-marked-outline' : 'checkbox-blank-outline'}
               onPress={() => changeChecked(index, !checkList[index]?.checked)}
@@ -91,7 +93,7 @@ const SortableDataRow = React.memo(
             <View style={[styles.td, { width: 60 }]}>
               <Button
                 color={COLOR.GRAY4}
-                style={{ backgroundColor: COLOR.MAIN }}
+                style={{ backgroundColor }}
                 borderRadius={0}
                 name={'menu-right'}
                 onPress={() => gotoDataEdit(index)}
@@ -132,11 +134,13 @@ const SortableDataRow = React.memo(
     );
   },
   (prevProps, nextProps) => {
+    //coordsの有無は文字色に影響するため、更新日時が変わらないケースに備えて明示的に比較する
     const isItemEqual =
       prevProps.item.id === nextProps.item.id &&
       prevProps.item.visible === nextProps.item.visible &&
       prevProps.item.displayName === nextProps.item.displayName &&
-      prevProps.item.updatedAt === nextProps.item.updatedAt;
+      prevProps.item.updatedAt === nextProps.item.updatedAt &&
+      (prevProps.item.coords === undefined) === (nextProps.item.coords === undefined);
 
     return (
       isItemEqual &&

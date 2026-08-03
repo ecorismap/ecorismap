@@ -662,7 +662,8 @@
     },
     "alert": {
       "exportData": "メンバーはデータのエクスポートは出来ません。",
-      "checkFieldInput": "以下の値を正しく入力してください。"
+      "checkFieldInput": "以下の値を正しく入力してください。",
+      "addWithoutLocation": "GPSがOFFになっているので、座標なしで追加します。"
     },
     "confirm": {
       "deleteData": "データを削除しますか？"

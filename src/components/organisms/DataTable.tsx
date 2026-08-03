@@ -41,21 +41,23 @@ const DataRow = React.memo(
     if (index === undefined) return null;
     const isGroupParent = item.field._group ? item.field._group === '' : true;
     if (!isGroupParent) return null;
+    //位置なしのレコードの背景を薄くし、位置ありのレコードが相対的に目立つようにする
+    const backgroundColor = isActive || item.coords === undefined ? COLOR.WHITE : COLOR.MAIN;
 
     return (
-      <View style={{ flex: 1, height: 45, flexDirection: 'row', backgroundColor: isActive ? COLOR.WHITE : COLOR.MAIN }}>
+      <View style={{ flex: 1, height: 45, flexDirection: 'row', backgroundColor }}>
         <View style={[styles.td, { width: 50 }]}>
           <Button
             name={item.visible ? 'eye' : 'eye-off-outline'}
             onPress={() => changeVisible(item)}
             color={COLOR.GRAY4}
-            style={{ backgroundColor: COLOR.MAIN }}
+            style={{ backgroundColor }}
           />
         </View>
         <View style={[styles.td, { width: 60 }]}>
           <Button
             color={COLOR.GRAY4}
-            style={{ backgroundColor: isActive ? COLOR.WHITE : COLOR.MAIN }}
+            style={{ backgroundColor }}
             borderRadius={0}
             name={checkList[index]?.checked ? 'checkbox-marked-outline' : 'checkbox-blank-outline'}
             onPress={() => changeChecked(index, !checkList[index]?.checked)}
@@ -79,7 +81,7 @@ const DataRow = React.memo(
           <View style={[styles.td, { width: 60 }]}>
             <Button
               color={COLOR.GRAY4}
-              style={{ backgroundColor: COLOR.MAIN }}
+              style={{ backgroundColor }}
               borderRadius={0}
               name={'menu-right'}
               onPress={() => gotoDataEdit(index)}
@@ -128,11 +130,13 @@ const DataRow = React.memo(
 
     // id, visible, displayName, updatedAtで比較（JSON.stringifyは重いので避ける）
     // updatedAtを比較することでフィールドの変更を検出できる
+    // coordsの有無は行の背景色に影響するため、更新日時が変わらないケースに備えて明示的に比較する
     const isItemEqual =
       prevProps.item.id === nextProps.item.id &&
       prevProps.item.visible === nextProps.item.visible &&
       prevProps.item.displayName === nextProps.item.displayName &&
-      prevProps.item.updatedAt === nextProps.item.updatedAt;
+      prevProps.item.updatedAt === nextProps.item.updatedAt &&
+      (prevProps.item.coords === undefined) === (nextProps.item.coords === undefined);
 
     return (
       isItemEqual &&

@@ -595,7 +595,8 @@
   "Data": {
     "alert": {
       "exportData": "Members cannot export data.",
-      "checkFieldInput": "Please enter the following values ​​correctly."
+      "checkFieldInput": "Please enter the following values ​​correctly.",
+      "addWithoutLocation": "GPS is off, so the record is added without coordinates."
     },
     "confirm": {
       "deleteData": "Do you want to delete the data?"

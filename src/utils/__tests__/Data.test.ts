@@ -1,5 +1,12 @@
-import { LatLonDMSType, RecordType } from '../../types';
-import { sortData, getInitialFieldValue, mergeLayerData, updateRecordCoords, isLatLonEmpty } from '../Data';
+import { LatLonDMSType, LocationType, RecordType } from '../../types';
+import {
+  sortData,
+  getInitialFieldValue,
+  mergeLayerData,
+  updateRecordCoords,
+  isLatLonEmpty,
+  resolveAddLocation,
+} from '../Data';
 
 describe('sortData', () => {
   const recordExt: RecordType[] = [
@@ -575,5 +582,50 @@ describe('isLatLonEmpty', () => {
       longitude: { decimal: '', deg: '', min: '', sec: '' },
     };
     expect(isLatLonEmpty(partial, true)).toBe(false);
+  });
+});
+
+describe('resolveAddLocation', () => {
+  const currentLocation: LocationType = { latitude: 35, longitude: 135 };
+
+  it('POINTでトグルONかつ現在地が取れていれば位置を付ける', () => {
+    expect(
+      resolveAddLocation({ layerType: 'POINT', isLocationEnabled: true, gpsState: 'follow', currentLocation })
+    ).toEqual({ location: currentLocation, needsGpsWarning: false });
+    expect(
+      resolveAddLocation({ layerType: 'POINT', isLocationEnabled: true, gpsState: 'show', currentLocation })
+    ).toEqual({ location: currentLocation, needsGpsWarning: false });
+  });
+
+  it('トグルONでもGPSが未起動なら位置を付けずに警告する', () => {
+    expect(resolveAddLocation({ layerType: 'POINT', isLocationEnabled: true, gpsState: 'off', currentLocation })).toEqual(
+      { location: undefined, needsGpsWarning: true }
+    );
+  });
+
+  it('トグルONでも現在地が未取得なら位置を付けずに警告する', () => {
+    expect(
+      resolveAddLocation({
+        layerType: 'POINT',
+        isLocationEnabled: true,
+        gpsState: 'follow',
+        currentLocation: undefined,
+      })
+    ).toEqual({ location: undefined, needsGpsWarning: true });
+  });
+
+  it('トグルOFFなら位置も警告もなし', () => {
+    expect(
+      resolveAddLocation({ layerType: 'POINT', isLocationEnabled: false, gpsState: 'off', currentLocation: undefined })
+    ).toEqual({ location: undefined, needsGpsWarning: false });
+  });
+
+  it('POINT以外はトグルONでも位置も警告もなし', () => {
+    expect(
+      resolveAddLocation({ layerType: 'LINE', isLocationEnabled: true, gpsState: 'off', currentLocation: undefined })
+    ).toEqual({ location: undefined, needsGpsWarning: false });
+    expect(
+      resolveAddLocation({ layerType: 'POLYGON', isLocationEnabled: true, gpsState: 'follow', currentLocation })
+    ).toEqual({ location: undefined, needsGpsWarning: false });
   });
 });

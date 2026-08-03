@@ -15,9 +15,11 @@ interface DataContextType {
   isEditable: boolean;
   isExporting: boolean;
   isLocationEnabled: boolean;
+  isLocationLocked: boolean;
   addDataByDictionary: (fieldId: string, value: string) => void;
   pressAddData: () => void;
   pressToggleLocation: () => void;
+  pressToggleLocationLock: () => void;
   pressDeleteData: () => void;
   pressExportData: () => void;
   changeOrder: (colname: string, order: SortOrderType) => void;

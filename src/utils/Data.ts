@@ -6,6 +6,7 @@ import {
   LatLonDMSKey,
   LatLonDMSType,
   LayerType,
+  LocationStateType,
   PhotoType,
   PointRecordType,
   RecordType,
@@ -497,3 +498,29 @@ export async function mergeLayerData({
 
   return [mergedUserData, mergedTemplateData];
 }
+
+/**
+ * レコード追加時に現在地を座標として付与するかを判定する。
+ * 位置トグルがONなのに座標が取れない（GPS未起動・現在地未取得）ケースは、
+ * 位置を付けたつもりの記録を防ぐためneedsGpsWarningで呼び出し側に知らせる。
+ */
+export const resolveAddLocation = <T extends { latitude: number; longitude: number }>({
+  layerType,
+  isLocationEnabled,
+  gpsState,
+  currentLocation,
+}: {
+  layerType: LayerType['type'];
+  isLocationEnabled: boolean;
+  gpsState: LocationStateType;
+  currentLocation: T | null | undefined;
+}): { location: T | undefined; needsGpsWarning: boolean } => {
+  //POINT以外は座標を付けないため、トグルの状態にかかわらず警告も出さない
+  if (layerType !== 'POINT' || !isLocationEnabled) {
+    return { location: undefined, needsGpsWarning: false };
+  }
+  if (gpsState === 'off' || currentLocation === undefined || currentLocation === null) {
+    return { location: undefined, needsGpsWarning: true };
+  }
+  return { location: currentLocation, needsGpsWarning: false };
+};

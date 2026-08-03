@@ -12,12 +12,22 @@ import { DictionaryTextInput } from '../molecules/DictionaryTextInput';
 import { t } from '../../i18n/config';
 import { COLOR, DATA_BTN } from '../../constants/AppConstants';
 import { BottomSheetHeader } from '../molecules/BottomSheetHeader';
+import { Button } from '../atoms';
 
 export default function DataScreen() {
   //console.log('render Data');
 
-  const { layer, gotoBack, addDataByDictionary, isExporting, isLocationEnabled, pressToggleLocation, isEditable } =
-    useContext(DataContext);
+  const {
+    layer,
+    gotoBack,
+    addDataByDictionary,
+    isExporting,
+    isLocationEnabled,
+    isLocationLocked,
+    pressToggleLocation,
+    pressToggleLocationLock,
+    isEditable,
+  } = useContext(DataContext);
 
   // 過去の不具合でdictionaryFieldIdが残留したレイヤがあるため、辞書型フィールドの実在も確認する
   const hasValidDictionaryField =
@@ -58,6 +68,15 @@ export default function DataScreen() {
                 thumbColor={isLocationEnabled ? COLOR.BLUE : COLOR.GRAY1}
                 // iOSのSwitchはデフォルトでalignSelf: 'flex-start'を持つため、親のalignItems: 'center'が効かない
                 style={{ alignSelf: 'center' }}
+              />
+              {/* ロック中は記録後も位置ONのままにする */}
+              <Button
+                name={isLocationLocked ? 'lock' : 'lock-open-variant'}
+                onPress={pressToggleLocationLock}
+                disabled={!isEditable}
+                color={isLocationLocked ? COLOR.BLUE : COLOR.GRAY3}
+                backgroundColor="transparent"
+                size={22}
               />
             </View>
           )}

@@ -401,6 +401,8 @@ export interface SettingsType {
   proximityAlert: ProximityAlertSettingsType;
   //レイヤごとの「レコード追加時に現在地を付与するか」（端末ローカル設定。プロジェクト設定には同期しない）
   addLocationPerLayer?: { [layerId: string]: boolean };
+  //位置トグルのロック（記録後に自動OFFしない）。端末ローカル設定
+  lockLocationPerLayer?: { [layerId: string]: boolean };
 }
 
 export interface RegionType {
