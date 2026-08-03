@@ -1,5 +1,7 @@
-import { LatLonDMSType, LocationType, RecordType } from '../../types';
+import { LatLonDMSType, LayerType, LocationType, RecordType } from '../../types';
 import {
+  boundingBoxFromRecords,
+  filterRecords,
   sortData,
   getInitialFieldValue,
   mergeLayerData,
@@ -585,6 +587,97 @@ describe('isLatLonEmpty', () => {
   });
 });
 
+describe('filterRecords', () => {
+  const layer = {
+    id: 'layer1',
+    name: '植物',
+    type: 'POINT',
+    permission: 'PRIVATE',
+    colorStyle: {},
+    label: '種名',
+    visible: true,
+    active: true,
+    field: [
+      { id: 'f1', name: '種名', format: 'STRING_DICTIONARY' },
+      { id: 'f2', name: '地区', format: 'STRING' },
+      { id: 'f3', name: '株数', format: 'INTEGER' },
+      { id: 'f4', name: '写真', format: 'PHOTO' },
+    ],
+  } as unknown as LayerType;
+
+  const records = [
+    { id: '1', field: { 種名: 'スギ', 地区: 'A地区', 株数: 3 } },
+    { id: '2', field: { 種名: 'ミズナラ', 地区: 'B地区', 株数: 12 } },
+    { id: '3', field: { 種名: 'アカマツ', 地区: 'A地区', 株数: 3 } },
+  ] as unknown as RecordType[];
+
+  it('空文字なら全件返す', () => {
+    expect(filterRecords(records, layer, '', '')).toHaveLength(3);
+    expect(filterRecords(records, layer, '   ', '')).toHaveLength(3);
+  });
+
+  it('全フィールド横断で部分一致する', () => {
+    expect(filterRecords(records, layer, 'スギ', '').map((r) => r.id)).toEqual(['1']);
+    expect(filterRecords(records, layer, 'A地区', '').map((r) => r.id)).toEqual(['1', '3']);
+    //数値フィールドも文字列として比較する
+    expect(filterRecords(records, layer, '12', '').map((r) => r.id)).toEqual(['2']);
+  });
+
+  it('フィールドを指定するとその列だけ見る', () => {
+    expect(filterRecords(records, layer, 'A地区', '種名')).toHaveLength(0);
+    expect(filterRecords(records, layer, 'ナラ', '種名').map((r) => r.id)).toEqual(['2']);
+  });
+
+  it('ひらがなで入力してもカタカナの値に一致する', () => {
+    expect(filterRecords(records, layer, 'すぎ', '').map((r) => r.id)).toEqual(['1']);
+  });
+
+  it('存在しないフィールドを指定した場合は絞り込まない', () => {
+    expect(filterRecords(records, layer, 'スギ', '削除済みの列')).toHaveLength(3);
+  });
+
+  it('写真フィールドは対象外', () => {
+    expect(filterRecords(records, layer, '写真', '写真')).toHaveLength(3);
+  });
+});
+
+describe('boundingBoxFromRecords', () => {
+  it('ポイントレコードを囲む矩形を返す', () => {
+    const records = [
+      { id: '1', coords: { latitude: 35, longitude: 135 } },
+      { id: '2', coords: { latitude: 36, longitude: 137 } },
+    ] as unknown as RecordType[];
+    expect(boundingBoxFromRecords(records)).toEqual({ north: 36, south: 35, east: 137, west: 135 });
+  });
+
+  it('ライン等は構成点をすべて含める', () => {
+    const records = [
+      {
+        id: '1',
+        coords: [
+          { latitude: 35, longitude: 135 },
+          { latitude: 37, longitude: 139 },
+        ],
+      },
+    ] as unknown as RecordType[];
+    expect(boundingBoxFromRecords(records)).toEqual({ north: 37, south: 35, east: 139, west: 135 });
+  });
+
+  it('座標なしや0,0のレコードは除外する', () => {
+    const records = [
+      { id: '1', coords: undefined },
+      { id: '2', coords: { latitude: 0, longitude: 0 } },
+      { id: '3', coords: { latitude: 35, longitude: 135 } },
+    ] as unknown as RecordType[];
+    expect(boundingBoxFromRecords(records)).toEqual({ north: 35, south: 35, east: 135, west: 135 });
+  });
+
+  it('有効な座標がなければundefined', () => {
+    const records = [{ id: '1', coords: undefined }] as unknown as RecordType[];
+    expect(boundingBoxFromRecords(records)).toBeUndefined();
+  });
+});
+
 describe('resolveAddLocation', () => {
   const currentLocation: LocationType = { latitude: 35, longitude: 135 };
 
@@ -598,9 +691,9 @@ describe('resolveAddLocation', () => {
   });
 
   it('トグルONでもGPSが未起動なら位置を付けずに警告する', () => {
-    expect(resolveAddLocation({ layerType: 'POINT', isLocationEnabled: true, gpsState: 'off', currentLocation })).toEqual(
-      { location: undefined, needsGpsWarning: true }
-    );
+    expect(
+      resolveAddLocation({ layerType: 'POINT', isLocationEnabled: true, gpsState: 'off', currentLocation })
+    ).toEqual({ location: undefined, needsGpsWarning: true });
   });
 
   it('トグルONでも現在地が未取得なら位置を付けずに警告する', () => {

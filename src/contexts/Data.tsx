@@ -16,6 +16,12 @@ interface DataContextType {
   isExporting: boolean;
   isLocationEnabled: boolean;
   isLocationLocked: boolean;
+  filterText: string;
+  filterFieldName: string;
+  isFiltering: boolean;
+  setFilter: (text: string, fieldName: string) => void;
+  clearFilter: () => void;
+  showOnlyFilteredRecords: () => void;
   addDataByDictionary: (fieldId: string, value: string) => void;
   pressAddData: () => void;
   pressToggleLocation: () => void;

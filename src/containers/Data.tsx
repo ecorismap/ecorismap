@@ -11,7 +11,9 @@ import { t } from '../i18n/config';
 import { DataContext } from '../contexts/Data';
 import { exportGeoFile } from '../utils/File';
 import { MAX_BACKUP_LABEL_LENGTH, truncateForFileName } from '../utils/General';
-import { resolveAddLocation } from '../utils/Data';
+import { boundingBoxFromRecords, resolveAddLocation } from '../utils/Data';
+import { deltaToZoom } from '../utils/Coords';
+import { useWindow } from '../hooks/useWindow';
 import { usePermission } from '../hooks/usePermission';
 import { useGeoFile } from '../hooks/useGeoFile';
 import dayjs from 'dayjs';
@@ -22,7 +24,8 @@ import { useBottomSheetNavigation, useBottomSheetRoute } from '../contexts/Botto
 
 export default function DataContainer() {
   //console.log('render DataContainer');
-  const { navigate } = useBottomSheetNavigation();
+  const { navigate, navigateToHome } = useBottomSheetNavigation();
+  const { isLandscape, windowWidth, mapRegion } = useWindow();
   const { params } = useBottomSheetRoute<'Data'>();
 
   const dispatch = useDispatch();
@@ -57,6 +60,12 @@ export default function DataContainer() {
     sortedName,
     sortedOrder,
     isEditable,
+    filterText,
+    filterFieldName,
+    isFiltering,
+    setFilter,
+    clearFilter,
+    showOnlyFilteredRecords,
     changeVisible,
     changeVisibleAll,
     changeChecked,
@@ -260,6 +269,45 @@ export default function DataContainer() {
     }
   }, [dispatch, isLocationEnabled, isLocationLocked, params?.targetLayer]);
 
+  //絞り込み結果だけを地図に表示し、その範囲へ移動する
+  const pressShowFilteredOnMap = useCallback(() => {
+    const bounds = boundingBoxFromRecords(sortedRecordSet);
+    if (bounds === undefined) {
+      //地図に出るものが無いのに表示だけ切り替えると、他が消えて何も見えない状態になるため何もしない
+      Alert.alert('', t('Data.alert.noLocationData'));
+      return;
+    }
+    showOnlyFilteredRecords();
+
+    //1点だけ（または同一地点）の場合は現在の縮尺を保ったまま移動する
+    const latitudeDelta = bounds.north - bounds.south;
+    const longitudeDelta = bounds.east - bounds.west;
+    const hasExtent = latitudeDelta > 0 || longitudeDelta > 0;
+    const jumpTo = hasExtent
+      ? (() => {
+          const tempZoom = deltaToZoom(windowWidth, { latitudeDelta, longitudeDelta }).zoom;
+          const jumpZoom = Math.min(tempZoom, 20);
+          //DataEditのジャンプと同じく、ボトムシートで隠れる分をずらして中心を合わせる
+          const delta = longitudeDelta * 2 ** (tempZoom - jumpZoom);
+          return {
+            latitude: (isLandscape ? 0 : -delta / 4) + (bounds.north + bounds.south) / 2,
+            longitude: (isLandscape ? delta / 4 : 0) + (bounds.east + bounds.west) / 2,
+            latitudeDelta: delta,
+            longitudeDelta: delta,
+            zoom: jumpZoom,
+          };
+        })()
+      : {
+          latitude: bounds.north,
+          longitude: bounds.east,
+          latitudeDelta: mapRegion.latitudeDelta,
+          longitudeDelta: mapRegion.longitudeDelta,
+          zoom: mapRegion.zoom,
+        };
+
+    navigateToHome?.({ jumpTo, previous: 'Data', mode: 'jumpTo' });
+  }, [isLandscape, mapRegion, navigateToHome, showOnlyFilteredRecords, sortedRecordSet, windowWidth]);
+
   const pressToggleLocationLock = useCallback(() => {
     if (!params?.targetLayer) return;
     //ロックONにすると位置トグルもONになる（reducer側でそろえる）
@@ -297,6 +345,12 @@ export default function DataContainer() {
       isExporting,
       isLocationEnabled,
       isLocationLocked,
+      filterText,
+      filterFieldName,
+      isFiltering,
+      setFilter,
+      clearFilter,
+      showOnlyFilteredRecords: pressShowFilteredOnMap,
       changeOrder,
       changeChecked,
       changeCheckedAll,
@@ -326,6 +380,12 @@ export default function DataContainer() {
       isExporting,
       isLocationEnabled,
       isLocationLocked,
+      filterText,
+      filterFieldName,
+      isFiltering,
+      setFilter,
+      clearFilter,
+      pressShowFilteredOnMap,
       changeOrder,
       changeChecked,
       changeCheckedAll,

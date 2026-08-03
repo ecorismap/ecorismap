@@ -7,6 +7,7 @@ import {
   LatLonDMSType,
   LayerType,
   LocationStateType,
+  LocationType,
   PhotoType,
   PointRecordType,
   RecordType,
@@ -17,9 +18,10 @@ import {
 import dayjs from '../i18n/dayjs';
 import { formattedInputs } from './Format';
 import { cloneDeep } from 'lodash';
-import { latLonDMS } from './Coords';
+import { boundingBoxFromCoords, latLonDMS } from './Coords';
 import { t } from '../i18n/config';
 import { isLocationType } from './General';
+import * as wanakana from 'wanakana';
 
 export type SortOrderType = 'ASCENDING' | 'DESCENDING' | 'UNSORTED';
 
@@ -498,6 +500,57 @@ export async function mergeLayerData({
 
   return [mergedUserData, mergedTemplateData];
 }
+
+//ひらがな/カタカナの違いを吸収して比較する。ローマ字はそのまま残す（英数字のフィールド値が化けるのを防ぐ）
+const normalizeForFilter = (value: string) => wanakana.toKatakana(value.toLowerCase(), { passRomaji: true });
+
+/** 絞り込み対象にできないフォーマット（値が文字列として比較できないもの） */
+const UNFILTERABLE_FORMATS: FormatType[] = ['PHOTO', 'REFERENCE'];
+
+/**
+ * データ一覧の絞り込み。filterFieldNameが空文字なら全フィールド横断で部分一致する。
+ */
+export const filterRecords = (
+  records: RecordType[],
+  layer: LayerType,
+  filterText: string,
+  filterFieldName: string
+): RecordType[] => {
+  const query = normalizeForFilter(filterText.trim());
+  if (query === '') return records;
+  const targetFields = layer.field.filter(
+    (f) => !UNFILTERABLE_FORMATS.includes(f.format) && (filterFieldName === '' || f.name === filterFieldName)
+  );
+  //対象列が無い場合（削除された列を指したままなど）は絞り込まない
+  if (targetFields.length === 0) return records;
+
+  return records.filter((record) =>
+    targetFields.some((f) => {
+      const value = record.field[f.name];
+      if (value === undefined || value === null) return false;
+      return normalizeForFilter(String(value)).includes(query);
+    })
+  );
+};
+
+/**
+ * レコード群を囲む矩形を返す。ライン・ポリゴンは構成点をすべて含める。
+ * 座標を持たないレコードしかない場合はundefined。
+ */
+export const boundingBoxFromRecords = (records: RecordType[]) => {
+  const points: LocationType[] = [];
+  records.forEach((record) => {
+    if (isLocationType(record.coords)) {
+      points.push(record.coords);
+    } else if (Array.isArray(record.coords)) {
+      points.push(...record.coords);
+    }
+  });
+  //0,0は座標未設定のレコードで使われるため範囲計算から除く
+  const valid = points.filter((p) => !(p.latitude === 0 && p.longitude === 0));
+  if (valid.length === 0) return undefined;
+  return boundingBoxFromCoords(valid);
+};
 
 /**
  * レコード追加時に現在地を座標として付与するかを判定する。

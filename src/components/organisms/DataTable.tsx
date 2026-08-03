@@ -9,6 +9,7 @@ import dayjs from '../../i18n/dayjs';
 import { DataContext } from '../../contexts/Data';
 import { SortOrderType } from '../../utils/Data';
 import DraggableFlatList, { RenderItemParams } from 'react-native-draggable-flatlist';
+import { DataModalFilter } from './DataModalFilter';
 
 // メモ化されたデータ行コンポーネント
 const DataRow = React.memo(
@@ -24,11 +25,13 @@ const DataRow = React.memo(
     changeChecked,
     changeVisible,
     gotoDataEdit,
+    isFiltering,
   }: {
     item: RecordType;
     getIndex: () => number | undefined;
     drag: () => void;
     isActive: boolean;
+    isFiltering: boolean;
     checkList: { id: number; checked: boolean }[];
     projectId: string | undefined;
     layer: LayerType;
@@ -68,7 +71,7 @@ const DataRow = React.memo(
         {projectId !== undefined && layer.permission !== 'COMMON' && (
           <Pressable
             style={[styles.td, { flex: 2, width: 100 }]}
-            onLongPress={drag}
+            onLongPress={isFiltering ? undefined : drag}
             disabled={isActive}
             onPress={() => gotoDataEdit(index)}
           >
@@ -92,7 +95,7 @@ const DataRow = React.memo(
             <Pressable
               key={field_index}
               style={[styles.td, { flex: 2, width: 120 }]}
-              onLongPress={drag}
+              onLongPress={isFiltering ? undefined : drag}
               disabled={isActive}
               onPress={() => gotoDataEdit(index)}
             >
@@ -100,12 +103,12 @@ const DataRow = React.memo(
                 {item.field[name] === undefined
                   ? ''
                   : format === 'DATETIME'
-                  ? `${dayjs(item.field[name] as string).format('L HH:mm')}`
-                  : format === 'PHOTO'
-                  ? `${(item.field[name] as PhotoType[]).length} pic`
-                  : format === 'REFERENCE'
-                  ? 'Reference'
-                  : `${item.field[name]}`}
+                    ? `${dayjs(item.field[name] as string).format('L HH:mm')}`
+                    : format === 'PHOTO'
+                      ? `${(item.field[name] as PhotoType[]).length} pic`
+                      : format === 'REFERENCE'
+                        ? 'Reference'
+                        : `${item.field[name]}`}
               </Text>
             </Pressable>
           ))
@@ -141,6 +144,7 @@ const DataRow = React.memo(
     return (
       isItemEqual &&
       prevProps.isActive === nextProps.isActive &&
+      prevProps.isFiltering === nextProps.isFiltering &&
       prevProps.checkList[prevIndex]?.checked === nextProps.checkList[nextIndex]?.checked
     );
   }
@@ -163,10 +167,32 @@ export const DataTable = React.memo(() => {
     changeOrder,
     changeCheckedAll,
     changeVisibleAll,
+    isFiltering,
+    filterText,
+    filterFieldName,
+    setFilter,
+    clearFilter,
   } = useContext(DataContext);
 
   const [checkedAll, setCheckedAll] = useState(false);
   const [visibleAll, setVisibleAll] = useState(true);
+  //列ヘッダ長押しで開く絞り込みモーダル。開いている列名を保持する
+  const [filterTarget, setFilterTarget] = useState<string | undefined>(undefined);
+
+  const onFilterField = useCallback((fieldName: string) => setFilterTarget(fieldName), []);
+
+  const applyFilter = useCallback(
+    (value: string) => {
+      //空欄でOKしたら解除扱い。対象列も戻さないとヘッダのフィルタアイコンが残る
+      if (value.trim() === '') {
+        clearFilter();
+      } else {
+        setFilter(value, filterTarget ?? '');
+      }
+      setFilterTarget(undefined);
+    },
+    [clearFilter, filterTarget, setFilter]
+  );
 
   const onCheckAll = useCallback(() => {
     setCheckedAll(!checkedAll);
@@ -186,8 +212,8 @@ export const DataTable = React.memo(() => {
           ? sortedOrder === 'UNSORTED'
             ? 'DESCENDING'
             : sortedOrder === 'DESCENDING'
-            ? 'ASCENDING'
-            : 'UNSORTED'
+              ? 'ASCENDING'
+              : 'UNSORTED'
           : 'DESCENDING';
       changeOrder(colName, sortOrder);
     },
@@ -209,10 +235,11 @@ export const DataTable = React.memo(() => {
           changeChecked={changeChecked}
           changeVisible={changeVisible}
           gotoDataEdit={gotoDataEdit}
+          isFiltering={isFiltering}
         />
       );
     },
-    [changeChecked, changeVisible, checkList, gotoDataEdit, isMapMemoLayer, layer, projectId]
+    [changeChecked, changeVisible, checkList, gotoDataEdit, isFiltering, isMapMemoLayer, layer, projectId]
   );
   const keyExtractor = useCallback((item: RecordType) => item.id, []);
 
@@ -233,41 +260,72 @@ export const DataTable = React.memo(() => {
         sortedOrder={sortedOrder}
         projectId={projectId}
         layer={layer}
+        filterFieldName={filterFieldName}
+        onFilterField={onFilterField}
       />
     ),
-    [isMapMemoLayer, visibleAll, onVisibleAll, checkedAll, onCheckAll, onChangeOrder, sortedName, sortedOrder, projectId, layer]
+    [
+      isMapMemoLayer,
+      visibleAll,
+      onVisibleAll,
+      checkedAll,
+      onCheckAll,
+      onChangeOrder,
+      sortedName,
+      sortedOrder,
+      projectId,
+      layer,
+      filterFieldName,
+      onFilterField,
+    ]
   );
 
-  return sortedRecordSet.length !== 0 ? (
-    // @ts-ignore - react-native-draggable-flatlist is not compatible with React 19 types
-    <DraggableFlatList<RecordType>
-      ListHeaderComponent={ListHeader}
-      data={sortedRecordSet}
-      stickyHeaderIndices={[0]}
-      initialNumToRender={10}
-      maxToRenderPerBatch={10}
-      windowSize={5}
-      removeClippedSubviews={true}
-      extraData={extraData}
-      renderItem={renderItem}
-      keyExtractor={keyExtractor}
-      onDragEnd={({ data }) => updateRecordSetOrder(data)}
-      activationDistance={5}
-      getItemLayout={(_, index) => ({ length: 45, offset: 45 * index, index })}
-    />
-  ) : (
-    <DataTitle
-      isMapMemoLayer={isMapMemoLayer}
-      visibleAll={visibleAll}
-      onVisibleAll={onVisibleAll}
-      checkedAll={checkedAll}
-      onCheckAll={onCheckAll}
-      onChangeOrder={onChangeOrder}
-      sortedName={sortedName}
-      sortedOrder={sortedOrder}
-      projectId={projectId}
-      layer={layer}
-    />
+  return (
+    <>
+      {sortedRecordSet.length !== 0 ? (
+        // @ts-ignore - react-native-draggable-flatlist is not compatible with React 19 types
+        <DraggableFlatList<RecordType>
+          ListHeaderComponent={ListHeader}
+          data={sortedRecordSet}
+          stickyHeaderIndices={[0]}
+          initialNumToRender={10}
+          maxToRenderPerBatch={10}
+          windowSize={5}
+          removeClippedSubviews={true}
+          extraData={extraData}
+          renderItem={renderItem}
+          keyExtractor={keyExtractor}
+          onDragEnd={({ data }) => updateRecordSetOrder(data)}
+          activationDistance={5}
+          getItemLayout={(_, index) => ({ length: 45, offset: 45 * index, index })}
+        />
+      ) : (
+        <DataTitle
+          isMapMemoLayer={isMapMemoLayer}
+          visibleAll={visibleAll}
+          onVisibleAll={onVisibleAll}
+          checkedAll={checkedAll}
+          onCheckAll={onCheckAll}
+          onChangeOrder={onChangeOrder}
+          sortedName={sortedName}
+          sortedOrder={sortedOrder}
+          projectId={projectId}
+          layer={layer}
+          filterFieldName={filterFieldName}
+          onFilterField={onFilterField}
+        />
+      )}
+      {/* 開いているときだけマウントする（Modalを常設すると毎回のレンダリングコストになる） */}
+      {filterTarget !== undefined && (
+        <DataModalFilter
+          visible={true}
+          fieldName={filterTarget}
+          defaultValue={filterTarget === filterFieldName ? filterText : ''}
+          pressOK={applyFilter}
+          pressCancel={() => setFilterTarget(undefined)}
+        />
+      )}
+    </>
   );
 });
 
@@ -282,6 +340,8 @@ interface Props {
   sortedOrder: SortOrderType;
   projectId: string | undefined;
   layer: LayerType;
+  filterFieldName: string;
+  onFilterField: (fieldName: string) => void;
 }
 
 const DataTitle = React.memo((props: Props) => {
@@ -297,6 +357,8 @@ const DataTitle = React.memo((props: Props) => {
     sortedOrder,
     projectId,
     layer,
+    filterFieldName,
+    onFilterField,
   } = props;
 
   return (
@@ -341,8 +403,10 @@ const DataTitle = React.memo((props: Props) => {
             key={field_index}
             style={[styles.th, { flex: 2, width: 120 }]}
             onPress={() => onChangeOrder(name, format)}
+            onLongPress={() => onFilterField(name)}
           >
             <Text>{name}</Text>
+            {filterFieldName === name && <MaterialCommunityIcons name="filter" size={14} color={COLOR.BLUE} />}
             {sortedName === name && sortedOrder === 'ASCENDING' && (
               <MaterialCommunityIcons name="sort-alphabetical-ascending" size={16} color="black" />
             )}

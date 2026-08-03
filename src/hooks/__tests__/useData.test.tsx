@@ -2,13 +2,12 @@ import { renderHook, act } from '@testing-library/react-hooks';
 import { Provider } from 'react-redux';
 import { configureStore } from '@reduxjs/toolkit';
 import React from 'react';
-import { useData } from '../useData';
+import { clearAllVisibilitySnapshots, useData } from '../useData';
 import dataSetReducer, { updateRecordsAction, addRecordsAction } from '../../modules/dataSet';
 import layersReducer from '../../modules/layers';
 import settingsReducer from '../../modules/settings';
 import userReducer from '../../modules/user';
 import { RecordType, LayerType } from '../../types';
-
 
 jest.mock('../useProject', () => ({
   useProject: () => ({
@@ -17,10 +16,7 @@ jest.mock('../useProject', () => ({
 }));
 
 // テスト用のストアを作成
-const createTestStore = (
-  initialData: RecordType[] = [],
-  layerOverrides: Partial<LayerType> = {}
-) => {
+const createTestStore = (initialData: RecordType[] = [], layerOverrides: Partial<LayerType> = {}) => {
   return configureStore({
     reducer: {
       dataSet: dataSetReducer,
@@ -29,11 +25,13 @@ const createTestStore = (
       user: userReducer,
     },
     preloadedState: {
-      dataSet: [{
-        layerId: 'layer1',
-        userId: 'user1',
-        data: initialData,
-      }],
+      dataSet: [
+        {
+          layerId: 'layer1',
+          userId: 'user1',
+          data: initialData,
+        },
+      ],
       layers: [
         {
           id: 'layer1',
@@ -272,7 +270,7 @@ describe('useData', () => {
             mapList: [],
             gpsAccuracy: 'HIGH' as const,
             agreedTermsVersion: '',
-        lastSeenVersion: '',
+            lastSeenVersion: '',
             isModalInfoToolHidden: false,
             isModalMapMemoToolHidden: false,
             currentInfoTool: 'ALL_INFO' as const,
@@ -293,9 +291,7 @@ describe('useData', () => {
         },
       });
 
-      const wrapper = ({ children }: { children: React.ReactNode }) => (
-        <Provider store={store}>{children}</Provider>
-      );
+      const wrapper = ({ children }: { children: React.ReactNode }) => <Provider store={store}>{children}</Provider>;
 
       // 参照レイヤーのデータを取得
       const { result } = renderHook(() => useData('refLayer'), { wrapper });
@@ -390,7 +386,7 @@ describe('useData', () => {
             mapList: [],
             gpsAccuracy: 'HIGH' as const,
             agreedTermsVersion: '',
-        lastSeenVersion: '',
+            lastSeenVersion: '',
             isModalInfoToolHidden: false,
             isModalMapMemoToolHidden: false,
             currentInfoTool: 'ALL_INFO' as const,
@@ -411,9 +407,7 @@ describe('useData', () => {
         },
       });
 
-      const wrapper = ({ children }: { children: React.ReactNode }) => (
-        <Provider store={store}>{children}</Provider>
-      );
+      const wrapper = ({ children }: { children: React.ReactNode }) => <Provider store={store}>{children}</Provider>;
 
       const { result } = renderHook(() => useData('refLayer'), { wrapper });
 
@@ -441,9 +435,7 @@ describe('useData', () => {
       const initialRecord = createMockRecord('record1', 'Initial Name', 100);
       const store = createTestStore([initialRecord]);
 
-      const wrapper = ({ children }: { children: React.ReactNode }) => (
-        <Provider store={store}>{children}</Provider>
-      );
+      const wrapper = ({ children }: { children: React.ReactNode }) => <Provider store={store}>{children}</Provider>;
 
       const { result, rerender } = renderHook(() => useData('layer1'), { wrapper });
 
@@ -477,9 +469,7 @@ describe('useData', () => {
       const initialRecord = createMockRecord('record1', 'Record 1', 100);
       const store = createTestStore([initialRecord]);
 
-      const wrapper = ({ children }: { children: React.ReactNode }) => (
-        <Provider store={store}>{children}</Provider>
-      );
+      const wrapper = ({ children }: { children: React.ReactNode }) => <Provider store={store}>{children}</Provider>;
 
       const { result, rerender } = renderHook(() => useData('layer1'), { wrapper });
 
@@ -503,8 +493,8 @@ describe('useData', () => {
 
       // 新しいレコードが追加されていることを確認
       expect(result.current.sortedRecordSet).toHaveLength(2);
-      expect(result.current.sortedRecordSet.find(r => r.id === 'record2')).toBeTruthy();
-      expect(result.current.sortedRecordSet.find(r => r.id === 'record2')?.field.name).toBe('Record 2');
+      expect(result.current.sortedRecordSet.find((r) => r.id === 'record2')).toBeTruthy();
+      expect(result.current.sortedRecordSet.find((r) => r.id === 'record2')?.field.name).toBe('Record 2');
     });
 
     it('複数のレコードが同時に更新された時、全て正しく反映される', () => {
@@ -515,9 +505,7 @@ describe('useData', () => {
       ];
       const store = createTestStore(initialRecords);
 
-      const wrapper = ({ children }: { children: React.ReactNode }) => (
-        <Provider store={store}>{children}</Provider>
-      );
+      const wrapper = ({ children }: { children: React.ReactNode }) => <Provider store={store}>{children}</Provider>;
 
       const { result, rerender } = renderHook(() => useData('layer1'), { wrapper });
 
@@ -564,9 +552,7 @@ describe('useData', () => {
       ];
       const store = createTestStore(records);
 
-      const wrapper = ({ children }: { children: React.ReactNode }) => (
-        <Provider store={store}>{children}</Provider>
-      );
+      const wrapper = ({ children }: { children: React.ReactNode }) => <Provider store={store}>{children}</Provider>;
 
       const { result } = renderHook(() => useData('layer1'), { wrapper });
 
@@ -600,9 +586,7 @@ describe('useData', () => {
         field: [{ id: 'fieldSerial', name: 'serial', format: 'SERIAL' }],
       });
 
-      const wrapper = ({ children }: { children: React.ReactNode }) => (
-        <Provider store={store}>{children}</Provider>
-      );
+      const wrapper = ({ children }: { children: React.ReactNode }) => <Provider store={store}>{children}</Provider>;
 
       const { result } = renderHook(() => useData('layer1'), { wrapper });
 
@@ -628,9 +612,7 @@ describe('useData', () => {
       const record = createMockRecord('record1', 'Test', 100);
       const store = createTestStore([record]);
 
-      const wrapper = ({ children }: { children: React.ReactNode }) => (
-        <Provider store={store}>{children}</Provider>
-      );
+      const wrapper = ({ children }: { children: React.ReactNode }) => <Provider store={store}>{children}</Provider>;
 
       const { result } = renderHook(() => useData('layer1'), { wrapper });
 
@@ -656,9 +638,7 @@ describe('useData', () => {
       ];
       const store = createTestStore(records);
 
-      const wrapper = ({ children }: { children: React.ReactNode }) => (
-        <Provider store={store}>{children}</Provider>
-      );
+      const wrapper = ({ children }: { children: React.ReactNode }) => <Provider store={store}>{children}</Provider>;
 
       const { result } = renderHook(() => useData('layer1'), { wrapper });
 
@@ -667,7 +647,7 @@ describe('useData', () => {
         result.current.changeCheckedAll(true);
       });
 
-      expect(result.current.checkList.every(item => item.checked)).toBe(true);
+      expect(result.current.checkList.every((item) => item.checked)).toBe(true);
       expect(result.current.checkedRecords).toHaveLength(3);
 
       // 全てチェックを外す
@@ -675,8 +655,126 @@ describe('useData', () => {
         result.current.changeCheckedAll(false);
       });
 
-      expect(result.current.checkList.every(item => !item.checked)).toBe(true);
+      expect(result.current.checkList.every((item) => !item.checked)).toBe(true);
       expect(result.current.checkedRecords).toHaveLength(0);
+    });
+  });
+  describe('絞り込みと地図表示', () => {
+    //スナップショットはモジュールスコープなのでテスト間で持ち越さない
+    beforeEach(() => {
+      clearAllVisibilitySnapshots();
+    });
+
+    //createMockRecordのfieldキーはレイヤ定義(Name/Value)と綴りが違うため、ここでは実際のキーで作る
+    const createRecord = (id: string, name: string, visible: boolean): RecordType => ({
+      id,
+      userId: 'user1',
+      displayName: 'Test User',
+      visible,
+      redraw: false,
+      coords: { latitude: 0, longitude: 0 },
+      field: { Name: name, Value: 1 },
+      updatedAt: 1,
+    });
+
+    const setup = () => {
+      const records = [
+        createRecord('r1', 'スギ', true),
+        createRecord('r2', 'ミズナラ', false),
+        createRecord('r3', 'スギナ', true),
+      ];
+      const store = createTestStore(records);
+      const wrapper = ({ children }: { children: React.ReactNode }) => <Provider store={store}>{children}</Provider>;
+      const { result, rerender, unmount } = renderHook(() => useData('layer1'), { wrapper });
+      return { store, result, rerender, unmount };
+    };
+
+    const visibilityOf = (store: ReturnType<typeof createTestStore>) =>
+      Object.fromEntries(store.getState().dataSet[0].data.map((r: RecordType) => [r.id, r.visible]));
+
+    it('絞り込むと一致するレコードだけが一覧に残る', () => {
+      const { result } = setup();
+      act(() => {
+        result.current.setFilter('スギ', 'Name');
+      });
+      expect(result.current.sortedRecordSet.map((r) => r.id)).toEqual(['r1', 'r3']);
+      expect(result.current.isFiltering).toBe(true);
+    });
+
+    it('絞り込み中は並べ替えを受け付けない', () => {
+      const { store, result } = setup();
+      act(() => {
+        result.current.setFilter('スギ', 'Name');
+      });
+      act(() => {
+        result.current.updateRecordSetOrder([]);
+      });
+      //絞り込みから外れたレコードが消えていないこと
+      expect(store.getState().dataSet[0].data).toHaveLength(3);
+    });
+
+    it('地図表示ボタンで絞り込み結果だけが表示になる', () => {
+      const { store, result, rerender } = setup();
+      act(() => {
+        result.current.setFilter('スギ', 'Name');
+      });
+      rerender();
+      act(() => {
+        result.current.showOnlyFilteredRecords();
+      });
+      expect(visibilityOf(store)).toEqual({ r1: true, r2: false, r3: true });
+    });
+
+    it('絞り込みを解除するとボタンを押す前の表示状態に戻る', () => {
+      const { store, result, rerender } = setup();
+      act(() => {
+        result.current.setFilter('ミズナラ', 'Name');
+      });
+      rerender();
+      act(() => {
+        result.current.showOnlyFilteredRecords();
+      });
+      //非表示だったr2だけが表示になっている
+      expect(visibilityOf(store)).toEqual({ r1: false, r2: true, r3: false });
+
+      rerender();
+      act(() => {
+        result.current.clearFilter();
+      });
+      //押す前の状態（r2だけ非表示）に戻る
+      expect(visibilityOf(store)).toEqual({ r1: true, r2: false, r3: true });
+      expect(result.current.filterFieldName).toBe('');
+    });
+
+    it('画面を開き直しても絞り込みは維持され、解除するまで残る', () => {
+      const { store, result, unmount } = setup();
+      act(() => {
+        result.current.setFilter('スギ', 'Name');
+      });
+
+      //画面遷移でhookがアンマウントされても条件が残ること
+      unmount();
+      const wrapper = ({ children }: { children: React.ReactNode }) => <Provider store={store}>{children}</Provider>;
+      const remounted = renderHook(() => useData('layer1'), { wrapper });
+      expect(remounted.result.current.filterText).toBe('スギ');
+      expect(remounted.result.current.sortedRecordSet.map((r) => r.id)).toEqual(['r1', 'r3']);
+
+      act(() => {
+        remounted.result.current.clearFilter();
+      });
+      expect(remounted.result.current.filterText).toBe('');
+      expect(remounted.result.current.sortedRecordSet).toHaveLength(3);
+    });
+
+    it('地図表示ボタンを押していなければ解除しても表示状態は変えない', () => {
+      const { store, result } = setup();
+      act(() => {
+        result.current.setFilter('スギ', 'Name');
+      });
+      act(() => {
+        result.current.clearFilter();
+      });
+      expect(visibilityOf(store)).toEqual({ r1: true, r2: false, r3: true });
     });
   });
 });

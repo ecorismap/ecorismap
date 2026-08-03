@@ -403,6 +403,8 @@ export interface SettingsType {
   addLocationPerLayer?: { [layerId: string]: boolean };
   //位置トグルのロック（記録後に自動OFFしない）。端末ローカル設定
   lockLocationPerLayer?: { [layerId: string]: boolean };
+  //データ一覧の絞り込み条件。解除するまで保持するため画面の再表示をまたいで残す（fieldNameが空なら全フィールド）
+  dataFilterPerLayer?: { [layerId: string]: { text: string; fieldName: string } };
 }
 
 export interface RegionType {

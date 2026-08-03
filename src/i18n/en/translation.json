@@ -596,7 +596,8 @@
     "alert": {
       "exportData": "Members cannot export data.",
       "checkFieldInput": "Please enter the following values ​​correctly.",
-      "addWithoutLocation": "GPS is off, so the record is added without coordinates."
+      "addWithoutLocation": "GPS is off, so the record is added without coordinates.",
+      "noLocationData": "There are no records with a location."
     },
     "confirm": {
       "deleteData": "Do you want to delete the data?"
@@ -607,10 +608,13 @@
     "label": {
       "add": "add",
       "export": "export",
-      "delete": "delete"
+      "delete": "delete",
+      "filter": "Filter",
+      "showOnMap": "Show on map"
     },
     "message": {
-      "exporting": "Exporting data..."
+      "exporting": "Exporting data...",
+      "filterResult": "{{count}} records"
     }
   },
   "hooks": {

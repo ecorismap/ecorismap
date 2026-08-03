@@ -13,6 +13,7 @@ import * as projectStore from '../lib/firebase/firestore';
 import { isLoggedIn } from '../utils/Account';
 import { t } from '../i18n/config';
 import { clearAllDynamicDictionaries } from './useDynamicDictionaryInput';
+import { clearAllVisibilitySnapshots } from './useData';
 
 export type UseProjectReturnType = {
   isSettingProject: boolean;
@@ -92,6 +93,7 @@ export const useProject = (): UseProjectReturnType => {
     dispatch(setTileMapsAction(tileMapsInitialState));
     // 動的辞書をクリア
     clearAllDynamicDictionaries();
+    clearAllVisibilitySnapshots();
   }, [dispatch, store]);
 
   const saveProjectSetting = useCallback(async () => {

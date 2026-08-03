@@ -11,7 +11,7 @@ export type RootScreenParams = {
     | {
         tileMap?: TileMapType | undefined;
         jumpTo?: RegionType;
-        previous: RootScreenName | 'Settings' | 'Maps' | 'DataEdit';
+        previous: RootScreenName | 'Settings' | 'Maps' | 'DataEdit' | 'Data';
         mode:
           | 'exportPDF'
           | 'openEcorisMap'

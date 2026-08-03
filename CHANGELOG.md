@@ -10,6 +10,7 @@
 - Changed backup file extension to standard .zip (deprecated the .ecorismap extension)
 - Added a one-tap location on/off toggle when adding data from the dictionary in the data list. The toggle is off by default, turns itself off again once a record is saved with a location, and opens that record's edit screen so the remaining fields can be filled in. A warning is shown if the toggle is on but GPS is off. A lock button keeps the toggle on for continuous recording
 - Improved the data list to shade the rows of records that have no location, so records with a location stand out
+- Added a filter to the data list, with an optional target field and a button to show only the filtered records on the map
 - Added elevation and coordinates (with tap-to-copy) to the long-press and POI popups
 - Added straight-line distance from the current location to the long-pressed point in the map popup when GPS is on
 - Added hillshade with omnidirectional shading (SVF) and red relief map styles, unified across iOS, Android, and Web

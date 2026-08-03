@@ -50,6 +50,7 @@ export const settingsInitialState: SettingsType = {
   } as ProximityAlertSettingsType,
   addLocationPerLayer: {},
   lockLocationPerLayer: {},
+  dataFilterPerLayer: {},
 };
 
 type SettingsEditType = Partial<SettingsType>;
@@ -65,6 +66,16 @@ const reducers = {
     return {
       ...state,
       addLocationPerLayer: { ...state.addLocationPerLayer, [action.payload.layerId]: action.payload.enabled },
+    };
+  },
+  setDataFilterForLayerAction: (
+    state: SettingsType,
+    action: PayloadAction<{ layerId: string; text: string; fieldName: string }>
+  ) => {
+    const { layerId, text, fieldName } = action.payload;
+    return {
+      ...state,
+      dataFilterPerLayer: { ...state.dataFilterPerLayer, [layerId]: { text, fieldName } },
     };
   },
   //位置トグルのロック（記録後の自動OFFを止める）。ロック時は位置トグル自体もONにそろえる
@@ -90,5 +101,6 @@ export const {
   editSettingsAction,
   setAddLocationForLayerAction,
   setLockLocationForLayerAction,
+  setDataFilterForLayerAction,
 } = settingsSlice.actions;
 export default settingsSlice.reducer;

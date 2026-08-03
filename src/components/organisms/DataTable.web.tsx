@@ -19,6 +19,7 @@ import {
 } from '@dnd-kit/core';
 import { SortableContext, useSortable, verticalListSortingStrategy, arrayMove } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { DataModalFilter } from './DataModalFilter';
 
 // ドラッグ可能なデータ行コンポーネント
 const SortableDataRow = React.memo(
@@ -32,9 +33,11 @@ const SortableDataRow = React.memo(
     changeChecked,
     changeVisible,
     gotoDataEdit,
+    isFiltering,
   }: {
     item: RecordType;
     index: number;
+    isFiltering: boolean;
     checkList: { id: number; checked: boolean }[];
     projectId: string | undefined;
     layer: LayerType;
@@ -43,7 +46,11 @@ const SortableDataRow = React.memo(
     changeVisible: (item: RecordType) => void;
     gotoDataEdit: (index: number) => void;
   }) => {
-    const { listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: item.id });
+    const { listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+      id: item.id,
+      //絞り込み中の並べ替えはストアのレコードを丸ごと置き換えてしまうため禁止する
+      disabled: isFiltering,
+    });
 
     const style = {
       transform: CSS.Transform.toString(transform),
@@ -111,12 +118,12 @@ const SortableDataRow = React.memo(
                   {item.field[name] === undefined
                     ? ''
                     : format === 'DATETIME'
-                    ? `${dayjs(item.field[name] as string).format('L HH:mm')}`
-                    : format === 'PHOTO'
-                    ? `${(item.field[name] as PhotoType[]).length} pic`
-                    : format === 'REFERENCE'
-                    ? 'Reference'
-                    : `${item.field[name]}`}
+                      ? `${dayjs(item.field[name] as string).format('L HH:mm')}`
+                      : format === 'PHOTO'
+                        ? `${(item.field[name] as PhotoType[]).length} pic`
+                        : format === 'REFERENCE'
+                          ? 'Reference'
+                          : `${item.field[name]}`}
                 </Text>
               </Pressable>
             ))
@@ -124,9 +131,7 @@ const SortableDataRow = React.memo(
           {isMapMemoLayer &&
             ['_strokeColor', '_strokeWidth'].map((name, field_index) => (
               <View key={field_index} style={[styles.td, { flex: 2, width: 120 }]}>
-                <Text numberOfLines={2}>
-                  {item.field[name] === undefined ? '' : (item.field[name] as string)}
-                </Text>
+                <Text numberOfLines={2}>{item.field[name] === undefined ? '' : (item.field[name] as string)}</Text>
               </View>
             ))}
         </View>
@@ -145,6 +150,7 @@ const SortableDataRow = React.memo(
     return (
       isItemEqual &&
       prevProps.index === nextProps.index &&
+      prevProps.isFiltering === nextProps.isFiltering &&
       prevProps.checkList[prevProps.index]?.checked === nextProps.checkList[nextProps.index]?.checked
     );
   }
@@ -166,10 +172,32 @@ export const DataTable = React.memo(() => {
     changeOrder,
     changeCheckedAll,
     changeVisibleAll,
+    isFiltering,
+    filterText,
+    filterFieldName,
+    setFilter,
+    clearFilter,
   } = useContext(DataContext);
 
   const [checkedAll, setCheckedAll] = useState(false);
   const [visibleAll, setVisibleAll] = useState(true);
+  //列ヘッダ長押しで開く絞り込みモーダル。開いている列名を保持する
+  const [filterTarget, setFilterTarget] = useState<string | undefined>(undefined);
+
+  const onFilterField = useCallback((fieldName: string) => setFilterTarget(fieldName), []);
+
+  const applyFilter = useCallback(
+    (value: string) => {
+      //空欄でOKしたら解除扱い。対象列も戻さないとヘッダのフィルタアイコンが残る
+      if (value.trim() === '') {
+        clearFilter();
+      } else {
+        setFilter(value, filterTarget ?? '');
+      }
+      setFilterTarget(undefined);
+    },
+    [clearFilter, filterTarget, setFilter]
+  );
 
   const onCheckAll = useCallback(() => {
     setCheckedAll(!checkedAll);
@@ -189,8 +217,8 @@ export const DataTable = React.memo(() => {
           ? sortedOrder === 'UNSORTED'
             ? 'DESCENDING'
             : sortedOrder === 'DESCENDING'
-            ? 'ASCENDING'
-            : 'UNSORTED'
+              ? 'ASCENDING'
+              : 'UNSORTED'
           : 'DESCENDING';
       changeOrder(colName, sortOrder);
     },
@@ -221,6 +249,17 @@ export const DataTable = React.memo(() => {
 
   const itemIds = useMemo(() => sortedRecordSet.map((record) => record.id), [sortedRecordSet]);
 
+  //開いているときだけマウントする（Modalを常設すると毎回のレンダリングコストになる）
+  const filterModal = filterTarget !== undefined && (
+    <DataModalFilter
+      visible={true}
+      fieldName={filterTarget}
+      defaultValue={filterTarget === filterFieldName ? filterText : ''}
+      pressOK={applyFilter}
+      pressCancel={() => setFilterTarget(undefined)}
+    />
+  );
+
   return sortedRecordSet.length !== 0 ? (
     <View style={styles.container}>
       <DataTitle
@@ -234,6 +273,8 @@ export const DataTable = React.memo(() => {
         sortedOrder={sortedOrder}
         projectId={projectId}
         layer={layer}
+        filterFieldName={filterFieldName}
+        onFilterField={onFilterField}
       />
       {/* @ts-ignore - dnd-kit is not compatible with React 19 types */}
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
@@ -254,25 +295,32 @@ export const DataTable = React.memo(() => {
                 changeChecked={changeChecked}
                 changeVisible={changeVisible}
                 gotoDataEdit={gotoDataEdit}
+                isFiltering={isFiltering}
               />
             );
           })}
         </SortableContext>
       </DndContext>
+      {filterModal}
     </View>
   ) : (
-    <DataTitle
-      isMapMemoLayer={isMapMemoLayer}
-      visibleAll={visibleAll}
-      onVisibleAll={onVisibleAll}
-      checkedAll={checkedAll}
-      onCheckAll={onCheckAll}
-      onChangeOrder={onChangeOrder}
-      sortedName={sortedName}
-      sortedOrder={sortedOrder}
-      projectId={projectId}
-      layer={layer}
-    />
+    <View style={styles.container}>
+      <DataTitle
+        isMapMemoLayer={isMapMemoLayer}
+        visibleAll={visibleAll}
+        onVisibleAll={onVisibleAll}
+        checkedAll={checkedAll}
+        onCheckAll={onCheckAll}
+        onChangeOrder={onChangeOrder}
+        sortedName={sortedName}
+        sortedOrder={sortedOrder}
+        projectId={projectId}
+        layer={layer}
+        filterFieldName={filterFieldName}
+        onFilterField={onFilterField}
+      />
+      {filterModal}
+    </View>
   );
 });
 
@@ -287,6 +335,8 @@ interface Props {
   sortedOrder: SortOrderType;
   projectId: string | undefined;
   layer: LayerType;
+  filterFieldName: string;
+  onFilterField: (fieldName: string) => void;
 }
 
 const DataTitle = React.memo((props: Props) => {
@@ -301,6 +351,8 @@ const DataTitle = React.memo((props: Props) => {
     sortedOrder,
     projectId,
     layer,
+    filterFieldName,
+    onFilterField,
   } = props;
 
   return (
@@ -326,9 +378,7 @@ const DataTitle = React.memo((props: Props) => {
       </View>
       {projectId !== undefined && layer.permission !== 'COMMON' && (
         <Pressable style={[styles.th, { flex: 2, width: 100 }]} onPress={() => onChangeOrder('_user_', '_user_')}>
-          <Text numberOfLines={2}>
-            User
-          </Text>
+          <Text numberOfLines={2}>User</Text>
           {sortedName === '_user_' && sortedOrder === 'ASCENDING' && (
             <MaterialCommunityIcons name="sort-alphabetical-ascending" size={16} color="black" />
           )}
@@ -345,8 +395,10 @@ const DataTitle = React.memo((props: Props) => {
             key={field_index}
             style={[styles.th, { flex: 2, width: 120 }]}
             onPress={() => onChangeOrder(name, format)}
+            onLongPress={() => onFilterField(name)}
           >
             <Text>{name}</Text>
+            {filterFieldName === name && <MaterialCommunityIcons name="filter" size={14} color={COLOR.BLUE} />}
             {sortedName === name && sortedOrder === 'ASCENDING' && (
               <MaterialCommunityIcons name="sort-alphabetical-ascending" size={16} color="black" />
             )}

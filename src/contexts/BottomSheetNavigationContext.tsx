@@ -4,7 +4,7 @@ import { ColorStyle, LayerType, RecordType, RegionType, TileMapType } from '../t
 
 // navigateToHome用のパラメータ型
 export interface NavigateToHomeParams {
-  previous: 'Settings' | 'Maps' | 'DataEdit';
+  previous: 'Settings' | 'Maps' | 'DataEdit' | 'Data';
   mode?:
     | 'exportPDF'
     | 'openEcorisMap'
