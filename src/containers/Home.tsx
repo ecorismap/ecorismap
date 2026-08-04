@@ -1795,13 +1795,9 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       // 少し遅延を入れて確実にmapRegionが更新されてから実行
       const timer = setTimeout(() => {
         if (featureType === 'POINT') {
-          // 座標がない場合は従来通りレコード選択のみ（新規追加モード）
-          if (withCoord) {
-            selectObjectByFeature(layer, record, true);
-            setDrawTool('PLOT_POINT');
-          } else {
-            selectRecord(layer.id, record);
-          }
+          // 位置なしレコードも編集対象として登録し、タップで設定した位置を既存レコードへ保存する
+          selectObjectByFeature(layer, record, withCoord);
+          setDrawTool('PLOT_POINT');
         } else if (featureType === 'LINE' || featureType === 'POLYGON') {
           // DataEditからの編集時は座標を再計算
           selectObjectByFeature(layer, record, true);
@@ -1815,7 +1811,6 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
   }, [
     pendingEditPosition,
     mapRegion,
-    selectRecord,
     selectObjectByFeature,
     setDrawTool,
   ]);
@@ -1902,13 +1897,9 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
         } else {
           // jumpToがない場合はすぐに編集モードを開始（座標再計算なし）
           if (featureType === 'POINT') {
-            // 座標がない場合は従来通りレコード選択のみ（新規追加モード）
-            if (route.params?.withCoord) {
-              selectObjectByFeature(layer, record, false);
-              setDrawTool('PLOT_POINT');
-            } else {
-              selectRecord(layer.id, record);
-            }
+            // 位置なしレコードも編集対象として登録し、タップで設定した位置を既存レコードへ保存する
+            selectObjectByFeature(layer, record, false);
+            setDrawTool('PLOT_POINT');
           } else if (featureType === 'LINE' || featureType === 'POLYGON') {
             selectObjectByFeature(layer, record, false);
             setDrawTool(featureType === 'LINE' ? 'PLOT_LINE' : 'PLOT_POLYGON');
