@@ -1,5 +1,6 @@
 import { getDatabase } from './SQLite';
 import { PresetDictionary } from './Preset';
+import { bulkInsertValues } from './SQLiteBulkInsert';
 
 // プリセット適用で作成したレイヤの辞書語彙を辞書DBに登録する。
 // テーブル名は辞書型フィールドの規約（_<layerId>_<fieldId>）に従う
@@ -11,10 +12,7 @@ export async function importPresetDictionaries(layerId: string, dictionaries: Pr
     await db.execAsync(`DROP TABLE IF EXISTS "${tableName}"`);
     await db.execAsync(`CREATE TABLE "${tableName}" (value TEXT)`);
     await db.withTransactionAsync(async () => {
-      const insertSQL = `INSERT INTO "${tableName}" (value) VALUES (?)`;
-      for (const value of values) {
-        await db.runAsync(insertSQL, [value.trim()]);
-      }
+      await bulkInsertValues(db, tableName, values);
     });
   }
 }

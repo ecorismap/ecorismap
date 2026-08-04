@@ -2,6 +2,7 @@
 
 import sqlite3InitModule from '@sqlite.org/sqlite-wasm';
 import { isValidTableName } from './SQLiteTableName';
+import { bulkInsertValues } from './SQLiteBulkInsert';
 
 //ネイティブ版(SQLite.ts)と共通の実装を再エクスポートする。
 //useDictionaryInput / useFieldList は '../utils/SQLite' からimportするため、
@@ -222,10 +223,11 @@ class WebSQLiteDatabase implements SQLiteDatabase {
           value: string;
         }[];
         if (data.length > 0) {
-          const insertSql = `INSERT INTO "${newTableName}" (value) VALUES (?)`;
-          for (const { value } of data) {
-            await this.runAsync(insertSql, [value]);
-          }
+          await bulkInsertValues(
+            this,
+            newTableName,
+            data.map(({ value }) => value)
+          );
         }
       }
       importDb.close();
