@@ -1,4 +1,21 @@
+import fs from 'fs';
+import path from 'path';
 import { isValidTableName } from '../SQLite';
+import { isValidTableName as isValidTableNameWeb } from '../SQLiteTableName';
+
+// useDictionaryInput / useFieldList は '../utils/SQLite' からimportするため、
+// ネイティブ・Webのどちらのファイルにもエクスポートが無いと、その環境で
+// undefinedを呼び出して例外になる（Web版で辞書が引けなくなる不具合の再発防止）
+describe('SQLiteのプラットフォーム間のエクスポート', () => {
+  it.each(['SQLite.ts', 'SQLite.web.ts'])('%s がisValidTableNameをエクスポートする', (file) => {
+    const source = fs.readFileSync(path.join(__dirname, '..', file), 'utf8');
+    expect(source).toMatch(/export\s*\{[^}]*isValidTableName[^}]*\}\s*from\s*'\.\/SQLiteTableName'/);
+  });
+
+  it('共通実装と同じ関数を再エクスポートしている', () => {
+    expect(isValidTableName).toBe(isValidTableNameWeb);
+  });
+});
 
 describe('isValidTableName', () => {
   it('accepts dictionary table names', () => {
