@@ -18,7 +18,7 @@ import { configureStore, combineReducers } from '@reduxjs/toolkit';
 import React from 'react';
 import { useRecord } from '../useRecord';
 import dataSetReducer from '../../modules/dataSet';
-import layersReducer from '../../modules/layers';
+import layersReducer, { setLayersAction } from '../../modules/layers';
 import userReducer from '../../modules/user';
 import settingsReducer, { settingsInitialState } from '../../modules/settings';
 import projectsReducer from '../../modules/projects';
@@ -324,11 +324,38 @@ describe('useRecord', () => {
     expect(isOK).toBe(true);
     expect(message).toBe('');
 
-    // Test inactive layer
-    const inactiveLayer = { ...activeLayer, active: false };
-    const { isOK: isOKInactive, message: messageInactive } = result.current.checkRecordEditable(inactiveLayer);
-    expect(isOKInactive).toBe(false);
-    expect(messageInactive).toBe('hooks.message.noEditMode');
+    // 画面遷移paramsのスナップショットでactiveが古くても、storeの最新状態で判定する
+    // （編集モード切替後に確認ダイアログが再表示される不具合の回帰テスト）
+    const staleLayer = { ...activeLayer, active: false };
+    const { isOK: isOKStale, message: messageStale } = result.current.checkRecordEditable(staleLayer);
+    expect(isOKStale).toBe(true);
+    expect(messageStale).toBe('');
+
+    // storeに存在しないレイヤは渡されたオブジェクトで判定する
+    const unknownInactiveLayer = { ...activeLayer, id: 'unknown-layer', active: false };
+    const { isOK: isOKUnknown, message: messageUnknown } = result.current.checkRecordEditable(unknownInactiveLayer);
+    expect(isOKUnknown).toBe(false);
+    expect(messageUnknown).toBe('hooks.message.noEditMode');
+  });
+
+  it('should check record editable status against latest store state', () => {
+    const { result } = renderHook(() => useRecord(), { wrapper });
+
+    const activeLayer = result.current.findLayer('layer1')!;
+
+    // storeでlayer1を非アクティブにする
+    act(() => {
+      store.dispatch(
+        setLayersAction(
+          store.getState().layers.map((l: LayerType) => (l.id === 'layer1' ? { ...l, active: false } : l))
+        )
+      );
+    });
+
+    // 渡すオブジェクトがactive:trueのままでも、storeの最新状態（非アクティブ）で判定される
+    const { isOK, message } = result.current.checkRecordEditable(activeLayer);
+    expect(isOK).toBe(false);
+    expect(message).toBe('hooks.message.noEditMode');
   });
 
   it('should generate record correctly', () => {

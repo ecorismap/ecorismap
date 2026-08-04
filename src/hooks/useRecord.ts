@@ -175,18 +175,23 @@ export const useRecord = (): UseRecordReturnType => {
 
   const checkRecordEditable = useCallback(
     (targetLayer: LayerType) => {
-      if (isRunningProject && targetLayer.permission === 'COMMON') {
+      // 画面遷移paramsで渡されるレイヤはスナップショットでactiveが古いことがある
+      // （編集モード切替後もfalseのままで確認ダイアログが再表示される）ため、
+      // 最新のlayersをidで引いて判定する
+      const layer = layers.find((l) => l.id === targetLayer.id) ?? targetLayer;
+
+      if (isRunningProject && layer.permission === 'COMMON') {
         return { isOK: false, message: t('hooks.message.lockProject') };
       }
 
-      if (!targetLayer.active && targetLayer.id !== 'track') {
+      if (!layer.active && layer.id !== 'track') {
         // レイヤーがアクティブでない場合。ただし、トラックレイヤーは除外
         return { isOK: false, message: t('hooks.message.noEditMode') };
       }
 
       return { isOK: true, message: '' };
     },
-    [isRunningProject]
+    [isRunningProject, layers]
   );
 
   const isLayerEditable = useCallback(
