@@ -304,6 +304,52 @@ describe('useLocation', () => {
     // Clean up
     consoleErrorSpy.mockRestore();
   });
+
+  describe('Web版GeolocateControl同期', () => {
+    it('updateLocationFromWebGeolocateで現在地が設定されgpsStateがshowになる', () => {
+      const replaced = jest.replaceProperty(Platform, 'OS', 'web');
+      const mockRef = createMockMapRef();
+      const { result } = renderHook(() => useLocation(mockRef), { wrapper });
+
+      act(() => {
+        result.current.updateLocationFromWebGeolocate({ latitude: 35.0, longitude: 135.0, accuracy: 10 });
+      });
+
+      expect(result.current.currentLocation).toEqual({ latitude: 35.0, longitude: 135.0, accuracy: 10 });
+      expect(result.current.gpsState).toBe('show');
+      expect(result.current.isLocationStale).toBe(false);
+      replaced.restore();
+    });
+
+    it('endWebGeolocateでgpsStateがoffに戻り現在地がクリアされる', () => {
+      const replaced = jest.replaceProperty(Platform, 'OS', 'web');
+      const mockRef = createMockMapRef();
+      const { result } = renderHook(() => useLocation(mockRef), { wrapper });
+
+      act(() => {
+        result.current.updateLocationFromWebGeolocate({ latitude: 35.0, longitude: 135.0 });
+      });
+      act(() => {
+        result.current.endWebGeolocate();
+      });
+
+      expect(result.current.currentLocation).toBeNull();
+      expect(result.current.gpsState).toBe('off');
+      replaced.restore();
+    });
+
+    it('Web以外のプラットフォームでは何もしない', () => {
+      const mockRef = createMockMapRef();
+      const { result } = renderHook(() => useLocation(mockRef), { wrapper });
+
+      act(() => {
+        result.current.updateLocationFromWebGeolocate({ latitude: 35.0, longitude: 135.0 });
+      });
+
+      expect(result.current.currentLocation).toBeNull();
+      expect(result.current.gpsState).toBe('off');
+    });
+  });
 });
 
 describe('shouldEmitAzimuth', () => {

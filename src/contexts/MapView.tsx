@@ -1,7 +1,7 @@
 import React from 'react';
 import MapView, { Region } from 'react-native-maps';
 import { MapRef, ViewState } from 'react-map-gl/maplibre';
-import { LocationStateType, PoiInfoType, MapLocationInfoType } from '../types';
+import { LocationStateType, LocationType, PoiInfoType, MapLocationInfoType } from '../types';
 
 export interface MapViewContextType {
   mapViewRef: React.RefObject<MapView | MapRef | null>;
@@ -26,6 +26,9 @@ export interface MapViewContextType {
   isLocationStale: boolean;
   gpsState: LocationStateType;
   pressGPS: () => void;
+  // Web専用: maplibre GeolocateControl（地図の現在地ボタン）のイベントからアプリのGPS状態を同期する
+  updateLocationFromWebGeolocate: (coords: LocationType) => void;
+  endWebGeolocate: () => void;
   isPinch: boolean;
   panResponder: any;
   isDrawLineVisible: boolean;

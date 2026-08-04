@@ -6,7 +6,14 @@ import { COLOR } from '../../constants/AppConstants';
 import { HomeButtons } from '../organisms/HomeButtons';
 import HomeProjectLabel from '../organisms/HomeProjectLabel';
 import { HomeAccountButton } from '../organisms/HomeAccountButton';
-import Map, { GeolocateControl, MapRef, NavigationControl, ScaleControl } from 'react-map-gl/maplibre';
+import Map, {
+  GeolocateControl,
+  GeolocateEvent,
+  GeolocateResultEvent,
+  MapRef,
+  NavigationControl,
+  ScaleControl,
+} from 'react-map-gl/maplibre';
 import maplibregl, {
   BackgroundLayerSpecification,
   FillLayerSpecification,
@@ -16,7 +23,6 @@ import maplibregl, {
 } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { Point } from '../organisms/HomePoint';
-import { CurrentMarker } from '../organisms/HomeCurrentMarker.web';
 import { Polygon } from '../organisms/HomePolygon.web';
 import { Line } from '../organisms/HomeLine';
 import { TileMapType, PaperOrientationType, PaperSizeType, ScaleType } from '../../types';
@@ -107,9 +113,6 @@ export default function HomeScreen() {
   // MapViewContext
   const {
     mapViewRef,
-    gpsState,
-    currentLocation,
-    isLocationStale,
     zoom,
     onRegionChangeMapView,
     onDrop,
@@ -118,6 +121,8 @@ export default function HomeScreen() {
     isPinch,
     isTerrainActive,
     toggleTerrain,
+    updateLocationFromWebGeolocate,
+    endWebGeolocate,
   } = useContext(MapViewContext);
 
   // DrawingToolsContext
@@ -137,7 +142,7 @@ export default function HomeScreen() {
   } = useContext(PDFExportContext);
 
   // LocationTrackingContext
-  const { trackingState, memberLocations, editPositionMode, editPositionRecord, editPositionLayer } =
+  const { memberLocations, editPositionMode, editPositionRecord, editPositionLayer } =
     useContext(LocationTrackingContext);
 
   // ProjectContext
@@ -154,6 +159,38 @@ export default function HomeScreen() {
   const animatedIndex = useSharedValue(0);
 
   const pressPDFBack = useCallback(() => gotoHome(), [gotoHome]);
+
+  // 地図の現在地ボタン(GeolocateControl)で取得した位置をアプリのGPS状態へ同期する。
+  // これが無いとWeb版はgpsState/currentLocationが常にOFF扱いになり、
+  // 位置トグル付きの辞書追加や現在地ポイント追加が機能しない
+  const handleGeolocate = useCallback(
+    (e: GeolocateResultEvent) => {
+      updateLocationFromWebGeolocate({
+        latitude: e.coords.latitude,
+        longitude: e.coords.longitude,
+        altitude: e.coords.altitude,
+        accuracy: e.coords.accuracy,
+      });
+    },
+    [updateLocationFromWebGeolocate]
+  );
+
+  const handleGeolocateError = useCallback(() => {
+    endWebGeolocate();
+  }, [endWebGeolocate]);
+
+  const handleTrackUserLocationEnd = useCallback(
+    (e: GeolocateEvent) => {
+      // 地図を手動移動しただけ（backgroundモード）でもendイベントが発火するため、
+      // コントロールが完全にOFFになった場合のみアプリのGPS状態を落とす。
+      // _watchStateはmaplibre内部プロパティのため、参照できない場合は安全側（OFF扱い）に倒す
+      const watchState = (e.target as unknown as { _watchState?: string })._watchState;
+      if (watchState === undefined || watchState === 'OFF') {
+        endWebGeolocate();
+      }
+    },
+    [endWebGeolocate]
+  );
 
   const skyStyle = {
     'sky-color': '#79bffc',
@@ -878,21 +915,15 @@ export default function HomeScreen() {
                   style={{ position: 'absolute', top: 180, left: 0 }}
                   trackUserLocation={true}
                   position="top-left"
+                  onGeolocate={handleGeolocate}
+                  onError={handleGeolocateError}
+                  onTrackUserLocationEnd={handleTrackUserLocationEnd}
                 />
                 {/************** Member Location ****************** */}
                 {isSynced &&
                   memberLocations.map((memberLocation) => (
                     <MemberMarker key={memberLocation.uid} memberLocation={memberLocation} />
                   ))}
-
-                {/************** Current Marker ****************** */}
-                {(gpsState !== 'off' || trackingState !== 'off') && currentLocation && (
-                  <CurrentMarker
-                    currentLocation={currentLocation}
-                    isStale={isLocationStale}
-                    //angle={magnetometer && northUp ? magnetometer!.trueHeading : 0}
-                  />
-                )}
 
                 {/************** Point Line Polygon ****************** */}
                 {pointDataSet.map((d) => {

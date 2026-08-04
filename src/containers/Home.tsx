@@ -314,6 +314,8 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     checkUnsavedTrackLog,
     saveTrackLog,
     confirmLocationPermission,
+    updateLocationFromWebGeolocate,
+    endWebGeolocate,
   } = useLocation(mapViewRef);
   //現在位置の共有関連
   const { uploadLocation } = useSyncLocation(projectId);
@@ -725,10 +727,13 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
 
   const addLocationPoint = useCallback(async () => {
     if (Platform.OS === 'web') {
-      await AlertAsync(t('Home.alert.gpsWeb'));
-      return;
-    }
-    if (gpsState === 'off' && trackingState === 'off') {
+      // Web版はGeolocateControl（地図の現在地ボタン）経由のライブ現在地のみ使用できる。
+      // BackgroundGeolocationのフォールバック取得が無いため、現在地未取得なら中断する
+      if (gpsState === 'off' || currentLocation === null) {
+        await AlertAsync(t('Home.alert.gps'));
+        return;
+      }
+    } else if (gpsState === 'off' && trackingState === 'off') {
       await AlertAsync(t('Home.alert.gps'));
       return;
     }
@@ -2108,6 +2113,8 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       isLocationStale,
       gpsState,
       pressGPS,
+      updateLocationFromWebGeolocate,
+      endWebGeolocate,
       isPinch,
       panResponder,
       isDrawLineVisible,
@@ -2135,6 +2142,8 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       isLocationStale,
       gpsState,
       pressGPS,
+      updateLocationFromWebGeolocate,
+      endWebGeolocate,
       panResponder,
       isDrawLineVisible,
       isTerrainActive,
