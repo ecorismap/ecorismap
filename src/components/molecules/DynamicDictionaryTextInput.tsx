@@ -13,12 +13,15 @@ interface DynamicDictionaryTextInputProps {
   initialValue: string;
   handleSelect: (text: string) => void;
   clearOnSelect?: boolean;
+  // trueの場合、入力中はhandleSelectを呼ばず、候補をタップしたときだけ確定する
+  // （データ一覧の辞書追加のように、確定=レコード追加の用途で使う）
+  commitOnSelectOnly?: boolean;
   onBlur?: (text: string) => void;
 }
 
 export const DynamicDictionaryTextInput = React.memo((props: DynamicDictionaryTextInputProps) => {
-  const { editable = true, fieldKey, initialValue, handleSelect, onBlur, clearOnSelect } = props;
-  
+  const { editable = true, fieldKey, initialValue, handleSelect, onBlur, clearOnSelect, commitOnSelectOnly } = props;
+
   const {
     queryString,
     filteredData,
@@ -56,8 +59,8 @@ export const DynamicDictionaryTextInput = React.memo((props: DynamicDictionaryTe
           onChangeText={(text) => {
             setFocused(true);
             handleSearch(text);
-            // 親コンポーネントに値の変更を通知
-            handleSelect(text);
+            // 親コンポーネントに値の変更を通知（確定＝追加の用途では候補選択時のみ通知する）
+            if (!commitOnSelectOnly) handleSelect(text);
           }}
           onFocus={() => {
             // フォーカスしても候補は開かない

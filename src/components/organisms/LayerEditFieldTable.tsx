@@ -125,7 +125,7 @@ export const LayerEditFieldTable = () => {
             )}
           </View>
           <View style={[styles.td, { flex: 4, width: 100 }]}>
-            {item.format === 'STRING_DICTIONARY' && (
+            {(item.format === 'STRING_DICTIONARY' || item.format === 'STRING_DYNAMIC') && (
               <CheckBox
                 label={t('common.useAdd')}
                 labelSize={11}

@@ -9,6 +9,7 @@ import { DataContext } from '../../contexts/Data';
 //import perf, { FirebasePerformanceTypes } from '@react-native-firebase/perf';
 import { ScrollView } from 'react-native-gesture-handler';
 import { DictionaryTextInput } from '../molecules/DictionaryTextInput';
+import { DynamicDictionaryTextInput } from '../molecules/DynamicDictionaryTextInput';
 import { t } from '../../i18n/config';
 import { COLOR, DATA_BTN, DATAEDIT_BTN } from '../../constants/AppConstants';
 import { BottomSheetHeader } from '../molecules/BottomSheetHeader';
@@ -36,10 +37,11 @@ export default function DataScreen() {
     sortedRecordSet,
   } = useContext(DataContext);
 
-  // 過去の不具合でdictionaryFieldIdが残留したレイヤがあるため、辞書型フィールドの実在も確認する
-  const hasValidDictionaryField =
-    layer.dictionaryFieldId !== undefined &&
-    layer.field.some((f) => f.id === layer.dictionaryFieldId && f.format === 'STRING_DICTIONARY');
+  // 過去の不具合でdictionaryFieldIdが残留したレイヤがあるため、対応フィールドの実在も確認する
+  const dictionaryField = layer.field.find(
+    (f) => f.id === layer.dictionaryFieldId && (f.format === 'STRING_DICTIONARY' || f.format === 'STRING_DYNAMIC')
+  );
+  const hasValidDictionaryField = layer.dictionaryFieldId !== undefined && dictionaryField !== undefined;
 
   // useEffect(() => {
   //   let screenTrace: FirebasePerformanceTypes.ScreenTrace;
@@ -88,12 +90,22 @@ export default function DataScreen() {
             </View>
           )}
           <View style={styles.dictionaryInput}>
-            <DictionaryTextInput
-              initialValue=""
-              table={`_${layer.id}_${layer.dictionaryFieldId}`}
-              handleSelect={(text: string) => addDataByDictionary(layer.dictionaryFieldId!, text)}
-              clearOnSelect
-            />
+            {dictionaryField?.format === 'STRING_DYNAMIC' ? (
+              <DynamicDictionaryTextInput
+                initialValue=""
+                fieldKey={`${layer.id}_${layer.dictionaryFieldId}`}
+                handleSelect={(text: string) => addDataByDictionary(layer.dictionaryFieldId!, text)}
+                clearOnSelect
+                commitOnSelectOnly
+              />
+            ) : (
+              <DictionaryTextInput
+                initialValue=""
+                table={`_${layer.id}_${layer.dictionaryFieldId}`}
+                handleSelect={(text: string) => addDataByDictionary(layer.dictionaryFieldId!, text)}
+                clearOnSelect
+              />
+            )}
           </View>
         </View>
       )}

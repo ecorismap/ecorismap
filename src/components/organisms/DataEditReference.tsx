@@ -9,6 +9,7 @@ import { Button } from '../atoms';
 import { DataEditContext } from '../../contexts/DataEdit';
 import { ScrollView } from 'react-native-gesture-handler';
 import { DictionaryTextInput } from '../molecules/DictionaryTextInput';
+import { DynamicDictionaryTextInput } from '../molecules/DynamicDictionaryTextInput';
 
 interface Props {
   name: string;
@@ -115,6 +116,20 @@ export const DataEditReference = (props: Props) => {
             />
           </View>
         )}
+        {refLayer.dictionaryFieldId !== undefined &&
+          refLayer.field.some((f) => f.id === refLayer.dictionaryFieldId && f.format === 'STRING_DYNAMIC') && (
+            <View style={{ flexDirection: 'row', justifyContent: 'center', margin: 10 }}>
+              <DynamicDictionaryTextInput
+                initialValue=""
+                fieldKey={`${refLayer.id}_${refLayer.dictionaryFieldId}`}
+                handleSelect={(text: string) =>
+                  pressAddReferenceDataByDictionary(refLayer, addDefaultRecord, fields, text)
+                }
+                clearOnSelect
+                commitOnSelectOnly
+              />
+            </View>
+          )}
       </View>
       <ScrollView horizontal={true} contentContainerStyle={{ flexGrow: 1 }}>
         <View style={{ flex: 1, flexDirection: 'column' }}>

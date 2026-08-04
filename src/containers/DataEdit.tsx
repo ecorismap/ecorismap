@@ -22,6 +22,7 @@ import { useWindow } from '../hooks/useWindow';
 import { isLocationType, isLocationTypeArray } from '../utils/General';
 import { DataEditModalPhotoView } from '../components/organisms/DataEditModalPhotoView';
 import { useLayers } from '../hooks/useLayers';
+import { addToDynamicDictionary } from '../hooks/useDynamicDictionaryInput';
 
 export default function DataEditContainer() {
   const { navigate, navigateToHome } = useBottomSheetNavigation();
@@ -553,8 +554,13 @@ export default function DataEditContainer() {
         Alert.alert('', t('DataEdit.alert.saveChangesFirst'));
         return;
       }
-      const fieldName = referenceLayer.field.find((f) => f.id === referenceLayer.dictionaryFieldId)?.name;
+      const dictionaryField = referenceLayer.field.find((f) => f.id === referenceLayer.dictionaryFieldId);
+      const fieldName = dictionaryField?.name;
       if (!fieldName) return;
+      // 動的辞書はデータ保存時に語彙が蓄積されるが、この追加経路は保存を経ないため即時登録する
+      if (dictionaryField?.format === 'STRING_DYNAMIC') {
+        addToDynamicDictionary(`${referenceLayer.id}_${referenceLayer.dictionaryFieldId}`, text);
+      }
       addRecord({ ...fields, [fieldName]: text });
     },
     [isEditingRecord]

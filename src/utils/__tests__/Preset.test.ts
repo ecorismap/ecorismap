@@ -77,6 +77,22 @@ describe('createLayerFromPreset', () => {
     expect(layer.dictionaryFieldId).toBe(layer.field[0].id);
   });
 
+  it('動的辞書フィールドのuseDictionaryAddからもdictionaryFieldIdが設定される', () => {
+    const dynamicPreset: LayerPresetType = {
+      ...dictionaryPreset,
+      layer: {
+        ...dictionaryPreset.layer,
+        field: [
+          { name: '種名', format: 'STRING_DYNAMIC', useDictionaryAdd: true },
+          { name: 'cmt', format: 'STRING' },
+        ],
+      },
+    };
+    const { layer, dictionaries } = createLayerFromPreset(dynamicPreset, 'LAYER_ID');
+    expect(dictionaries).toHaveLength(0);
+    expect(layer.dictionaryFieldId).toBe(layer.field[0].id);
+  });
+
   it('辞書フィールドがないプリセットはdictionariesが空でdictionaryFieldIdはundefined', () => {
     const plainPreset: LayerPresetType = {
       ...dictionaryPreset,

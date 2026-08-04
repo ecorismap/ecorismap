@@ -190,20 +190,22 @@ export function changeLayerId(layer: LayerType) {
     const newId = ulid();
     fieldIdMap[f.id] = newId;
 
-    // 元のdictionaryFieldIdと一致する場合は、新しいIDを記録（辞書型フィールドのみ有効）
-    if (oldDictionaryFieldId === f.id && f.format === 'STRING_DICTIONARY') {
+    // 元のdictionaryFieldIdと一致する場合は、新しいIDを記録（辞書型・動的辞書型のみ有効）
+    if (oldDictionaryFieldId === f.id && (f.format === 'STRING_DICTIONARY' || f.format === 'STRING_DYNAMIC')) {
       newDictionaryFieldId = newId;
     }
 
     f.id = newId;
-    // 辞書型以外に残留したuseDictionaryAddは無効なので解除する
-    if (f.format !== 'STRING_DICTIONARY' && f.useDictionaryAdd) {
+    // 辞書型・動的辞書型以外に残留したuseDictionaryAddは無効なので解除する
+    if (f.format !== 'STRING_DICTIONARY' && f.format !== 'STRING_DYNAMIC' && f.useDictionaryAdd) {
       f.useDictionaryAdd = false;
     }
   });
 
-  // useDictionaryAddがtrueの辞書型フィールドがある場合、そのIDをdictionaryFieldIdに設定
-  const dictionaryField = newLayer.field.find((f) => f.useDictionaryAdd && f.format === 'STRING_DICTIONARY');
+  // useDictionaryAddがtrueの辞書型・動的辞書型フィールドがある場合、そのIDをdictionaryFieldIdに設定
+  const dictionaryField = newLayer.field.find(
+    (f) => f.useDictionaryAdd && (f.format === 'STRING_DICTIONARY' || f.format === 'STRING_DYNAMIC')
+  );
   if (dictionaryField) {
     newLayer.dictionaryFieldId = dictionaryField.id;
   } else if (newDictionaryFieldId) {
