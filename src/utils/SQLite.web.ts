@@ -1,6 +1,12 @@
 // SQLite.web.ts
 
 import sqlite3InitModule from '@sqlite.org/sqlite-wasm';
+import { isValidTableName } from './SQLiteTableName';
+
+//ネイティブ版(SQLite.ts)と共通の実装を再エクスポートする。
+//useDictionaryInput / useFieldList は '../utils/SQLite' からimportするため、
+//Web版にも同じ名前のエクスポートが必要（無いとundefinedを呼び出して例外になる）
+export { isValidTableName } from './SQLiteTableName';
 
 interface SQLiteDatabase {
   closeAsync: () => Promise<void>;
@@ -193,6 +199,11 @@ class WebSQLiteDatabase implements SQLiteDatabase {
         const oldTableName = table.name;
         const newTableName =
           layerIdMap !== null && fieldIdMap !== null ? `_${layerIdMap[layerId]}_${fieldIdMap[fieldId]}` : table.name;
+        //テーブル名はSQLに直接埋め込むため、外部ファイル由来の想定外の名前は扱わない
+        if (!isValidTableName(oldTableName) || !isValidTableName(newTableName)) {
+          console.log(`skip invalid table name: ${oldTableName}`);
+          continue;
+        }
 
         // テーブルを削除する（存在する場合）
         await this.execAsync(`DROP TABLE IF EXISTS "${newTableName}"`);
