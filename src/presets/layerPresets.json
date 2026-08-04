@@ -11829,6 +11829,13 @@
           "useDictionaryAdd": false
         },
         {
+          "name": "調査地点",
+          "format": "STRING",
+          "useDictionaryAdd": false,
+          "list": [],
+          "useLastValue": true
+        },
+        {
           "name": "確認日時",
           "format": "DATETIME"
         },
