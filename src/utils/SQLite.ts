@@ -1,6 +1,7 @@
 import * as SQLite from 'expo-sqlite';
 import * as FileSystem from 'expo-file-system/legacy';
 import { isValidTableName } from './SQLiteTableName';
+import { bulkInsertValues } from './SQLiteBulkInsert';
 
 //Web版(SQLite.web.ts)と共通の実装を再エクスポートする（どちらのプラットフォームからも同じimportで使える）
 export { isValidTableName } from './SQLiteTableName';
@@ -66,10 +67,11 @@ export async function exportDatabase(layerId: string) {
       console.log(`Table ${tableName} created.`);
       // データを挿入する
       await tempDb.withTransactionAsync(async () => {
-        const insertSQL = `INSERT INTO "${tableName}" (value) VALUES (?)`;
-        for (const { value } of values) {
-          await tempDb.runAsync(insertSQL, [value.trim()]);
-        }
+        await bulkInsertValues(
+          tempDb,
+          tableName,
+          values.map(({ value }) => value)
+        );
       });
     }
     // 新しいデータベースをエクスポート
@@ -126,10 +128,11 @@ export async function importDictionary(
 
     // データを挿入する
     await sourceDb.withTransactionAsync(async () => {
-      const insertSQL = `INSERT INTO "${newTableName}" (value) VALUES (?)`;
-      for (const { value } of data) {
-        await sourceDb.runAsync(insertSQL, [value.trim()]);
-      }
+      await bulkInsertValues(
+        sourceDb,
+        newTableName,
+        data.map(({ value }) => value)
+      );
     });
   }
   await deleteDatabase('temp.sqlite');
