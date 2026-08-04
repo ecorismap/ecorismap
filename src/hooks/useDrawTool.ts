@@ -404,7 +404,21 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
   const selectObjectByFeature = useCallback(
     (layer: LayerType, feature: RecordType, shouldRefreshCoordinates = false) => {
       if (layer.type === 'POINT') {
-        convertPointFeatureToDrawLine(layer.id, [feature as PointRecordType]);
+        if ((feature as PointRecordType).coords === undefined) {
+          // 位置なしレコードの位置編集: 空のプロットを編集対象として登録する。
+          // handleGrantPlotの「編集中ポイントはタップで位置更新」動作により最初のタップが位置設定になり、
+          // savePointではrecordが紐づいているため既存レコードの更新として保存される
+          drawLine.current.push({
+            id: feature.id,
+            layerId: layer.id,
+            record: feature,
+            xy: [],
+            latlon: [],
+            properties: ['POINT'],
+          });
+        } else {
+          convertPointFeatureToDrawLine(layer.id, [feature as PointRecordType]);
+        }
       } else if (layer.type === 'LINE') {
         convertLineFeatureToDrawLine(layer.id, [feature as LineRecordType]);
       } else if (layer.type === 'POLYGON') {

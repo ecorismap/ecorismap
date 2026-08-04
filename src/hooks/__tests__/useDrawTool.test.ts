@@ -598,6 +598,56 @@ describe('useDrawTool', () => {
     });
   });
 
+  describe('位置なしポイントの位置編集', () => {
+    it('位置なしレコードを選択後、タップした位置が既存レコードの更新として保存される', () => {
+      const { result } = renderDrawTool();
+      mockGetEditableLayerAndRecordSetWithCheck.mockReturnValue({
+        isOK: true,
+        message: '',
+        layer: mockPointLayer,
+        recordSet: [],
+      });
+      mockFindLayer.mockReturnValue(mockPointLayer);
+
+      const noCoordsRecord = { ...mockPointRecord, id: 'no-coords-1', coords: undefined } as unknown as PointRecordType;
+
+      act(() => {
+        result.current.selectObjectByFeature(mockPointLayer, noCoordsRecord);
+      });
+
+      // レコードが紐づいた空のプロットが編集対象として登録される
+      expect(result.current.isEditingObject).toBe(true);
+      expect(result.current.drawLine.current).toHaveLength(1);
+      expect(result.current.drawLine.current[0].record).toBe(noCoordsRecord);
+      expect(result.current.drawLine.current[0].xy).toHaveLength(0);
+
+      act(() => {
+        result.current.setDrawTool('PLOT_POINT');
+      });
+      act(() => {
+        result.current.handleGrantPlot([30, 40]);
+      });
+      act(() => {
+        result.current.handleReleasePlotPoint();
+      });
+
+      expect(result.current.drawLine.current[0].xy).toEqual([[30, 40]]);
+
+      // 保存は新規追加ではなく既存レコードの更新になる
+      let res: ReturnType<typeof result.current.savePoint> | undefined;
+      act(() => {
+        res = result.current.savePoint();
+      });
+
+      expect(res?.isOK).toBe(true);
+      expect(mockAddRecord).not.toHaveBeenCalled();
+      expect(mockUpdateRecord).toHaveBeenCalledTimes(1);
+      const updatedRecord = mockUpdateRecord.mock.calls[0][1];
+      expect(updatedRecord.id).toBe('no-coords-1');
+      expect(updatedRecord.coords).toEqual({ longitude: 30, latitude: 40 });
+    });
+  });
+
   describe('savePolygon', () => {
     it('閉じていないポリゴンを自動で閉じて保存する', () => {
       const { result } = renderDrawTool();
