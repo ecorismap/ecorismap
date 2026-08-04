@@ -301,8 +301,10 @@ export const useLayerEdit = (
     (index: number, itemValue: FormatType) => {
       const m = cloneDeep(targetLayer);
       if (m.field[index].format !== itemValue) {
-        //辞書型から他の形式に変更した場合は「データ追加に使用」の設定を解除する
-        if (m.field[index].format === 'STRING_DICTIONARY' && itemValue !== 'STRING_DICTIONARY') {
+        //辞書型・動的辞書型から対応外の形式に変更した場合は「データ追加に使用」の設定を解除する
+        const supportsDictionaryAdd = (format: FormatType) =>
+          format === 'STRING_DICTIONARY' || format === 'STRING_DYNAMIC';
+        if (supportsDictionaryAdd(m.field[index].format) && !supportsDictionaryAdd(itemValue)) {
           m.field[index].useDictionaryAdd = false;
           if (m.dictionaryFieldId === m.field[index].id) {
             m.dictionaryFieldId = undefined;

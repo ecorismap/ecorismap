@@ -21,6 +21,7 @@ import { useRecord } from '../hooks/useRecord';
 import { useLayers } from '../hooks/useLayers';
 import { MapViewContext } from '../contexts/MapView';
 import { useBottomSheetNavigation, useBottomSheetRoute } from '../contexts/BottomSheetNavigationContext';
+import { addToDynamicDictionary } from '../hooks/useDynamicDictionaryInput';
 
 export default function DataContainer() {
   //console.log('render DataContainer');
@@ -212,8 +213,14 @@ export default function DataContainer() {
           return;
         }
       }
-      const fieldName = params.targetLayer.field.find((f) => f.id === fieldId)?.name;
+      const targetField = params.targetLayer.field.find((f) => f.id === fieldId);
+      const fieldName = targetField?.name;
       if (!fieldName) return;
+
+      // 動的辞書はデータ保存時に語彙が蓄積されるが、この追加経路は保存を経ない場合があるため即時登録する
+      if (targetField?.format === 'STRING_DYNAMIC') {
+        addToDynamicDictionary(`${params.targetLayer.id}_${fieldId}`, value);
+      }
 
       // 位置トグルがONかつGPSが有効で現在地が取得できている場合は、現在地を座標として使用
       const { location, needsGpsWarning } = resolveAddLocation({

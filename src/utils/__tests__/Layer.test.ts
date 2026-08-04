@@ -144,6 +144,20 @@ describe('changeLayerId dictionaryFieldId', () => {
     expect(newLayer.field[0].useDictionaryAdd).toBe(true);
   });
 
+  it('動的辞書型フィールドのuseDictionaryAddからもdictionaryFieldIdを引き継ぐ', () => {
+    const layer: LayerType = {
+      ...baseLayer,
+      dictionaryFieldId: '1-0',
+      field: [
+        { id: '1-0', name: 'species', format: 'STRING_DYNAMIC', useDictionaryAdd: true },
+        { id: '1-1', name: 'cmt', format: 'STRING' },
+      ],
+    };
+    const { layer: newLayer } = changeLayerId(layer);
+    expect(newLayer.dictionaryFieldId).toBe(newLayer.field[0].id);
+    expect(newLayer.field[0].useDictionaryAdd).toBe(true);
+  });
+
   it('辞書型以外に残留したuseDictionaryAddは解除しdictionaryFieldIdを設定しない', () => {
     const layer: LayerType = {
       ...baseLayer,

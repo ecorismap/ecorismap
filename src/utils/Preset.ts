@@ -21,13 +21,16 @@ export function createLayerFromPreset(
   const field = source.field.map((f) => {
     const { dictionary, ...rest } = f;
     const newId = ulid();
-    if (rest.format === 'STRING_DICTIONARY') {
-      if (dictionary !== undefined && dictionary.length > 0) {
-        dictionaries.push({ fieldId: newId, values: dictionary });
-      }
-      if (rest.useDictionaryAdd && dictionaryFieldId === undefined) {
-        dictionaryFieldId = newId;
-      }
+    if (rest.format === 'STRING_DICTIONARY' && dictionary !== undefined && dictionary.length > 0) {
+      dictionaries.push({ fieldId: newId, values: dictionary });
+    }
+    // 「データ追加に使用」は辞書型・動的辞書型のどちらでも有効
+    if (
+      (rest.format === 'STRING_DICTIONARY' || rest.format === 'STRING_DYNAMIC') &&
+      rest.useDictionaryAdd &&
+      dictionaryFieldId === undefined
+    ) {
+      dictionaryFieldId = newId;
     }
     return { ...rest, id: newId };
   });
