@@ -164,6 +164,9 @@ export type UseLocationReturnType = {
     message: string;
   }>;
   confirmLocationPermission: () => Promise<'granted' | undefined>;
+  // Web専用: maplibre GeolocateControl（地図の現在地ボタン）のイベントからアプリのGPS状態を同期する
+  updateLocationFromWebGeolocate: (coords: LocationType) => void;
+  endWebGeolocate: () => void;
 };
 
 export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>): UseLocationReturnType => {
@@ -284,6 +287,31 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
     isLocationStaleRef.current = stale;
     setIsLocationStale(stale);
   }, []);
+
+  // Web専用: maplibre GeolocateControl（地図の現在地ボタン）のイベントからアプリのGPS状態を同期する。
+  // Web版はBackgroundGeolocationが使えずGeolocateControlが唯一の位置取得手段のため、
+  // ここで同期しないとgpsState/currentLocationが常にOFF扱いになり、
+  // 位置トグル付き辞書追加や現在地ポイント追加が機能しない。
+  const updateLocationFromWebGeolocate = useCallback(
+    (coords: LocationType) => {
+      if (Platform.OS !== 'web') return;
+      setCurrentLocation(coords);
+      setLocationStale(false);
+      if (gpsStateRef.current === 'off') {
+        setGpsState('show');
+        gpsStateRef.current = 'show';
+      }
+    },
+    [setLocationStale]
+  );
+
+  const endWebGeolocate = useCallback(() => {
+    if (Platform.OS !== 'web') return;
+    setGpsState('off');
+    gpsStateRef.current = 'off';
+    setCurrentLocation(null);
+    setLocationStale(false);
+  }, [setLocationStale]);
 
   const confirmLocationPermission = useCallback(async () => {
     try {
@@ -1214,5 +1242,7 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
     checkUnsavedTrackLog,
     saveTrackLog,
     confirmLocationPermission,
+    updateLocationFromWebGeolocate,
+    endWebGeolocate,
   } as const;
 };
