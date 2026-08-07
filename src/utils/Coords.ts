@@ -529,6 +529,49 @@ export const selectLineFeatureByLatLon = (
   }
 };
 
+export interface NearestTrackPointResult {
+  index: number;
+  point: LocationType;
+  interpolatedTimestamp?: number;
+}
+
+export const findNearestTrackPoint = (
+  coords: LocationType[],
+  pointCoords: Position,
+  radius: number
+): NearestTrackPointResult | undefined => {
+  try {
+    if (coords.length === 0) return undefined;
+    if (coords.length === 1) {
+      const dist = turf.distance(turf.point(pointCoords), turf.point([coords[0].longitude, coords[0].latitude]));
+      return dist <= radius ? { index: 0, point: coords[0] } : undefined;
+    }
+    const line = turf.lineString(coords.map((c) => [c.longitude, c.latitude]));
+    const snapped = turf.nearestPointOnLine(line, turf.point(pointCoords));
+    //nearestPointOnLineのdistはkm単位。radiusはselectLineFeatureByLatLonのbufferと同じくkmとして扱う
+    if (snapped.properties.dist === undefined || snapped.properties.dist > radius) return undefined;
+    const startIndex = Math.min(snapped.properties.index ?? 0, coords.length - 2);
+    const endIndex = startIndex + 1;
+    const snappedPoint = turf.point(snapped.geometry.coordinates);
+    const distToStart = turf.distance(snappedPoint, turf.point([coords[startIndex].longitude, coords[startIndex].latitude]));
+    const distToEnd = turf.distance(snappedPoint, turf.point([coords[endIndex].longitude, coords[endIndex].latitude]));
+    const index = distToStart <= distToEnd ? startIndex : endIndex;
+
+    let interpolatedTimestamp: number | undefined;
+    const startTimestamp = coords[startIndex].timestamp;
+    const endTimestamp = coords[endIndex].timestamp;
+    if (startTimestamp !== undefined && endTimestamp !== undefined) {
+      const segmentLength = distToStart + distToEnd;
+      const ratio = segmentLength > 0 ? distToStart / segmentLength : 0;
+      interpolatedTimestamp = Math.round(startTimestamp + (endTimestamp - startTimestamp) * ratio);
+    }
+    return { index, point: coords[index], interpolatedTimestamp };
+  } catch (e) {
+    console.error(e);
+    return undefined;
+  }
+};
+
 export const selectPolygonFeatureByLatLon = (
   polygonFeatures: PolygonRecordType[],
   pointCoords: Position,

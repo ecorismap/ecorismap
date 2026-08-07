@@ -1,7 +1,7 @@
 import React from 'react';
 import MapView, { Region } from 'react-native-maps';
 import { MapRef, ViewState } from 'react-map-gl/maplibre';
-import { LocationStateType, LocationType, PoiInfoType, MapLocationInfoType } from '../types';
+import { LocationStateType, LocationType, PoiInfoType, MapLocationInfoType, TrackPointInfoType } from '../types';
 
 export interface MapViewContextType {
   mapViewRef: React.RefObject<MapView | MapRef | null>;
@@ -38,6 +38,8 @@ export interface MapViewContextType {
   setPoiInfo: (poi: PoiInfoType | null) => void;
   mapLocationInfo: MapLocationInfoType | null;
   setMapLocationInfo: (location: MapLocationInfoType | null) => void;
+  trackPointInfo: TrackPointInfoType | null;
+  setTrackPointInfo: (info: TrackPointInfoType | null) => void;
 }
 
 export const MapViewContext = React.createContext<MapViewContextType>({} as MapViewContextType);

@@ -1,4 +1,13 @@
-import { decimal2dms, dms2decimal, toLatLonDMS, pointsToSvg, calcCentroid, isNearWithPlot, cleanupLine } from '../Coords';
+import {
+  decimal2dms,
+  dms2decimal,
+  toLatLonDMS,
+  pointsToSvg,
+  calcCentroid,
+  isNearWithPlot,
+  cleanupLine,
+  findNearestTrackPoint,
+} from '../Coords';
 import { LocationType } from '../../types';
 
 describe('decimal2dms', () => {
@@ -125,5 +134,58 @@ describe('cleanupLine', () => {
     expect(result.length).toBeGreaterThan(2);
     // 旧実装(O(N^2))では数秒〜かかっていた。O(N)化により十分高速に完了する。
     expect(elapsed).toBeLessThan(5000);
+  });
+});
+
+describe('findNearestTrackPoint', () => {
+  //経度0.001度 ≒ 91m（緯度35度）。radiusはkm単位
+  const track: LocationType[] = [
+    { longitude: 138.0, latitude: 35.0, timestamp: 1000, altitude: 100, speed: 1.0 },
+    { longitude: 138.001, latitude: 35.0, timestamp: 2000, altitude: 110, speed: 2.0 },
+    { longitude: 138.002, latitude: 35.0, timestamp: 3000, altitude: 120, speed: 3.0 },
+  ];
+
+  it('returns the nearest vertex when tapped close to it', () => {
+    const result = findNearestTrackPoint(track, [138.00095, 35.0], 0.1);
+    expect(result).toBeDefined();
+    expect(result!.index).toBe(1);
+    expect(result!.point.timestamp).toBe(2000);
+    expect(result!.point.altitude).toBe(110);
+    expect(result!.point.speed).toBe(2.0);
+  });
+
+  it('interpolates timestamp at the middle of a segment', () => {
+    const result = findNearestTrackPoint(track, [138.0005, 35.0], 0.1);
+    expect(result).toBeDefined();
+    expect(result!.interpolatedTimestamp).toBeGreaterThan(1400);
+    expect(result!.interpolatedTimestamp).toBeLessThan(1600);
+  });
+
+  it('returns undefined when tapped outside the radius', () => {
+    const result = findNearestTrackPoint(track, [138.001, 35.01], 0.1);
+    expect(result).toBeUndefined();
+  });
+
+  it('returns undefined for an empty track', () => {
+    expect(findNearestTrackPoint([], [138.0, 35.0], 0.1)).toBeUndefined();
+  });
+
+  it('handles a single point track with radius check', () => {
+    const single = [track[0]];
+    const hit = findNearestTrackPoint(single, [138.0001, 35.0], 0.1);
+    expect(hit).toBeDefined();
+    expect(hit!.index).toBe(0);
+    expect(hit!.point.timestamp).toBe(1000);
+    expect(findNearestTrackPoint(single, [138.1, 35.0], 0.1)).toBeUndefined();
+  });
+
+  it('returns the point without interpolatedTimestamp when timestamps are missing', () => {
+    const noTime: LocationType[] = [
+      { longitude: 138.0, latitude: 35.0 },
+      { longitude: 138.001, latitude: 35.0 },
+    ];
+    const result = findNearestTrackPoint(noTime, [138.0005, 35.0], 0.1);
+    expect(result).toBeDefined();
+    expect(result!.interpolatedTimestamp).toBeUndefined();
   });
 });

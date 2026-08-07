@@ -65,6 +65,17 @@ export interface MapLocationInfoType {
   position?: { x: number; y: number };
 }
 
+export interface TrackPointInfoType {
+  coordinate: {
+    latitude: number;
+    longitude: number;
+  };
+  position?: { x: number; y: number };
+  timestamp?: number;
+  altitude?: number | null;
+  speed?: number | null;
+}
+
 export interface UserType {
   uid: string | undefined;
   email: string | null;

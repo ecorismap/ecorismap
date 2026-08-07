@@ -21,6 +21,8 @@ import {
   InfoToolType,
   PoiInfoType,
   MapLocationInfoType,
+  TrackPointInfoType,
+  LineRecordType,
   TileMapType,
   LocationStateType,
 } from '../types';
@@ -76,7 +78,8 @@ import { getDropedFile } from '../utils/File.web';
 import { useMapMemo } from '../hooks/useMapMemo';
 import { useVectorTile } from '../hooks/useVectorTile';
 import { useWindow } from '../hooks/useWindow';
-import { xyArrayToLatLonObjects } from '../utils/Coords';
+import { xyArrayToLatLonObjects, xyToLatLon, calcDegreeRadius, findNearestTrackPoint } from '../utils/Coords';
+import { getAllTrackPoints } from '../utils/Location';
 import BottomSheet from '@gorhom/bottom-sheet';
 import { useNetInfo } from '@react-native-community/netinfo';
 import {
@@ -380,6 +383,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
   const [isLoading, setIsLoading] = useState(false);
   const [poiInfo, setPoiInfo] = useState<PoiInfoType | null>(null);
   const [mapLocationInfo, setMapLocationInfo] = useState<MapLocationInfoType | null>(null);
+  const [trackPointInfo, setTrackPointInfo] = useState<TrackPointInfoType | null>(null);
   const [pendingSplitPosition, setPendingSplitPosition] = useState<Position | null>(null);
   const attribution = useMemo(
     () =>
@@ -574,6 +578,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       closeVectorTileInfo();
       setPoiInfo(null);
       setMapLocationInfo(null);
+      setTrackPointInfo(null);
     },
     [changeMapRegion, closeVectorTileInfo, isDrawLineVisible, showDrawLine, setPoiInfo, setMapLocationInfo]
   );
@@ -645,6 +650,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     }
     setPoiInfo(null);
     setMapLocationInfo(null);
+    setTrackPointInfo(null);
   }, [setPoiInfo, setMapLocationInfo]);
 
   const togglePencilMode = useCallback(() => {
@@ -1398,6 +1404,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
         await AlertAsync(t('Home.alert.discardChanges'));
         return false;
       }
+      setTrackPointInfo(null);
 
       const { layer, feature, recordSet, recordIndex } = selectSingleFeature(event);
 
@@ -1406,7 +1413,46 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
         if (route.params?.mode !== 'editPosition') {
           unselectRecord();
         }
+        // 記録中の軌跡ログはレコード化前でselectSingleFeatureの対象外のため、別途ヒットテストして時刻を表示する
+        if (Platform.OS !== 'web' && trackMetadata.totalPoints > 0) {
+          const pXY = getPXY(event);
+          const latlon = xyToLatLon(pXY, mapRegion, mapSize, mapViewRef.current);
+          const radius = calcDegreeRadius(2000, mapRegion, mapSize);
+          const nearest = findNearestTrackPoint(getAllTrackPoints(), latlon, radius);
+          const timestamp = nearest?.interpolatedTimestamp ?? nearest?.point.timestamp;
+          if (nearest !== undefined && timestamp !== undefined) {
+            setTrackPointInfo({
+              coordinate: { latitude: nearest.point.latitude, longitude: nearest.point.longitude },
+              timestamp,
+              altitude: nearest.point.altitude,
+              speed: nearest.point.speed,
+            });
+            return false; // ポップアップを表示したのでgetInfoOfMapは実行しない
+          }
+        }
         return true; // 何も見つからなかったのでtrueを返す
+      }
+
+      // 保存済み軌跡（trackレイヤ）はDataEditを開かず、タップ位置に最も近い軌跡上の地点の時刻ポップアップのみ表示する
+      // （timestampがない軌跡は従来どおりDataEditへフォールバック）
+      if (Platform.OS !== 'web' && layer.id === 'track' && layer.type === 'LINE') {
+        const lineFeature = feature as LineRecordType;
+        if (lineFeature.coords !== undefined) {
+          const pXY = getPXY(event);
+          const latlon = xyToLatLon(pXY, mapRegion, mapSize, mapViewRef.current);
+          const radius = calcDegreeRadius(2000, mapRegion, mapSize);
+          const nearest = findNearestTrackPoint(lineFeature.coords, latlon, radius);
+          const timestamp = nearest?.interpolatedTimestamp ?? nearest?.point.timestamp;
+          if (nearest !== undefined && timestamp !== undefined) {
+            setTrackPointInfo({
+              coordinate: { latitude: nearest.point.latitude, longitude: nearest.point.longitude },
+              timestamp,
+              altitude: nearest.point.altitude,
+              speed: nearest.point.speed,
+            });
+            return false; // ポップアップを表示したのでDataEditへは遷移しない
+          }
+        }
       }
 
       // selectRecordを遅延実行するためにペンディング状態に保存
@@ -1427,7 +1473,18 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       });
       return false; // フィーチャーが見つかったのでfalseを返す
     },
-    [isEditingRecord, isLandscape, navigateToSplit, route.params?.mode, selectSingleFeature, unselectRecord]
+    [
+      isEditingRecord,
+      isLandscape,
+      navigateToSplit,
+      route.params?.mode,
+      selectSingleFeature,
+      unselectRecord,
+      trackMetadata.totalPoints,
+      getPXY,
+      mapRegion,
+      mapSize,
+    ]
   );
 
   const handlePanResponderGrant = useCallback(
@@ -2124,6 +2181,8 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       setPoiInfo: setPoiInfoWithControl,
       mapLocationInfo,
       setMapLocationInfo,
+      trackPointInfo,
+      setTrackPointInfo,
     }),
     [
       mapViewRef,
@@ -2153,6 +2212,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       setPoiInfoWithControl,
       mapLocationInfo,
       setMapLocationInfo,
+      trackPointInfo,
     ]
   );
 

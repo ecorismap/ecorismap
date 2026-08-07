@@ -900,6 +900,12 @@
       "elevation": "Elevation {{elevation}} m",
       "elevationUnavailable": "Elevation unavailable",
       "copied": "Copied"
+    },
+    "trackPoint": {
+      "title": "Track Point",
+      "elevation": "Elevation {{elevation}} m",
+      "speed": "Speed {{speed}} km/h",
+      "copied": "Copied"
     }
   },
   "LayerEditFeatureStyle": {
