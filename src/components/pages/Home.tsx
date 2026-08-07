@@ -62,6 +62,7 @@ import { HomeDownloadButtons } from '../organisms/HomeDownloadButtons';
 import { HomeTileMapSelector } from '../organisms/HomeTileMapSelector';
 import { useViewportBounds } from '../../hooks/useViewportBounds';
 import { HomePoiPopup } from '../organisms/HomePoiPopup';
+import { HomeTrackPointPopup } from '../organisms/HomeTrackPointPopup';
 
 interface TileMapsProps {
   tileMaps: TileMapType[];
@@ -521,6 +522,7 @@ export default function HomeScreen() {
           <MapMemoView />
           <HomePopup />
           <HomePoiPopup />
+          <HomeTrackPointPopup />
           {isDrawLineVisible && <SvgView />}
 
           <MapView

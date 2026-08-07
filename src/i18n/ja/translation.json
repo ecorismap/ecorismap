@@ -317,6 +317,12 @@
       "elevation": "標高 {{elevation}} m",
       "elevationUnavailable": "標高 取得できません",
       "copied": "コピーしました"
+    },
+    "trackPoint": {
+      "title": "軌跡ポイント",
+      "elevation": "標高 {{elevation}} m",
+      "speed": "速度 {{speed}} km/h",
+      "copied": "コピーしました"
     }
   },
   "AccountSettings": {
