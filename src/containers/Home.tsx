@@ -1435,7 +1435,8 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
 
       // 保存済み軌跡（trackレイヤ）はDataEditを開かず、タップ位置に最も近い軌跡上の地点の時刻ポップアップのみ表示する
       // （timestampがない軌跡は従来どおりDataEditへフォールバック）
-      if (Platform.OS !== 'web' && layer.id === 'track' && layer.type === 'LINE') {
+      // ヒットテストはReduxのcoords（timestamp保持済み）を使うためWebでも動作する
+      if (layer.id === 'track' && layer.type === 'LINE') {
         const lineFeature = feature as LineRecordType;
         if (lineFeature.coords !== undefined) {
           const pXY = getPXY(event);
