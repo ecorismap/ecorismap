@@ -139,12 +139,14 @@ export const changeEncryptPassword = async (oldPassword: string, newPassword: st
   }
 };
 
-export const encryptEThree = async (data: any, userId: string, groupId: string) => {
+export const encryptEThree = async (data: any, userId: string, groupId: string, groupOwnerUid?: string) => {
   try {
     if (!FUNC_ENCRYPTION) {
       return [gzip(JSON.stringify(data))];
     }
-    const { isOK, group } = await loadGroup(groupId, userId);
+    // グループチケットは作成者（プロジェクトオーナー）名義で保管されるため、照会名義には
+    // groupOwnerUid を使う。userId（データ所有者）で照会すると本人がオーナーの場合しか見つからない。
+    const { isOK, group } = await loadGroup(groupId, groupOwnerUid ?? userId);
     if (!isOK || group === undefined) {
       throw new Error('no group for encryption');
     }
@@ -158,13 +160,21 @@ export const encryptEThree = async (data: any, userId: string, groupId: string) 
   }
 };
 
-export const decryptEThree = async (encryptedAt: Date, dataString: string[], userId: string, groupId: string) => {
+export const decryptEThree = async (
+  encryptedAt: Date,
+  dataString: string[],
+  userId: string,
+  groupId: string,
+  groupOwnerUid?: string
+) => {
   try {
     if (!FUNC_ENCRYPTION) {
       return JSON.parse(unzip(dataString[0]));
     }
 
-    const { isOK, group } = await loadGroup(groupId, userId);
+    // 照会名義は groupOwnerUid（チケットの保管名義＝プロジェクトオーナー）。
+    // userId はデータ所有者で、署名検証（findUsers）にのみ使う。
+    const { isOK, group } = await loadGroup(groupId, groupOwnerUid ?? userId);
     if (!isOK || group === undefined) {
       throw new Error('no group for encryption');
     }

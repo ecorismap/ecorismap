@@ -3,7 +3,7 @@ import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { COLORTYPE, COLORRAMP, COLOR } from '../constants/AppConstants';
 import { ColorRampType, ColorStyle, ColorTypesType, LayerType, FeatureType } from '../types';
 import { ItemValue } from '@react-native-picker/picker/typings/Picker';
-import { useDispatch, useSelector } from 'react-redux';
+import { shallowEqual, useDispatch, useSelector } from 'react-redux';
 import { RootState } from '../store';
 import { cloneDeep } from 'lodash';
 import { getRandomColor, hsv2rgbaString } from '../utils/Color';
@@ -46,6 +46,7 @@ export const useFeatureStyle = (layer_: LayerType, isEdited_: boolean): UseFeatu
   const dispatch = useDispatch();
   // メモ化されたセレクターを使用
   const layerDataSet = useSelector((state: RootState) => selectDataSetForLayer(state, layer_.id));
+  const projectId = useSelector((state: RootState) => state.settings.projectId, shallowEqual);
 
   // 複雑な計算を useMemo でメモ化
   const allUserData = useMemo(() => layerDataSet.flatMap((d) => d.data), [layerDataSet]);
@@ -82,8 +83,14 @@ export const useFeatureStyle = (layer_: LayerType, isEdited_: boolean): UseFeatu
   );
   const colorRamps = useMemo(() => Object.keys(COLORRAMP) as ColorRampType[], []);
   const colorRampLabels = useMemo(() => Object.values(COLORRAMP), []);
-  const colorTypes = useMemo(() => Object.keys(COLORTYPE) as ColorTypesType[], []);
-  const colorTypeLabels = useMemo(() => Object.values(COLORTYPE), []);
+  // USERはプロジェクトのdisplayNameで色分けするため、プロジェクト外では機能しない。
+  // ただし設定済みのレイヤでピッカーの選択値が消えないよう、選択中は残す
+  const colorTypes = useMemo(() => {
+    const types = Object.keys(COLORTYPE) as ColorTypesType[];
+    if (projectId !== undefined || colorStyle.colorType === 'USER') return types;
+    return types.filter((type) => type !== 'USER');
+  }, [colorStyle.colorType, projectId]);
+  const colorTypeLabels = useMemo(() => colorTypes.map((type) => COLORTYPE[type]), [colorTypes]);
   const layerType = useMemo(() => layer_.type, [layer_.type]);
 
   useEffect(() => {

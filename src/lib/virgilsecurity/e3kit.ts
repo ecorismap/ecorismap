@@ -184,7 +184,7 @@ export const changeEncryptPassword = async (oldPassword: string, newPassword: st
   }
 };
 
-export const encryptEThree = async (data: any, userId: string, groupId: string) => {
+export const encryptEThree = async (data: any, userId: string, groupId: string, groupOwnerUid?: string) => {
   try {
     if (!FUNC_ENCRYPTION) {
       return [gzip(JSON.stringify(data))];
@@ -195,7 +195,9 @@ export const encryptEThree = async (data: any, userId: string, groupId: string) 
       throw new Error('E3Kit not initialized');
     }
 
-    const { isOK, group } = await loadGroup(groupId, userId);
+    // グループチケットは作成者（プロジェクトオーナー）名義で保管されるため、照会名義には
+    // groupOwnerUid を使う。userId（データ所有者）で照会すると本人がオーナーの場合しか見つからない。
+    const { isOK, group } = await loadGroup(groupId, groupOwnerUid ?? userId);
     if (!isOK || group === undefined) {
       throw new Error('no group for encryption');
     }
@@ -209,7 +211,13 @@ export const encryptEThree = async (data: any, userId: string, groupId: string) 
   }
 };
 
-export const decryptEThree = async (encryptedAt: Date, dataString: string[], userId: string, groupId: string) => {
+export const decryptEThree = async (
+  encryptedAt: Date,
+  dataString: string[],
+  userId: string,
+  groupId: string,
+  groupOwnerUid?: string
+) => {
   // const perfStart = performance.now();
   try {
     if (!FUNC_ENCRYPTION) {
@@ -223,8 +231,10 @@ export const decryptEThree = async (encryptedAt: Date, dataString: string[], use
     }
 
     // const loadGroupStart = performance.now();
-    // 復号化は読み取りのみなのでskipUpdate=trueで高速化
-    const { isOK, group } = await loadGroup(groupId, userId, true);
+    // 復号化は読み取りのみなのでskipUpdate=trueで高速化。
+    // 照会名義は groupOwnerUid（チケットの保管名義＝プロジェクトオーナー）。
+    // userId はデータ所有者で、署名検証（findUsers）にのみ使う。
+    const { isOK, group } = await loadGroup(groupId, groupOwnerUid ?? userId, true);
     // const loadGroupEnd = performance.now();
     if (!isOK || group === undefined) {
       throw new Error('no group for encryption');
