@@ -3,9 +3,10 @@ import {
   uploadDataHelper,
   clearProjectCryptoCache,
   collectUnmarkedDekGroups,
+  downloadPublicData,
   SelfMigrationInputType,
 } from '../firestore';
-import { unwrapDEK } from '../../virgilsecurity/e3kit';
+import { decryptEThree, encryptEThree, unwrapDEK } from '../../virgilsecurity/e3kit';
 import { encryptWithDEK } from '../../virgilsecurity/dek';
 import { getDoc, getDocs, writeBatch } from '../firebase';
 
@@ -54,6 +55,8 @@ const mockedGetDoc = getDoc as jest.Mock;
 const mockedGetDocs = getDocs as jest.Mock;
 const mockedWriteBatch = writeBatch as jest.Mock;
 const mockedUnwrapDEK = unwrapDEK as jest.Mock;
+const mockedDecGroup = decryptEThree as jest.Mock;
+const mockedEncGroup = encryptEThree as jest.Mock;
 const mockedEncryptWithDEK = encryptWithDEK as jest.Mock;
 
 const PROJECT_ID = 'project-1';
@@ -297,5 +300,58 @@ describe('uploadDataHelper のcryptoScheme印付与', () => {
     const setCalls = allSetCalls();
     expect(setCalls).toHaveLength(1);
     expect('cryptoScheme' in setCalls[0][1]).toBe(false);
+  });
+});
+
+describe('グループ暗号のloadGroup照会名義（オーナーuidの引き渡し）', () => {
+  // グループチケットはプロジェクトオーナー名義で保管されるため、復号・暗号化とも
+  // オーナーuidを渡す必要がある。データ所有者のuidで照会すると他人のデータで必ず失敗する
+  //（Phase iiでdek化した際にloadE3kitGroupの事前キャッシュが無くなり露見したバグの回帰テスト）。
+  const OWNER = 'owner-x';
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    clearProjectCryptoCache();
+    setupWriteBatch();
+  });
+
+  it('dekプロジェクトのdual-read復号は、データ所有者ではなくオーナーuidを照会名義に渡す', async () => {
+    // DEK秘密鍵を開封できない状態（keysなし）にして、グループ暗号へのフォールバックを踏ませる
+    mockedGetDoc.mockImplementation(async (path: string) => {
+      if (path === `projects/${PROJECT_ID}`) {
+        return { data: () => ({ cryptoScheme: 'dek', dekPublicKey: 'PUB_KEY', ownerUid: OWNER }) };
+      }
+      return { data: () => undefined };
+    });
+    mockedDecGroup.mockResolvedValue({ data: [] });
+    mockedGetDocs.mockResolvedValue({
+      docs: [dataDoc({ encdata: ['E1'], layerId: 'layer-1', userId: 'member-a', permission: 'PUBLIC', encryptedAt: TS })],
+    });
+
+    const res = await downloadPublicData(PROJECT_ID);
+
+    expect(res.isOK).toBe(true);
+    expect(mockedDecGroup).toHaveBeenCalledWith(expect.any(Date), ['E1'], 'member-a', PROJECT_ID, OWNER);
+  });
+
+  it('groupプロジェクトの暗号化はオーナーuidを照会名義に渡す', async () => {
+    mockedGetDoc.mockImplementation(async (path: string) => {
+      if (path === `projects/${PROJECT_ID}`) {
+        return { data: () => ({ ownerUid: OWNER }) }; // cryptoSchemeなし = group
+      }
+      return { data: () => undefined };
+    });
+    mockedEncGroup.mockResolvedValue(['ENC1']);
+    mockedGetDocs.mockResolvedValue({ docs: [] }); // 既存doc取得
+
+    const res = await uploadDataHelper(PROJECT_ID, {
+      userId: UID,
+      layerId: 'layer-1',
+      permission: 'PRIVATE',
+      data: [],
+    });
+
+    expect(res.isOK).toBe(true);
+    expect(mockedEncGroup).toHaveBeenCalledWith(expect.anything(), UID, PROJECT_ID, OWNER);
   });
 });
