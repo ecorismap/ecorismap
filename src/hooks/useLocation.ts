@@ -1147,6 +1147,11 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
   }, []);
 
   useEffect(() => {
+    // Web版ではタブの表示/非表示でもAppStateが background/active を行き来する。
+    // この処理はBackgroundGeolocation・MMKV軌跡・端末方位センサーが前提でWebには存在しないため、
+    // 実行するとタブ復帰のたびに権限リクエスト（→権限エラーのアラート）が走ってしまう。
+    if (Platform.OS === 'web') return;
+
     const subscription = RNAppState.addEventListener('change', async (nextAppState) => {
       if (appState.current.match(/inactive|background/) && nextAppState === 'active') {
         // フォアグラウンド復帰時
