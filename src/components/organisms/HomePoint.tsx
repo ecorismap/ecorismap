@@ -6,6 +6,7 @@ import { LayerType, PointRecordType, RecordType } from '../../types';
 import { PointView, PointLabel } from '../atoms';
 import { generateLabel, getColor } from '../../utils/Layer';
 import { ViewportBounds, cullPoints } from '../../utils/ViewportCulling';
+import { MARKER_BAND, SELECTED_MARKER_ZINDEX, markerZIndex } from '../../utils/markerZIndex';
 
 interface Props {
   data: PointRecordType[];
@@ -139,18 +140,33 @@ const PointComponent = React.memo((props: PointComponentProps) => {
   );
 
   if (!feature.coords) return null;
-  // iOSではtrue（ラベル変更を即反映）、AndroidではfalseでkeyによるremountでOK
-  // AndroidではGoogle Maps SDKのIllegalStateExceptionを回避するためfalseが必須
+  // tracksViewChangesは両OSでfalse固定。
+  // - iOS(Google Maps)はtrueだとGMSMarkerのiconViewが毎フレーム再描画され、
+  //   同一座標のマーカー同士でz順が入れ替わって点滅する（rnmaps#1159）上、CPU/電池を消費し続ける
+  // - AndroidはGoogle Maps SDKのIllegalStateException回避のためfalseが必須
+  // falseだとラベル・色の変更がアイコンに反映されないため、見た目に影響する値を
+  // keyに含めてremountで再ラスタライズさせる（選択変化は親のkeyでもremountされる）
+  const markerContentKey = `${zoom > 8 ? label : ''}|${color}|${pointColor}|${borderColor}`;
   return (
     <Marker
-      tracksViewChanges={Platform.OS === 'ios'}
+      key={markerContentKey}
+      tracksViewChanges={false}
       draggable={draggable}
       onDragEnd={(e) => onDragEndPoint(e, layer, feature)}
       coordinate={feature.coords}
       opacity={0.8}
       anchor={{ x: 0.5, y: 0.8 }}
       style={{ zIndex: selected ? 1000 : 1, alignItems: 'center' }}
-      //zIndex={selected ? 1000 : 1}
+      // style.zIndexはGMSMarkerに届かないため、iOSはネイティブのzIndexプロップも指定する。
+      // Google Maps SDKは同一zIndexのマーカーの描画順を保証せず、再描画のたびに入れ替わって
+      // 点滅の原因になるため、レイヤをまたいでも衝突しないidハッシュで一意な順序を与える（選択中は最前面）
+      zIndex={
+        Platform.OS === 'ios'
+          ? selected
+            ? SELECTED_MARKER_ZINDEX
+            : markerZIndex(MARKER_BAND.POINT, feature.id)
+          : undefined
+      }
     >
       {/*Textのcolorにcolorを適用しないとなぜかマーカーの色も変わらない*/}
       {/*labelの表示非表示でanchorがずれないようにzoom<=8でラベルを空白にする*/}

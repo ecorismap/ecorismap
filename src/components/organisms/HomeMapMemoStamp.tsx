@@ -3,6 +3,7 @@ import { Platform, View } from 'react-native';
 import { Marker } from 'react-native-maps';
 import { PointRecordType } from '../../types';
 import Svg, { Circle, Line, Polygon, Rect, Text } from 'react-native-svg';
+import { MARKER_BAND, markerZIndex } from '../../utils/markerZIndex';
 
 interface Props {
   feature: PointRecordType;
@@ -19,16 +20,22 @@ export const HomeMapMemoStamp = React.memo((props: Props) => {
   const stamp = useMemo(() => feature.field._stamp as string, [feature.field]);
 
   if (feature.coords === undefined) return null;
+  // tracksViewChangesはfalse固定（trueだとiOSで毎フレーム再描画され、重なりの点滅と電池消費の原因）。
+  // 見た目に影響する値をkeyに含め、変更時はremountで再描画する
+  const markerKey = `stamp-${selected}-${stamp}-${lineColor}`;
+  // 同一zIndexのマーカーは重なると描画順が不定で点滅するため、idハッシュで一意にする
+  const zIndex = Platform.OS === 'ios' ? markerZIndex(MARKER_BAND.MAPMEMO, feature.id) : undefined;
   switch (stamp) {
     case 'NUMBERS':
       return (
         <Marker
-          tracksViewChanges={Platform.OS === 'ios'}
-          key={`stamp-${selected}`}
+          tracksViewChanges={false}
+          key={markerKey}
           coordinate={feature.coords}
           opacity={1}
           anchor={{ x: 0.5, y: 0.5 }}
           style={{ zIndex: -1, alignItems: 'center' }}
+          zIndex={zIndex}
         >
           <View style={{ width: 20, height: 20 }}>
             <Svg height="20" width="20" viewBox="0 0 20 20">
@@ -42,12 +49,13 @@ export const HomeMapMemoStamp = React.memo((props: Props) => {
     case 'ALPHABETS':
       return (
         <Marker
-          tracksViewChanges={Platform.OS === 'ios'}
-          key={`stamp-${selected}`}
+          tracksViewChanges={false}
+          key={markerKey}
           coordinate={feature.coords}
           opacity={1}
           anchor={{ x: 0.5, y: 0.5 }}
           style={{ zIndex: -1, alignItems: 'center' }}
+          zIndex={zIndex}
         >
           <View style={{ width: 20, height: 20 }}>
             <Svg height="20" width="20" viewBox="0 0 20 20">
@@ -61,12 +69,13 @@ export const HomeMapMemoStamp = React.memo((props: Props) => {
     case 'TEXT':
       return (
         <Marker
-          tracksViewChanges={Platform.OS === 'ios'}
-          key={`stamp-${selected}`}
+          tracksViewChanges={false}
+          key={markerKey}
           coordinate={feature.coords}
           opacity={1}
           anchor={{ x: 0.5, y: 0.5 }}
           style={{ zIndex: -1, alignItems: 'center' }}
+          zIndex={zIndex}
         >
           <View style={{ width: 80, height: 20 }}>
             <Svg height="20" width="80" viewBox="0 0 80 20">
@@ -80,12 +89,13 @@ export const HomeMapMemoStamp = React.memo((props: Props) => {
     case 'TOMARI':
       return (
         <Marker
-          tracksViewChanges={Platform.OS === 'ios'}
-          key={`stamp-${selected}`}
+          tracksViewChanges={false}
+          key={markerKey}
           coordinate={feature.coords}
           opacity={1}
           anchor={{ x: 0.5, y: 0.5 }}
           style={{ zIndex: -1, alignItems: 'center' }}
+          zIndex={zIndex}
         >
           <View style={{ width: 20, height: 20 }}>
             <Svg height="20" width="20" viewBox="0 0 20 20">
@@ -100,12 +110,13 @@ export const HomeMapMemoStamp = React.memo((props: Props) => {
     case 'KARI':
       return (
         <Marker
-          tracksViewChanges={Platform.OS === 'ios'}
-          key={`stamp-${selected}`}
+          tracksViewChanges={false}
+          key={markerKey}
           coordinate={feature.coords}
           opacity={1}
           anchor={{ x: 0.5, y: 0.5 }}
           style={{ zIndex: -1, alignItems: 'center' }}
+          zIndex={zIndex}
         >
           <View style={{ width: 20, height: 20 }}>
             <Svg height="20" width="20" viewBox="0 0 20 20">
@@ -119,12 +130,13 @@ export const HomeMapMemoStamp = React.memo((props: Props) => {
     case 'HOVERING':
       return (
         <Marker
-          tracksViewChanges={Platform.OS === 'ios'}
-          key={`stamp-${selected}`}
+          tracksViewChanges={false}
+          key={markerKey}
           coordinate={feature.coords}
           opacity={1}
           anchor={{ x: 0.5, y: 0.5 }}
           style={{ zIndex: -1, alignItems: 'center' }}
+          zIndex={zIndex}
         >
           <View style={{ width: 20, height: 20 }}>
             <Svg height="20" width="20" viewBox="0 0 20 20">
@@ -139,12 +151,13 @@ export const HomeMapMemoStamp = React.memo((props: Props) => {
     case 'VOICE':
       return (
         <Marker
-          tracksViewChanges={Platform.OS === 'ios'}
-          key={`stamp-${selected}`}
+          tracksViewChanges={false}
+          key={markerKey}
           coordinate={feature.coords}
           opacity={1}
           anchor={{ x: 0.5, y: 0.5 }}
           style={{ zIndex: -1, alignItems: 'center' }}
+          zIndex={zIndex}
         >
           <View style={{ width: 20, height: 20 }}>
             <Svg height="20" width="20" viewBox="0 0 20 20">
@@ -159,12 +172,13 @@ export const HomeMapMemoStamp = React.memo((props: Props) => {
     case 'KOUBI':
       return (
         <Marker
-          tracksViewChanges={Platform.OS === 'ios'}
-          key={`stamp-${selected}`}
+          tracksViewChanges={false}
+          key={markerKey}
           coordinate={feature.coords}
           opacity={1}
           anchor={{ x: 0.5, y: 0.5 }}
           style={{ zIndex: -1, alignItems: 'center' }}
+          zIndex={zIndex}
         >
           <View style={{ width: 20, height: 20 }}>
             <Svg height="20" width="20" viewBox="0 0 20 20">
@@ -178,12 +192,13 @@ export const HomeMapMemoStamp = React.memo((props: Props) => {
     case 'SQUARE':
       return (
         <Marker
-          tracksViewChanges={Platform.OS === 'ios'}
-          key={`stamp-${selected}`}
+          tracksViewChanges={false}
+          key={markerKey}
           coordinate={feature.coords}
           opacity={1}
           anchor={{ x: 0.5, y: 0.5 }}
           style={{ zIndex: -1, alignItems: 'center' }}
+          zIndex={zIndex}
         >
           <View style={{ width: 20, height: 20 }}>
             <Svg height="20" width="20" viewBox="0 0 20 20">
@@ -195,12 +210,13 @@ export const HomeMapMemoStamp = React.memo((props: Props) => {
     case 'CIRCLE':
       return (
         <Marker
-          tracksViewChanges={Platform.OS === 'ios'}
-          key={`stamp-${selected}`}
+          tracksViewChanges={false}
+          key={markerKey}
           coordinate={feature.coords}
           opacity={1}
           anchor={{ x: 0.5, y: 0.5 }}
           style={{ zIndex: -1, alignItems: 'center' }}
+          zIndex={zIndex}
         >
           <View style={{ width: 20, height: 20 }}>
             <Svg height="20" width="20" viewBox="0 0 20 20">
@@ -212,12 +228,13 @@ export const HomeMapMemoStamp = React.memo((props: Props) => {
     case 'TRIANGLE':
       return (
         <Marker
-          tracksViewChanges={Platform.OS === 'ios'}
-          key={`stamp-${selected}`}
+          tracksViewChanges={false}
+          key={markerKey}
           coordinate={feature.coords}
           opacity={1}
           anchor={{ x: 0.5, y: 0.5 }}
           style={{ zIndex: -1, alignItems: 'center' }}
+          zIndex={zIndex}
         >
           <View style={{ width: 20, height: 20 }}>
             <Svg height="20" width="20" viewBox="0 0 20 20">

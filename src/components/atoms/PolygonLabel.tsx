@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, Platform } from 'react-native';
 import { LatLng, Marker } from 'react-native-maps';
 import { COLOR } from '../../constants/AppConstants';
+import { MARKER_BAND, markerZIndex } from '../../utils/markerZIndex';
 
 interface Props {
   coordinate: LatLng;
@@ -14,8 +15,20 @@ const PolygonLabel = React.memo((props: Props) => {
   const { coordinate, label, size, color } = props;
   const isWeb = Platform.OS === 'web';
 
+  // tracksViewChangesはfalse固定（trueだとiOSで毎フレーム再描画され、重なりの点滅と電池消費の原因）。
+  // 見た目に影響する値をkeyに含め、変更時はremountで再描画する。
+  // iOSのzIndexは、同一値のマーカー同士が重なると描画順が不定で点滅するため、座標ハッシュで一意にする
   return (
-    <Marker coordinate={coordinate} tracksViewChanges={Platform.OS === 'ios'}>
+    <Marker
+      key={`${label}|${size}|${color}`}
+      coordinate={coordinate}
+      tracksViewChanges={false}
+      zIndex={
+        Platform.OS === 'ios'
+          ? markerZIndex(MARKER_BAND.POLYGON_LABEL, `${label}:${coordinate.latitude}:${coordinate.longitude}`)
+          : undefined
+      }
+    >
       <View style={{ alignItems: 'center' }}>
         <Text
           style={{

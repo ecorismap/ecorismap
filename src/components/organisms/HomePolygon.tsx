@@ -6,6 +6,7 @@ import { PointLabel, PointView, PolygonLabel } from '../atoms';
 import { COLOR } from '../../constants/AppConstants';
 import { generateLabel, getColor } from '../../utils/Layer';
 import { ViewportBounds, cullPolygons } from '../../utils/ViewportCulling';
+import { MARKER_BAND, markerZIndex } from '../../utils/markerZIndex';
 
 interface Props {
   data: PolygonRecordType[];
@@ -180,9 +181,17 @@ const PolygonMarkerComponent = React.memo((props: PolygonMarkerComponentProps) =
 
   if (!feature.coords) return null;
 
-  // iOSではtrue（ラベル変更を即反映）、AndroidではGoogle Maps SDKのIllegalStateExceptionを回避するためfalse
+  // tracksViewChangesはfalse固定（trueだとiOSで毎フレーム再描画され、重なりの点滅と電池消費の原因。
+  // AndroidはGoogle Maps SDKのIllegalStateException回避のためfalseが必須）。
+  // 見た目に影響する値をkeyに含め、変更時はremountで再描画する。
+  // iOSのzIndexは、同一値のマーカー同士が重なると描画順が不定で点滅するため、idハッシュで一意にする
   return (
-    <Marker coordinate={feature.centroid ?? feature.coords[0]} tracksViewChanges={Platform.OS === 'ios'}>
+    <Marker
+      key={`${label}|${strokeColor}|${pointColor}|${borderColor}`}
+      coordinate={feature.centroid ?? feature.coords[0]}
+      tracksViewChanges={false}
+      zIndex={Platform.OS === 'ios' ? markerZIndex(MARKER_BAND.POLYGON_LABEL, feature.id) : undefined}
+    >
       <View style={{ alignItems: 'center' }}>
         <PointLabel label={label} size={15} color={strokeColor} borderColor={COLOR.WHITE} />
         <PointView size={10} color={pointColor} borderColor={borderColor} style={{ borderRadius: 0 }} />
