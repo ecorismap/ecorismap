@@ -20,6 +20,10 @@ jest.mock('../../virgilsecurity/e3kit', () => ({
 }));
 jest.mock('../../firebase/publicKeys', () => ({
   publishPublicKeyToLedger: jest.fn(),
+  getPublicKeyFromLedger: jest.fn(),
+}));
+jest.mock('../../crypto/identity', () => ({
+  extractPublicKeyB64: jest.fn(),
 }));
 jest.mock('../../crypto/backup', () => ({
   getKeyBackupStatus: jest.fn(),
@@ -43,6 +47,12 @@ const mockRegistEncrypt = e3kit.registEncrypt as jest.MockedFunction<typeof e3ki
 const mockPublish = publicKeys.publishPublicKeyToLedger as jest.MockedFunction<
   typeof publicKeys.publishPublicKeyToLedger
 >;
+const mockGetLedger = publicKeys.getPublicKeyFromLedger as jest.MockedFunction<
+  typeof publicKeys.getPublicKeyFromLedger
+>;
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const identityMock = require('../../crypto/identity');
+const mockExtractPublicKey = identityMock.extractPublicKeyB64 as jest.Mock;
 const mockGetStatus = backup.getKeyBackupStatus as jest.MockedFunction<typeof backup.getKeyBackupStatus>;
 const mockCreateBackup = backup.createKeyBackup as jest.MockedFunction<typeof backup.createKeyBackup>;
 const mockRestoreBackup = backup.restoreKeyBackup as jest.MockedFunction<typeof backup.restoreKeyBackup>;
@@ -91,13 +101,27 @@ describe('getKeyMigrationState', () => {
     expect(await AsyncStorage.getItem(`keyMigrated:${UID}`)).toBe('true');
   });
 
-  it('サーバー移行済み+新ストレージ鍵なし+e3kit鍵あり: コピーして migrated', async () => {
+  it('サーバー移行済み+新ストレージ鍵なし+e3kit鍵あり(台帳と一致): コピーして migrated', async () => {
     mockLoadKey.mockResolvedValue(undefined);
     mockGetStatus.mockResolvedValue({ isOK: true, status: { exists: true } });
     mockExportLocalIdentityKey.mockResolvedValue(KEY_PAIR);
+    mockGetLedger.mockResolvedValue({ publicKey: 'PUB_B64', keyVersion: 1, createdAt: {} as any });
+    mockExtractPublicKey.mockResolvedValue('PUB_B64');
     const result = await getKeyMigrationState(UID);
     expect(result.state).toBe('migrated');
     expect(mockSaveKey).toHaveBeenCalledWith(UID, 'PRIV_B64');
+  });
+
+  it('サーバー移行済み+e3kit鍵ありでも台帳と不一致(古い鍵): コピーせず migrated-need-restore', async () => {
+    mockLoadKey.mockResolvedValue(undefined);
+    mockGetStatus.mockResolvedValue({ isOK: true, status: { exists: true } });
+    mockExportLocalIdentityKey.mockResolvedValue(KEY_PAIR);
+    // 台帳の現行鍵はローテーション後の別の鍵
+    mockGetLedger.mockResolvedValue({ publicKey: 'NEW_PUB_B64', keyVersion: 2, createdAt: {} as any });
+    mockExtractPublicKey.mockResolvedValue('PUB_B64');
+    const result = await getKeyMigrationState(UID);
+    expect(result.state).toBe('migrated-need-restore');
+    expect(mockSaveKey).not.toHaveBeenCalled();
   });
 
   it('サーバー移行済み+どこにも鍵なし: migrated-need-restore（lockedUntil付き）', async () => {

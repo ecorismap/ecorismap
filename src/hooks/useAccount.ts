@@ -84,8 +84,6 @@ export const useAccount = (): UseAccountReturnType => {
   const [isLoading, setIsLoading] = useState(false);
   const [accountMessage, setAccountMessage] = useState('');
   const [accountFormState, setAccountFormState] = useState<AccountFormStateType>('loginUserAccount');
-  // restoreEncryptKey フォームのモード。legacy=旧PIN(keyknox復元)、v2=新6桁PIN(KMSバックアップ復元)
-  const [restoreKeyMode, setRestoreKeyMode] = useState<'legacy' | 'v2'>('legacy');
 
   const initializeEncript = useCallback(async (authUser: FirebaseAuthTypes.User) => {
     //暗号化の初期化
@@ -107,15 +105,16 @@ export const useAccount = (): UseAccountReturnType => {
       // 未移行 or この端末に鍵なし: 移行元鍵の取得・従来フォールバックのためにe3kitを初期化
       const { isOK: initE3kitOK, message: initE3kitMessage } = await e3kit.initializeUser(authUser.uid);
       if (migrationState.state === 'migrated-need-restore') {
-        // 他端末で移行済み。e3kit側にローカル鍵が残っていれば新ストレージへコピーして完了
+        // 他端末で移行済み。e3kit側にローカル鍵が残っていて台帳の現行鍵と一致すれば
+        // 新ストレージへコピーして完了（古い鍵の可能性があるため必ず整合検証する）
         const exported = await e3kit.exportLocalIdentityKey(authUser.uid);
-        setIsLoading(false);
-        if (exported !== undefined) {
+        if (exported !== undefined && (await migration.isKeyConsistentWithLedger(authUser.uid, exported.privateKey))) {
           await saveIdentityPrivateKey(authUser.uid, exported.privateKey);
           await migration.markMigrated(authUser.uid);
+          setIsLoading(false);
           return { isOK: true };
         }
-        setRestoreKeyMode('v2');
+        setIsLoading(false);
         setAccountMessage(t('hooks.message.inputNewPinRestore'));
         setAccountFormState('restoreEncryptKey');
         return { isOK: false };
@@ -127,7 +126,6 @@ export const useAccount = (): UseAccountReturnType => {
           setAccountMessage(t('hooks.message.registEncryptPassword'));
           setAccountFormState('registEncryptPassword');
         } else if (initE3kitMessage === 'not-localkey') {
-          setRestoreKeyMode('legacy');
           setAccountMessage(t('hooks.message.inputEncryptPassword'));
           setAccountFormState('restoreEncryptKey');
         } else if (initE3kitMessage === 'not-backup') {
@@ -466,32 +464,41 @@ export const useAccount = (): UseAccountReturnType => {
 
   const restoreEncryptKey = useCallback(
     async (password: string): Promise<{ isOK: boolean; needsMigration?: boolean; retry?: boolean }> => {
-      if (ENABLE_KEY_LEDGER && FUNC_ENCRYPTION && restoreKeyMode === 'v2') {
-        // 移行済みユーザーの新PIN復元。誤PINはフォームに留まって再試行できる（retry=true）
-        if (user.uid === undefined) return { isOK: false };
+      if (ENABLE_KEY_LEDGER && FUNC_ENCRYPTION && user.uid !== undefined) {
+        // モードはサーバー真実で毎回判定する（フォームへの入口がログイン経由とは限らないため）:
+        // 移行済み=新6桁PINでKMSバックアップから復元 / 未移行=旧PINでkeyknoxから復元
         setIsLoading(true);
-        const result = await migration.restoreIdentityKeyV2(user.uid, password);
-        setIsLoading(false);
-        if (!result.isOK) {
-          setAccountMessage(
-            result.message === 'backup-locked'
-              ? t('hooks.message.backupLocked')
-              : result.message === 'backup-wrong-pin'
-              ? t('hooks.message.backupWrongPin')
-              : t('hooks.message.failMigrateEncryptKey')
-          );
-          return { isOK: false, retry: true };
+        const statusResult = await keyBackup.getKeyBackupStatus();
+        const migratedOnServer = statusResult.isOK && statusResult.status.exists;
+        if (migratedOnServer) {
+          // 誤PINはフォームに留まって再試行できる（retry=true）
+          const result = await migration.restoreIdentityKeyV2(user.uid, password);
+          setIsLoading(false);
+          if (!result.isOK) {
+            setAccountMessage(
+              result.message === 'backup-locked'
+                ? t('hooks.message.backupLocked')
+                : result.message === 'backup-wrong-pin'
+                ? t('hooks.message.backupWrongPin')
+                : t('hooks.message.failMigrateEncryptKey')
+            );
+            return { isOK: false, retry: true };
+          }
+          return { isOK: true };
         }
-        return { isOK: true };
+        const { isOK: legacyOK } = await e3kit.restoreEncryptKey(password);
+        setIsLoading(false);
+        if (!legacyOK) return { isOK: false };
+        // 旧PINで復元した未移行ユーザーは、続けて移行フォームへ誘導する
+        return { isOK: true, needsMigration: true };
       }
       setIsLoading(true);
       const { isOK } = await e3kit.restoreEncryptKey(password);
       setIsLoading(false);
       if (!isOK) return { isOK: false };
-      // 旧PINで復元した未移行ユーザーは、続けて移行フォームへ誘導する
-      return { isOK: true, needsMigration: ENABLE_KEY_LEDGER && FUNC_ENCRYPTION };
+      return { isOK: true };
     },
-    [restoreKeyMode, user.uid]
+    [user.uid]
   );
 
   const backupEncryptPassword = useCallback(

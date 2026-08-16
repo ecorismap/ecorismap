@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as e3kit from '../virgilsecurity/e3kit';
-import { publishPublicKeyToLedger } from '../firebase/publicKeys';
+import { getPublicKeyFromLedger, publishPublicKeyToLedger } from '../firebase/publicKeys';
 import { createKeyBackup, getKeyBackupStatus, restoreKeyBackup } from './backup';
 import { loadIdentityPrivateKey, saveIdentityPrivateKey } from './keyStorage';
 import { extractPublicKeyB64 } from './identity';
@@ -52,6 +52,23 @@ export type KeyMigrationState =
   | { state: 'error'; message: string };
 
 /**
+ * 端末に残っていた鍵が台帳の現行公開鍵と一致するか検証する。
+ * 過去に鍵リセットをしたユーザーの端末にはローテーション前の古い鍵が残っていることがあり、
+ * 検証なしで採用すると復号が静かに全滅するため、採用（コピー）前に必ず確認する。
+ */
+export const isKeyConsistentWithLedger = async (uid: string, privateKeyB64: string): Promise<boolean> => {
+  try {
+    const ledger = await getPublicKeyFromLedger(uid);
+    if (ledger === undefined) return false;
+    const publicKey = await extractPublicKeyB64(privateKeyB64);
+    return publicKey === ledger.publicKey;
+  } catch (e) {
+    console.log('[isKeyConsistentWithLedger] error', e);
+    return false;
+  }
+};
+
+/**
  * 移行状態を判定する。
  * - migrated: 移行済みでローカル鍵もある（何もしなくてよい）
  * - migrated-need-restore: 他端末で移行済みだがこの端末に鍵がない（新PINで復元が必要）
@@ -77,9 +94,10 @@ export const getKeyMigrationState = async (uid: string): Promise<KeyMigrationSta
     await markMigrated(uid);
     return { state: 'migrated' };
   }
-  // e3kit側にローカル鍵があれば新ストレージへコピーして完了（移行済み端末のストレージ差分吸収）
+  // e3kit側にローカル鍵が残っていて台帳の現行鍵と一致すれば、新ストレージへコピーして完了
+  //（古い鍵の可能性があるため必ず整合検証する。isKeyConsistentWithLedger参照）
   const exported = await e3kit.exportLocalIdentityKey(uid);
-  if (exported !== undefined) {
+  if (exported !== undefined && (await isKeyConsistentWithLedger(uid, exported.privateKey))) {
     await saveIdentityPrivateKey(uid, exported.privateKey);
     await markMigrated(uid);
     return { state: 'migrated' };
