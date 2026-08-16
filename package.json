@@ -10,7 +10,7 @@
       "./jestSetupFile.js"
     ],
     "transformIgnorePatterns": [
-      "node_modules/(?!(jest-)?@react-native|react-native|react-clone-referenced-element|@react-native-community|expo(nent)?|@expo(nent)?/.*|react-navigation|@react-navigation/.*|@unimodules/.*|unimodules|sentry-expo|native-base|@sentry/.*|react-redux|immer)"
+      "node_modules/(?!(jest-)?@react-native|react-native|react-clone-referenced-element|@react-native-community|expo(nent)?|@expo(nent)?/.*|react-navigation|@react-navigation/.*|@unimodules/.*|unimodules|sentry-expo|native-base|@sentry/.*|react-redux|immer|@noble/.*)"
     ],
     "testPathIgnorePatterns": [
       "src/__tests__/resources/.*",
@@ -102,6 +102,7 @@
     "@mapbox/vector-tile": "^3.0.0",
     "@mui/material": "^9.1.1",
     "@mui/x-date-pickers": "^9.5.0",
+    "@noble/hashes": "^2.3.0",
     "@react-native-async-storage/async-storage": "2.2.0",
     "@react-native-community/hooks": "^3.0.0",
     "@react-native-community/image-editor": "^4.2.0",
@@ -170,7 +171,6 @@
     "object-sizeof": "^2.6.4",
     "pako": "^2.1.0",
     "pbf": "^5.1.0",
-    "pbkdf2": "^3.1.6",
     "pdfjs-dist": "4.5.136",
     "pmtiles": "3.0.6",
     "prop-types": "^15.8.1",
@@ -245,7 +245,6 @@
     "@types/jest": "29.5.14",
     "@types/lodash": "^4.14.176",
     "@types/pako": "^2.0.4",
-    "@types/pbkdf2": "^3.1.2",
     "@types/react": "~19.2.14",
     "@types/react-dom": "~19.2.3",
     "@types/react-test-renderer": "^19.1.0",

@@ -1,8 +1,13 @@
-import { pbkdf2 } from 'pbkdf2';
+import { pbkdf2Async } from '@noble/hashes/pbkdf2.js';
+import { sha256 } from '@noble/hashes/sha2.js';
 import { Buffer } from 'buffer';
 
 /**
- * PINから k（サーバーへ送るKDF出力）を導出する（native版・純JS実装）。
+ * PINから k（サーバーへ送るKDF出力）を導出する（native版）。
+ *
+ * 実装は @noble/hashes（依存ゼロ・監査済み・純JS）。
+ * ※Node系の 'pbkdf2' パッケージは依存の readable-stream が process.version を参照して
+ *   RN/Hermes で起動時クラッシュするため使えない。
  *
  * 総当たり防御の主柱はサーバー側のKMS（エクスポート不能鍵によるKEK導出）とレート制限であり、
  * クライアントKDFは「PINを平文のままサーバーへ送らない」ための衛生策。
@@ -16,16 +21,13 @@ export const KDF_NAME = 'pbkdf2-sha256';
 export const DEFAULT_KDF_ITERATIONS = 10000;
 const KDF_OUTPUT_BYTES = 32;
 
-export const deriveKB64 = (pin: string, saltB64: string, iterations: number): Promise<string> =>
-  new Promise((resolve, reject) => {
-    pbkdf2(pin, Buffer.from(saltB64, 'base64'), iterations, KDF_OUTPUT_BYTES, 'sha256', (err, derived) => {
-      if (err) {
-        reject(err);
-      } else {
-        resolve(derived.toString('base64'));
-      }
-    });
+export const deriveKB64 = async (pin: string, saltB64: string, iterations: number): Promise<string> => {
+  const derived = await pbkdf2Async(sha256, pin, new Uint8Array(Buffer.from(saltB64, 'base64')), {
+    c: iterations,
+    dkLen: KDF_OUTPUT_BYTES,
   });
+  return Buffer.from(derived).toString('base64');
+};
 
 /** バックアップ作成時のsalt（16バイト）を生成する。 */
 export const generateSaltB64 = (): string => {
