@@ -1465,3 +1465,152 @@ describe('tileAccess collection', () => {
     );
   });
 });
+
+describe('publicKeys collection（公開鍵台帳・脱Virgil）', () => {
+  const ctx = (uid: string, n: string) =>
+    testEnv.authenticatedContext(uid, { email: `${n}@example.com`, email_verified: true });
+
+  const validEntry = (keyVersion = 1) => ({
+    publicKey: 'PUBKEY_B64',
+    keyVersion,
+    createdAt: '2026年8月16日',
+    updatedAt: '2026年8月16日',
+  });
+
+  const seedPublicKey = async (uid: string, keyVersion = 1) => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await setDoc(doc(context.firestore(), `publicKeys/${uid}`), validEntry(keyVersion));
+    });
+  };
+
+  it('read: 認証済みユーザーは他人の公開鍵を読める（DEKラップに必要）', async () => {
+    await seedPublicKey(uid1);
+    await firebase.assertSucceeds(getDoc(doc(ctx(uid3, 'test3').firestore(), `publicKeys/${uid1}`)));
+  });
+
+  it('read: 未認証ユーザーは読めない', async () => {
+    await seedPublicKey(uid1);
+    await firebase.assertFails(getDoc(doc(testEnv.unauthenticatedContext().firestore(), `publicKeys/${uid1}`)));
+  });
+
+  it('read: メール未承認ユーザーは読めない', async () => {
+    await seedPublicKey(uid1);
+    const unverified = testEnv.authenticatedContext(uid4, { email: 'test4@example.com', email_verified: false });
+    await firebase.assertFails(getDoc(doc(unverified.firestore(), `publicKeys/${uid1}`)));
+  });
+
+  it('create: 本人は自分の公開鍵を登録できる（keyVersion=1）', async () => {
+    await firebase.assertSucceeds(setDoc(doc(ctx(uid1, 'test1').firestore(), `publicKeys/${uid1}`), validEntry()));
+  });
+
+  it('create: card フィールド（任意）を含めても登録できる', async () => {
+    await firebase.assertSucceeds(
+      setDoc(doc(ctx(uid1, 'test1').firestore(), `publicKeys/${uid1}`), { ...validEntry(), card: 'EXPORTED_CARD' })
+    );
+  });
+
+  it('create: 他人のuidには登録できない（なりすまし禁止）', async () => {
+    await firebase.assertFails(setDoc(doc(ctx(uid5, 'test5').firestore(), `publicKeys/${uid1}`), validEntry()));
+  });
+
+  it('create: keyVersion=1以外では新規登録できない', async () => {
+    await firebase.assertFails(setDoc(doc(ctx(uid1, 'test1').firestore(), `publicKeys/${uid1}`), validEntry(2)));
+  });
+
+  it('create: 未定義フィールドがあると登録できない', async () => {
+    await firebase.assertFails(
+      setDoc(doc(ctx(uid1, 'test1').firestore(), `publicKeys/${uid1}`), { ...validEntry(), extra: 'x' })
+    );
+  });
+
+  it('update: 本人はローテーション（keyVersion+1）できる', async () => {
+    await seedPublicKey(uid1, 1);
+    await firebase.assertSucceeds(setDoc(doc(ctx(uid1, 'test1').firestore(), `publicKeys/${uid1}`), validEntry(2)));
+  });
+
+  it('update: keyVersion の巻き戻しはできない', async () => {
+    await seedPublicKey(uid1, 3);
+    await firebase.assertFails(setDoc(doc(ctx(uid1, 'test1').firestore(), `publicKeys/${uid1}`), validEntry(2)));
+  });
+
+  it('update: 他人の公開鍵は上書きできない', async () => {
+    await seedPublicKey(uid1, 1);
+    await firebase.assertFails(setDoc(doc(ctx(uid5, 'test5').firestore(), `publicKeys/${uid1}`), validEntry(2)));
+  });
+
+  it('delete: 本人でも削除できない（掃除はFunctions側）', async () => {
+    await seedPublicKey(uid1);
+    await firebase.assertFails(deleteDoc(doc(ctx(uid1, 'test1').firestore(), `publicKeys/${uid1}`)));
+  });
+
+  it('history create: 本人は旧世代を退避できる', async () => {
+    await seedPublicKey(uid1, 1);
+    await firebase.assertSucceeds(
+      setDoc(doc(ctx(uid1, 'test1').firestore(), `publicKeys/${uid1}/history/1`), {
+        publicKey: 'OLD_PUBKEY',
+        keyVersion: 1,
+        createdAt: '2026年8月16日',
+        rotatedAt: '2026年8月16日',
+      })
+    );
+  });
+
+  it('history create: 他人は書けない', async () => {
+    await seedPublicKey(uid1, 1);
+    await firebase.assertFails(
+      setDoc(doc(ctx(uid5, 'test5').firestore(), `publicKeys/${uid1}/history/1`), {
+        publicKey: 'FAKE',
+        keyVersion: 1,
+        createdAt: '2026年8月16日',
+        rotatedAt: '2026年8月16日',
+      })
+    );
+  });
+
+  it('history read: 認証済みユーザーは読める（旧ラップの署名検証用）', async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await setDoc(doc(context.firestore(), `publicKeys/${uid1}/history/1`), {
+        publicKey: 'OLD_PUBKEY',
+        keyVersion: 1,
+        createdAt: '2026年8月16日',
+        rotatedAt: '2026年8月16日',
+      });
+    });
+    await firebase.assertSucceeds(getDoc(doc(ctx(uid3, 'test3').firestore(), `publicKeys/${uid1}/history/1`)));
+  });
+});
+
+describe('keyBackups / keyBackupAttempts collection（PINバックアップ・Functions専用）', () => {
+  const ctx = (uid: string, n: string) =>
+    testEnv.authenticatedContext(uid, { email: `${n}@example.com`, email_verified: true });
+
+  const seedBackup = async (uid: string) => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await setDoc(doc(context.firestore(), `keyBackups/${uid}`), {
+        encPrivateKey: 'ENC_BLOB',
+        salt: 'SALT',
+        kdf: 'pbkdf2-sha256',
+        kekVerifier: 'VERIFIER',
+        keyVersion: 1,
+      });
+    });
+  };
+
+  it('keyBackups read: 本人でも読めない（Functions経由のみ＝オフライン総当たり防止）', async () => {
+    await seedBackup(uid1);
+    await firebase.assertFails(getDoc(doc(ctx(uid1, 'test1').firestore(), `keyBackups/${uid1}`)));
+  });
+
+  it('keyBackups write: 本人でも書けない', async () => {
+    await firebase.assertFails(
+      setDoc(doc(ctx(uid1, 'test1').firestore(), `keyBackups/${uid1}`), { encPrivateKey: 'X' })
+    );
+  });
+
+  it('keyBackupAttempts read/write: 本人でも読み書きできない', async () => {
+    await firebase.assertFails(getDoc(doc(ctx(uid1, 'test1').firestore(), `keyBackupAttempts/${uid1}`)));
+    await firebase.assertFails(
+      setDoc(doc(ctx(uid1, 'test1').firestore(), `keyBackupAttempts/${uid1}`), { failCount: 0 })
+    );
+  });
+});
