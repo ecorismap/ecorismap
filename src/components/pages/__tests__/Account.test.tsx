@@ -32,6 +32,7 @@ const createContextValue = (accountFormState: AccountFormStateType) => ({
   pressRestoreEncryptKey: jest.fn(),
   pressRegistEncryptPassword: jest.fn(),
   pressBackupEncryptPassword: jest.fn(),
+  pressMigrateEncryptPassword: jest.fn(),
   pressResetEncryptKey: jest.fn(),
   pressDeleteAllProjects: jest.fn(),
   pressClose: jest.fn(),

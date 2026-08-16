@@ -31,6 +31,7 @@ export default function Account() {
     pressRestoreEncryptKey,
     pressRegistEncryptPassword,
     pressBackupEncryptPassword,
+    pressMigrateEncryptPassword,
     pressResetEncryptKey,
     pressDeleteAllProjects,
     pressClose,
@@ -220,6 +221,8 @@ export default function Account() {
               ? `${t('Account.title.backupEncryptPassword')}`
               : accountFormState === 'restoreEncryptKey'
               ? `${t('Account.title.restoreEncryptKey')}`
+              : accountFormState === 'migrateEncryptPassword'
+              ? `${t('Account.title.migrateEncryptPassword')}`
               : accountFormState === 'resetEncryptKey'
               ? `${t('Account.title.resetEncryptKey')}`
               : accountFormState === 'changeEncryptPassword'
@@ -300,6 +303,7 @@ export default function Account() {
             accountFormState === 'registEncryptPassword' ||
             accountFormState === 'backupEncryptPassword' ||
             accountFormState === 'restoreEncryptKey' ||
+            accountFormState === 'migrateEncryptPassword' ||
             accountFormState === 'resetEncryptKey' ||
             accountFormState === 'deleteAllProjects') && (
             <View style={styles.passwordContainer}>
@@ -393,6 +397,8 @@ export default function Account() {
                   ? pressBackupEncryptPassword(password)
                   : accountFormState === 'restoreEncryptKey'
                   ? pressRestoreEncryptKey(password)
+                  : accountFormState === 'migrateEncryptPassword'
+                  ? pressMigrateEncryptPassword(password)
                   : accountFormState === 'resetEncryptKey'
                   ? pressResetEncryptKey(password)
                   : accountFormState === 'deleteAllProjects'

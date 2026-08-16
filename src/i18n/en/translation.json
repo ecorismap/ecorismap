@@ -370,6 +370,7 @@
       "registEncryptPassword": "Registration of encrypted password",
       "backupEncryptPassword": "Registration of encrypted password",
       "restoreEncryptKey": "Restore encryption key",
+      "migrateEncryptPassword": "Update encryption key",
       "resetEncryptKey": "Encrypt key reset",
       "changeEncryptPassword": "Change encrypted password",
       "deleteUserAccount": "Account deletion",
@@ -413,7 +414,9 @@
       "needResetEncryptKey": "You need to reset the encryption key.",
       "FailRestoreEncryptKey": "Failed to restore the encryption key.",
       "FailBackupEncryptPassword": "Failed to register the encryption key.",
-      "FailRegistEncryptPassword": "Failed to register the encryption key."
+      "FailRegistEncryptPassword": "Failed to register the encryption key.",
+      "migrateEncryptKey": "The encryption key protection has been updated.",
+      "migrateEncryptKeyRequired": "You need to update the encryption key to continue."
     },
     "message": {
       "inputMail": "Please enter your e-mail address",
@@ -686,6 +689,11 @@
       "failUpdateProfile": "Failed to update your profile.",
       "failUserCheck": "User check failed.",
       "inputEncryptPassword": "Please enter the encrypted password.",
+      "migrateEncryptPassword": "For enhanced security, the encryption key protection will be updated. Please set a new 6-digit PIN.",
+      "inputNewPinRestore": "Please enter your 6-digit PIN.",
+      "backupLocked": "Too many PIN attempts. Please try again later.",
+      "backupWrongPin": "Incorrect PIN.",
+      "failMigrateEncryptKey": "Failed to update the encryption key. Please check your connection and try again.",
       "inputMaplistURL": "Please set the map list URL correctly.",
       "inputProjectName": "Please enter the project name.",
       "inputValidDisplayName": "Please enter the display name correctly",

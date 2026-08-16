@@ -10,6 +10,10 @@ import { AccountFormStateType, UserType } from '../types';
 import { formattedInputs } from '../utils/Format';
 import * as e3kit from '../lib/virgilsecurity/e3kit';
 import { clearPublicKeyLedgerCache } from '../lib/crypto';
+import * as migration from '../lib/crypto/migration';
+import * as keyBackup from '../lib/crypto/backup';
+import { deleteIdentityPrivateKey, saveIdentityPrivateKey } from '../lib/crypto/keyStorage';
+import { ENABLE_KEY_LEDGER, FUNC_ENCRYPTION } from '../constants/AppConstants';
 import { AlertAsync, ConfirmAsync } from '../components/molecules/AlertAsync';
 import { isLoggedIn } from '../utils/Account';
 import { projectsInitialState, setProjectsAction } from '../modules/projects';
@@ -63,7 +67,8 @@ export type UseAccountReturnType = {
   registEncryptPassword: (password: string) => Promise<{ isOK: boolean }>;
   backupEncryptPassword: (password: string) => Promise<{ isOK: boolean }>;
   cleanupEncryptKey: () => Promise<void>;
-  restoreEncryptKey: (password: string) => Promise<{ isOK: boolean }>;
+  migrateEncryptKey: (password: string) => Promise<{ isOK: boolean }>;
+  restoreEncryptKey: (password: string) => Promise<{ isOK: boolean; needsMigration?: boolean; retry?: boolean }>;
   resetEncryptKey: (password: string) => Promise<{
     isOK: boolean;
   }>;
@@ -79,9 +84,66 @@ export const useAccount = (): UseAccountReturnType => {
   const [isLoading, setIsLoading] = useState(false);
   const [accountMessage, setAccountMessage] = useState('');
   const [accountFormState, setAccountFormState] = useState<AccountFormStateType>('loginUserAccount');
+  // restoreEncryptKey フォームのモード。legacy=旧PIN(keyknox復元)、v2=新6桁PIN(KMSバックアップ復元)
+  const [restoreKeyMode, setRestoreKeyMode] = useState<'legacy' | 'v2'>('legacy');
 
   const initializeEncript = useCallback(async (authUser: FirebaseAuthTypes.User) => {
     //暗号化の初期化
+    if (ENABLE_KEY_LEDGER && FUNC_ENCRYPTION) {
+      // 脱Virgil移行フロー: 移行状態で分岐する（詳細は src/lib/crypto/migration.ts）
+      setIsLoading(true);
+      const migrationState = await migration.getKeyMigrationState(authUser.uid);
+      if (migrationState.state === 'migrated') {
+        // 旧グループ暗号のdual-read用にe3kitも初期化しておく（失敗しても続行=Virgil障害時もDEKは動く）
+        await e3kit.initializeUser(authUser.uid);
+        setIsLoading(false);
+        return { isOK: true };
+      }
+      if (migrationState.state === 'error') {
+        setIsLoading(false);
+        setAccountMessage(t('hooks.message.errorInitEncrypt'));
+        return { isOK: false };
+      }
+      // 未移行 or この端末に鍵なし: 移行元鍵の取得・従来フォールバックのためにe3kitを初期化
+      const { isOK: initE3kitOK, message: initE3kitMessage } = await e3kit.initializeUser(authUser.uid);
+      if (migrationState.state === 'migrated-need-restore') {
+        // 他端末で移行済み。e3kit側にローカル鍵が残っていれば新ストレージへコピーして完了
+        const exported = await e3kit.exportLocalIdentityKey(authUser.uid);
+        setIsLoading(false);
+        if (exported !== undefined) {
+          await saveIdentityPrivateKey(authUser.uid, exported.privateKey);
+          await migration.markMigrated(authUser.uid);
+          return { isOK: true };
+        }
+        setRestoreKeyMode('v2');
+        setAccountMessage(t('hooks.message.inputNewPinRestore'));
+        setAccountFormState('restoreEncryptKey');
+        return { isOK: false };
+      }
+      // needs-migration
+      setIsLoading(false);
+      if (!initE3kitOK) {
+        if (initE3kitMessage === 'not-registered') {
+          setAccountMessage(t('hooks.message.registEncryptPassword'));
+          setAccountFormState('registEncryptPassword');
+        } else if (initE3kitMessage === 'not-localkey') {
+          setRestoreKeyMode('legacy');
+          setAccountMessage(t('hooks.message.inputEncryptPassword'));
+          setAccountFormState('restoreEncryptKey');
+        } else if (initE3kitMessage === 'not-backup') {
+          setAccountMessage(t('hooks.message.registEncryptPassword'));
+          setAccountFormState('backupEncryptPassword');
+        } else {
+          setAccountMessage(t('hooks.message.errorInitEncrypt'));
+        }
+        return { isOK: false };
+      }
+      // e3kit健全＝端末に鍵がある未移行ユーザー（大多数）→ 移行フォームへ
+      setAccountMessage(t('hooks.message.migrateEncryptPassword'));
+      setAccountFormState('migrateEncryptPassword');
+      return { isOK: false };
+    }
+
     setIsLoading(true);
     const { isOK: initE3kitOK, message: initE3kitMessage } = await e3kit.initializeUser(authUser.uid);
     setIsLoading(false);
@@ -287,16 +349,63 @@ export const useAccount = (): UseAccountReturnType => {
     return { isOK: true };
   }, []);
 
-  const changeEncryptPassword = useCallback(async (oldPassword: string, password: string) => {
-    setIsLoading(true);
-    const { isOK } = await e3kit.changeEncryptPassword(oldPassword, password);
-    setIsLoading(false);
-    if (!isOK) {
-      setAccountMessage(t('hooks.message.failedUpdatePassword'));
-      return { isOK: false };
-    }
-    return { isOK: true };
-  }, []);
+  const changeEncryptPassword = useCallback(
+    async (oldPassword: string, password: string) => {
+      if (ENABLE_KEY_LEDGER && FUNC_ENCRYPTION && user.uid !== undefined) {
+        setIsLoading(true);
+        const migrationState = await migration.getKeyMigrationState(user.uid);
+        if (migrationState.state === 'migrated') {
+          // 旧PINの検証を兼ねてKMSバックアップから復元し、新PINで作り直す。
+          // keyknox側は旧PINが一致する場合のみベストエフォートで同期される。
+          const restoreResult = await keyBackup.restoreKeyBackup(oldPassword);
+          if (!restoreResult.isOK) {
+            setIsLoading(false);
+            setAccountMessage(
+              restoreResult.message === 'backup-locked'
+                ? t('hooks.message.backupLocked')
+                : t('hooks.message.failedUpdatePassword')
+            );
+            return { isOK: false };
+          }
+          const createResult = await keyBackup.createKeyBackup(
+            password,
+            restoreResult.privateKey,
+            restoreResult.keyVersion
+          );
+          await e3kit.changeEncryptPassword(oldPassword, password);
+          setIsLoading(false);
+          if (!createResult.isOK) {
+            setAccountMessage(t('hooks.message.failedUpdatePassword'));
+            return { isOK: false };
+          }
+          return { isOK: true };
+        }
+        // 未移行: 従来のkeyknox変更に続けて、新PIN(6桁)でそのまま移行する
+        const { isOK: legacyOK } = await e3kit.changeEncryptPassword(oldPassword, password);
+        if (!legacyOK) {
+          setIsLoading(false);
+          setAccountMessage(t('hooks.message.failedUpdatePassword'));
+          return { isOK: false };
+        }
+        const migrateResult = await migration.migrateIdentityKey(user.uid, password);
+        setIsLoading(false);
+        if (!migrateResult.isOK) {
+          setAccountMessage(t('hooks.message.failedUpdatePassword'));
+          return { isOK: false };
+        }
+        return { isOK: true };
+      }
+      setIsLoading(true);
+      const { isOK } = await e3kit.changeEncryptPassword(oldPassword, password);
+      setIsLoading(false);
+      if (!isOK) {
+        setAccountMessage(t('hooks.message.failedUpdatePassword'));
+        return { isOK: false };
+      }
+      return { isOK: true };
+    },
+    [user.uid]
+  );
 
   const checkUserPassword = useCallback(async (password: string) => {
     setIsLoading(true);
@@ -312,34 +421,98 @@ export const useAccount = (): UseAccountReturnType => {
   const resetEncryptKey = useCallback(async () => {
     setIsLoading(true);
     const { isOK } = await e3kit.resetEncryptKey();
+    if (isOK && ENABLE_KEY_LEDGER && FUNC_ENCRYPTION && user.uid !== undefined) {
+      // 鍵が変わったため新ストレージの旧鍵とマーカーを破棄する。
+      // 直後のbackupEncryptPasswordステップで台帳publish+KMSバックアップが再同期される。
+      await deleteIdentityPrivateKey(user.uid);
+      await migration.clearMigratedMarker(user.uid);
+      clearPublicKeyLedgerCache();
+    }
     setIsLoading(false);
     if (!isOK) return { isOK: false };
     return { isOK: true };
-  }, []);
+  }, [user.uid]);
 
-  const registEncryptPassword = useCallback(async (password: string) => {
-    setIsLoading(true);
-    const { isOK } = await e3kit.registEncrypt(password);
-    setIsLoading(false);
-    if (!isOK) return { isOK: false };
-    return { isOK: true };
-  }, []);
+  const registEncryptPassword = useCallback(
+    async (password: string) => {
+      setIsLoading(true);
+      // V2登録: Card+keyknoxを同一PINで併行作成し（旧アプリとの相互運用）、台帳publish+KMSバックアップまで行う
+      const { isOK } =
+        ENABLE_KEY_LEDGER && FUNC_ENCRYPTION && user.uid !== undefined
+          ? await migration.registerIdentityV2(user.uid, password)
+          : await e3kit.registEncrypt(password);
+      setIsLoading(false);
+      if (!isOK) return { isOK: false };
+      return { isOK: true };
+    },
+    [user.uid]
+  );
 
-  const restoreEncryptKey = useCallback(async (password: string): Promise<{ isOK: boolean }> => {
-    setIsLoading(true);
-    const { isOK } = await e3kit.restoreEncryptKey(password);
-    setIsLoading(false);
-    if (!isOK) return { isOK: false };
-    return { isOK: true };
-  }, []);
+  const migrateEncryptKey = useCallback(
+    async (password: string) => {
+      if (user.uid === undefined) return { isOK: false };
+      setIsLoading(true);
+      const { isOK, message } = await migration.migrateIdentityKey(user.uid, password);
+      setIsLoading(false);
+      if (!isOK) {
+        console.log('[migrateEncryptKey]', message);
+        setAccountMessage(t('hooks.message.failMigrateEncryptKey'));
+        return { isOK: false };
+      }
+      return { isOK: true };
+    },
+    [user.uid]
+  );
 
-  const backupEncryptPassword = useCallback(async (password: string) => {
-    setIsLoading(true);
-    const { isOK } = await e3kit.backupEncryptKey(password);
-    setIsLoading(false);
-    if (!isOK) return { isOK: false };
-    return { isOK: true };
-  }, []);
+  const restoreEncryptKey = useCallback(
+    async (password: string): Promise<{ isOK: boolean; needsMigration?: boolean; retry?: boolean }> => {
+      if (ENABLE_KEY_LEDGER && FUNC_ENCRYPTION && restoreKeyMode === 'v2') {
+        // 移行済みユーザーの新PIN復元。誤PINはフォームに留まって再試行できる（retry=true）
+        if (user.uid === undefined) return { isOK: false };
+        setIsLoading(true);
+        const result = await migration.restoreIdentityKeyV2(user.uid, password);
+        setIsLoading(false);
+        if (!result.isOK) {
+          setAccountMessage(
+            result.message === 'backup-locked'
+              ? t('hooks.message.backupLocked')
+              : result.message === 'backup-wrong-pin'
+              ? t('hooks.message.backupWrongPin')
+              : t('hooks.message.failMigrateEncryptKey')
+          );
+          return { isOK: false, retry: true };
+        }
+        return { isOK: true };
+      }
+      setIsLoading(true);
+      const { isOK } = await e3kit.restoreEncryptKey(password);
+      setIsLoading(false);
+      if (!isOK) return { isOK: false };
+      // 旧PINで復元した未移行ユーザーは、続けて移行フォームへ誘導する
+      return { isOK: true, needsMigration: ENABLE_KEY_LEDGER && FUNC_ENCRYPTION };
+    },
+    [restoreKeyMode, user.uid]
+  );
+
+  const backupEncryptPassword = useCallback(
+    async (password: string) => {
+      setIsLoading(true);
+      const { isOK } = await e3kit.backupEncryptKey(password);
+      if (isOK && ENABLE_KEY_LEDGER && FUNC_ENCRYPTION && user.uid !== undefined) {
+        // 鍵リセット直後のkeyknoxバックアップと同時に、新方式(台帳+KMS)も同じPINで再同期する。
+        // 鍵が変わっていれば台帳は自動でkeyVersion+1・旧世代をhistoryへ退避する
+        const migrateResult = await migration.migrateIdentityKey(user.uid, password);
+        if (!migrateResult.isOK) {
+          setIsLoading(false);
+          return { isOK: false };
+        }
+      }
+      setIsLoading(false);
+      if (!isOK) return { isOK: false };
+      return { isOK: true };
+    },
+    [user.uid]
+  );
 
   const cleanupEncryptKey = useCallback(async () => {
     await e3kit.cleanupEncryptKey();
@@ -402,6 +575,13 @@ export const useAccount = (): UseAccountReturnType => {
         setAccountMessage(t('hooks.message.failDeleteEncryptKey'));
         return { isOK: false };
       }
+      if (ENABLE_KEY_LEDGER && FUNC_ENCRYPTION && user.uid !== undefined) {
+        // 新方式の鍵データも削除（台帳・KMSバックアップはRulesでクライアント削除不可のためFunctions経由）。
+        // 失敗しても残るのは公開鍵と本人にしか開けない暗号化blobのみなので、アカウント削除は続行する
+        await keyBackup.deleteKeyData();
+        await deleteIdentityPrivateKey(user.uid);
+        await migration.clearMigratedMarker(user.uid);
+      }
       setIsLoading(true);
       const { isOK: deleteProjectOK } = await deleteAllProjects();
       setIsLoading(false);
@@ -455,6 +635,7 @@ export const useAccount = (): UseAccountReturnType => {
     backupEncryptPassword,
     changeEncryptPassword,
     registEncryptPassword,
+    migrateEncryptKey,
     restoreEncryptKey,
     cleanupEncryptKey,
     resetEncryptKey,

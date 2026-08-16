@@ -60,12 +60,13 @@ export const getPublicKeyHistoryFromLedger = async (uid: string): Promise<string
  * - 未登録: keyVersion=1 で作成
  * - 登録済みで同一鍵: 何もしない
  * - 登録済みで別鍵（ローテーション）: 旧世代を history/{旧keyVersion} へ退避して keyVersion+1 で上書き
+ * @returns keyVersion=登録後の世代（PINバックアップの keyVersion に使う）
  */
 export const publishPublicKeyToLedger = async (
   uid: string,
   publicKeyB64: string,
   card?: string
-): Promise<{ isOK: boolean; message: string }> => {
+): Promise<{ isOK: boolean; message: string; keyVersion?: number }> => {
   try {
     const ref = doc(firestore, 'publicKeys', uid);
     const snapshot = await getDoc(ref);
@@ -81,12 +82,12 @@ export const publishPublicKeyToLedger = async (
       };
       await setDoc(ref, entry);
       ledgerCache.delete(uid);
-      return { isOK: true, message: '' };
+      return { isOK: true, message: '', keyVersion: 1 };
     }
 
     const current = snapshot.data() as PublicKeyFS;
     if (current.publicKey === publicKeyB64) {
-      return { isOK: true, message: '' };
+      return { isOK: true, message: '', keyVersion: current.keyVersion };
     }
 
     // 鍵ローテーション: 旧世代を退避してから上書き（同一バッチで原子的に）
@@ -108,7 +109,7 @@ export const publishPublicKeyToLedger = async (
     batch.set(ref, entry);
     await batch.commit();
     ledgerCache.delete(uid);
-    return { isOK: true, message: '' };
+    return { isOK: true, message: '', keyVersion: entry.keyVersion };
   } catch (e) {
     console.log('[publishPublicKeyToLedger] error', e);
     return { isOK: false, message: 'failPublishPublicKey' };

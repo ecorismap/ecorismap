@@ -592,6 +592,7 @@ export type AccountFormStateType =
   | 'changeEncryptPassword'
   | 'restoreEncryptKey'
   | 'resetEncryptKey'
+  | 'migrateEncryptPassword'
   | 'deleteAllProjects';
 
 export interface EcorisMapFileType {

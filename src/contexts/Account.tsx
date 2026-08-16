@@ -22,6 +22,7 @@ interface AccountContextType {
   pressRestoreEncryptKey: (password: string) => void;
   pressRegistEncryptPassword: (password: string) => void;
   pressBackupEncryptPassword: (password: string) => void;
+  pressMigrateEncryptPassword: (password: string) => void;
   pressResetEncryptKey: (password: string) => void;
   pressDeleteAllProjects: (password: string) => void;
   pressClose: () => void;

@@ -376,6 +376,25 @@ export const exportLocalIdentityKey = async (
   }
 };
 
+/**
+ * 識別秘密鍵を e3kit のローカル鍵ストレージへ書き込む（脱Virgil移行用）。
+ * KMSバックアップから復元した端末で、旧グループ暗号の dual-read を旧PINなしで
+ * 動かすために使う（e3kit は keyEntryStorage の鍵をそのまま利用できる）。
+ */
+export const importLocalIdentityKey = async (userId: string, privateKeyB64: string): Promise<boolean> => {
+  if (!FUNC_ENCRYPTION) return false;
+  try {
+    if (!eThree) return false;
+    const existing = await eThree.keyEntryStorage.load(userId);
+    if (existing) return true; // 既にあれば触らない
+    await eThree.keyEntryStorage.save({ name: userId, value: privateKeyB64 });
+    return true;
+  } catch (e) {
+    console.log('[importLocalIdentityKey] error', e);
+    return false;
+  }
+};
+
 /** 自分のVirgilカードのエクスポート文字列を返す（台帳の監査用フィールド向け）。 */
 export const exportOwnCard = async (userId: string): Promise<string | undefined> => {
   if (!FUNC_ENCRYPTION) return undefined;

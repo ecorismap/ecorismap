@@ -66,14 +66,22 @@ export default function ProjectsContainers({ navigation, route }: Props_Projects
 
   const reloadProjects = useCallback(async () => {
     try {
-      const { isOK, message } = await fetchProjects();
+      const { isOK, message, needsKeyMigration } = await fetchProjects();
       if (!isOK) {
         await AlertAsync(message);
+        return;
+      }
+      if (needsKeyMigration) {
+        // 復帰セッションの未移行ユーザー: 暗号化キーの保護方式更新（新6桁PIN設定）へ誘導
+        navigation.navigate('Account', {
+          accountFormState: 'migrateEncryptPassword',
+          message: t('hooks.message.migrateEncryptPassword'),
+        });
       }
     } catch (e: any) {
       Alert.alert('error', e.message);
     }
-  }, [fetchProjects]);
+  }, [fetchProjects, navigation]);
 
   const onToggleShowArchive = useCallback(async () => {
     try {
