@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Image, StyleSheet, Text, Platform } from 'react-native';
 import { Pressable } from '../atoms/Pressable';
 import { Marker } from 'react-native-maps';
 import { MemberLocationType } from '../../types';
 import { COLOR } from '../../constants/AppConstants';
+import { MARKER_BAND, markerZIndex } from '../../utils/markerZIndex';
 
 interface Props {
   memberLocation: MemberLocationType;
@@ -11,23 +12,38 @@ interface Props {
 
 export const MemberMarker = React.memo((props: Props) => {
   const { memberLocation } = props;
+  const photoURL = memberLocation.icon.photoURL;
 
-  //console.log(angle);
+  // tracksViewChangesは基本false（trueだとiOSで毎フレーム再描画され、重なりの点滅と電池消費の原因）。
+  // ただし写真アイコンは非同期読み込みのため、iOSでは読み込み完了までtrueにして反映し、
+  // 完了後にfalseへ戻す（falseのままだと読み込み前の空アイコンで固定される）
+  const [tracksChanges, setTracksChanges] = useState(Platform.OS === 'ios' && photoURL !== null);
+  useEffect(() => {
+    setTracksChanges(Platform.OS === 'ios' && photoURL !== null);
+  }, [photoURL]);
 
   return (
     <Marker
+      key={`member-${photoURL ?? memberLocation.icon.initial}`}
       coordinate={{
         latitude: memberLocation.coords.latitude,
         longitude: memberLocation.coords.longitude,
       }}
       opacity={0.9}
       anchor={{ x: 0.5, y: 0.5 }}
-      tracksViewChanges={Platform.OS === 'ios'}
+      tracksViewChanges={tracksChanges}
+      // 同一zIndexのマーカーは重なると描画順が不定で点滅するため、uidハッシュで一意にする
+      zIndex={Platform.OS === 'ios' ? markerZIndex(MARKER_BAND.MEMBER, memberLocation.uid) : undefined}
     >
-      {memberLocation.icon.photoURL !== null ? (
+      {photoURL !== null ? (
         //@ts-ignore
         <Pressable name="account" onPress={() => null}>
-          <Image style={styles.icon} source={{ uri: memberLocation.icon.photoURL }} />
+          <Image
+            style={styles.icon}
+            source={{ uri: photoURL }}
+            onLoadEnd={() => setTracksChanges(false)}
+            onError={() => setTracksChanges(false)}
+          />
         </Pressable>
       ) : (
         //@ts-ignore

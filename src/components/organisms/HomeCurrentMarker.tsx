@@ -3,6 +3,7 @@ import { Image, Platform, StyleSheet, View, useWindowDimensions } from 'react-na
 import { Marker, Polyline, Circle } from 'react-native-maps';
 import { COLOR } from '../../constants/AppConstants';
 import { LocationType } from '../../types';
+import { CURRENT_MARKER_ZINDEX } from '../../utils/markerZIndex';
 
 // 表示角度を目標角度へ1フレーム分近づける指数平滑ステップ（角度ラップ考慮）。
 // 係数を k = 1 - exp(-dt/τ) とすることで、フレーム落ちや更新間引きがあっても
@@ -240,6 +241,8 @@ const CurrentMarkerComponent = (props: Props) => {
           anchor={{ x: 0.5, y: 0.5 }}
           tracksViewChanges={true}
           style={{ zIndex: 1001 }}
+          // style.zIndexはGMSMarkerに届かない。現在地は選択中マーカーも含め全マーカーより前面に出す
+          zIndex={CURRENT_MARKER_ZINDEX}
         >
           <View style={styles.markerImageContainer}>
             <Image

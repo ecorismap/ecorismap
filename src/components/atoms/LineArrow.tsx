@@ -5,6 +5,7 @@ import Svg, { Path } from 'react-native-svg';
 import { bearing } from '@turf/turf';
 import * as turf from '@turf/helpers';
 import { ArrowStyleType } from '../../types';
+import { MARKER_BAND, markerZIndex } from '../../utils/markerZIndex';
 
 interface Props {
   coordinates: LatLng[];
@@ -35,15 +36,27 @@ const LineArrow = React.memo((props: Props) => {
     15 * scale
   } ${20 * scale} Z`;
 
+  // tracksViewChangesはfalse固定（trueだとiOSで毎フレーム再描画され、重なりの点滅と電池消費の原因）。
+  // 見た目に影響する値をkeyに含め、変更時はremountで再描画する。
+  // zIndexは同一zIndexのマーカー同士が重なると描画順が不定で点滅するため、座標ハッシュで一意にする
+  const contentKey = `${strokeColor}-${strokeWidth}`;
+  const endCoord = coordinates[coordinates.length - 1];
+  const startCoord = coordinates[0];
   return (
     <>
       <Marker
-        tracksViewChanges={Platform.OS === 'ios'}
-        coordinate={coordinates[coordinates.length - 1]}
+        tracksViewChanges={false}
+        key={`arrow-end-${contentKey}`}
+        coordinate={endCoord}
         opacity={1}
         anchor={{ x: 0.5, y: 0.5 }}
         rotation={angleEnd}
         style={{ zIndex: -1, alignItems: 'center' }}
+        zIndex={
+          Platform.OS === 'ios'
+            ? markerZIndex(MARKER_BAND.LINE_ARROW, `${endCoord.latitude}:${endCoord.longitude}`)
+            : undefined
+        }
       >
         <View style={{ width: size, height: size }}>
           <Svg height={size.toString()} width={size.toString()} viewBox={`0 0 ${size} ${size}`}>
@@ -53,12 +66,18 @@ const LineArrow = React.memo((props: Props) => {
       </Marker>
       {arrowStyle === 'ARROW_BOTH' && (
         <Marker
-          tracksViewChanges={Platform.OS === 'ios'}
-          coordinate={coordinates[0]}
+          tracksViewChanges={false}
+          key={`arrow-start-${contentKey}`}
+          coordinate={startCoord}
           opacity={1}
           anchor={{ x: 0.5, y: 0.5 }}
           rotation={angleStart}
           style={{ zIndex: -1, alignItems: 'center' }}
+          zIndex={
+            Platform.OS === 'ios'
+              ? markerZIndex(MARKER_BAND.LINE_ARROW, `${startCoord.latitude}:${startCoord.longitude}`)
+              : undefined
+          }
         >
           <View style={{ width: size, height: size }}>
             <Svg height={size.toString()} width={size.toString()} viewBox={`0 0 ${size} ${size}`}>

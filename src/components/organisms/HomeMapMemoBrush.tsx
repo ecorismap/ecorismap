@@ -5,6 +5,7 @@ import { LineRecordType } from '../../types';
 import Svg, { Circle, Path, Polygon } from 'react-native-svg';
 
 import { interpolateLineString, latLonObjectsToLatLonArray } from '../../utils/Coords';
+import { MARKER_BAND, markerZIndex } from '../../utils/markerZIndex';
 
 interface Props {
   lineColor: string;
@@ -23,13 +24,17 @@ export const HomeMapMemoBrush = React.memo((props: Props) => {
     <>
       {points.map((point, idx) => (
         <Marker
-          tracksViewChanges={Platform.OS === 'ios'}
+          // tracksViewChangesはfalse固定（trueだとiOSで毎フレーム再描画され、重なりの点滅と電池消費の原因）。
+          // 見た目に影響する値をkeyに含め、変更時はremountで再描画する
+          tracksViewChanges={false}
           coordinate={{ latitude: point.coordinates[1], longitude: point.coordinates[0] }}
           opacity={1}
           anchor={{ x: 0.5, y: 0.5 }}
           rotation={point.angle}
           style={{ zIndex: -1, alignItems: 'center' }}
-          key={`${idx}-${selected}`}
+          // 同一zIndexのマーカーは重なると描画順が不定で点滅するため、idハッシュで一意にする
+          zIndex={Platform.OS === 'ios' ? markerZIndex(MARKER_BAND.MAPMEMO, `${feature.id}:${idx}`) : undefined}
+          key={`${idx}-${selected}-${feature.field._strokeStyle}-${lineColor}`}
         >
           <View style={{ width: 20, height: 20 }}>
             {feature.field._strokeStyle === 'PLUS' && (
