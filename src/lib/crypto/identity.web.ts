@@ -36,6 +36,20 @@ export const extractPublicKeyB64 = async (privateKeyB64: string): Promise<string
   return vc.exportPublicKey(publicKey).toString('base64');
 };
 
+/** KEK等の鍵素材から決定的に導出した鍵でペイロードを暗号化する（PINバックアップのblob用）。詳細は identity.ts 参照。 */
+export const encryptWithKeyMaterial = async (payload: string, keyMaterialB64: string): Promise<string> => {
+  const vc = await getCrypto();
+  const keyPair = vc.generateKeysFromKeyMaterial(Buffer.from(keyMaterialB64, 'base64'));
+  return vc.encrypt(payload, keyPair.publicKey).toString('base64');
+};
+
+/** encryptWithKeyMaterial で暗号化したペイロードを復号する。 */
+export const decryptWithKeyMaterial = async (encB64: string, keyMaterialB64: string): Promise<string> => {
+  const vc = await getCrypto();
+  const keyPair = vc.generateKeysFromKeyMaterial(Buffer.from(keyMaterialB64, 'base64'));
+  return vc.decrypt(Buffer.from(encB64, 'base64'), keyPair.privateKey).toString('utf8');
+};
+
 export const authEncryptWithKeys = async (
   payload: string,
   myPrivateKeyB64: string,
