@@ -351,6 +351,44 @@ export const loadGroup = async (groupId: string, owner: ProjectType['ownerUid'])
     return { isOK: false, group: undefined };
   }
 };
+/**
+ * ローカル保管中の識別鍵ペアを base64 でエクスポートする（脱Virgil移行用）。
+ * e3kit は秘密鍵を keyEntryStorage に name=identity(uid)・value=base64 で保存している。
+ * eThree 未初期化・鍵なし・エラー時は undefined。
+ */
+export const exportLocalIdentityKey = async (
+  userId: string
+): Promise<{ privateKey: string; publicKey: string } | undefined> => {
+  if (!FUNC_ENCRYPTION) return undefined;
+  try {
+    if (!eThree) return undefined;
+    const entry = await eThree.keyEntryStorage.load(userId);
+    if (!entry) return undefined;
+    const privateKey = eThree.virgilCrypto.importPrivateKey(entry.value);
+    const publicKey = eThree.virgilCrypto.extractPublicKey(privateKey);
+    return {
+      privateKey: entry.value,
+      publicKey: eThree.virgilCrypto.exportPublicKey(publicKey).toString('base64'),
+    };
+  } catch (e) {
+    console.log('[exportLocalIdentityKey] error', e);
+    return undefined;
+  }
+};
+
+/** 自分のVirgilカードのエクスポート文字列を返す（台帳の監査用フィールド向け）。 */
+export const exportOwnCard = async (userId: string): Promise<string | undefined> => {
+  if (!FUNC_ENCRYPTION) return undefined;
+  try {
+    if (!eThree) return undefined;
+    const card = await eThree.findUsers(userId);
+    return eThree.cardManager.exportCardAsString(card);
+  } catch (e) {
+    console.log('[exportOwnCard] error', e);
+    return undefined;
+  }
+};
+
 export const hasPrivateKeyBackup = async () => {
   if (!FUNC_ENCRYPTION) return true;
   // This code is taken from a comment on vigril slack

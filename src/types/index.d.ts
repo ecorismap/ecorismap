@@ -476,6 +476,32 @@ export interface ProjectSettingsFS {
   encryptedAt: Timestamp;
 }
 
+/**
+ * publicKeys/{uid} の形。ユーザー識別鍵の公開鍵台帳（Virgil Cards の後継）。
+ * 書き込みは Rules で本人のみに制限。DEK のラップ/署名検証に使う。
+ */
+export interface PublicKeyFS {
+  /** base64 エクスポート済み公開鍵 */
+  publicKey: string;
+  /** 鍵世代。初回=1、鍵リセット（ローテーション）で+1。Rules で巻き戻し禁止 */
+  keyVersion: number;
+  /** Virgil カードのエクスポート文字列（移行期の監査用。検証には使わない） */
+  card?: string;
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+}
+
+/**
+ * publicKeys/{uid}/history/{keyVersion} の形。ローテーションで退避した旧世代の公開鍵。
+ * ローテーション前に作られたラップの署名検証フォールバックに使う。
+ */
+export interface PublicKeyHistoryFS {
+  publicKey: string;
+  keyVersion: number;
+  createdAt: Timestamp;
+  rotatedAt: Timestamp;
+}
+
 export interface DataFS {
   userId: string;
   layerId: string;

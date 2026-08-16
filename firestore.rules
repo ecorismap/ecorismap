@@ -125,5 +125,48 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
+    // ユーザー識別鍵の公開鍵台帳（Virgil Cards の後継、脱Virgil移行）。
+    // DEKのラップ/署名検証に使うため全認証済みユーザーが読める。
+    // 書き込みは本人のみ。台帳の差し替えには本人のFirebase認証の奪取が必要＝E2Eの本人性前提と同等。
+    // keyVersion の巻き戻し禁止で「古い（漏洩済みかもしれない）鍵への差し戻し」を塞ぐ。
+    match /publicKeys/{uid} {
+      function isVerifiedUser() {
+        return request.auth != null && request.auth.token.email_verified;
+      }
+      function verifyPublicKeyFields() {
+        return request.resource.data.keys().hasAll(["publicKey", "keyVersion", "createdAt", "updatedAt"])
+        && request.resource.data.keys().hasOnly(["publicKey", "keyVersion", "createdAt", "updatedAt", "card"]);
+      }
+      allow read: if isVerifiedUser();
+      allow create: if isVerifiedUser()
+      && request.auth.uid == uid
+      && verifyPublicKeyFields()
+      && request.resource.data.keyVersion == 1;
+      allow update: if isVerifiedUser()
+      && request.auth.uid == uid
+      && verifyPublicKeyFields()
+      && request.resource.data.keyVersion >= resource.data.keyVersion;
+      // アカウント削除時の掃除はFunctions(Admin SDK)側で行う
+      allow delete: if false;
+
+      // ローテーションで退避した旧世代の公開鍵（旧ラップの署名検証フォールバック用）
+      match /history/{keyVersion} {
+        allow read: if isVerifiedUser();
+        allow create, update: if isVerifiedUser()
+        && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(["publicKey", "keyVersion", "createdAt", "rotatedAt"]);
+        allow delete: if false;
+      }
+    }
+
+    // 識別秘密鍵のPINバックアップblobとレート制限カウンタ（脱Virgil: Keyknox/Pythia の後継）。
+    // 総当たり防御のためクライアント直接アクセスは全面禁止。読み書きはFunctions(Admin SDK)経由のみ。
+    match /keyBackups/{uid} {
+      allow read, write: if false;
+    }
+    match /keyBackupAttempts/{uid} {
+      allow read, write: if false;
+    }
+
   }
 }

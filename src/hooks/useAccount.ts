@@ -9,6 +9,7 @@ import { RootState } from '../store';
 import { AccountFormStateType, UserType } from '../types';
 import { formattedInputs } from '../utils/Format';
 import * as e3kit from '../lib/virgilsecurity/e3kit';
+import { clearPublicKeyLedgerCache } from '../lib/crypto';
 import { AlertAsync, ConfirmAsync } from '../components/molecules/AlertAsync';
 import { isLoggedIn } from '../utils/Account';
 import { projectsInitialState, setProjectsAction } from '../modules/projects';
@@ -186,6 +187,7 @@ export const useAccount = (): UseAccountReturnType => {
     await FBsignOut();
     // アカウント切替時に前ユーザーの公開鍵・DEK（復号済み秘密鍵を含む）をキャッシュに残さない。
     e3kit.clearPublicKeyCache();
+    clearPublicKeyLedgerCache();
     projectStore.clearProjectCryptoCache();
     dispatch(setUserAction(userInitialState));
     dispatch(setProjectsAction(projectsInitialState));

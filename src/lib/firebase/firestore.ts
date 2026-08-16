@@ -16,12 +16,9 @@ import {
 //@ts-ignore
 import sizeof from 'firestore-size';
 import obj_sizeof from 'object-sizeof';
-import {
-  decryptEThree as decGroup,
-  encryptEThree as encGroup,
-  wrapDEKForMember,
-  unwrapDEK,
-} from '../virgilsecurity/e3kit';
+import { decryptEThree as decGroup, encryptEThree as encGroup } from '../virgilsecurity/e3kit';
+// DEKのラップ/アンラップは脱Virgilファサード経由（ENABLE_KEY_LEDGER で台帳優先、e3kitへフォールバック）
+import { wrapDEKForMember, unwrapDEK } from '../crypto';
 import { createProjectDEK, encryptWithDEK, decryptWithDEK, ExportedDEK } from '../virgilsecurity/dek';
 import { FUNC_ENCRYPTION, CREATE_DEK_PROJECTS } from '../../constants/AppConstants';
 import {
