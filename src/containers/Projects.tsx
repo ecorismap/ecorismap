@@ -66,8 +66,16 @@ export default function ProjectsContainers({ navigation, route }: Props_Projects
 
   const reloadProjects = useCallback(async () => {
     try {
-      const { isOK, message, needsKeyMigration } = await fetchProjects();
+      const { isOK, message, needsKeyMigration, needsKeyRestore, restoreMessage } = await fetchProjects();
       if (!isOK) {
+        if (needsKeyRestore) {
+          // 端末に鍵がない復帰セッション: 復元フォームへ（移行済み=新6桁PIN/未移行=旧PIN）
+          navigation.navigate('Account', {
+            accountFormState: 'restoreEncryptKey',
+            message: restoreMessage ?? t('hooks.message.inputEncryptPassword'),
+          });
+          return;
+        }
         await AlertAsync(message);
         return;
       }

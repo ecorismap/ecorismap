@@ -26,6 +26,8 @@ export type UseProjectsReturnType = {
     isOK: boolean;
     message: string;
     needsKeyMigration?: boolean;
+    needsKeyRestore?: boolean;
+    restoreMessage?: string;
   }>;
   generateProject: () => ProjectType;
   toggleFavorite: (projectId: string) => void;
@@ -76,6 +78,20 @@ export const useProjects = (): UseProjectsReturnType => {
       if (!e3kit.isInitialized()) {
         const { isOK: initE3kitOK, message: initE3kitMessage } = await e3kit.initializeUser(user.uid);
         if (!initE3kitOK) {
+          if (ENABLE_KEY_LEDGER && FUNC_ENCRYPTION && initE3kitMessage === 'not-localkey') {
+            // 端末に鍵がない復帰セッション（機種変更でアプリデータだけ引き継がれた場合等）:
+            // 鍵なしで先へ進むと復号が全滅するため、復元フォームへ誘導する
+            const migrationState = await getKeyMigrationState(user.uid);
+            return {
+              isOK: false,
+              message: '',
+              needsKeyRestore: true,
+              restoreMessage:
+                migrationState.state === 'migrated-need-restore'
+                  ? t('hooks.message.inputNewPinRestore')
+                  : t('hooks.message.inputEncryptPassword'),
+            };
+          }
           throw new Error(initE3kitMessage || t('hooks.message.failedInitializeEncrypt'));
         }
         // const e3kitInitEnd = performance.now();
