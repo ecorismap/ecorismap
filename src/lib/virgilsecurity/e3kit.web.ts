@@ -139,6 +139,19 @@ export const changeEncryptPassword = async (oldPassword: string, newPassword: st
   }
 };
 
+export const verifyEncryptPassword = async (password: string): Promise<{ isOK: boolean; message: string }> => {
+  if (!FUNC_ENCRYPTION) return { isOK: true, message: '' };
+  try {
+    // 同一パスワードのchangePasswordはkeyknoxのpull(=検証)+再pushになるため、PINの検証として使える
+    await eThree.changePassword(password, password);
+    return { isOK: true, message: '' };
+  } catch (e: any) {
+    console.log(e);
+    if (e?.name === 'WrongKeyknoxPasswordError') return { isOK: false, message: 'wrong-password' };
+    return { isOK: false, message: 'error' };
+  }
+};
+
 export const encryptEThree = async (data: any, userId: string, groupId: string, groupOwnerUid?: string) => {
   try {
     if (!FUNC_ENCRYPTION) {

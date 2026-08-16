@@ -57,7 +57,7 @@ export const getKeyBackupStatus = async (): Promise<
 
 /**
  * 識別秘密鍵のバックアップを作成（または新しいPINで作り直し）する。
- * @param pin ユーザーのPIN（6桁化・弱PIN拒否はUI側のバリデーションで担保）
+ * @param pin ユーザーのPIN（新規設定・変更時の6桁化と弱PIN拒否はUI側で担保。移行時は既存の旧4桁も許容）
  * @param privateKeyB64 バックアップ対象の識別秘密鍵
  * @param keyVersion publicKeys台帳と対応する鍵世代
  */

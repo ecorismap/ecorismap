@@ -651,7 +651,8 @@
       "stopDownload": "Do you want to stop the download?",
       "resumeDownload": "The download was interrupted. Resume from where it left off?",
       "resumeIncompleteDownload": "There is an incomplete map download. Resume from where it left off?",
-      "sendMailForActivate": "Your account has not been activated. \nWould you like to send an activation email?"
+      "sendMailForActivate": "Your account has not been activated. \nWould you like to send an activation email?",
+      "migrateEncryptPinMismatch": "The entered PIN does not match your current encryption key. If you continue, this PIN will be used as your encryption key from now on. Continue?"
     },
     "alert": {
       "completeDownload": "The map download is complete.",
@@ -690,7 +691,7 @@
       "failUpdateProfile": "Failed to update your profile.",
       "failUserCheck": "User check failed.",
       "inputEncryptPassword": "Please enter the encrypted password.",
-      "migrateEncryptPassword": "For enhanced security, the encryption key protection will be updated. Please set a new 6-digit PIN.",
+      "migrateEncryptPassword": "The encryption key protection will be updated. Please enter your current encryption key (PIN).",
       "inputNewPinRestore": "Please enter your 6-digit PIN.",
       "backupLocked": "Too many PIN attempts. Please try again later.",
       "backupWrongPin": "Incorrect PIN.",

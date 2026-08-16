@@ -319,7 +319,7 @@ export default function Account() {
                       accountFormState === 'resetEncryptKey' ||
                       accountFormState === 'deleteAllProjects'
                     ? 'password'
-                    : accountFormState === 'restoreEncryptKey'
+                    : accountFormState === 'restoreEncryptKey' || accountFormState === 'migrateEncryptPassword'
                     ? t('Account.placeholder.pin')
                     : t('Account.placeholder.newPin')
                 }

@@ -10,7 +10,7 @@ import { extractPublicKeyB64 } from './identity';
  *
  * 「移行」= 既存の識別鍵ペアはそのまま、保管の仕組みだけを置き換える:
  *   - 公開鍵: Virgil Cards → Firestore台帳(publicKeys/{uid})
- *   - 秘密鍵バックアップ: Virgil Keyknox(旧PIN) → KMS方式(新6桁PIN)
+ *   - 秘密鍵バックアップ: Virgil Keyknox(旧PIN) → KMS方式(原則これまでと同じPIN)
  *   - ローカル保管: e3kit keyEntryStorage → keyStorage（移行期間中は両方に持つ）
  *
  * 移行済み判定はサーバー真実（KMSバックアップの有無）で行い、
@@ -108,7 +108,7 @@ export const getKeyMigrationState = async (uid: string): Promise<KeyMigrationSta
 /**
  * 未移行ユーザーの移行本体。端末にある既存の識別鍵をそのまま新方式へ載せ替える。
  * 前提: e3kit が初期化済みでローカル鍵がある（initializeEncript の分岐で保証）。
- * @param newPin 新しい6桁PIN（バリデーションは呼び出し側）
+ * @param newPin KMSバックアップに使うPIN（原則これまでと同じPIN。バリデーションは呼び出し側）
  */
 export const migrateIdentityKey = async (uid: string, newPin: string): Promise<{ isOK: boolean; message: string }> => {
   // 1. 既存鍵の取り出し（e3kit公式API経由）
