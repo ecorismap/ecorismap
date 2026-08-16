@@ -192,7 +192,8 @@ export default function AccountContainers({ navigation, route }: Props_Account) 
         return;
       }
       if (needsMigration) {
-        // 旧PINで復元した未移行ユーザー: 続けて保護方式の更新（新6桁PIN設定）へ
+        // 旧PINで復元した未移行ユーザーの保護方式更新はフック側で自動実行される。
+        // ここに来るのは自動移行に失敗した場合のみで、移行フォームから再試行する
         setAccountMessage(t('hooks.message.migrateEncryptPassword'));
         setAccountFormState('migrateEncryptPassword');
         return;
@@ -205,7 +206,8 @@ export default function AccountContainers({ navigation, route }: Props_Account) 
 
   const pressMigrateEncryptPassword = useCallback(
     async (password: string) => {
-      const checkEncryptPasswordResult = checkNewEncryptPassword(password);
+      // 移行はこれまでのPINをそのまま使うため旧4桁も受け付ける（新規設定・自発変更は6桁強制のまま）
+      const checkEncryptPasswordResult = checkEncryptPassword(password);
       if (!checkEncryptPasswordResult.isOK) return;
       const { isOK } = await migrateEncryptKey(password);
       // 失敗時はメッセージ表示済み・フォームに留まって再試行できる
@@ -214,7 +216,7 @@ export default function AccountContainers({ navigation, route }: Props_Account) 
       await AlertAsync(t('Account.alert.migrateEncryptKey'));
       navigation.navigate('Projects');
     },
-    [checkNewEncryptPassword, migrateEncryptKey, navigation, setAccountMessage]
+    [checkEncryptPassword, migrateEncryptKey, navigation, setAccountMessage]
   );
 
   const pressRegistEncryptPassword = useCallback(

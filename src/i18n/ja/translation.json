@@ -844,7 +844,8 @@
       "stopDownload": "ダウンロードを中止しますか?",
       "resumeDownload": "ダウンロードが中断されました。続きから再開しますか?",
       "resumeIncompleteDownload": "未完了の地図ダウンロードがあります。続きから再開しますか?",
-      "sendMailForActivate": "アカウントがアクティベートされていません。アクティベート用のメールを送信しますか？"
+      "sendMailForActivate": "アカウントがアクティベートされていません。アクティベート用のメールを送信しますか？",
+      "migrateEncryptPinMismatch": "入力されたPINはこれまでの暗号化キーと一致しません。このまま続けると、今後はこのPINを暗号化キーとして使用します。続けますか？"
     },
     "alert": {
       "completeDownload": "地図のダウンロードが完了しました。",
@@ -895,7 +896,7 @@
       "registEncryptPassword": "暗号化パスワードを登録してください。",
       "inputEncryptPassword": "暗号化パスワードを入力してください。",
       "errorInitEncrypt": "暗号の初期化に問題があります。",
-      "migrateEncryptPassword": "セキュリティ強化のため、暗号化キーの保護方式を更新します。新しいPIN(数字6桁)を設定してください。",
+      "migrateEncryptPassword": "暗号化キーの保護方式を更新します。これまで使用している暗号化キー(PIN)を入力してください。",
       "inputNewPinRestore": "設定したPIN(数字6桁)を入力してください。",
       "backupLocked": "PINの入力回数が上限に達しました。しばらくしてから再試行してください。",
       "backupWrongPin": "PINが違います。",

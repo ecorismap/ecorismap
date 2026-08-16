@@ -450,6 +450,20 @@ export const useAccount = (): UseAccountReturnType => {
     async (password: string) => {
       if (user.uid === undefined) return { isOK: false };
       setIsLoading(true);
+      // 移行は「これまでのPINをそのまま使う」運用のため、打ち間違い・記憶違いのPINで
+      // バックアップが作られないようkeyknoxと照合する。不一致でも、旧PINを忘れたユーザーが
+      // 移行できなくならないよう、確認の上で入力したPINのまま続行できる
+      const verifyResult = await e3kit.verifyEncryptPassword(password);
+      if (!verifyResult.isOK && verifyResult.message === 'wrong-password') {
+        setIsLoading(false);
+        const proceed = await ConfirmAsync(t('hooks.confirm.migrateEncryptPinMismatch'));
+        if (!proceed) {
+          setAccountMessage(t('hooks.message.migrateEncryptPassword'));
+          return { isOK: false };
+        }
+        setIsLoading(true);
+      }
+      // 照合の通信エラー等はベストエフォート扱いで続行し、移行本体の失敗で拾う
       const { isOK, message } = await migration.migrateIdentityKey(user.uid, password);
       setIsLoading(false);
       if (!isOK) {
@@ -466,7 +480,7 @@ export const useAccount = (): UseAccountReturnType => {
     async (password: string): Promise<{ isOK: boolean; needsMigration?: boolean; retry?: boolean }> => {
       if (ENABLE_KEY_LEDGER && FUNC_ENCRYPTION && user.uid !== undefined) {
         // モードはサーバー真実で毎回判定する（フォームへの入口がログイン経由とは限らないため）:
-        // 移行済み=新6桁PINでKMSバックアップから復元 / 未移行=旧PINでkeyknoxから復元
+        // 移行済み=移行後のPINでKMSバックアップから復元 / 未移行=旧PINでkeyknoxから復元
         setIsLoading(true);
         const statusResult = await keyBackup.getKeyBackupStatus();
         const migratedOnServer = statusResult.isOK && statusResult.status.exists;
@@ -487,10 +501,19 @@ export const useAccount = (): UseAccountReturnType => {
           return { isOK: true };
         }
         const { isOK: legacyOK } = await e3kit.restoreEncryptKey(password);
+        if (!legacyOK) {
+          setIsLoading(false);
+          return { isOK: false };
+        }
+        // 旧PINで復元できた＝PIN検証済みなので、同じPINでそのまま新方式へ移行する（フォーム省略）。
+        // 移行に失敗した場合のみ移行フォームへ誘導して再試行できるようにする
+        const migrateResult = await migration.migrateIdentityKey(user.uid, password);
         setIsLoading(false);
-        if (!legacyOK) return { isOK: false };
-        // 旧PINで復元した未移行ユーザーは、続けて移行フォームへ誘導する
-        return { isOK: true, needsMigration: true };
+        if (!migrateResult.isOK) {
+          console.log('[restoreEncryptKey] migrate failed', migrateResult.message);
+          return { isOK: true, needsMigration: true };
+        }
+        return { isOK: true };
       }
       setIsLoading(true);
       const { isOK } = await e3kit.restoreEncryptKey(password);

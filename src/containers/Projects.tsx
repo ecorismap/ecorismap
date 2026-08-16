@@ -69,7 +69,7 @@ export default function ProjectsContainers({ navigation, route }: Props_Projects
       const { isOK, message, needsKeyMigration, needsKeyRestore, restoreMessage } = await fetchProjects();
       if (!isOK) {
         if (needsKeyRestore) {
-          // 端末に鍵がない復帰セッション: 復元フォームへ（移行済み=新6桁PIN/未移行=旧PIN）
+          // 端末に鍵がない復帰セッション: 復元フォームへ（移行済み=移行後のPIN/未移行=旧PIN）
           navigation.navigate('Account', {
             accountFormState: 'restoreEncryptKey',
             message: restoreMessage ?? t('hooks.message.inputEncryptPassword'),
@@ -80,7 +80,7 @@ export default function ProjectsContainers({ navigation, route }: Props_Projects
         return;
       }
       if (needsKeyMigration) {
-        // 復帰セッションの未移行ユーザー: 暗号化キーの保護方式更新（新6桁PIN設定）へ誘導
+        // 復帰セッションの未移行ユーザー: 暗号化キーの保護方式更新（これまでのPINを入力）へ誘導
         navigation.navigate('Account', {
           accountFormState: 'migrateEncryptPassword',
           message: t('hooks.message.migrateEncryptPassword'),
