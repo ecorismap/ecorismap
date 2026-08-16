@@ -39,6 +39,22 @@ export const extractPublicKeyB64 = async (privateKeyB64: string): Promise<string
 };
 
 /**
+ * KEK等の鍵素材から決定的に導出した鍵でペイロードを暗号化する（PINバックアップのblob用）。
+ * generateKeysFromKeyMaterial は同一シードから常に同一の鍵ペアを生成するため、
+ * 同じKEKを再導出できれば復号できる。
+ */
+export const encryptWithKeyMaterial = async (payload: string, keyMaterialB64: string): Promise<string> => {
+  const keyPair = virgilCrypto.generateKeysFromKeyMaterial(Buffer.from(keyMaterialB64, 'base64'));
+  return virgilCrypto.encrypt(payload, keyPair.publicKey).toString('base64');
+};
+
+/** encryptWithKeyMaterial で暗号化したペイロードを復号する。 */
+export const decryptWithKeyMaterial = async (encB64: string, keyMaterialB64: string): Promise<string> => {
+  const keyPair = virgilCrypto.generateKeysFromKeyMaterial(Buffer.from(keyMaterialB64, 'base64'));
+  return virgilCrypto.decrypt(Buffer.from(encB64, 'base64'), keyPair.privateKey).toString('utf8');
+};
+
+/**
  * eThree.authEncrypt と互換のラップ。DEK秘密鍵等を相手の公開鍵でラップし、自分の秘密鍵で署名する。
  * @returns base64 のラップ済み文字列（ProjectKeyFS.encDek と同形式）
  */
