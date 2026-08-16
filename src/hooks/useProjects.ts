@@ -2,7 +2,8 @@ import { useCallback, useMemo, useState } from 'react';
 import { ProjectType, UserType } from '../types';
 import * as projectRepository from '../lib/firebase/firestore';
 import { setProjectsAction, updateProjectAction } from '../modules/projects';
-import { FUNC_ENCRYPTION, ENABLE_DEK_MIGRATION } from '../constants/AppConstants';
+import { FUNC_ENCRYPTION, ENABLE_DEK_MIGRATION, ENABLE_KEY_LEDGER } from '../constants/AppConstants';
+import { getKeyMigrationState } from '../lib/crypto/migration';
 import {
   toggleFavorite as toggleFavoriteAction,
   setShowOnlyFavorites as setShowOnlyFavoritesAction,
@@ -24,6 +25,7 @@ export type UseProjectsReturnType = {
   fetchProjects: (includeArchived?: boolean) => Promise<{
     isOK: boolean;
     message: string;
+    needsKeyMigration?: boolean;
   }>;
   generateProject: () => ProjectType;
   toggleFavorite: (projectId: string) => void;
@@ -102,7 +104,15 @@ export const useProjects = (): UseProjectsReturnType => {
       dispatch(setProjectsAction(sortedProjects));
       // const perfEnd = performance.now();
       // console.log(`[PERF] === fetchProjects TOTAL: ${(perfEnd - perfStart).toFixed(0)}ms ===`);
-      return { isOK: true, message };
+
+      // 脱Virgil移行の取りこぼし対策: ログインフォームを通らない復帰セッション
+      // （Webのリロード等）でも未移行を検知し、呼び出し元で移行フォームへ誘導する
+      let needsKeyMigration = false;
+      if (ENABLE_KEY_LEDGER && FUNC_ENCRYPTION) {
+        const migrationState = await getKeyMigrationState(user.uid);
+        needsKeyMigration = migrationState.state === 'needs-migration';
+      }
+      return { isOK: true, message, needsKeyMigration };
     } catch (e: any) {
       return { isOK: false, message: e.message };
     } finally {

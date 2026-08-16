@@ -87,6 +87,19 @@ export const createKeyBackup = async (
   }
 };
 
+/** アカウント削除時に自分の鍵データ（台帳・バックアップ）をFunctions経由で削除する。 */
+export const deleteKeyData = async (): Promise<{ isOK: boolean }> => {
+  try {
+    await firebaseReady;
+    const call = httpsCallable(functions, 'deleteKeyData');
+    await call();
+    return { isOK: true };
+  } catch (e) {
+    console.log('[deleteKeyData] error', e);
+    return { isOK: false };
+  }
+};
+
 /**
  * PINでバックアップから識別秘密鍵を復元する。
  * 誤PINの連続でロックされる（message='backup-locked'、lockedUntil=解除時刻ms）。

@@ -37,6 +37,7 @@ export default function AccountContainers({ navigation, route }: Props_Account) 
     changeEncryptPassword,
     registEncryptPassword,
     backupEncryptPassword,
+    migrateEncryptKey,
     restoreEncryptKey,
     resetEncryptKey,
     deleteAllProjects,
@@ -114,8 +115,17 @@ export default function AccountContainers({ navigation, route }: Props_Account) 
   }, [navigation, route.params?.previous]);
 
   const pressClose = useCallback(async () => {
-    if (accountFormState === 'registEncryptPassword' || accountFormState === 'backupEncryptPassword') {
-      await AlertAsync(t('Account.alert.registEncryptKey'));
+    if (
+      accountFormState === 'registEncryptPassword' ||
+      accountFormState === 'backupEncryptPassword' ||
+      accountFormState === 'migrateEncryptPassword'
+    ) {
+      // 暗号化キーの登録・更新はスキップ不可（中断=ログアウト）
+      await AlertAsync(
+        accountFormState === 'migrateEncryptPassword'
+          ? t('Account.alert.migrateEncryptKeyRequired')
+          : t('Account.alert.registEncryptKey')
+      );
       await logout();
       //ログアウト済みのためAccountSettingsには戻さない
       if (Platform.OS === 'web') {
@@ -172,16 +182,39 @@ export default function AccountContainers({ navigation, route }: Props_Account) 
     async (password: string) => {
       const checkEncryptPasswordResult = checkEncryptPassword(password);
       if (!checkEncryptPasswordResult.isOK) return;
-      const { isOK } = await restoreEncryptKey(password);
-      setAccountMessage('');
+      const { isOK, needsMigration, retry } = await restoreEncryptKey(password);
       if (!isOK) {
+        // 新方式の復元は誤PINでもフォームに留まって再試行できる（メッセージはフック側でセット済み）
+        if (retry) return;
+        setAccountMessage('');
         await AlertAsync(t('Account.alert.FailRestoreEncryptKey'));
         await logout();
-      } else {
-        navigation.navigate('Home');
+        return;
       }
+      if (needsMigration) {
+        // 旧PINで復元した未移行ユーザー: 続けて保護方式の更新（新6桁PIN設定）へ
+        setAccountMessage(t('hooks.message.migrateEncryptPassword'));
+        setAccountFormState('migrateEncryptPassword');
+        return;
+      }
+      setAccountMessage('');
+      navigation.navigate('Home');
     },
-    [checkEncryptPassword, logout, navigation, restoreEncryptKey, setAccountMessage]
+    [checkEncryptPassword, logout, navigation, restoreEncryptKey, setAccountFormState, setAccountMessage]
+  );
+
+  const pressMigrateEncryptPassword = useCallback(
+    async (password: string) => {
+      const checkEncryptPasswordResult = checkNewEncryptPassword(password);
+      if (!checkEncryptPasswordResult.isOK) return;
+      const { isOK } = await migrateEncryptKey(password);
+      // 失敗時はメッセージ表示済み・フォームに留まって再試行できる
+      if (!isOK) return;
+      setAccountMessage('');
+      await AlertAsync(t('Account.alert.migrateEncryptKey'));
+      navigation.navigate('Projects');
+    },
+    [checkNewEncryptPassword, migrateEncryptKey, navigation, setAccountMessage]
   );
 
   const pressRegistEncryptPassword = useCallback(
@@ -346,6 +379,7 @@ export default function AccountContainers({ navigation, route }: Props_Account) 
         pressRestoreEncryptKey,
         pressRegistEncryptPassword,
         pressBackupEncryptPassword,
+        pressMigrateEncryptPassword,
         pressResetEncryptKey,
         pressDeleteAllProjects,
         changeSignUpForm,

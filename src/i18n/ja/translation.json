@@ -758,6 +758,7 @@
       "registEncryptPassword": "暗号化パスワードの登録",
       "backupEncryptPassword": "暗号化パスワードの登録",
       "restoreEncryptKey": "暗号化キーのリストア",
+      "migrateEncryptPassword": "暗号化キーの更新",
       "resetEncryptKey": "暗号化キーのリセット",
       "changeEncryptPassword": "暗号化パスワード変更",
       "deleteUserAccount": "アカウントの削除",
@@ -801,7 +802,9 @@
       "needResetEncryptKey": "暗号化キーをリセットする必要があります。",
       "FailRestoreEncryptKey": "暗号化キーのリストアに失敗しました。",
       "FailBackupEncryptPassword": "暗号化キーの登録に失敗しました。",
-      "FailRegistEncryptPassword": "暗号化キーの登録に失敗しました。"
+      "FailRegistEncryptPassword": "暗号化キーの登録に失敗しました。",
+      "migrateEncryptKey": "暗号化キーの保護方式を更新しました。",
+      "migrateEncryptKeyRequired": "利用を続けるには、暗号化キーの更新が必要です。"
     },
     "message": {
       "inputMail": "メールアドレスを入力してください",
@@ -891,6 +894,11 @@
       "registEncryptPassword": "暗号化パスワードを登録してください。",
       "inputEncryptPassword": "暗号化パスワードを入力してください。",
       "errorInitEncrypt": "暗号の初期化に問題があります。",
+      "migrateEncryptPassword": "セキュリティ強化のため、暗号化キーの保護方式を更新します。新しいPIN(数字6桁)を設定してください。",
+      "inputNewPinRestore": "設定したPIN(数字6桁)を入力してください。",
+      "backupLocked": "PINの入力回数が上限に達しました。しばらくしてから再試行してください。",
+      "backupWrongPin": "PINが違います。",
+      "failMigrateEncryptKey": "暗号化キーの更新に失敗しました。通信環境を確認して再試行してください。",
       "failedInitializeEncrypt": "暗号化の初期化に失敗しました",
       "reloginRequired": "ログアウト後に復元したデータのため、同期には再ログインが必要です。\nログアウト→ログイン後、もう一度「バックアップから復元」を実行してから、データの取得・送信をお試しください。\n（現在のデータはログアウト時に自動バックアップされます）",
       "noUser": "ユーザーが存在しません。",

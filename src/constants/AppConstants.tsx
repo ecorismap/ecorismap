@@ -20,11 +20,12 @@ export const ENABLE_DEK_MIGRATION = true;
 // セルラー回線では書き戻しをスキップする(現場の弱い回線への配慮。Wi-Fi時に自動で再試行)。
 // firestore.rules の data verifyFields に cryptoScheme を追加デプロイしてから有効なビルドを配布すること。
 export const ENABLE_DEK_SELF_MIGRATION = true;
-// 脱Virgil: DEKのラップ/アンラップの公開鍵取得を Firestore の公開鍵台帳(publicKeys/{uid})優先にするか。
+// 脱Virgil: DEKのラップ/アンラップの公開鍵取得を Firestore の公開鍵台帳(publicKeys/{uid})優先にし、
+// ログイン時の移行フロー(migrateEncryptPassword=新6桁PIN設定→台帳publish+KMSバックアップ)を有効にするか。
 // true でも台帳に無い相手・失敗時は Virgil Cards(findUsers) へフォールバックするため後方互換。
-// 前提: firestore.rules の publicKeys 追加デプロイ + シーディングスクリプト実行(台帳の初期投入)。
+// 前提: firestore.rules の publicKeys(済) + key-backup Functions(済) + シーディング実行(済・2026-08-16)。
 // false の間は従来どおり e3kit(Virgil) のみを使う＝挙動不変。
-export const ENABLE_KEY_LEDGER = false;
+export const ENABLE_KEY_LEDGER = true;
 export const CURRENT_TERMS_VERSION = '2026-08-01';
 
 export const COLOR = {
