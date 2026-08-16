@@ -30,6 +30,7 @@ export default function ProjectEditScreen() {
     isLoading,
     migrationProgress,
     userUid,
+    staleKeyUids,
     changeText,
     changeMemberText,
     changeAdmin,
@@ -83,6 +84,7 @@ export default function ProjectEditScreen() {
         name={item.role === 'OWNER' ? t('common.owner') : t('common.member')}
         value={item.email}
         verified={item.verified}
+        keyStale={!!item.uid && staleKeyUids.includes(item.uid)}
         role={item.role}
         editable={(isOwner && !isProjectOpen && index !== 0) || (isNew && index !== 0)}
         visibleMinus={item.role !== 'OWNER' && !isProjectOpen && (isOwner || isNew)}
@@ -106,6 +108,7 @@ export default function ProjectEditScreen() {
       pressDeleteMember,
       pressReshareMemberKey,
       showReshareKey,
+      staleKeyUids,
       userUid,
     ]
   );
