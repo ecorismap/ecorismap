@@ -162,6 +162,26 @@ const CurrentMarkerComponent = (props: Props) => {
 
   // redraw() は使用しない (iOS での初動ちらつき軽減)
 
+  // 現在地マーカー(iOS)の再描画追跡。trueのままだと現在地が画面内にある間ずっと
+  // GMSMapViewが毎フレーム再描画され電池を消費し続けるため、アイコンの見た目
+  // （回転角・マーカー画像）が変化したときだけ有効化し、変化が収まったらfalseへ戻す。
+  // 回転中はtrueが維持されるので、子ビューtransformによる滑らかな回転は変わらない
+  const [tracksMarkerChanges, setTracksMarkerChanges] = useState(true);
+  const tracksOffTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    if (!rotatesImageByTransform()) return; // 子ビュー回転を使うのはiOSのみ
+    setTracksMarkerChanges(true);
+    if (tracksOffTimerRef.current) clearTimeout(tracksOffTimerRef.current);
+    // 最後の変化から500ms後に追跡を止める（最終フレームのラスタライズを待つ）
+    tracksOffTimerRef.current = setTimeout(() => setTracksMarkerChanges(false), 500);
+  }, [markerAngle, markerImage]);
+  useEffect(
+    () => () => {
+      if (tracksOffTimerRef.current) clearTimeout(tracksOffTimerRef.current);
+    },
+    []
+  );
+
   const usesScreenLine = !!showDirectionLine && usesScreenFixedLine(headingUp);
 
   // north-up時の方角線（地理座標のPolyline）。画面固定線を使う場合は描かない。
@@ -239,7 +259,7 @@ const CurrentMarkerComponent = (props: Props) => {
             longitude: currentLocation.longitude,
           }}
           anchor={{ x: 0.5, y: 0.5 }}
-          tracksViewChanges={true}
+          tracksViewChanges={tracksMarkerChanges}
           style={{ zIndex: 1001 }}
           // style.zIndexはGMSMarkerに届かない。現在地は選択中マーカーも含め全マーカーより前面に出す
           zIndex={CURRENT_MARKER_ZINDEX}

@@ -10079,6 +10079,29 @@ index 0000000..fe281d2
 +@end
 +
 +#endif
+diff --git a/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapMarker.m b/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapMarker.m
+index b3f8da6..e962ce2 100644
+--- a/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapMarker.m
++++ b/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapMarker.m
+@@ -517,11 +517,17 @@ - (BOOL)flat {
+ }
+ 
+ - (void)setTracksViewChanges:(BOOL)tracksViewChanges {
++    // Keep the ivar in sync: props are applied before didInsertInMap creates
++    // _realMarker (messaging nil is a no-op), and didInsertInMap re-applies
++    // _tracksViewChanges. Without this, an initial value of NO is lost and the
++    // marker is inserted with the default YES, forcing the map to re-render
++    // the icon view every frame.
++    _tracksViewChanges = tracksViewChanges;
+     _realMarker.tracksViewChanges = tracksViewChanges;
+ }
+ 
+ - (BOOL)tracksViewChanges {
+-    return _realMarker.tracksViewChanges;
++    return _tracksViewChanges;
+ }
+ 
+ - (void)setTracksInfoWindowChanges:(BOOL)tracksInfoWindowChanges {
 diff --git a/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapPMTile.h b/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapPMTile.h
 new file mode 100644
 index 0000000..9faf374
