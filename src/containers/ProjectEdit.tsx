@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import ProjectEdit from '../components/pages/ProjectEdit';
 import { AlertAsync, ConfirmAsync } from '../components/molecules/AlertAsync';
 import { useProjectEdit } from '../hooks/useProjectEdit';
@@ -13,7 +13,7 @@ import { exportGeoFile } from '../utils/File';
 import { truncateForFileName } from '../utils/General';
 import { ProjectType } from '../types';
 import { FUNC_ENCRYPTION, CREATE_DEK_PROJECTS, ENABLE_DEK_SELF_MIGRATION } from '../constants/AppConstants';
-import { migrateSelfDataToDEK, SelfMigrationInputType } from '../lib/firebase/firestore';
+import { getMemberKeyFreshness, migrateSelfDataToDEK, SelfMigrationInputType } from '../lib/firebase/firestore';
 import dayjs from '../i18n/dayjs';
 import { useEcorisMapFile } from '../hooks/useEcorismapFile';
 import { ConflictResolverModal } from '../components/organisms/HomeModalConflictResolver';
@@ -41,6 +41,20 @@ export default function ProjectEditContainer({ navigation, route }: Props_Projec
 
   const [isLoading, setIsLoading] = useState(false);
   const [migrationProgress, setMigrationProgress] = useState('');
+  // 鍵リセット済み（ラップが古く本人が開けない）メンバーのuid。管理者にバッジ表示して再共有を促す
+  const [staleKeyUids, setStaleKeyUids] = useState<string[]>([]);
+
+  const refreshMemberKeyFreshness = useCallback(async () => {
+    if (isNew || targetProject.cryptoScheme !== 'dek') return;
+    const memberUids = targetProject.members.map((m) => m.uid).filter((uid): uid is string => !!uid);
+    if (memberUids.length === 0) return;
+    const freshness = await getMemberKeyFreshness(targetProject.id, memberUids);
+    setStaleKeyUids(memberUids.filter((uid) => freshness[uid] === 'needs-reshare'));
+  }, [isNew, targetProject.cryptoScheme, targetProject.id, targetProject.members]);
+
+  useEffect(() => {
+    refreshMemberKeyFreshness();
+  }, [refreshMemberKeyFreshness]);
   const { loadE3kitGroup, deleteE3kitGroup, updateE3kitGroupMembers, createE3kitGroup, reshareMemberKey } =
     useE3kitGroup();
   const {
@@ -328,12 +342,14 @@ export default function ProjectEditContainer({ navigation, route }: Props_Projec
         setIsLoading(false);
         if (!res.isOK) throw new Error(res.message);
         await AlertAsync(t('ProjectEdit.alert.reshareKey'));
+        // 再共有により新しいラップになったためバッジを更新する
+        refreshMemberKeyFreshness();
       } catch (e: any) {
         setIsLoading(false);
         await AlertAsync(e.message);
       }
     },
-    [reshareMemberKey, targetProject]
+    [refreshMemberKeyFreshness, reshareMemberKey, targetProject]
   );
 
   const gotoBack = useCallback(async () => {
@@ -373,6 +389,7 @@ export default function ProjectEditContainer({ navigation, route }: Props_Projec
         migrationProgress,
         isNew,
         userUid: user.uid,
+        staleKeyUids,
         changeText,
         changeMemberText,
         changeAdmin,

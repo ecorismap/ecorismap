@@ -508,6 +508,7 @@
       "save": "保存",
       "dataManage": "データ管理",
       "reshareKey": "暗号化キーを再共有",
+      "keyChanged": "鍵変更あり・要再共有",
       "migratingData": "データを新しい暗号方式へ移行中... ({{done}}/{{total}})"
     }
   },

@@ -50,7 +50,7 @@ const mockPublish = publicKeys.publishPublicKeyToLedger as jest.MockedFunction<
 const mockGetLedger = publicKeys.getPublicKeyFromLedger as jest.MockedFunction<
   typeof publicKeys.getPublicKeyFromLedger
 >;
-// eslint-disable-next-line @typescript-eslint/no-var-requires
+ 
 const identityMock = require('../../crypto/identity');
 const mockExtractPublicKey = identityMock.extractPublicKeyB64 as jest.Mock;
 const mockGetStatus = backup.getKeyBackupStatus as jest.MockedFunction<typeof backup.getKeyBackupStatus>;

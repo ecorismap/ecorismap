@@ -11,6 +11,8 @@ interface ProjectEditContextType {
   isLoading: boolean;
   migrationProgress: string;
   userUid: string | undefined;
+  /** 鍵リセット済み（ラップが古く本人が開けない）で再共有が必要なメンバーのuid */
+  staleKeyUids: string[];
   changeText: (name: string, value: string) => void;
   changeMemberText: (value: string, idx: number) => void;
   changeAdmin: (checked: boolean, idx: number) => void;

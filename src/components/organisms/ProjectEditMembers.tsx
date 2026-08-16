@@ -13,6 +13,8 @@ interface Props {
   value: string | number | undefined;
   editable: boolean;
   verified: 'OK' | 'HOLD' | 'NO_ACCOUNT';
+  /** 鍵リセット済みでラップが古い（本人が開けない）＝再共有が必要 */
+  keyStale: boolean;
   role: RoleType;
   visibleMinus: boolean;
   visibleReshareKey: boolean;
@@ -29,6 +31,7 @@ export const ProjectEditMembers = (props: Props) => {
     value,
     editable,
     verified,
+    keyStale,
     role,
     visibleMinus,
     visibleReshareKey,
@@ -49,6 +52,7 @@ export const ProjectEditMembers = (props: Props) => {
           style={styles.input}
           label={name}
           verified={verified}
+          keyStale={keyStale}
           value={value ? value.toString() : ''}
           onChangeText={onChangeText}
           editable={editable}
@@ -114,7 +118,7 @@ export const ProjectEditMembers = (props: Props) => {
 };
 
 const MemberTextInput = React.memo((props: any) => {
-  const { label, verified } = props;
+  const { label, verified, keyStale } = props;
   return (
     <View style={styles.tr2}>
       <View style={{ flexDirection: 'row' }}>
@@ -128,6 +132,12 @@ const MemberTextInput = React.memo((props: any) => {
           name={verified ? 'account-check' : 'account-alert'}
           size={14}
         />
+        {keyStale && (
+          <View style={styles.staleBadge}>
+            <MaterialCommunityIcons name="key-alert" size={12} color={COLOR.WHITE} />
+            <Text style={styles.staleBadgeText}>{t('ProjectEdit.label.keyChanged')}</Text>
+          </View>
+        )}
       </View>
       <TextInput {...props} />
     </View>
@@ -174,6 +184,20 @@ const styles = StyleSheet.create({
     color: COLOR.TEXT_DARK,
     fontSize: 15,
     marginLeft: 12,
+  },
+  staleBadge: {
+    alignItems: 'center',
+    backgroundColor: COLOR.DARKRED,
+    borderRadius: 4,
+    flexDirection: 'row',
+    marginLeft: 8,
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+  },
+  staleBadgeText: {
+    color: COLOR.WHITE,
+    fontSize: 10,
+    marginLeft: 3,
   },
   td: {
     alignItems: 'center',

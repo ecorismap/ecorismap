@@ -19,8 +19,9 @@ import obj_sizeof from 'object-sizeof';
 import { decryptEThree as decGroup, encryptEThree as encGroup } from '../virgilsecurity/e3kit';
 // DEKのラップ/アンラップは脱Virgilファサード経由（ENABLE_KEY_LEDGER で台帳優先、e3kitへフォールバック）
 import { wrapDEKForMember, unwrapDEK } from '../crypto';
+import { getPublicKeyFromLedger } from './publicKeys';
 import { createProjectDEK, encryptWithDEK, decryptWithDEK, ExportedDEK } from '../virgilsecurity/dek';
-import { FUNC_ENCRYPTION, CREATE_DEK_PROJECTS } from '../../constants/AppConstants';
+import { FUNC_ENCRYPTION, CREATE_DEK_PROJECTS, ENABLE_KEY_LEDGER } from '../../constants/AppConstants';
 import {
   auth,
   collection,
@@ -1401,4 +1402,41 @@ export const deleteLayerFromSettings = async (
     console.error('deleteLayerFromSettings Error:', error);
     return { isOK: false, message: t('CloudDataManagement.message.failDeleteLayer') };
   }
+};
+
+/**
+ * 各メンバーの鍵ラップ(keys/{uid})が台帳の現行鍵より古くないかを判定する（管理者向けバッジ用）。
+ * 判定: keys/{uid}.encryptedAt < publicKeys/{uid}.createdAt（現行世代の作成時刻）なら、
+ * ラップは鍵リセット前のもの＝本人は開けないため再共有が必要。
+ * keysの読み取り権限がない（一般メンバー）・台帳未登録・鍵ラップ未作成は 'unknown'（バッジ非表示）。
+ */
+export const getMemberKeyFreshness = async (
+  projectId: string,
+  memberUids: string[]
+): Promise<{ [uid: string]: 'ok' | 'needs-reshare' | 'unknown' }> => {
+  const result: { [uid: string]: 'ok' | 'needs-reshare' | 'unknown' } = {};
+  if (!ENABLE_KEY_LEDGER || !FUNC_ENCRYPTION) {
+    memberUids.forEach((uid) => (result[uid] = 'unknown'));
+    return result;
+  }
+  await Promise.all(
+    memberUids.map(async (uid) => {
+      try {
+        const [keySnapshot, ledger] = await Promise.all([
+          getDoc(doc(firestore, 'projects', projectId, 'keys', uid)),
+          getPublicKeyFromLedger(uid),
+        ]);
+        if (!keySnapshot.exists() || ledger === undefined) {
+          result[uid] = 'unknown';
+          return;
+        }
+        const keyData = keySnapshot.data() as ProjectKeyFS;
+        result[uid] = toDate(keyData.encryptedAt) < toDate(ledger.createdAt) ? 'needs-reshare' : 'ok';
+      } catch (e) {
+        // 権限なし(一般メンバー)等
+        result[uid] = 'unknown';
+      }
+    })
+  );
+  return result;
 };
