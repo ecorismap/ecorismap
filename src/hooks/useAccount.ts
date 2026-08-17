@@ -206,6 +206,11 @@ export const useAccount = (): UseAccountReturnType => {
       const { isOK: signInOK, message: signInMessage, authUser } = await firebase.signInWithEmail(email, password);
       setIsLoading(false);
       if (!signInOK || authUser === undefined) {
+        if (signInMessage === 'auth/signin-restricted') {
+          // beforeSignIn blocking functionによる拒否（組織の契約終了・停止など）
+          setAccountMessage(t('hooks.message.signinRestricted'));
+          return { isOK: false, authUser: undefined };
+        }
         if (signInMessage === 'auth/wrong-password') {
           //setAccountMessage('パスワードが間違っています。');
         } else if (signInMessage === 'auth/user-not-found') {
