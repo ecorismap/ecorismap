@@ -906,6 +906,7 @@
       "noUser": "ユーザーが存在しません。",
       "emailInUse": "そのメールアドレスは既に使用されています。",
       "signupRestricted": "このメールアドレスでは登録できません。アカウントの登録には運営元の許可が必要です。「Googleで接続」もご利用いただけます。",
+      "signinRestricted": "組織アカウントの利用が制限されているため、ログインできません。組織の管理者または運営元にお問い合わせください。",
       "failSetProfile": "プロフィールの設定に失敗しました。",
       "inputValidDisplayName": "表示名を正しく入力してください",
       "inputValidIconURL": "icon画像のURLを正しく入力してください",
