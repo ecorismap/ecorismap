@@ -916,8 +916,7 @@
       "title": "Track Point",
       "elevation": "Elevation {{elevation}} m",
       "speed": "Speed {{speed}} km/h",
-      "copied": "Copied",
-      "showSummary": "Show Summary"
+      "copied": "Copied"
     }
   },
   "LayerEditFeatureStyle": {

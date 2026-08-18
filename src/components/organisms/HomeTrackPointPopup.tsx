@@ -2,7 +2,7 @@ import React, { useContext, useCallback, useMemo, useState, useEffect } from 're
 import { View, Text } from 'react-native';
 import { Pressable } from '../atoms/Pressable';
 import { MapViewContext } from '../../contexts/MapView';
-import { useBottomSheetNavigation } from '../../contexts/BottomSheetNavigationContext';
+import { TrackFocusContext } from '../../contexts/TrackFocus';
 import { COLOR } from '../../constants/AppConstants';
 import { latLonToXY } from '../../utils/Coords';
 import { copyToClipboard } from '../../utils/Clipboard';
@@ -11,28 +11,42 @@ import { t } from '../../i18n/config';
 import dayjs from '../../i18n/dayjs';
 
 export const HomeTrackPointPopup = React.memo(() => {
-  const { trackPointInfo, setTrackPointInfo, mapViewRef } = useContext(MapViewContext);
-  const { navigate, snapToIndex } = useBottomSheetNavigation();
-  const { mapRegion, mapSize, isLandscape } = useWindow();
+  const { trackPointInfo, mapViewRef } = useContext(MapViewContext);
+  // 軌跡サマリーのグラフカーソル（フォーカス地点）があればそちらを優先し、ポップアップも追随させる
+  const { trackFocusPoint } = useContext(TrackFocusContext);
+  const { mapRegion, mapSize } = useWindow();
   const WIDTH = 150;
 
+  const displayInfo = useMemo(() => {
+    if (trackFocusPoint !== null) {
+      return {
+        coordinate: { latitude: trackFocusPoint.latitude, longitude: trackFocusPoint.longitude },
+        position: undefined,
+        timestamp: trackFocusPoint.timestamp,
+        altitude: trackFocusPoint.altitude,
+        speed: trackFocusPoint.speed,
+      };
+    }
+    return trackPointInfo;
+  }, [trackFocusPoint, trackPointInfo]);
+
   const timeText = useMemo(() => {
-    if (trackPointInfo?.timestamp === undefined) return null;
-    return dayjs(trackPointInfo.timestamp).format('L HH:mm:ss');
-  }, [trackPointInfo?.timestamp]);
+    if (displayInfo?.timestamp === undefined) return null;
+    return dayjs(displayInfo.timestamp).format('L HH:mm:ss');
+  }, [displayInfo?.timestamp]);
 
   const elevationText = useMemo(() => {
-    if (trackPointInfo?.altitude === undefined || trackPointInfo?.altitude === null) return null;
-    return t('Home.trackPoint.elevation', { elevation: trackPointInfo.altitude.toFixed(1) });
-  }, [trackPointInfo?.altitude]);
+    if (displayInfo?.altitude === undefined || displayInfo?.altitude === null) return null;
+    return t('Home.trackPoint.elevation', { elevation: displayInfo.altitude.toFixed(1) });
+  }, [displayInfo?.altitude]);
 
   const speedText = useMemo(() => {
-    if (trackPointInfo?.speed === undefined || trackPointInfo?.speed === null || trackPointInfo.speed < 0) return null;
-    return t('Home.trackPoint.speed', { speed: (trackPointInfo.speed * 3.6).toFixed(1) });
-  }, [trackPointInfo?.speed]);
+    if (displayInfo?.speed === undefined || displayInfo?.speed === null || displayInfo.speed < 0) return null;
+    return t('Home.trackPoint.speed', { speed: (displayInfo.speed * 3.6).toFixed(1) });
+  }, [displayInfo?.speed]);
 
-  const lat = trackPointInfo?.coordinate.latitude;
-  const lon = trackPointInfo?.coordinate.longitude;
+  const lat = displayInfo?.coordinate.latitude;
+  const lon = displayInfo?.coordinate.longitude;
 
   // 緯度経度を表示（小数5桁 ≒ 1m精度）。タップでクリップボードにコピー
   const coordinateText = useMemo(() => {
@@ -56,37 +70,23 @@ export const HomeTrackPointPopup = React.memo(() => {
     if (success) setCopied(true);
   }, [coordinateText]);
 
-  const trackRecordRef = trackPointInfo?.trackRecordRef;
-  const handleShowSummary = useCallback(() => {
-    if (trackRecordRef === undefined) return;
-    setTrackPointInfo(null);
-    snapToIndex(isLandscape ? 2 : 1);
-    navigate('TrackSummary', { ...trackRecordRef, previous: 'Home' });
-  }, [trackRecordRef, setTrackPointInfo, snapToIndex, isLandscape, navigate]);
-
-  const HEIGHT =
-    36 +
-    (timeText ? 22 : 0) +
-    (elevationText ? 20 : 0) +
-    (speedText ? 20 : 0) +
-    (coordinateText ? 20 : 0) +
-    (trackRecordRef ? 24 : 0);
+  const HEIGHT = 36 + (timeText ? 22 : 0) + (elevationText ? 20 : 0) + (speedText ? 20 : 0) + (coordinateText ? 20 : 0);
 
   // 画面座標を計算。タップ位置のpositionがあればそれを使い、なければ座標から計算
   const position = useMemo(() => {
-    if (!trackPointInfo) return null;
-    if (trackPointInfo.position) return trackPointInfo.position;
+    if (!displayInfo) return null;
+    if (displayInfo.position) return displayInfo.position;
     if (!mapRegion || !mapSize) return null;
     const xy = latLonToXY(
-      [trackPointInfo.coordinate.longitude, trackPointInfo.coordinate.latitude],
+      [displayInfo.coordinate.longitude, displayInfo.coordinate.latitude],
       mapRegion,
       mapSize,
       mapViewRef.current
     );
     return { x: xy[0], y: xy[1] };
-  }, [trackPointInfo, mapRegion, mapSize, mapViewRef]);
+  }, [displayInfo, mapRegion, mapSize, mapViewRef]);
 
-  if (!trackPointInfo || !position || !timeText) return null;
+  if (!displayInfo || !position || !timeText) return null;
 
   return (
     <View
@@ -117,13 +117,6 @@ export const HomeTrackPointPopup = React.memo(() => {
             <Pressable onPress={handleCopyCoordinate} style={{ paddingBottom: 4 }}>
               <Text style={{ color: copied ? COLOR.GRAY4 : COLOR.BLUE, fontSize: 12 }}>
                 {copied ? t('Home.trackPoint.copied') : coordinateText}
-              </Text>
-            </Pressable>
-          )}
-          {trackRecordRef !== undefined && (
-            <Pressable onPress={handleShowSummary} style={{ paddingBottom: 2, paddingTop: 2 }}>
-              <Text style={{ color: COLOR.BLUE, fontSize: 12, fontWeight: '600' }}>
-                {t('Home.trackPoint.showSummary')}
               </Text>
             </Pressable>
           )}

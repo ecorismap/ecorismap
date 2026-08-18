@@ -1,6 +1,7 @@
 import {
   calcTrackStatistics,
   buildElevationProfile,
+  findNearestProfileIndex,
   smoothAltitudes,
   ELEVATION_GAIN_THRESHOLD,
 } from '../trackStatistics';
@@ -165,6 +166,22 @@ describe('calcTrackStatistics', () => {
     expect(stats.endTime).toBeNull();
     expect(stats.durationSeconds).toBeNull();
     expect(stats.averageSpeedKmh).toBeNull();
+  });
+});
+
+describe('findNearestProfileIndex', () => {
+  it('最も近いプロファイル点のインデックスを返す', () => {
+    const track = makeTrack(10);
+    const profile = buildElevationProfile(track);
+    const target = { latitude: profile[3].latitude + 0.0001, longitude: profile[3].longitude };
+    expect(findNearestProfileIndex(profile, target)).toBe(3);
+  });
+
+  it('端の点にもスナップする', () => {
+    const track = makeTrack(10);
+    const profile = buildElevationProfile(track);
+    expect(findNearestProfileIndex(profile, { latitude: 34, longitude: 135 })).toBe(0);
+    expect(findNearestProfileIndex(profile, { latitude: 36, longitude: 135 })).toBe(profile.length - 1);
   });
 });
 

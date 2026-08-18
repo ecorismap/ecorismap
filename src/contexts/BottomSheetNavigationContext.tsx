@@ -69,6 +69,8 @@ export type BottomSheetScreenParams = {
     recordId: string;
     userId: string | undefined;
     previous: 'Home';
+    // タップ地点から開いたときの初期マーカー位置
+    initialFocusLatLon?: { latitude: number; longitude: number };
   };
 };
 
