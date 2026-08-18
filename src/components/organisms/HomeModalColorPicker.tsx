@@ -93,7 +93,9 @@ export const HomeModalColorPicker = React.memo((props: Props) => {
               sliderThickness={20}
               thumbSize={25}
               thumbShape="circle"
-              onComplete={onSelectColor}
+              // onComplete/onChangeはworklet専用。通常のJS関数はonCompleteJSに渡さないと
+              // 「Tried to synchronously call a Remote Function」でクラッシュする
+              onCompleteJS={onSelectColor}
               style={{ width: '75%', justifyContent: 'center' }}
             >
               <View style={styles.panelBrightnessContainer}>
