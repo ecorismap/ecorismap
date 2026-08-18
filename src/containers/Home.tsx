@@ -1463,9 +1463,17 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
               timestamp,
               altitude: nearest.point.altitude,
               speed: nearest.point.speed,
-              trackRecordRef: { layerId: layer.id, recordId: lineFeature.id, userId: lineFeature.userId },
             });
-            return false; // ポップアップを表示したのでDataEditへは遷移しない
+            // タップと同時にサマリーを開き、タップ地点を初期フォーカスにする
+            bottomSheetRef.current?.snapToIndex(isLandscape ? 2 : 1);
+            navigateToSplit('TrackSummary', {
+              layerId: layer.id,
+              recordId: lineFeature.id,
+              userId: lineFeature.userId,
+              previous: 'Home',
+              initialFocusLatLon: { latitude: nearest.point.latitude, longitude: nearest.point.longitude },
+            });
+            return false; // サマリーを表示したのでDataEditへは遷移しない
           }
         }
       }

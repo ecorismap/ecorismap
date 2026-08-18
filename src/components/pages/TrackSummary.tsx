@@ -97,6 +97,14 @@ export default function TrackSummary() {
       ) : (
         <ScrollView>
           <View style={styles.contentContainer}>
+            {/* グラフを先頭に置き、シートを半分開いた状態でも見えるようにする */}
+            {profile.length >= 2 ? (
+              <TrackSummaryChart profile={profile} />
+            ) : (
+              <View style={styles.noAltitudeContainer}>
+                <Text style={styles.emptyText}>{`${t('TrackSummary.noAltitudeData')}`}</Text>
+              </View>
+            )}
             {timeRangeText !== null && (
               <View style={styles.timeRow}>
                 <MaterialCommunityIcons name="calendar-clock" size={16} color={COLOR.GRAY3} />
@@ -114,14 +122,6 @@ export default function TrackSummary() {
                 </View>
               ))}
             </View>
-            <Text style={styles.sectionTitle}>{`${t('TrackSummary.label.elevationProfile')}`}</Text>
-            {profile.length >= 2 ? (
-              <TrackSummaryChart profile={profile} />
-            ) : (
-              <View style={styles.noAltitudeContainer}>
-                <Text style={styles.emptyText}>{`${t('TrackSummary.noAltitudeData')}`}</Text>
-              </View>
-            )}
           </View>
         </ScrollView>
       )}
@@ -182,17 +182,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     minHeight: 120,
   },
-  sectionTitle: {
-    color: COLOR.GRAY4,
-    fontSize: 14,
-    fontWeight: '600',
-    marginBottom: 8,
-    marginTop: 6,
-  },
   timeRow: {
     alignItems: 'center',
     flexDirection: 'row',
     marginBottom: 12,
+    marginTop: 12,
   },
   timeText: {
     color: COLOR.GRAY4,

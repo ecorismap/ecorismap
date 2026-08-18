@@ -322,8 +322,7 @@
       "title": "軌跡ポイント",
       "elevation": "標高 {{elevation}} m",
       "speed": "速度 {{speed}} km/h",
-      "copied": "コピーしました",
-      "showSummary": "サマリーを表示"
+      "copied": "コピーしました"
     }
   },
   "AccountSettings": {

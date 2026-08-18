@@ -22,6 +22,7 @@ export interface ElevationProfilePoint {
   distanceKm: number;
   altitude: number;
   timestamp?: number;
+  speed?: number | null;
   latitude: number;
   longitude: number;
 }
@@ -111,6 +112,23 @@ export const calcTrackStatistics = (coords: LocationType[]): TrackStatistics => 
   };
 };
 
+// 地図上の座標に最も近いプロファイル点のインデックスを返す
+export const findNearestProfileIndex = (
+  profile: ElevationProfilePoint[],
+  latlon: { latitude: number; longitude: number }
+): number => {
+  let nearest = 0;
+  let minDistance = Infinity;
+  for (let i = 0; i < profile.length; i++) {
+    const d = haversineKm(profile[i], latlon);
+    if (d < minDistance) {
+      minDistance = d;
+      nearest = i;
+    }
+  }
+  return nearest;
+};
+
 export const buildElevationProfile = (coords: LocationType[], maxPoints = 300): ElevationProfilePoint[] => {
   const simplified = simplifyLocations(coords, maxPoints);
 
@@ -127,6 +145,7 @@ export const buildElevationProfile = (coords: LocationType[], maxPoints = 300): 
         distanceKm: cumulativeKm,
         altitude: point.altitude,
         timestamp: point.timestamp,
+        speed: point.speed,
         latitude: point.latitude,
         longitude: point.longitude,
       });
