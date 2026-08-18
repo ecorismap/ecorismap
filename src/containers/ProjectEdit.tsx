@@ -12,7 +12,8 @@ import { useRepository } from '../hooks/useRepository';
 import { exportGeoFile } from '../utils/File';
 import { truncateForFileName } from '../utils/General';
 import { ProjectType } from '../types';
-import { FUNC_ENCRYPTION, CREATE_DEK_PROJECTS, ENABLE_DEK_SELF_MIGRATION } from '../constants/AppConstants';
+import { FUNC_ENCRYPTION, CREATE_DEK_PROJECTS, ENABLE_DEK_SELF_MIGRATION, ENABLE_KEY_LEDGER } from '../constants/AppConstants';
+import { getKeyMigrationState } from '../lib/crypto/migration';
 import { getMemberKeyFreshness, migrateSelfDataToDEK, SelfMigrationInputType } from '../lib/firebase/firestore';
 import dayjs from '../i18n/dayjs';
 import { useEcorisMapFile } from '../hooks/useEcorismapFile';
@@ -117,6 +118,27 @@ export default function ProjectEditContainer({ navigation, route }: Props_Projec
     [createMergedDataSet, downloadCommonData, fetchPrivateData, fetchPublicData, fetchTemplateData, targetProject]
   );
 
+  // 端末にE3Kitのローカル鍵がない復帰セッション（機種変更等）は、
+  // エラー表示ではなく鍵の復元フォームへ誘導する（Projects画面のfetchProjectsと同じ扱い）
+  const navigateToKeyRestoreIfNeeded = useCallback(
+    async (message: string) => {
+      if (!(ENABLE_KEY_LEDGER && FUNC_ENCRYPTION && message === 'not-localkey' && user.uid !== undefined)) {
+        return false;
+      }
+      const migrationState = await getKeyMigrationState(user.uid);
+      navigation.navigate('Account', {
+        accountFormState: 'restoreEncryptKey',
+        message:
+          migrationState.state === 'migrated-need-restore'
+            ? t('hooks.message.inputNewPinRestore')
+            : t('hooks.message.inputEncryptPassword'),
+        previous: 'Projects',
+      });
+      return true;
+    },
+    [navigation, user.uid]
+  );
+
   const pressOpenProject = useCallback(
     async (isSetting: boolean) => {
       try {
@@ -130,7 +152,13 @@ export default function ProjectEditContainer({ navigation, route }: Props_Projec
 
         setIsLoading(true);
         const loadE3kitGroupResult = await loadE3kitGroup(targetProject);
-        if (!loadE3kitGroupResult.isOK) throw new Error(loadE3kitGroupResult.message);
+        if (!loadE3kitGroupResult.isOK) {
+          if (await navigateToKeyRestoreIfNeeded(loadE3kitGroupResult.message)) {
+            setIsLoading(false);
+            return false;
+          }
+          throw new Error(loadE3kitGroupResult.message);
+        }
 
         const projectSettingsResult = await downloadProjectSettings(targetProject);
         if (!projectSettingsResult.isOK || projectSettingsResult.region === undefined)
@@ -187,6 +215,7 @@ export default function ProjectEditContainer({ navigation, route }: Props_Projec
       isProjectOpen,
       targetProject,
       loadE3kitGroup,
+      navigateToKeyRestoreIfNeeded,
       downloadProjectSettings,
       openProject,
       navigation,
@@ -365,7 +394,13 @@ export default function ProjectEditContainer({ navigation, route }: Props_Projec
       setIsLoading(true);
       // E3Kitグループをロード（セッションが切れている場合のため）
       const loadE3kitGroupResult = await loadE3kitGroup(targetProject);
-      if (!loadE3kitGroupResult.isOK) throw new Error(loadE3kitGroupResult.message);
+      if (!loadE3kitGroupResult.isOK) {
+        if (await navigateToKeyRestoreIfNeeded(loadE3kitGroupResult.message)) {
+          setIsLoading(false);
+          return;
+        }
+        throw new Error(loadE3kitGroupResult.message);
+      }
       setIsLoading(false);
       navigation.navigate('CloudDataManagement', {
         previous: 'ProjectEdit',
@@ -375,7 +410,7 @@ export default function ProjectEditContainer({ navigation, route }: Props_Projec
       setIsLoading(false);
       await AlertAsync(e.message);
     }
-  }, [loadE3kitGroup, navigation, targetProject]);
+  }, [loadE3kitGroup, navigateToKeyRestoreIfNeeded, navigation, targetProject]);
 
   return (
     <ProjectEditContext.Provider

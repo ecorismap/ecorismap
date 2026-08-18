@@ -416,7 +416,9 @@
       "FailBackupEncryptPassword": "Failed to register the encryption key.",
       "FailRegistEncryptPassword": "Failed to register the encryption key.",
       "migrateEncryptKey": "The encryption key protection has been updated.",
-      "migrateEncryptKeyRequired": "You need to update the encryption key to continue."
+      "migrateEncryptKeyRequired": "You need to update the encryption key to continue.",
+      "restoreEncryptKeySuccess": "The encryption key has been restored.",
+      "restoreEncryptKeySuccessOpenProject": "The encryption key has been restored. Please open the project again."
     },
     "message": {
       "inputMail": "Please enter your e-mail address",

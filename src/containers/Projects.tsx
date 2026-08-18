@@ -73,6 +73,7 @@ export default function ProjectsContainers({ navigation, route }: Props_Projects
           navigation.navigate('Account', {
             accountFormState: 'restoreEncryptKey',
             message: restoreMessage ?? t('hooks.message.inputEncryptPassword'),
+            previous: 'Projects',
           });
           return;
         }

@@ -109,6 +109,8 @@ export default function AccountContainers({ navigation, route }: Props_Account) 
   const navigateToPrevious = useCallback(() => {
     if (route.params?.previous === 'AccountSettings') {
       navigation.navigate('AccountSettings', { previous: 'Home' });
+    } else if (route.params?.previous === 'Projects') {
+      navigation.navigate('Projects');
     } else {
       navigation.navigate('Home');
     }
@@ -199,9 +201,23 @@ export default function AccountContainers({ navigation, route }: Props_Account) 
         return;
       }
       setAccountMessage('');
-      navigation.navigate('Home');
+      // 何が起きたか分かるように結果を通知し、プロジェクト系画面から来た場合は一覧へ戻して開き直しを促す
+      if (route.params?.previous === 'Projects') {
+        await AlertAsync(t('Account.alert.restoreEncryptKeySuccessOpenProject'));
+      } else {
+        await AlertAsync(t('Account.alert.restoreEncryptKeySuccess'));
+      }
+      navigateToPrevious();
     },
-    [checkEncryptPassword, logout, navigation, restoreEncryptKey, setAccountFormState, setAccountMessage]
+    [
+      checkEncryptPassword,
+      logout,
+      navigateToPrevious,
+      restoreEncryptKey,
+      route.params?.previous,
+      setAccountFormState,
+      setAccountMessage,
+    ]
   );
 
   const pressMigrateEncryptPassword = useCallback(
