@@ -322,7 +322,8 @@
       "title": "軌跡ポイント",
       "elevation": "標高 {{elevation}} m",
       "speed": "速度 {{speed}} km/h",
-      "copied": "コピーしました"
+      "copied": "コピーしました",
+      "showSummary": "サマリーを表示"
     }
   },
   "AccountSettings": {
@@ -1087,5 +1088,23 @@
         "description": "バッテリー消費を抑えます。位置精度は低くなります。"
       }
     }
+  },
+  "TrackSummary": {
+    "navigation": {
+      "title": "軌跡サマリー"
+    },
+    "label": {
+      "distance": "総距離",
+      "duration": "所要時間",
+      "averageSpeed": "平均速度",
+      "maxSpeed": "最高速度",
+      "ascent": "累積上昇",
+      "descent": "累積下降",
+      "maxAltitude": "最高標高",
+      "minAltitude": "最低標高",
+      "elevationProfile": "標高グラフ"
+    },
+    "noAltitudeData": "標高データがありません",
+    "notFound": "軌跡データが見つかりません"
   }
 }

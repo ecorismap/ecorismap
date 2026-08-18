@@ -103,6 +103,7 @@ import { useMaps } from '../hooks/useMaps';
 import { useRepository } from '../hooks/useRepository';
 import { ConflictResolverModal } from '../components/organisms/HomeModalConflictResolver';
 import { selectNonDeletedDataSet } from '../modules/selectors';
+import { TrackFocusProvider } from '../contexts/TrackFocus';
 import { useLayers } from '../hooks/useLayers';
 
 // 内部コンポーネント - BottomSheetNavigationProvider の内側で使用
@@ -993,11 +994,23 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
         }
         await toggleTracking('off');
         await toggleGPS('off');
+        // 保存に成功したら軌跡サマリーを表示する
+        if (result.isOK && result.layer !== undefined && result.record !== undefined) {
+          bottomSheetRef.current?.snapToIndex(isLandscape ? 2 : 1);
+          navigateToSplit('TrackSummary', {
+            layerId: result.layer.id,
+            recordId: result.record.id,
+            userId: result.record.userId,
+            previous: 'Home',
+          });
+        }
       }
     }
   }, [
     checkUnsavedTrackLog,
     confirmLocationPermission,
+    isLandscape,
+    navigateToSplit,
     saveTrackLog,
     setFeatureButton,
     toggleGPS,
@@ -1450,6 +1463,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
               timestamp,
               altitude: nearest.point.altitude,
               speed: nearest.point.speed,
+              trackRecordRef: { layerId: layer.id, recordId: lineFeature.id, userId: lineFeature.userId },
             });
             return false; // ポップアップを表示したのでDataEditへは遷移しない
           }
@@ -2754,8 +2768,10 @@ export default function HomeContainers(props: Props_Home) {
   );
 
   return (
-    <BottomSheetNavigationProvider onRouteChange={setCurrentSplitRoute} onNavigateToHome={handleNavigateToHome}>
-      <HomeContainersInner {...props} />
-    </BottomSheetNavigationProvider>
+    <TrackFocusProvider>
+      <BottomSheetNavigationProvider onRouteChange={setCurrentSplitRoute} onNavigateToHome={handleNavigateToHome}>
+        <HomeContainersInner {...props} />
+      </BottomSheetNavigationProvider>
+    </TrackFocusProvider>
   );
 }

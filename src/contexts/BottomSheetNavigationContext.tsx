@@ -64,6 +64,12 @@ export type BottomSheetScreenParams = {
   Licenses: { previous: 'Settings' };
   GoogleDriveProjects: { previous: 'Settings' | 'Home'; mode?: 'save' | 'open' };
   GpsSettings: { previous: 'Settings' };
+  TrackSummary: {
+    layerId: string;
+    recordId: string;
+    userId: string | undefined;
+    previous: 'Home';
+  };
 };
 
 export type BottomSheetScreenName = keyof BottomSheetScreenParams;

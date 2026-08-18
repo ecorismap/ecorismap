@@ -2,6 +2,7 @@ import React, { useContext, useCallback, useMemo, useState, useEffect } from 're
 import { View, Text } from 'react-native';
 import { Pressable } from '../atoms/Pressable';
 import { MapViewContext } from '../../contexts/MapView';
+import { useBottomSheetNavigation } from '../../contexts/BottomSheetNavigationContext';
 import { COLOR } from '../../constants/AppConstants';
 import { latLonToXY } from '../../utils/Coords';
 import { copyToClipboard } from '../../utils/Clipboard';
@@ -10,8 +11,9 @@ import { t } from '../../i18n/config';
 import dayjs from '../../i18n/dayjs';
 
 export const HomeTrackPointPopup = React.memo(() => {
-  const { trackPointInfo, mapViewRef } = useContext(MapViewContext);
-  const { mapRegion, mapSize } = useWindow();
+  const { trackPointInfo, setTrackPointInfo, mapViewRef } = useContext(MapViewContext);
+  const { navigate, snapToIndex } = useBottomSheetNavigation();
+  const { mapRegion, mapSize, isLandscape } = useWindow();
   const WIDTH = 150;
 
   const timeText = useMemo(() => {
@@ -54,7 +56,21 @@ export const HomeTrackPointPopup = React.memo(() => {
     if (success) setCopied(true);
   }, [coordinateText]);
 
-  const HEIGHT = 36 + (timeText ? 22 : 0) + (elevationText ? 20 : 0) + (speedText ? 20 : 0) + (coordinateText ? 20 : 0);
+  const trackRecordRef = trackPointInfo?.trackRecordRef;
+  const handleShowSummary = useCallback(() => {
+    if (trackRecordRef === undefined) return;
+    setTrackPointInfo(null);
+    snapToIndex(isLandscape ? 2 : 1);
+    navigate('TrackSummary', { ...trackRecordRef, previous: 'Home' });
+  }, [trackRecordRef, setTrackPointInfo, snapToIndex, isLandscape, navigate]);
+
+  const HEIGHT =
+    36 +
+    (timeText ? 22 : 0) +
+    (elevationText ? 20 : 0) +
+    (speedText ? 20 : 0) +
+    (coordinateText ? 20 : 0) +
+    (trackRecordRef ? 24 : 0);
 
   // 画面座標を計算。タップ位置のpositionがあればそれを使い、なければ座標から計算
   const position = useMemo(() => {
@@ -101,6 +117,13 @@ export const HomeTrackPointPopup = React.memo(() => {
             <Pressable onPress={handleCopyCoordinate} style={{ paddingBottom: 4 }}>
               <Text style={{ color: copied ? COLOR.GRAY4 : COLOR.BLUE, fontSize: 12 }}>
                 {copied ? t('Home.trackPoint.copied') : coordinateText}
+              </Text>
+            </Pressable>
+          )}
+          {trackRecordRef !== undefined && (
+            <Pressable onPress={handleShowSummary} style={{ paddingBottom: 2, paddingTop: 2 }}>
+              <Text style={{ color: COLOR.BLUE, fontSize: 12, fontWeight: '600' }}>
+                {t('Home.trackPoint.showSummary')}
               </Text>
             </Pressable>
           )}
