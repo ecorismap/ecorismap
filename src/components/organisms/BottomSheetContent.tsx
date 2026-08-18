@@ -18,6 +18,7 @@ import Settings from '../../containers/Settings';
 import Licenses from '../../containers/Licenses';
 import GoogleDriveProjects from '../../containers/GoogleDriveProjects';
 import GpsSettings from '../../containers/GpsSettings';
+import TrackSummary from '../../containers/TrackSummary';
 
 // 画面タイトルのマッピング
 const SCREEN_TITLES: Record<BottomSheetScreenName, string> = {
@@ -34,6 +35,7 @@ const SCREEN_TITLES: Record<BottomSheetScreenName, string> = {
   Licenses: t('Licenses.navigation.title'),
   GoogleDriveProjects: t('GoogleDriveProjects.navigation.title'),
   GpsSettings: t('GpsSettings.navigation.title'),
+  TrackSummary: t('TrackSummary.navigation.title'),
 };
 
 // 画面コンポーネントのマッピング
@@ -51,6 +53,7 @@ const SCREEN_COMPONENTS: Record<BottomSheetScreenName, React.ComponentType<any>>
   Licenses,
   GoogleDriveProjects,
   GpsSettings,
+  TrackSummary,
 };
 
 interface BottomSheetContentProps {

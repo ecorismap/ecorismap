@@ -74,6 +74,8 @@ export interface TrackPointInfoType {
   timestamp?: number;
   altitude?: number | null;
   speed?: number | null;
+  // 保存済み軌跡レコード由来の場合のみ設定。サマリー画面への導線に使う
+  trackRecordRef?: { layerId: string; recordId: string; userId: string | undefined };
 }
 
 export interface UserType {

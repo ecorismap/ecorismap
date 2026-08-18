@@ -9,7 +9,7 @@ import BackgroundGeolocation, {
 import { watchHeadingAsync, LocationSubscription } from 'expo-location';
 import MapView from 'react-native-maps';
 import { MapRef } from 'react-map-gl/maplibre';
-import { LocationStateType, LocationType, TrackingStateType, TrackMetadataType } from '../types';
+import { LayerType, LocationStateType, LocationType, RecordType, TrackingStateType, TrackMetadataType } from '../types';
 import { shallowEqual, useSelector } from 'react-redux';
 import {
   checkAndStoreLocations,
@@ -162,6 +162,8 @@ export type UseLocationReturnType = {
   saveTrackLog: () => Promise<{
     isOK: boolean;
     message: string;
+    layer?: LayerType;
+    record?: RecordType;
   }>;
   confirmLocationPermission: () => Promise<'granted' | undefined>;
   // Web専用: maplibre GeolocateControl（地図の現在地ボタン）のイベントからアプリのGPS状態を同期する
@@ -931,7 +933,7 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
       }
 
       if (validPoints.length < 2) {
-        return { isOK: true, message: warningMessage || t('hooks.message.insufficientTrackLog') };
+        return { isOK: true, message: warningMessage || t('hooks.message.insufficientTrackLog'), layer: undefined, record: undefined };
       }
 
       setSavingTrackStatus({ isSaving: true, phase: 'saving', message: t('hooks.progress.savingTrackLog') });
@@ -950,7 +952,7 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
       });
 
       if (!ret.isOK) {
-        return { isOK: ret.isOK, message: ret.message };
+        return { isOK: ret.isOK, message: ret.message, layer: undefined, record: undefined };
       }
 
       // チャンクデータをクリア
@@ -969,7 +971,7 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
       setCurrentLocation(null);
       setLocationStale(false);
 
-      return { isOK: true, message: warningMessage };
+      return { isOK: true, message: warningMessage, layer: ret.layer, record: ret.record };
     } finally {
       setSavingTrackStatus({ isSaving: false, phase: '', message: '' });
     }

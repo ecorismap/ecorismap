@@ -916,7 +916,8 @@
       "title": "Track Point",
       "elevation": "Elevation {{elevation}} m",
       "speed": "Speed {{speed}} km/h",
-      "copied": "Copied"
+      "copied": "Copied",
+      "showSummary": "Show Summary"
     }
   },
   "LayerEditFeatureStyle": {
@@ -1087,5 +1088,23 @@
         "description": "Reduces battery consumption. Location accuracy is lower."
       }
     }
+  },
+  "TrackSummary": {
+    "navigation": {
+      "title": "Track Summary"
+    },
+    "label": {
+      "distance": "Distance",
+      "duration": "Duration",
+      "averageSpeed": "Avg Speed",
+      "maxSpeed": "Max Speed",
+      "ascent": "Total Ascent",
+      "descent": "Total Descent",
+      "maxAltitude": "Max Altitude",
+      "minAltitude": "Min Altitude",
+      "elevationProfile": "Elevation Profile"
+    },
+    "noAltitudeData": "No altitude data",
+    "notFound": "Track data not found"
   }
 }

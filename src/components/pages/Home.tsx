@@ -10,6 +10,7 @@ import { Button } from '../atoms';
 import { Pressable } from '../atoms/Pressable';
 import { HomeButtons } from '../organisms/HomeButtons';
 import { CurrentMarker } from '../organisms/HomeCurrentMarker';
+import { HomeTrackFocusMarker } from '../organisms/HomeTrackFocusMarker';
 import { Point } from '../organisms/HomePoint';
 import { Line } from '../organisms/HomeLine';
 import { Polygon } from '../organisms/HomePolygon';
@@ -205,7 +206,17 @@ export default function HomeScreen() {
     useContext(AppStateContext);
 
   // BottomSheetNavigationContext
-  const { setIsBottomSheetOpen, currentRouteName } = useBottomSheetNavigation();
+  const { setIsBottomSheetOpen, currentRouteName, bottomSheetRef: navSheetRef } = useBottomSheetNavigation();
+
+  // 実際のBottomSheetをAppStateのrefとナビゲーションContextのrefの両方に接続する
+  // （ContextのsnapToIndex/closeBottomSheetが実シートに効くようにするため）
+  const setBottomSheetRefs = useCallback(
+    (instance: BottomSheet | null) => {
+      bottomSheetRef.current = instance;
+      navSheetRef.current = instance;
+    },
+    [bottomSheetRef, navSheetRef]
+  );
 
   // SVGDrawingContext
   const { isPencilTouch, mapMemoEditingLine } = useContext(SVGDrawingContext);
@@ -566,6 +577,8 @@ export default function HomeScreen() {
                 isStale={isLocationStale}
               />
             )}
+            {/************** Track Focus Marker (軌跡サマリー連動) ****************** */}
+            <HomeTrackFocusMarker />
             {/* 表示を正しく更新するには順番とzIndexが重要。
                 Android(Google Maps)は宣言順が後の要素を上に描画するため、タイル地図を
                 フィーチャ(Point/Line/Polygon)より先に宣言してフィーチャを上に表示する。
@@ -747,7 +760,7 @@ export default function HomeScreen() {
       </Modal>
 
       <BottomSheet
-        ref={bottomSheetRef}
+        ref={setBottomSheetRefs}
         index={-1}
         snapPoints={snapPoints}
         enablePanDownToClose={!isEditingRecord && !isEditingLayer && !isEditingMap}

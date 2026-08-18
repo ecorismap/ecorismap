@@ -20,6 +20,8 @@ export const MARKER_BAND = {
 
 // 選択中マーカーと現在地マーカーは全バンドより前面
 export const SELECTED_MARKER_ZINDEX = 0x7ffffff0;
+// 軌跡サマリーのフォーカスマーカーは選択中より前面・現在地より背面
+export const TRACK_FOCUS_MARKER_ZINDEX = 0x7ffffff4;
 export const CURRENT_MARKER_ZINDEX = 0x7ffffff8;
 
 // idの文字列から決定的にバンド内のzIndexを作る

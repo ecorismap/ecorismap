@@ -51,6 +51,7 @@ import { DataSelectionContext } from '../../contexts/DataSelection';
 import { AppStateContext } from '../../contexts/AppState';
 import { useBottomSheetNavigation } from '../../contexts/BottomSheetNavigationContext';
 import { MemberMarker } from '../organisms/HomeMemberMarker';
+import { HomeTrackFocusMarker } from '../organisms/HomeTrackFocusMarker';
 import { useFeatureSelectionWeb } from '../../hooks/useFeatureSelectionWeb';
 import { isPointRecordType } from '../../utils/Data';
 import * as pmtiles from 'pmtiles';
@@ -106,7 +107,17 @@ export default function HomeScreen() {
     useContext(AppStateContext);
 
   // BottomSheetNavigationContext
-  const { currentRouteName, setIsBottomSheetOpen } = useBottomSheetNavigation();
+  const { currentRouteName, setIsBottomSheetOpen, bottomSheetRef: navSheetRef } = useBottomSheetNavigation();
+
+  // 実際のBottomSheetをAppStateのrefとナビゲーションContextのrefの両方に接続する
+  // （ContextのsnapToIndex/closeBottomSheetが実シートに効くようにするため）
+  const setBottomSheetRefs = useCallback(
+    (instance: BottomSheet | null) => {
+      bottomSheetRef.current = instance;
+      navSheetRef.current = instance;
+    },
+    [bottomSheetRef, navSheetRef]
+  );
 
   // SVGDrawingContext
   const { mapMemoEditingLine } = useContext(SVGDrawingContext);
@@ -927,6 +938,8 @@ export default function HomeScreen() {
                     <MemberMarker key={memberLocation.uid} memberLocation={memberLocation} />
                   ))}
 
+                {/************** Track Focus Marker (軌跡サマリー連動) ****************** */}
+                <HomeTrackFocusMarker />
                 {/************** Point Line Polygon ****************** */}
                 {pointDataSet.map((d) => {
                   const layer = layers.find((v) => v.id === d.layerId);
@@ -1014,7 +1027,7 @@ export default function HomeScreen() {
       </View>
 
       <BottomSheet
-        ref={bottomSheetRef}
+        ref={setBottomSheetRefs}
         index={-1}
         snapPoints={snapPoints}
         enablePanDownToClose={!isEditingRecord && !isEditingLayer && !isEditingMap}
