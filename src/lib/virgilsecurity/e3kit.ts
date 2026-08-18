@@ -50,9 +50,12 @@ export const initializeUser = async (userId: string) => {
   // eThreeが既に正常に初期化されているかチェック
   if (eThree !== undefined) {
     try {
-      // eThreeが有効かどうか簡単なテストを実行
-      await eThree.hasLocalPrivateKey();
-      return { isOK: true, message: '' };
+      // ローカル鍵の有無まで確認する（呼び出し成功だけで正常と判定すると、
+      // 鍵なしセッションでisOK:trueを返してしまい後続の復号が全滅する）
+      const hasKey = await eThree.hasLocalPrivateKey();
+      if (hasKey) return { isOK: true, message: '' };
+      // 鍵がない場合はフル初期化パスで正確な状態(not-localkey等)を判定させる
+      eThree = undefined as any;
     } catch (e) {
       // eThreeが無効な場合は再初期化を続行
       console.log('eThree is invalid, reinitializing...');
