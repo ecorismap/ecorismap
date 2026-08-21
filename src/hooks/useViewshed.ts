@@ -1,79 +1,19 @@
 import { useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { ulid } from 'ulid';
 import { RootState } from '../store';
 import { LayerType, LocationType, RecordType } from '../types';
 import { addLayerAction, updateLayerAction } from '../modules/layers';
-import { COLOR } from '../constants/AppConstants';
 import { useRecord } from './useRecord';
 import { calcViewshedPolygons, makeCircleRing } from '../utils/viewshed';
+import {
+  VIEWSHED_LAYER_ID,
+  VIEWSHED_CIRCLE_LAYER_ID,
+  VIEWSHED_POINT_LAYER_ID,
+  createViewshedLayer,
+  createViewshedCircleLayer,
+  createViewshedPointLayer,
+} from '../utils/viewshedLayers';
 import { t } from '../i18n/config';
-
-/** 可視領域専用レイヤ（ポリゴン）の固定ID。トラックレイヤ(id:'track')と同じ方式 */
-export const VIEWSHED_LAYER_ID = 'viewshed';
-/** 範囲円専用レイヤ（ポリゴン・枠線のみ）の固定ID */
-export const VIEWSHED_CIRCLE_LAYER_ID = 'viewshed_circle';
-/** 観測点専用レイヤ（ポイント）の固定ID */
-export const VIEWSHED_POINT_LAYER_ID = 'viewshed_center';
-
-const baseColorStyle = {
-  colorType: 'SINGLE' as const,
-  fieldName: '',
-  customFieldValue: '',
-  colorRamp: 'RANDOM' as const,
-  colorList: [],
-};
-
-/**
- * 可視領域専用レイヤ（ポリゴン）のテンプレート。初回作成時にオンデマンドで追加する
- * （layersInitialStateには入れない: 新規ユーザーに空レイヤを見せないため）。
- * プロジェクト中はローカル一時レイヤ扱いで、アップロード対象外（isLocalViewshedLayer参照）。
- * transparency=0で半透明の赤の塗りつぶし。属性は観測点との対応が分かる観測点Noのみ。
- */
-export const createViewshedLayer = (): LayerType => ({
-  id: VIEWSHED_LAYER_ID,
-  name: t('common.viewshed'),
-  type: 'POLYGON',
-  permission: 'PRIVATE',
-  colorStyle: { ...baseColorStyle, transparency: 0, color: 'rgba(255, 0, 0, 0.4)' },
-  label: '',
-  visible: true,
-  active: false,
-  field: [{ id: ulid(), name: t('Home.viewshed.fieldNo'), format: 'INTEGER' }],
-});
-
-/** 範囲円専用レイヤのテンプレート。transparencyフラグで塗りなし（枠線のみ）にする */
-export const createViewshedCircleLayer = (): LayerType => ({
-  id: VIEWSHED_CIRCLE_LAYER_ID,
-  name: t('common.viewshedCircle'),
-  type: 'POLYGON',
-  permission: 'PRIVATE',
-  colorStyle: { ...baseColorStyle, transparency: 1, color: COLOR.RED },
-  label: '',
-  visible: true,
-  active: false,
-  field: [{ id: ulid(), name: t('Home.viewshed.fieldNo'), format: 'INTEGER' }],
-});
-
-/** 観測点専用レイヤ（ポイント）のテンプレート。観測点Noをラベル表示する */
-export const createViewshedPointLayer = (): LayerType => ({
-  id: VIEWSHED_POINT_LAYER_ID,
-  name: t('common.viewshedCenter'),
-  type: 'POINT',
-  permission: 'PRIVATE',
-  colorStyle: { ...baseColorStyle, transparency: 0.2, color: COLOR.RED },
-  label: t('Home.viewshed.fieldNo'),
-  visible: true,
-  active: false,
-  field: [
-    { id: ulid(), name: t('Home.viewshed.fieldNo'), format: 'SERIAL' },
-    { id: ulid(), name: t('Home.viewshed.fieldDistance'), format: 'DECIMAL' },
-    { id: ulid(), name: t('Home.viewshed.fieldHeight'), format: 'DECIMAL' },
-    { id: ulid(), name: t('Home.viewshed.fieldElevation'), format: 'DECIMAL' },
-    // スナップした既存ポイントの名前を記録する
-    { id: ulid(), name: t('Home.viewshed.fieldRemarks'), format: 'STRING' },
-  ],
-});
 
 export type UseViewshedReturnType = {
   createViewshed: (
@@ -132,7 +72,7 @@ export const useViewshed = (): UseViewshedReturnType => {
       if (!pointLayer.field.some((f) => f.name === remarksFieldName)) {
         pointLayer = {
           ...pointLayer,
-          field: [...pointLayer.field, { id: ulid(), name: remarksFieldName, format: 'STRING' as const }],
+          field: [...pointLayer.field, { id: 'viewshed_remarks', name: remarksFieldName, format: 'STRING' as const }],
         };
         dispatch(updateLayerAction(pointLayer));
       }

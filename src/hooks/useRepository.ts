@@ -23,7 +23,8 @@ import { tileMapsInitialState, setTileMapsAction } from '../modules/tileMaps';
 import { editSettingsAction } from '../modules/settings';
 import { addProjectAction, deleteProjectAction, updateProjectAction } from '../modules/projects';
 import { cloneDeep } from 'lodash';
-import { getPhotoFields, getTargetLayers, isLocalViewshedLayer } from '../utils/Layer';
+import { getPhotoFields, getTargetLayers } from '../utils/Layer';
+import { ensureViewshedLayers } from '../utils/viewshedLayers';
 import { isLoggedIn } from '../utils/Account';
 import { getTargetRecordSet, mergeLayerData } from '../utils/Data';
 import { Platform } from 'react-native';
@@ -364,6 +365,9 @@ export const useRepository = (): UseRepositoryReturnType & {
         projectSettings.layers.push(trackLayer);
       }
     }
+    // 可視領域関連レイヤも設定になければテンプレートで補完する（trackと同じ自己修復）。
+    // 全クライアントが同一の固定テンプレートを持つため、設定に未登録でもデータ送受信が機能する。
+    projectSettings.layers = ensureViewshedLayers(projectSettings.layers);
     return { isOK: true, message: '', data: projectSettings };
   }, []);
 
@@ -744,8 +748,7 @@ export const useRepository = (): UseRepositoryReturnType & {
         }
       }
       const { isOK, message, timestamp } = await projectStore.uploadProjectSettings(project_.id, user.uid, {
-        // 可視領域関連レイヤはローカル一時レイヤなのでプロジェクト設定に含めない
-        layers: updatedLayers.filter((l) => !isLocalViewshedLayer(l.id)),
+        layers: updatedLayers,
         tileMaps: updatedTileMaps,
         mapType,
         mapRegion,
@@ -917,10 +920,8 @@ export const useRepository = (): UseRepositoryReturnType & {
         const initialTrackLayer = layersInitialState.find((l) => l.id === 'track');
         if (initialTrackLayer) mergedLayers.push(initialTrackLayer);
       }
-      // 可視領域関連レイヤ（ローカル一時レイヤ）はここでは保持しない。
-      // プロジェクトを開く時はローカルレイヤを全置換する既存仕様に従い、
-      // プロジェクト中に必要になればcreateViewshedが自動作成する。
-      dispatch(setLayersAction(mergedLayers));
+      // 可視領域関連レイヤも設定になければテンプレートで補完する（trackと同じ自己修復）
+      dispatch(setLayersAction(ensureViewshedLayers(mergedLayers)));
       dispatch(setTileMapsAction(tileMapsFromSettings));
       dispatch(editSettingsAction({ ...settings, projectRegion }));
       return { isOK: true, message: '', region: projectRegion };

@@ -375,7 +375,9 @@ export const downloadStyle = async (url: string, key: string) => {
       }
     }
   } catch (error) {
-    console.error('downloadStyle Error:', error);
+    // どの地図のスタイル取得で失敗したか分かるようURLも出す
+    // （エミュレータで保存されたlocalhost:9199のURLが本番接続で残っているケース等の切り分け用）
+    console.error('downloadStyle Error:', url, error);
     return { isOK: false };
   }
 };
