@@ -102,6 +102,7 @@ import { usePDF } from '../hooks/usePDF';
 import { HomeModalPDFSettings } from '../components/organisms/HomeModalPDFSettings';
 import { HomeModalViewshedSettings } from '../components/organisms/HomeModalViewshedSettings';
 import { useViewshed } from '../hooks/useViewshed';
+import { getViewshedAttribution } from '../utils/viewshedLayers';
 import dayjs from 'dayjs';
 import { HomeModalStampPicker } from '../components/organisms/HomeModalStampPicker';
 import { HomeModalPenPicker } from '../components/organisms/HomeModalPenPicker';
@@ -404,17 +405,19 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
   const [viewshedSnapPoint, setViewshedSnapPoint] = useState<{ coordinate: LocationType; name: string } | null>(null);
   const [viewshedUseSnap, setViewshedUseSnap] = useState(true);
   const { createViewshed } = useViewshed();
-  const attribution = useMemo(
-    () =>
-      Array.from(
-        new Set(
-          tileMaps
-            .filter((tileMap) => tileMap.visible && tileMap.url && tileMap.attribution)
-            .map((tileMap) => tileMap.attribution)
-        )
-      ).join(', '),
-    [tileMaps]
-  );
+  const attribution = useMemo(() => {
+    const sources = Array.from(
+      new Set(
+        tileMaps
+          .filter((tileMap) => tileMap.visible && tileMap.url && tileMap.attribution)
+          .map((tileMap) => tileMap.attribution)
+      )
+    );
+    // 可視領域は標高タイルの加工物なので、表示中は標高データの出典も併記する
+    const viewshedAttribution = getViewshedAttribution(layers, polygonDataSet);
+    if (viewshedAttribution !== undefined) sources.push(viewshedAttribution);
+    return sources.join(', ');
+  }, [tileMaps, layers, polygonDataSet]);
 
   const downloadMode = useMemo(
     () => route.params?.tileMap !== undefined || route.params?.mode === 'download',
