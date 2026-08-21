@@ -25,6 +25,7 @@ import {
   LineRecordType,
   TileMapType,
   LocationStateType,
+  LocationType,
 } from '../types';
 import Home from '../components/pages/Home';
 import { Alert } from '../components/atoms/Alert';
@@ -78,7 +79,14 @@ import { getDropedFile } from '../utils/File.web';
 import { useMapMemo } from '../hooks/useMapMemo';
 import { useVectorTile } from '../hooks/useVectorTile';
 import { useWindow } from '../hooks/useWindow';
-import { xyArrayToLatLonObjects, xyToLatLon, calcDegreeRadius, findNearestTrackPoint } from '../utils/Coords';
+import {
+  xyArrayToLatLonObjects,
+  xyToLatLon,
+  calcDegreeRadius,
+  findNearestTrackPoint,
+  latLonToXY,
+} from '../utils/Coords';
+import { generateLabel } from '../utils/Layer';
 import { getAllTrackPoints } from '../utils/Location';
 import BottomSheet from '@gorhom/bottom-sheet';
 import { useNetInfo } from '@react-native-community/netinfo';
@@ -92,6 +100,8 @@ import {
 
 import { usePDF } from '../hooks/usePDF';
 import { HomeModalPDFSettings } from '../components/organisms/HomeModalPDFSettings';
+import { HomeModalViewshedSettings } from '../components/organisms/HomeModalViewshedSettings';
+import { useViewshed } from '../hooks/useViewshed';
 import dayjs from 'dayjs';
 import { HomeModalStampPicker } from '../components/organisms/HomeModalStampPicker';
 import { HomeModalPenPicker } from '../components/organisms/HomeModalPenPicker';
@@ -386,6 +396,14 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
   const [mapLocationInfo, setMapLocationInfo] = useState<MapLocationInfoType | null>(null);
   const [trackPointInfo, setTrackPointInfo] = useState<TrackPointInfoType | null>(null);
   const [pendingSplitPosition, setPendingSplitPosition] = useState<Position | null>(null);
+  // 可視領域作成ダイアログ（対象座標がセットされている間表示）
+  const [viewshedTarget, setViewshedTarget] = useState<LocationType | null>(null);
+  const [viewshedDistanceKm, setViewshedDistanceKm] = useState('3');
+  const [viewshedObserverHeight, setViewshedObserverHeight] = useState('2');
+  // 長押し位置の近くの既存ポイント（スナップ候補）と、それを中心に使うかの選択
+  const [viewshedSnapPoint, setViewshedSnapPoint] = useState<{ coordinate: LocationType; name: string } | null>(null);
+  const [viewshedUseSnap, setViewshedUseSnap] = useState(true);
+  const { createViewshed } = useViewshed();
   const attribution = useMemo(
     () =>
       Array.from(
@@ -658,6 +676,78 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     runTutrial('PENCILMODE');
     setPencilModeActive(!isPencilModeActive);
   }, [isPencilModeActive, runTutrial, setPencilModeActive]);
+
+  // 長押し位置の近く（40px以内）にある表示中の既存ポイントを探す（可視領域の中心へのスナップ候補）
+  const findNearestVisiblePoint = useCallback(
+    (pXY: Position): { coordinate: LocationType; name: string } | undefined => {
+      const SNAP_RADIUS_PX = 40;
+      let nearest: { coordinate: LocationType; name: string } | undefined;
+      let nearestDist = SNAP_RADIUS_PX;
+      for (const layer of layers) {
+        if (layer.type !== 'POINT' || !layer.visible) continue;
+        for (const data of pointDataSet) {
+          if (data.layerId !== layer.id) continue;
+          for (const record of data.data) {
+            if (!record.visible || (record as RecordType).deleted || record.coords === undefined) continue;
+            const coords = record.coords as LocationType;
+            const xy = latLonToXY([coords.longitude, coords.latitude], mapRegion, mapSize, mapViewRef.current);
+            const dist = Math.hypot(xy[0] - pXY[0], xy[1] - pXY[1]);
+            if (dist < nearestDist) {
+              nearestDist = dist;
+              const label = generateLabel(layer, record);
+              nearest = { coordinate: coords, name: label !== '' ? label : layer.name };
+            }
+          }
+        }
+      }
+      return nearest;
+    },
+    [layers, pointDataSet, mapRegion, mapSize]
+  );
+
+  // 長押しポップアップの「可視領域を作成」から呼ばれ、設定ダイアログを開く
+  const pressCreateViewshed = useCallback(
+    (coordinate: LocationType, snapPoint?: { coordinate: LocationType; name: string }) => {
+      setViewshedTarget(coordinate);
+      setViewshedSnapPoint(snapPoint ?? null);
+      setViewshedUseSnap(true);
+    },
+    []
+  );
+
+  const pressViewshedOK = useCallback(async () => {
+    if (viewshedTarget === null) return;
+    const distanceKm = parseFloat(viewshedDistanceKm);
+    const observerHeight = parseFloat(viewshedObserverHeight);
+    if (isNaN(distanceKm) || distanceKm < 0.1 || distanceKm > 100) {
+      await AlertAsync(t('Home.alert.viewshedDistanceRange'));
+      return;
+    }
+    if (isNaN(observerHeight) || observerHeight < 0 || observerHeight > 1000) {
+      await AlertAsync(t('Home.alert.viewshedHeightRange'));
+      return;
+    }
+    // スナップ候補があり選択が維持されていれば、既存ポイントの正確な座標を中心にし、
+    // ポイント名を観測点レコードの備考に記録する
+    const snapped = viewshedUseSnap && viewshedSnapPoint !== null ? viewshedSnapPoint : null;
+    const observer = snapped ? snapped.coordinate : viewshedTarget;
+    setViewshedTarget(null);
+    setViewshedSnapPoint(null);
+    setIsLoading(true);
+    try {
+      const { isOK, message } = await createViewshed(observer, distanceKm, observerHeight, snapped?.name);
+      setIsLoading(false);
+      if (!isOK) await AlertAsync(message);
+    } catch (e: any) {
+      setIsLoading(false);
+      await AlertAsync(e.message);
+    }
+  }, [viewshedTarget, viewshedDistanceKm, viewshedObserverHeight, viewshedUseSnap, viewshedSnapPoint, createViewshed]);
+
+  const pressViewshedCancel = useCallback(() => {
+    setViewshedTarget(null);
+    setViewshedSnapPoint(null);
+  }, []);
 
   const selectMapMemoTool = useCallback(
     (value: MapMemoToolType | undefined) => {
@@ -1550,6 +1640,8 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
                 longitude: latLonArray[0].longitude,
               },
               position: { x: xy[0], y: xy[1] },
+              // 近くの既存ポイントがあれば可視領域の中心へのスナップ候補として保持
+              snapPoint: findNearestVisiblePoint(xy),
             });
           }
         }, 800);
@@ -1630,6 +1722,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       mapRegion,
       mapSize,
       setMapLocationInfo,
+      findNearestVisiblePoint,
     ]
   );
   const handlePanResponderMove = useCallback(
@@ -2206,6 +2299,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       setMapLocationInfo,
       trackPointInfo,
       setTrackPointInfo,
+      pressCreateViewshed,
     }),
     [
       mapViewRef,
@@ -2236,6 +2330,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       mapLocationInfo,
       setMapLocationInfo,
       trackPointInfo,
+      pressCreateViewshed,
     ]
   );
 
@@ -2652,6 +2747,18 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
                             setOutputVRT={setOutputVRT}
                             setOutputDataPDF={setOutputDataPDF}
                             pressOK={() => setIsPDFSettingsVisible(false)}
+                          />
+                          <HomeModalViewshedSettings
+                            visible={viewshedTarget !== null}
+                            distanceKm={viewshedDistanceKm}
+                            observerHeight={viewshedObserverHeight}
+                            setDistanceKm={setViewshedDistanceKm}
+                            setObserverHeight={setViewshedObserverHeight}
+                            snapName={viewshedSnapPoint?.name}
+                            useSnapPoint={viewshedUseSnap}
+                            setUseSnapPoint={setViewshedUseSnap}
+                            pressOK={pressViewshedOK}
+                            pressCancel={pressViewshedCancel}
                           />
                           {conflictState.visible && conflictState.queue.length > 0 && (
                             <ConflictResolverModal

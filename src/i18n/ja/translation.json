@@ -63,6 +63,9 @@
     "second": "秒",
     "point": "ポイント",
     "track": "トラック",
+    "viewshed": "可視領域",
+    "viewshedCircle": "可視領域(範囲円)",
+    "viewshedCenter": "可視領域(観測点)",
     "polygon": "ポリゴン",
     "project": "プロジェクト",
     "user": "ユーザー",
@@ -220,7 +223,9 @@
       "cannotEdit": "編集できるレイヤがありません。",
       "noInternet": "インターネットに接続していません。接続してから再度実行してください。",
       "exportPDF": "PDFを保存しました。",
-      "zoomLevel": "この範囲では取得できません。ズームしてください。"
+      "zoomLevel": "この範囲では取得できません。ズームしてください。",
+      "viewshedDistanceRange": "距離は0.1〜100kmの範囲で入力してください。10kmを超えると距離に応じて解像度が粗くなります。",
+      "viewshedHeightRange": "観測点の高さは0〜1000mの範囲で入力してください。"
     },
     "navigation": {
       "download": "ダウンロード",
@@ -316,13 +321,25 @@
       "distanceFromCurrentLocation": "現在地から {{distance}}",
       "elevation": "標高 {{elevation}} m",
       "elevationUnavailable": "標高 取得できません",
-      "copied": "コピーしました"
+      "copied": "コピーしました",
+      "createViewshed": "可視領域を作成"
     },
     "trackPoint": {
       "title": "軌跡ポイント",
       "elevation": "標高 {{elevation}} m",
       "speed": "速度 {{speed}} km/h",
       "copied": "コピーしました"
+    },
+    "viewshed": {
+      "title": "可視領域の作成",
+      "distance": "距離(km)",
+      "observerHeight": "観測点の高さ(m)",
+      "fieldDistance": "距離(km)",
+      "fieldHeight": "高さ(m)",
+      "fieldElevation": "標高(m)",
+      "fieldNo": "観測点No",
+      "useSnapPoint": "ポイント「{{name}}」を中心にする",
+      "fieldRemarks": "備考"
     }
   },
   "AccountSettings": {
@@ -955,7 +972,9 @@
       "googleDriveReauth": "Google Driveへの接続が期限切れです。再接続してください。",
       "googleDriveApiError": "Google Driveとの通信に失敗しました。",
       "googleDriveConnectFailed": "Googleアカウントに接続できませんでした。",
-      "googleDriveScopeDenied": "Google ドライブへのアクセスが許可されませんでした。接続時の同意画面で「Google ドライブ」の項目にチェックを入れて続行してください。"
+      "googleDriveScopeDenied": "Google ドライブへのアクセスが許可されませんでした。接続時の同意画面で「Google ドライブ」の項目にチェックを入れて続行してください。",
+      "failGetDem": "標高データを取得できませんでした。ネットワーク接続を確認してください。",
+      "failCalcViewshed": "可視領域を計算できませんでした。"
     },
     "notification": {
       "inTracking": "トラックの記録中。終了するには、トラックのボタンを押してください。",

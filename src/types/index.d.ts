@@ -63,6 +63,8 @@ export interface MapLocationInfoType {
     longitude: number;
   };
   position?: { x: number; y: number };
+  // 長押し位置の近くにあった既存ポイント（可視領域の中心へのスナップ候補）
+  snapPoint?: { coordinate: LocationType; name: string };
 }
 
 export interface TrackPointInfoType {

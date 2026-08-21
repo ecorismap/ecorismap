@@ -47,6 +47,7 @@ export const mockMapViewContextValue: MapViewContextType = {
   setPoiInfo: jest.fn(),
   mapLocationInfo: null,
   setMapLocationInfo: jest.fn(),
+  pressCreateViewshed: jest.fn(),
   trackPointInfo: null,
   setTrackPointInfo: jest.fn(),
 };

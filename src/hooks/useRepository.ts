@@ -24,6 +24,7 @@ import { editSettingsAction } from '../modules/settings';
 import { addProjectAction, deleteProjectAction, updateProjectAction } from '../modules/projects';
 import { cloneDeep } from 'lodash';
 import { getPhotoFields, getTargetLayers } from '../utils/Layer';
+import { ensureViewshedLayers } from '../utils/viewshedLayers';
 import { isLoggedIn } from '../utils/Account';
 import { getTargetRecordSet, mergeLayerData } from '../utils/Data';
 import { Platform } from 'react-native';
@@ -364,6 +365,9 @@ export const useRepository = (): UseRepositoryReturnType & {
         projectSettings.layers.push(trackLayer);
       }
     }
+    // 可視領域関連レイヤも設定になければテンプレートで補完する（trackと同じ自己修復）。
+    // 全クライアントが同一の固定テンプレートを持つため、設定に未登録でもデータ送受信が機能する。
+    projectSettings.layers = ensureViewshedLayers(projectSettings.layers);
     return { isOK: true, message: '', data: projectSettings };
   }, []);
 
@@ -909,14 +913,15 @@ export const useRepository = (): UseRepositoryReturnType & {
         }
       });
       const projectRegion = cloneDeep(settings.mapRegion);
-      let trackLayer = updatedLayers.find((l) => l.id === 'track');
+      const mergedLayers = [...updatedLayers];
+      const trackLayer = mergedLayers.find((l) => l.id === 'track');
       if (!trackLayer) {
         // Trackレイヤーがなければ初期状態から作成。旧プロジェクトの互換性のため。
-        trackLayer = layersInitialState.find((l) => l.id === 'track');
-        dispatch(setLayersAction([...updatedLayers, trackLayer!]));
-      } else {
-        dispatch(setLayersAction(updatedLayers));
+        const initialTrackLayer = layersInitialState.find((l) => l.id === 'track');
+        if (initialTrackLayer) mergedLayers.push(initialTrackLayer);
       }
+      // 可視領域関連レイヤも設定になければテンプレートで補完する（trackと同じ自己修復）
+      dispatch(setLayersAction(ensureViewshedLayers(mergedLayers)));
       dispatch(setTileMapsAction(tileMapsFromSettings));
       dispatch(editSettingsAction({ ...settings, projectRegion }));
       return { isOK: true, message: '', region: projectRegion };

@@ -19,6 +19,7 @@ import { editSettingsAction } from '../modules/settings';
 import { t } from '../i18n/config';
 import { ulid } from 'ulid';
 import { getDefaultField } from '../utils/Data';
+import { isViewshedLayer } from '../utils/viewshedLayers';
 import { addRecordsAction, updateRecordsAction } from '../modules/dataSet';
 
 import { calcCentroid, calcLineMidPoint } from '../utils/Coords';
@@ -184,8 +185,8 @@ export const useRecord = (): UseRecordReturnType => {
         return { isOK: false, message: t('hooks.message.lockProject') };
       }
 
-      if (!layer.active && layer.id !== 'track') {
-        // レイヤーがアクティブでない場合。ただし、トラックレイヤーは除外
+      if (!layer.active && layer.id !== 'track' && !isViewshedLayer(layer.id)) {
+        // レイヤーがアクティブでない場合。ただし、トラック・可視領域関連レイヤーは除外
         return { isOK: false, message: t('hooks.message.noEditMode') };
       }
 
