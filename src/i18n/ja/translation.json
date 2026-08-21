@@ -66,6 +66,7 @@
     "viewshed": "可視領域",
     "viewshedCircle": "可視領域(範囲円)",
     "viewshedCenter": "可視領域(観測点)",
+    "demAttribution": "国土地理院・Terrain Tiles（標高タイルを加工して作成）",
     "polygon": "ポリゴン",
     "project": "プロジェクト",
     "user": "ユーザー",

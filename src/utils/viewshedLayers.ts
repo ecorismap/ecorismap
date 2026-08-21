@@ -11,7 +11,7 @@
  * プロジェクト設定を保存するたびに差分が出るため。レコードの値はフィールド名
  * キーで保持されるのでIDの違いはデータに影響しない。
  */
-import { LayerType } from '../types';
+import { DataType, LayerType } from '../types';
 import { COLOR } from '../constants/AppConstants';
 import { t } from '../i18n/config';
 
@@ -94,4 +94,21 @@ export const ensureViewshedLayers = (layers: LayerType[]): LayerType[] => {
     if (!result.some((l) => l.id === id)) result.push(create());
   }
   return result;
+};
+
+/**
+ * 可視領域を表示中のときに追加する標高タイルの出典表記。
+ * 国土地理院コンテンツ利用規約は出典の記載と「編集・加工した旨」の記載を求めており、
+ * 可視領域は標高タイルの加工物にあたるため、表示中は地図の出典に併記する。
+ * 国外はTerrain Tiles（AWS Open Data）へフォールバックするので、そちらも併記する。
+ *
+ * @returns 出典文字列。可視領域が表示されていなければundefined
+ */
+export const getViewshedAttribution = (layers: LayerType[], polygonDataSet: DataType[]): string | undefined => {
+  const layer = layers.find((l) => l.id === VIEWSHED_LAYER_ID);
+  if (layer === undefined || !layer.visible) return undefined;
+  const hasData = polygonDataSet.some(
+    (d) => d.layerId === VIEWSHED_LAYER_ID && d.data.some((record) => record.visible && !record.deleted)
+  );
+  return hasData ? t('common.demAttribution') : undefined;
 };
