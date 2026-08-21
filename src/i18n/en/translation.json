@@ -125,6 +125,9 @@
     "second": "Seconds",
     "point": "point",
     "track": "track",
+    "viewshed": "Viewshed",
+    "viewshedCircle": "Viewshed (Range circle)",
+    "viewshedCenter": "Viewshed (Observer)",
     "polygon": "polygon",
     "message": {
       "failGetUids": "Failed to retrieve user ID",
@@ -762,7 +765,9 @@
       "googleDriveReauth": "The Google Drive connection has expired. Please reconnect.",
       "googleDriveApiError": "Failed to communicate with Google Drive.",
       "googleDriveConnectFailed": "Could not connect to your Google account.",
-      "googleDriveScopeDenied": "Access to Google Drive was not granted. Please check the Google Drive checkbox on the consent screen when connecting."
+      "googleDriveScopeDenied": "Access to Google Drive was not granted. Please check the Google Drive checkbox on the consent screen when connecting.",
+      "failGetDem": "Failed to get elevation data. Check your network connection.",
+      "failCalcViewshed": "Failed to calculate the viewshed."
     },
     "notification": {
       "inTracking": "Recording a track. \nPress the button on the track to finish.",
@@ -796,7 +801,9 @@
       "cannotEdit": "There are no editable layers.",
       "exportPDF": "I saved the PDF.",
       "zoomLevel": "It cannot be obtained within this range. \nPlease zoom in.",
-      "noInternet": "I'm not connected to the internet. \nPlease connect and try again."
+      "noInternet": "I'm not connected to the internet. \nPlease connect and try again.",
+      "viewshedDistanceRange": "Enter a distance between 0.1 and 100 km. Beyond 10 km, the resolution becomes coarser with distance.",
+      "viewshedHeightRange": "Enter an observer height between 0 and 1000 m."
     },
     "confirm": {
       "closeProject": "Do you want to finish the project? \nAny data that has not been uploaded will be discarded! \n!",
@@ -912,13 +919,25 @@
       "distanceFromCurrentLocation": "{{distance}} from here",
       "elevation": "Elevation {{elevation}} m",
       "elevationUnavailable": "Elevation unavailable",
-      "copied": "Copied"
+      "copied": "Copied",
+      "createViewshed": "Create Viewshed"
     },
     "trackPoint": {
       "title": "Track Point",
       "elevation": "Elevation {{elevation}} m",
       "speed": "Speed {{speed}} km/h",
       "copied": "Copied"
+    },
+    "viewshed": {
+      "title": "Create Viewshed",
+      "distance": "Distance (km)",
+      "observerHeight": "Observer height (m)",
+      "fieldDistance": "distance(km)",
+      "fieldHeight": "height(m)",
+      "fieldElevation": "elevation(m)",
+      "fieldNo": "observer No",
+      "useSnapPoint": "Use point \"{{name}}\" as center",
+      "fieldRemarks": "remarks"
     }
   },
   "LayerEditFeatureStyle": {

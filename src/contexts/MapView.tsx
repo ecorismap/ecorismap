@@ -38,6 +38,8 @@ export interface MapViewContextType {
   setPoiInfo: (poi: PoiInfoType | null) => void;
   mapLocationInfo: MapLocationInfoType | null;
   setMapLocationInfo: (location: MapLocationInfoType | null) => void;
+  // 長押しポップアップから可視領域作成ダイアログを開く
+  pressCreateViewshed: (coordinate: LocationType, snapPoint?: { coordinate: LocationType; name: string }) => void;
   trackPointInfo: TrackPointInfoType | null;
   setTrackPointInfo: (info: TrackPointInfoType | null) => void;
 }

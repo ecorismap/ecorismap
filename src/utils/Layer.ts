@@ -134,6 +134,10 @@ export const checkLayerInputs = (layer: LayerType) => {
   return { isOK: true, message: '' };
 };
 
+/** 可視領域関連のローカル一時レイヤか（アップロード・プロジェクト設定の対象外） */
+export const isLocalViewshedLayer = (layerId: string) =>
+  layerId === 'viewshed' || layerId === 'viewshed_circle' || layerId === 'viewshed_center';
+
 export const getTargetLayers = (
   layers: LayerType[],
   uploadType: 'All' | 'PublicAndPrivate' | 'Common' | 'Template'
@@ -161,6 +165,8 @@ export const getTargetLayers = (
   }
 
   const targetLayers = layers.filter((layer) => {
+    // 可視領域関連レイヤはローカル一時レイヤなのでアップロードしない
+    if (isLocalViewshedLayer(layer.id)) return false;
     const result =
       (withCommonData && layer.permission === 'COMMON') ||
       (withPublicData && layer.permission === 'PUBLIC') ||

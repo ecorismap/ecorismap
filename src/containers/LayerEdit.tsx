@@ -7,7 +7,7 @@ import { FieldType } from '../types';
 import { Alert } from '../components/atoms/Alert';
 import { t } from '../i18n/config';
 import { LayerEditContext } from '../contexts/LayerEdit';
-import { checkLayerInputs } from '../utils/Layer';
+import { checkLayerInputs, isLocalViewshedLayer } from '../utils/Layer';
 import { usePermission } from '../hooks/usePermission';
 import { exportGeoFile } from '../utils/File';
 import { MAX_BACKUP_LABEL_LENGTH, truncateForFileName } from '../utils/General';
@@ -49,7 +49,8 @@ export default function LayerEditContainer() {
   const { generateExportGeoData } = useGeoFile();
 
   const pressSaveLayer = useCallback(() => {
-    if (isRunningProject) {
+    // 可視領域関連レイヤはローカル一時レイヤなのでプロジェクト中でも編集・削除できる
+    if (isRunningProject && !isLocalViewshedLayer(targetLayer.id)) {
       AlertAsync(t('hooks.message.cannotInRunningProject'));
       return;
     }
@@ -62,7 +63,7 @@ export default function LayerEditContainer() {
   }, [isRunningProject, saveLayer, targetLayer]);
 
   const pressDeleteLayer = useCallback(async () => {
-    if (isRunningProject) {
+    if (isRunningProject && !isLocalViewshedLayer(targetLayer.id)) {
       await AlertAsync(t('hooks.message.cannotInRunningProject'));
       return;
     }
@@ -72,7 +73,7 @@ export default function LayerEditContainer() {
       await deleteLayerPhotos();
       navigate('Layers', undefined);
     }
-  }, [deleteLayer, deleteLayerPhotos, isRunningProject, navigate]);
+  }, [deleteLayer, deleteLayerPhotos, isRunningProject, navigate, targetLayer.id]);
 
   const pressExportLayer = useCallback(async () => {
     const time = dayjs().format('YYYY-MM-DD_HH-mm-ss');

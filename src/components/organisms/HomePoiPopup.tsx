@@ -5,14 +5,22 @@ import { MapViewContext } from '../../contexts/MapView';
 import { COLOR } from '../../constants/AppConstants';
 import { latLonToXY } from '../../utils/Coords';
 import { haversineKm } from '../../utils/Location';
-import { getGsiElevation } from '../../utils/Elevation';
+import { getDemElevation } from '../../utils/viewshed';
 import { copyToClipboard } from '../../utils/Clipboard';
 import { useWindow } from '../../hooks/useWindow';
 import { t } from '../../i18n/config';
 
 export const HomePoiPopup = React.memo(() => {
-  const { poiInfo, setPoiInfo, mapLocationInfo, setMapLocationInfo, mapViewRef, currentLocation, gpsState } =
-    useContext(MapViewContext);
+  const {
+    poiInfo,
+    setPoiInfo,
+    mapLocationInfo,
+    setMapLocationInfo,
+    mapViewRef,
+    currentLocation,
+    gpsState,
+    pressCreateViewshed,
+  } = useContext(MapViewContext);
   const { mapRegion, mapSize } = useWindow();
   const WIDTH = 150;
 
@@ -28,8 +36,8 @@ export const HomePoiPopup = React.memo(() => {
     return t('Home.poi.distanceFromCurrentLocation', { distance });
   }, [isPOI, locationInfo, gpsState, currentLocation]);
 
-  // 長押し/POI位置の標高を国土地理院APIから取得する
-  // undefined: 取得中, null: 取得失敗（範囲外等）, number: 標高(m)
+  // 長押し/POI位置の標高を標高タイルから取得する（国内=GSI、国外=Terrain Tiles）
+  // undefined: 取得中, null: 取得失敗（国内の海上・通信エラー等）, number: 標高(m)
   const lat = locationInfo?.coordinate.latitude;
   const lon = locationInfo?.coordinate.longitude;
   const [elevation, setElevation] = useState<number | null | undefined>(undefined);
@@ -40,7 +48,7 @@ export const HomePoiPopup = React.memo(() => {
     }
     let cancelled = false;
     setElevation(undefined);
-    getGsiElevation(lat, lon).then((e) => {
+    getDemElevation(lat, lon).then((e) => {
       if (!cancelled) setElevation(e);
     });
     return () => {
@@ -76,7 +84,17 @@ export const HomePoiPopup = React.memo(() => {
     if (success) setCopied(true);
   }, [coordinateText]);
 
-  const HEIGHT = 40 + (distanceText ? 20 : 0) + 20 + (coordinateText ? 20 : 0);
+  const HEIGHT = 40 + (distanceText ? 20 : 0) + 20 + (coordinateText ? 20 : 0) + (isPOI ? 0 : 30);
+
+  // 長押し位置の可視領域作成ダイアログを開く（近くの既存ポイントがあればスナップ候補として渡す）
+  const handleCreateViewshed = useCallback(() => {
+    if (!locationInfo) return;
+    const coordinate = locationInfo.coordinate;
+    const snapPoint = mapLocationInfo?.snapPoint;
+    setPoiInfo(null);
+    setMapLocationInfo(null);
+    pressCreateViewshed(coordinate, snapPoint);
+  }, [locationInfo, mapLocationInfo?.snapPoint, setPoiInfo, setMapLocationInfo, pressCreateViewshed]);
 
   const openGoogleMaps = useCallback(() => {
     if (!locationInfo) return;
@@ -188,6 +206,19 @@ export const HomePoiPopup = React.memo(() => {
               {t('Home.poi.openInGoogleMaps')}
             </Text>
           </Pressable>
+          {!isPOI && (
+            <Pressable
+              onPress={handleCreateViewshed}
+              style={{
+                paddingHorizontal: 10,
+                paddingVertical: 6,
+              }}
+            >
+              <Text style={{ color: COLOR.BLUE, fontSize: 14, fontWeight: 'bold' }}>
+                {t('Home.poi.createViewshed')}
+              </Text>
+            </Pressable>
+          )}
           {distanceText && (
             <Text style={{ color: COLOR.GRAY4, fontSize: 12, paddingBottom: 4 }}>{distanceText}</Text>
           )}
