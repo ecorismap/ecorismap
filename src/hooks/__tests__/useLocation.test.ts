@@ -99,6 +99,11 @@ jest.mock('../../utils/Location', () => ({
 }));
 
 jest.mock('../../utils/mmkvStorage', () => ({
+  storage: {
+    set: jest.fn(),
+    getString: jest.fn(),
+    remove: jest.fn(),
+  },
   trackLogMMKV: {
     getCurrentLocation: jest.fn(() => null),
     setCurrentLocation: jest.fn(),

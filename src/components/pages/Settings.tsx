@@ -23,6 +23,7 @@ export default function Settings() {
     pressPDFSettingsOpen,
     pressGPSSettingsOpen,
     pressProximityAlertSettingsOpen,
+    pressLanguageSettingsOpen,
   } = useContext(SettingsContext);
 
   const styles = StyleSheet.create({
@@ -63,6 +64,11 @@ export default function Settings() {
           />
         )}
         <TextButton name={SETTINGS_BTN.CACHE_DELETE} text={t('Settings.cachedelete.text')} onPress={pressClearCache} />
+        <TextButton
+          name={SETTINGS_BTN.LANGUAGE}
+          text={t('Settings.language.text')}
+          onPress={pressLanguageSettingsOpen}
+        />
 
         {/* 情報・ヘルプ */}
         <TextButton

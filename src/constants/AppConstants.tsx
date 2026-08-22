@@ -401,6 +401,7 @@ export const SETTINGS_BTN = {
   APRI_CLEAR: 'restore',
   GPS_SETTINGS: 'crosshairs-gps',
   PROXIMITY_ALERT: 'bell-ring',
+  LANGUAGE: 'translate',
   MANUAL: 'help',
   TERMSOFUSE: 'book-open-variant',
   OSSLICENSE: 'star',

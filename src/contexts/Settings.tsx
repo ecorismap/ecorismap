@@ -16,6 +16,7 @@ interface SettingsContextType {
   pressPDFSettingsOpen: () => void;
   pressGPSSettingsOpen: () => void;
   pressProximityAlertSettingsOpen: () => void;
+  pressLanguageSettingsOpen: () => void;
 }
 
 export const SettingsContext = createContext({} as SettingsContextType);

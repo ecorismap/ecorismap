@@ -431,6 +431,8 @@ export interface RegionType {
   altitude?: number;
 }
 
+export type AppLanguageType = 'ja' | 'en';
+
 export interface ProximityAlertSettingsType {
   enabled: boolean;
   targetLayerIds: string[];
