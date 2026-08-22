@@ -13,14 +13,8 @@ import { decodeElevation } from './terrainShading';
 import { decodePngLite } from './pngLite';
 import { loadDemTilePng } from './demTileLoader';
 import { LocationType } from '../types';
+import { GSI_DEM_URL, TERRARIUM_URL } from '../constants/DemSources';
 
-// 国土地理院 標高タイル（DEM10B統合、最大z14 ≒ 10m解像度、日本国内のみ）
-// https://maps.gsi.go.jp/development/demtile.html
-const GSI_DEM_URL = 'https://cyberjapandata.gsi.go.jp/xyz/dem_png/{z}/{x}/{y}.png';
-// 国外用フォールバック: AWS Terrain Tiles（旧Mapzen、terrariumエンコード、z0-15、全球）
-// 出典: Mapzen/AWS Open Data "Terrain Tiles"（SRTM, GMTED, ETOPO1等の合成）
-// https://registry.opendata.aws/terrain-tiles/
-const TERRARIUM_URL = 'https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png';
 const TILE_SIZE = 256;
 const MAX_DEM_ZOOM = 14;
 const MIN_DEM_ZOOM = 8;

@@ -33,6 +33,19 @@ import { HomeProjectButtons } from '../organisms/HomeProjectButtons';
 import { Loading } from '../molecules/Loading';
 import { t } from '../../i18n/config';
 import { maptilerKey } from '../../constants/APIKeys';
+import { MAPTERHORN_URL, TERRAIN_EXAGGERATION } from '../../constants/DemSources';
+
+// 3D表示用の標高タイル（Mapterhorn、terrarium形式をmaplibreが内蔵デコード）。
+// 日本は基盤地図情報DEM(1m/5m/10m)、国外はCopernicus GLO-30ほか。詳細はdocs/DEM_SOURCES.md
+const rasterdem = {
+  type: 'raster-dem',
+  tiles: [MAPTERHORN_URL],
+  encoding: 'terrarium',
+  tileSize: 512,
+  minzoom: 0,
+  maxzoom: 15,
+  attribution: '<a href="https://mapterhorn.com/attribution" target="_blank">&copy; Mapterhorn</a>',
+};
 import { useDropzone } from 'react-dropzone';
 import { useWindow } from '../../hooks/useWindow';
 import { useViewportBounds } from '../../hooks/useViewportBounds';
@@ -645,7 +658,7 @@ export default function HomeScreen() {
 
     // isTerrainActiveの状態に基づいて地形設定を復元
     if (isTerrainActive) {
-      map.setTerrain({ source: 'rasterdem', exaggeration: 1.5 });
+      map.setTerrain({ source: 'rasterdem', exaggeration: TERRAIN_EXAGGERATION });
     } else {
       map.setTerrain(null);
     }
@@ -678,19 +691,6 @@ export default function HomeScreen() {
   }, [selectFeatureWeb, selectedRecord]);
 
 
-  // 地理院のraster-dem
-  const maptilerdem = {
-    maxzoom: 12,
-    minzoom: 0,
-    tileSize: 256,
-    //tiles: ['https://optgeo.github.io/10b512-7-113-50/zxy/{z}/{x}/{y}.webp'],
-    //tiles: ['https://cyberjapandata.gsi.go.jp/xyz/dem_png/{z}/{x}/{y}.png'],
-    tiles: ['https://api.maptiler.com/tiles/terrain-rgb-v2/{z}/{x}/{y}.webp?key=' + maptilerKey],
-    type: 'raster-dem',
-  };
-
-  const rasterdem = maptilerdem;
-
   // ========== マップイベントハンドラー ==========
 
   /**
@@ -709,7 +709,7 @@ export default function HomeScreen() {
 
       // ユーザーの設定に合わせて地形表示を初期化
       if (isTerrainActive) {
-        map.setTerrain({ source: 'rasterdem', exaggeration: 1.5 });
+        map.setTerrain({ source: 'rasterdem', exaggeration: TERRAIN_EXAGGERATION });
       } else {
         map.setTerrain(null);
       }
@@ -719,7 +719,7 @@ export default function HomeScreen() {
         await addDynamicLayers();
       }
     },
-    [rasterdem, isTerrainActive, addDynamicLayers, mapViewRef]
+    [isTerrainActive, addDynamicLayers, mapViewRef]
   );
 
   // ========== マップスタイル定義 ==========

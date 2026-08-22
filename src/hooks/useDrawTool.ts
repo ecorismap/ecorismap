@@ -1,3 +1,4 @@
+import { TERRAIN_EXAGGERATION } from '../constants/DemSources';
 import { Dispatch, RefObject, SetStateAction, useCallback, useEffect, useRef, useState } from 'react';
 import { GestureResponderEvent, Platform } from 'react-native';
 import { shallowEqual, useDispatch, useSelector } from 'react-redux';
@@ -1112,7 +1113,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
         if (isTerrainActive) return;
         if (activate !== undefined && !terrainPreferenceRef.current) return;
 
-        mapView.setTerrain({ source: 'rasterdem', exaggeration: 1.5 });
+        mapView.setTerrain({ source: 'rasterdem', exaggeration: TERRAIN_EXAGGERATION });
         setIsTerrainActive(true);
       } else {
         if (!isTerrainActive) return;
