@@ -59,6 +59,7 @@ export type UseAccountReturnType = {
   login: (email: string, password: string) => Promise<{ isOK: boolean; authUser: FirebaseAuthTypes.User | undefined }>;
   signUp: (email: string, password: string) => Promise<{ isOK: boolean }>;
   logout: () => Promise<void>;
+  deleteLocalEncryptKeys: () => Promise<void>;
   resetUserPassword: (email: string) => Promise<{ isOK: boolean }>;
   updateUserProfile: (displayName: string, photoURL: string) => Promise<{ isOK: boolean }>;
   changeUserPassword: (oldPassword: string, password: string) => Promise<{ isOK: boolean }>;
@@ -257,6 +258,28 @@ export const useAccount = (): UseAccountReturnType => {
     dispatch(setUserAction(userInitialState));
     dispatch(setProjectsAction(projectsInitialState));
   }, [dispatch]);
+
+  // 明示的ログアウト時のみ呼ぶ。ローカルの暗号化鍵一式を削除する（復号済みデータは消さない）。
+  // 内部的・強制的なログアウト（フォーム中断等）で呼ぶと、旧PINを忘れたユーザーが
+  // データへアクセスできなくなる事故になるため呼ばないこと。
+  // uid は logout() でクリアされるため、必ず logout() より前に呼ぶこと。
+  const deleteLocalEncryptKeys = useCallback(async () => {
+    try {
+      await e3kit.cleanupEncryptKey();
+    } catch (e) {
+      console.log('[deleteLocalEncryptKeys] cleanup error', e);
+    }
+    // cleanupはeThree未初期化だと何も消さないため、保存実体を直接削除するフォールバック
+    await e3kit.purgeLocalKeys();
+    if (user.uid !== undefined) {
+      try {
+        await deleteIdentityPrivateKey(user.uid);
+      } catch (e) {
+        console.log('[deleteLocalEncryptKeys] identity key error', e);
+      }
+      await migration.clearMigratedMarker(user.uid);
+    }
+  }, [user.uid]);
 
   const resetUserPassword = useCallback(async (email: string) => {
     setIsLoading(true);
@@ -505,10 +528,17 @@ export const useAccount = (): UseAccountReturnType => {
           }
           return { isOK: true };
         }
-        const { isOK: legacyOK } = await e3kit.restoreEncryptKey(password);
+        const { isOK: legacyOK, message: legacyMessage } = await e3kit.restoreEncryptKey(password);
         if (!legacyOK) {
           setIsLoading(false);
-          return { isOK: false };
+          // 誤PIN・通信エラーともログアウトせずフォームに留まって再試行できるようにする。
+          // 離脱はpressCloseで可能で、鍵なしログイン状態はnot-localkey判定で再度復元フォームへ誘導される
+          setAccountMessage(
+            legacyMessage === 'wrong-password'
+              ? t('hooks.message.backupWrongPin')
+              : t('hooks.message.failRestoreEncryptKey')
+          );
+          return { isOK: false, retry: true };
         }
         // 旧PINで復元できた＝PIN検証済みなので、同じPINでそのまま新方式へ移行する（フォーム省略）。
         // 移行に失敗した場合のみ移行フォームへ誘導して再試行できるようにする
@@ -521,9 +551,14 @@ export const useAccount = (): UseAccountReturnType => {
         return { isOK: true };
       }
       setIsLoading(true);
-      const { isOK } = await e3kit.restoreEncryptKey(password);
+      const { isOK, message } = await e3kit.restoreEncryptKey(password);
       setIsLoading(false);
-      if (!isOK) return { isOK: false };
+      if (!isOK) {
+        setAccountMessage(
+          message === 'wrong-password' ? t('hooks.message.backupWrongPin') : t('hooks.message.failRestoreEncryptKey')
+        );
+        return { isOK: false, retry: true };
+      }
       return { isOK: true };
     },
     [user.uid]
@@ -663,6 +698,7 @@ export const useAccount = (): UseAccountReturnType => {
     login,
     signUp,
     logout,
+    deleteLocalEncryptKeys,
     updateUserProfile,
     changeUserPassword,
     resetUserPassword,
