@@ -42,7 +42,7 @@ export default function SettingsContainers() {
   const { clearEcorisMap, generateEcorisMapData, openEcorisMapFile, createExportSettings } = useEcorisMapFile();
   const { mapListURL, saveMapListURL, clearTileCache } = useMaps();
   const store = useStore<RootState>();
-  const { backupList, refreshBackupList, restoreBackup } = useProjectBackup();
+  const { backupList, refreshBackupList, restoreBackup, deleteBackup, clearAllBackups } = useProjectBackup();
 
   const [isMapListURLOpen, setIsMapListURLOpen] = useState(false);
   const [isProximityAlertSettingsOpen, setIsProximityAlertSettingsOpen] = useState(false);
@@ -204,6 +204,21 @@ export default function SettingsContainers() {
   const pressBackupSelectCancel = useCallback(() => {
     setIsBackupSelectOpen(false);
   }, []);
+
+  const pressBackupDelete = useCallback(
+    async (id: string) => {
+      const ret = await ConfirmAsync(t('Settings.confirm.deleteBackup'));
+      if (!ret) return;
+      deleteBackup(id);
+    },
+    [deleteBackup]
+  );
+
+  const pressBackupClearAll = useCallback(async () => {
+    const ret = await ConfirmAsync(t('Settings.confirm.clearAllBackups'));
+    if (!ret) return;
+    clearAllBackups();
+  }, [clearAllBackups]);
 
   // const pressResetAll = useCallback(async () => {
   //   const ret = await ConfirmAsync(t('Settings.confirm.clearLocalStorage'));
@@ -393,6 +408,8 @@ export default function SettingsContainers() {
         backupList={backupList}
         pressSelect={pressBackupSelect}
         pressCancel={pressBackupSelectCancel}
+        pressDelete={pressBackupDelete}
+        pressClearAll={pressBackupClearAll}
       />
     </SettingsContext.Provider>
   );

@@ -1,4 +1,12 @@
-import { BackupStateType, saveProjectBackup, listBackups, loadBackup, deleteBackup, backupStorage } from '../projectBackup';
+import {
+  BackupStateType,
+  saveProjectBackup,
+  listBackups,
+  loadBackup,
+  deleteBackup,
+  clearAllBackups,
+  backupStorage,
+} from '../projectBackup';
 
 // 専用MMKVインスタンスをMapベースでモック（removeを含む実APIに合わせる）
 jest.mock('react-native-mmkv', () => {
@@ -156,5 +164,15 @@ describe('projectBackup', () => {
     deleteBackup(meta.id);
     expect(listBackups()).toHaveLength(0);
     expect(backupStorage.contains(`backup:snapshot:${meta.id}`)).toBe(false);
+  });
+
+  test('clearAllBackupsで全世代のスナップショットとインデックスが消える', () => {
+    saveProjectBackup(createState(1, 'p1'), 'projectClose');
+    saveProjectBackup(createState(2, 'p2'), 'projectOpen');
+    const metas = listBackups();
+    expect(metas).toHaveLength(2);
+    clearAllBackups();
+    expect(listBackups()).toHaveLength(0);
+    metas.forEach((meta) => expect(backupStorage.contains(`backup:snapshot:${meta.id}`)).toBe(false));
   });
 });

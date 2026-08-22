@@ -185,3 +185,12 @@ export const deleteBackup = (id: string): void => {
   backupStorage.remove(snapshotKey(id));
   writeIndex(readIndex().filter((meta) => meta.id !== id));
 };
+
+/**
+ * 端末内のバックアップを全件削除する。
+ * 端末を手放す前などに復号済みデータを残さないための操作なので、
+ * 一覧のuidフィルタに関わらず他アカウントのスナップショットも含めて消す。
+ */
+export const clearAllBackups = (): void => {
+  backupStorage.clearAll();
+};

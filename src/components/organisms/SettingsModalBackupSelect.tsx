@@ -14,6 +14,8 @@ interface Props {
   backupList: BackupMetaType[];
   pressSelect: (id: string) => void;
   pressCancel: () => void;
+  pressDelete: (id: string) => void;
+  pressClearAll: () => void;
 }
 
 const triggerLabel = (trigger: BackupTriggerType) => {
@@ -34,11 +36,17 @@ const triggerLabel = (trigger: BackupTriggerType) => {
 };
 
 export const SettingsModalBackupSelect = React.memo((props: Props) => {
-  const { visible, backupList, pressSelect, pressCancel } = props;
+  const { visible, backupList, pressSelect, pressCancel, pressDelete, pressClearAll } = props;
   const { windowWidth, windowHeight } = useWindow();
   const modalWidthScale = 0.7;
 
   const styles = StyleSheet.create({
+    modalButtonContainer: {
+      flexDirection: 'row',
+      justifyContent: 'space-evenly',
+      marginTop: 10,
+      width: windowWidth * modalWidthScale,
+    },
     modalCancelButton: {
       alignItems: 'center',
       backgroundColor: COLOR.GRAY1,
@@ -46,9 +54,26 @@ export const SettingsModalBackupSelect = React.memo((props: Props) => {
       elevation: 2,
       height: 48,
       justifyContent: 'center',
-      marginTop: 10,
       padding: 10,
-      width: 80,
+      width: 100,
+    },
+    modalClearAllButton: {
+      alignItems: 'center',
+      backgroundColor: COLOR.DARKRED,
+      borderRadius: 5,
+      elevation: 2,
+      height: 48,
+      justifyContent: 'center',
+      padding: 10,
+      width: 100,
+    },
+    modalClearAllButtonText: {
+      color: COLOR.WHITE,
+    },
+    modalDeleteButton: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: 5,
     },
     modalCenteredView: {
       alignItems: 'center',
@@ -135,12 +160,22 @@ export const SettingsModalBackupSelect = React.memo((props: Props) => {
                       )}  ${triggerLabel(meta.trigger)}`}
                     </Text>
                   </View>
+                  <Pressable style={styles.modalDeleteButton} onPress={() => pressDelete(meta.id)}>
+                    <MaterialCommunityIcons name="trash-can-outline" size={24} color={COLOR.DARKRED} />
+                  </Pressable>
                 </Pressable>
               ))}
             </ScrollView>
-            <Pressable style={styles.modalCancelButton} onPress={pressCancel}>
-              <Text>Cancel</Text>
-            </Pressable>
+            <View style={styles.modalButtonContainer}>
+              {backupList.length > 0 && (
+                <Pressable style={styles.modalClearAllButton} onPress={pressClearAll}>
+                  <Text style={styles.modalClearAllButtonText}>{`${t('Settings.backup.deleteAll')}`}</Text>
+                </Pressable>
+              )}
+              <Pressable style={styles.modalCancelButton} onPress={pressCancel}>
+                <Text>Cancel</Text>
+              </Pressable>
+            </View>
           </View>
         </View>
       </View>

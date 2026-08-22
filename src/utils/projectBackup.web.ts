@@ -47,3 +47,5 @@ export const listBackups = (): BackupMetaType[] => [];
 export const loadBackup = (_id: string): BackupSnapshotType | undefined => undefined;
 
 export const deleteBackup = (_id: string): void => undefined;
+
+export const clearAllBackups = (): void => undefined;

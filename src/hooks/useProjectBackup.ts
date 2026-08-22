@@ -15,6 +15,8 @@ import {
   loadBackup,
   saveProjectBackup,
   isBackupAvailable,
+  deleteBackup as deleteBackupStorage,
+  clearAllBackups as clearAllBackupsStorage,
 } from '../utils/projectBackup';
 import { getAuthUid } from '../lib/firebase/sign-in';
 
@@ -25,6 +27,8 @@ export type UseProjectBackupReturnType = {
   backupList: BackupMetaType[];
   refreshBackupList: () => void;
   restoreBackup: (id: string) => RestoreBackupResultType;
+  deleteBackup: (id: string) => void;
+  clearAllBackups: () => void;
 };
 
 /**
@@ -99,5 +103,18 @@ export const useProjectBackup = (): UseProjectBackupReturnType => {
     [dispatch, refreshBackupList, store]
   );
 
-  return { isBackupAvailable, backupList, refreshBackupList, restoreBackup } as const;
+  const deleteBackup = useCallback(
+    (id: string) => {
+      deleteBackupStorage(id);
+      refreshBackupList();
+    },
+    [refreshBackupList]
+  );
+
+  const clearAllBackups = useCallback(() => {
+    clearAllBackupsStorage();
+    refreshBackupList();
+  }, [refreshBackupList]);
+
+  return { isBackupAvailable, backupList, refreshBackupList, restoreBackup, deleteBackup, clearAllBackups } as const;
 };
