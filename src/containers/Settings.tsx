@@ -21,8 +21,10 @@ import { usePermission } from '../hooks/usePermission';
 import { SettingsModalMapListURL } from '../components/organisms/SettingsModalMapListURL';
 import { SettingsModalProximityAlert } from '../components/organisms/SettingsModalProximityAlert';
 import { SettingsModalStorageSelect } from '../components/organisms/SettingsModalStorageSelect';
+import { SettingsModalLanguageSelect } from '../components/organisms/SettingsModalLanguageSelect';
+import { getStoredLanguage, setStoredLanguage } from '../utils/appLanguage';
 import { editSettingsAction } from '../modules/settings';
-import { ProximityAlertSettingsType } from '../types';
+import { AppLanguageType, ProximityAlertSettingsType } from '../types';
 import { selectNonDeletedDataSet } from '../modules/selectors';
 import dayjs from '../i18n/dayjs';
 
@@ -44,6 +46,7 @@ export default function SettingsContainers() {
 
   const [isMapListURLOpen, setIsMapListURLOpen] = useState(false);
   const [isProximityAlertSettingsOpen, setIsProximityAlertSettingsOpen] = useState(false);
+  const [isLanguageSettingsOpen, setIsLanguageSettingsOpen] = useState(false);
   const [isBackupSelectOpen, setIsBackupSelectOpen] = useState(false);
   const [storageSelectMode, setStorageSelectMode] = useState<'save' | 'open' | undefined>(undefined);
 
@@ -299,6 +302,26 @@ export default function SettingsContainers() {
     setIsProximityAlertSettingsOpen(false);
   }, []);
 
+  const pressLanguageSettingsOpen = useCallback(() => {
+    setIsLanguageSettingsOpen(true);
+  }, []);
+
+  const pressLanguageSelect = useCallback(async (language: AppLanguageType | null) => {
+    setIsLanguageSettingsOpen(false);
+    if (language === getStoredLanguage()) return;
+    setStoredLanguage(language);
+    if (Platform.OS === 'web') {
+      //リロードで新しい言語のリソースを読み込み直す
+      window.location.reload();
+    } else {
+      await AlertAsync(t('Settings.alert.languageChanged'));
+    }
+  }, []);
+
+  const pressLanguageSelectCancel = useCallback(() => {
+    setIsLanguageSettingsOpen(false);
+  }, []);
+
   const pressGotoManual = useCallback(() => {
     const url = t('site.manual');
     Linking.openURL(url);
@@ -334,6 +357,7 @@ export default function SettingsContainers() {
         pressPDFSettingsOpen,
         pressGPSSettingsOpen,
         pressProximityAlertSettingsOpen,
+        pressLanguageSettingsOpen,
       }}
     >
       <Settings />
@@ -357,6 +381,12 @@ export default function SettingsContainers() {
         pressLocal={pressStorageSelectLocal}
         pressDrive={pressStorageSelectDrive}
         pressCancel={pressStorageSelectCancel}
+      />
+      <SettingsModalLanguageSelect
+        visible={isLanguageSettingsOpen}
+        currentLanguage={getStoredLanguage()}
+        pressSelect={pressLanguageSelect}
+        pressCancel={pressLanguageSelectCancel}
       />
       <SettingsModalBackupSelect
         visible={isBackupSelectOpen}

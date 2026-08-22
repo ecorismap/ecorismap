@@ -8,8 +8,10 @@ import LocalizedFormat from 'dayjs/plugin/localizedFormat';
 // 日本時間に変換する
 import 'dayjs/locale/ja';
 import { Platform } from 'react-native';
+import { getStoredLanguage } from '../utils/appLanguage';
 
-const languageCode = Localization.getLocales()[0]?.languageCode;
+// 設定画面で選択した言語を優先し、未設定なら端末の言語を使用
+const languageCode = getStoredLanguage() ?? Localization.getLocales()[0]?.languageCode;
 
 // プラグイン拡張
 dayjs.extend(LocalizedFormat);

@@ -320,7 +320,8 @@
       "clearCacheError": "An error occurred while clearing the cache.",
       "restoreBackupDone": "Backup restored.\nTo sync (upload/download) the project, you may need to log in again while online.",
       "restoreBackupFailed": "Failed to restore the backup.",
-      "restoreBackupDifferentUser": "This backup belongs to a different user.\nTo restore it, log in again as the user who created the backup."
+      "restoreBackupDifferentUser": "This backup belongs to a different user.\nTo restore it, log in again as the user who created the backup.",
+      "languageChanged": "Language setting saved.\nRestart the app to apply the change."
     },
     "navigation": {
       "title": "Setting"
@@ -338,6 +339,11 @@
     },
     "gps_settings": {
       "text": "GPS settings"
+    },
+    "language": {
+      "text": "Language",
+      "title": "Select language",
+      "system": "Use system setting"
     },
     "proximity_alert": {
       "text": "Proximity Alert"

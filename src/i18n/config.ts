@@ -1,4 +1,5 @@
 import { getLocales } from 'expo-localization';
+import { getStoredLanguage } from '../utils/appLanguage';
 import { default as i18n } from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import translation_en from './en/translation.json';
@@ -15,9 +16,11 @@ export const resources = {
 
 const locales = getLocales();
 const deviceLanguage = locales[0]?.languageTag || 'en';
+// 設定画面で選択した言語を優先し、未設定なら端末の言語を使用
+const appLanguage = getStoredLanguage() ?? deviceLanguage;
 
 i18n.use(initReactI18next).init({
-  lng: deviceLanguage,
+  lng: appLanguage,
   fallbackLng: 'en',
   interpolation: {
     escapeValue: false,

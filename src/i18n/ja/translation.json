@@ -431,7 +431,8 @@
       "clearCacheError": "キャッシュのクリア中にエラーが発生しました。",
       "restoreBackupDone": "バックアップを復元しました。\nプロジェクトの同期（アップロード/ダウンロード）を行う場合は、オンラインで再ログインが必要なことがあります。",
       "restoreBackupFailed": "バックアップの復元に失敗しました。",
-      "restoreBackupDifferentUser": "このバックアップは別のユーザーのものです。\n復元するには、バックアップを作成したユーザーでログインし直してください。"
+      "restoreBackupDifferentUser": "このバックアップは別のユーザーのものです。\n復元するには、バックアップを作成したユーザーでログインし直してください。",
+      "languageChanged": "言語設定を保存しました。\nアプリを再起動すると反映されます。"
     },
     "termsOfUse": {},
     "version": {},
@@ -446,6 +447,11 @@
     },
     "gps_settings": {
       "text": "GPSの設定"
+    },
+    "language": {
+      "text": "言語",
+      "title": "言語を選択",
+      "system": "システム設定に従う"
     },
     "proximity_alert": {
       "text": "接近通知"
