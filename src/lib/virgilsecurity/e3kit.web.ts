@@ -92,6 +92,13 @@ export const cleanupEncryptKey = async () => {
   }
 };
 
+/**
+ * Web版はno-op。Virgil鍵の削除はcleanupEncryptKey、識別鍵の削除はkeyStorage.webでカバーする。
+ * eThree未初期化時にIndexedDB(.virgil-local-storage)を直接消す案は、接続中DBのdeleteDatabaseが
+ * blockedになるハンドリングが必要なため見送り（native版のフォールバックとのAPI整合のための定義）。
+ */
+export const purgeLocalKeys = async (): Promise<void> => {};
+
 export const deleteEncryptKey = async () => {
   if (!FUNC_ENCRYPTION) return { isOK: true };
   try {
@@ -117,14 +124,15 @@ export const resetEncryptKey = async () => {
   }
 };
 
-export const restoreEncryptKey = async (backupPassword: string) => {
-  if (!FUNC_ENCRYPTION) return { isOK: true };
+export const restoreEncryptKey = async (backupPassword: string): Promise<{ isOK: boolean; message: string }> => {
+  if (!FUNC_ENCRYPTION) return { isOK: true, message: '' };
   try {
     await eThree.restorePrivateKey(backupPassword);
-    return { isOK: true };
-  } catch (e) {
+    return { isOK: true, message: '' };
+  } catch (e: any) {
     console.log(e);
-    return { isOK: false };
+    if (e?.name === 'WrongKeyknoxPasswordError') return { isOK: false, message: 'wrong-password' };
+    return { isOK: false, message: 'error' };
   }
 };
 

@@ -336,7 +336,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
   const { uploadLocation } = useSyncLocation(projectId);
 
   //Account関連
-  const { logout } = useAccount();
+  const { logout, deleteLocalEncryptKeys } = useAccount();
   //Google Drive接続状態（起動時のサイレント再接続を含む）
   const { googleAccountEmail, disconnectGoogleAccount } = useGoogleAccount();
   //Project Buttons関連
@@ -1180,13 +1180,8 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       if (!ret) return;
     }
 
-    // 暗号化キーのクリーンアップ（エラーが発生しても続行）
-    try {
-      await e3kit.cleanupEncryptKey();
-    } catch (error) {
-      // e3kitが初期化されていない場合などのエラーは無視
-      // Failed to cleanup encrypt key
-    }
+    // ローカルの暗号化鍵一式を削除（uidを参照するためlogoutより前に実行。エラーでも続行）
+    await deleteLocalEncryptKeys();
 
     clearProject();
     await logout();
@@ -1196,7 +1191,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       await disconnectGoogleAccount();
     }
     navigation.navigate('Home');
-  }, [clearProject, disconnectGoogleAccount, googleAccountEmail, isSettingProject, logout, navigation]);
+  }, [clearProject, deleteLocalEncryptKeys, disconnectGoogleAccount, googleAccountEmail, isSettingProject, logout, navigation]);
 
   const pressZoomIn = useCallback(() => {
     hideDrawLine();

@@ -1,5 +1,6 @@
 import { EThree } from '@virgilsecurity/e3kit-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as Keychain from 'react-native-keychain';
 import { ProjectType } from '../../types';
 import { virgilCrypto } from 'react-native-virgil-crypto';
 import { Buffer } from 'buffer';
@@ -140,6 +141,30 @@ export const cleanupEncryptKey = async () => {
   }
 };
 
+/**
+ * 明示的ログアウト専用の確実なローカル鍵削除フォールバック。
+ * cleanupEncryptKey() は eThree 未初期化（再起動直後・オフライン等）だと何も消さないため、
+ * e3kit-native の保存実体（Keychainの単一service + AsyncStorageのグループチケット）を直接削除する。
+ * 鍵はKeyknox/KMSバックアップから復元可能なので、消しすぎても次回PIN入力が必要になる以上の影響はない。
+ * 注: serviceは全identity共有のため、同一端末の別アカウントのe3kitローカル鍵も消える（PINで復元可能）。
+ */
+export const purgeLocalKeys = async (): Promise<void> => {
+  if (!FUNC_ENCRYPTION) return;
+  try {
+    await Keychain.resetGenericPassword({ service: 'com.virgilsecurity.keys' });
+  } catch (e) {
+    console.log('[purgeLocalKeys] keychain error', e);
+  }
+  try {
+    const keys = await AsyncStorage.getAllKeys();
+    const groupKeys = keys.filter((k) => k.includes('.virgil-group-storage'));
+    if (groupKeys.length > 0) await AsyncStorage.multiRemove(groupKeys);
+  } catch (e) {
+    console.log('[purgeLocalKeys] group storage error', e);
+  }
+  eThree = undefined as any;
+};
+
 export const deleteEncryptKey = async () => {
   if (!FUNC_ENCRYPTION) return { isOK: true };
   try {
@@ -165,14 +190,15 @@ export const resetEncryptKey = async () => {
   }
 };
 
-export const restoreEncryptKey = async (backupPassword: string) => {
-  if (!FUNC_ENCRYPTION) return { isOK: true };
+export const restoreEncryptKey = async (backupPassword: string): Promise<{ isOK: boolean; message: string }> => {
+  if (!FUNC_ENCRYPTION) return { isOK: true, message: '' };
   try {
     await eThree.restorePrivateKey(backupPassword);
-    return { isOK: true };
-  } catch (e) {
+    return { isOK: true, message: '' };
+  } catch (e: any) {
     console.log(e);
-    return { isOK: false };
+    if (e?.name === 'WrongKeyknoxPasswordError') return { isOK: false, message: 'wrong-password' };
+    return { isOK: false, message: 'error' };
   }
 };
 

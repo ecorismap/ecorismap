@@ -186,11 +186,14 @@ export default function AccountContainers({ navigation, route }: Props_Account) 
       if (!checkEncryptPasswordResult.isOK) return;
       const { isOK, needsMigration, retry } = await restoreEncryptKey(password);
       if (!isOK) {
-        // 新方式の復元は誤PINでもフォームに留まって再試行できる（メッセージはフック側でセット済み）
+        // 復元失敗は誤PIN・通信エラーともフォームに留まって再試行できる（メッセージはフック側でセット済み）
         if (retry) return;
         setAccountMessage('');
         await AlertAsync(t('Account.alert.FailRestoreEncryptKey'));
         await logout();
+        // ログアウト後にフォームが残ると、ログアウト状態のまま復元操作ができてしまうため必ずリセットする
+        setAccountFormState('loginUserAccount');
+        if (Platform.OS !== 'web') navigation.navigate('Home');
         return;
       }
       if (needsMigration) {
@@ -213,6 +216,7 @@ export default function AccountContainers({ navigation, route }: Props_Account) 
       checkEncryptPassword,
       logout,
       navigateToPrevious,
+      navigation,
       restoreEncryptKey,
       route.params?.previous,
       setAccountFormState,
@@ -245,11 +249,14 @@ export default function AccountContainers({ navigation, route }: Props_Account) 
       if (!isOK) {
         await AlertAsync(t('Account.alert.FailRegistEncryptPassword'));
         await logout();
+        // ログアウト後にフォームが残らないようにリセットする
+        setAccountFormState('loginUserAccount');
+        if (Platform.OS !== 'web') navigation.navigate('Home');
       } else {
         navigation.navigate('Home');
       }
     },
-    [checkNewEncryptPassword, logout, navigation, registEncryptPassword, setAccountMessage]
+    [checkNewEncryptPassword, logout, navigation, registEncryptPassword, setAccountFormState, setAccountMessage]
   );
 
   const pressBackupEncryptPassword = useCallback(
@@ -261,6 +268,9 @@ export default function AccountContainers({ navigation, route }: Props_Account) 
       if (!isOK) {
         await AlertAsync(t('Account.alert.FailBackupEncryptPassword'));
         await logout();
+        // ログアウト後にフォームが残らないようにリセットする
+        setAccountFormState('loginUserAccount');
+        if (Platform.OS !== 'web') navigation.navigate('Home');
       } else {
         await AlertAsync(t('Account.alert.backupEncryptPassword'));
         await logout();
