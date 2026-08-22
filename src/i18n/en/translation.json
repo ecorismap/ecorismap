@@ -310,7 +310,9 @@
       "clearCache": "Clear all cache (maps and photos)?",
       "fileNew": "Clear current data?",
       "fileOpen": "Load data file (.ecorismap)? \nCurrent data and settings will be overwritten.",
-      "restoreBackup": "Restore the selected backup? \nCurrent data will be replaced. (The current state will also be backed up automatically.)"
+      "restoreBackup": "Restore the selected backup? \nCurrent data will be replaced. (The current state will also be backed up automatically.)",
+      "deleteBackup": "Delete this backup? \nThis cannot be undone.",
+      "clearAllBackups": "Delete all backups on this device? \n(Including backups of other accounts not shown in the list.) \nThis cannot be undone."
     },
     "alert": {
       "loadEcorisMapFile": "File is loaded.",
@@ -362,6 +364,7 @@
       "noBackups": "No backups",
       "localData": "Local data",
       "records": " records",
+      "deleteAll": "Delete all",
       "trigger": {
         "projectClose": "before closing project",
         "projectOpen": "before opening project",
