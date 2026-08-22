@@ -103,6 +103,11 @@ Web では maplibre 内蔵の hillshade レイヤは使いません（光源方�
   --exclude '(^|/)(\.gradle|build|\.cxx)/'` で再生成してください。
   除外を付けないと `node_modules` に残ったビルド生成物を巻き込みます
 
+## 関連
+
+アプリ全体の標高ソースの使い分け（3D地形・可視領域・標高表示との関係）は
+[DEM_SOURCES.md](./DEM_SOURCES.md) を参照してください。
+
 ## 参考
 
 Kaneda, H., and T. Chiba (2019), Stereopaired morphometric protection index red relief

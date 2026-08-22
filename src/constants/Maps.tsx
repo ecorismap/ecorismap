@@ -1,5 +1,9 @@
+import { Platform } from 'react-native';
 import { t } from '../i18n/config';
 import { TileMapType } from '../types';
+
+// standard/hybridの実体はモバイル=Google Maps SDK、Web=MapTiler（Home.web.tsx参照）
+const BASEMAP_ATTRIBUTION = Platform.OS === 'web' ? '© MapTiler © OpenStreetMap contributors' : 'Google';
 
 export const JP: TileMapType[] = [
   {
@@ -37,7 +41,7 @@ export const BASE: TileMapType[] = [
     id: 'hybrid',
     name: t('common.satelliteImage'),
     url: '',
-    attribution: 'Google',
+    attribution: BASEMAP_ATTRIBUTION,
     maptype: 'hybrid',
     visible: false,
     transparency: 0,
@@ -51,7 +55,7 @@ export const BASE: TileMapType[] = [
     id: 'standard',
     name: t('common.standardMap'),
     url: '',
-    attribution: 'Google',
+    attribution: BASEMAP_ATTRIBUTION,
     maptype: 'standard',
     visible: true,
     transparency: 0,
