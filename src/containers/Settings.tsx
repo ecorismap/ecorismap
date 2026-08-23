@@ -77,11 +77,11 @@ export default function SettingsContainers() {
     const fileName = `ecorismap_${time}`;
     const data = { dataSet, layers, settings: createExportSettings(), maps };
     const exportData = await generateEcorisMapData(data, { includePhoto, fromProject: false });
-    const isOK = await exportGeoFile(exportData, fileName, 'zip');
+    const result = await exportGeoFile(exportData, fileName, 'zip');
     setIsLoading(false);
-    if (!isOK) {
+    if (result === 'error') {
       await AlertAsync(t('hooks.message.failSaveFile'));
-    } else {
+    } else if (result === 'success') {
       await AlertAsync(t('hooks.message.successSaveFile'));
     }
   }, [createExportSettings, dataSet, generateEcorisMapData, layers, maps]);

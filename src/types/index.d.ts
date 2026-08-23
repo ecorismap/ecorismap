@@ -582,6 +582,8 @@ export type ColorTypesType = keyof typeof COLORTYPE;
 export type ColorRampType = keyof typeof COLORRAMP;
 export type PermissionType = keyof typeof PERMISSIONTYPE;
 export type ExportType = keyof typeof EXPORTTYPE;
+// エクスポートの結果。cancelled=ユーザーがキャンセル（成功・失敗どちらのメッセージも表示しない）
+export type ExportResultType = 'success' | 'cancelled' | 'error';
 export type MapType = 'standard' | 'satellite' | 'hybrid' | 'terrain' | 'none';
 export type AccountFormStateType =
   | 'selectLoginMethod'

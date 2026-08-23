@@ -1434,18 +1434,18 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
           setIsLoading(true);
           mapUri = await generatePDF({ dataSet, layers });
           dataUri = await generateDataPDF({ dataSet, layers });
-          await exportFileFromUri(mapUri as string, fileName, { mimeType: 'application/pdf' });
-          await exportFileFromUri(dataUri as string, fileName.replace('_map_', '_data_'), {
+          const mapResult = await exportFileFromUri(mapUri as string, fileName, { mimeType: 'application/pdf' });
+          const dataResult = await exportFileFromUri(dataUri as string, fileName.replace('_map_', '_data_'), {
             mimeType: 'application/pdf',
           });
           setIsLoading(false);
-          await AlertAsync(t('Home.alert.exportPDF'));
+          if (mapResult === 'success' || dataResult === 'success') await AlertAsync(t('Home.alert.exportPDF'));
         } else {
           setIsLoading(true);
           mapUri = await generatePDF({ dataSet, layers });
-          await exportFileFromUri(mapUri as string, fileName, { mimeType: 'application/pdf' });
+          const mapResult = await exportFileFromUri(mapUri as string, fileName, { mimeType: 'application/pdf' });
           setIsLoading(false);
-          await AlertAsync(t('Home.alert.exportPDF'));
+          if (mapResult === 'success') await AlertAsync(t('Home.alert.exportPDF'));
         }
       }
     } catch (e) {
