@@ -213,7 +213,8 @@ export const exportAsyncStorageData = async (): Promise<string | null> => {
           await RNFS.unlink(sourcePath);
           await RNFS.unlink(targetPath);
 
-          return result === 'success' ? zipPath : null;
+          // 共有シートの結果は取得不能だが、iOSでは共有がバックアップの唯一の手段のため成功扱いにする
+          return result === 'saved' || result === 'shared' ? zipPath : null;
         }
       } catch (error) {
         // Error creating ecorismap backup

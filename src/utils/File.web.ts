@@ -18,7 +18,7 @@ if (Platform.OS === 'web') {
 export const exportFileFromData = async (data: string, fileName: string): Promise<ExportResultType> => {
   const blob = new Blob([data], { type: 'text/plain;charset=utf-8' } as BlobPropertyBag);
   FileSaver.saveAs(blob, sanitize(fileName));
-  return 'success';
+  return 'saved';
 };
 
 export const generateZipBlob = async (
@@ -125,7 +125,7 @@ export const exportGeoFile = async (
   const zipFile = await generateZipBlob(exportData);
   if (zipFile === undefined) return 'error';
   FileSaver.saveAs(zipFile, `${sanitize(exportFileName)}.${ext}`);
-  return 'success';
+  return 'saved';
 };
 
 // Google Driveアップロード等、ダウンロードUIを介さずzipの実体が必要な場合に使う。
@@ -223,5 +223,5 @@ export function saveAs(fileBytes: Uint8Array | Blob, fileName: string): void {
 
 
 export async function exportFileFromUri(): Promise<ExportResultType> {
-  return 'success';
+  return 'saved';
 }

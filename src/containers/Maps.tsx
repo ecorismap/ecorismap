@@ -195,7 +195,7 @@ export default function MapContainer() {
     const result = await exportFileFromData(mapSettings, fileName);
     if (result === 'error') {
       await AlertAsync(t('hooks.message.failExport'));
-    } else if (result === 'success') {
+    } else if (result === 'saved') {
       await AlertAsync(t('hooks.message.successExportMaps'));
     }
   }, [maps]);
