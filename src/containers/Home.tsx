@@ -1439,13 +1439,13 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
             mimeType: 'application/pdf',
           });
           setIsLoading(false);
-          if (mapResult === 'success' || dataResult === 'success') await AlertAsync(t('Home.alert.exportPDF'));
+          if (mapResult === 'saved' || dataResult === 'saved') await AlertAsync(t('Home.alert.exportPDF'));
         } else {
           setIsLoading(true);
           mapUri = await generatePDF({ dataSet, layers });
           const mapResult = await exportFileFromUri(mapUri as string, fileName, { mimeType: 'application/pdf' });
           setIsLoading(false);
-          if (mapResult === 'success') await AlertAsync(t('Home.alert.exportPDF'));
+          if (mapResult === 'saved') await AlertAsync(t('Home.alert.exportPDF'));
         }
       }
     } catch (e) {

@@ -81,7 +81,7 @@ export default function SettingsContainers() {
     setIsLoading(false);
     if (result === 'error') {
       await AlertAsync(t('hooks.message.failSaveFile'));
-    } else if (result === 'success') {
+    } else if (result === 'saved') {
       await AlertAsync(t('hooks.message.successSaveFile'));
     }
   }, [createExportSettings, dataSet, generateEcorisMapData, layers, maps]);

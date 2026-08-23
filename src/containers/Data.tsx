@@ -113,7 +113,7 @@ export default function DataContainer() {
         exportPhoto: true,
       });
       const result = await exportGeoFile(exportData, `data_${layerNameLabel}_${time}`, 'zip');
-      if (result === 'success') {
+      if (result === 'saved') {
         await AlertAsync(t('hooks.message.successExportData'));
       } else if (result === 'error') {
         await AlertAsync(t('hooks.message.failExport'));

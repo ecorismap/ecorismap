@@ -501,10 +501,11 @@ export const useMaps = (): UseMapsReturnType => {
     const result = await exportFileFromData(mapData, fileName);
     if (result === 'error') {
       return { isOK: false, message: t('hooks.message.failExport') };
-    } else if (result === 'cancelled') {
-      return { isOK: true, message: '' };
-    } else {
+    } else if (result === 'saved') {
       return { isOK: true, message: t('hooks.message.successExportMaps') };
+    } else {
+      // shared=共有シートの結果は取得不能、cancelled=キャンセル。どちらもメッセージなし
+      return { isOK: true, message: '' };
     }
   }, []);
 

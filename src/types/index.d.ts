@@ -582,8 +582,10 @@ export type ColorTypesType = keyof typeof COLORTYPE;
 export type ColorRampType = keyof typeof COLORRAMP;
 export type PermissionType = keyof typeof PERMISSIONTYPE;
 export type ExportType = keyof typeof EXPORTTYPE;
-// エクスポートの結果。cancelled=ユーザーがキャンセル（成功・失敗どちらのメッセージも表示しない）
-export type ExportResultType = 'success' | 'cancelled' | 'error';
+// エクスポートの結果。saved=デバイスへ保存済み（成功メッセージを表示）、
+// shared=共有シートを表示した（実際に共有したかは取得不能なためメッセージを表示しない）、
+// cancelled=ユーザーがキャンセル（成功・失敗どちらのメッセージも表示しない）
+export type ExportResultType = 'saved' | 'shared' | 'cancelled' | 'error';
 export type MapType = 'standard' | 'satellite' | 'hybrid' | 'terrain' | 'none';
 export type AccountFormStateType =
   | 'selectLoginMethod'

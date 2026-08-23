@@ -258,11 +258,11 @@ export async function exportFileFromUri(
       if (choice === 'cancel') return 'cancelled';
       if (choice === 'save') {
         await RNFS.copyFile(uri, `${RNFS.DownloadDirectoryPath}/${sanitize(fileName)}`);
-        return 'success';
+        return 'saved';
       }
     }
     await Sharing.shareAsync(`file://${encodeURI(uri)}`, options);
-    return 'success';
+    return 'shared';
   } catch (e) {
     console.log(e);
     return 'error';
@@ -276,14 +276,14 @@ export const exportFileFromData = async (data: string, fileName: string): Promis
       if (choice === 'cancel') return 'cancelled';
       if (choice === 'save') {
         await RNFS.writeFile(`${RNFS.DownloadDirectoryPath}/${sanitize(fileName)}`, data, 'utf8');
-        return 'success';
+        return 'saved';
       }
     }
     const sourcePath = `${RNFS.CachesDirectoryPath}/${sanitize(fileName)}`;
     await RNFS.writeFile(sourcePath, data, 'utf8');
     await Sharing.shareAsync(`file://${encodeURI(sourcePath)}`, { mimeType: 'text/plain' });
     await RNFS.unlink(sourcePath);
-    return 'success';
+    return 'shared';
   } catch (e) {
     console.log(e);
     return 'error';

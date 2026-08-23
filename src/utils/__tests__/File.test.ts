@@ -127,7 +127,7 @@ describe('File', () => {
       // 期待される結果（iOSでは選択ダイアログを表示しない）
       expect(mockExportDestinationConfirmAsync).not.toHaveBeenCalled();
       expect(Sharing.shareAsync).toHaveBeenCalledWith('file://file%3A%2F%2F%2Ftest.txt', undefined);
-      expect(result).toBe('success');
+      expect(result).toBe('shared');
     });
 
     it('should copy file to download directory when save is selected on Android', async () => {
@@ -140,7 +140,7 @@ describe('File', () => {
       // 期待される結果（保存時は共有シートを表示しない）
       expect(RNFS.copyFile).toHaveBeenCalledWith('file:///test.txt', '/download/test.txt');
       expect(Sharing.shareAsync).not.toHaveBeenCalled();
-      expect(result).toBe('success');
+      expect(result).toBe('saved');
 
       Platform.OS = 'ios';
     });
@@ -155,7 +155,7 @@ describe('File', () => {
       // 期待される結果（共有時はDownloadへ保存しない）
       expect(RNFS.copyFile).not.toHaveBeenCalled();
       expect(Sharing.shareAsync).toHaveBeenCalledWith('file://file%3A%2F%2F%2Ftest.txt', undefined);
-      expect(result).toBe('success');
+      expect(result).toBe('shared');
 
       Platform.OS = 'ios';
     });
@@ -188,7 +188,7 @@ describe('File', () => {
         mimeType: 'text/plain',
       });
       expect(RNFS.unlink).toHaveBeenCalledWith('/cache/test.txt');
-      expect(result).toBe('success');
+      expect(result).toBe('shared');
     });
 
     it('should write file to download directory when save is selected on Android', async () => {
@@ -201,7 +201,7 @@ describe('File', () => {
       // 期待される結果（保存時は共有シートを表示しない）
       expect(RNFS.writeFile).toHaveBeenCalledWith('/download/test.txt', 'test data', 'utf8');
       expect(Sharing.shareAsync).not.toHaveBeenCalled();
-      expect(result).toBe('success');
+      expect(result).toBe('saved');
 
       Platform.OS = 'ios';
     });
@@ -220,7 +220,7 @@ describe('File', () => {
         mimeType: 'text/plain',
       });
       expect(RNFS.unlink).toHaveBeenCalledWith('/cache/test.txt');
-      expect(result).toBe('success');
+      expect(result).toBe('shared');
 
       Platform.OS = 'ios';
     });
