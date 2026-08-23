@@ -82,7 +82,8 @@ export default function DataEditScreen() {
         rightComponent={rightComponent}
       />
       <View style={styles.contentContainer}>
-        <ScrollView>
+        {/* キーボード表示中でも辞書候補などのタップが1回で反応するようにhandledを指定 */}
+        <ScrollView keyboardShouldPersistTaps="handled">
           {projectId && data.displayName && layer.permission !== 'COMMON' && (
             <DataEditUserName value={data.displayName} />
           )}
