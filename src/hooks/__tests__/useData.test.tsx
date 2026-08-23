@@ -605,6 +605,63 @@ describe('useData', () => {
       // ソート末尾(連番1)+1=2 ではなく、最新追加レコード基準の 4 になること
       expect(newRecord?.field.serial).toBe(4);
     });
+
+    it('列ソート中はドラッグでのストア順置き換えを受け付けない', () => {
+      // ソート順でストア順(追加順)が上書きされると、以降の連番採番が壊れて重複する
+      const records: RecordType[] = [
+        { ...createMockRecord('record1', 'A', 1), field: { serial: 1 } },
+        { ...createMockRecord('record2', 'B', 2), field: { serial: 2 } },
+        { ...createMockRecord('record3', 'C', 3), field: { serial: 3 } },
+      ];
+      const store = createTestStore(records, {
+        field: [{ id: 'fieldSerial', name: 'serial', format: 'SERIAL' }],
+      });
+
+      const wrapper = ({ children }: { children: React.ReactNode }) => <Provider store={store}>{children}</Provider>;
+
+      const { result } = renderHook(() => useData('layer1'), { wrapper });
+
+      // serialで降順ソートし、表示順(末尾が連番1)でドラッグ終了が発火したと想定
+      act(() => {
+        result.current.changeOrder('serial', 'DESCENDING');
+      });
+      act(() => {
+        result.current.updateRecordSetOrder(result.current.sortedRecordSet);
+      });
+
+      // ストア順は追加順のまま維持されること
+      expect(store.getState().dataSet[0].data.map((r: RecordType) => r.id)).toEqual([
+        'record1',
+        'record2',
+        'record3',
+      ]);
+    });
+
+    it('未ソートならドラッグでのストア順置き換えを受け付ける', () => {
+      const records: RecordType[] = [
+        { ...createMockRecord('record1', 'A', 1), field: { serial: 1 } },
+        { ...createMockRecord('record2', 'B', 2), field: { serial: 2 } },
+        { ...createMockRecord('record3', 'C', 3), field: { serial: 3 } },
+      ];
+      const store = createTestStore(records, {
+        field: [{ id: 'fieldSerial', name: 'serial', format: 'SERIAL' }],
+      });
+
+      const wrapper = ({ children }: { children: React.ReactNode }) => <Provider store={store}>{children}</Provider>;
+
+      const { result } = renderHook(() => useData('layer1'), { wrapper });
+
+      const reordered = [records[2], records[0], records[1]];
+      act(() => {
+        result.current.updateRecordSetOrder(reordered);
+      });
+
+      expect(store.getState().dataSet[0].data.map((r: RecordType) => r.id)).toEqual([
+        'record3',
+        'record1',
+        'record2',
+      ]);
+    });
   });
 
   describe('チェック機能', () => {
