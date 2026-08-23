@@ -1,9 +1,11 @@
 /**
  * 可視領域関連レイヤの定義。
  *
- * トラックレイヤ(id:'track')と同じ方式の固定IDレイヤで、プロジェクト設定に
- * なければ各クライアントがテンプレートから自動補完する（useRepositoryの
- * fetchProjectSettings/downloadProjectSettings参照）。
+ * トラックレイヤ(id:'track')と同様の固定IDレイヤだが、常設ではなく
+ * オンデマンドで作成する。可視領域を実際に作成した端末ではuseViewshedが、
+ * 可視領域データを受信した端末ではuseRepositoryのcreateMergedDataSetが
+ * テンプレートから補完する。お試しで作らない限りプロジェクトのレイヤ構成に
+ * 影響しないようにするための方式（プロジェクト中は削除も可能。LayerEdit参照）。
  * データはpermission=PRIVATEで(userId, layerId)単位に保存されるため、
  * 複数メンバーが同時に作成・送信しても書き込みは衝突しない。
  *
@@ -79,22 +81,21 @@ export const createViewshedPointLayer = (): LayerType => ({
   ],
 });
 
+const viewshedLayerTemplates: ReadonlyArray<[string, () => LayerType]> = [
+  [VIEWSHED_LAYER_ID, createViewshedLayer],
+  [VIEWSHED_CIRCLE_LAYER_ID, createViewshedCircleLayer],
+  [VIEWSHED_POINT_LAYER_ID, createViewshedPointLayer],
+];
+
 /**
- * レイヤ一覧に可視領域関連レイヤがなければテンプレートで補完する。
- * プロジェクト設定の取得時（開く時）にtrackレイヤの補完と同じ場所で使う。
+ * 受信データに含まれる可視領域関連レイヤIDのうち、レイヤ一覧に未登録のものを
+ * テンプレートから作成して返す。データを受信したときだけ補完することで、
+ * 可視領域を使っていないプロジェクトのレイヤ構成に影響を与えない。
  */
-export const ensureViewshedLayers = (layers: LayerType[]): LayerType[] => {
-  const result = [...layers];
-  const templates: [string, () => LayerType][] = [
-    [VIEWSHED_LAYER_ID, createViewshedLayer],
-    [VIEWSHED_CIRCLE_LAYER_ID, createViewshedCircleLayer],
-    [VIEWSHED_POINT_LAYER_ID, createViewshedPointLayer],
-  ];
-  for (const [id, create] of templates) {
-    if (!result.some((l) => l.id === id)) result.push(create());
-  }
-  return result;
-};
+export const missingViewshedLayers = (layers: LayerType[], dataLayerIds: string[]): LayerType[] =>
+  viewshedLayerTemplates
+    .filter(([id]) => dataLayerIds.includes(id) && !layers.some((l) => l.id === id))
+    .map(([, create]) => create());
 
 /**
  * 可視領域を表示中のときに追加する標高タイルの出典表記。

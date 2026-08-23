@@ -1,8 +1,8 @@
 import { DataType, LayerType, RecordType } from '../../types';
 import {
   createViewshedLayer,
-  ensureViewshedLayers,
   getViewshedAttribution,
+  missingViewshedLayers,
   VIEWSHED_CIRCLE_LAYER_ID,
   VIEWSHED_LAYER_ID,
   VIEWSHED_POINT_LAYER_ID,
@@ -24,17 +24,21 @@ const dataSet = (data: RecordType[], layerId = VIEWSHED_LAYER_ID): DataType[] =>
   { layerId, userId: 'user1', data },
 ];
 
-describe('ensureViewshedLayers', () => {
-  it('可視領域の3レイヤを補完する', () => {
-    const layers = ensureViewshedLayers([]);
-    expect(layers.map((l) => l.id)).toEqual([VIEWSHED_LAYER_ID, VIEWSHED_CIRCLE_LAYER_ID, VIEWSHED_POINT_LAYER_ID]);
+describe('missingViewshedLayers', () => {
+  it('受信データにある可視領域レイヤIDだけを補完する', () => {
+    const layers = missingViewshedLayers([], [VIEWSHED_LAYER_ID, VIEWSHED_POINT_LAYER_ID, 'other']);
+    expect(layers.map((l) => l.id)).toEqual([VIEWSHED_LAYER_ID, VIEWSHED_POINT_LAYER_ID]);
   });
 
-  it('既存のレイヤは置き換えない', () => {
+  it('可視領域データがなければ何も補完しない', () => {
+    expect(missingViewshedLayers([], ['other1', 'other2'])).toEqual([]);
+    expect(missingViewshedLayers([], [])).toEqual([]);
+  });
+
+  it('既存のレイヤは補完対象にしない', () => {
     const existing: LayerType = { ...createViewshedLayer(), name: 'カスタム名' };
-    const layers = ensureViewshedLayers([existing]);
-    expect(layers.filter((l) => l.id === VIEWSHED_LAYER_ID)).toHaveLength(1);
-    expect(layers.find((l) => l.id === VIEWSHED_LAYER_ID)?.name).toBe('カスタム名');
+    const layers = missingViewshedLayers([existing], [VIEWSHED_LAYER_ID, VIEWSHED_CIRCLE_LAYER_ID]);
+    expect(layers.map((l) => l.id)).toEqual([VIEWSHED_CIRCLE_LAYER_ID]);
   });
 });
 

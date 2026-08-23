@@ -18,13 +18,13 @@ import { RootState } from '../store';
 import { saveProjectBackup } from '../utils/projectBackup';
 import { setDataSetAction, updateDataAction, updateRecordsAction } from '../modules/dataSet';
 import { setDataSyncTimestampsAction, dataSyncKey } from '../modules/dataSync';
-import { layersInitialState, setLayersAction } from '../modules/layers';
+import { addLayerAction, layersInitialState, setLayersAction } from '../modules/layers';
 import { tileMapsInitialState, setTileMapsAction } from '../modules/tileMaps';
 import { editSettingsAction } from '../modules/settings';
 import { addProjectAction, deleteProjectAction, updateProjectAction } from '../modules/projects';
 import { cloneDeep } from 'lodash';
 import { getPhotoFields, getTargetLayers } from '../utils/Layer';
-import { ensureViewshedLayers } from '../utils/viewshedLayers';
+import { missingViewshedLayers } from '../utils/viewshedLayers';
 import { isLoggedIn } from '../utils/Account';
 import { getTargetRecordSet, mergeLayerData } from '../utils/Data';
 import { Platform } from 'react-native';
@@ -289,6 +289,12 @@ export const useRepository = (): UseRepositoryReturnType & {
         ])
       );
 
+      // 可視領域レイヤはオンデマンド作成のため設定に含まれないことがある。
+      // 受信データにあれば、データ反映より先にテンプレートで補完する
+      // （プロジェクトを開いた直後はselector経由のlayersが古いのでstoreから読む）
+      const currentLayers = store.getState().layers;
+      missingViewshedLayers(currentLayers, allLayerIds).forEach((l) => dispatch(addLayerAction(l)));
+
       for (const layerId of allLayerIds) {
         const templateItem = templateData.find((d) => d.layerId === layerId);
         const privateItems = privateData.filter((d) => d.layerId === layerId);
@@ -349,7 +355,7 @@ export const useRepository = (): UseRepositoryReturnType & {
       }
       return { isOK: true, message: '' };
     },
-    [dispatch, user.uid, conflictsResolver]
+    [dispatch, store, user.uid, conflictsResolver]
   );
 
   const fetchProjectSettings = useCallback(async (project: ProjectType) => {
@@ -365,9 +371,6 @@ export const useRepository = (): UseRepositoryReturnType & {
         projectSettings.layers.push(trackLayer);
       }
     }
-    // 可視領域関連レイヤも設定になければテンプレートで補完する（trackと同じ自己修復）。
-    // 全クライアントが同一の固定テンプレートを持つため、設定に未登録でもデータ送受信が機能する。
-    projectSettings.layers = ensureViewshedLayers(projectSettings.layers);
     return { isOK: true, message: '', data: projectSettings };
   }, []);
 
@@ -920,8 +923,9 @@ export const useRepository = (): UseRepositoryReturnType & {
         const initialTrackLayer = layersInitialState.find((l) => l.id === 'track');
         if (initialTrackLayer) mergedLayers.push(initialTrackLayer);
       }
-      // 可視領域関連レイヤも設定になければテンプレートで補完する（trackと同じ自己修復）
-      dispatch(setLayersAction(ensureViewshedLayers(mergedLayers)));
+      // 可視領域レイヤはここでは補完しない。可視領域データを受信したときに
+      // createMergedDataSetがオンデマンドで補完する（お試し利用で構成を汚さないため）
+      dispatch(setLayersAction(mergedLayers));
       dispatch(setTileMapsAction(tileMapsFromSettings));
       dispatch(editSettingsAction({ ...settings, projectRegion }));
       return { isOK: true, message: '', region: projectRegion };
