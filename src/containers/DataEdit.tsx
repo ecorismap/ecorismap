@@ -110,12 +110,13 @@ export default function DataEditContainer() {
     const result = saveData();
     if (!result.isOK) {
       Alert.alert('', result.message);
+      return;
     }
 
+    //保存に成功したら元の画面に戻る
     if (params?.previous === 'Data') {
-      navigate('DataEdit', {
-        previous: 'Data',
-        targetData: targetRecord,
+      unselectRecord();
+      navigate('Data', {
         targetLayer: { ...targetLayer },
       });
     } else if (
@@ -124,11 +125,9 @@ export default function DataEditContainer() {
       params?.mainData !== undefined
     ) {
       navigate('DataEdit', {
-        previous: 'DataEdit',
-        targetData: targetRecord,
-        targetLayer: { ...targetLayer },
-        mainData: params.mainData,
-        mainLayer: params.mainLayer,
+        previous: 'Data',
+        targetLayer: params.mainLayer,
+        targetData: params.mainData,
       });
     }
   }, [
@@ -144,6 +143,7 @@ export default function DataEditContainer() {
     saveData,
     targetLayer,
     targetRecord,
+    unselectRecord,
   ]);
 
   const pressCopyData = useCallback(async () => {
