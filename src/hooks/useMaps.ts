@@ -498,9 +498,11 @@ export const useMaps = (): UseMapsReturnType => {
     const mapData = JSON.stringify(tileMap, null, 2);
     // ZIP処理と同様にUnicode正規化を追加
     const fileName = `map_${sanitize(tileMap.name).normalize('NFC')}_${time}.json`;
-    const isOK = await exportFileFromData(mapData, fileName);
-    if (!isOK && Platform.OS !== 'web') {
+    const result = await exportFileFromData(mapData, fileName);
+    if (result === 'error') {
       return { isOK: false, message: t('hooks.message.failExport') };
+    } else if (result === 'cancelled') {
+      return { isOK: true, message: '' };
     } else {
       return { isOK: true, message: t('hooks.message.successExportMaps') };
     }

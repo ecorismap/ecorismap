@@ -1,6 +1,7 @@
 import * as RNFS from 'react-native-fs';
 import * as Sharing from 'expo-sharing';
-import { ExportType } from '../types';
+import { ExportResultType, ExportType } from '../types';
+import { ExportDestinationConfirmAsync } from '../components/molecules/AlertAsync';
 import JSZip from 'jszip';
 import sanitize from 'sanitize-filename';
 import { getExt } from './General';
@@ -209,19 +210,18 @@ export const exportGeoFile = async (
   exportFileName: string,
   // ecorismap拡張子は廃止済み（読み込みのみ互換維持）
   ext: 'zip'
-) => {
+): Promise<ExportResultType> => {
   try {
     const fileName = sanitize(exportFileName.normalize('NFC'));
     const path = await generateZipFile(exportData, exportFileName, ext);
+    if (path === undefined) return 'error';
 
-    if (path !== undefined) {
-      await exportFileFromUri(path, `${fileName}.${ext}`);
-      await RNFS.unlink(path);
-    }
-    return true;
+    const result = await exportFileFromUri(path, `${fileName}.${ext}`);
+    await RNFS.unlink(path);
+    return result;
   } catch (e) {
     console.log(e);
-    return false;
+    return 'error';
   }
   //Memo: expoのSharingはキャンセルしたかどうか値を返さない.objectは常に{}
 };
@@ -245,25 +245,49 @@ export const generateEcorisMapZip = async (
   return { source: path, size: Number(stat.size) };
 };
 
-export async function exportFileFromUri(uri: string, fileName: string, options?: Sharing.SharingOptions) {
-  if (Platform.OS === 'android') {
-    await RNFS.copyFile(uri, `${RNFS.DownloadDirectoryPath}/${sanitize(fileName)}`);
+// Androidの共有シートには「デバイスに保存」がないため、保存/共有/キャンセルを事前に選ばせる。
+// キャンセル時は何も書き込まずに'cancelled'を返す（以前は共有前に無条件でDownloadへ保存していた）。
+export async function exportFileFromUri(
+  uri: string,
+  fileName: string,
+  options?: Sharing.SharingOptions
+): Promise<ExportResultType> {
+  try {
+    if (Platform.OS === 'android') {
+      const choice = await ExportDestinationConfirmAsync();
+      if (choice === 'cancel') return 'cancelled';
+      if (choice === 'save') {
+        await RNFS.copyFile(uri, `${RNFS.DownloadDirectoryPath}/${sanitize(fileName)}`);
+        return 'success';
+      }
+    }
+    await Sharing.shareAsync(`file://${encodeURI(uri)}`, options);
+    return 'success';
+  } catch (e) {
+    console.log(e);
+    return 'error';
   }
-  await Sharing.shareAsync(`file://${encodeURI(uri)}`, options);
-
-  return true;
 }
 
-export const exportFileFromData = async (data: string, fileName: string) => {
-  if (Platform.OS === 'android') {
-    await RNFS.writeFile(`${RNFS.DownloadDirectoryPath}/${sanitize(fileName)}`, data, 'utf8');
+export const exportFileFromData = async (data: string, fileName: string): Promise<ExportResultType> => {
+  try {
+    if (Platform.OS === 'android') {
+      const choice = await ExportDestinationConfirmAsync();
+      if (choice === 'cancel') return 'cancelled';
+      if (choice === 'save') {
+        await RNFS.writeFile(`${RNFS.DownloadDirectoryPath}/${sanitize(fileName)}`, data, 'utf8');
+        return 'success';
+      }
+    }
+    const sourcePath = `${RNFS.CachesDirectoryPath}/${sanitize(fileName)}`;
+    await RNFS.writeFile(sourcePath, data, 'utf8');
+    await Sharing.shareAsync(`file://${encodeURI(sourcePath)}`, { mimeType: 'text/plain' });
+    await RNFS.unlink(sourcePath);
+    return 'success';
+  } catch (e) {
+    console.log(e);
+    return 'error';
   }
-  const sourcePath = `${RNFS.CachesDirectoryPath}/${sanitize(fileName)}`;
-  await RNFS.writeFile(sourcePath, data, 'utf8');
-  await Sharing.shareAsync(`file://${encodeURI(sourcePath)}`, { mimeType: 'text/plain' });
-  await RNFS.unlink(sourcePath);
-
-  return true;
 };
 
 export const clearCacheData = async () => {

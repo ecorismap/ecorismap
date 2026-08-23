@@ -86,8 +86,8 @@ export default function LayerEditContainer() {
       settingsOnly: true,
       exportDictionary: true,
     });
-    const isOK = await exportGeoFile(exportData, `layer_${layerNameLabel}_${time}`, 'zip');
-    if (!isOK) await AlertAsync(t('hooks.message.failExport'));
+    const result = await exportGeoFile(exportData, `layer_${layerNameLabel}_${time}`, 'zip');
+    if (result === 'error') await AlertAsync(t('hooks.message.failExport'));
   }, [generateExportGeoData, targetLayer]);
 
   const gotoLayerEditFeatureStyle = useCallback(() => {

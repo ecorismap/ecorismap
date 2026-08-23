@@ -260,8 +260,8 @@ export default function ProjectEditContainer({ navigation, route }: Props_Projec
       const time = dayjs().format('YYYY-MM-DD_HH-mm-ss');
       const exportDataName = `${truncateForFileName(targetProject.name)}_${time}`;
 
-      const isOK = await exportGeoFile(exportData, exportDataName, 'zip');
-      if (!isOK) await AlertAsync(t('hooks.message.failExport'));
+      const result = await exportGeoFile(exportData, exportDataName, 'zip');
+      if (result === 'error') await AlertAsync(t('hooks.message.failExport'));
 
       setIsLoading(false);
     } catch (e: any) {

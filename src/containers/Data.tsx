@@ -112,10 +112,10 @@ export default function DataContainer() {
       const exportData = await generateExportGeoData(params.targetLayer, exportedRecords, fileNameBase, {
         exportPhoto: true,
       });
-      const isOK = await exportGeoFile(exportData, `data_${layerNameLabel}_${time}`, 'zip');
-      if (isOK) {
+      const result = await exportGeoFile(exportData, `data_${layerNameLabel}_${time}`, 'zip');
+      if (result === 'success') {
         await AlertAsync(t('hooks.message.successExportData'));
-      } else {
+      } else if (result === 'error') {
         await AlertAsync(t('hooks.message.failExport'));
       }
     } catch (error) {

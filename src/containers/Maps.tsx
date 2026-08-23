@@ -192,10 +192,10 @@ export default function MapContainer() {
     const time = dayjs().format('YYYY-MM-DD_HH-mm-ss');
     const mapSettings = JSON.stringify(maps);
     const fileName = `maps_${time}.json`;
-    const isOK = await exportFileFromData(mapSettings, fileName);
-    if (!isOK && Platform.OS !== 'web') {
+    const result = await exportFileFromData(mapSettings, fileName);
+    if (result === 'error') {
       await AlertAsync(t('hooks.message.failExport'));
-    } else {
+    } else if (result === 'success') {
       await AlertAsync(t('hooks.message.successExportMaps'));
     }
   }, [maps]);
@@ -203,7 +203,7 @@ export default function MapContainer() {
   const pressExportMap = useCallback(
     async (tileMap: TileMapType) => {
       const result = await exportSingleMap(tileMap);
-      await AlertAsync(result.message);
+      if (result.message !== '') await AlertAsync(result.message);
     },
     [exportSingleMap]
   );

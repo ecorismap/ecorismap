@@ -643,6 +643,12 @@
       "replace": "Replace",
       "newLayer": "New Layer"
     },
+    "exportDestination": {
+      "title": "Choose Export Destination",
+      "message": "Choose where to export the file.",
+      "save": "Save to device (Download folder)",
+      "share": "Share to another app"
+    },
     "dataConflict": {
       "title": "Updated on Another Device",
       "message": "This data has been updated on another device. What would you like to do?\n\nMerge: Keep changes from both\nOverwrite: Overwrite with this device's data (changes from the other device will be lost)",

@@ -86,6 +86,12 @@ jest.mock('expo-sharing', () => ({
   shareAsync: jest.fn(),
 }));
 
+// Androidのエクスポート先選択ダイアログをモック（デフォルトは「共有」）
+const mockExportDestinationConfirmAsync = jest.fn().mockResolvedValue('share');
+jest.mock('../../components/molecules/AlertAsync', () => ({
+  ExportDestinationConfirmAsync: () => mockExportDestinationConfirmAsync(),
+}));
+
 // react-native-zip-archiveは使用しなくなったためモック削除
 
 jest.mock('expo-file-system/legacy', () => ({
@@ -116,24 +122,56 @@ describe('File', () => {
   describe('exportFileFromUri', () => {
     it('should share file from uri', async () => {
       // テスト実行
-      await exportFileFromUri('file:///test.txt', 'test.txt');
+      const result = await exportFileFromUri('file:///test.txt', 'test.txt');
 
-      // 期待される結果
+      // 期待される結果（iOSでは選択ダイアログを表示しない）
+      expect(mockExportDestinationConfirmAsync).not.toHaveBeenCalled();
       expect(Sharing.shareAsync).toHaveBeenCalledWith('file://file%3A%2F%2F%2Ftest.txt', undefined);
+      expect(result).toBe('success');
     });
 
-    it('should copy file to download directory on Android', async () => {
-      // Platformをモックしてandroidに設定
+    it('should copy file to download directory when save is selected on Android', async () => {
       Platform.OS = 'android';
+      mockExportDestinationConfirmAsync.mockResolvedValueOnce('save');
 
       // テスト実行
-      await exportFileFromUri('file:///test.txt', 'test.txt');
+      const result = await exportFileFromUri('file:///test.txt', 'test.txt');
 
-      // 期待される結果
+      // 期待される結果（保存時は共有シートを表示しない）
       expect(RNFS.copyFile).toHaveBeenCalledWith('file:///test.txt', '/download/test.txt');
-      expect(Sharing.shareAsync).toHaveBeenCalledWith('file://file%3A%2F%2F%2Ftest.txt', undefined);
+      expect(Sharing.shareAsync).not.toHaveBeenCalled();
+      expect(result).toBe('success');
 
-      // モックを元に戻す
+      Platform.OS = 'ios';
+    });
+
+    it('should share without saving when share is selected on Android', async () => {
+      Platform.OS = 'android';
+      mockExportDestinationConfirmAsync.mockResolvedValueOnce('share');
+
+      // テスト実行
+      const result = await exportFileFromUri('file:///test.txt', 'test.txt');
+
+      // 期待される結果（共有時はDownloadへ保存しない）
+      expect(RNFS.copyFile).not.toHaveBeenCalled();
+      expect(Sharing.shareAsync).toHaveBeenCalledWith('file://file%3A%2F%2F%2Ftest.txt', undefined);
+      expect(result).toBe('success');
+
+      Platform.OS = 'ios';
+    });
+
+    it('should do nothing when cancelled on Android', async () => {
+      Platform.OS = 'android';
+      mockExportDestinationConfirmAsync.mockResolvedValueOnce('cancel');
+
+      // テスト実行
+      const result = await exportFileFromUri('file:///test.txt', 'test.txt');
+
+      // 期待される結果（キャンセル時は保存も共有もしない）
+      expect(RNFS.copyFile).not.toHaveBeenCalled();
+      expect(Sharing.shareAsync).not.toHaveBeenCalled();
+      expect(result).toBe('cancelled');
+
       Platform.OS = 'ios';
     });
   });
@@ -141,32 +179,64 @@ describe('File', () => {
   describe('exportFileFromData', () => {
     it('should export data to file', async () => {
       // テスト実行
-      await exportFileFromData('test data', 'test.txt');
+      const result = await exportFileFromData('test data', 'test.txt');
 
       // 期待される結果
+      expect(mockExportDestinationConfirmAsync).not.toHaveBeenCalled();
       expect(RNFS.writeFile).toHaveBeenCalledWith('/cache/test.txt', 'test data', 'utf8');
       expect(Sharing.shareAsync).toHaveBeenCalledWith('file://%2Fcache%2Ftest.txt', {
         mimeType: 'text/plain',
       });
       expect(RNFS.unlink).toHaveBeenCalledWith('/cache/test.txt');
+      expect(result).toBe('success');
     });
 
-    it('should write file to download directory on Android', async () => {
-      // Platformをモックしてandroidに設定
+    it('should write file to download directory when save is selected on Android', async () => {
       Platform.OS = 'android';
+      mockExportDestinationConfirmAsync.mockResolvedValueOnce('save');
 
       // テスト実行
-      await exportFileFromData('test data', 'test.txt');
+      const result = await exportFileFromData('test data', 'test.txt');
 
-      // 期待される結果
+      // 期待される結果（保存時は共有シートを表示しない）
       expect(RNFS.writeFile).toHaveBeenCalledWith('/download/test.txt', 'test data', 'utf8');
+      expect(Sharing.shareAsync).not.toHaveBeenCalled();
+      expect(result).toBe('success');
+
+      Platform.OS = 'ios';
+    });
+
+    it('should share without saving when share is selected on Android', async () => {
+      Platform.OS = 'android';
+      mockExportDestinationConfirmAsync.mockResolvedValueOnce('share');
+
+      // テスト実行
+      const result = await exportFileFromData('test data', 'test.txt');
+
+      // 期待される結果（共有時はDownloadへ保存しない）
+      expect(RNFS.writeFile).not.toHaveBeenCalledWith('/download/test.txt', 'test data', 'utf8');
       expect(RNFS.writeFile).toHaveBeenCalledWith('/cache/test.txt', 'test data', 'utf8');
       expect(Sharing.shareAsync).toHaveBeenCalledWith('file://%2Fcache%2Ftest.txt', {
         mimeType: 'text/plain',
       });
       expect(RNFS.unlink).toHaveBeenCalledWith('/cache/test.txt');
+      expect(result).toBe('success');
 
-      // モックを元に戻す
+      Platform.OS = 'ios';
+    });
+
+    it('should do nothing when cancelled on Android', async () => {
+      Platform.OS = 'android';
+      mockExportDestinationConfirmAsync.mockResolvedValueOnce('cancel');
+
+      // テスト実行
+      const result = await exportFileFromData('test data', 'test.txt');
+
+      // 期待される結果（キャンセル時は保存も共有もしない）
+      expect(RNFS.writeFile).not.toHaveBeenCalled();
+      expect(Sharing.shareAsync).not.toHaveBeenCalled();
+      expect(result).toBe('cancelled');
+
       Platform.OS = 'ios';
     });
   });

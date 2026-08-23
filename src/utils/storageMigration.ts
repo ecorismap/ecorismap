@@ -206,14 +206,14 @@ export const exportAsyncStorageData = async (): Promise<string | null> => {
         await RNFS.writeFile(targetPath, zipContent, 'base64');
         const zipPath = targetPath;
         if (zipPath !== undefined) {
-          // ファイルを共有
-          await exportFileFromUri(zipPath, `${fileName}.ecorismap`);
-          
+          // ファイルを共有（キャンセル時はバックアップ未保存のため移行完了扱いにしない）
+          const result = await exportFileFromUri(zipPath, `${fileName}.ecorismap`);
+
           // 一時ファイルを削除
           await RNFS.unlink(sourcePath);
           await RNFS.unlink(targetPath);
-          
-          return zipPath;
+
+          return result === 'success' ? zipPath : null;
         }
       } catch (error) {
         // Error creating ecorismap backup

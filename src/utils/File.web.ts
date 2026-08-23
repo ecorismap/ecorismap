@@ -1,7 +1,7 @@
 import JSZip from 'jszip';
 import { Platform } from 'react-native';
 import sanitize from 'sanitize-filename';
-import { ExportType } from '../types';
+import { ExportResultType, ExportType } from '../types';
 import { Buffer } from 'buffer';
 import { fetchPhoto } from '../lib/firebase/storage';
 // //@ts-ignore
@@ -15,9 +15,10 @@ if (Platform.OS === 'web') {
   FileSaver = require('file-saver');
 }
 
-export const exportFileFromData = async (data: string, fileName: string) => {
+export const exportFileFromData = async (data: string, fileName: string): Promise<ExportResultType> => {
   const blob = new Blob([data], { type: 'text/plain;charset=utf-8' } as BlobPropertyBag);
   FileSaver.saveAs(blob, sanitize(fileName));
+  return 'success';
 };
 
 export const generateZipBlob = async (
@@ -120,11 +121,11 @@ export const exportGeoFile = async (
   }[],
   exportFileName: string,
   ext: string
-) => {
+): Promise<ExportResultType> => {
   const zipFile = await generateZipBlob(exportData);
-  if (zipFile === undefined) return false;
+  if (zipFile === undefined) return 'error';
   FileSaver.saveAs(zipFile, `${sanitize(exportFileName)}.${ext}`);
-  return true;
+  return 'success';
 };
 
 // Google Driveアップロード等、ダウンロードUIを介さずzipの実体が必要な場合に使う。
@@ -221,4 +222,6 @@ export function saveAs(fileBytes: Uint8Array | Blob, fileName: string): void {
 }
 
 
-export async function exportFileFromUri() {}
+export async function exportFileFromUri(): Promise<ExportResultType> {
+  return 'success';
+}

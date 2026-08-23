@@ -16,7 +16,7 @@ jest.mock('expo-sharing', () => ({
 
 // File.tsのモック（共有ダイアログの起動を避ける）
 jest.mock('../File', () => ({
-  exportFileFromUri: jest.fn(() => Promise.resolve()),
+  exportFileFromUri: jest.fn(() => Promise.resolve('success')),
 }));
 
 import AsyncStorage from '@react-native-async-storage/async-storage';

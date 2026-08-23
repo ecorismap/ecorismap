@@ -17,6 +17,26 @@ export const DuplicateLayerConfirmAsync = async (layerName: string): Promise<Dup
     );
   });
 
+export type ExportDestinationChoice = 'save' | 'share' | 'cancel';
+
+/**
+ * Androidでのエクスポート先（デバイスに保存 / 他のアプリで共有）をユーザーに確認する。
+ * Androidの共有シートには「デバイスに保存」の選択肢がないため、共有前にここで選ばせる。
+ */
+export const ExportDestinationConfirmAsync = async (): Promise<ExportDestinationChoice> =>
+  new Promise((resolve) => {
+    Alert.alert(
+      t('hooks.exportDestination.title'),
+      t('hooks.exportDestination.message'),
+      [
+        { text: t('hooks.exportDestination.save'), swalType: 'confirm', onPress: () => resolve('save') },
+        { text: t('hooks.exportDestination.share'), swalType: 'deny', onPress: () => resolve('share') },
+        { text: t('common.cancel'), swalType: 'cancel', onPress: () => resolve('cancel') },
+      ],
+      { cancelable: false }
+    );
+  });
+
 export type DataConflictChoice = 'merge' | 'overwrite' | 'cancel';
 
 /**
