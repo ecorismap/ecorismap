@@ -186,6 +186,8 @@ export const useData = (layerId: string): UseDataReturnType => {
     (sortedRecordSet_: RecordType[]) => {
       //絞り込み中はストアのレコードを丸ごと置き換えると絞り込みから外れたレコードが消えるため受け付けない
       if (isFiltering) return;
+      //列ソート中は表示順で置き換えるとストア順(追加順=連番採番の基準)が壊れるため受け付けない
+      if (sortedOrder !== 'UNSORTED') return;
       changeCheckedAll(false);
       // userIdごとにグループ化（undefinedはキー'undefined'として処理）
       const userMap: { [userId: string]: RecordType[] } = {};
@@ -200,7 +202,7 @@ export const useData = (layerId: string): UseDataReturnType => {
         );
       });
     },
-    [changeCheckedAll, dispatch, isFiltering, targetLayer]
+    [changeCheckedAll, dispatch, isFiltering, sortedOrder, targetLayer]
   );
 
   //レコードのvisibleをまとめて更新する（userIdごとにdispatchが必要）

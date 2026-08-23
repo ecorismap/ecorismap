@@ -25,13 +25,13 @@ const DataRow = React.memo(
     changeChecked,
     changeVisible,
     gotoDataEdit,
-    isFiltering,
+    isDragDisabled,
   }: {
     item: RecordType;
     getIndex: () => number | undefined;
     drag: () => void;
     isActive: boolean;
-    isFiltering: boolean;
+    isDragDisabled: boolean;
     checkList: { id: number; checked: boolean }[];
     projectId: string | undefined;
     layer: LayerType;
@@ -71,7 +71,7 @@ const DataRow = React.memo(
         {projectId !== undefined && layer.permission !== 'COMMON' && (
           <Pressable
             style={[styles.td, { flex: 2, width: 100 }]}
-            onLongPress={isFiltering ? undefined : drag}
+            onLongPress={isDragDisabled ? undefined : drag}
             disabled={isActive}
             onPress={() => gotoDataEdit(index)}
           >
@@ -95,7 +95,7 @@ const DataRow = React.memo(
             <Pressable
               key={field_index}
               style={[styles.td, { flex: 2, width: 120 }]}
-              onLongPress={isFiltering ? undefined : drag}
+              onLongPress={isDragDisabled ? undefined : drag}
               disabled={isActive}
               onPress={() => gotoDataEdit(index)}
             >
@@ -144,7 +144,7 @@ const DataRow = React.memo(
     return (
       isItemEqual &&
       prevProps.isActive === nextProps.isActive &&
-      prevProps.isFiltering === nextProps.isFiltering &&
+      prevProps.isDragDisabled === nextProps.isDragDisabled &&
       prevProps.checkList[prevIndex]?.checked === nextProps.checkList[nextIndex]?.checked
     );
   }
@@ -235,11 +235,12 @@ export const DataTable = React.memo(() => {
           changeChecked={changeChecked}
           changeVisible={changeVisible}
           gotoDataEdit={gotoDataEdit}
-          isFiltering={isFiltering}
+          //列ソート中にドラッグすると表示順(ソート順)でストア順が上書きされ連番採番が壊れるため無効化
+          isDragDisabled={isFiltering || sortedOrder !== 'UNSORTED'}
         />
       );
     },
-    [changeChecked, changeVisible, checkList, gotoDataEdit, isFiltering, isMapMemoLayer, layer, projectId]
+    [changeChecked, changeVisible, checkList, gotoDataEdit, isFiltering, isMapMemoLayer, layer, projectId, sortedOrder]
   );
   const keyExtractor = useCallback((item: RecordType) => item.id, []);
 
@@ -295,7 +296,8 @@ export const DataTable = React.memo(() => {
           extraData={extraData}
           renderItem={renderItem}
           keyExtractor={keyExtractor}
-          onDragEnd={({ data }) => updateRecordSetOrder(data)}
+          //移動していない場合(長押しして離しただけ)はストア順を書き換えない
+          onDragEnd={({ data, from, to }) => from !== to && updateRecordSetOrder(data)}
           activationDistance={5}
           getItemLayout={(_, index) => ({ length: 45, offset: 45 * index, index })}
         />
