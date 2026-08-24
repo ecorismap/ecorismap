@@ -86,10 +86,10 @@ jest.mock('expo-sharing', () => ({
   shareAsync: jest.fn(),
 }));
 
-// Androidのエクスポート先選択ダイアログをモック（デフォルトは「共有」）
+// Androidのエクスポート先選択モーダルをモック（デフォルトは「共有」）
 const mockExportDestinationConfirmAsync = jest.fn().mockResolvedValue('share');
-jest.mock('../../components/molecules/AlertAsync', () => ({
-  ExportDestinationConfirmAsync: () => mockExportDestinationConfirmAsync(),
+jest.mock('../../components/organisms/ExportDestinationModal', () => ({
+  showExportDestinationModal: () => mockExportDestinationConfirmAsync(),
 }));
 
 // react-native-zip-archiveは使用しなくなったためモック削除
