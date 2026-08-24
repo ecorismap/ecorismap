@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useReducer } from 'react';
 import { Platform } from 'react-native';
 import { render, userEvent } from '@testing-library/react-native';
 import Projects from '../Projects';
 import { ProjectsContext } from '../../../contexts/Projects';
+import projectsUIReducer, { changeProjectSort, projectsUIInitialState } from '../../../modules/projectsUI';
 import { ProjectType, UserType } from '../../../types';
 
 // @expo/vector-iconsのモック
@@ -64,12 +65,23 @@ const createContextValue = () => ({
   pressMigrateProjects: jest.fn(),
 });
 
-const renderProjects = async () =>
-  await render(
-    <ProjectsContext.Provider value={createContextValue()}>
+// ソート状態はReduxへ移動したため、実際のreducerをuseReducerで再現して配線する
+const ProjectsWithSortState = () => {
+  const [uiState, dispatch] = useReducer(projectsUIReducer, projectsUIInitialState);
+  const contextValue = {
+    ...createContextValue(),
+    sortField: uiState.sortField,
+    sortOrder: uiState.sortOrder,
+    changeProjectSort: (field: Parameters<typeof changeProjectSort>[0]) => dispatch(changeProjectSort(field)),
+  };
+  return (
+    <ProjectsContext.Provider value={contextValue}>
       <Projects />
     </ProjectsContext.Provider>
   );
+};
+
+const renderProjects = async () => await render(<ProjectsWithSortState />);
 
 describe('Projects ソート', () => {
   let originalOS: typeof Platform.OS;

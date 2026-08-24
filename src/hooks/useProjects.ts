@@ -8,6 +8,13 @@ import {
   toggleFavorite as toggleFavoriteAction,
   setShowOnlyFavorites as setShowOnlyFavoritesAction,
 } from '../modules/favoriteProjects';
+import {
+  setShowArchive as setShowArchiveAction,
+  changeProjectSort as changeProjectSortAction,
+  ProjectSortField,
+  ProjectSortOrder,
+  projectsUIInitialState,
+} from '../modules/projectsUI';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '../store';
 import { ulid } from 'ulid';
@@ -22,6 +29,9 @@ export type UseProjectsReturnType = {
   favoriteProjectIds: string[];
   showOnlyFavorites: boolean;
   isShowArchive: boolean;
+  sortField: ProjectSortField;
+  sortOrder: ProjectSortOrder;
+  changeProjectSort: (field: ProjectSortField) => void;
   fetchProjects: (includeArchived?: boolean) => Promise<{
     isOK: boolean;
     message: string;
@@ -48,8 +58,12 @@ export const useProjects = (): UseProjectsReturnType => {
   const favoriteProjectIds = useSelector((state: RootState) => state.favoriteProjects?.projectIds || []);
   const showOnlyFavorites = useSelector((state: RootState) => state.favoriteProjects?.showOnlyFavorites || false);
   const [isLoading, setIsLoading] = useState(false);
-  // アーカイブ済みも読み込むか（端末ローカルの一時状態。永続化しない）
-  const [isShowArchive, setIsShowArchive] = useState(false);
+  // アーカイブ表示とソートは画面遷移後も維持するためReduxで永続化する
+  const isShowArchive = useSelector(
+    (state: RootState) => state.projectsUI?.isShowArchive ?? projectsUIInitialState.isShowArchive
+  );
+  const sortField = useSelector((state: RootState) => state.projectsUI?.sortField ?? projectsUIInitialState.sortField);
+  const sortOrder = useSelector((state: RootState) => state.projectsUI?.sortOrder ?? projectsUIInitialState.sortOrder);
 
   const generateProject = useCallback(() => {
     if (!isLoggedIn(user)) throw new Error(t('hooks.message.pleaseLogin'));
@@ -152,9 +166,16 @@ export const useProjects = (): UseProjectsReturnType => {
   // アーカイブ表示のトグル。反転した値でそのまま再取得する（state更新の反映待ちを避ける）。
   const toggleShowArchive = useCallback(async () => {
     const next = !isShowArchive;
-    setIsShowArchive(next);
+    dispatch(setShowArchiveAction(next));
     return fetchProjects(next);
-  }, [fetchProjects, isShowArchive]);
+  }, [dispatch, fetchProjects, isShowArchive]);
+
+  const changeProjectSort = useCallback(
+    (field: ProjectSortField) => {
+      dispatch(changeProjectSortAction(field));
+    },
+    [dispatch]
+  );
 
   const archiveProject = useCallback(
     async (projectId: string) => {
@@ -232,6 +253,9 @@ export const useProjects = (): UseProjectsReturnType => {
     favoriteProjectIds,
     showOnlyFavorites,
     isShowArchive,
+    sortField,
+    sortOrder,
+    changeProjectSort,
     fetchProjects,
     generateProject,
     toggleFavorite,
