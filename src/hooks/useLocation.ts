@@ -6,7 +6,7 @@ import BackgroundGeolocation, {
   Config as BackgroundConfig,
   NotificationConfig,
 } from '../lib/backgroundGeolocation';
-import { watchHeadingAsync, LocationSubscription } from 'expo-location';
+import { watchHeadingAsync, getForegroundPermissionsAsync, LocationSubscription } from 'expo-location';
 import MapView from 'react-native-maps';
 import { MapRef } from 'react-map-gl/maplibre';
 import { LayerType, LocationStateType, LocationType, RecordType, TrackingStateType, TrackMetadataType } from '../types';
@@ -269,6 +269,8 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
     headingSubscribingRef.current = true;
     try {
       headingSubscriber.current = await watchHeadingAsync((pos) => {
+        // iOSは真北未取得時にtrueHeadingへ-1を返すため弾く（コンパスON時の購読と同じ対策）
+        if (pos.trueHeading < 0) return;
         pushAzimuth(pos.trueHeading);
       });
     } catch (error) {
@@ -277,6 +279,18 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
       headingSubscribingRef.current = false;
     }
   }, [pushAzimuth]);
+
+  // 方位盤（コンパスボタン）の常時回転用。権限プロンプトは出さず、
+  // 未許可なら購読しない（方位盤は静止表示のままになる）。
+  const ensureHeadingSubscriptionIfPermitted = useCallback(async () => {
+    if (headingSubscriber.current !== null) return;
+    try {
+      const { granted } = await getForegroundPermissionsAsync();
+      if (granted) await ensureHeadingSubscription();
+    } catch {
+      // 権限APIが使えない環境では静止表示にフォールバック
+    }
+  }, [ensureHeadingSubscription]);
 
   // checkProximityをrefで同期（onLocationコールバックがクロージャで古い参照を保持する問題を回避）
   useEffect(() => {
@@ -573,10 +587,8 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
     } catch (error) {
       console.error('[gps] stop error', error);
     }
-    if (headingSubscriber.current !== null) {
-      headingSubscriber.current.remove();
-      headingSubscriber.current = null;
-    }
+    // heading購読はここでは解除しない: 方位盤（コンパスボタン）をGPS OFFでも端末の向きに
+    // 追従させるため、購読は「フォアグラウンド＋権限あり」に紐づく（バックグラウンド移行時に解除）
   }, [syncBackgroundService]);
 
   const stopTracking = useCallback(async () => {
@@ -594,11 +606,7 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
       // React Stateをクリア（メモリ解放を促進）
       setCurrentLocation(null);
       setLocationStale(false);
-      // heading購読を解除（stopGPSと対称。磁気センサーの購読が残るのを防ぐ）
-      if (headingSubscriber.current !== null) {
-        headingSubscriber.current.remove();
-        headingSubscriber.current = null;
-      }
+      // heading購読は解除しない（方位盤の常時回転用。バックグラウンド移行時に解除される）
     } catch (e) {
     } finally {
       if (isLoggedIn(dataUser) && hasOpened(projectId)) {
@@ -850,10 +858,9 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
           { duration: 500 }
         );
 
-        // GPS/トラッキング中はマーカーの向き表示にazimuthが必要なため、通常のheading購読を復元する
-        if (gpsStateRef.current !== 'off' || trackingStateRef.current === 'on') {
-          await ensureHeadingSubscription();
-        }
+        // 通常のheading購読を復元する（マーカーの向き・方位盤の回転に使用。
+        // headingUpに入れた時点で位置権限は許可済みなので無条件でよい）
+        await ensureHeadingSubscription();
       }
       setHeadingUp(headingUp_);
     },
@@ -1058,6 +1065,8 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
             if (!isOK) {
               await AlertAsync(message);
             }
+            // GPS OFFでも方位盤を回すため、権限があればheading購読だけは開始する（プロンプトなし）
+            await ensureHeadingSubscriptionIfPermitted();
             return;
           }
           // MMKVから保存されたトラッキング状態を取得して復元
@@ -1129,6 +1138,10 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
           }
         }
       }
+
+      // GPS OFFでも方位盤（コンパスボタン）を回すため、権限があればheading購読を開始する
+      // （冪等・プロンプトなし。上の分岐で購読済みなら何もしない）
+      await ensureHeadingSubscriptionIfPermitted();
     })();
 
     return () => {
@@ -1180,17 +1193,23 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
         }
 
         // ヘディング再購読
-        const shouldSubscribeHeading = trackingState === 'on' || gpsState !== 'off' || headingUp;
-        if (shouldSubscribeHeading && headingSubscriber.current === null) {
-          try {
-            const permissionStatus = await confirmLocationPermission();
-            if (permissionStatus === 'granted') {
-              await ensureHeadingSubscription();
-            } else {
-              console.warn('[tracking] Skipped heading subscription on foreground: permission not granted');
+        if (headingSubscriber.current === null) {
+          const usesLocationService = trackingState === 'on' || gpsState !== 'off' || headingUp;
+          if (usesLocationService) {
+            // サービス利用中は従来どおり権限がなければ案内する
+            try {
+              const permissionStatus = await confirmLocationPermission();
+              if (permissionStatus === 'granted') {
+                await ensureHeadingSubscription();
+              } else {
+                console.warn('[tracking] Skipped heading subscription on foreground: permission not granted');
+              }
+            } catch (error) {
+              console.error('Error resubscribing heading watcher on foreground:', error);
             }
-          } catch (error) {
-            console.error('Error resubscribing heading watcher on foreground:', error);
+          } else {
+            // 方位盤の回転のみが目的の場合はサイレントに再購読（権限プロンプトなし）
+            await ensureHeadingSubscriptionIfPermitted();
           }
         }
 
@@ -1223,6 +1242,7 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
     syncLocationFromMMKV,
     confirmLocationPermission,
     ensureHeadingSubscription,
+    ensureHeadingSubscriptionIfPermitted,
     syncBackgroundService,
   ]);
 

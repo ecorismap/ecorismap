@@ -127,7 +127,6 @@ export const TrackSummaryChart = React.memo(({ profile, height = 180 }: Props) =
                     strokeWidth={1}
                   />
                   <SvgText x={PADDING.left - 4} y={chart.toY(v) + 3} fontSize={9} fill={COLOR.GRAY3} textAnchor="end">
-                    {/* eslint-disable-next-line react-native/no-raw-text -- SVG内のテキスト */}
                     {`${v}m`}
                   </SvgText>
                 </React.Fragment>
@@ -142,7 +141,6 @@ export const TrackSummaryChart = React.memo(({ profile, height = 180 }: Props) =
                   fill={COLOR.GRAY3}
                   textAnchor="middle"
                 >
-                  {/* eslint-disable-next-line react-native/no-raw-text -- SVG内のテキスト */}
                   {`${v % 1 === 0 ? v : v.toFixed(1)}km`}
                 </SvgText>
               ))}
