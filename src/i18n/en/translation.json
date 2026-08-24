@@ -646,8 +646,10 @@
     "exportDestination": {
       "title": "Choose Export Destination",
       "message": "Choose where to export the file.",
-      "save": "Save to device (Download folder)",
-      "share": "Share to another app"
+      "save": "Save to device",
+      "saveDescription": "Save to the Download folder",
+      "share": "Share to another app",
+      "shareDescription": "Choose an app to share with"
     },
     "dataConflict": {
       "title": "Updated on Another Device",

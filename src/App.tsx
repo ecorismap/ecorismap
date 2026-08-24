@@ -9,6 +9,8 @@ import * as NavigationBar from 'expo-navigation-bar';
 import Routes from './routes';
 import { persistor, store } from './store';
 import { StatusBarOverlay } from './components/atoms/StatusBarOverlay';
+import { ExportDestinationModal } from './components/organisms/ExportDestinationModal';
+import { StyledDialog } from './components/molecules/StyledDialog';
 import { TileSignatureSync } from './components/atoms/TileSignatureSync';
 import { checkAsyncStorageData, isMigrationCompleted, isMigrationSkipped, StorageInfo } from './utils/storageMigration';
 
@@ -64,6 +66,8 @@ export default function App() {
               <Routes />
               <TileSignatureSync />
               <StatusBarOverlay />
+              <ExportDestinationModal />
+              <StyledDialog />
               {Platform.OS !== 'web' && storageInfo && StorageMigrationDialog && (
                 <StorageMigrationDialog
                   visible={showMigrationDialog}

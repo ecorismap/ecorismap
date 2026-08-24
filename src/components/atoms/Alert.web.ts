@@ -1,14 +1,17 @@
 import { type AlertButton, type AlertOptions } from 'react-native';
 
 import Swal from 'sweetalert2';
+import { showStyledDialog } from '../molecules/StyledDialog';
 
 export type CustomAlertButton = AlertButton & {
   swalType?: 'deny' | 'cancel' | 'confirm';
 };
 
 class WebAlert {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+   
   public alert(title: string, message?: string, buttons?: CustomAlertButton[], options?: AlertOptions): void {
+    // App直下のStyledDialogで表示する。未マウント時のみsweetalert2へフォールバック
+    if (showStyledDialog({ title, message, buttons, options })) return;
     const confirmButton = buttons ? buttons.find((button) => button.swalType === 'confirm') : undefined;
     const denyButton = buttons ? buttons.find((button) => button.swalType === 'deny') : undefined;
     const cancelButton = buttons ? buttons.find((button) => button.swalType === 'cancel') : undefined;

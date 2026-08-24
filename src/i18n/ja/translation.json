@@ -180,7 +180,7 @@
     "userName": "User",
     "move": "上下",
     "finish": "確定",
-    "cancel": "取消",
+    "cancel": "キャンセル",
     "cancelEdit": "編集を取消",
     "ok": "OK",
     "confirm": {
@@ -853,8 +853,10 @@
     "exportDestination": {
       "title": "エクスポート先の選択",
       "message": "ファイルのエクスポート先を選択してください。",
-      "save": "デバイスに保存（Downloadフォルダ）",
-      "share": "他のアプリで共有"
+      "save": "デバイスに保存",
+      "saveDescription": "Downloadフォルダに保存します",
+      "share": "他のアプリで共有",
+      "shareDescription": "共有先のアプリを選択します"
     },
     "dataConflict": {
       "title": "別の端末で更新されています",

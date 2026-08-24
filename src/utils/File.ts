@@ -1,7 +1,7 @@
 import * as RNFS from 'react-native-fs';
 import * as Sharing from 'expo-sharing';
 import { ExportResultType, ExportType } from '../types';
-import { ExportDestinationConfirmAsync } from '../components/molecules/AlertAsync';
+import { showExportDestinationModal } from '../components/organisms/ExportDestinationModal';
 import JSZip from 'jszip';
 import sanitize from 'sanitize-filename';
 import { getExt } from './General';
@@ -254,7 +254,7 @@ export async function exportFileFromUri(
 ): Promise<ExportResultType> {
   try {
     if (Platform.OS === 'android') {
-      const choice = await ExportDestinationConfirmAsync();
+      const choice = await showExportDestinationModal();
       if (choice === 'cancel') return 'cancelled';
       if (choice === 'save') {
         await RNFS.copyFile(uri, `${RNFS.DownloadDirectoryPath}/${sanitize(fileName)}`);
@@ -272,7 +272,7 @@ export async function exportFileFromUri(
 export const exportFileFromData = async (data: string, fileName: string): Promise<ExportResultType> => {
   try {
     if (Platform.OS === 'android') {
-      const choice = await ExportDestinationConfirmAsync();
+      const choice = await showExportDestinationModal();
       if (choice === 'cancel') return 'cancelled';
       if (choice === 'save') {
         await RNFS.writeFile(`${RNFS.DownloadDirectoryPath}/${sanitize(fileName)}`, data, 'utf8');

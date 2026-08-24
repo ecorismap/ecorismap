@@ -65,6 +65,8 @@ export const COLOR = {
   CAROUSEL_BACKGROUND: 'rgba(1, 1, 1, 0.1)',
   TRACK: '#0000FFee',
   STATUS_BAR_OVERLAY: 'rgba(0, 0, 0, 0.4)',
+  MODAL_OVERLAY: 'rgba(0, 0, 0, 0.4)',
+  PALEBLUE: '#EAF3FF',
   SAVING_OVERLAY: 'rgba(0, 0, 0, 0.5)',
   PROGRESS_BAR_BG: '#E0E0E0',
   PROGRESS_BAR_FILL: '#0066CC',
