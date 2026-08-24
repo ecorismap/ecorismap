@@ -1,4 +1,4 @@
-import React, { useCallback, useContext, useState, useMemo } from 'react';
+import React, { useCallback, useContext, useMemo } from 'react';
 import {
   View,
   Text,
@@ -21,9 +21,6 @@ import { ProjectsModalEncryptPassword } from '../organisms/ProjectsModalEncryptP
 import { ProjectType } from '../../types';
 import { ListRenderItemInfo } from 'react-native';
 
-type SortField = 'name' | 'abstract' | 'storage' | 'encryptedAt' | 'owner' | 'archived';
-type SortOrder = 'ASCENDING' | 'DESCENDING' | 'UNSORTED';
-
 export default function Projects() {
   const {
     projects,
@@ -33,6 +30,9 @@ export default function Projects() {
     favoriteProjectIds,
     showOnlyFavorites,
     isShowArchive,
+    sortField,
+    sortOrder,
+    changeProjectSort,
     pressEncryptPasswordOK,
     pressEncryptPasswordCancel,
     onReloadProjects,
@@ -53,21 +53,6 @@ export default function Projects() {
 
   // Web用: ヘッダー(56 + insets.top) + テーブルヘッダー(45) + ボタン(約60) + マージンを引く
   const tableHeight = windowHeight - (56 + insets.top) - 45 - 60 - insets.bottom - 20;
-
-  const [sortField, setSortField] = useState<SortField>('encryptedAt');
-  const [sortOrder, setSortOrder] = useState<SortOrder>('DESCENDING');
-
-  const handleSort = useCallback(
-    (field: SortField) => {
-      if (field === sortField) {
-        setSortOrder(sortOrder === 'UNSORTED' ? 'DESCENDING' : sortOrder === 'DESCENDING' ? 'ASCENDING' : 'UNSORTED');
-      } else {
-        setSortField(field);
-        setSortOrder('DESCENDING');
-      }
-    },
-    [sortField, sortOrder]
-  );
 
   const filteredProjects = useMemo(() => {
     let result = projects;
@@ -141,7 +126,7 @@ export default function Projects() {
           color={showOnlyFavorites ? COLOR.YELLOW : COLOR.GRAY4}
         />
       </Pressable>
-      <Pressable style={[styles.th, { flex: 3, width: 140 }]} onPress={() => handleSort('name')}>
+      <Pressable style={[styles.th, { flex: 3, width: 140 }]} onPress={() => changeProjectSort('name')}>
         <Text style={{ color: COLOR.TEXT_DARK }}>{`${t('common.projectName')}`}</Text>
         {sortField === 'name' && sortOrder === 'ASCENDING' && (
           <MaterialCommunityIcons name="sort-alphabetical-ascending" size={16} color={COLOR.TEXT_DARK} />
@@ -150,7 +135,7 @@ export default function Projects() {
           <MaterialCommunityIcons name="sort-alphabetical-descending" size={16} color={COLOR.TEXT_DARK} />
         )}
       </Pressable>
-      <Pressable style={[styles.th, { flex: 2, width: 120 }]} onPress={() => handleSort('abstract')}>
+      <Pressable style={[styles.th, { flex: 2, width: 120 }]} onPress={() => changeProjectSort('abstract')}>
         <Text style={{ color: COLOR.TEXT_DARK }}>{`${t('common.overview')}`}</Text>
         {sortField === 'abstract' && sortOrder === 'ASCENDING' && (
           <MaterialCommunityIcons name="sort-alphabetical-ascending" size={16} color={COLOR.TEXT_DARK} />
@@ -159,7 +144,7 @@ export default function Projects() {
           <MaterialCommunityIcons name="sort-alphabetical-descending" size={16} color={COLOR.TEXT_DARK} />
         )}
       </Pressable>
-      <Pressable style={[styles.th, { flex: 2, width: 120 }]} onPress={() => handleSort('encryptedAt')}>
+      <Pressable style={[styles.th, { flex: 2, width: 120 }]} onPress={() => changeProjectSort('encryptedAt')}>
         <Text style={{ color: COLOR.TEXT_DARK }}>{`${t('common.updatedAt')}`}</Text>
         {sortField === 'encryptedAt' && sortOrder === 'ASCENDING' && (
           <MaterialCommunityIcons name="sort-calendar-ascending" size={16} color={COLOR.TEXT_DARK} />
@@ -168,7 +153,7 @@ export default function Projects() {
           <MaterialCommunityIcons name="sort-calendar-descending" size={16} color={COLOR.TEXT_DARK} />
         )}
       </Pressable>
-      <Pressable style={[styles.th, { flex: 2, width: 100 }]} onPress={() => handleSort('owner')}>
+      <Pressable style={[styles.th, { flex: 2, width: 100 }]} onPress={() => changeProjectSort('owner')}>
         <Text style={{ color: COLOR.TEXT_DARK }}>{`${t('common.owner')}`}</Text>
         {sortField === 'owner' && sortOrder === 'ASCENDING' && (
           <MaterialCommunityIcons name="sort-bool-ascending" size={16} color={COLOR.TEXT_DARK} />
@@ -177,7 +162,7 @@ export default function Projects() {
           <MaterialCommunityIcons name="sort-bool-descending" size={16} color={COLOR.TEXT_DARK} />
         )}
       </Pressable>
-      <Pressable style={[styles.th, { flex: 2, width: 120 }]} onPress={() => handleSort('storage')}>
+      <Pressable style={[styles.th, { flex: 2, width: 120 }]} onPress={() => changeProjectSort('storage')}>
         <Text style={{ color: COLOR.TEXT_DARK }}>{`${t('common.usage')}`}</Text>
         {sortField === 'storage' && sortOrder === 'ASCENDING' && (
           <MaterialCommunityIcons name="sort-numeric-ascending" size={16} color={COLOR.TEXT_DARK} />
@@ -187,7 +172,7 @@ export default function Projects() {
         )}
       </Pressable>
       {Platform.OS === 'web' && (
-        <Pressable style={[styles.th, { width: 90 }]} onPress={() => handleSort('archived')}>
+        <Pressable style={[styles.th, { width: 90 }]} onPress={() => changeProjectSort('archived')}>
           <Text numberOfLines={1} style={{ color: COLOR.TEXT_DARK }}>{`${t('Projects.label.archive')}`}</Text>
           {sortField === 'archived' && sortOrder === 'ASCENDING' && (
             <MaterialCommunityIcons name="sort-bool-ascending" size={16} color={COLOR.TEXT_DARK} />
@@ -198,7 +183,7 @@ export default function Projects() {
         </Pressable>
       )}
     </View>
-  ), [handleSort, showOnlyFavorites, sortField, sortOrder, toggleShowOnlyFavorites]);
+  ), [changeProjectSort, showOnlyFavorites, sortField, sortOrder, toggleShowOnlyFavorites]);
 
   // renderItemをメモ化（不要な再生成を防止）
   const renderItem = useCallback(
