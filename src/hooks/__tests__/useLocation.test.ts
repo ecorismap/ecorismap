@@ -593,7 +593,7 @@ describe('heading購読のライフサイクル', () => {
     expect(mockLocation.watchHeadingAsync.mock.calls.length).toBe(callsAfterGpsOn + 2);
   });
 
-  it('トラッキング停止時にheading購読を解除する', async () => {
+  it('トラッキング停止後もheading購読を維持する（方位盤をGPS OFFでも回すため）', async () => {
     const removeMock = jest.fn();
     mockLocation.watchHeadingAsync.mockResolvedValue({ remove: removeMock });
     const mockMapRef = { current: { animateCamera: jest.fn() } };
@@ -607,7 +607,47 @@ describe('heading購読のライフサイクル', () => {
     await act(async () => {
       await result.current.toggleTracking('off');
     });
-    expect(removeMock).toHaveBeenCalled();
+    expect(removeMock).not.toHaveBeenCalled();
+  });
+
+  it('GPS OFF後もheading購読を維持する（方位盤をGPS OFFでも回すため）', async () => {
+    const removeMock = jest.fn();
+    mockLocation.watchHeadingAsync.mockResolvedValue({ remove: removeMock });
+    const mockMapRef = { current: { animateCamera: jest.fn() } };
+    const { result } = renderHook(() => useLocation(mockMapRef as any), { wrapper });
+
+    await act(async () => {
+      await result.current.toggleGPS('show');
+    });
+    removeMock.mockClear();
+
+    await act(async () => {
+      await result.current.toggleGPS('off');
+    });
+    expect(removeMock).not.toHaveBeenCalled();
+  });
+
+  it('位置権限が許可済みならGPS OFFの起動時でもheading購読を開始する（プロンプトなし）', async () => {
+    mockLocation.getForegroundPermissionsAsync.mockResolvedValue({ granted: true } as any);
+    mockLocation.watchHeadingAsync.mockResolvedValue({ remove: jest.fn() } as any);
+    const mockMapRef = { current: { animateCamera: jest.fn() } };
+    renderHook(() => useLocation(mockMapRef as any), { wrapper });
+
+    await act(async () => {});
+
+    expect(mockLocation.watchHeadingAsync).toHaveBeenCalled();
+    expect(mockBackgroundGeolocation.requestPermission).not.toHaveBeenCalled();
+  });
+
+  it('位置権限が未許可なら起動時にheading購読せず権限プロンプトも出さない', async () => {
+    mockLocation.getForegroundPermissionsAsync.mockResolvedValue({ granted: false } as any);
+    const mockMapRef = { current: { animateCamera: jest.fn() } };
+    renderHook(() => useLocation(mockMapRef as any), { wrapper });
+
+    await act(async () => {});
+
+    expect(mockLocation.watchHeadingAsync).not.toHaveBeenCalled();
+    expect(mockBackgroundGeolocation.requestPermission).not.toHaveBeenCalled();
   });
 
   it('トラッキング開始後の状態変化でonLocation/heading購読が破棄されない（初期化effect再実行の回帰）', async () => {

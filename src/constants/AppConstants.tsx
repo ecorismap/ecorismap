@@ -323,7 +323,6 @@ export const HOME_ACCOUNT_BTN = {
 export const HOME_BTN = {
   GPS: 'crosshairs-gps',
   TRACK: 'walk',
-  COMPASS: 'arrow-up-bold',
   ZOOM_PLUS: 'plus',
   ZOOM_MINUS: 'minus',
   MAPS: 'layers',
