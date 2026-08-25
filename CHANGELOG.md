@@ -15,6 +15,10 @@
 - Added straight-line distance from the current location to the long-pressed point in the map popup when GPS is on
 - Added hillshade with omnidirectional shading (SVF) and red relief map styles, unified across iOS, Android, and Web
 - Added preset selection to map and layer editing, including terrain visualization presets
+- Added a relief:// map protocol (alongside hillshade://) that renders color relief with omnidirectional shading and burned-in depth contours from elevation tiles, unified across iOS, Android, and Web
+- Changed the hillshade preset source to the GSJ integrated land-sea DEM so seafloor terrain is also shaded (sea data is reliable up to z8; above that the sea shading degrades or becomes transparent while land stays accurate up to z15)
+- Added a global GEBCO seafloor relief preset that reproduces shiwaku's gebco-2025-grid-tile-on-maplibre demo. On web it uses the same MapLibre layer stack as the demo (color-relief, hillshade, maplibre-contour depth contours with numeric labels, and island/undersea feature names from MSIL); on iOS/Android it renders a close raster approximation of the relief and contour lines, with place names and contour labels shown as crisp upright markers
+- Added support for GSJ elev2 elevation sources (512px WebP tiles, e.g. Cabinet Office Nankai Trough bathymetry up to z11) in the relief:// protocol via manual URL entry
 - Added pause and resume for map tile downloads
 - Added project archiving, with sorting by owner and archive status in the project list
 - Added migration of existing projects to the new encryption key scheme (bulk migration, and automatic migration when opening a project)

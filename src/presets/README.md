@@ -16,6 +16,11 @@
 - レイヤの `type` は `POINT` / `LINE` / `POLYGON` / `NONE`、`format` は `src/constants/AppConstants.tsx` の `DATAFORMAT` のキー（`STRING`, `SERIAL`, `DATETIME`, `PHOTO` など）
 - `STRING_DICTIONARY` フィールドには `"dictionary": ["語彙1", "語彙2", ...]` で辞書語彙を持たせられる。レイヤ保存時に辞書DBへ自動登録される
 - `dictionaryFieldId` は書かない（`useDictionaryAdd: true` の辞書フィールドから自動導出される）
+- レイヤプリセットに `dataKey` を書くと、`src/constants/Presets.tsx` の `PRESET_LAYER_DATA` から同名キーの
+  GeoJSON（`data/` のファイル）がレイヤ保存時に投入される（保存せず戻れば破棄）。
+  GeoJSONのプロパティ名はレイヤのフィールド名と一致させる（`Preset.test.ts` で検証される）。
+  海しる由来のデータ（`data/msil_*.json`）は `scripts/fetch-msil-data.js` で再生成できる
+  （要 `MSIL_SUBSCRIPTION_KEY`、出典: 海しる（海上保安庁））
 
 ## アプリからエクスポートしたレイヤの変換
 

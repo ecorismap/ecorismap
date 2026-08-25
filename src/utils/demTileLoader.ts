@@ -8,9 +8,12 @@
  * @returns PNGバイト列。404はnull。ネットワークエラーはthrow（呼び出し側でキャッシュさせないため）
  */
 import * as FileSystem from 'expo-file-system/legacy';
+import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
 
 const CACHE_DIR = `${FileSystem.cacheDirectory}dem_png`;
 let dirEnsured = false;
+
+const cacheFileUri = (key: string) => `${CACHE_DIR}/${key.replace(/\//g, '_')}.png`;
 
 /** atobに依存しない素朴なbase64デコード */
 const BASE64_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
@@ -43,7 +46,7 @@ const readTileFile = async (fileUri: string): Promise<ArrayBuffer> => {
 };
 
 export const loadDemTilePng = async (url: string, key: string): Promise<ArrayBuffer | null> => {
-  const fileUri = `${CACHE_DIR}/${key.replace(/\//g, '_')}.png`;
+  const fileUri = cacheFileUri(key);
 
   // ディスクキャッシュを確認
   try {
@@ -71,6 +74,58 @@ export const loadDemTilePng = async (url: string, key: string): Promise<ArrayBuf
   return await readTileFile(fileUri);
 };
 
+
+/**
+ * ローカルファイル（オフラインダウンロード済みタイル等）のPNGバイト列を読む。
+ * 存在しない・空・読めない場合はnull。
+ */
+export const loadLocalDemTilePng = async (fileUri: string): Promise<ArrayBuffer | null> => {
+  try {
+    const info = await FileSystem.getInfoAsync(fileUri);
+    if (!info.exists || (info.size ?? 0) === 0) return null;
+    return await readTileFile(fileUri);
+  } catch {
+    return null;
+  }
+};
+
+/** バイト列がWebP（RIFFコンテナ）か */
+const isWebp = (buffer: ArrayBuffer): boolean => {
+  const bytes = new Uint8Array(buffer);
+  return bytes.length > 12 && bytes[0] === 0x52 && bytes[1] === 0x49 && bytes[2] === 0x46 && bytes[3] === 0x46;
+};
+
+/**
+ * WebPファイルをPNGへ変換してバイト列を返す。
+ * HermesのJS側デコーダ（pngLite）はWebPを読めないため、ネイティブのデコーダを
+ * expo-image-manipulator経由で借りる（無変換・可逆PNG出力なので標高値は保たれる）。
+ */
+const convertWebpFileToPng = async (fileUri: string): Promise<ArrayBuffer | null> => {
+  try {
+    const result = await manipulateAsync(fileUri, [], { format: SaveFormat.PNG, base64: true });
+    if (!result.base64) return null;
+    return base64ToArrayBuffer(result.base64);
+  } catch {
+    return null;
+  }
+};
+
+/**
+ * 標高タイルをPNGバイト列として取得する（WebP配信のelev2用）。
+ * 取得はloadDemTilePngと同じキャッシュを使い、WebPならPNGへ変換して返す。
+ */
+export const loadDemTileAsPngBytes = async (url: string, key: string): Promise<ArrayBuffer | null> => {
+  const bytes = await loadDemTilePng(url, key);
+  if (bytes === null || !isWebp(bytes)) return bytes;
+  return await convertWebpFileToPng(cacheFileUri(key));
+};
+
+/** ローカルファイル版。WebPならPNGへ変換して返す */
+export const loadLocalDemTileAsPngBytes = async (fileUri: string): Promise<ArrayBuffer | null> => {
+  const bytes = await loadLocalDemTilePng(fileUri);
+  if (bytes === null || !isWebp(bytes)) return bytes;
+  return await convertWebpFileToPng(fileUri);
+};
 
 /** ディスクキャッシュを削除する（設定画面等からの利用を想定） */
 export const clearDemTileDiskCache = async (): Promise<void> => {

@@ -1,4 +1,4 @@
-import { LAYER_PRESETS, MAP_PRESETS } from '../../constants/Presets';
+import { LAYER_PRESETS, MAP_PRESETS, PRESET_LAYER_DATA } from '../../constants/Presets';
 import { LayerPresetType } from '../../types';
 import { createLayerFromPreset, createTileMapFromPreset } from '../Preset';
 
@@ -141,5 +141,62 @@ describe('プリセット定数', () => {
         if (f.dictionary !== undefined) expect(f.format).toBe('STRING_DICTIONARY');
       })
     );
+  });
+
+  it('dataKeyはPRESET_LAYER_DATAに実在する', () => {
+    LAYER_PRESETS.forEach((p) => {
+      if (p.dataKey !== undefined) {
+        expect(PRESET_LAYER_DATA[p.dataKey]).toBeDefined();
+      }
+    });
+  });
+
+  it('同梱データのプロパティ名はレイヤのフィールド名と対応する', () => {
+    // geoJson2Dataはフィールド名でプロパティを引くので、名前がズレると全て空になる
+    LAYER_PRESETS.forEach((p) => {
+      if (p.dataKey === undefined) return;
+      const data = PRESET_LAYER_DATA[p.dataKey];
+      const fieldNames = new Set(p.layer.field.map((f) => f.name));
+      expect(p.layer.type).toBe('POINT');
+      const sample = data.features[0];
+      Object.keys(sample.properties ?? {}).forEach((key) => {
+        expect(fieldNames.has(key)).toBe(true);
+      });
+      // ラベルに使うフィールドが存在すること
+      expect(fieldNames.has(p.layer.label)).toBe(true);
+    });
+  });
+
+  it('同梱データはプリセット由来のレイヤでgeoJson2Dataに全件取り込める', () => {
+     
+    const { geoJson2Data } = require('../Geometry');
+    LAYER_PRESETS.forEach((p) => {
+      if (p.dataKey === undefined) return;
+      const data = PRESET_LAYER_DATA[p.dataKey];
+      const { layer } = createLayerFromPreset(p, 'LAYER_ID');
+      const records = geoJson2Data(data, layer, 'POINT', undefined, null);
+      expect(records).toBeDefined();
+      expect(records!.length).toBe(data.features.length);
+      // ラベルフィールドに値が入っている
+      const labeled = records!.filter((r: any) => r.field[p.layer.label] !== '');
+      expect(labeled.length).toBeGreaterThan(records!.length * 0.9);
+      expect(records![0].coords).toBeDefined();
+    });
+  });
+
+  it('同梱データの全フィーチャが有効なPoint座標を持つ', () => {
+    Object.values(PRESET_LAYER_DATA).forEach((data) => {
+      expect(data.features.length).toBeGreaterThan(0);
+      data.features.forEach((f) => {
+        expect(f.geometry?.type).toBe('Point');
+        if (f.geometry?.type === 'Point') {
+          const [lon, lat] = f.geometry.coordinates;
+          expect(lon).toBeGreaterThanOrEqual(-180);
+          expect(lon).toBeLessThanOrEqual(180);
+          expect(lat).toBeGreaterThanOrEqual(-90);
+          expect(lat).toBeLessThanOrEqual(90);
+        }
+      });
+    });
   });
 });

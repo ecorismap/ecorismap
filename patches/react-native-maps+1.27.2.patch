@@ -357,10 +357,10 @@ index e4010de..e9a07ad 100644
 \ No newline at end of file
 diff --git a/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapDEMTileProvider.java b/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapDEMTileProvider.java
 new file mode 100644
-index 0000000..d5f08fe
+index 0000000..8d8ca23
 --- /dev/null
 +++ b/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapDEMTileProvider.java
-@@ -0,0 +1,343 @@
+@@ -0,0 +1,732 @@
 +package com.rnmaps.maps;
 +
 +import android.content.Context;
@@ -397,8 +397,94 @@ index 0000000..d5f08fe
 +  private static final float MPI_GAMMA = 1.0f;
 +  /** 袖の幅。探索半径に加えて傾斜の中央差分に1画素余分に要る */
 +  private static final int HALO = SEARCH_RADIUS + 1;
-+  /** 標高タイルが無いとき、何段まで粗いズームへ降りるか */
-+  private static final int MAX_ZOOM_FALLBACK = 4;
++  /** 標高タイルが無いとき、何段まで粗いズームへ降りるか（z15→海域データの上限z10に届く段数） */
++  private static final int MAX_ZOOM_FALLBACK = 5;
++
++  // --- 陰影段彩（relief://）のテーブル。src/utils/colorRelief.ts と同値にすること ---
++  // （一致はcolorRelief.test.tsのパッチ整合テストで機械検証される）
++  private static final double[][] RELIEF_RAMP = {
++    {-8000, 30, 48, 110},
++    {-6000, 38, 62, 128},
++    {-4000, 48, 82, 148},
++    {-2000, 60, 105, 168},
++    {-1000, 74, 130, 185},
++    {-500, 88, 155, 200},
++    {-200, 104, 180, 212},
++    {-100, 118, 198, 221},
++    {-50, 132, 213, 228},
++    {-20, 145, 226, 233},
++    {-0.01, 160, 240, 238},
++    {0, 140, 200, 120},
++    {200, 150, 195, 108},
++    {500, 168, 188, 98},
++    {1000, 172, 160, 82},
++    {1500, 166, 138, 70},
++    {2000, 160, 122, 62},
++    {3000, 155, 110, 55}
++  };
++  private static final int[][] CONTOUR_INTERVALS = {
++    {4, 500, 5000},
++    {5, 200, 2000},
++    {6, 200, 1000},
++    {7, 100, 500},
++    {8, 100, 200},
++    {9, 50, 200},
++    {10, 50, 200},
++    {11, 20, 100}
++  };
++  private static final double CONTOUR_MINOR_FACTOR = 0.8;
++  private static final double CONTOUR_MAJOR_FACTOR = 0.6;
++  /** 陰影の下限。急峻な深海が黒く潰れないよう緩和する */
++  private static final double RELIEF_SHADE_MIN = 0.35;
++  // --- GEBCOスタイル（デモ再現の近似）。src/utils/colorRelief.ts と同値にすること ---
++  /** color-reliefの指数補間の底 */
++  private static final double GEBCO_EXP_BASE = 0.8;
++  /** color-relief-opacity相当（白との混合率） */
++  private static final double GEBCO_BASE_MIX = 0.85;
++  /** hillshade-exaggeration */
++  private static final double GEBCO_HILLSHADE_EXAGGERATION = 0.6;
++  /** hillshade-illumination-direction[度] */
++  private static final double GEBCO_ILLUMINATION_DEG = 315;
++  /** hillshade-shadow-colorのアルファ */
++  private static final double GEBCO_SHADOW_ALPHA = 0.22;
++  /** hillshade-highlight-colorのアルファ */
++  private static final double GEBCO_HIGHLIGHT_ALPHA = 0.14;
++  /** hillshade-accent-colorのアルファ */
++  private static final double GEBCO_ACCENT_ALPHA = 0.1;
++  /** maplibre hillshade prepareシェーダのderivスケール指数 */
++  private static final double GEBCO_DERIV_EXP = 28.2562;
++  /** 等値線: 太線係数 */
++  private static final double GEBCO_CONTOUR_MAJOR_FACTOR = 0.5;
++  /** 等値線: 細線係数 */
++  private static final double GEBCO_CONTOUR_MINOR_FACTOR = 0.75;
++
++  /** GEBCO全球プリセット用の配色（URLに #style=gebco）。src/utils/colorRelief.ts と同値にすること */
++  private static final double[][] GEBCO_RELIEF_RAMP = {
++    {-11000, 5, 5, 40},
++    {-10000, 8, 8, 55},
++    {-9000, 10, 12, 70},
++    {-8000, 12, 18, 90},
++    {-7000, 15, 25, 110},
++    {-6000, 18, 35, 130},
++    {-5000, 20, 48, 150},
++    {-4000, 15, 65, 165},
++    {-3000, 10, 82, 178},
++    {-2000, 0, 100, 190},
++    {-1000, 0, 125, 205},
++    {-500, 0, 150, 215},
++    {-200, 0, 175, 220},
++    {-50, 30, 200, 225},
++    {-10, 80, 220, 230},
++    {0, 120, 240, 235},
++    {10, 140, 200, 120},
++    {100, 170, 200, 100},
++    {200, 200, 200, 90},
++    {500, 210, 185, 80},
++    {1000, 205, 165, 70},
++    {2000, 190, 145, 65},
++    {3000, 170, 125, 60},
++    {4000, 155, 110, 55}
++  };
 +
 +  /** 出力PNGのキャッシュ（キー: "x,y,zoom"） */
 +  private final LruCache<String, byte[]> shadingCache;
@@ -406,6 +492,10 @@ index 0000000..d5f08fe
 +  private final LruCache<String, float[]> elevationCache;
 +  /** 標高配列の一辺。全タイル同じ前提で最初に見たタイルから決まる */
 +  private volatile int demTileSize = 0;
++  /** relief://（陰影段彩＋等深線）モード。URLプレフィックスから自己判定する */
++  private volatile boolean reliefMode = false;
++  /** GEBCO配色（URLフラグメントの #style=gebco から自己判定する） */
++  private volatile boolean gebcoStyle = false;
 +
 +  public MapDEMTileProvider(
 +    int tileSizet,
@@ -426,6 +516,9 @@ index 0000000..d5f08fe
 +          cleanUrlTemplate(urlTemplate),
 +          maximumZ, maximumNativeZ, minimumZ, flipY, tileCachePath, tileCacheMaxAge, offlineMode, context, customMode);
 +
++    this.reliefMode = urlTemplate != null && urlTemplate.startsWith("relief://");
++    this.gebcoStyle = urlTemplate != null && urlTemplate.contains("#style=gebco");
++
 +    final int maxMemoryKb = (int) (Runtime.getRuntime().maxMemory() / 1024);
 +    final int shadingCacheKb = Math.min(maxMemoryKb / 8, 50 * 1024);
 +    // 標高1枚は 256*256*4 = 256KB。袖のために周囲8枚を参照するので少し多めに持つ
@@ -445,12 +538,23 @@ index 0000000..d5f08fe
 +    };
 +  }
 +
-+  /** URLテンプレートからプレフィックスを除去する */
++  /** URLテンプレートからプレフィックスと方式指定フラグメント（#style=...等）を除去する */
 +  private static String cleanUrlTemplate(String urlTemplate) {
-+    if (urlTemplate != null && urlTemplate.startsWith("hillshade://")) {
-+      return urlTemplate.substring("hillshade://".length());
++    if (urlTemplate == null) return null;
++    String cleaned = urlTemplate;
++    if (cleaned.startsWith("hillshade://")) {
++      cleaned = cleaned.substring("hillshade://".length());
++    } else if (cleaned.startsWith("relief://")) {
++      cleaned = cleaned.substring("relief://".length());
 +    }
-+    return urlTemplate;
++    int hash = cleaned.indexOf('#');
++    return hash < 0 ? cleaned : cleaned.substring(0, hash);
++  }
++
++  /** 出力タイルの一辺。gebcoは512pxソース（elev2）の詳細を保つため実寸で返す */
++  private int outTileSize() {
++    if (reliefMode && gebcoStyle && demTileSize > 0) return demTileSize;
++    return (int) this.tileSize;
 +  }
 +
 +  @Override
@@ -458,7 +562,7 @@ index 0000000..d5f08fe
 +    String cacheKey = x + "," + y + "," + zoom;
 +    byte[] cached = shadingCache.get(cacheKey);
 +    if (cached != null) {
-+      return new Tile(this.tileSize, this.tileSize, cached);
++      return new Tile(outTileSize(), outTileSize(), cached);
 +    }
 +
 +    // まずオーバーズーム分を落とす
@@ -478,13 +582,14 @@ index 0000000..d5f08fe
 +      }
 +
 +      int scaleFactor = 1 << shift;
-+      byte[] processed = createShading(sx, sy, sourceZoom, scaleFactor,
-+                                       x - (sx << shift), y - (sy << shift));
++      byte[] processed = (reliefMode && gebcoStyle)
++        ? createGebcoShading(sx, sy, sourceZoom, scaleFactor, x - (sx << shift), y - (sy << shift))
++        : createShading(sx, sy, sourceZoom, scaleFactor, x - (sx << shift), y - (sy << shift));
 +      if (processed == null) {
 +        return null;
 +      }
 +      shadingCache.put(cacheKey, processed);
-+      return new Tile(this.tileSize, this.tileSize, processed);
++      return new Tile(outTileSize(), outTileSize(), processed);
 +    }
 +    return null;
 +  }
@@ -616,6 +721,18 @@ index 0000000..d5f08fe
 +      final float slopeInv = (float) (1.0 / (2.0 * metersPerPx));
 +      int[] pixels = new int[size * size];
 +
++      // 陰影段彩用: 等深線の間隔（zoomは計算を実行したsourceZoom）と色の作業領域
++      int contourMinor = 0;
++      int contourMajor = 0;
++      if (reliefMode) {
++        int[] intervals = contourIntervalsForZoom(zoom);
++        if (intervals != null) {
++          contourMinor = intervals[0];
++          contourMajor = intervals[1];
++        }
++      }
++      double[] rgbScratch = new double[3];
++
 +      for (int py = 0; py < size; py++) {
 +        int rowBase = (HALO + py) * bufferSize + HALO;
 +        for (int px = 0; px < size; px++) {
@@ -655,6 +772,34 @@ index 0000000..d5f08fe
 +          // 2つの暗さを乗算する
 +          float sTerm = clamp01(slope / SLOPE_MAX_DEG);
 +          float mTerm = (float) Math.pow(clamp01(mpi / MPI_MAX_DEG), MPI_GAMMA);
++
++          if (reliefMode) {
++            // 海岸優先: 海に接する陸画素は透明にして下のベース地図の海岸線を見せる。
++            // 海陸統合DEMは境界画素で陸のデータが優先され、近海を陸として塗ってしまうため
++            if (z0 >= 0.0f && hasSeaNeighbor(buffer, center, bufferSize)) {
++              pixels[py * size + px] = 0; // 透明
++              continue;
++            }
++            // 段彩色×陰影係数（下限付きで緩和）、海域には等深線を焼き込む
++            double shade = (1.0 - (double) sTerm) * (1.0 - (double) mTerm);
++            double factor = RELIEF_SHADE_MIN + (1.0 - RELIEF_SHADE_MIN) * shade;
++            if (contourMinor > 0 && z0 < 0.0f) {
++              float eRight = buffer[center + 1];
++              float eDown = buffer[center + bufferSize];
++              if (isContourPixel(z0, eRight, eDown, contourMajor)) {
++                factor *= CONTOUR_MAJOR_FACTOR;
++              } else if (isContourPixel(z0, eRight, eDown, contourMinor)) {
++                factor *= CONTOUR_MINOR_FACTOR;
++              }
++            }
++            reliefColor(z0, RELIEF_RAMP, rgbScratch);
++            int r = clamp255((int) Math.round(rgbScratch[0] * factor));
++            int g = clamp255((int) Math.round(rgbScratch[1] * factor));
++            int b = clamp255((int) Math.round(rgbScratch[2] * factor));
++            pixels[py * size + px] = 0xff000000 | (r << 16) | (g << 8) | b;
++            continue;
++          }
++
 +          int gray = Math.round(255.0f * (1.0f - sTerm) * (1.0f - mTerm));
 +          if (gray < 0) gray = 0;
 +          if (gray > 255) gray = 255;
@@ -691,6 +836,248 @@ index 0000000..d5f08fe
 +    return v < 0.0f ? 0.0f : (v > 1.0f ? 1.0f : v);
 +  }
 +
++  private static int clamp255(int v) {
++    return v < 0 ? 0 : (v > 255 ? 255 : v);
++  }
++
++  /** 段彩色を区分線形補間で求める（0-255のdouble、丸めは呼び出し側で一度だけ行う） */
++  private static void reliefColor(double elev, double[][] ramp, double[] out) {
++    double[] first = ramp[0];
++    if (elev <= first[0]) {
++      out[0] = first[1]; out[1] = first[2]; out[2] = first[3];
++      return;
++    }
++    double[] last = ramp[ramp.length - 1];
++    if (elev >= last[0]) {
++      out[0] = last[1]; out[1] = last[2]; out[2] = last[3];
++      return;
++    }
++    for (int i = 1; i < ramp.length; i++) {
++      if (elev <= ramp[i][0]) {
++        double[] lo = ramp[i - 1];
++        double[] hi = ramp[i];
++        double t = (elev - lo[0]) / (hi[0] - lo[0]);
++        out[0] = lo[1] + (hi[1] - lo[1]) * t;
++        out[1] = lo[2] + (hi[2] - lo[2]) * t;
++        out[2] = lo[3] + (hi[3] - lo[3]) * t;
++        return;
++      }
++    }
++    out[0] = last[1]; out[1] = last[2]; out[2] = last[3];
++  }
++
++  /** sourceZoomに応じた{細線, 太線}の間隔。z4未満は等深線なし(null)、z9超はz9の値 */
++  private static int[] contourIntervalsForZoom(int zoom) {
++    int[] first = CONTOUR_INTERVALS[0];
++    if (zoom < first[0]) return null;
++    int[] last = CONTOUR_INTERVALS[CONTOUR_INTERVALS.length - 1];
++    if (zoom >= last[0]) return new int[] {last[1], last[2]};
++    for (int[] row : CONTOUR_INTERVALS) {
++      if (row[0] == zoom) return new int[] {row[1], row[2]};
++    }
++    return new int[] {last[1], last[2]};
++  }
++
++  /**
++   * GEBCOスタイル（デモ再現の近似）の描画。src/utils/colorRelief.ts の computeGebcoRelief と
++   * 同じ計算（指数補間の段彩×白0.85混合＋maplibre hillshadeシェーダの移植＋海陸両方の等値線）に、
++   * 主要等値線の数値ラベルを焼き込む。
++   */
++  private byte[] createGebcoShading(int x, int y, int zoom, int scaleFactor, int offsetX, int offsetY) {
++    try {
++      int size = demTileSize;
++      if (size <= 0) return null;
++
++      int bufferSize = size + 2 * HALO;
++      float[] buffer = assembleWithHalo(x, y, zoom, size);
++
++      int contourMinor = 0;
++      int contourMajor = 0;
++      int[] intervals = contourIntervalsForZoom(zoom);
++      if (intervals != null) {
++        contourMinor = intervals[0];
++        contourMajor = intervals[1];
++      }
++
++      // maplibre hillshade prepareシェーダのズーム依存derivスケール
++      double zoomFactor = zoom < 2 ? 0.4 : zoom < 4.5 ? 0.35 : 0.3;
++      double exaggerationZ = zoom < 15 ? (zoom - 15) * zoomFactor : 0;
++      double derivScale = 256.0 / Math.pow(2.0, exaggerationZ + GEBCO_DERIV_EXP - zoom);
++
++      // standard_hillshadeの定数
++      double azimuth = GEBCO_ILLUMINATION_DEG * Math.PI / 180.0 + Math.PI;
++      double intensity = GEBCO_HILLSHADE_EXAGGERATION;
++      double hillshadeBase = 1.875 - intensity * 1.75;
++      double maxValue = 0.5 * Math.PI;
++      double intensityClamp = Math.min(1.0, Math.max(0.0, intensity * 2.0));
++
++      int[] pixels = new int[size * size];
++      double[] rgbScratch = new double[3];
++
++      for (int py = 0; py < size; py++) {
++        int rowBase = (HALO + py) * bufferSize + HALO;
++        for (int px = 0; px < size; px++) {
++          int center = rowBase + px;
++          float z0 = buffer[center];
++          if (Float.isNaN(z0)) {
++            pixels[py * size + px] = 0; // 透明
++            continue;
++          }
++
++          // 段彩（指数補間＋白との混合）
++          gebcoReliefColor(z0, rgbScratch);
++          double r = GEBCO_BASE_MIX * rgbScratch[0] + (1.0 - GEBCO_BASE_MIX) * 255.0;
++          double g = GEBCO_BASE_MIX * rgbScratch[1] + (1.0 - GEBCO_BASE_MIX) * 255.0;
++          double b = GEBCO_BASE_MIX * rgbScratch[2] + (1.0 - GEBCO_BASE_MIX) * 255.0;
++
++          // maplibre hillshade（standard法）の合成
++          float a9 = buffer[center - bufferSize - 1];
++          float b9 = buffer[center - bufferSize];
++          float c9 = buffer[center - bufferSize + 1];
++          float d9 = buffer[center - 1];
++          float f9 = buffer[center + 1];
++          float g9 = buffer[center + bufferSize - 1];
++          float h9 = buffer[center + bufferSize];
++          float i9 = buffer[center + bufferSize + 1];
++          float window9 = a9 + b9 + c9 + d9 + f9 + g9 + h9 + i9;
++          if (!Float.isNaN(window9)) {
++            double derivX = (c9 + f9 + f9 + i9 - (a9 + d9 + d9 + g9)) * derivScale;
++            double derivY = (g9 + h9 + h9 + i9 - (a9 + b9 + b9 + c9)) * derivScale;
++            double slope = Math.atan(0.625 * Math.sqrt(derivX * derivX + derivY * derivY));
++            double aspect = derivX != 0 ? Math.atan2(derivY, -derivX) : (Math.PI / 2.0) * (derivY > 0 ? 1 : -1);
++            double scaledSlope = intensity != 0.5
++              ? ((Math.pow(hillshadeBase, slope) - 1.0) / (Math.pow(hillshadeBase, maxValue) - 1.0)) * maxValue
++              : slope;
++            double accentA = GEBCO_ACCENT_ALPHA * (1.0 - Math.cos(scaledSlope)) * intensityClamp;
++            double shade = Math.abs(((aspect + azimuth) / Math.PI + 0.5) % 2.0 - 1.0);
++            double sinSlope = Math.sin(scaledSlope) * intensityClamp;
++            double shadeR = 255.0 * GEBCO_HIGHLIGHT_ALPHA * shade * sinSlope;
++            double shadeA = (GEBCO_SHADOW_ALPHA * (1.0 - shade) + GEBCO_HIGHLIGHT_ALPHA * shade) * sinSlope;
++            double fragA = accentA * (1.0 - shadeA) + shadeA;
++            r = shadeR + r * (1.0 - fragA);
++            g = shadeR + g * (1.0 - fragA);
++            b = shadeR + b * (1.0 - fragA);
++          }
++
++          // 等値線（海陸を問わず）。数値ラベルはアプリ側のMarkerで表示する（HomeSeaLabels.tsx）
++          if (contourMinor > 0) {
++            float eRight = buffer[center + 1];
++            float eDown = buffer[center + bufferSize];
++            if (crossesInterval(z0, eRight, eDown, contourMajor)) {
++              r *= GEBCO_CONTOUR_MAJOR_FACTOR;
++              g *= GEBCO_CONTOUR_MAJOR_FACTOR;
++              b *= GEBCO_CONTOUR_MAJOR_FACTOR;
++            } else if (crossesInterval(z0, eRight, eDown, contourMinor)) {
++              r *= GEBCO_CONTOUR_MINOR_FACTOR;
++              g *= GEBCO_CONTOUR_MINOR_FACTOR;
++              b *= GEBCO_CONTOUR_MINOR_FACTOR;
++            }
++          }
++
++          pixels[py * size + px] = 0xff000000
++            | (clamp255((int) Math.round(r)) << 16)
++            | (clamp255((int) Math.round(g)) << 8)
++            | clamp255((int) Math.round(b));
++        }
++      }
++
++      Bitmap result = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888);
++      result.setPixels(pixels, 0, size, 0, 0, size, size);
++
++      // オーバーズーム時は該当部分を切り出してソース解像度（size）へ拡大する
++      // （出力はoutTileSize()＝実寸で返すため、512pxソースの詳細が保たれる）
++      if (scaleFactor > 1) {
++        int cropSize = Math.max(1, size / scaleFactor);
++        Bitmap cropped = Bitmap.createBitmap(result, offsetX * cropSize, offsetY * cropSize, cropSize, cropSize);
++        Bitmap scaled = Bitmap.createScaledBitmap(cropped, size, size, true);
++        byte[] bytes = toPng(scaled);
++        result.recycle();
++        cropped.recycle();
++        scaled.recycle();
++        return bytes;
++      }
++
++      byte[] bytes = toPng(result);
++      result.recycle();
++      return bytes;
++
++    } catch (Exception e) {
++      Log.e(TAG, "Error creating gebco shading", e);
++      return null;
++    }
++  }
++
++  // 島名・海底地形名と等値線の数値ラベルは、タイル焼き込みではなくアプリ側のMarker
++  // オーバーレイで表示する（src/components/organisms/HomeSeaLabels.tsx。
++  // 鮮明・正立・タイル境界切れなしのため）
++
++  /** maplibreのexponential補間係数（0-1） */
++  private static double exponentialInterpolationFactor(double input, double base, double lower, double upper) {
++    double difference = upper - lower;
++    double progress = input - lower;
++    if (difference == 0) return 0;
++    if (base == 1) return progress / difference;
++    return (Math.pow(base, progress) - 1.0) / (Math.pow(base, difference) - 1.0);
++  }
++
++  /** GEBCO配色を指数補間(0.8)で求める */
++  private static void gebcoReliefColor(double elev, double[] out) {
++    double[] first = GEBCO_RELIEF_RAMP[0];
++    if (elev <= first[0]) {
++      out[0] = first[1]; out[1] = first[2]; out[2] = first[3];
++      return;
++    }
++    double[] last = GEBCO_RELIEF_RAMP[GEBCO_RELIEF_RAMP.length - 1];
++    if (elev >= last[0]) {
++      out[0] = last[1]; out[1] = last[2]; out[2] = last[3];
++      return;
++    }
++    for (int i = 1; i < GEBCO_RELIEF_RAMP.length; i++) {
++      if (elev <= GEBCO_RELIEF_RAMP[i][0]) {
++        double[] lo = GEBCO_RELIEF_RAMP[i - 1];
++        double[] hi = GEBCO_RELIEF_RAMP[i];
++        double t = exponentialInterpolationFactor(elev, GEBCO_EXP_BASE, lo[0], hi[0]);
++        out[0] = lo[1] + (hi[1] - lo[1]) * t;
++        out[1] = lo[2] + (hi[2] - lo[2]) * t;
++        out[2] = lo[3] + (hi[3] - lo[3]) * t;
++        return;
++      }
++    }
++    out[0] = last[1]; out[1] = last[2]; out[2] = last[3];
++  }
++
++  /** 等値線の横断判定（海陸を問わない。GEBCOスタイル用）。NaN隣接は線にしない */
++  private static boolean crossesInterval(float e0, float eRight, float eDown, int interval) {
++    double level = Math.floor((double) e0 / interval);
++    if (!Float.isNaN(eRight) && Math.floor((double) eRight / interval) != level) return true;
++    if (!Float.isNaN(eDown) && Math.floor((double) eDown / interval) != level) return true;
++    return false;
++  }
++
++  /** 8近傍に海（負の標高）があるか。NaN（NoData）は海とみなさない */
++  private static boolean hasSeaNeighbor(float[] buffer, int center, int bufferSize) {
++    return buffer[center - 1] < 0.0f
++      || buffer[center + 1] < 0.0f
++      || buffer[center - bufferSize] < 0.0f
++      || buffer[center + bufferSize] < 0.0f
++      || buffer[center - bufferSize - 1] < 0.0f
++      || buffer[center - bufferSize + 1] < 0.0f
++      || buffer[center + bufferSize - 1] < 0.0f
++      || buffer[center + bufferSize + 1] < 0.0f;
++  }
++
++  /**
++   * 等深線画素の判定。中央と右隣・下隣のfloor(e/interval)が異なれば線とする。
++   * 海域のみ対象で、隣が陸（>=0）またはNoDataなら線を引かない
++   * （0m等深線は引かず、海岸線は段彩の不連続に任せる）。floorは負値でも床関数。
++   */
++  private static boolean isContourPixel(float e0, float eRight, float eDown, int interval) {
++    double level = Math.floor((double) e0 / interval);
++    if (!Float.isNaN(eRight) && eRight < 0.0f && Math.floor((double) eRight / interval) != level) return true;
++    if (!Float.isNaN(eDown) && eDown < 0.0f && Math.floor((double) eDown / interval) != level) return true;
++    return false;
++  }
++
 +  private static byte[] toPng(Bitmap bitmap) {
 +    ByteArrayOutputStream stream = new ByteArrayOutputStream();
 +    bitmap.compress(Bitmap.CompressFormat.PNG, 100, stream);
@@ -700,6 +1087,8 @@ index 0000000..d5f08fe
 +  @Override
 +  public void setUrlTemplate(String urlTemplate) {
 +    super.setUrlTemplate(cleanUrlTemplate(urlTemplate));
++    this.reliefMode = urlTemplate != null && urlTemplate.startsWith("relief://");
++    this.gebcoStyle = urlTemplate != null && urlTemplate.contains("#style=gebco");
 +    shadingCache.evictAll();
 +    elevationCache.evictAll();
 +  }
@@ -3463,18 +3852,19 @@ index a974311..3ee0827 100644
  }
 \ No newline at end of file
 diff --git a/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapUrlTile.java b/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapUrlTile.java
-index 8c0a76c..c47c3ce 100644
+index 8c0a76c..e5a3ce6 100644
 --- a/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapUrlTile.java
 +++ b/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapUrlTile.java
-@@ -183,9 +183,16 @@ public class MapUrlTile extends MapFeature {
+@@ -183,9 +183,17 @@ public class MapUrlTile extends MapFeature {
      TileOverlayOptions options = new TileOverlayOptions();
      options.zIndex(zIndex);
      options.transparency(1 - this.opacity);
 -    this.tileProvider = new MapTileProvider((int)this.tileSize, this.doubleTileSize, this.urlTemplate,
 -      this.maximumZ, this.maximumNativeZ, this.minimumZ, this.flipY, this.tileCachePath,
 -      this.tileCacheMaxAge, this.offlineMode, this.context, this.customTileProviderNeeded);
-+    // EcorisMap: hillshade://は標高タイル（立体図のクライアント描画）として扱う
-+    if (this.urlTemplate != null && this.urlTemplate.startsWith("hillshade://")) {
++    // EcorisMap: hillshade://（立体図）とrelief://（陰影段彩）は標高タイルのクライアント描画として扱う
++    if (this.urlTemplate != null
++        && (this.urlTemplate.startsWith("hillshade://") || this.urlTemplate.startsWith("relief://"))) {
 +      this.tileProvider = new MapDEMTileProvider((int)this.tileSize, this.doubleTileSize, this.urlTemplate,
 +        this.maximumZ, this.maximumNativeZ, this.minimumZ, this.flipY, this.tileCachePath,
 +        this.tileCacheMaxAge, this.offlineMode, this.context, this.customTileProviderNeeded);
@@ -3486,7 +3876,7 @@ index 8c0a76c..c47c3ce 100644
      options.tileProvider(this.tileProvider);
      return options;
    }
-@@ -197,11 +204,21 @@ public class MapUrlTile extends MapFeature {
+@@ -197,11 +205,21 @@ public class MapUrlTile extends MapFeature {
  
    @Override
    public void addToMap(Object map) {
@@ -9796,10 +10186,10 @@ index b375241..328d14e 100644
      tile.tileLayer.map = nil;
 diff --git a/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapDEMTileOverlay.h b/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapDEMTileOverlay.h
 new file mode 100644
-index 0000000..237975a
+index 0000000..c9f56f2
 --- /dev/null
 +++ b/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapDEMTileOverlay.h
-@@ -0,0 +1,17 @@
+@@ -0,0 +1,23 @@
 +//
 +//  AIRGoogleMapDEMTileOverlay.h
 +//  AirGoogleMaps
@@ -9814,15 +10204,21 @@ index 0000000..237975a
 +
 +@interface AIRGoogleMapDEMTileOverlay : AIRGoogleMapUrlTileOverlay
 +
++/** YESならrelief://（陰影段彩＋等深線）。NOなら無彩色の陰影 */
++@property (nonatomic, assign) BOOL reliefMode;
++
++/** YESならGEBCO配色（URLフラグメントの #style=gebco） */
++@property (nonatomic, assign) BOOL reliefGebcoStyle;
++
 +@end
 +
 +#endif
 diff --git a/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapDEMTileOverlay.m b/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapDEMTileOverlay.m
 new file mode 100644
-index 0000000..fe281d2
+index 0000000..1e4df7d
 --- /dev/null
 +++ b/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapDEMTileOverlay.m
-@@ -0,0 +1,349 @@
+@@ -0,0 +1,708 @@
 +//
 +//  AIRGoogleMapDEMTileOverlay.m
 +//  AirGoogleMaps
@@ -9853,8 +10249,97 @@ index 0000000..fe281d2
 +static const float kMpiGamma = 1.0f;
 +/** 袖の幅。探索半径に加えて傾斜の中央差分に1画素余分に要る */
 +static const NSInteger kHalo = kSearchRadius + 1;
-+/** 標高タイルが無いとき、何段まで粗いズームへ降りるか */
-+static const NSInteger kMaxZoomFallback = 4;
++/** 標高タイルが無いとき、何段まで粗いズームへ降りるか（z15→海域データの上限z10に届く段数） */
++static const NSInteger kMaxZoomFallback = 5;
++
++// --- 陰影段彩（relief://）のテーブル。src/utils/colorRelief.ts と同値にすること ---
++// （一致はcolorRelief.test.tsのパッチ整合テストで機械検証される）
++static const double kReliefRamp[][4] = {
++    {-8000, 30, 48, 110},
++    {-6000, 38, 62, 128},
++    {-4000, 48, 82, 148},
++    {-2000, 60, 105, 168},
++    {-1000, 74, 130, 185},
++    {-500, 88, 155, 200},
++    {-200, 104, 180, 212},
++    {-100, 118, 198, 221},
++    {-50, 132, 213, 228},
++    {-20, 145, 226, 233},
++    {-0.01, 160, 240, 238},
++    {0, 140, 200, 120},
++    {200, 150, 195, 108},
++    {500, 168, 188, 98},
++    {1000, 172, 160, 82},
++    {1500, 166, 138, 70},
++    {2000, 160, 122, 62},
++    {3000, 155, 110, 55}
++};
++static const NSInteger kReliefRampCount = sizeof(kReliefRamp) / sizeof(kReliefRamp[0]);
++static const int kContourIntervals[][3] = {
++    {4, 500, 5000},
++    {5, 200, 2000},
++    {6, 200, 1000},
++    {7, 100, 500},
++    {8, 100, 200},
++    {9, 50, 200},
++    {10, 50, 200},
++    {11, 20, 100}
++};
++static const NSInteger kContourIntervalsCount = sizeof(kContourIntervals) / sizeof(kContourIntervals[0]);
++static const double kContourMinorFactor = 0.8;
++static const double kContourMajorFactor = 0.6;
++/** 陰影の下限。急峻な深海が黒く潰れないよう緩和する */
++static const double kReliefShadeMin = 0.35;
++// --- GEBCOスタイル（デモ再現の近似）。src/utils/colorRelief.ts と同値にすること ---
++/** color-reliefの指数補間の底 */
++static const double kGebcoExpBase = 0.8;
++/** color-relief-opacity相当（白との混合率） */
++static const double kGebcoBaseMix = 0.85;
++/** hillshade-exaggeration */
++static const double kGebcoHillshadeExaggeration = 0.6;
++/** hillshade-illumination-direction[度] */
++static const double kGebcoIlluminationDeg = 315;
++/** hillshade-shadow-colorのアルファ */
++static const double kGebcoShadowAlpha = 0.22;
++/** hillshade-highlight-colorのアルファ */
++static const double kGebcoHighlightAlpha = 0.14;
++/** hillshade-accent-colorのアルファ */
++static const double kGebcoAccentAlpha = 0.1;
++/** maplibre hillshade prepareシェーダのderivスケール指数 */
++static const double kGebcoDerivExp = 28.2562;
++/** 等値線: 太線係数 */
++static const double kGebcoContourMajorFactor = 0.5;
++/** 等値線: 細線係数 */
++static const double kGebcoContourMinorFactor = 0.75;
++
++/** GEBCO全球プリセット用の配色（URLに #style=gebco）。src/utils/colorRelief.ts と同値にすること */
++static const double kGebcoReliefRamp[][4] = {
++    {-11000, 5, 5, 40},
++    {-10000, 8, 8, 55},
++    {-9000, 10, 12, 70},
++    {-8000, 12, 18, 90},
++    {-7000, 15, 25, 110},
++    {-6000, 18, 35, 130},
++    {-5000, 20, 48, 150},
++    {-4000, 15, 65, 165},
++    {-3000, 10, 82, 178},
++    {-2000, 0, 100, 190},
++    {-1000, 0, 125, 205},
++    {-500, 0, 150, 215},
++    {-200, 0, 175, 220},
++    {-50, 30, 200, 225},
++    {-10, 80, 220, 230},
++    {0, 120, 240, 235},
++    {10, 140, 200, 120},
++    {100, 170, 200, 100},
++    {200, 200, 200, 90},
++    {500, 210, 185, 80},
++    {1000, 205, 165, 70},
++    {2000, 190, 145, 65},
++    {3000, 170, 125, 60},
++    {4000, 155, 110, 55}
++};
++static const NSInteger kGebcoReliefRampCount = sizeof(kGebcoReliefRamp) / sizeof(kGebcoReliefRamp[0]);
 +
 +@interface AIRGoogleMapDEMTileOverlay ()
 +
@@ -9898,6 +10383,75 @@ index 0000000..fe281d2
 +    double normalizedTileY = ((double)tileY + 0.5) / pow(2.0, (double)zoom);
 +    double lat = 85.05112878 - 2.0 * 85.05112878 * normalizedTileY;
 +    return 40075017.0 * cos(lat * M_PI / 180.0) / ((double)tileSize * pow(2.0, (double)zoom));
++}
++
++#pragma mark - 陰影段彩（relief://）
++
++/** 段彩色を区分線形補間で求める（0-255のdouble、丸めは呼び出し側で一度だけ行う） */
++static void ReliefColor(double elev, const double (*ramp)[4], NSInteger rampCount, double *out) {
++    if (elev <= ramp[0][0]) {
++        out[0] = ramp[0][1]; out[1] = ramp[0][2]; out[2] = ramp[0][3];
++        return;
++    }
++    const double *last = ramp[rampCount - 1];
++    if (elev >= last[0]) {
++        out[0] = last[1]; out[1] = last[2]; out[2] = last[3];
++        return;
++    }
++    for (NSInteger i = 1; i < rampCount; i++) {
++        if (elev <= ramp[i][0]) {
++            const double *lo = ramp[i - 1];
++            const double *hi = ramp[i];
++            double t = (elev - lo[0]) / (hi[0] - lo[0]);
++            out[0] = lo[1] + (hi[1] - lo[1]) * t;
++            out[1] = lo[2] + (hi[2] - lo[2]) * t;
++            out[2] = lo[3] + (hi[3] - lo[3]) * t;
++            return;
++        }
++    }
++    out[0] = last[1]; out[1] = last[2]; out[2] = last[3];
++}
++
++/** sourceZoomに応じた等深線間隔。戻り値YESならminor/majorに設定。z4未満は等深線なし */
++static BOOL ContourIntervalsForZoom(NSInteger zoom, int *minor, int *major) {
++    if (zoom < kContourIntervals[0][0]) return NO;
++    const int *last = kContourIntervals[kContourIntervalsCount - 1];
++    if (zoom >= last[0]) {
++        *minor = last[1]; *major = last[2];
++        return YES;
++    }
++    for (NSInteger i = 0; i < kContourIntervalsCount; i++) {
++        if (kContourIntervals[i][0] == zoom) {
++            *minor = kContourIntervals[i][1]; *major = kContourIntervals[i][2];
++            return YES;
++        }
++    }
++    *minor = last[1]; *major = last[2];
++    return YES;
++}
++
++/** 8近傍に海（負の標高）があるか。NaN（NoData）は海とみなさない */
++static inline BOOL HasSeaNeighbor(const float *buffer, NSInteger center, NSInteger bufferSize) {
++    return buffer[center - 1] < 0.0f
++        || buffer[center + 1] < 0.0f
++        || buffer[center - bufferSize] < 0.0f
++        || buffer[center + bufferSize] < 0.0f
++        || buffer[center - bufferSize - 1] < 0.0f
++        || buffer[center - bufferSize + 1] < 0.0f
++        || buffer[center + bufferSize - 1] < 0.0f
++        || buffer[center + bufferSize + 1] < 0.0f;
++}
++
++/**
++ * 等深線画素の判定。中央と右隣・下隣のfloor(e/interval)が異なれば線とする。
++ * 海域のみ対象で、隣が陸（>=0）またはNoDataなら線を引かない
++ * （0m等深線は引かず、海岸線は段彩の不連続に任せる）。floorは負値でも床関数。
++ */
++static inline BOOL IsContourPixel(float e0, float eRight, float eDown, int interval) {
++    double level = floor((double)e0 / interval);
++    if (!isnan(eRight) && eRight < 0.0f && floor((double)eRight / interval) != level) return YES;
++    if (!isnan(eDown) && eDown < 0.0f && floor((double)eDown / interval) != level) return YES;
++    return NO;
 +}
 +
 +/**
@@ -10027,6 +10581,15 @@ index 0000000..fe281d2
 +    const float toDeg = (float)(180.0 / M_PI);
 +    const float slopeInv = (float)(1.0 / (2.0 * metersPerPx));
 +
++    // 陰影段彩用: 等深線の間隔（zoomは計算を実行したsourceZoom）
++    const BOOL reliefMode = self.reliefMode;
++    int contourMinor = 0;
++    int contourMajor = 0;
++    BOOL hasContour = NO;
++    if (reliefMode) {
++        hasContour = ContourIntervalsForZoom((NSInteger)zoom, &contourMinor, &contourMajor);
++    }
++
 +    for (NSInteger py = 0; py < size; py++) {
 +        NSInteger rowBase = (kHalo + py) * bufferSize + kHalo;
 +        for (NSInteger px = 0; px < size; px++) {
@@ -10067,6 +10630,35 @@ index 0000000..fe281d2
 +            // 2つの暗さを乗算する
 +            float sTerm = fmaxf(0.0f, fminf(1.0f, slope / kSlopeMaxDeg));
 +            float mTerm = powf(fmaxf(0.0f, fminf(1.0f, mpi / kMpiMaxDeg)), kMpiGamma);
++
++            if (reliefMode) {
++                // 海岸優先: 海に接する陸画素は透明にして下のベース地図の海岸線を見せる。
++                // 海陸統合DEMは境界画素で陸のデータが優先され、近海を陸として塗ってしまうため
++                if (z0 >= 0.0f && HasSeaNeighbor(buffer, center, bufferSize)) {
++                    rgba[out] = rgba[out + 1] = rgba[out + 2] = rgba[out + 3] = 0; // 透明
++                    continue;
++                }
++                // 段彩色×陰影係数（下限付きで緩和）、海域には等深線を焼き込む
++                double shade = (1.0 - (double)sTerm) * (1.0 - (double)mTerm);
++                double factor = kReliefShadeMin + (1.0 - kReliefShadeMin) * shade;
++                if (hasContour && z0 < 0.0f) {
++                    float eRight = buffer[center + 1];
++                    float eDown = buffer[center + bufferSize];
++                    if (IsContourPixel(z0, eRight, eDown, contourMajor)) {
++                        factor *= kContourMajorFactor;
++                    } else if (IsContourPixel(z0, eRight, eDown, contourMinor)) {
++                        factor *= kContourMinorFactor;
++                    }
++                }
++                double rgb[3];
++                ReliefColor((double)z0, kReliefRamp, kReliefRampCount, rgb);
++                rgba[out]     = (uint8_t)fmax(0.0, fmin(255.0, round(rgb[0] * factor)));
++                rgba[out + 1] = (uint8_t)fmax(0.0, fmin(255.0, round(rgb[1] * factor)));
++                rgba[out + 2] = (uint8_t)fmax(0.0, fmin(255.0, round(rgb[2] * factor)));
++                rgba[out + 3] = 255;
++                continue;
++            }
++
 +            float gray = 255.0f * (1.0f - sTerm) * (1.0f - mTerm);
 +            uint8_t value = (uint8_t)fmaxf(0.0f, fminf(255.0f, roundf(gray)));
 +
@@ -10090,6 +10682,160 @@ index 0000000..fe281d2
 +    if (!cgImage) {
 +        return nil;
 +    }
++    UIImage *image = [UIImage imageWithCGImage:cgImage];
++    CGImageRelease(cgImage);
++    return image;
++}
++
++/** maplibreのexponential補間係数（0-1） */
++static double ExponentialInterpolationFactor(double input, double base, double lower, double upper) {
++    double difference = upper - lower;
++    double progress = input - lower;
++    if (difference == 0) return 0;
++    if (base == 1) return progress / difference;
++    return (pow(base, progress) - 1.0) / (pow(base, difference) - 1.0);
++}
++
++/** GEBCO配色を指数補間(0.8)で求める */
++static void GebcoReliefColor(double elev, double *out) {
++    if (elev <= kGebcoReliefRamp[0][0]) {
++        out[0] = kGebcoReliefRamp[0][1]; out[1] = kGebcoReliefRamp[0][2]; out[2] = kGebcoReliefRamp[0][3];
++        return;
++    }
++    const double *last = kGebcoReliefRamp[kGebcoReliefRampCount - 1];
++    if (elev >= last[0]) {
++        out[0] = last[1]; out[1] = last[2]; out[2] = last[3];
++        return;
++    }
++    for (NSInteger i = 1; i < kGebcoReliefRampCount; i++) {
++        if (elev <= kGebcoReliefRamp[i][0]) {
++            const double *lo = kGebcoReliefRamp[i - 1];
++            const double *hi = kGebcoReliefRamp[i];
++            double t = ExponentialInterpolationFactor(elev, kGebcoExpBase, lo[0], hi[0]);
++            out[0] = lo[1] + (hi[1] - lo[1]) * t;
++            out[1] = lo[2] + (hi[2] - lo[2]) * t;
++            out[2] = lo[3] + (hi[3] - lo[3]) * t;
++            return;
++        }
++    }
++    out[0] = last[1]; out[1] = last[2]; out[2] = last[3];
++}
++
++/** 等値線の横断判定（海陸を問わない。GEBCOスタイル用）。NaN隣接は線にしない */
++static inline BOOL CrossesInterval(float e0, float eRight, float eDown, int interval) {
++    double level = floor((double)e0 / interval);
++    if (!isnan(eRight) && floor((double)eRight / interval) != level) return YES;
++    if (!isnan(eDown) && floor((double)eDown / interval) != level) return YES;
++    return NO;
++}
++
++/**
++ * GEBCOスタイル（デモ再現の近似）の描画。src/utils/colorRelief.ts の computeGebcoRelief と
++ * 同じ計算（指数補間の段彩×白0.85混合＋maplibre hillshadeシェーダの移植＋海陸両方の等値線）。
++ * 島名・海底地形名と等値線の数値ラベルは、タイル焼き込みではなくアプリ側のMarker
++ * オーバーレイで表示する（src/components/organisms/HomeSeaLabels.tsx）。
++ */
++- (UIImage *)gebcoImageForX:(NSUInteger)x y:(NSUInteger)y zoom:(NSUInteger)zoom size:(NSInteger)size {
++    NSInteger bufferSize = size + 2 * kHalo;
++    NSMutableData *bufferData = [self assembleWithHaloX:x y:y zoom:zoom size:size];
++    const float *buffer = (const float *)bufferData.bytes;
++
++    int contourMinor = 0;
++    int contourMajor = 0;
++    BOOL hasContour = ContourIntervalsForZoom((NSInteger)zoom, &contourMinor, &contourMajor);
++
++    // maplibre hillshade prepareシェーダのズーム依存derivスケール
++    double zoomFactor = zoom < 2 ? 0.4 : zoom < 4.5 ? 0.35 : 0.3;
++    double exaggerationZ = zoom < 15 ? ((double)zoom - 15.0) * zoomFactor : 0.0;
++    double derivScale = 256.0 / pow(2.0, exaggerationZ + kGebcoDerivExp - (double)zoom);
++
++    // standard_hillshadeの定数
++    double azimuth = kGebcoIlluminationDeg * M_PI / 180.0 + M_PI;
++    double intensity = kGebcoHillshadeExaggeration;
++    double hillshadeBase = 1.875 - intensity * 1.75;
++    double maxValue = 0.5 * M_PI;
++    double intensityClamp = MIN(1.0, MAX(0.0, intensity * 2.0));
++
++    NSMutableData *rgbaData = [NSMutableData dataWithLength:(NSUInteger)(size * size * 4)];
++    uint8_t *rgba = (uint8_t *)rgbaData.mutableBytes;
++
++    for (NSInteger py = 0; py < size; py++) {
++        NSInteger rowBase = (kHalo + py) * bufferSize + kHalo;
++        for (NSInteger px = 0; px < size; px++) {
++            NSInteger center = rowBase + px;
++            NSInteger out = (py * size + px) * 4;
++            float z0 = buffer[center];
++            if (isnan(z0)) {
++                rgba[out] = rgba[out + 1] = rgba[out + 2] = rgba[out + 3] = 0; // 透明
++                continue;
++            }
++
++            // 段彩（指数補間＋白との混合）
++            double rgb[3];
++            GebcoReliefColor((double)z0, rgb);
++            double r = kGebcoBaseMix * rgb[0] + (1.0 - kGebcoBaseMix) * 255.0;
++            double g = kGebcoBaseMix * rgb[1] + (1.0 - kGebcoBaseMix) * 255.0;
++            double b = kGebcoBaseMix * rgb[2] + (1.0 - kGebcoBaseMix) * 255.0;
++
++            // maplibre hillshade（standard法）の合成
++            float a9 = buffer[center - bufferSize - 1];
++            float b9 = buffer[center - bufferSize];
++            float c9 = buffer[center - bufferSize + 1];
++            float d9 = buffer[center - 1];
++            float f9 = buffer[center + 1];
++            float g9 = buffer[center + bufferSize - 1];
++            float h9 = buffer[center + bufferSize];
++            float i9 = buffer[center + bufferSize + 1];
++            float window9 = a9 + b9 + c9 + d9 + f9 + g9 + h9 + i9;
++            if (!isnan(window9)) {
++                double derivX = (c9 + f9 + f9 + i9 - (a9 + d9 + d9 + g9)) * derivScale;
++                double derivY = (g9 + h9 + h9 + i9 - (a9 + b9 + b9 + c9)) * derivScale;
++                double slope = atan(0.625 * sqrt(derivX * derivX + derivY * derivY));
++                double aspect = derivX != 0 ? atan2(derivY, -derivX) : (M_PI / 2.0) * (derivY > 0 ? 1 : -1);
++                double scaledSlope = intensity != 0.5
++                    ? ((pow(hillshadeBase, slope) - 1.0) / (pow(hillshadeBase, maxValue) - 1.0)) * maxValue
++                    : slope;
++                double accentA = kGebcoAccentAlpha * (1.0 - cos(scaledSlope)) * intensityClamp;
++                double shade = fabs(fmod((aspect + azimuth) / M_PI + 0.5, 2.0) - 1.0);
++                double sinSlope = sin(scaledSlope) * intensityClamp;
++                double shadeR = 255.0 * kGebcoHighlightAlpha * shade * sinSlope;
++                double shadeA = (kGebcoShadowAlpha * (1.0 - shade) + kGebcoHighlightAlpha * shade) * sinSlope;
++                double fragA = accentA * (1.0 - shadeA) + shadeA;
++                r = shadeR + r * (1.0 - fragA);
++                g = shadeR + g * (1.0 - fragA);
++                b = shadeR + b * (1.0 - fragA);
++            }
++
++            // 等値線（海陸を問わず）。数値ラベルはアプリ側のMarkerで表示する（HomeSeaLabels.tsx）
++            if (hasContour) {
++                float eRight = buffer[center + 1];
++                float eDown = buffer[center + bufferSize];
++                if (CrossesInterval(z0, eRight, eDown, contourMajor)) {
++                    r *= kGebcoContourMajorFactor;
++                    g *= kGebcoContourMajorFactor;
++                    b *= kGebcoContourMajorFactor;
++                } else if (CrossesInterval(z0, eRight, eDown, contourMinor)) {
++                    r *= kGebcoContourMinorFactor;
++                    g *= kGebcoContourMinorFactor;
++                    b *= kGebcoContourMinorFactor;
++                }
++            }
++
++            rgba[out]     = (uint8_t)fmax(0.0, fmin(255.0, round(r)));
++            rgba[out + 1] = (uint8_t)fmax(0.0, fmin(255.0, round(g)));
++            rgba[out + 2] = (uint8_t)fmax(0.0, fmin(255.0, round(b)));
++            rgba[out + 3] = 255;
++        }
++    }
++
++    CGColorSpaceRef colorSpace = CGColorSpaceCreateDeviceRGB();
++    CGContextRef ctx = CGBitmapContextCreate(rgba, (size_t)size, (size_t)size, 8, (size_t)(size * 4), colorSpace,
++                                             kCGImageAlphaPremultipliedLast | kCGBitmapByteOrder32Big);
++    CGColorSpaceRelease(colorSpace);
++    if (!ctx) return nil;
++    CGImageRef cgImage = CGBitmapContextCreateImage(ctx);
++    CGContextRelease(ctx);
++    if (!cgImage) return nil;
 +    UIImage *image = [UIImage imageWithCGImage:cgImage];
 +    CGImageRelease(cgImage);
 +    return image;
@@ -10146,12 +10892,21 @@ index 0000000..fe281d2
 +            continue;
 +        }
 +
-+        UIImage *image = [self shadingImageForX:sx y:sy zoom:(NSUInteger)sourceZoom size:size];
++        BOOL isGebco = self.reliefMode && self.reliefGebcoStyle;
++        UIImage *image = isGebco
++            ? [self gebcoImageForX:sx y:sy zoom:(NSUInteger)sourceZoom size:size]
++            : [self shadingImageForX:sx y:sy zoom:(NSUInteger)sourceZoom size:size];
 +        if (image && shift > 0) {
 +            image = [self cropImage:image
 +                        scaleFactor:(1 << shift)
 +                            offsetX:(x - (sx << shift))
 +                            offsetY:(y - (sy << shift))];
++        }
++        if (image && isGebco && size > 256 && image.CGImage) {
++            // GMSのタイルは256pt前提。512pxソース（elev2）はscale=2のretinaタイルとして返し詳細を保つ
++            image = [UIImage imageWithCGImage:image.CGImage
++                                        scale:((CGFloat)size / 256.0)
++                                  orientation:UIImageOrientationUp];
 +        }
 +        if (!image) {
 +            return kGMSTileLayerNoTile;
@@ -12134,10 +12889,10 @@ index 05b2afd..83cf84e 100644
  #endif
 +
 diff --git a/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapUrlTile.m b/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapUrlTile.m
-index b2e1eea..becbca3 100644
+index b2e1eea..d512f70 100644
 --- a/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapUrlTile.m
 +++ b/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapUrlTile.m
-@@ -6,51 +6,204 @@
+@@ -6,51 +6,219 @@
  #ifdef HAVE_GOOGLE_MAPS
  
  #import "AIRGoogleMapUrlTile.h"
@@ -12202,7 +12957,11 @@ index b2e1eea..becbca3 100644
 +    [self.tileLayer clearTileCache];
 +  }
 +}
-+    
+     
+-    NSString *url = urlTemplate;
+-    url = [url stringByReplacingOccurrencesOfString:@"{x}" withString:[NSString stringWithFormat: @"%ld", (long)x]];
+-    url = [url stringByReplacingOccurrencesOfString:@"{y}" withString:[NSString stringWithFormat: @"%ld", (long)y]];
+-    url = [url stringByReplacingOccurrencesOfString:@"{z}" withString:[NSString stringWithFormat: @"%ld", (long)zoom]];
 +- (void)setMinimumZ:(NSInteger)minimumZ {
 +  _minimumZ = minimumZ;
 +  if (self.tileLayer && minimumZ) {
@@ -12210,7 +12969,10 @@ index b2e1eea..becbca3 100644
 +    [self.tileLayer clearTileCache];
 +  }
 +}
-+
+ 
+-   if(maximumZ && (long)zoom > (long)maximumZ) {
+-      return nil;
+-    }
 +- (void)setMaximumZ:(NSInteger)maximumZ {
 +  _maximumZ = maximumZ;
 +  if (self.tileLayer && maximumZ) {
@@ -12218,11 +12980,7 @@ index b2e1eea..becbca3 100644
 +    [self.tileLayer clearTileCache];
 +  }
 +}
- 
--    NSString *url = urlTemplate;
--    url = [url stringByReplacingOccurrencesOfString:@"{x}" withString:[NSString stringWithFormat: @"%ld", (long)x]];
--    url = [url stringByReplacingOccurrencesOfString:@"{y}" withString:[NSString stringWithFormat: @"%ld", (long)y]];
--    url = [url stringByReplacingOccurrencesOfString:@"{z}" withString:[NSString stringWithFormat: @"%ld", (long)zoom]];
++
 +- (void)setMaximumNativeZ:(NSInteger)maximumNativeZ {
 +  _maximumNativeZ = maximumNativeZ;
 +  if (self.tileLayer && maximumNativeZ) {
@@ -12230,17 +12988,11 @@ index b2e1eea..becbca3 100644
 +    [self.tileLayer clearTileCache];
 +  }
 +}
- 
--   if(maximumZ && (long)zoom > (long)maximumZ) {
--      return nil;
--    }
++
 +- (void)setDoubleTileSize:(BOOL)doubleTileSize {
 +  // iOSの場合tileSizeがディスプレイのスケール倍で通常のズームレベルの表示になる
 +  // tileSizeを小さくすると上のズームレベルのタイルで高解像度になる。（drawFromHigherZoomLevelと同じ効果）
- 
--    if(minimumZ && (long)zoom < (long)minimumZ) {
--      return nil;
--    }
++
 +  // 256の整数倍になるようにしているっぽい。
 +  float screenTileSize =
 +      [[UIScreen mainScreen] nativeBounds].size.width / 256 * 256;
@@ -12256,41 +13008,55 @@ index b2e1eea..becbca3 100644
 +    [self.tileLayer clearTileCache];
 +  }
 +}
- 
--    return [NSURL URLWithString:url];
--  };
--  return urls;
++
 +- (void)setOpacity:(float)opacity {
 +  _opacity = opacity;
 +  if (self.tileLayer) {
 +    [self.tileLayer setOpacity:opacity];
 +    [self.tileLayer clearTileCache];
 +  }
- }
- 
++}
++
 +- (void)setUrlTemplate:(NSString *)urlTemplate {
 +
 +  _urlTemplate = urlTemplate;
-+  
-+  // Check for hillshade:// prefix
+   
+-    if(minimumZ && (long)zoom < (long)minimumZ) {
+-      return nil;
++  // Check for hillshade:// (立体図) / relief:// (陰影段彩) prefix
 +  BOOL isHillshade = [urlTemplate hasPrefix:@"hillshade://"];
++  BOOL isRelief = [urlTemplate hasPrefix:@"relief://"];
++  BOOL isGebcoStyle = isRelief && [urlTemplate containsString:@"#style=gebco"];
 +  NSString *actualUrlTemplate = urlTemplate;
 +
 +  if (isHillshade) {
-+    actualUrlTemplate = [urlTemplate substringFromIndex:12]; // Remove "hillshade://"
++    actualUrlTemplate = [urlTemplate substringFromIndex:[@"hillshade://" length]];
 +    NSLog(@"AIRGoogleMapUrlTile: Detected DEM tile URL: %@", actualUrlTemplate);
++  } else if (isRelief) {
++    actualUrlTemplate = [urlTemplate substringFromIndex:[@"relief://" length]];
++    NSLog(@"AIRGoogleMapUrlTile: Detected relief DEM tile URL: %@", actualUrlTemplate);
++  }
++  if (isHillshade || isRelief) {
++    // 方式指定フラグメント（#style=...等）は標高タイルのURLではないので落とす
++    NSRange hash = [actualUrlTemplate rangeOfString:@"#"];
++    if (hash.location != NSNotFound) {
++      actualUrlTemplate = [actualUrlTemplate substringToIndex:hash.location];
+     }
 +  }
 +
 +  //  _tileLayer = [GMSURLTileLayer tileLayerWithURLConstructor:[self
 +  //  _getTileURLConstructor]];
 +  AIRGoogleMapUrlTileOverlay *tile;
-+  
-+  if (isHillshade) {
-+    tile = [[AIRGoogleMapDEMTileOverlay alloc] init];
++
++  if (isHillshade || isRelief) {
++    AIRGoogleMapDEMTileOverlay *demTile = [[AIRGoogleMapDEMTileOverlay alloc] init];
++    demTile.reliefMode = isRelief;
++    demTile.reliefGebcoStyle = isGebcoStyle;
++    tile = demTile;
 +  } else {
 +    tile = [[AIRGoogleMapUrlTileOverlay alloc] init];
 +  }
-+  
++
 +  [tile setTileTemplate:actualUrlTemplate];
 +  [tile setFlipY:_flipY];
 +  [tile setMaximumZ:_maximumZ];
@@ -12305,7 +13071,7 @@ index b2e1eea..becbca3 100644
 +  [tile setTileCacheMaxAge:_tileCacheMaxAge];
 +  _tileLayer = tile;
 +  
-+  NSLog(@"AIRGoogleMapUrlTile: Created %@ tileLayer", isHillshade ? @"DEM" : @"URL");
++  NSLog(@"AIRGoogleMapUrlTile: Created %@ tileLayer", (isHillshade || isRelief) ? @"DEM" : @"URL");
 +}
 +
 +- (void)setOfflineMode:(BOOL)offlineMode {
@@ -12323,15 +13089,18 @@ index b2e1eea..becbca3 100644
 +  self.tileLayer.tileCachePath = [NSURL URLWithString:_tileCachePath];
 +  [self.tileLayer clearTileCache];
 +}
-+
+ 
+-    return [NSURL URLWithString:url];
+-  };
+-  return urls;
 +- (void)setTileCacheMaxAge:(NSInteger)tileCacheMaxAge {
 +  _tileCacheMaxAge = tileCacheMaxAge;
 +  if (self.tileLayer && tileCacheMaxAge) {
 +    self.tileLayer.tileCacheMaxAge = _tileCacheMaxAge;
 +    [self.tileLayer clearTileCache];
 +  }
-+}
-+
+ }
+ 
 +
  @end
  

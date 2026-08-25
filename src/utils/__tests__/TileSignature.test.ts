@@ -83,6 +83,10 @@ describe('signatureKeyForUrl', () => {
     expect(signatureKeyForUrl('hillshade://' + P + 'dem/{z}/{x}/{y}.png#a=1')).toBe(P + 'dem/{z}/{x}/{y}.png');
   });
 
+  it('陰影段彩(relief://)もプレフィックスとハッシュを落とす', () => {
+    expect(signatureKeyForUrl('relief://' + P + 'dem/{z}/{x}/{y}.png#a=1')).toBe(P + 'dem/{z}/{x}/{y}.png');
+  });
+
   it('pmtiles:// を落とす', () => {
     expect(signatureKeyForUrl('pmtiles://' + P + 'a.pmtiles')).toBe(P + 'a.pmtiles');
   });

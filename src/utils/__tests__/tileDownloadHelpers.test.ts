@@ -59,6 +59,10 @@ describe('getTileType', () => {
     expect(getTileType({ ...baseMap, url: 'hillshade://https://example.com/{z}/{x}/{y}.png' })).toBe('hillshade');
   });
 
+  it('relief://スキームもhillshade扱い（生DEMを保存する点で同じ）', () => {
+    expect(getTileType({ ...baseMap, url: 'relief://https://example.com/{z}/{x}/{y}.png' })).toBe('hillshade');
+  });
+
   it('それ以外はpng', () => {
     expect(getTileType(baseMap)).toBe('png');
   });

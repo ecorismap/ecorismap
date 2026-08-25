@@ -2,8 +2,9 @@ import * as FileSystem from 'expo-file-system/legacy';
 import { TileMapType, TileRegionType } from '../types';
 import { TILE_FOLDER } from '../constants/AppConstants';
 import { getExt } from './General';
-import { isShadingUrl } from './terrainShading';
+import { isDemProtocolUrl } from './terrainShading';
 
+// hillshadeはrelief://（陰影段彩）も含む。どちらも生のDEMタイルを保存する点で同じ扱い
 export type TileType = 'pbf' | 'pmtiles' | 'hillshade' | 'png';
 
 export const getTileType = (tileMap: TileMapType): TileType =>
@@ -11,7 +12,7 @@ export const getTileType = (tileMap: TileMapType): TileType =>
     ? 'pbf'
     : getExt(tileMap.url) === 'pmtiles' || tileMap.url.startsWith('pmtiles://')
     ? 'pmtiles'
-    : isShadingUrl(tileMap.url)
+    : isDemProtocolUrl(tileMap.url)
     ? 'hillshade'
     : 'png';
 

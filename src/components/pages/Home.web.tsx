@@ -89,7 +89,17 @@ import {
   createShadingProtocolHandler,
   SHADING_PROTOCOL,
 } from '../../utils/shadingTileProtocol.web';
-import { isShadingUrl, toDemUrl } from '../../utils/terrainShading';
+import { isDemProtocolUrl, isReliefUrl, toDemUrl } from '../../utils/terrainShading';
+import { reliefStyleFromUrl } from '../../utils/colorRelief';
+import {
+  GSJDEM_PROTOCOL,
+  buildGsjDemTileUrl,
+  createGsjDemProtocolHandler,
+  gebcoSourceParams,
+  getGebcoContourTilesUrl,
+  getGebcoLayers,
+  getGebcoNameSources,
+} from '../../utils/gebcoDemLayers.web';
 import { withTileSignature } from '../../utils/TileSignature';
 import { tileToWebMercator } from '../../utils/Tile';
 import { fromBlob } from 'geotiff';
@@ -268,6 +278,9 @@ export default function HomeScreen() {
   // 標高タイルから全方向陰影を生成するプロトコル。
   // maplibre内蔵のhillshadeは光源方位に依存し地図を回すと凹凸が反転するため使わない。
   maplibregl.addProtocol(SHADING_PROTOCOL, createShadingProtocolHandler());
+
+  // GEBCO海底地形図用: GSJ数値PNG→Terrain-RGB変換プロトコル（raster-demソースが読む）
+  maplibregl.addProtocol(GSJDEM_PROTOCOL, createGsjDemProtocolHandler());
 
   //console.log('Home');
 
@@ -564,8 +577,13 @@ export default function HomeScreen() {
         return null;
       }
 
-      // 立体図タイル（標高から陰影を計算）の判定と処理
-      if (isShadingUrl(tileMap.url)) {
+      // GEBCO海底地形図はデモ再現のmaplibreネイティブレイヤ（段彩・陰影・等深線・数値ラベル）
+      if (isReliefUrl(tileMap.url) && reliefStyleFromUrl(tileMap.url) === 'gebco') {
+        return getGebcoLayers(tileMap);
+      }
+
+      // 立体図タイル（標高から陰影・陰影段彩を計算）の判定と処理
+      if (isDemProtocolUrl(tileMap.url)) {
         return getShadingLayer(tileMap);
       }
 
@@ -776,14 +794,44 @@ export default function HomeScreen() {
                 attribution: tileMap.attribution,
               },
             };
-          } else if (isShadingUrl(tileMap.url)) {
+          } else if (isReliefUrl(tileMap.url) && reliefStyleFromUrl(tileMap.url) === 'gebco') {
+            // GEBCO海底地形図: raster-dem（Terrain-RGB変換）と等深線ベクタの2ソース
+            const demUrl = withTileSignature(toDemUrl(tileMap.url), tileSignatures);
+            const { tileSize, maxzoom } = gebcoSourceParams(demUrl);
+            return {
+              ...result,
+              [tileMap.id]: {
+                type: 'raster-dem' as const,
+                tiles: [buildGsjDemTileUrl(demUrl)],
+                tileSize,
+                minzoom: tileMap.minimumZ || 0,
+                maxzoom,
+                encoding: 'mapbox' as const,
+                attribution: tileMap.attribution,
+              },
+              [`${tileMap.id}_contour`]: {
+                type: 'vector' as const,
+                tiles: [getGebcoContourTilesUrl(maplibregl, demUrl)],
+                minzoom: 4,
+                maxzoom,
+              },
+              ...getGebcoNameSources(tileMap.id),
+            };
+          } else if (isDemProtocolUrl(tileMap.url)) {
             // 標高タイルを自前で取得・計算するため、raster-demではなく通常のラスタとして扱う。
             // maxzoomは標高タイルが実在する最大ズーム。これを超える分はmaplibreが拡大表示する。
             return {
               ...result,
               [tileMap.id]: {
                 type: 'raster' as const,
-                tiles: [buildShadingTileUrl(withTileSignature(toDemUrl(tileMap.url), tileSignatures), tileMap.flipY)],
+                tiles: [
+                  buildShadingTileUrl(
+                    withTileSignature(toDemUrl(tileMap.url), tileSignatures),
+                    tileMap.flipY,
+                    isReliefUrl(tileMap.url),
+                    reliefStyleFromUrl(tileMap.url)
+                  ),
+                ],
                 tileSize: 256,
                 minzoom: tileMap.minimumZ || 0,
                 maxzoom: Math.min(tileMap.overzoomThreshold ?? 15, tileMap.maximumZ ?? 15),

@@ -11,6 +11,7 @@ import { Pressable } from '../atoms/Pressable';
 import { HomeButtons } from '../organisms/HomeButtons';
 import { CurrentMarker } from '../organisms/HomeCurrentMarker';
 import { HomeTrackFocusMarker } from '../organisms/HomeTrackFocusMarker';
+import { HomeSeaLabels } from '../organisms/HomeSeaLabels';
 import { Point } from '../organisms/HomePoint';
 import { Line } from '../organisms/HomeLine';
 import { Polygon } from '../organisms/HomePolygon';
@@ -585,6 +586,8 @@ export default function HomeScreen() {
                 iOSはzIndexで順序付けされるため、この順序でも従来どおり正しく重なる。 */}
             {/************* TILE MAP ******************** */}
             <TileMaps tileMaps={tileMaps} isOffline={isOffline} />
+            {/* GEBCO海底地形図の島名・海底地形名（焼き込みではなくMarkerで鮮明に表示） */}
+            <HomeSeaLabels tileMaps={tileMaps} bounds={bounds} zoom={zoom} />
             {/************** Point Line Polygon ****************** */}
             {pointDataSet.map((d) => {
               const layer = layers.find((v) => v.id === d.layerId);
