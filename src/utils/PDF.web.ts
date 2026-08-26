@@ -21,36 +21,47 @@ export async function generateTileMap(
   let tileContents = '';
   const maps = tileMaps.filter((m) => !m.isGroup && m.visible && m.id !== 'standard' && m.id !== 'hybrid').reverse();
 
-  for (let y = topTileY; y <= bottomTileY; y++) {
-    tileContents += '<div style="position: absolute; left: 0; top: 0;">';
+  for (const map of maps) {
+    if (
+      map.url.includes('file://') ||
+      map.url.includes('pmtiles://') ||
+      map.url.includes('.pmtiles') ||
+      map.url.includes('pdf://') ||
+      map.url.includes('.pdf') ||
+      map.url.includes('.pbf') ||
+      map.url.includes('blob:') ||
+      map.url.startsWith('hillshade://') ||
+      map.url.startsWith('relief://')
+    )
+      continue;
 
-    for (let x = leftTileX; x <= rightTileX; x++) {
-      for (const map of maps) {
-        if (
-          map.url.includes('file://') ||
-          map.url.includes('pmtiles://') ||
-          map.url.includes('.pmtiles') ||
-          map.url.includes('pdf://') ||
-          map.url.includes('.pdf') ||
-          map.url.includes('.pbf') ||
-          map.url.includes('blob:') ||
-          map.url.startsWith('hillshade://') ||
-          map.url.startsWith('relief://')
-        )
-          continue;
+    // overzoomThresholdを超えるズームでは、画面表示のオーバーズームと同様に
+    // 提供上限ズームの親タイルを拡大して描画する（例: 1:1000のz19で地理院地図はz18を2倍表示）
+    const dz = Math.max(0, tileZoom - (map.overzoomThreshold ?? tileZoom));
+    const mapZoom = tileZoom - dz;
+    const scaleFactor = Math.pow(2, dz);
+    const tileSize = 256 * scaleFactor;
+    const mapLeftTileX = Math.floor(leftTileX / scaleFactor);
+    const mapRightTileX = Math.floor(rightTileX / scaleFactor);
+    const mapTopTileY = Math.floor(topTileY / scaleFactor);
+    const mapBottomTileY = Math.floor(bottomTileY / scaleFactor);
+
+    tileContents += '<div style="position: absolute; left: 0; top: 0;">';
+    for (let y = mapTopTileY; y <= mapBottomTileY; y++) {
+      for (let x = mapLeftTileX; x <= mapRightTileX; x++) {
         const mapUrl = map.url
-          .replace('{z}', tileZoom.toString())
+          .replace('{z}', mapZoom.toString())
           .replace('{x}', x.toString())
           .replace('{y}', y.toString());
 
         try {
           const response = await fetch(mapUrl, { method: 'HEAD' });
           if (response.ok) {
-            tileContents += `<img src="${mapUrl}" style="position: absolute; width: 256px; height: 256px; left: ${
-              256 * (x - leftTileX)
-            }px; top: ${256 * (y - topTileY)}px; margin: 0; padding: 0; opacity:${(1 - map.transparency).toFixed(
-              1
-            )}" />`;
+            tileContents += `<img src="${mapUrl}" style="position: absolute; width: ${tileSize}px; height: ${tileSize}px; left: ${
+              256 * (x * scaleFactor - leftTileX)
+            }px; top: ${256 * (y * scaleFactor - topTileY)}px; margin: 0; padding: 0; opacity:${(
+              1 - map.transparency
+            ).toFixed(1)}" />`;
           }
         } catch (error) {
           console.error(`Failed to fetch tile: ${mapUrl}`, error);

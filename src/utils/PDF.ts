@@ -47,13 +47,23 @@ export async function generateTileMap(
     )
     .reverse();
 
-  for (let y = topTileY; y <= bottomTileY; y++) {
-    tileContents += '<div style="position: absolute; left: 0; top: 0;">';
+  for (const map of maps) {
+    // overzoomThresholdを超えるズームでは、画面表示のオーバーズームと同様に
+    // 提供上限ズームの親タイルを拡大して描画する（例: 1:1000のz19で地理院地図はz18を2倍表示）
+    const dz = Math.max(0, tileZoom - (map.overzoomThreshold ?? tileZoom));
+    const mapZoom = tileZoom - dz;
+    const scaleFactor = Math.pow(2, dz);
+    const tileSize = 256 * scaleFactor;
+    const mapLeftTileX = Math.floor(leftTileX / scaleFactor);
+    const mapRightTileX = Math.floor(rightTileX / scaleFactor);
+    const mapTopTileY = Math.floor(topTileY / scaleFactor);
+    const mapBottomTileY = Math.floor(bottomTileY / scaleFactor);
 
-    for (let x = leftTileX; x <= rightTileX; x++) {
-      for (const map of maps) {
+    tileContents += '<div style="position: absolute; left: 0; top: 0;">';
+    for (let y = mapTopTileY; y <= mapBottomTileY; y++) {
+      for (let x = mapLeftTileX; x <= mapRightTileX; x++) {
         let mapSrc;
-        const mapUri = `${TILE_FOLDER}/${map.id}/${tileZoom}/${x}/${y}`;
+        const mapUri = `${TILE_FOLDER}/${map.id}/${mapZoom}/${x}/${y}`;
         const tempFileUri = `${FileSystem.cacheDirectory}${map.id}_${x}_${y}.png`; // 一時ファイル
 
         try {
@@ -64,14 +74,14 @@ export async function generateTileMap(
           // インターネットから画像をダウンロードする場合
           else if (map.url.startsWith('http://') || map.url.startsWith('https://')) {
             const mapUrl = map.url
-              .replace('{z}', tileZoom.toString())
+              .replace('{z}', mapZoom.toString())
               .replace('{x}', x.toString())
               .replace('{y}', y.toString());
 
-            await FileSystem.makeDirectoryAsync(`${TILE_FOLDER}/${map.id}/${tileZoom}/${x}`, {
+            await FileSystem.makeDirectoryAsync(`${TILE_FOLDER}/${map.id}/${mapZoom}/${x}`, {
               intermediates: true,
             });
-            const resp = await FileSystem.downloadAsync(mapUrl, `${TILE_FOLDER}/${map.id}/${tileZoom}/${x}/${y}`);
+            const resp = await FileSystem.downloadAsync(mapUrl, `${TILE_FOLDER}/${map.id}/${mapZoom}/${x}/${y}`);
             if (resp.status === 200) {
               mapSrc = await handleImageManipulation(resp.uri, tempFileUri);
             }
@@ -86,9 +96,11 @@ export async function generateTileMap(
         if (mapSrc) {
           tileContents += `<img src="data:image/png;base64,${
             mapSrc.base64
-          }" style="position: absolute; width: 256px; height: 256px; left: ${256 * (x - leftTileX)}px; top: ${
-            256 * (y - topTileY)
-          }px; margin: 0; padding: 0; opacity:${(1 - map.transparency).toFixed(1)}" />`;
+          }" style="position: absolute; width: ${tileSize}px; height: ${tileSize}px; left: ${
+            256 * (x * scaleFactor - leftTileX)
+          }px; top: ${256 * (y * scaleFactor - topTileY)}px; margin: 0; padding: 0; opacity:${(
+            1 - map.transparency
+          ).toFixed(1)}" />`;
         }
       }
     }
