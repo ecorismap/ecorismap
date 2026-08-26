@@ -34,7 +34,18 @@ export async function generateTileMap(
   const { leftTileX, rightTileX, bottomTileY, topTileY } = getTileRegion(pdfRegion, tileZoom);
 
   let tileContents = '';
-  const maps = tileMaps.filter((m) => !m.isGroup && m.visible && m.id !== 'standard' && m.id !== 'hybrid').reverse();
+  // hillshade://やrelief://はローカルに生DEMタイルしか持たずPDFに描画できないため除外する
+  const maps = tileMaps
+    .filter(
+      (m) =>
+        !m.isGroup &&
+        m.visible &&
+        m.id !== 'standard' &&
+        m.id !== 'hybrid' &&
+        !m.url.startsWith('hillshade://') &&
+        !m.url.startsWith('relief://')
+    )
+    .reverse();
 
   for (let y = topTileY; y <= bottomTileY; y++) {
     tileContents += '<div style="position: absolute; left: 0; top: 0;">';
@@ -45,28 +56,30 @@ export async function generateTileMap(
         const mapUri = `${TILE_FOLDER}/${map.id}/${tileZoom}/${x}/${y}`;
         const tempFileUri = `${FileSystem.cacheDirectory}${map.id}_${x}_${y}.png`; // 一時ファイル
 
-        // 画像が既にローカルにある場合
-        if (await RNFS.exists(mapUri)) {
-          mapSrc = await handleImageManipulation(mapUri, tempFileUri);
-        }
-        // PDFの場合はスキップ
-        else if (map.url.startsWith('file://') && map.url.endsWith('.pdf')) {
-          mapSrc = undefined;
-        }
-        // インターネットから画像をダウンロードする場合
-        else {
-          const mapUrl = map.url
-            .replace('{z}', tileZoom.toString())
-            .replace('{x}', x.toString())
-            .replace('{y}', y.toString());
-
-          await FileSystem.makeDirectoryAsync(`${TILE_FOLDER}/${map.id}/${tileZoom}/${x}`, {
-            intermediates: true,
-          });
-          const resp = await FileSystem.downloadAsync(mapUrl, `${TILE_FOLDER}/${map.id}/${tileZoom}/${x}/${y}`);
-          if (resp.status === 200) {
-            mapSrc = await handleImageManipulation(resp.uri, tempFileUri);
+        try {
+          // 画像が既にローカルにある場合
+          if (await RNFS.exists(mapUri)) {
+            mapSrc = await handleImageManipulation(mapUri, tempFileUri);
           }
+          // インターネットから画像をダウンロードする場合
+          else if (map.url.startsWith('http://') || map.url.startsWith('https://')) {
+            const mapUrl = map.url
+              .replace('{z}', tileZoom.toString())
+              .replace('{x}', x.toString())
+              .replace('{y}', y.toString());
+
+            await FileSystem.makeDirectoryAsync(`${TILE_FOLDER}/${map.id}/${tileZoom}/${x}`, {
+              intermediates: true,
+            });
+            const resp = await FileSystem.downloadAsync(mapUrl, `${TILE_FOLDER}/${map.id}/${tileZoom}/${x}/${y}`);
+            if (resp.status === 200) {
+              mapSrc = await handleImageManipulation(resp.uri, tempFileUri);
+            }
+          }
+          // PDF(file://)やpmtiles://などダウンロードできないURLはスキップ
+        } catch (e) {
+          // 1タイルの取得失敗でPDF全体の生成を止めない
+          mapSrc = undefined;
         }
 
         // 画像が正常に取得できた場合のみHTMLに追加
