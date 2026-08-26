@@ -301,6 +301,8 @@ export type MapPresetType = {
 export type LayerPresetType = {
   presetId: string;
   presetName: string;
+  // 同梱データ（PRESET_LAYER_DATAのキー）。指定するとレイヤ保存時にデータも投入される
+  dataKey?: string;
   // dictionaryはSTRING_DICTIONARYフィールドの辞書語彙。適用時に新フィールドIDで辞書DBへ登録される
   layer: Omit<LayerType, 'id' | 'field' | 'dictionaryFieldId'> & {
     field: (Omit<FieldType, 'id'> & { dictionary?: string[] })[];

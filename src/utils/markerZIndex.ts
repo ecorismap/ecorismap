@@ -11,11 +11,12 @@ const BAND_WIDTH = 0x1000000;
 // マーカー種類ごとのバンド。値が大きいほど前面に描画される
 export const MARKER_BAND = {
   MAPMEMO: 0, // マップメモ（ブラシ・スタンプ）は最背面（従来のstyle.zIndex=-1の意図を踏襲）
-  LINE_ARROW: 1,
-  POINT: 2,
-  MEMBER: 3,
-  POLYGON_LABEL: 4,
-  LINE_LABEL: 5, // ラベルは従来(zIndex=9999)どおり他マーカーより前面
+  SEA_LABEL: 1, // GEBCO地図の島名・海底地形名。地物データより背面
+  LINE_ARROW: 2,
+  POINT: 3,
+  MEMBER: 4,
+  POLYGON_LABEL: 5,
+  LINE_LABEL: 6, // ラベルは従来(zIndex=9999)どおり他マーカーより前面
 } as const;
 
 // 選択中マーカーと現在地マーカーは全バンドより前面

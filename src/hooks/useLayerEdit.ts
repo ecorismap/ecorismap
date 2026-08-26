@@ -13,8 +13,10 @@ import { addDataAction, deleteDataAction, updateDataAction } from '../modules/da
 import { addLayerAction, deleteLayerAction, setLayersAction, updateLayerAction } from '../modules/layers';
 import { editSettingsAction } from '../modules/settings';
 import { changeFieldValue, getInitialFieldValue } from '../utils/Data';
-import { LAYER_PRESETS } from '../constants/Presets';
+import { LAYER_PRESETS, PRESET_LAYER_DATA } from '../constants/Presets';
 import { createLayerFromPreset, PresetDictionary } from '../utils/Preset';
+import { geoJson2Data } from '../utils/Geometry';
+import type { FeatureCollection } from 'geojson';
 import { importPresetDictionaries } from '../utils/PresetDictionary';
 import sanitize from 'sanitize-filename';
 import { selectDataSet, selectIsNewLayer } from '../modules/selectors';
@@ -64,6 +66,8 @@ export const useLayerEdit = (
   const [isEdited, setIsEdited] = useState(isStyleEdited);
   // プリセット適用で発生した辞書語彙。保存時に辞書DBへ登録する（保存せず戻った場合は破棄）
   const pendingPresetDictionariesRef = useRef<PresetDictionary[]>([]);
+  // プリセット同梱のデータ（島名・海底地形名など）。保存時に投入する（保存せず戻った場合は破棄）
+  const pendingPresetGeojsonRef = useRef<FeatureCollection | undefined>(undefined);
 
   const dataUser = useMemo(
     () => (projectId === undefined ? { ...user, uid: undefined, displayName: null } : user),
@@ -183,7 +187,15 @@ export const useLayerEdit = (
 
     if (isNewLayer) {
       dispatch(addLayerAction(targetLayer));
-      dispatch(addDataAction([{ layerId: targetLayer.id, userId: dataUser.uid, data: [] }]));
+      // プリセット同梱データがあれば投入する。フィールド名で対応付けるので、
+      // ユーザーが保存前にフィールドを消していてもその項目が空になるだけで壊れない
+      const presetGeojson = pendingPresetGeojsonRef.current;
+      const presetData =
+        presetGeojson !== undefined && targetLayer.type === 'POINT'
+          ? geoJson2Data(presetGeojson, targetLayer, 'POINT', dataUser.uid, dataUser.displayName)
+          : undefined;
+      pendingPresetGeojsonRef.current = undefined;
+      dispatch(addDataAction([{ layerId: targetLayer.id, userId: dataUser.uid, data: presetData ?? [] }]));
     } else {
       dispatch(updateLayerAction(targetLayer));
     }
@@ -198,7 +210,7 @@ export const useLayerEdit = (
     }
 
     setIsEdited(false);
-  }, [dataUser.uid, dispatch, isNewLayer, layers, targetLayer, updateDataOfTheLayer]);
+  }, [dataUser.uid, dataUser.displayName, dispatch, isNewLayer, layers, targetLayer, updateDataOfTheLayer]);
 
   const deleteLayerPhotos = useCallback(async () => {
     if (Platform.OS === 'web') return;
@@ -381,6 +393,7 @@ export const useLayerEdit = (
       const { layer: presetLayer, dictionaries } = createLayerFromPreset(preset, layer.id);
       setTargetLayer(presetLayer);
       pendingPresetDictionariesRef.current = dictionaries;
+      pendingPresetGeojsonRef.current = preset.dataKey !== undefined ? PRESET_LAYER_DATA[preset.dataKey] : undefined;
       setIsEdited(true);
     },
     [layer.id]

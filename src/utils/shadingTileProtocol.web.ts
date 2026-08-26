@@ -17,12 +17,13 @@ import {
   DEFAULT_SHADING_OPTIONS,
   ShadingOptions,
 } from './terrainShading';
+import { computeColorRelief, computeGebcoRelief, ReliefStyle } from './colorRelief';
 
 export const SHADING_PROTOCOL = 'terrainshade';
 
 const TILE_SIZE = 256;
-/** 標高タイルが無いとき、何段まで粗いズームへ降りるか */
-const MAX_ZOOM_FALLBACK = 4;
+/** 標高タイルが無いとき、何段まで粗いズームへ降りるか（z15→海域データの上限z10に届く段数） */
+const MAX_ZOOM_FALLBACK = 5;
 /** デコード済み標高のキャッシュ枚数。1枚あたり 256×256×4B = 256KB */
 const MAX_CACHED_TILES = 128;
 
@@ -31,12 +32,23 @@ type ShadingTileConfig = {
   u: string;
   /** Y軸反転（TMS形式） */
   f?: boolean;
+  /** 1なら陰影段彩（relief://）。省略時は無彩色の陰影 */
+  m?: 1;
+  /** 段彩の配色バリアント（省略時はdefault） */
+  s?: ReliefStyle;
 };
 
 /** タイルURLの先頭部分を作る。maplibre側で {z}/{x}/{y} が置換される */
-export function buildShadingTileUrl(demUrlTemplate: string, flipY?: boolean): string {
+export function buildShadingTileUrl(
+  demUrlTemplate: string,
+  flipY?: boolean,
+  relief?: boolean,
+  style?: ReliefStyle
+): string {
   const config: ShadingTileConfig = { u: demUrlTemplate };
   if (flipY) config.f = true;
+  if (relief) config.m = 1;
+  if (relief && style && style !== 'default') config.s = style;
   return `${SHADING_PROTOCOL}://${encodeURIComponent(JSON.stringify(config))}/{z}/{x}/{y}`;
 }
 
@@ -229,14 +241,21 @@ export function createShadingProtocolHandler(baseOptions: ShadingOptions = DEFAU
         if (!tiles[4]) continue;
 
         const buffer = assembleWithHalo(tiles, halo);
-        const rgba = computeShading(
-          buffer,
-          TILE_SIZE + 2 * halo,
-          halo,
-          TILE_SIZE,
-          metersPerPixel(sourceZ, sy),
-          baseOptions
-        );
+        // gebcoスタイルはHome.web.tsxがmaplibreの実レイヤを使うためここには来ないが、
+        // フォールバックとしてネイティブと同じラスタ近似を返せるようにしておく
+        const rgba = config.m
+          ? config.s === 'gebco'
+            ? computeGebcoRelief(buffer, TILE_SIZE + 2 * halo, halo, TILE_SIZE, sourceZ)
+            : computeColorRelief(
+                buffer,
+                TILE_SIZE + 2 * halo,
+                halo,
+                TILE_SIZE,
+                metersPerPixel(sourceZ, sy),
+                sourceZ,
+                baseOptions
+              )
+          : computeShading(buffer, TILE_SIZE + 2 * halo, halo, TILE_SIZE, metersPerPixel(sourceZ, sy), baseOptions);
 
         const output = shift === 0 ? rgba : cropAndScale(rgba, shift, x - (sx << shift), y - (sy << shift));
         return {

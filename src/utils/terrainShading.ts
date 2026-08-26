@@ -68,9 +68,25 @@ export function requiredHalo(options: ShadingOptions = DEFAULT_SHADING_OPTIONS):
  */
 export const SHADING_URL_PREFIX = 'hillshade://';
 
+/**
+ * 陰影段彩図（段彩×陰影＋等深線焼き込み）のプレフィックス。
+ * デコード・袖組み立て・ズーム降格はhillshadeと共通で、色付けだけが異なる。
+ */
+export const RELIEF_URL_PREFIX = 'relief://';
+
 /** 陰影を計算する地図か判定する */
 export function isShadingUrl(url: string | undefined): boolean {
   return !!url && url.startsWith(SHADING_URL_PREFIX);
+}
+
+/** 陰影段彩を計算する地図か判定する */
+export function isReliefUrl(url: string | undefined): boolean {
+  return !!url && url.startsWith(RELIEF_URL_PREFIX);
+}
+
+/** 標高タイルをDEMとして処理する地図（hillshade/relief）か判定する */
+export function isDemProtocolUrl(url: string | undefined): boolean {
+  return isShadingUrl(url) || isReliefUrl(url);
 }
 
 /**
@@ -78,7 +94,11 @@ export function isShadingUrl(url: string | undefined): boolean {
  * プレフィックスと、動作確認時に付けた方式指定などのフラグメントを落とす。
  */
 export function toDemUrl(url: string): string {
-  const rest = url.startsWith(SHADING_URL_PREFIX) ? url.slice(SHADING_URL_PREFIX.length) : url;
+  const rest = url.startsWith(SHADING_URL_PREFIX)
+    ? url.slice(SHADING_URL_PREFIX.length)
+    : url.startsWith(RELIEF_URL_PREFIX)
+    ? url.slice(RELIEF_URL_PREFIX.length)
+    : url;
   const hash = rest.indexOf('#');
   return hash < 0 ? rest : rest.slice(0, hash);
 }
@@ -141,7 +161,9 @@ function getSampleTable(
 const clamp01 = (v: number) => (v < 0 ? 0 : v > 1 ? 1 : v);
 
 /**
- * 袖付きの標高バッファから、中央 size×size 分の陰影RGBAを計算する。
+ * 袖付きの標高バッファから、中央 size×size 分の陰影係数 (1−s)(1−m) を計算する。
+ * 値域は0〜1、NoData（周辺欠損で傾斜が求まらない画素を含む）はNaN。
+ * 無彩色の陰影（computeShading）と段彩（computeColorRelief）が共有する。
  *
  * @param elevation 袖を含む標高配列（bufferWidth×bufferWidth、NoDataはNaN）
  * @param bufferWidth 標高配列の一辺
@@ -149,17 +171,17 @@ const clamp01 = (v: number) => (v < 0 ? 0 : v > 1 ? 1 : v);
  * @param size 出力する一辺
  * @param metersPerPx 1画素あたりのメートル数
  */
-export function computeShading(
+export function computeShadeField(
   elevation: Float32Array,
   bufferWidth: number,
   offset: number,
   size: number,
   metersPerPx: number,
   options: ShadingOptions = DEFAULT_SHADING_OPTIONS
-): Uint8ClampedArray {
+): Float64Array {
   const { numDirections, searchRadius, slopeMaxDeg, mpiMaxDeg, mpiGamma } = options;
   const { offsets, invDistances } = getSampleTable(bufferWidth, metersPerPx, numDirections, searchRadius);
-  const out = new Uint8ClampedArray(size * size * 4);
+  const out = new Float64Array(size * size);
   const toDeg = 180 / Math.PI;
   const slopeInv = 1 / (2 * metersPerPx);
 
@@ -168,13 +190,13 @@ export function computeShading(
     for (let x = 0; x < size; x++) {
       const center = rowBase + x;
       const z0 = elevation[center];
-      const p = (y * size + x) * 4;
+      const p = y * size + x;
 
-      // NoDataは透明にする。v !== v は NaN 判定の慣用句で、
+      // NoDataはNaNのまま返す。v !== v は NaN 判定の慣用句で、
       // 画素ごとに走るこのループでは関数呼び出しを避けたいためこの形にしている
       // eslint-disable-next-line no-self-compare
       if (z0 !== z0) {
-        out[p + 3] = 0;
+        out[p] = NaN;
         continue;
       }
 
@@ -202,20 +224,43 @@ export function computeShading(
       const slope = Math.atan(Math.sqrt(gx * gx + gy * gy)) * toDeg;
       // eslint-disable-next-line no-self-compare
       if (slope !== slope) {
-        out[p + 3] = 0;
+        out[p] = NaN;
         continue;
       }
 
       // --- 2つの暗さを乗算する ---
       const s = clamp01(slope / slopeMaxDeg);
       const m = Math.pow(clamp01(mpi / mpiMaxDeg), mpiGamma);
-      const gray = 255 * (1 - s) * (1 - m);
-
-      out[p] = gray;
-      out[p + 1] = gray;
-      out[p + 2] = gray;
-      out[p + 3] = 255;
+      out[p] = (1 - s) * (1 - m);
     }
+  }
+  return out;
+}
+
+/**
+ * 袖付きの標高バッファから、中央 size×size 分の陰影RGBAを計算する。
+ * 引数はcomputeShadeField参照。
+ */
+export function computeShading(
+  elevation: Float32Array,
+  bufferWidth: number,
+  offset: number,
+  size: number,
+  metersPerPx: number,
+  options: ShadingOptions = DEFAULT_SHADING_OPTIONS
+): Uint8ClampedArray {
+  const shade = computeShadeField(elevation, bufferWidth, offset, size, metersPerPx, options);
+  const out = new Uint8ClampedArray(size * size * 4);
+  for (let i = 0; i < size * size; i++) {
+    const v = shade[i];
+    // eslint-disable-next-line no-self-compare
+    if (v !== v) continue; // NoDataは透明（alphaは0のまま）
+    const p = i * 4;
+    const gray = 255 * v;
+    out[p] = gray;
+    out[p + 1] = gray;
+    out[p + 2] = gray;
+    out[p + 3] = 255;
   }
   return out;
 }

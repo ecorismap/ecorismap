@@ -5,13 +5,13 @@ import { Button } from '../atoms';
 import { t } from '../../i18n/config';
 
 interface Props {
-  zoom: number;
+  isDownloadPossible: boolean;
   downloading: boolean;
   onPress: () => void;
 }
 
 export const HomeDownloadButtons = React.memo((props: Props) => {
-  const { zoom, downloading, onPress } = props;
+  const { isDownloadPossible, downloading, onPress } = props;
 
   return (
     <View style={styles.buttonContainer}>
@@ -20,7 +20,7 @@ export const HomeDownloadButtons = React.memo((props: Props) => {
           <Button
             size={30}
             name="download"
-            backgroundColor={zoom >= 11 ? COLOR.RED : COLOR.GRAY4}
+            backgroundColor={isDownloadPossible ? COLOR.RED : COLOR.GRAY4}
             onPress={onPress}
             labelText={t('Home.label.download')}
           />

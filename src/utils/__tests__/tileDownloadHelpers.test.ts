@@ -1,6 +1,9 @@
 import { TileMapType, TileRegionType } from '../../types';
 import {
   boundsFromCoords,
+  countTilesForRegion,
+  DOWNLOAD_TILE_COUNT_LIMIT,
+  estimateDownloadTileCount,
   getTileType,
   getZoomRange,
   listExistingTiles,
@@ -8,6 +11,7 @@ import {
   removeIncompleteRegions,
   toCompletedRegion,
 } from '../tileDownloadHelpers';
+import { tileGridForRegion } from '../Tile';
 import * as FileSystem from 'expo-file-system/legacy';
 
 jest.mock('expo-file-system/legacy', () => ({
@@ -59,6 +63,10 @@ describe('getTileType', () => {
     expect(getTileType({ ...baseMap, url: 'hillshade://https://example.com/{z}/{x}/{y}.png' })).toBe('hillshade');
   });
 
+  it('relief://スキームもhillshade扱い（生DEMを保存する点で同じ）', () => {
+    expect(getTileType({ ...baseMap, url: 'relief://https://example.com/{z}/{x}/{y}.png' })).toBe('hillshade');
+  });
+
   it('それ以外はpng', () => {
     expect(getTileType(baseMap)).toBe('png');
   });
@@ -76,6 +84,47 @@ describe('getZoomRange', () => {
 
   it('非ベクタのpmtilesはmaxZoomがoverzoomThresholdと16の小さい方', () => {
     expect(getZoomRange('pmtiles', baseMap, 11)).toEqual({ minZoom: 11, maxZoom: 16 });
+  });
+});
+
+describe('countTilesForRegion', () => {
+  it('tileGridForRegionの実列挙と同じ枚数になる', () => {
+    const bounds = boundsFromCoords(baseRegion.coords);
+    expect(countTilesForRegion(bounds, 0, 12)).toBe(tileGridForRegion(bounds, 0, 12).length);
+    expect(countTilesForRegion(bounds, 5, 9)).toBe(tileGridForRegion(bounds, 5, 9).length);
+  });
+});
+
+describe('estimateDownloadTileCount', () => {
+  // 日本近海の広域（約20度四方、z5相当の表示範囲）
+  const wideBounds = { minLon: 125, minLat: 25, maxLon: 145, maxLat: 45 };
+
+  it('最大z9の地図（GEBCO相当）は広域でも上限以下になる', () => {
+    const gebco = { ...baseMap, url: 'relief://https://example.com/{z}/{x}/{y}.png', overzoomThreshold: 9 };
+    const count = estimateDownloadTileCount(wideBounds, [gebco], 5);
+    expect(count).toBeGreaterThan(0);
+    expect(count).toBeLessThanOrEqual(DOWNLOAD_TILE_COUNT_LIMIT);
+  });
+
+  it('z16まで取得するラスタ地図（地理院相当）は広域だと上限を超える', () => {
+    const count = estimateDownloadTileCount(wideBounds, [baseMap], 5);
+    expect(count).toBeGreaterThan(DOWNLOAD_TILE_COUNT_LIMIT);
+  });
+
+  it('複数地図は枚数を合算する', () => {
+    const bounds = boundsFromCoords(baseRegion.coords);
+    const single = estimateDownloadTileCount(bounds, [baseMap], 11);
+    expect(estimateDownloadTileCount(bounds, [baseMap, baseMap], 11)).toBe(single * 2);
+  });
+
+  it('ベクタ地図は現在ズームからz18までを見積もる', () => {
+    const vector = { ...baseMap, url: 'https://example.com/{z}/{x}/{y}.pbf', isVector: true };
+    const bounds = boundsFromCoords(baseRegion.coords);
+    expect(estimateDownloadTileCount(bounds, [vector], 11)).toBe(countTilesForRegion(bounds, 11, 18));
+  });
+
+  it('対象地図がなければ0', () => {
+    expect(estimateDownloadTileCount(boundsFromCoords(baseRegion.coords), [], 11)).toBe(0);
   });
 });
 

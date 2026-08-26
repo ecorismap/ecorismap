@@ -1,11 +1,15 @@
 import {
   computeShading,
+  computeShadeField,
   decodeElevation,
   metersPerPixel,
   requiredHalo,
   isShadingUrl,
+  isReliefUrl,
+  isDemProtocolUrl,
   toDemUrl,
   SHADING_URL_PREFIX,
+  RELIEF_URL_PREFIX,
   DEFAULT_SHADING_OPTIONS,
 } from '../terrainShading';
 
@@ -128,6 +132,53 @@ describe('地図URLの判定', () => {
 
   it('動作確認時の方式指定フラグメントが残っていても落とす', () => {
     expect(toDemUrl(SHADING_URL_PREFIX + DEM + '#mpi-gray')).toBe(DEM);
+  });
+
+  it('relief:// を陰影段彩として扱い、標高タイルURLを取り出す', () => {
+    expect(isReliefUrl(RELIEF_URL_PREFIX + DEM)).toBe(true);
+    expect(isReliefUrl(SHADING_URL_PREFIX + DEM)).toBe(false);
+    expect(isReliefUrl(DEM)).toBe(false);
+    expect(isReliefUrl(undefined)).toBe(false);
+    expect(toDemUrl(RELIEF_URL_PREFIX + DEM)).toBe(DEM);
+    expect(toDemUrl(RELIEF_URL_PREFIX + DEM + '#v=1')).toBe(DEM);
+  });
+
+  it('isDemProtocolUrlはhillshadeとreliefの両方を受け付ける', () => {
+    expect(isDemProtocolUrl(SHADING_URL_PREFIX + DEM)).toBe(true);
+    expect(isDemProtocolUrl(RELIEF_URL_PREFIX + DEM)).toBe(true);
+    expect(isDemProtocolUrl(DEM)).toBe(false);
+    expect(isDemProtocolUrl(undefined)).toBe(false);
+  });
+});
+
+describe('computeShadeField', () => {
+  it('computeShadingのグレー値は255×shadeと一致する', () => {
+    const buffer = makeBuffer((x, y) => 100 + 5 * Math.sin(x / 5) * Math.cos(y / 7) + 0.1 * x);
+    const mpp = metersPerPixel(12, 1600);
+    const rgba = computeShading(buffer, BUFFER, HALO, SIZE, mpp);
+    const shade = computeShadeField(buffer, BUFFER, HALO, SIZE, mpp);
+    for (let i = 0; i < SIZE * SIZE; i++) {
+      const expected = new Uint8ClampedArray(1);
+      expected[0] = 255 * shade[i];
+      expect(rgba[i * 4]).toBe(expected[0]);
+      expect(rgba[i * 4 + 3]).toBe(255);
+    }
+  });
+
+  it('NoData画素はNaNになる', () => {
+    const buffer = makeBuffer(() => 100);
+    buffer[(HALO + 10) * BUFFER + (HALO + 10)] = NaN;
+    const shade = computeShadeField(buffer, BUFFER, HALO, SIZE, metersPerPixel(12, 1600));
+    expect(Number.isNaN(shade[10 * SIZE + 10])).toBe(true);
+    // 中央差分の隣接画素も傾斜が求まらないのでNaN
+    expect(Number.isNaN(shade[10 * SIZE + 11])).toBe(true);
+    expect(Number.isNaN(shade[10 * SIZE + 9])).toBe(true);
+  });
+
+  it('平坦地はshade=1（真っ白）', () => {
+    const buffer = makeBuffer(() => 100);
+    const shade = computeShadeField(buffer, BUFFER, HALO, SIZE, metersPerPixel(12, 1600));
+    expect(shade[0]).toBeCloseTo(1, 10);
   });
 });
 

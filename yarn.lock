@@ -14605,6 +14605,7 @@ __metadata:
     jschardet: ^3.1.3
     jszip: ^3.10.1
     lodash: ^4.17.21
+    maplibre-contour: ^0.1.0
     maplibre-gl: ^5.24.0
     metro-react-native-babel-preset: 0.76.8
     mockdate: ^3.0.5
@@ -21272,6 +21273,13 @@ __metadata:
   dependencies:
     object-visit: ^1.0.0
   checksum: c27045a5021c344fc19b9132eb30313e441863b2951029f8f8b66f79d3d8c1e7e5091578075a996f74e417479506fe9ede28c44ca7bc351a61c9d8073daec36a
+  languageName: node
+  linkType: hard
+
+"maplibre-contour@npm:^0.1.0":
+  version: 0.1.0
+  resolution: "maplibre-contour@npm:0.1.0"
+  checksum: 525e4067846806335933b06bc57dd303fcc118f091b9ee3362c0424311fa8b2839ec8d497ffc2794ae802893eb1c4e52a261e6adbcb43f5e57f6f0a6163a51c7
   languageName: node
   linkType: hard
 

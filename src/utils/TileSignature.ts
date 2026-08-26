@@ -1,5 +1,5 @@
 import { TileMapType } from '../types';
-import { isShadingUrl, toDemUrl } from './terrainShading';
+import { isDemProtocolUrl, toDemUrl } from './terrainShading';
 
 // 署名付きタイル配信のクライアント側ヘルパー（純粋関数）。
 //
@@ -35,11 +35,11 @@ export const nowSec = (): number => Math.floor(Date.now() / 1000);
 //
 // - pmtiles:// : 保存形式に付いていたり、maplibreに渡すために呼び出し側で前置したりする。
 //   どちらで引いても同じ署名に当たるよう剥がす。
-// - hillshade:// : 実際には剥がした後のDEMタイルURLへアクセスするのでそちらに揃える。
+// - hillshade:// / relief:// : 実際には剥がした後のDEMタイルURLへアクセスするのでそちらに揃える。
 //   ダウンロード側も toDemUrl の結果で引く。
 export const signatureKeyForUrl = (url: string): string => {
   const bare = url.startsWith('pmtiles://') ? url.slice('pmtiles://'.length) : url;
-  return isShadingUrl(bare) ? toDemUrl(bare) : bare;
+  return isDemProtocolUrl(bare) ? toDemUrl(bare) : bare;
 };
 
 // ローカルのファイルや、Firebase Storage経由のPDF(pdf://)は問い合わせても意味がない
