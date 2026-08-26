@@ -319,12 +319,16 @@ export function getGebcoLayers(tileMap: TileMapType): LayerSpecification[] {
       filter: ['>', ['get', 'level'], 0],
       layout: {
         'symbol-placement': 'line',
-        'text-size': 13,
+        // ラベル同士の間隔を広げて件数を抑える（デフォルト250px）
+        'symbol-spacing': 500,
+        'text-size': 10,
         'text-field': ['concat', ['number-format', ['get', 'ele'], {}], 'm'],
-        'text-font': ['Noto Sans CJK JP Bold'],
+        'text-font': ['Noto Sans Universal Regular'],
       },
       paint: {
-        'text-halo-color': 'white',
+        // 地形の読図を邪魔しないよう、太字黒ではなく半透明のグレーで控えめにする
+        'text-color': 'rgba(60,75,90,0.85)',
+        'text-halo-color': 'rgba(255,255,255,0.7)',
         'text-halo-width': 1,
       },
     },

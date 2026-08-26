@@ -135,15 +135,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   contourHalo: {
-    color: COLOR.WHITE,
+    color: COLOR.CONTOUR_HALO,
     fontSize: 10,
-    fontWeight: 'bold',
     position: 'absolute',
   },
   contourLabel: {
-    color: COLOR.BLACK,
+    // 地形の読図を邪魔しないよう、太字黒ではなく半透明のグレーで控えめにする
+    color: COLOR.CONTOUR_LABEL,
     fontSize: 10,
-    fontWeight: 'bold',
   },
   dot: {
     backgroundColor: COLOR.BLACK,

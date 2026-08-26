@@ -30,7 +30,7 @@ type ElevationTile = { width: number; data: Float32Array };
 /** ラベルを出す最小表示ズーム（等値線の間隔テーブルの下限と同じ） */
 const MIN_LABEL_ZOOM = 4;
 /** 間引き格子の一辺（表示ズームのワールドピクセル、256pxタイル基準） */
-const GRID_PX = 128;
+const GRID_PX = 256;
 /** 1画面に出す最大件数 */
 const MAX_FEATURES = 40;
 /** 1回の計算で読むタイル数の上限（通常の画面では4枚以内に収まる） */

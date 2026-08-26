@@ -71,6 +71,8 @@ export const COLOR = {
   PROGRESS_BAR_BG: '#E0E0E0',
   PROGRESS_BAR_FILL: '#0066CC',
   TEXT_DARK: '#333',
+  CONTOUR_LABEL: 'rgba(60, 75, 90, 0.85)',
+  CONTOUR_HALO: 'rgba(255, 255, 255, 0.7)',
 };
 
 export const TILE_FOLDER = `${FileSystem.documentDirectory}tiles`;
