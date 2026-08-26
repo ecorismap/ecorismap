@@ -33,7 +33,9 @@ export async function generateTileMap(
           map.url.includes('pdf://') ||
           map.url.includes('.pdf') ||
           map.url.includes('.pbf') ||
-          map.url.includes('blob:')
+          map.url.includes('blob:') ||
+          map.url.startsWith('hillshade://') ||
+          map.url.startsWith('relief://')
         )
           continue;
         const mapUrl = map.url
