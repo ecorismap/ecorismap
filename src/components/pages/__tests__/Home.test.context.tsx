@@ -190,6 +190,7 @@ export const mockTileManagementContextValue: TileManagementContextType = {
   downloadProgress: '',
   selectedTileMapIds: [],
   selectedDisplayTileMapId: null,
+  isDownloadPossible: true,
   setSelectedDisplayTileMapId: jest.fn(),
   toggleTileMapSelection: jest.fn(),
   pressDownloadTiles: jest.fn().mockResolvedValue(undefined),

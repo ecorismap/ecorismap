@@ -3,6 +3,7 @@ import { TileMapType, TileRegionType } from '../types';
 import { TILE_FOLDER } from '../constants/AppConstants';
 import { getExt } from './General';
 import { isDemProtocolUrl } from './terrainShading';
+import { lonToTileX, latToTileY } from './Tile';
 
 // hillshadeはrelief://（陰影段彩）も含む。どちらも生のDEMタイルを保存する点で同じ扱い
 export type TileType = 'pbf' | 'pmtiles' | 'hillshade' | 'png';
@@ -22,6 +23,39 @@ export const getZoomRange = (tileType: TileType, tileMap: TileMapType, zoom: num
     tileType === 'png' || tileType === 'hillshade' || !tileMap.isVector ? Math.min(tileMap.overzoomThreshold, 16) : 18;
   return { minZoom, maxZoom };
 };
+
+// ダウンロード可否の閾値。ズームレベルではなく推定タイル数で判定する
+// （最大z9のGEBCOは広域でも少数、z16まで取るラスタは広域だと爆発するため）
+export const DOWNLOAD_TILE_COUNT_CONFIRM = 3000; // これ以下は確認なしで即開始
+export const DOWNLOAD_TILE_COUNT_LIMIT = 30000; // これ超はダウンロード不可
+export const ESTIMATED_TILE_SIZE_MB = 0.03; // 概算サイズ表示用（約30KB/枚）
+
+// tilesForZoomと同じ数え方（max側+1タイル余分）を、配列を実体化せず算術で数える。
+// 広域指定ではz16で数十万枚になるためtileGridForRegionの流用は不可
+export const countTilesForRegion = (
+  bounds: { minLon: number; minLat: number; maxLon: number; maxLat: number },
+  minZoom: number,
+  maxZoom: number
+): number => {
+  let count = 0;
+  for (let z = minZoom; z <= maxZoom; z++) {
+    const xCount = lonToTileX(bounds.maxLon, z) - lonToTileX(bounds.minLon, z) + 2;
+    const yCount = latToTileY(bounds.minLat, z) - latToTileY(bounds.maxLat, z) + 2;
+    count += xCount * yCount;
+  }
+  return count;
+};
+
+// 対象地図ごとに実際の取得ズーム範囲（getZoomRange）でタイル数を見積もり合算する
+export const estimateDownloadTileCount = (
+  bounds: { minLon: number; minLat: number; maxLon: number; maxLat: number },
+  maps: TileMapType[],
+  zoom: number
+): number =>
+  maps.reduce((total, tileMap) => {
+    const { minZoom, maxZoom } = getZoomRange(getTileType(tileMap), tileMap, zoom);
+    return total + countTilesForRegion(bounds, minZoom, maxZoom);
+  }, 0);
 
 // 保存済みregionの4隅座標からダウンロード範囲を復元する（頂点順序に依存しない）
 export const boundsFromCoords = (coords: TileRegionType['coords']) => {

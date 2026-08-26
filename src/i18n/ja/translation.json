@@ -206,7 +206,8 @@
       "track_start": "トラックの記録を開始しますか？",
       "downloadAllUserData": "管理者として他のメンバーのプライベートデータもダウンロードしますか？",
       "addLocationPoint": "現在地にポイントを追加しますか？",
-      "discardEditPosition": "位置の変更を破棄しますか？"
+      "discardEditPosition": "位置の変更を破棄しますか？",
+      "downloadTiles": "約{{tileCount}}枚（概算{{size}}MB）の地図タイルをダウンロードします。よろしいですか？"
     },
     "alert": {
       "gps": "GPSをオンにしてください",
@@ -224,9 +225,9 @@
       "cannotEdit": "編集できるレイヤがありません。",
       "noInternet": "インターネットに接続していません。接続してから再度実行してください。",
       "exportPDF": "PDFを保存しました。",
-      "zoomLevel": "この範囲では取得できません。ズームしてください。",
       "viewshedDistanceRange": "距離は0.1〜100kmの範囲で入力してください。10kmを超えると距離に応じて解像度が粗くなります。",
-      "viewshedHeightRange": "観測点の高さは0〜1000mの範囲で入力してください。"
+      "viewshedHeightRange": "観測点の高さは0〜1000mの範囲で入力してください。",
+      "tooManyTiles": "範囲が広すぎるためダウンロードできません。ズームインするか、対象の地図を減らしてください。"
     },
     "navigation": {
       "download": "ダウンロード",

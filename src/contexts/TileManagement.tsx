@@ -23,6 +23,7 @@ export interface TileManagementContextType {
   downloadProgress: string;
   selectedTileMapIds: string[];
   selectedDisplayTileMapId: string | null;
+  isDownloadPossible: boolean;
   toggleTileMapSelection: (tileMapId: string) => void;
   setSelectedDisplayTileMapId: (tileMapId: string | null) => void;
   pressDownloadTiles: () => Promise<void>;
@@ -51,6 +52,7 @@ export const TileManagementContext = createContext<TileManagementContextType>({
   downloadProgress: '',
   selectedTileMapIds: [],
   selectedDisplayTileMapId: null,
+  isDownloadPossible: false,
   toggleTileMapSelection: () => {},
   setSelectedDisplayTileMapId: () => {},
   pressDownloadTiles: async () => {},

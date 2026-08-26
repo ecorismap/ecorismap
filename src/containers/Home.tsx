@@ -67,6 +67,13 @@ import { LocationTrackingContext } from '../contexts/LocationTracking';
 import { ProjectContext } from '../contexts/Project';
 import { SVGDrawingContext } from '../contexts/SVGDrawing';
 import { TileManagementContext } from '../contexts/TileManagement';
+import {
+  boundsFromCoords,
+  estimateDownloadTileCount,
+  DOWNLOAD_TILE_COUNT_CONFIRM,
+  DOWNLOAD_TILE_COUNT_LIMIT,
+  ESTIMATED_TILE_SIZE_MB,
+} from '../utils/tileDownloadHelpers';
 import { MapMemoContext } from '../contexts/MapMemo';
 import { DataSelectionContext } from '../contexts/DataSelection';
 import { InfoToolContext } from '../contexts/InfoTool';
@@ -1021,25 +1028,54 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     return true;
   }, [featureButton, isSelectedDraw, navigation, navigateToSplit, route.params?.mode, savePoint, saveLine, savePolygon, setDrawTool]);
 
+  // ダウンロード対象の地図リスト（選択地図 > 全地図 > 従来の単一地図）
+  const downloadTargetMaps = useMemo(() => {
+    if (selectedTileMapIds.length > 0) return tileMaps.filter((map) => selectedTileMapIds.includes(map.id));
+    if (route.params?.mode === 'download') {
+      // 「すべての地図」が選択されている場合、ダウンロード可能な全ての地図
+      return tileMaps.filter((map) => !map.isGroup && map.id !== 'standard' && map.id !== 'hybrid');
+    }
+    return route.params?.tileMap !== undefined ? [route.params.tileMap] : [];
+  }, [route.params?.mode, route.params?.tileMap, selectedTileMapIds, tileMaps]);
+
+  // ズームレベルではなく推定タイル数でダウンロード可否を判定する（地図ごとの実際の取得範囲に自動で追従）
+  const estimatedTileCount = useMemo(
+    () => estimateDownloadTileCount(boundsFromCoords(downloadArea.coords), downloadTargetMaps, zoom),
+    [downloadArea.coords, downloadTargetMaps, zoom]
+  );
+  const isDownloadPossible = estimatedTileCount <= DOWNLOAD_TILE_COUNT_LIMIT;
+
   const pressDownloadTiles = useCallback(async () => {
-    if (zoom < 11) {
-      await AlertAsync(t('Home.alert.zoomLevel'));
+    if (estimatedTileCount > DOWNLOAD_TILE_COUNT_LIMIT) {
+      await AlertAsync(t('Home.alert.tooManyTiles'));
       return;
     }
+    if (estimatedTileCount > DOWNLOAD_TILE_COUNT_CONFIRM) {
+      const estimatedMB = Math.round(estimatedTileCount * ESTIMATED_TILE_SIZE_MB);
+      const ok = await ConfirmAsync(
+        t('Home.confirm.downloadTiles', {
+          tileCount: estimatedTileCount.toLocaleString(),
+          size: estimatedMB.toLocaleString(),
+        })
+      );
+      if (!ok) return;
+    }
 
-    // 選択された地図がある場合は複数ダウンロード
-    if (selectedTileMapIds.length > 0) {
-      const selectedMaps = tileMaps.filter((map) => selectedTileMapIds.includes(map.id));
-      await downloadMultipleTiles(zoom, selectedMaps);
-    } else if (route.params?.mode === 'download') {
-      // ダウンロードモードで「すべての地図」が選択されている場合、ダウンロード可能な全ての地図をダウンロード
-      const downloadableMaps = tileMaps.filter((map) => !map.isGroup && map.id !== 'standard' && map.id !== 'hybrid');
-      await downloadMultipleTiles(zoom, downloadableMaps);
+    if (selectedTileMapIds.length > 0 || route.params?.mode === 'download') {
+      await downloadMultipleTiles(zoom, downloadTargetMaps);
     } else {
       // 従来の単一地図ダウンロード
       downloadTiles(zoom);
     }
-  }, [downloadTiles, downloadMultipleTiles, route.params?.mode, selectedTileMapIds, tileMaps, zoom]);
+  }, [
+    downloadTargetMaps,
+    downloadTiles,
+    downloadMultipleTiles,
+    estimatedTileCount,
+    route.params?.mode,
+    selectedTileMapIds,
+    zoom,
+  ]);
 
   const pressStopDownloadTiles = useCallback(() => {
     stopDownloadTiles();
@@ -2524,6 +2560,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       downloadProgress,
       selectedTileMapIds,
       selectedDisplayTileMapId,
+      isDownloadPossible,
       toggleTileMapSelection,
       setSelectedDisplayTileMapId,
       pressDownloadTiles,
@@ -2541,6 +2578,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       downloadProgress,
       selectedTileMapIds,
       selectedDisplayTileMapId,
+      isDownloadPossible,
       toggleTileMapSelection,
       pressDownloadTiles,
       pressStopDownloadTiles,

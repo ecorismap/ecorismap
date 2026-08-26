@@ -819,10 +819,10 @@
       "storage": "Loading data is full. \nDelete unnecessary data.",
       "cannotEdit": "There are no editable layers.",
       "exportPDF": "I saved the PDF.",
-      "zoomLevel": "It cannot be obtained within this range. \nPlease zoom in.",
       "noInternet": "I'm not connected to the internet. \nPlease connect and try again.",
       "viewshedDistanceRange": "Enter a distance between 0.1 and 100 km. Beyond 10 km, the resolution becomes coarser with distance.",
-      "viewshedHeightRange": "Enter an observer height between 0 and 1000 m."
+      "viewshedHeightRange": "Enter an observer height between 0 and 1000 m.",
+      "tooManyTiles": "The area is too large to download. Please zoom in or reduce the number of selected maps."
     },
     "confirm": {
       "closeProject": "Do you want to finish the project? \nAny data that has not been uploaded will be discarded! \n!",
@@ -842,7 +842,8 @@
       "downloadAllUserData": "Do you also download private data from other members as an administrator?",
       "addLocationPoint": "Add a point at the current location?",
       "discardEditPosition": "Discard position changes?",
-      "splitLine": "Do you want to split the line?"
+      "splitLine": "Do you want to split the line?",
+      "downloadTiles": "About {{tileCount}} tiles (approx. {{size}} MB) will be downloaded. Do you want to continue?"
     },
     "navigation": {
       "download": "download",

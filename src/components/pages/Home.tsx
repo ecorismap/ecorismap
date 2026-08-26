@@ -169,6 +169,7 @@ export default function HomeScreen() {
     savedArea,
     downloadProgress,
     selectedTileMapIds,
+    isDownloadPossible,
     pressDownloadTiles,
     pressStopDownloadTiles,
     pressDeleteTiles,
@@ -707,7 +708,11 @@ export default function HomeScreen() {
                   onCancel={() => setShowMapSelector(false)}
                 />
               )}
-              <HomeDownloadButtons zoom={zoom} downloading={isDownloading} onPress={pressDownloadTiles} />
+              <HomeDownloadButtons
+                isDownloadPossible={isDownloadPossible}
+                downloading={isDownloading}
+                onPress={pressDownloadTiles}
+              />
             </>
           )}
           {exportPDFMode && (
