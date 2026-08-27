@@ -170,29 +170,34 @@ const fetchTileFromSource = async (
     tileCacheSet(key, null);
     return null;
   }
-  try {
-    const url = urlTemplate.replace('{z}', String(zoom)).replace('{x}', String(x)).replace('{y}', String(y));
-    // ネイティブはディスクキャッシュ付きローダー、Webはブラウザキャッシュ任せ（demTileLoader参照）
-    const buffer = await loadDemTilePng(url, key);
-    // 404（提供範囲外）は恒久的なのでnullも記憶する
-    tileCacheSet(key, buffer);
-    return buffer === null ? null : decodeDemTile(buffer, source);
-  } catch {
-    // ネットワークエラーは一時的な可能性があるためキャッシュしない
-    return undefined;
+  const url = urlTemplate.replace('{z}', String(zoom)).replace('{x}', String(x)).replace('{y}', String(y));
+  // 電波が不安定な屋外での瞬断に備えて1回だけリトライする
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      // ネイティブはディスクキャッシュ付きローダー、Webはブラウザキャッシュ任せ（demTileLoader参照）
+      const buffer = await loadDemTilePng(url, key);
+      // 404（提供範囲外）は恒久的なのでnullも記憶する
+      tileCacheSet(key, buffer);
+      return buffer === null ? null : decodeDemTile(buffer, source);
+    } catch {
+      // ネットワークエラーは一時的な可能性があるためキャッシュしない
+    }
   }
+  return undefined;
 };
 
-const fetchDemTile = async (zoom: number, x: number, y: number): Promise<Float32Array | null> => {
+/**
+ * @returns デコード済み標高 / null=データなし（海上・提供範囲外） / undefined=通信エラー（一時的）
+ */
+const fetchDemTile = async (zoom: number, x: number, y: number): Promise<Float32Array | null | undefined> => {
   const max = Math.pow(2, zoom);
   if (x < 0 || y < 0 || x >= max || y >= max) return null;
   // 国内はGSI（10m）を優先し、提供範囲外（404）ならAWS Terrain Tiles（全球30-90m）へ
   // タイル単位でフォールバックする。国境付近は両ソースが自然に混在する。
   const gsi = await fetchTileFromSource('gsi', GSI_DEM_URL, zoom, x, y);
   if (gsi instanceof Float32Array) return gsi;
-  if (gsi === undefined) return null; // 通信エラー時はフォールバックせず失敗させる
-  const terra = await fetchTileFromSource('terrarium', TERRARIUM_URL, zoom, x, y);
-  return terra instanceof Float32Array ? terra : null;
+  if (gsi === undefined) return undefined; // 通信エラー時は低解像度へフォールバックせず失敗させる
+  return await fetchTileFromSource('terrarium', TERRARIUM_URL, zoom, x, y);
 };
 
 /**
@@ -209,7 +214,7 @@ export const getDemElevation = async (latitude: number, longitude: number): Prom
   const col = Math.min(TILE_SIZE - 1, Math.floor(px - tileX * TILE_SIZE));
   const row = Math.min(TILE_SIZE - 1, Math.floor(py - tileY * TILE_SIZE));
   const tile = await fetchDemTile(zoom, tileX, tileY);
-  if (tile !== null) {
+  if (tile instanceof Float32Array) {
     const e = tile[row * TILE_SIZE + col];
     if (!isNaN(e)) return e;
     // GSIタイル内のNoData（沿岸の海など）はterrariumで補完し、
@@ -223,6 +228,8 @@ export const getDemElevation = async (latitude: number, longitude: number): Prom
 /**
  * 中心と半径を覆うDEMグリッドを取得する。
  * 全タイルが取得できなかった場合（範囲外・オフライン等）はnullを返す。
+ * 通信エラー（undefined）が1枚でもあった場合もnullを返す。欠損域を海面0m扱いのまま
+ * 計算すると、誤った可視領域が警告なしに保存されてしまうため。
  */
 export const fetchDemGrid = async (
   center: LocationType,
@@ -247,10 +254,15 @@ export const fetchDemGrid = async (
 
   const elev = new Float32Array(size * size).fill(NaN);
   let validTiles = 0;
+  let hasTransientError = false;
 
   const loadTile = async (tx: number, ty: number) => {
     const tile = await tileLoader(zoom, tx, ty);
-    if (!tile) return;
+    if (tile === undefined) {
+      hasTransientError = true;
+      return;
+    }
+    if (tile === null) return;
     validTiles++;
     // タイルとグリッドの重なり範囲をコピー
     const gx0 = Math.max(tx * TILE_SIZE, originPxX);
@@ -278,13 +290,14 @@ export const fetchDemGrid = async (
     Array.from({ length: Math.min(CONCURRENCY, queue.length) }, async () => {
       for (;;) {
         const next = queue.shift();
-        if (next === undefined) return;
+        // 失敗が確定したら残りのタイル取得を打ち切る
+        if (next === undefined || hasTransientError) return;
         await loadTile(next.tx, next.ty);
       }
     })
   );
 
-  if (validTiles === 0) return null;
+  if (hasTransientError || validTiles === 0) return null;
   return { elev, size, zoom, originPxX, originPxY, mpp };
 };
 

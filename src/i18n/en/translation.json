@@ -785,7 +785,7 @@
       "googleDriveApiError": "Failed to communicate with Google Drive.",
       "googleDriveConnectFailed": "Could not connect to your Google account.",
       "googleDriveScopeDenied": "Access to Google Drive was not granted. Please check the Google Drive checkbox on the consent screen when connecting.",
-      "failGetDem": "Failed to get elevation data. Check your network connection.",
+      "failGetDem": "Failed to get elevation data. Check your network connection. Downloading \"Elevation tiles (for viewshed)\" in advance allows you to create viewsheds offline.",
       "failCalcViewshed": "Failed to calculate the viewshed."
     },
     "notification": {
