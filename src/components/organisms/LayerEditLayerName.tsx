@@ -12,9 +12,9 @@ import { TextInput } from '../atoms';
 
 export const LayerName = () => {
   const { layer, isNewLayer, onChangeLayerName, submitLayerName, onChangeLayerPreset } = useContext(LayerEditContext);
-  const { mapLayerPresets } = useFeatureFlags();
+  const { layerPresets } = useFeatureFlags();
   const editable = true;
-  const showPresetSelector = isNewLayer && mapLayerPresets;
+  const showPresetSelector = isNewLayer && layerPresets;
   const presetItems = useMemo(
     () => LAYER_PRESETS.map((p, index) => ({ key: index, label: p.presetName, value: p.presetId })),
     []
