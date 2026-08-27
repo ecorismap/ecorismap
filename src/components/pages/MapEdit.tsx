@@ -37,7 +37,7 @@ export default function MapEditScreen() {
   } = useContext(MapEditContext);
 
   const { windowWidth, isLandscape } = useWindow();
-  const { mapLayerPresets } = useFeatureFlags();
+  const { mapPresets } = useFeatureFlags();
 
   const rightComponent = (
     <Button
@@ -78,7 +78,7 @@ export default function MapEditScreen() {
                 value={map.name}
                 onChangeText={changeMapName}
               />
-              {isNewMap && mapLayerPresets && !map.isGroup && (
+              {isNewMap && mapPresets && !map.isGroup && (
                 <ModalSelector
                   data={MAP_PRESETS.map((p, index) => ({ key: index, label: p.presetName, value: p.presetId }))}
                   animationType={'none'}
