@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useRef } from 'react';
 import { useCallback } from 'react';
 import MapView, { Region } from 'react-native-maps';
 import { MapRef, ViewState } from 'react-map-gl/maplibre';
@@ -21,17 +21,18 @@ export type UseMapViewReturnType = {
 export const useMapView = (mapViewRef: MapView | MapRef | null): UseMapViewReturnType => {
   const { windowWidth, mapRegion } = useWindow();
   const dispatch = useDispatch();
+  const regionChangeSeq = useRef(0);
 
   const zoomDecimal = useMemo(() => {
     if (mapRegion) {
-      if (Platform.OS === 'web') {
+      // 地図回転中はregionのdeltaが回転後のバウンディングボックスに膨らみズームを誤算するため、
+      // ネイティブもカメラ由来のzoom（changeMapRegionで保存）をそのまま使う
+      if (Number.isFinite(mapRegion.zoom)) {
         return mapRegion.zoom;
+      } else if (mapRegion.longitudeDelta < 0) {
+        return Math.log2(360 * (windowWidth / 256 / (mapRegion.longitudeDelta + 360)));
       } else {
-        if (mapRegion.longitudeDelta < 0) {
-          return Math.log2(360 * (windowWidth / 256 / (mapRegion.longitudeDelta + 360)));
-        } else {
-          return Math.log2(360 * (windowWidth / 256 / mapRegion.longitudeDelta));
-        }
+        return Math.log2(360 * (windowWidth / 256 / mapRegion.longitudeDelta));
       }
     } else {
       return 5;
@@ -93,8 +94,24 @@ export const useMapView = (mapViewRef: MapView | MapRef | null): UseMapViewRetur
       } else {
         if (isRegion(region) && !isRegionType(region)) {
           const delta = { longitudeDelta: region.longitudeDelta, latitudeDelta: region.latitudeDelta };
-          const newRegion = { ...region, zoom: deltaToZoom(windowWidth, delta).zoom };
-          dispatch(editSettingsAction({ mapRegion: newRegion }));
+          const fallbackZoom = deltaToZoom(windowWidth, delta).decimalZoom;
+          const seq = ++regionChangeSeq.current;
+          if (isMapView(mapViewRef)) {
+            // deltaは回転時に膨らんでズームを誤算するため、カメラの実ズームを採用する
+            mapViewRef
+              .getCamera()
+              .then((camera) => {
+                if (seq !== regionChangeSeq.current) return;
+                const cameraZoom = Number.isFinite(camera.zoom) ? (camera.zoom as number) : fallbackZoom;
+                dispatch(editSettingsAction({ mapRegion: { ...region, zoom: cameraZoom } }));
+              })
+              .catch(() => {
+                if (seq !== regionChangeSeq.current) return;
+                dispatch(editSettingsAction({ mapRegion: { ...region, zoom: fallbackZoom } }));
+              });
+          } else {
+            dispatch(editSettingsAction({ mapRegion: { ...region, zoom: fallbackZoom } }));
+          }
         } else if (jumpTo && isRegionType(region) && isMapView(mapViewRef)) {
           mapViewRef.setCamera({
             center: {

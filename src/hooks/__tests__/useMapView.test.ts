@@ -47,7 +47,7 @@ jest.mock('../../utils/Map', () => ({
 }));
 
 jest.mock('../../utils/Coords', () => ({
-  deltaToZoom: jest.fn().mockReturnValue({ zoom: 15 }),
+  deltaToZoom: jest.fn().mockReturnValue({ zoom: 15, decimalZoom: 15.5 }),
   zoomToDelta: jest.fn().mockReturnValue({
     latitudeDelta: 0.01,
     longitudeDelta: 0.01,
@@ -58,6 +58,7 @@ jest.mock('../../utils/Coords', () => ({
 const createMockMapView = () => ({
   animateToRegion: jest.fn(),
   setCamera: jest.fn(),
+  getCamera: jest.fn().mockResolvedValue({ zoom: 16.25 }),
 });
 
 const createMockMapRef = () => ({
@@ -109,7 +110,27 @@ describe('useMapView', () => {
   });
 
   describe('zoom calculations', () => {
-    it('should calculate zoom decimal for mobile platform', () => {
+    it('should use stored camera zoom on mobile platform', () => {
+      // 回転時にdeltaが膨らんでも狂わないよう、保存済みのカメラzoomをそのまま使う
+      const { result } = renderHook(() => useMapView(null), { wrapper });
+
+      expect(result.current.zoomDecimal).toBe(15);
+      expect(result.current.zoom).toBe(15);
+    });
+
+    it('should fall back to delta-based zoom when stored zoom is invalid on mobile', () => {
+      const { useWindow } = require('../useWindow');
+      useWindow.mockReturnValueOnce({
+        windowWidth: 375,
+        mapRegion: {
+          latitude: 35.0,
+          longitude: 135.0,
+          latitudeDelta: 0.01,
+          longitudeDelta: 0.01,
+          zoom: NaN,
+        },
+      });
+
       const { result } = renderHook(() => useMapView(null), { wrapper });
 
       // Actual calculation: Math.log2(360 * (375 / 256 / 0.01)) ≈ 15.686
@@ -371,10 +392,11 @@ describe('useMapView', () => {
       });
     });
 
-    it('should handle Region on mobile platform', () => {
-      const { isRegion, isRegionType } = require('../../utils/Map');
+    it('should handle Region on mobile platform without MapView ref', () => {
+      const { isRegion, isRegionType, isMapView } = require('../../utils/Map');
       isRegion.mockReturnValue(true);
       isRegionType.mockReturnValue(false);
+      isMapView.mockReturnValue(false);
 
       const { result } = renderHook(() => useMapView(null), { wrapper });
 
@@ -392,7 +414,63 @@ describe('useMapView', () => {
       const state = store.getState();
       expect(state.settings.mapRegion).toEqual({
         ...region,
-        zoom: 15, // from deltaToZoom mock
+        zoom: 15.5, // from deltaToZoom mock (decimalZoom)
+      });
+    });
+
+    it('should use camera zoom from MapView on mobile platform', async () => {
+      const { isRegion, isRegionType, isMapView } = require('../../utils/Map');
+      isRegion.mockReturnValue(true);
+      isRegionType.mockReturnValue(false);
+      isMapView.mockReturnValue(true);
+
+      const mockMapView = createMockMapView();
+      const { result } = renderHook(() => useMapView(mockMapView as any), { wrapper });
+
+      const region = {
+        latitude: 36.0,
+        longitude: 136.0,
+        latitudeDelta: 0.02,
+        longitudeDelta: 0.02,
+      };
+
+      await act(async () => {
+        result.current.changeMapRegion(region);
+      });
+
+      expect(mockMapView.getCamera).toHaveBeenCalled();
+      const state = store.getState();
+      expect(state.settings.mapRegion).toEqual({
+        ...region,
+        zoom: 16.25, // from getCamera mock
+      });
+    });
+
+    it('should fall back to delta-based zoom when getCamera fails', async () => {
+      const { isRegion, isRegionType, isMapView } = require('../../utils/Map');
+      isRegion.mockReturnValue(true);
+      isRegionType.mockReturnValue(false);
+      isMapView.mockReturnValue(true);
+
+      const mockMapView = createMockMapView();
+      mockMapView.getCamera.mockRejectedValue(new Error('getCamera failed'));
+      const { result } = renderHook(() => useMapView(mockMapView as any), { wrapper });
+
+      const region = {
+        latitude: 36.0,
+        longitude: 136.0,
+        latitudeDelta: 0.02,
+        longitudeDelta: 0.02,
+      };
+
+      await act(async () => {
+        result.current.changeMapRegion(region);
+      });
+
+      const state = store.getState();
+      expect(state.settings.mapRegion).toEqual({
+        ...region,
+        zoom: 15.5, // from deltaToZoom mock (decimalZoom)
       });
     });
 
