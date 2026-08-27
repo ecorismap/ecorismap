@@ -855,6 +855,7 @@
       "selectAll": "Select All",
       "allMaps": "All Maps",
       "mapsSelected": "maps selected",
+      "demViewshed": "Elevation tiles (for viewshed)",
       "downloading": "Downloading",
       "stop": "Stop"
     },

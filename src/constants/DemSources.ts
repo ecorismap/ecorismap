@@ -24,6 +24,19 @@ export const GSI_DEM_URL = 'https://cyberjapandata.gsi.go.jp/xyz/dem_png/{z}/{x}
 export const TERRARIUM_URL = 'https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png';
 
 /**
+ * 可視領域用DEMタイルの疑似地図ID。
+ * Redux tileMapsには登録しない内部専用のダウンロードターゲットで、
+ * tileRegions.tileMapId・TILE_FOLDER配下のフォルダ名・ダウンロードセレクタの選択IDに使う。
+ * 保存構造: TILE_FOLDER/dem_viewshed/{gsi|terrarium}/{z}/{x}/{y}
+ * （ユーザー地図のIDはulid、組み込みはstandard/hybridのみなので衝突しない）
+ */
+export const DEM_VIEWSHED_MAP_ID = 'dem_viewshed';
+
+/** ダウンロードするズーム範囲。viewshed.tsのselectDemZoomの返域(z8-14)と一致させる */
+export const DEM_DOWNLOAD_MIN_ZOOM = 8;
+export const DEM_DOWNLOAD_MAX_ZOOM = 14;
+
+/**
  * Mapterhorn（terrariumエンコードWebP 512px、z0-15、全球）。
  * 日本は基盤地図情報DEM(1m/5m/10m)、国外はCopernicus GLO-30ほか各国の公開DEM。
  * WebPのため自前デコーダ（pngLite）では読めず、maplibreの内蔵デコード専用。

@@ -11,13 +11,18 @@ import simplify from '@turf/simplify';
 import * as turf from '@turf/helpers';
 import { decodeElevation } from './terrainShading';
 import { decodePngLite } from './pngLite';
-import { loadDemTilePng } from './demTileLoader';
+import { loadDemTilePng, loadDownloadedDemTile } from './demTileLoader';
 import { LocationType } from '../types';
-import { GSI_DEM_URL, TERRARIUM_URL } from '../constants/DemSources';
+import {
+  DEM_DOWNLOAD_MAX_ZOOM,
+  DEM_DOWNLOAD_MIN_ZOOM,
+  GSI_DEM_URL,
+  TERRARIUM_URL,
+} from '../constants/DemSources';
 
 const TILE_SIZE = 256;
-const MAX_DEM_ZOOM = 14;
-const MIN_DEM_ZOOM = 8;
+const MAX_DEM_ZOOM = DEM_DOWNLOAD_MAX_ZOOM;
+const MIN_DEM_ZOOM = DEM_DOWNLOAD_MIN_ZOOM;
 /**
  * グリッド一辺の上限（画素）。
  * 上限を下げるとズームが粗くなり可視領域の検出が激減する（z12は z14 の4割程度）ため、
@@ -141,7 +146,7 @@ export const clearDemTileCache = (): void => {
 };
 
 /**
- * 1ソース分のタイル取得。キャッシュ（メモリ+ディスク）→ネットワークの順。
+ * 1ソース分のタイル取得。メモリ→ダウンロード済みローカル→ディスクキャッシュ→ネットワークの順。
  * @returns デコード済み標高 / null=404（記憶される） / undefined=ネットワークエラー（記憶しない）
  */
 const fetchTileFromSource = async (
@@ -154,6 +159,17 @@ const fetchTileFromSource = async (
   const key = `${source}/${zoom}/${x}/${y}`;
   const cached = tileCacheGet(key);
   if (cached !== undefined) return cached === null ? null : decodeDemTile(cached, source);
+  // オフラインダウンロード済みタイルを最優先で参照する（オンライン時も通信を省ける。Webは常にmissing）
+  const local = await loadDownloadedDemTile(source, zoom, x, y);
+  if (local.kind === 'data') {
+    tileCacheSet(key, local.bytes);
+    return decodeDemTile(local.bytes, source);
+  }
+  if (local.kind === 'noData') {
+    // GSI確定404マーカー。nullを記憶するとfetchDemTileがterrarium側ローカルへフォールバックする
+    tileCacheSet(key, null);
+    return null;
+  }
   try {
     const url = urlTemplate.replace('{z}', String(zoom)).replace('{x}', String(x)).replace('{y}', String(y));
     // ネイティブはディスクキャッシュ付きローダー、Webはブラウザキャッシュ任せ（demTileLoader参照）

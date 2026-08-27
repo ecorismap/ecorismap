@@ -13,6 +13,16 @@ export const loadDemTilePng = async (url: string, _key: string): Promise<ArrayBu
 /** Webにはオフラインダウンロード機能がないため常にnull */
 export const loadLocalDemTilePng = async (_fileUri: string): Promise<ArrayBuffer | null> => null;
 
+export type LocalDemTileResult = { kind: 'data'; bytes: ArrayBuffer } | { kind: 'noData' } | { kind: 'missing' };
+
+/** Webにはオフラインダウンロード機能がないため常にmissing */
+export const loadDownloadedDemTile = async (
+  _source: 'gsi' | 'terrarium',
+  _zoom: number,
+  _x: number,
+  _y: number
+): Promise<LocalDemTileResult> => ({ kind: 'missing' });
+
 /**
  * Web版の等値線数値ラベル（contourLabels）はmaplibre-contourが担うため未使用。
  * PNGならそのまま返し、WebPはnull（呼ばれない前提の簡易実装）。

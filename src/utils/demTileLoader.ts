@@ -9,6 +9,8 @@
  */
 import * as FileSystem from 'expo-file-system/legacy';
 import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
+import { TILE_FOLDER } from '../constants/AppConstants';
+import { DEM_VIEWSHED_MAP_ID } from '../constants/DemSources';
 
 const CACHE_DIR = `${FileSystem.cacheDirectory}dem_png`;
 let dirEnsured = false;
@@ -86,6 +88,30 @@ export const loadLocalDemTilePng = async (fileUri: string): Promise<ArrayBuffer 
     return await readTileFile(fileUri);
   } catch {
     return null;
+  }
+};
+
+/**
+ * ダウンロード済み可視領域用DEMタイル（TILE_FOLDER/dem_viewshed/{source}/{z}/{x}/{y}）の読み取り結果。
+ * noData（0バイト）は「GSIが404＝提供範囲外」の確定マーカーで、missing（未ダウンロード）と
+ * 区別することでオフライン時にterrarium側ローカルへ正しくフォールバックできる。
+ */
+export type LocalDemTileResult = { kind: 'data'; bytes: ArrayBuffer } | { kind: 'noData' } | { kind: 'missing' };
+
+export const loadDownloadedDemTile = async (
+  source: 'gsi' | 'terrarium',
+  zoom: number,
+  x: number,
+  y: number
+): Promise<LocalDemTileResult> => {
+  try {
+    const fileUri = `${TILE_FOLDER}/${DEM_VIEWSHED_MAP_ID}/${source}/${zoom}/${x}/${y}`;
+    const info = await FileSystem.getInfoAsync(fileUri);
+    if (!info.exists) return { kind: 'missing' };
+    if ((info.size ?? 0) === 0) return { kind: 'noData' };
+    return { kind: 'data', bytes: await readTileFile(fileUri) };
+  } catch {
+    return { kind: 'missing' };
   }
 };
 
