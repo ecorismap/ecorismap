@@ -67,6 +67,10 @@ describe('getTileType', () => {
     expect(getTileType({ ...baseMap, url: 'relief://https://example.com/{z}/{x}/{y}.png' })).toBe('hillshade');
   });
 
+  it('可視領域用の疑似地図ID(dem_viewshed)はdem', () => {
+    expect(getTileType({ ...baseMap, id: 'dem_viewshed', url: 'https://example.com/{z}/{x}/{y}.png' })).toBe('dem');
+  });
+
   it('それ以外はpng', () => {
     expect(getTileType(baseMap)).toBe('png');
   });
@@ -84,6 +88,10 @@ describe('getZoomRange', () => {
 
   it('非ベクタのpmtilesはmaxZoomがoverzoomThresholdと16の小さい方', () => {
     expect(getZoomRange('pmtiles', baseMap, 11)).toEqual({ minZoom: 11, maxZoom: 16 });
+  });
+
+  it('可視領域用demはselectDemZoomの返域と同じz8-14固定', () => {
+    expect(getZoomRange('dem', baseMap, 11)).toEqual({ minZoom: 8, maxZoom: 14 });
   });
 });
 

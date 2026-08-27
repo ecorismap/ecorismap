@@ -30,6 +30,7 @@ import { HomeProjectButtons } from '../organisms/HomeProjectButtons';
 import { BottomSheetContent } from '../organisms/BottomSheetContent';
 import { Loading } from '../molecules/Loading';
 import { t } from '../../i18n/config';
+import { DEM_VIEWSHED_MAP_ID } from '../../constants/DemSources';
 import { useWindow } from '../../hooks/useWindow';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../store';
@@ -447,7 +448,9 @@ export default function HomeScreen() {
             {selectedTileMapIds.length === 0
               ? t('Home.download.allMaps')
               : selectedTileMapIds.length === 1
-              ? tileMaps?.find((m) => m.id === selectedTileMapIds[0])?.name || t('Home.download.allMaps')
+              ? selectedTileMapIds[0] === DEM_VIEWSHED_MAP_ID
+                ? t('Home.download.demViewshed')
+                : tileMaps?.find((m) => m.id === selectedTileMapIds[0])?.name || t('Home.download.allMaps')
               : `${selectedTileMapIds.length} ${t('Home.download.mapsSelected', '個の地図')}`}
           </Text>
           <Text style={{ marginLeft: 8 }}>▼</Text>

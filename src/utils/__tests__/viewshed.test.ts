@@ -7,7 +7,53 @@ import {
   fetchDemGrid,
   makeCircleRing,
   decodeDemTile,
+  getDemElevation,
+  clearDemTileCache,
 } from '../viewshed';
+import { loadDemTilePng, loadDownloadedDemTile } from '../demTileLoader';
+
+jest.mock('../demTileLoader', () => ({
+  loadDemTilePng: jest.fn(),
+  loadDownloadedDemTile: jest.fn(async () => ({ kind: 'missing' })),
+}));
+
+/** 全ピクセル同一RGBの256x256 PNGを組み立てる */
+const buildUniformPng = (r: number, g: number, b: number): Uint8Array => {
+  const size = 256;
+  const stride = size * 3;
+  const raw = new Uint8Array(size * (stride + 1));
+  for (let row = 0; row < size; row++) {
+    const offset = row * (stride + 1) + 1;
+    for (let col = 0; col < size; col++) {
+      raw[offset + col * 3] = r;
+      raw[offset + col * 3 + 1] = g;
+      raw[offset + col * 3 + 2] = b;
+    }
+  }
+  const idat = deflate(raw);
+  const chunk = (type: string, data: Uint8Array) => {
+    const out = new Uint8Array(12 + data.length);
+    new DataView(out.buffer).setUint32(0, data.length);
+    for (let i = 0; i < 4; i++) out[4 + i] = type.charCodeAt(i);
+    out.set(data, 8);
+    return out;
+  };
+  const ihdr = new Uint8Array(13);
+  const v = new DataView(ihdr.buffer);
+  v.setUint32(0, size);
+  v.setUint32(4, size);
+  ihdr[8] = 8; // bitDepth
+  ihdr[9] = 2; // RGB
+  const parts = [new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]), chunk('IHDR', ihdr), chunk('IDAT', idat), chunk('IEND', new Uint8Array(0))];
+  const total = parts.reduce((s, p) => s + p.length, 0);
+  const png = new Uint8Array(total);
+  let pos = 0;
+  for (const p of parts) {
+    png.set(p, pos);
+    pos += p.length;
+  }
+  return png;
+};
 
 describe('selectDemZoom', () => {
   it('UIの上限である半径10kmまでは日本全域で最大ズーム(z14)を選ぶ', () => {
@@ -198,44 +244,6 @@ describe('visibilityToPolygons', () => {
 });
 
 describe('decodeDemTile', () => {
-  /** 全ピクセル同一RGBの256x256 PNGを組み立てる */
-  const buildUniformPng = (r: number, g: number, b: number): Uint8Array => {
-    const size = 256;
-    const stride = size * 3;
-    const raw = new Uint8Array(size * (stride + 1));
-    for (let row = 0; row < size; row++) {
-      const offset = row * (stride + 1) + 1;
-      for (let col = 0; col < size; col++) {
-        raw[offset + col * 3] = r;
-        raw[offset + col * 3 + 1] = g;
-        raw[offset + col * 3 + 2] = b;
-      }
-    }
-    const idat = deflate(raw);
-    const chunk = (type: string, data: Uint8Array) => {
-      const out = new Uint8Array(12 + data.length);
-      new DataView(out.buffer).setUint32(0, data.length);
-      for (let i = 0; i < 4; i++) out[4 + i] = type.charCodeAt(i);
-      out.set(data, 8);
-      return out;
-    };
-    const ihdr = new Uint8Array(13);
-    const v = new DataView(ihdr.buffer);
-    v.setUint32(0, size);
-    v.setUint32(4, size);
-    ihdr[8] = 8; // bitDepth
-    ihdr[9] = 2; // RGB
-    const parts = [new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]), chunk('IHDR', ihdr), chunk('IDAT', idat), chunk('IEND', new Uint8Array(0))];
-    const total = parts.reduce((s, p) => s + p.length, 0);
-    const png = new Uint8Array(total);
-    let pos = 0;
-    for (const p of parts) {
-      png.set(p, pos);
-      pos += p.length;
-    }
-    return png;
-  };
-
   it('GSI方式をデコードできる（100m = x:10000, 0.01m単位）', () => {
     // x = 2^16*R + 2^8*G + B = 10000 → R=0, G=39, B=16
     const elev = decodeDemTile(buildUniformPng(0, 39, 16).buffer as ArrayBuffer, 'gsi');
@@ -292,5 +300,47 @@ describe('fetchDemGrid', () => {
     const loader = jest.fn(async () => null);
     const grid = await fetchDemGrid({ latitude: 35.0, longitude: 138.0 }, 1000, loader);
     expect(grid).toBeNull();
+  });
+});
+
+describe('getDemElevation（オフラインダウンロード済みタイルの参照）', () => {
+  const mockLoadDownloaded = loadDownloadedDemTile as jest.Mock;
+  const mockLoadPng = loadDemTilePng as jest.Mock;
+
+  beforeEach(() => {
+    clearDemTileCache();
+    jest.clearAllMocks();
+    mockLoadDownloaded.mockResolvedValue({ kind: 'missing' });
+    mockLoadPng.mockResolvedValue(null);
+  });
+
+  it('ダウンロード済みGSIタイルがあればネットワークへ行かない', async () => {
+    mockLoadDownloaded.mockImplementation(async (source: string) =>
+      source === 'gsi'
+        ? { kind: 'data', bytes: buildUniformPng(0, 39, 16).buffer as ArrayBuffer } // 100m
+        : { kind: 'missing' }
+    );
+    const elev = await getDemElevation(35.0, 138.0);
+    expect(elev).toBeCloseTo(100);
+    expect(mockLoadPng).not.toHaveBeenCalled();
+  });
+
+  it('GSIが確定404マーカー(noData)ならterrariumのダウンロード済みタイルへフォールバックする', async () => {
+    // オフラインでダウンロード済みの海・国外タイル相当
+    mockLoadDownloaded.mockImplementation(async (source: string) =>
+      source === 'gsi'
+        ? { kind: 'noData' }
+        : { kind: 'data', bytes: buildUniformPng(131, 232, 0).buffer as ArrayBuffer } // 1000m
+    );
+    const elev = await getDemElevation(35.0, 138.0);
+    expect(elev).toBeCloseTo(1000);
+    expect(mockLoadPng).not.toHaveBeenCalled();
+  });
+
+  it('未ダウンロード(missing)なら従来どおりloadDemTilePng（キャッシュ→ネットワーク）へ行く', async () => {
+    mockLoadPng.mockResolvedValue(buildUniformPng(0, 39, 16).buffer as ArrayBuffer);
+    const elev = await getDemElevation(35.0, 138.0);
+    expect(elev).toBeCloseTo(100);
+    expect(mockLoadPng).toHaveBeenCalled();
   });
 });

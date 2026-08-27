@@ -4,6 +4,7 @@ import { CheckBox } from '../molecules/CheckBox';
 import { TileManagementContext } from '../../contexts/TileManagement';
 import { Pressable } from '../atoms/Pressable';
 import { COLOR } from '../../constants/AppConstants';
+import { DEM_VIEWSHED_MAP_ID } from '../../constants/DemSources';
 import { t } from '../../i18n/config';
 
 interface Props {
@@ -47,7 +48,8 @@ export const HomeTileMapSelector = React.memo((props: Props) => {
     if (isAllMapsSelected) {
       // 初めて個別選択する場合
       toggleTileMapSelection(tileMapId);
-      setSelectedDisplayTileMapId(tileMapId);
+      // 可視領域用DEM（疑似地図）は表示地図にはなれない
+      setSelectedDisplayTileMapId(tileMapId === DEM_VIEWSHED_MAP_ID ? null : tileMapId);
     } else {
       // すでに個別選択がある場合
       toggleTileMapSelection(tileMapId);
@@ -56,13 +58,15 @@ export const HomeTileMapSelector = React.memo((props: Props) => {
       const newSelectedIds = selectedTileMapIds.includes(tileMapId)
         ? selectedTileMapIds.filter((id) => id !== tileMapId)
         : [...selectedTileMapIds, tileMapId];
+      // 表示地図の候補から疑似地図を除く
+      const displayCandidateIds = newSelectedIds.filter((id) => id !== DEM_VIEWSHED_MAP_ID);
 
-      if (newSelectedIds.length === 0) {
+      if (displayCandidateIds.length === 0) {
         setSelectedDisplayTileMapId(null);
-      } else if (newSelectedIds.length === 1) {
-        setSelectedDisplayTileMapId(newSelectedIds[0]);
-      } else if (selectedDisplayTileMapId && !newSelectedIds.includes(selectedDisplayTileMapId)) {
-        setSelectedDisplayTileMapId(newSelectedIds[0]);
+      } else if (displayCandidateIds.length === 1) {
+        setSelectedDisplayTileMapId(displayCandidateIds[0]);
+      } else if (selectedDisplayTileMapId && !displayCandidateIds.includes(selectedDisplayTileMapId)) {
+        setSelectedDisplayTileMapId(displayCandidateIds[0]);
       }
     }
   };
@@ -100,6 +104,17 @@ export const HomeTileMapSelector = React.memo((props: Props) => {
               numberOfLines={2}
             />
           ))}
+          {/* 可視領域用DEM。地図一覧には出さない内部専用のダウンロードターゲット */}
+          <CheckBox
+            key={DEM_VIEWSHED_MAP_ID}
+            label={t('Home.download.demViewshed')}
+            checked={isMapSelected(DEM_VIEWSHED_MAP_ID)}
+            onCheck={() => handleMapSelect(DEM_VIEWSHED_MAP_ID)}
+            labelAlign="row"
+            labelSize={16}
+            width={280}
+            numberOfLines={2}
+          />
         </ScrollView>
         <View style={styles.buttonContainer}>
           <Pressable style={styles.modalOKCancelButton} onPress={onCancel}>

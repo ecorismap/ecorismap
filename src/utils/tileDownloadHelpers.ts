@@ -1,15 +1,19 @@
 import * as FileSystem from 'expo-file-system/legacy';
 import { TileMapType, TileRegionType } from '../types';
 import { TILE_FOLDER } from '../constants/AppConstants';
+import { DEM_DOWNLOAD_MAX_ZOOM, DEM_DOWNLOAD_MIN_ZOOM, DEM_VIEWSHED_MAP_ID } from '../constants/DemSources';
 import { getExt } from './General';
 import { isDemProtocolUrl } from './terrainShading';
 import { lonToTileX, latToTileY } from './Tile';
 
-// hillshadeはrelief://（陰影段彩）も含む。どちらも生のDEMタイルを保存する点で同じ扱い
-export type TileType = 'pbf' | 'pmtiles' | 'hillshade' | 'png';
+// hillshadeはrelief://（陰影段彩）も含む。どちらも生のDEMタイルを保存する点で同じ扱い。
+// demは可視領域用の疑似地図（GSI→terrariumフォールバック保存、demTileDownload.ts）
+export type TileType = 'pbf' | 'pmtiles' | 'hillshade' | 'png' | 'dem';
 
 export const getTileType = (tileMap: TileMapType): TileType =>
-  getExt(tileMap.url) === 'pbf'
+  tileMap.id === DEM_VIEWSHED_MAP_ID
+    ? 'dem'
+    : getExt(tileMap.url) === 'pbf'
     ? 'pbf'
     : getExt(tileMap.url) === 'pmtiles' || tileMap.url.startsWith('pmtiles://')
     ? 'pmtiles'
@@ -18,6 +22,8 @@ export const getTileType = (tileMap: TileMapType): TileType =>
     : 'png';
 
 export const getZoomRange = (tileType: TileType, tileMap: TileMapType, zoom: number) => {
+  // 可視領域の計算が使うのはselectDemZoomの返域(z8-14)のみなのでz0-7は取らない
+  if (tileType === 'dem') return { minZoom: DEM_DOWNLOAD_MIN_ZOOM, maxZoom: DEM_DOWNLOAD_MAX_ZOOM };
   const minZoom = tileType === 'png' || tileType === 'hillshade' ? 0 : zoom;
   const maxZoom =
     tileType === 'png' || tileType === 'hillshade' || !tileMap.isVector ? Math.min(tileMap.overzoomThreshold, 16) : 18;

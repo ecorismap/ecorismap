@@ -239,6 +239,7 @@
       "selectAll": "すべて選択",
       "allMaps": "すべての地図",
       "mapsSelected": "個の地図",
+      "demViewshed": "標高タイル（可視領域用）",
       "downloading": "ダウンロード中",
       "stop": "停止"
     },
