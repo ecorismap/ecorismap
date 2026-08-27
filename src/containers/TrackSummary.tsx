@@ -1,17 +1,21 @@
 import React, { useCallback, useContext, useEffect, useMemo } from 'react';
-import { useSelector } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import TrackSummary from '../components/pages/TrackSummary';
 import { TrackSummaryContext } from '../contexts/TrackSummary';
 import { TrackFocusContext } from '../contexts/TrackFocus';
+import { TrackPhotoContext } from '../contexts/TrackPhoto';
 import { useBottomSheetNavigation, useBottomSheetRoute } from '../contexts/BottomSheetNavigationContext';
 import { RootState } from '../store';
 import { LineRecordType } from '../types';
 import { calcTrackStatistics, buildElevationProfile, findNearestProfileIndex } from '../utils/trackStatistics';
+import { useTrackPhotos } from '../hooks/useTrackPhotos';
+import { editSettingsAction } from '../modules/settings';
 
 export default function TrackSummaryContainers() {
   const { goBack, canGoBack, closeBottomSheet } = useBottomSheetNavigation();
   const { params } = useBottomSheetRoute<'TrackSummary'>();
   const dataSet = useSelector((state: RootState) => state.dataSet);
+  const dispatch = useDispatch();
 
   const record = useMemo(() => {
     if (params === undefined) return undefined;
@@ -41,6 +45,25 @@ export default function TrackSummaryContainers() {
     return () => setTrackFocusPoint(null);
   }, [initialFocusLatLon, profile, setTrackFocusPoint]);
 
+  // 軌跡の記録時間帯で端末ライブラリの写真を照合し、地図側のマーカーへContext経由で渡す。
+  // 画面を離れたら消す（TrackFocusと同じライフサイクル）
+  const isTrackPhotoVisible = useSelector((state: RootState) => state.settings.isTrackPhotoVisible !== false);
+  const { trackPhotos, isLimitedAccess, presentLimitedPicker } = useTrackPhotos(record?.coords, isTrackPhotoVisible);
+  const { setTrackPhotos, setSelectedPhoto } = useContext(TrackPhotoContext);
+  useEffect(() => {
+    setTrackPhotos(trackPhotos);
+  }, [trackPhotos, setTrackPhotos]);
+  useEffect(() => {
+    return () => {
+      setTrackPhotos([]);
+      setSelectedPhoto(null);
+    };
+  }, [setTrackPhotos, setSelectedPhoto]);
+
+  const toggleTrackPhotoVisible = useCallback(() => {
+    dispatch(editSettingsAction({ isTrackPhotoVisible: !isTrackPhotoVisible }));
+  }, [dispatch, isTrackPhotoVisible]);
+
   // 両導線とも地図（Home）から開くため、戻る＝シートを閉じて地図に戻る
   const gotoBack = useCallback(() => {
     closeBottomSheet();
@@ -54,6 +77,11 @@ export default function TrackSummaryContainers() {
         statistics,
         profile,
         gotoBack,
+        isTrackPhotoVisible,
+        toggleTrackPhotoVisible,
+        trackPhotoCount: trackPhotos.length,
+        isLimitedAccess,
+        presentLimitedPicker,
       }}
     >
       <TrackSummary />

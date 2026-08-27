@@ -51,6 +51,7 @@ export const settingsInitialState: SettingsType = {
   addLocationPerLayer: {},
   lockLocationPerLayer: {},
   dataFilterPerLayer: {},
+  isTrackPhotoVisible: true,
 };
 
 type SettingsEditType = Partial<SettingsType>;

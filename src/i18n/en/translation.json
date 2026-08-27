@@ -1148,9 +1148,12 @@
       "descent": "Total Descent",
       "maxAltitude": "Max Altitude",
       "minAltitude": "Min Altitude",
-      "elevationProfile": "Elevation Profile"
+      "elevationProfile": "Elevation Profile",
+      "photos": "Photos"
     },
     "noAltitudeData": "No altitude data",
-    "notFound": "Track data not found"
+    "notFound": "Track data not found",
+    "limitedAccess": "Access is limited to selected photos",
+    "selectMorePhotos": "Select more photos"
   }
 }

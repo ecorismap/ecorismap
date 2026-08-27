@@ -1148,9 +1148,12 @@
       "descent": "累積下降",
       "maxAltitude": "最高標高",
       "minAltitude": "最低標高",
-      "elevationProfile": "標高グラフ"
+      "elevationProfile": "標高グラフ",
+      "photos": "写真"
     },
     "noAltitudeData": "標高データがありません",
-    "notFound": "軌跡データが見つかりません"
+    "notFound": "軌跡データが見つかりません",
+    "limitedAccess": "一部の写真のみアクセスが許可されています",
+    "selectMorePhotos": "写真を追加選択"
   }
 }
