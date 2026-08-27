@@ -62,7 +62,7 @@
     "minutes": "分",
     "second": "秒",
     "point": "ポイント",
-    "track": "トラック",
+    "track": "軌跡",
     "viewshed": "可視領域",
     "viewshedCircle": "可視領域(範囲円)",
     "viewshedCenter": "可視領域(観測点)",
@@ -192,7 +192,7 @@
       "splitLine": "ラインを分割しますか？",
       "drag": "位置を変更しますか?",
       "discard": "変更を破棄しますか？",
-      "track": "トラックの記録を終了しますか？",
+      "track": "軌跡の記録を終了しますか？",
       "discardLogout": "編集中のプロジェクトがあります。破棄してログアウトしますか？端末の暗号化キーも削除されるため、次回ログイン時に暗号化キーの入力が必要になります。",
       "logout": "ログアウトしますか？現在のデータは破棄されます。端末の暗号化キーも削除されるため、次回ログイン時に暗号化キーの入力が必要になります。",
       "logoutWithGoogle": "ログアウトしますか？現在のデータは破棄され、Googleアカウントとの接続も解除されます。端末の暗号化キーも削除されるため、次回ログイン時に暗号化キーの入力が必要になります。",
@@ -203,7 +203,7 @@
       "reOpenProject": "プロジェクトを開きますか？保存していない現在のプロジェクトのデータは破棄されます。",
       "download": "更新されたデータを取得しますか？",
       "upload": "データを送信しますか？",
-      "track_start": "トラックの記録を開始しますか？",
+      "track_start": "軌跡の記録を開始しますか？",
       "downloadAllUserData": "管理者として他のメンバーのプライベートデータもダウンロードしますか？",
       "addLocationPoint": "現在地にポイントを追加しますか？",
       "discardEditPosition": "位置の変更を破棄しますか？",
@@ -212,12 +212,12 @@
     "alert": {
       "gps": "GPSをオンにしてください",
       "gpsWeb": "Web版では使用できません",
-      "trackWeb": "Web版ではトラックログは使用できません",
+      "trackWeb": "Web版では軌跡の記録は使用できません",
       "download": "データを取得しました。",
       "upload": "データをアップロードしました。",
       "sync": "現在地を共有します。",
       "saveProject": "プロジェクトの設定を変更しました",
-      "gpsWithTrack": "GPSをオフにするにはトラックの記録を終了してください。",
+      "gpsWithTrack": "GPSをオフにするには軌跡の記録を終了してください。",
       "discardChanges": "データを編集中です。先に保存してください。",
       "termsOfuse": "同意しない場合は、利用を中止してください。",
       "individualColor": "レイヤスタイルのカラータイプを[個別]に変更しました。",
@@ -658,7 +658,7 @@
     },
     "home_btn": {
       "gps": "GPSをオンにします。もう一度押すと、GPSのオフ、現在地の追従、ジャンプに切り替わります。",
-      "track": "トラックを記録します。"
+      "track": "軌跡を記録します。"
     },
     "layers_btn": {
       "import": "GeoJSON、GPX、KML、KMZファイルをインポートします。"
@@ -978,7 +978,7 @@
       "invalidPoint": "ポイントが不正なため保存できません。",
       "encryptKeyFailed": "暗号化パスワードを確認してください",
       "cannotInRunningProject": "プロジェクトを開いている時はできません",
-      "saveTracking": "保存されていないトラックログがあります。保存しますか？",
+      "saveTracking": "保存されていない軌跡データがあります。保存しますか？",
       "failLoadFile": "ファイルの読み込みに失敗しました。座標系が緯度経度になっているか確認してください。",
       "cannotOpenDB": "データベースを開けません。",
       "failUploadDictionary": "辞書のアップロードに失敗しました",
@@ -992,7 +992,7 @@
       "completeDownloadMaps": "{{total}}個の地図のダウンロードが完了しました",
       "mapsWithError": "エラーが発生した地図:",
       "excludedInvalidLocation": "{{invalidCount}}個の無効な位置データを除外しました。",
-      "insufficientTrackLog": "有効なトラックデータが不足しています",
+      "insufficientTrackLog": "有効な軌跡データが不足しています",
       "failUpdateLoginPassword": "パスワードの変更に失敗しました。\n変更前のパスワードは正しいですか？",
       "wrongPassword": "パスワードが違います。",
       "googleDriveReauth": "Google Driveへの接続が期限切れです。再接続してください。",
@@ -1003,7 +1003,7 @@
       "failCalcViewshed": "可視領域を計算できませんでした。"
     },
     "notification": {
-      "inTracking": "トラックの記録中。終了するには、トラックのボタンを押してください。",
+      "inTracking": "軌跡の記録中。終了するには、軌跡ボタンを押してください。",
       "gpsOn": "GPS位置情報取得中"
     },
     "pdf": {
@@ -1011,7 +1011,7 @@
     },
     "progress": {
       "downloadingMap": "地図 {{current}}/{{total}}: {{name}} {{progress}}%",
-      "mergingTrackLog": "トラックデータを結合中...",
+      "mergingTrackLog": "軌跡データを結合中...",
       "validatingTrackLog": "データを検証中...",
       "savingTrackLog": "データを保存中..."
     },
