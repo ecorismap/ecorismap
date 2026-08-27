@@ -11,6 +11,8 @@ import { Pressable } from '../atoms/Pressable';
 import { HomeButtons } from '../organisms/HomeButtons';
 import { CurrentMarker } from '../organisms/HomeCurrentMarker';
 import { HomeTrackFocusMarker } from '../organisms/HomeTrackFocusMarker';
+import { HomeMeasure } from '../organisms/HomeMeasure';
+import { HomeMeasureBanner } from '../organisms/HomeMeasureBanner';
 import { HomeSeaLabels } from '../organisms/HomeSeaLabels';
 import { Point } from '../organisms/HomePoint';
 import { Line } from '../organisms/HomeLine';
@@ -538,6 +540,7 @@ export default function HomeScreen() {
           <MapMemoView />
           <HomePopup />
           <HomePoiPopup />
+          <HomeMeasureBanner />
           <HomeTrackPointPopup />
           {isDrawLineVisible && <SvgView />}
 
@@ -584,6 +587,8 @@ export default function HomeScreen() {
             )}
             {/************** Track Focus Marker (軌跡サマリー連動) ****************** */}
             <HomeTrackFocusMarker />
+            {/************** Measure (二点間距離測定) ****************** */}
+            <HomeMeasure />
             {/* 表示を正しく更新するには順番とzIndexが重要。
                 Android(Google Maps)は宣言順が後の要素を上に描画するため、タイル地図を
                 フィーチャ(Point/Line/Polygon)より先に宣言してフィーチャを上に表示する。

@@ -4,6 +4,7 @@ import {
   toLocationType,
   getLineLength,
   haversineKm,
+  formatDistanceKm,
   checkLocations,
   isLowAccuracy,
   splitTrackByAccuracy,
@@ -165,6 +166,19 @@ describe('haversineKm', () => {
     const b: LocationType = { latitude: 35.001, longitude: 135 };
     const result = haversineKm(a, b);
     expect(result).toBeCloseTo(0.111, 2);
+  });
+});
+
+describe('formatDistanceKm', () => {
+  it('1km未満はm表示（四捨五入）', () => {
+    expect(formatDistanceKm(0)).toBe('0 m');
+    expect(formatDistanceKm(0.5)).toBe('500 m');
+    expect(formatDistanceKm(0.9994)).toBe('999 m');
+  });
+
+  it('1km以上は小数2桁のkm表示', () => {
+    expect(formatDistanceKm(1)).toBe('1.00 km');
+    expect(formatDistanceKm(12.345)).toBe('12.35 km');
   });
 });
 

@@ -57,6 +57,11 @@ export const haversineKm = (a: LocationType, b: LocationType): number => {
   return 2 * R * Math.asin(Math.min(1, Math.sqrt(h)));
 };
 
+// 距離(km)を表示用文字列に整形する（1km未満はm表示）
+export const formatDistanceKm = (km: number): string => {
+  return km < 1 ? `${Math.round(km * 1000)} m` : `${km.toFixed(2)} km`;
+};
+
 // キャッシュを破棄する。次回アクセス時にMMKVから再ハイドレートされる。
 export const resetTrackLogCache = (): void => {
   cache = null;

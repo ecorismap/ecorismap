@@ -941,7 +941,12 @@
       "elevation": "Elevation {{elevation}} m",
       "elevationUnavailable": "Elevation unavailable",
       "copied": "Copied",
-      "createViewshed": "Create Viewshed"
+      "createViewshed": "Create Viewshed",
+      "measureDistance": "Measure Distance"
+    },
+    "measure": {
+      "tapToSetPoint": "Tap the map to set a point",
+      "distance": "Distance {{distance}}"
     },
     "trackPoint": {
       "title": "Track Point",

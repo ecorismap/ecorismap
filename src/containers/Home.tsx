@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react';
+import React, { useContext, useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import {
   AppState as RNAppState,
   AppStateStatus,
@@ -124,6 +124,7 @@ import { useRepository } from '../hooks/useRepository';
 import { ConflictResolverModal } from '../components/organisms/HomeModalConflictResolver';
 import { selectNonDeletedDataSet } from '../modules/selectors';
 import { TrackFocusProvider } from '../contexts/TrackFocus';
+import { MeasureContext, MeasureProvider } from '../contexts/Measure';
 import { useLayers } from '../hooks/useLayers';
 
 // 内部コンポーネント - BottomSheetNavigationProvider の内側で使用
@@ -143,6 +144,8 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
   const toggleGPSRef = useRef<((state: LocationStateType) => Promise<void>) | null>(null);
 
   const dispatch = useDispatch();
+  // 二点間距離測定の状態（長押しポップアップから開始、タップでB点設定）
+  const { isMeasuring, setMeasureB, endMeasure } = useContext(MeasureContext);
   const tileMaps = useSelector((state: RootState) => state.tileMaps);
   const user = useSelector((state: RootState) => state.user);
   const tileRegions = useSelector((state: RootState) => state.settings.tileRegions, shallowEqual);
@@ -1648,6 +1651,13 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     ]
   );
 
+  // 描画・メモツールの起動や位置編集モードへの遷移時は距離測定を自動終了する
+  useEffect(() => {
+    if (isMeasuring && (featureButton !== 'NONE' || currentMapMemoTool !== 'NONE' || route.params?.mode === 'editPosition')) {
+      endMeasure();
+    }
+  }, [isMeasuring, featureButton, currentMapMemoTool, route.params?.mode, endMeasure]);
+
   const handlePanResponderGrant = useCallback(
     async (event: GestureResponderEvent) => {
       //@ts-ignore
@@ -1671,6 +1681,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       // ドローツールが開いていても、特定のツールが選択されていない場合は長押しを有効にする
       // editPositionモード中は長押しを無効にする
       if (
+        !isMeasuring &&
         (featureButton === 'NONE' || currentDrawTool === 'NONE') &&
         currentMapMemoTool === 'NONE' &&
         featureButton !== 'MEMO' &&
@@ -1771,6 +1782,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       mapSize,
       setMapLocationInfo,
       findNearestVisiblePoint,
+      isMeasuring,
     ]
   );
   const handlePanResponderMove = useCallback(
@@ -1943,17 +1955,25 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       } else if (currentMapMemoTool !== 'NONE') {
         handleReleaseMapMemo(event);
       } else if (!isMapDragging.current && !freehandFinishedRef.current && !longPressFiredRef.current) {
-        // 地図をドラッグしておらず、長押しポップアップを表示していない場合のみ情報取得
-        // まずgetInfoOfFeatureを実行し、何も見つからなければgetInfoOfMapを実行
-        const noFeatureFound = await getInfoOfFeature(event);
-        if (noFeatureFound) {
-          // フィーチャーが見つからなかった場合、かつ長押しポップアップが表示されていない場合のみgetInfoOfMapを実行
-          if (!mapLocationInfo) {
-            const xy = pXY;
-            const latLonArray = xyArrayToLatLonObjects([xy], mapRegion, mapSize, mapViewRef.current);
-            if (latLonArray && latLonArray.length > 0) {
-              const latlon: Position = [latLonArray[0].longitude, latLonArray[0].latitude];
-              await getInfoOfMap(latlon, xy);
+        if (isMeasuring) {
+          // 測定モード中はタップ位置をB点に設定（再タップで置換）。情報取得ポップアップは抑制する
+          const latLonArray = xyArrayToLatLonObjects([pXY], mapRegion, mapSize, mapViewRef.current);
+          if (latLonArray && latLonArray.length > 0) {
+            setMeasureB({ latitude: latLonArray[0].latitude, longitude: latLonArray[0].longitude });
+          }
+        } else {
+          // 地図をドラッグしておらず、長押しポップアップを表示していない場合のみ情報取得
+          // まずgetInfoOfFeatureを実行し、何も見つからなければgetInfoOfMapを実行
+          const noFeatureFound = await getInfoOfFeature(event);
+          if (noFeatureFound) {
+            // フィーチャーが見つからなかった場合、かつ長押しポップアップが表示されていない場合のみgetInfoOfMapを実行
+            if (!mapLocationInfo) {
+              const xy = pXY;
+              const latLonArray = xyArrayToLatLonObjects([xy], mapRegion, mapSize, mapViewRef.current);
+              if (latLonArray && latLonArray.length > 0) {
+                const latlon: Position = [latLonArray[0].longitude, latLonArray[0].latitude];
+                await getInfoOfMap(latlon, xy);
+              }
             }
           }
         }
@@ -1991,6 +2011,8 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       setDrawTool,
       setIsPinch,
       showDrawLine,
+      isMeasuring,
+      setMeasureB,
     ]
   );
 
@@ -2933,10 +2955,12 @@ export default function HomeContainers(props: Props_Home) {
   );
 
   return (
-    <TrackFocusProvider>
-      <BottomSheetNavigationProvider onRouteChange={setCurrentSplitRoute} onNavigateToHome={handleNavigateToHome}>
-        <HomeContainersInner {...props} />
-      </BottomSheetNavigationProvider>
-    </TrackFocusProvider>
+    <MeasureProvider>
+      <TrackFocusProvider>
+        <BottomSheetNavigationProvider onRouteChange={setCurrentSplitRoute} onNavigateToHome={handleNavigateToHome}>
+          <HomeContainersInner {...props} />
+        </BottomSheetNavigationProvider>
+      </TrackFocusProvider>
+    </MeasureProvider>
   );
 }

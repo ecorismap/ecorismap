@@ -4,10 +4,11 @@ import { Pressable } from '../atoms/Pressable';
 import { MapViewContext } from '../../contexts/MapView';
 import { COLOR } from '../../constants/AppConstants';
 import { latLonToXY } from '../../utils/Coords';
-import { haversineKm } from '../../utils/Location';
+import { haversineKm, formatDistanceKm } from '../../utils/Location';
 import { getDemElevation } from '../../utils/viewshed';
 import { copyToClipboard } from '../../utils/Clipboard';
 import { useWindow } from '../../hooks/useWindow';
+import { MeasureContext } from '../../contexts/Measure';
 import { t } from '../../i18n/config';
 
 export const HomePoiPopup = React.memo(() => {
@@ -21,6 +22,7 @@ export const HomePoiPopup = React.memo(() => {
     gpsState,
     pressCreateViewshed,
   } = useContext(MapViewContext);
+  const { startMeasure } = useContext(MeasureContext);
   const { mapRegion, mapSize } = useWindow();
   const WIDTH = 150;
 
@@ -32,7 +34,7 @@ export const HomePoiPopup = React.memo(() => {
   const distanceText = useMemo(() => {
     if (isPOI || !locationInfo || gpsState === 'off' || !currentLocation) return null;
     const km = haversineKm(currentLocation, locationInfo.coordinate);
-    const distance = km < 1 ? `${Math.round(km * 1000)} m` : `${km.toFixed(2)} km`;
+    const distance = formatDistanceKm(km);
     return t('Home.poi.distanceFromCurrentLocation', { distance });
   }, [isPOI, locationInfo, gpsState, currentLocation]);
 
@@ -84,7 +86,7 @@ export const HomePoiPopup = React.memo(() => {
     if (success) setCopied(true);
   }, [coordinateText]);
 
-  const HEIGHT = 40 + (distanceText ? 20 : 0) + 20 + (coordinateText ? 20 : 0) + (isPOI ? 0 : 30);
+  const HEIGHT = 40 + (distanceText ? 20 : 0) + 20 + (coordinateText ? 20 : 0) + (isPOI ? 0 : 60);
 
   // 長押し位置の可視領域作成ダイアログを開く（近くの既存ポイントがあればスナップ候補として渡す）
   const handleCreateViewshed = useCallback(() => {
@@ -95,6 +97,15 @@ export const HomePoiPopup = React.memo(() => {
     setMapLocationInfo(null);
     pressCreateViewshed(coordinate, snapPoint);
   }, [locationInfo, mapLocationInfo?.snapPoint, setPoiInfo, setMapLocationInfo, pressCreateViewshed]);
+
+  // 長押し位置をA点として距離測定モードを開始する
+  const handleMeasureDistance = useCallback(() => {
+    if (!locationInfo) return;
+    const coordinate = locationInfo.coordinate;
+    setPoiInfo(null);
+    setMapLocationInfo(null);
+    startMeasure(coordinate);
+  }, [locationInfo, setPoiInfo, setMapLocationInfo, startMeasure]);
 
   const openGoogleMaps = useCallback(() => {
     if (!locationInfo) return;
@@ -216,6 +227,19 @@ export const HomePoiPopup = React.memo(() => {
             >
               <Text style={{ color: COLOR.BLUE, fontSize: 14, fontWeight: 'bold' }}>
                 {t('Home.poi.createViewshed')}
+              </Text>
+            </Pressable>
+          )}
+          {!isPOI && (
+            <Pressable
+              onPress={handleMeasureDistance}
+              style={{
+                paddingHorizontal: 10,
+                paddingVertical: 6,
+              }}
+            >
+              <Text style={{ color: COLOR.BLUE, fontSize: 14, fontWeight: 'bold' }}>
+                {t('Home.poi.measureDistance')}
               </Text>
             </Pressable>
           )}
