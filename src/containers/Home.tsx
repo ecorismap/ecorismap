@@ -124,6 +124,7 @@ import { useRepository } from '../hooks/useRepository';
 import { ConflictResolverModal } from '../components/organisms/HomeModalConflictResolver';
 import { selectNonDeletedDataSet } from '../modules/selectors';
 import { TrackFocusProvider } from '../contexts/TrackFocus';
+import { TrackPhotoProvider, TrackPhotoContext } from '../contexts/TrackPhoto';
 import { MeasureContext, MeasureProvider } from '../contexts/Measure';
 import { useLayers } from '../hooks/useLayers';
 
@@ -146,6 +147,8 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
   const dispatch = useDispatch();
   // 二点間距離測定の状態（長押しポップアップから開始、タップでB点設定）
   const { isMeasuring, setMeasureB, endMeasure } = useContext(MeasureContext);
+  // 軌跡上の写真マーカー（タップ判定はMarkerのonPressではなくここの画面タップヒットテストで行う）
+  const { trackPhotos, setSelectedPhoto } = useContext(TrackPhotoContext);
   const tileMaps = useSelector((state: RootState) => state.tileMaps);
   const user = useSelector((state: RootState) => state.user);
   const tileRegions = useSelector((state: RootState) => state.settings.tileRegions, shallowEqual);
@@ -1560,6 +1563,25 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       }
       setTrackPointInfo(null);
 
+      // 軌跡サマリー表示中の写真マーカーのタップ判定。最も近いマーカー（24px以内）を拡大表示する
+      if (Platform.OS !== 'web' && trackPhotos.length > 0) {
+        const pXY = getPXY(event);
+        let nearestPhoto = null as (typeof trackPhotos)[number] | null;
+        let nearestDist = 24;
+        for (const photo of trackPhotos) {
+          const [x, y] = latLonToXY([photo.longitude, photo.latitude], mapRegion, mapSize, mapViewRef.current);
+          const dist = Math.hypot(x - pXY[0], y - pXY[1]);
+          if (dist <= nearestDist) {
+            nearestDist = dist;
+            nearestPhoto = photo;
+          }
+        }
+        if (nearestPhoto !== null) {
+          setSelectedPhoto(nearestPhoto);
+          return false; // 写真を表示したので他のヒットテストは行わない
+        }
+      }
+
       const { layer, feature, recordSet, recordIndex } = selectSingleFeature(event);
 
       if (layer === undefined || feature === undefined || recordSet === undefined || recordIndex === undefined) {
@@ -1645,6 +1667,8 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       selectSingleFeature,
       unselectRecord,
       trackMetadata.totalPoints,
+      trackPhotos,
+      setSelectedPhoto,
       getPXY,
       mapRegion,
       mapSize,
@@ -2957,9 +2981,11 @@ export default function HomeContainers(props: Props_Home) {
   return (
     <MeasureProvider>
       <TrackFocusProvider>
-        <BottomSheetNavigationProvider onRouteChange={setCurrentSplitRoute} onNavigateToHome={handleNavigateToHome}>
-          <HomeContainersInner {...props} />
-        </BottomSheetNavigationProvider>
+        <TrackPhotoProvider>
+          <BottomSheetNavigationProvider onRouteChange={setCurrentSplitRoute} onNavigateToHome={handleNavigateToHome}>
+            <HomeContainersInner {...props} />
+          </BottomSheetNavigationProvider>
+        </TrackPhotoProvider>
       </TrackFocusProvider>
     </MeasureProvider>
   );

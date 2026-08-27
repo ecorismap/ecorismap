@@ -11,6 +11,8 @@ import { Pressable } from '../atoms/Pressable';
 import { HomeButtons } from '../organisms/HomeButtons';
 import { CurrentMarker } from '../organisms/HomeCurrentMarker';
 import { HomeTrackFocusMarker } from '../organisms/HomeTrackFocusMarker';
+import { HomeTrackPhotoMarkers } from '../organisms/HomeTrackPhotoMarkers';
+import { HomeTrackPhotoModal } from '../organisms/HomeTrackPhotoModal';
 import { HomeMeasure } from '../organisms/HomeMeasure';
 import { HomeMeasureBanner } from '../organisms/HomeMeasureBanner';
 import { HomeSeaLabels } from '../organisms/HomeSeaLabels';
@@ -542,6 +544,7 @@ export default function HomeScreen() {
           <HomePoiPopup />
           <HomeMeasureBanner />
           <HomeTrackPointPopup />
+          <HomeTrackPhotoModal />
           {isDrawLineVisible && <SvgView />}
 
           <MapView
@@ -587,6 +590,8 @@ export default function HomeScreen() {
             )}
             {/************** Track Focus Marker (軌跡サマリー連動) ****************** */}
             <HomeTrackFocusMarker />
+            {/************** Track Photos (軌跡上の写真、時刻照合) ****************** */}
+            <HomeTrackPhotoMarkers bounds={bounds} />
             {/************** Measure (二点間距離測定) ****************** */}
             <HomeMeasure />
             {/* 表示を正しく更新するには順番とzIndexが重要。

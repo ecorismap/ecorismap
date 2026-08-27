@@ -41,6 +41,18 @@ export interface LocationType {
   zoom?: number;
 }
 
+// 軌跡上に表示する写真（端末ライブラリを撮影時刻で照合した結果）
+export interface TrackPhotoType {
+  assetId: string;
+  timestamp: number; // 撮影時刻（ms）
+  latitude: number; // 時刻照合による補間位置
+  longitude: number;
+  thumbnail: string | null; // base64 data URI（生成失敗時はnull）
+  direction: number | null; // 真北基準の撮影方位（度）。EXIFになければnull
+  uri: string; // ph://（iOS）またはfile://（Android）
+  localUri?: string; // 拡大表示用のfile:// URI
+}
+
 export interface MemberLocationType {
   uid: string;
   icon: { photoURL: string | null; initial: string };
@@ -420,6 +432,8 @@ export interface SettingsType {
   lockLocationPerLayer?: { [layerId: string]: boolean };
   //データ一覧の絞り込み条件。解除するまで保持するため画面の再表示をまたいで残す（fieldNameが空なら全フィールド）
   dataFilterPerLayer?: { [layerId: string]: { text: string; fieldName: string } };
+  //軌跡上に端末ライブラリの写真を表示するか。既存ユーザーの永続化済みsettingsにはキーがないためoptional（未定義=ON）
+  isTrackPhotoVisible?: boolean;
 }
 
 export interface RegionType {

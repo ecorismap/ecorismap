@@ -17,6 +17,7 @@ export const MARKER_BAND = {
   MEMBER: 4,
   POLYGON_LABEL: 5,
   LINE_LABEL: 6, // ラベルは従来(zIndex=9999)どおり他マーカーより前面
+  TRACK_PHOTO: 7, // 軌跡上の写真サムネイル。地物・ラベルより前面
 } as const;
 
 // 選択中マーカーと現在地マーカーは全バンドより前面

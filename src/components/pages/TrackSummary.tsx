@@ -1,5 +1,5 @@
 import React, { useContext, useMemo } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, Platform, TouchableOpacity } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { COLOR } from '../../constants/AppConstants';
@@ -26,7 +26,17 @@ interface StatItem {
 }
 
 export default function TrackSummary() {
-  const { record, statistics, profile, gotoBack } = useContext(TrackSummaryContext);
+  const {
+    record,
+    statistics,
+    profile,
+    gotoBack,
+    isTrackPhotoVisible,
+    toggleTrackPhotoVisible,
+    trackPhotoCount,
+    isLimitedAccess,
+    presentLimitedPicker,
+  } = useContext(TrackSummaryContext);
 
   const timeRangeText = useMemo(() => {
     if (statistics === null || statistics.startTime === null || statistics.endTime === null) return null;
@@ -89,7 +99,29 @@ export default function TrackSummary() {
 
   return (
     <View style={{ flex: 1 }}>
-      <BottomSheetHeader title={t('TrackSummary.navigation.title')} showBackButton onBack={gotoBack} />
+      <BottomSheetHeader
+        title={t('TrackSummary.navigation.title')}
+        showBackButton
+        onBack={gotoBack}
+        rightComponent={
+          Platform.OS !== 'web' ? (
+            <TouchableOpacity
+              style={styles.photoToggle}
+              onPress={toggleTrackPhotoVisible}
+              accessibilityLabel={t('TrackSummary.label.photos')}
+            >
+              <MaterialCommunityIcons
+                name={isTrackPhotoVisible ? 'image-multiple' : 'image-off-outline'}
+                size={22}
+                color={isTrackPhotoVisible ? COLOR.BLACK : COLOR.GRAY3}
+              />
+              {isTrackPhotoVisible && trackPhotoCount > 0 && (
+                <Text style={styles.photoCount}>{trackPhotoCount}</Text>
+              )}
+            </TouchableOpacity>
+          ) : undefined
+        }
+      />
       {record === undefined || statistics === null ? (
         <View style={styles.emptyContainer}>
           <Text style={styles.emptyText}>{`${t('TrackSummary.notFound')}`}</Text>
@@ -103,6 +135,15 @@ export default function TrackSummary() {
             ) : (
               <View style={styles.noAltitudeContainer}>
                 <Text style={styles.emptyText}>{`${t('TrackSummary.noAltitudeData')}`}</Text>
+              </View>
+            )}
+            {Platform.OS !== 'web' && isTrackPhotoVisible && isLimitedAccess && (
+              <View style={styles.limitedRow}>
+                <MaterialCommunityIcons name="alert-circle-outline" size={16} color={COLOR.GRAY3} />
+                <Text style={styles.limitedText}>{t('TrackSummary.limitedAccess')}</Text>
+                <TouchableOpacity onPress={presentLimitedPicker}>
+                  <Text style={styles.limitedLink}>{t('TrackSummary.selectMorePhotos')}</Text>
+                </TouchableOpacity>
               </View>
             )}
             {timeRangeText !== null && (
@@ -173,6 +214,23 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     justifyContent: 'space-between',
   },
+  limitedLink: {
+    color: COLOR.BLUE,
+    fontSize: 12,
+    marginLeft: 8,
+    textDecorationLine: 'underline',
+  },
+  limitedRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginTop: 8,
+  },
+  limitedText: {
+    color: COLOR.GRAY3,
+    fontSize: 12,
+    marginLeft: 4,
+  },
   noAltitudeContainer: {
     alignItems: 'center',
     backgroundColor: COLOR.WHITE,
@@ -187,6 +245,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     marginBottom: 12,
     marginTop: 12,
+  },
+  photoCount: {
+    color: COLOR.BLACK,
+    fontSize: 12,
+    marginLeft: 3,
+  },
+  photoToggle: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    padding: 5,
   },
   timeText: {
     color: COLOR.GRAY4,
