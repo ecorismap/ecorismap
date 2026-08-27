@@ -994,7 +994,7 @@
       "googleDriveApiError": "Google Driveとの通信に失敗しました。",
       "googleDriveConnectFailed": "Googleアカウントに接続できませんでした。",
       "googleDriveScopeDenied": "Google ドライブへのアクセスが許可されませんでした。接続時の同意画面で「Google ドライブ」の項目にチェックを入れて続行してください。",
-      "failGetDem": "標高データを取得できませんでした。ネットワーク接続を確認してください。",
+      "failGetDem": "標高データを取得できませんでした。ネットワーク接続を確認してください。「標高タイル（可視領域用）」を事前にダウンロードしておくと、オフラインでも作成できます。",
       "failCalcViewshed": "可視領域を計算できませんでした。"
     },
     "notification": {

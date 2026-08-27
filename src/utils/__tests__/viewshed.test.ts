@@ -301,6 +301,22 @@ describe('fetchDemGrid', () => {
     const grid = await fetchDemGrid({ latitude: 35.0, longitude: 138.0 }, 1000, loader);
     expect(grid).toBeNull();
   });
+
+  it('通信エラー（undefined）のタイルが1枚でもあれば全体をnullにする', async () => {
+    // 欠損域を海面0m扱いのまま計算した誤ったポリゴンを黙って保存しないため
+    let count = 0;
+    const loader = jest.fn(async () => (count++ === 0 ? undefined : new Float32Array(256 * 256).fill(100)));
+    const grid = await fetchDemGrid({ latitude: 35.0, longitude: 138.0 }, 1000, loader);
+    expect(grid).toBeNull();
+  });
+
+  it('データなし（null）のタイルが混ざっても取得できたタイルでグリッドを組み立てる', async () => {
+    // 海上・提供範囲外の404は恒久的な欠損なので0m扱いで計算を続ける
+    let count = 0;
+    const loader = jest.fn(async () => (count++ === 0 ? null : new Float32Array(256 * 256).fill(100)));
+    const grid = await fetchDemGrid({ latitude: 35.0, longitude: 138.0 }, 1000, loader);
+    expect(grid).not.toBeNull();
+  });
 });
 
 describe('getDemElevation（オフラインダウンロード済みタイルの参照）', () => {
@@ -342,5 +358,22 @@ describe('getDemElevation（オフラインダウンロード済みタイルの�
     const elev = await getDemElevation(35.0, 138.0);
     expect(elev).toBeCloseTo(100);
     expect(mockLoadPng).toHaveBeenCalled();
+  });
+
+  it('ネットワークエラーは1回リトライし、成功すれば標高を返す', async () => {
+    mockLoadPng
+      .mockRejectedValueOnce(new Error('network error'))
+      .mockResolvedValueOnce(buildUniformPng(0, 39, 16).buffer as ArrayBuffer);
+    const elev = await getDemElevation(35.0, 138.0);
+    expect(elev).toBeCloseTo(100);
+    expect(mockLoadPng).toHaveBeenCalledTimes(2);
+  });
+
+  it('リトライしても通信エラーならnullを返す（terrariumへフォールバックしない）', async () => {
+    mockLoadPng.mockRejectedValue(new Error('network error'));
+    const elev = await getDemElevation(35.0, 138.0);
+    expect(elev).toBeNull();
+    // GSIの2回（初回＋リトライ）のみ。低解像度への静かなすり替えはしない
+    expect(mockLoadPng).toHaveBeenCalledTimes(2);
   });
 });
