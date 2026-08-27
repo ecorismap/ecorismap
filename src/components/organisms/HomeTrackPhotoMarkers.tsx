@@ -14,10 +14,12 @@ import { ViewportBounds, expandBounds, isPointInBounds } from '../../utils/Viewp
 // タップ判定はMarkerのonPressではなくcontainers/Home.tsxの画面タップヒットテストで行う
 // （native onPressはPanResponderと競合して取りこぼすため）
 
-const MARKER_SIZE = 56;
-const FAN_RADIUS = 26;
+const MARKER_SIZE = 64;
+const FAN_RADIUS = 30;
+const THUMBNAIL_SIZE = 36;
 const CENTER = MARKER_SIZE / 2;
-// 中心角60度の扇形（北向き）。回転はGのrotationで与える
+// 中心角60度の扇形（北向き）。回転はGのrotationで与える。
+// サムネイルは円形（半径18）なので、半径30の扇形の先端12px分がどの方向でも均等にはみ出して見える
 const FAN_PATH = `M${CENTER} ${CENTER} L${CENTER - FAN_RADIUS * Math.sin(Math.PI / 6)} ${
   CENTER - FAN_RADIUS * Math.cos(Math.PI / 6)
 } A${FAN_RADIUS} ${FAN_RADIUS} 0 0 1 ${CENTER + FAN_RADIUS * Math.sin(Math.PI / 6)} ${
@@ -43,7 +45,7 @@ const TrackPhotoMarker = React.memo(({ photo }: { photo: TrackPhotoType }) => {
         {photo.direction !== null && (
           <Svg width={MARKER_SIZE} height={MARKER_SIZE} style={StyleSheet.absoluteFill}>
             <G rotation={photo.direction} origin={`${CENTER}, ${CENTER}`}>
-              <Path d={FAN_PATH} fill={COLOR.ORANGE} fillOpacity={0.5} />
+              <Path d={FAN_PATH} fill={COLOR.ORANGE} fillOpacity={0.7} stroke={COLOR.WHITE} strokeWidth={1} strokeOpacity={0.8} />
             </G>
           </Svg>
         )}
@@ -51,7 +53,9 @@ const TrackPhotoMarker = React.memo(({ photo }: { photo: TrackPhotoType }) => {
           <Image
             source={{ uri: photo.thumbnail }}
             style={styles.thumbnail}
-            onLoadEnd={() => setTracksViewChanges(false)}
+            // Androidは画像読み込み直後にスナップショット化すると扇形がまだ描画されて
+            // いないことがあるため、少し待ってからfalseに落とす
+            onLoadEnd={() => setTimeout(() => setTracksViewChanges(false), 300)}
           />
         ) : (
           <View style={styles.placeholder}>
@@ -96,21 +100,24 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     width: MARKER_SIZE,
   },
+  // 円形にすることで扇形のはみ出し量がどの方向でも均等になる
   placeholder: {
     alignItems: 'center',
     backgroundColor: COLOR.WHITE,
     borderColor: COLOR.WHITE,
-    borderRadius: 4,
+    borderRadius: THUMBNAIL_SIZE / 2,
     borderWidth: 2,
-    height: 36,
+    height: THUMBNAIL_SIZE,
     justifyContent: 'center',
-    width: 36,
+    overflow: 'hidden',
+    width: THUMBNAIL_SIZE,
   },
   thumbnail: {
     borderColor: COLOR.WHITE,
-    borderRadius: 4,
+    borderRadius: THUMBNAIL_SIZE / 2,
     borderWidth: 2,
-    height: 36,
-    width: 36,
+    height: THUMBNAIL_SIZE,
+    overflow: 'hidden',
+    width: THUMBNAIL_SIZE,
   },
 });
