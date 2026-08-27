@@ -325,7 +325,12 @@
       "elevation": "標高 {{elevation}} m",
       "elevationUnavailable": "標高 取得できません",
       "copied": "コピーしました",
-      "createViewshed": "可視領域を作成"
+      "createViewshed": "可視領域を作成",
+      "measureDistance": "距離を測定"
+    },
+    "measure": {
+      "tapToSetPoint": "地図をタップして地点を選択",
+      "distance": "距離 {{distance}}"
     },
     "trackPoint": {
       "title": "軌跡ポイント",

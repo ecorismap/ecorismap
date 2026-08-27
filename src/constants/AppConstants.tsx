@@ -68,6 +68,7 @@ export const COLOR = {
   MODAL_OVERLAY: 'rgba(0, 0, 0, 0.4)',
   PALEBLUE: '#EAF3FF',
   SAVING_OVERLAY: 'rgba(0, 0, 0, 0.5)',
+  BANNER_BACKGROUND: 'rgba(0, 0, 0, 0.6)',
   PROGRESS_BAR_BG: '#E0E0E0',
   PROGRESS_BAR_FILL: '#0066CC',
   TEXT_DARK: '#333',

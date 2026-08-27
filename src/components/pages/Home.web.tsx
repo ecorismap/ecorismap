@@ -65,6 +65,8 @@ import { AppStateContext } from '../../contexts/AppState';
 import { useBottomSheetNavigation } from '../../contexts/BottomSheetNavigationContext';
 import { MemberMarker } from '../organisms/HomeMemberMarker';
 import { HomeTrackFocusMarker } from '../organisms/HomeTrackFocusMarker';
+import { HomeMeasure } from '../organisms/HomeMeasure';
+import { HomeMeasureBanner } from '../organisms/HomeMeasureBanner';
 import { useFeatureSelectionWeb } from '../../hooks/useFeatureSelectionWeb';
 import { isPointRecordType } from '../../utils/Data';
 import * as pmtiles from 'pmtiles';
@@ -928,6 +930,7 @@ export default function HomeScreen() {
           <MapMemoView />
           <HomePopup />
           <HomePoiPopup />
+          <HomeMeasureBanner />
           <HomeTrackPointPopup />
           {isDrawLineVisible && <SvgView />}
 
@@ -988,6 +991,8 @@ export default function HomeScreen() {
 
                 {/************** Track Focus Marker (軌跡サマリー連動) ****************** */}
                 <HomeTrackFocusMarker />
+                {/************** Measure (二点間距離測定) ****************** */}
+                <HomeMeasure />
                 {/************** Point Line Polygon ****************** */}
                 {pointDataSet.map((d) => {
                   const layer = layers.find((v) => v.id === d.layerId);
