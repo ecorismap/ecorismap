@@ -1,68 +1,140 @@
-import React, { useContext, useMemo, useState } from 'react';
-import { Image, Platform, StyleSheet, View } from 'react-native';
+import React, { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { Image, Platform, StyleSheet, Text, View } from 'react-native';
 import { Marker } from 'react-native-maps';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import Svg, { G, Path } from 'react-native-svg';
+import Svg, { Circle, Line } from 'react-native-svg';
 import { COLOR } from '../../constants/AppConstants';
+import { MapViewContext } from '../../contexts/MapView';
 import { TrackPhotoContext } from '../../contexts/TrackPhoto';
+import { useWindow } from '../../hooks/useWindow';
 import { TrackPhotoType } from '../../types';
-import { MARKER_BAND, markerZIndex } from '../../utils/markerZIndex';
+import { latLonToXY } from '../../utils/Coords';
+import { MARKER_BAND, TRACK_PHOTO_EXPANDED_ZINDEX, markerZIndex } from '../../utils/markerZIndex';
+import { clusterTrackPhotos, spiderOffsets, spiderRadius } from '../../utils/trackPhoto';
 import { ViewportBounds, expandBounds, isPointInBounds } from '../../utils/ViewportCulling';
 
 // 軌跡サマリー表示中に、記録時間帯に撮影された写真をサムネイルマーカーで軌跡上に表示する。
-// EXIFの撮影方向がある写真は扇形でカメラの向き（真北基準）を示す。
+// 画面上で重なる写真はグループ化して枚数バッジつきの1マーカーにまとめ、
+// タップで引き出し線つきの円形レイアウトに展開する（クラスタリングはタップ判定側と共有）。
 // タップ判定はMarkerのonPressではなくcontainers/Home.tsxの画面タップヒットテストで行う
 // （native onPressはPanResponderと競合して取りこぼすため）
 
-const MARKER_SIZE = 64;
-const FAN_RADIUS = 30;
+const MARKER_SIZE = 48;
 const THUMBNAIL_SIZE = 36;
-const CENTER = MARKER_SIZE / 2;
-// 中心角60度の扇形（北向き）。回転はGのrotationで与える。
-// サムネイルは円形（半径18）なので、半径30の扇形の先端12px分がどの方向でも均等にはみ出して見える
-const FAN_PATH = `M${CENTER} ${CENTER} L${CENTER - FAN_RADIUS * Math.sin(Math.PI / 6)} ${
-  CENTER - FAN_RADIUS * Math.cos(Math.PI / 6)
-} A${FAN_RADIUS} ${FAN_RADIUS} 0 0 1 ${CENTER + FAN_RADIUS * Math.sin(Math.PI / 6)} ${
-  CENTER - FAN_RADIUS * Math.cos(Math.PI / 6)
-} Z`;
 
-const TrackPhotoMarker = React.memo(({ photo }: { photo: TrackPhotoType }) => {
+// サムネイル（なければカメラアイコンのプレースホルダ）
+const PhotoThumbnail = React.memo(
+  ({ photo, onLoadEnd }: { photo: TrackPhotoType; onLoadEnd: () => void }) =>
+    photo.thumbnail !== null ? (
+      <Image source={{ uri: photo.thumbnail }} style={styles.thumbnail} onLoadEnd={onLoadEnd} />
+    ) : (
+      <View style={styles.placeholder}>
+        <MaterialCommunityIcons name="camera" size={20} color={COLOR.GRAY3} selectable={undefined} />
+      </View>
+    )
+);
+
+interface ClusterMarkerProps {
+  photos: TrackPhotoType[]; // 先頭が代表（クラスタid=先頭のassetId、マーカー位置も先頭の座標）
+  expanded: boolean;
+}
+
+const TrackPhotoClusterMarker = React.memo(({ photos, expanded }: ClusterMarkerProps) => {
+  const representative = photos[0];
+  const zIndex = expanded
+    ? TRACK_PHOTO_EXPANDED_ZINDEX
+    : markerZIndex(MARKER_BAND.TRACK_PHOTO, representative.assetId);
+
   // Androidでサムネイル画像の描画完了前にスナップショット化されて空表示になるのを防ぐ。
-  // 読み込み完了後はfalseに落として再描画コストを抑える
-  const [tracksViewChanges, setTracksViewChanges] = useState(photo.thumbnail !== null);
-  const zIndex = markerZIndex(MARKER_BAND.TRACK_PHOTO, photo.assetId);
+  // 表示中の全サムネイルの読み込み完了後にfalseへ落として再描画コストを抑える
+  const [tracksViewChanges, setTracksViewChanges] = useState(true);
+  const loadedCountRef = useRef(0);
+  const expectedLoads = expanded
+    ? photos.filter((p) => p.thumbnail !== null).length
+    : representative.thumbnail !== null
+    ? 1
+    : 0;
+
+  useEffect(() => {
+    loadedCountRef.current = 0;
+    setTracksViewChanges(true);
+  }, [expanded, photos]);
+
+  useEffect(() => {
+    if (!tracksViewChanges || expectedLoads > 0) return;
+    const timer = setTimeout(() => setTracksViewChanges(false), 300);
+    return () => clearTimeout(timer);
+  }, [tracksViewChanges, expectedLoads]);
+
+  const handleThumbnailLoadEnd = useCallback(() => {
+    loadedCountRef.current += 1;
+    // 画像読み込み直後にスナップショット化すると描画が間に合わないことがあるため少し待つ
+    if (loadedCountRef.current >= expectedLoads) setTimeout(() => setTracksViewChanges(false), 300);
+  }, [expectedLoads]);
+
+  // 展開時はメンバー数に応じた円形レイアウト分の描画領域を確保する
+  const offsets = useMemo(() => spiderOffsets(photos.length), [photos.length]);
+  const size = expanded ? (spiderRadius(photos.length) + THUMBNAIL_SIZE / 2 + 2) * 2 : MARKER_SIZE;
+  const center = size / 2;
 
   return (
     <Marker
-      coordinate={{ latitude: photo.latitude, longitude: photo.longitude }}
+      coordinate={{ latitude: representative.latitude, longitude: representative.longitude }}
       anchor={{ x: 0.5, y: 0.5 }}
       tracksViewChanges={tracksViewChanges}
       // style.zIndexはGMSMarkerに届かないためiOSはnativeのzIndexプロップを使う
       zIndex={Platform.OS === 'ios' ? zIndex : undefined}
       style={{ zIndex }}
     >
-      <View style={styles.container}>
-        {photo.direction !== null && (
-          <Svg width={MARKER_SIZE} height={MARKER_SIZE} style={StyleSheet.absoluteFill}>
-            <G rotation={photo.direction} origin={`${CENTER}, ${CENTER}`}>
-              <Path d={FAN_PATH} fill={COLOR.ORANGE} fillOpacity={0.7} stroke={COLOR.WHITE} strokeWidth={1} strokeOpacity={0.8} />
-            </G>
+      {expanded ? (
+        <View style={{ width: size, height: size }}>
+          <Svg width={size} height={size} style={StyleSheet.absoluteFill}>
+            {offsets.map((offset, i) => (
+              <React.Fragment key={photos[i].assetId}>
+                <Line
+                  x1={center}
+                  y1={center}
+                  x2={center + offset.dx}
+                  y2={center + offset.dy}
+                  stroke={COLOR.WHITE}
+                  strokeWidth={3}
+                />
+                <Line
+                  x1={center}
+                  y1={center}
+                  x2={center + offset.dx}
+                  y2={center + offset.dy}
+                  stroke={COLOR.GRAY2}
+                  strokeWidth={1.5}
+                />
+              </React.Fragment>
+            ))}
+            {/* 実際の位置を示す中心点 */}
+            <Circle cx={center} cy={center} r={4} fill={COLOR.ORANGE} stroke={COLOR.WHITE} strokeWidth={1.5} />
           </Svg>
-        )}
-        {photo.thumbnail !== null ? (
-          <Image
-            source={{ uri: photo.thumbnail }}
-            style={styles.thumbnail}
-            // Androidは画像読み込み直後にスナップショット化すると扇形がまだ描画されて
-            // いないことがあるため、少し待ってからfalseに落とす
-            onLoadEnd={() => setTimeout(() => setTracksViewChanges(false), 300)}
-          />
-        ) : (
-          <View style={styles.placeholder}>
-            <MaterialCommunityIcons name="camera" size={20} color={COLOR.GRAY3} selectable={undefined} />
-          </View>
-        )}
-      </View>
+          {photos.map((photo, i) => (
+            <View
+              key={photo.assetId}
+              style={{
+                position: 'absolute',
+                left: center + offsets[i].dx - THUMBNAIL_SIZE / 2,
+                top: center + offsets[i].dy - THUMBNAIL_SIZE / 2,
+              }}
+            >
+              <PhotoThumbnail photo={photo} onLoadEnd={handleThumbnailLoadEnd} />
+            </View>
+          ))}
+        </View>
+      ) : (
+        <View style={styles.container}>
+          <PhotoThumbnail photo={representative} onLoadEnd={handleThumbnailLoadEnd} />
+          {photos.length > 1 && (
+            <View style={styles.badge}>
+              <Text style={styles.badgeText}>{photos.length}</Text>
+            </View>
+          )}
+        </View>
+      )}
     </Marker>
   );
 });
@@ -72,35 +144,79 @@ interface Props {
 }
 
 export const HomeTrackPhotoMarkers = React.memo(({ bounds }: Props) => {
-  const { trackPhotos } = useContext(TrackPhotoContext);
+  const { trackPhotos, expandedClusterId } = useContext(TrackPhotoContext);
+  const { mapViewRef } = useContext(MapViewContext);
+  const { mapRegion, mapSize } = useWindow();
 
-  // 画面範囲（バッファ20%）外の写真は描画しない
-  const visiblePhotos = useMemo(() => {
-    if (trackPhotos.length === 0) return trackPhotos;
-    if (bounds === null) return trackPhotos;
+  const photoById = useMemo(() => new Map(trackPhotos.map((p) => [p.assetId, p])), [trackPhotos]);
+
+  // 全写真を画面座標でクラスタリング（タップ判定側と同一の入力・ロジックで結果を一致させる）
+  const clusters = useMemo(() => {
+    if (trackPhotos.length === 0) return [];
+    const items = trackPhotos.map((photo) => {
+      const [x, y] = latLonToXY([photo.longitude, photo.latitude], mapRegion, mapSize, mapViewRef.current);
+      return { assetId: photo.assetId, x, y };
+    });
+    return clusterTrackPhotos(items);
+  }, [trackPhotos, mapRegion, mapSize, mapViewRef]);
+
+  // 画面範囲（バッファ20%）外のグループは描画しない
+  const visibleClusters = useMemo(() => {
+    if (clusters.length === 0 || bounds === null) return clusters;
     const expanded = expandBounds(bounds, 20);
-    return trackPhotos.filter((p) => isPointInBounds({ latitude: p.latitude, longitude: p.longitude }, expanded));
-  }, [trackPhotos, bounds]);
+    return clusters.filter((cluster) => {
+      const rep = photoById.get(cluster.id);
+      return rep !== undefined && isPointInBounds({ latitude: rep.latitude, longitude: rep.longitude }, expanded);
+    });
+  }, [clusters, bounds, photoById]);
 
-  if (visiblePhotos.length === 0) return null;
+  if (visibleClusters.length === 0) return null;
 
   return (
     <>
-      {visiblePhotos.map((photo) => (
-        <TrackPhotoMarker key={photo.assetId} photo={photo} />
-      ))}
+      {visibleClusters.map((cluster) => {
+        const photos = cluster.assetIds
+          .map((id) => photoById.get(id))
+          .filter((p): p is TrackPhotoType => p !== undefined);
+        if (photos.length === 0) return null;
+        return (
+          <TrackPhotoClusterMarker
+            key={cluster.id}
+            photos={photos}
+            expanded={cluster.id === expandedClusterId && photos.length > 1}
+          />
+        );
+      })}
     </>
   );
 });
 
 const styles = StyleSheet.create({
+  badge: {
+    alignItems: 'center',
+    backgroundColor: COLOR.ORANGE,
+    borderColor: COLOR.WHITE,
+    borderRadius: 9,
+    borderWidth: 1.5,
+    height: 18,
+    justifyContent: 'center',
+    minWidth: 18,
+    paddingHorizontal: 3,
+    position: 'absolute',
+    right: 0,
+    top: 0,
+  },
+  badgeText: {
+    color: COLOR.WHITE,
+    fontSize: 11,
+    fontWeight: 'bold',
+  },
   container: {
     alignItems: 'center',
     height: MARKER_SIZE,
     justifyContent: 'center',
     width: MARKER_SIZE,
   },
-  // 円形にすることで扇形のはみ出し量がどの方向でも均等になる
   placeholder: {
     alignItems: 'center',
     backgroundColor: COLOR.WHITE,

@@ -2,7 +2,7 @@ import { LocationType } from '../types';
 
 // 軌跡上への写真表示（スーパー地形方式）の純関数群。
 // 写真の撮影時刻を軌跡のtimestampと照合して位置を補間し、
-// EXIFのGPSImgDirectionから撮影方向（真北基準）を求める。
+// 画面上で重なる写真のグループ化（クラスタリング）と展開レイアウトを計算する。
 
 // カメラ時計と GPS 時刻のズレ許容幅
 export const TRACK_PHOTO_TIME_MARGIN_MS = 3 * 60 * 1000;
@@ -83,57 +83,48 @@ export const matchPhotoTimesToTrack = (
   return photoTimes.map((t) => interpolateOnPoints(points, t, marginMs));
 };
 
-export interface PhotoImgDirection {
-  direction: number; // 0-360度
-  ref: 'T' | 'M'; // T=真方位, M=磁気方位
+// ---- 重なり写真のグループ化 ----
+
+// 画面上でこの距離（px）以内の写真マーカーを1つのグループにまとめる
+export const TRACK_PHOTO_CLUSTER_THRESHOLD_PX = 40;
+// マーカーのタップ判定半径（px）
+export const TRACK_PHOTO_TAP_RADIUS_PX = 24;
+
+export interface TrackPhotoClusterType {
+  id: string; // 先頭メンバーのassetId
+  x: number; // 代表位置（先頭メンバーの画面座標）
+  y: number;
+  assetIds: string[];
 }
 
-const normalizeDegrees = (deg: number): number => {
-  const d = deg % 360;
-  return d < 0 ? d + 360 : d;
-};
-
-// "347/100"のようなEXIF有理数表現や数値文字列も受け付ける
-const toFiniteNumber = (value: unknown): number | null => {
-  if (typeof value === 'number') return Number.isFinite(value) ? value : null;
-  if (typeof value === 'string') {
-    const rational = value.match(/^(-?\d+(?:\.\d+)?)\s*\/\s*(\d+(?:\.\d+)?)$/);
-    if (rational) {
-      const denom = parseFloat(rational[2]);
-      if (denom === 0) return null;
-      return parseFloat(rational[1]) / denom;
+// 画面座標ベースの貪欲クラスタリング。
+// 表示側（HomeTrackPhotoMarkers）とタップ判定側（containers/Home）で結果が一致するよう、
+// 同じ入力順（撮影時刻順）で呼ぶこと
+export const clusterTrackPhotos = (
+  items: { assetId: string; x: number; y: number }[],
+  thresholdPx: number = TRACK_PHOTO_CLUSTER_THRESHOLD_PX
+): TrackPhotoClusterType[] => {
+  const clusters: TrackPhotoClusterType[] = [];
+  for (const item of items) {
+    const found = clusters.find((c) => Math.hypot(c.x - item.x, c.y - item.y) <= thresholdPx);
+    if (found !== undefined) {
+      found.assetIds.push(item.assetId);
+    } else {
+      clusters.push({ id: item.assetId, x: item.x, y: item.y, assetIds: [item.assetId] });
     }
-    const n = parseFloat(value);
-    return Number.isFinite(n) ? n : null;
   }
-  return null;
+  return clusters;
 };
 
-// getAssetInfoAsyncのexifから撮影方向を取り出す。
-// iOSはネスト形式 exif['{GPS}'].ImgDirection、Androidはフラット形式 exif.GPSImgDirection（double）
-export const parseImgDirectionFromExif = (exif: unknown): PhotoImgDirection | null => {
-  if (exif === null || typeof exif !== 'object') return null;
-  const record = exif as Record<string, unknown>;
+// 展開時に円周上へサムネイル（36px＋間隔）を重ならず並べるのに必要な半径（px）
+export const spiderRadius = (count: number): number => Math.max(48, Math.ceil((count * 44) / (2 * Math.PI)));
 
-  let rawDirection: unknown;
-  let rawRef: unknown;
-  const gps = record['{GPS}'];
-  if (gps !== null && typeof gps === 'object') {
-    rawDirection = (gps as Record<string, unknown>).ImgDirection;
-    rawRef = (gps as Record<string, unknown>).ImgDirectionRef;
-  }
-  if (rawDirection === undefined) {
-    rawDirection = record.GPSImgDirection;
-    rawRef = record.GPSImgDirectionRef;
-  }
-
-  const direction = toFiniteNumber(rawDirection);
-  if (direction === null || direction < 0) return null;
-  // Ref省略時は'T'扱い（磁北と断定できないため補正しない安全側）
-  const ref = rawRef === 'M' ? 'M' : 'T';
-  return { direction: normalizeDegrees(direction), ref };
+// 展開時の各メンバーの中心からの画面オフセット（真上から時計回りの円形配置）
+export const spiderOffsets = (count: number): { dx: number; dy: number }[] => {
+  if (count <= 1) return [{ dx: 0, dy: 0 }];
+  const radius = spiderRadius(count);
+  return Array.from({ length: count }, (_, i) => {
+    const angle = (2 * Math.PI * i) / count - Math.PI / 2;
+    return { dx: radius * Math.cos(angle), dy: radius * Math.sin(angle) };
+  });
 };
-
-// 撮影方向を真北基準に変換する。declinationは磁気偏角（度、東偏が正）
-export const toTrueDirection = (direction: number, ref: 'T' | 'M', declination: number): number =>
-  ref === 'M' ? normalizeDegrees(direction + declination) : normalizeDegrees(direction);

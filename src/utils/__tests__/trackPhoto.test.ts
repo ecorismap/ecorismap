@@ -1,9 +1,11 @@
 import {
+  TRACK_PHOTO_CLUSTER_THRESHOLD_PX,
   TRACK_PHOTO_TIME_MARGIN_MS,
+  clusterTrackPhotos,
   interpolateTrackPositionAtTime,
   matchPhotoTimesToTrack,
-  parseImgDirectionFromExif,
-  toTrueDirection,
+  spiderOffsets,
+  spiderRadius,
 } from '../trackPhoto';
 import { LocationType } from '../../types';
 
@@ -109,53 +111,81 @@ describe('matchPhotoTimesToTrack', () => {
   });
 });
 
-describe('parseImgDirectionFromExif', () => {
-  it('iOSのネスト形式（{GPS}）を読む', () => {
-    const exif = { '{GPS}': { ImgDirection: 123.5, ImgDirectionRef: 'T' } };
-    expect(parseImgDirectionFromExif(exif)).toEqual({ direction: 123.5, ref: 'T' });
+describe('clusterTrackPhotos', () => {
+  it('しきい値以内の写真を1つのグループにまとめる', () => {
+    const clusters = clusterTrackPhotos([
+      { assetId: 'a', x: 100, y: 100 },
+      { assetId: 'b', x: 110, y: 100 },
+      { assetId: 'c', x: 100, y: 130 },
+    ]);
+    expect(clusters).toHaveLength(1);
+    expect(clusters[0]).toEqual({ id: 'a', x: 100, y: 100, assetIds: ['a', 'b', 'c'] });
   });
 
-  it('Androidのフラット形式（double + string）を読む', () => {
-    const exif = { GPSImgDirection: 250.25, GPSImgDirectionRef: 'M' };
-    expect(parseImgDirectionFromExif(exif)).toEqual({ direction: 250.25, ref: 'M' });
+  it('しきい値より離れた写真は別グループになる', () => {
+    const clusters = clusterTrackPhotos([
+      { assetId: 'a', x: 100, y: 100 },
+      { assetId: 'b', x: 100, y: 100 + TRACK_PHOTO_CLUSTER_THRESHOLD_PX + 1 },
+    ]);
+    expect(clusters).toHaveLength(2);
+    expect(clusters.map((c) => c.id)).toEqual(['a', 'b']);
   });
 
-  it('Refがない場合はT扱い（補正しない安全側）', () => {
-    expect(parseImgDirectionFromExif({ GPSImgDirection: 90 })).toEqual({ direction: 90, ref: 'T' });
+  it('距離はグループ代表位置（先頭メンバー）と比較する', () => {
+    // bはaに吸収され、cはa（代表位置）から遠いので別グループ（チェーン的な連結はしない）
+    const clusters = clusterTrackPhotos(
+      [
+        { assetId: 'a', x: 0, y: 0 },
+        { assetId: 'b', x: 30, y: 0 },
+        { assetId: 'c', x: 60, y: 0 },
+      ],
+      40
+    );
+    expect(clusters).toHaveLength(2);
+    expect(clusters[0].assetIds).toEqual(['a', 'b']);
+    expect(clusters[1].assetIds).toEqual(['c']);
   });
 
-  it('有理数文字列("347/100")も解釈する', () => {
-    expect(parseImgDirectionFromExif({ GPSImgDirection: '347/100', GPSImgDirectionRef: 'M' })).toEqual({
-      direction: 3.47,
-      ref: 'M',
-    });
+  it('入力順（撮影時刻順）が同じなら決定的に同じ結果になる', () => {
+    const items = [
+      { assetId: 'a', x: 10, y: 10 },
+      { assetId: 'b', x: 15, y: 15 },
+      { assetId: 'c', x: 200, y: 200 },
+    ];
+    expect(clusterTrackPhotos(items)).toEqual(clusterTrackPhotos(items));
   });
 
-  it('360以上は0-360に正規化する', () => {
-    expect(parseImgDirectionFromExif({ GPSImgDirection: 365 })!.direction).toBe(5);
-    expect(parseImgDirectionFromExif({ GPSImgDirection: 360 })!.direction).toBe(0);
-  });
-
-  it('方向がない・NaN・負値はnull', () => {
-    expect(parseImgDirectionFromExif(null)).toBeNull();
-    expect(parseImgDirectionFromExif(undefined)).toBeNull();
-    expect(parseImgDirectionFromExif({})).toBeNull();
-    expect(parseImgDirectionFromExif({ '{GPS}': {} })).toBeNull();
-    expect(parseImgDirectionFromExif({ GPSImgDirection: NaN })).toBeNull();
-    expect(parseImgDirectionFromExif({ GPSImgDirection: -1 })).toBeNull();
-    expect(parseImgDirectionFromExif({ GPSImgDirection: 'abc' })).toBeNull();
+  it('空入力は空配列', () => {
+    expect(clusterTrackPhotos([])).toEqual([]);
   });
 });
 
-describe('toTrueDirection', () => {
-  it('ref=Tはそのまま', () => {
-    expect(toTrueDirection(123.4, 'T', -8)).toBe(123.4);
+describe('spiderOffsets / spiderRadius', () => {
+  it('1枚以下はオフセットなし', () => {
+    expect(spiderOffsets(1)).toEqual([{ dx: 0, dy: 0 }]);
   });
 
-  it('ref=Mは偏角を加算する（西偏=負）', () => {
-    // 磁気方位5°・西偏8° → 真方位357°
-    expect(toTrueDirection(5, 'M', -8)).toBe(357);
-    // 磁気方位350°・東偏15° → 真方位5°
-    expect(toTrueDirection(350, 'M', 15)).toBe(5);
+  it('メンバー数ぶんのオフセットを円周上（等半径）に返す', () => {
+    const count = 5;
+    const offsets = spiderOffsets(count);
+    expect(offsets).toHaveLength(count);
+    const radius = spiderRadius(count);
+    for (const { dx, dy } of offsets) {
+      expect(Math.hypot(dx, dy)).toBeCloseTo(radius, 6);
+    }
+  });
+
+  it('先頭は真上に配置される', () => {
+    const [first] = spiderOffsets(4);
+    expect(first.dx).toBeCloseTo(0, 6);
+    expect(first.dy).toBeCloseTo(-spiderRadius(4), 6);
+  });
+
+  it('枚数が多いほど半径が広がり、円周上でサムネイルが重ならない', () => {
+    expect(spiderRadius(20)).toBeGreaterThan(spiderRadius(6));
+    // 隣接オフセット間の距離がサムネイルサイズ（36px）以上
+    const offsets = spiderOffsets(20);
+    const d = Math.hypot(offsets[1].dx - offsets[0].dx, offsets[1].dy - offsets[0].dy);
+    expect(d).toBeGreaterThanOrEqual(36);
   });
 });

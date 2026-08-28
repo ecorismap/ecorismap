@@ -97,6 +97,7 @@ import {
 } from '../utils/Coords';
 import { generateLabel } from '../utils/Layer';
 import { getAllTrackPoints } from '../utils/Location';
+import { TRACK_PHOTO_TAP_RADIUS_PX, clusterTrackPhotos, spiderOffsets } from '../utils/trackPhoto';
 import BottomSheet from '@gorhom/bottom-sheet';
 import { useNetInfo } from '@react-native-community/netinfo';
 import {
@@ -148,7 +149,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
   // 二点間距離測定の状態（長押しポップアップから開始、タップでB点設定）
   const { isMeasuring, setMeasureB, endMeasure } = useContext(MeasureContext);
   // 軌跡上の写真マーカー（タップ判定はMarkerのonPressではなくここの画面タップヒットテストで行う）
-  const { trackPhotos, setSelectedPhoto } = useContext(TrackPhotoContext);
+  const { trackPhotos, setSelectedPhoto, expandedClusterId, setExpandedClusterId } = useContext(TrackPhotoContext);
   const tileMaps = useSelector((state: RootState) => state.tileMaps);
   const user = useSelector((state: RootState) => state.user);
   const tileRegions = useSelector((state: RootState) => state.settings.tileRegions, shallowEqual);
@@ -616,8 +617,9 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       setPoiInfo(null);
       setMapLocationInfo(null);
       setTrackPointInfo(null);
+      setExpandedClusterId(null);
     },
-    [changeMapRegion, closeVectorTileInfo, isDrawLineVisible, showDrawLine, setPoiInfo, setMapLocationInfo]
+    [changeMapRegion, closeVectorTileInfo, isDrawLineVisible, showDrawLine, setPoiInfo, setMapLocationInfo, setExpandedClusterId]
   );
 
   // const getGeologyInfo = useCallback(async (latlon: Position) => {
@@ -688,7 +690,8 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     setPoiInfo(null);
     setMapLocationInfo(null);
     setTrackPointInfo(null);
-  }, [setPoiInfo, setMapLocationInfo]);
+    setExpandedClusterId(null);
+  }, [setPoiInfo, setMapLocationInfo, setExpandedClusterId]);
 
   const togglePencilMode = useCallback(() => {
     runTutrial('PENCILMODE');
@@ -1563,22 +1566,61 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       }
       setTrackPointInfo(null);
 
-      // 軌跡サマリー表示中の写真マーカーのタップ判定。最も近いマーカー（24px以内）を拡大表示する
+      // 軌跡サマリー表示中の写真マーカーのタップ判定。
+      // 重なる写真はグループ化されているため、複数枚グループはまず引き出し線つきで展開し、
+      // 展開後のサムネイルをタップで拡大表示する。
+      // クラスタリングは表示側（HomeTrackPhotoMarkers）と同一の入力・ロジックで行い判定を一致させる
       if (Platform.OS !== 'web' && trackPhotos.length > 0) {
         const pXY = getPXY(event);
-        let nearestPhoto = null as (typeof trackPhotos)[number] | null;
-        let nearestDist = 24;
-        for (const photo of trackPhotos) {
+        const items = trackPhotos.map((photo) => {
           const [x, y] = latLonToXY([photo.longitude, photo.latitude], mapRegion, mapSize, mapViewRef.current);
-          const dist = Math.hypot(x - pXY[0], y - pXY[1]);
+          return { assetId: photo.assetId, x, y };
+        });
+        const clusters = clusterTrackPhotos(items);
+        const photoById = new Map(trackPhotos.map((p) => [p.assetId, p]));
+
+        // 展開中グループがあれば引き出し先のサムネイル位置を優先判定
+        const expandedCluster = clusters.find((c) => c.id === expandedClusterId && c.assetIds.length > 1);
+        if (expandedCluster !== undefined) {
+          const offsets = spiderOffsets(expandedCluster.assetIds.length);
+          let nearestPhoto = null as (typeof trackPhotos)[number] | null;
+          let nearestDist = TRACK_PHOTO_TAP_RADIUS_PX;
+          for (let i = 0; i < expandedCluster.assetIds.length; i++) {
+            const dist = Math.hypot(
+              expandedCluster.x + offsets[i].dx - pXY[0],
+              expandedCluster.y + offsets[i].dy - pXY[1]
+            );
+            if (dist <= nearestDist) {
+              nearestDist = dist;
+              nearestPhoto = photoById.get(expandedCluster.assetIds[i]) ?? null;
+            }
+          }
+          if (nearestPhoto !== null) {
+            setSelectedPhoto(nearestPhoto);
+            return false; // 写真を表示したので他のヒットテストは行わない
+          }
+          // 展開中に他の場所をタップしたら折りたたむ（このタップは他のヒットテストに回さない）
+          setExpandedClusterId(null);
+          return false;
+        }
+
+        let nearestCluster = null as (typeof clusters)[number] | null;
+        let nearestDist = TRACK_PHOTO_TAP_RADIUS_PX;
+        for (const cluster of clusters) {
+          const dist = Math.hypot(cluster.x - pXY[0], cluster.y - pXY[1]);
           if (dist <= nearestDist) {
             nearestDist = dist;
-            nearestPhoto = photo;
+            nearestCluster = cluster;
           }
         }
-        if (nearestPhoto !== null) {
-          setSelectedPhoto(nearestPhoto);
-          return false; // 写真を表示したので他のヒットテストは行わない
+        if (nearestCluster !== null) {
+          if (nearestCluster.assetIds.length > 1) {
+            setExpandedClusterId(nearestCluster.id);
+          } else {
+            const photo = photoById.get(nearestCluster.id);
+            if (photo !== undefined) setSelectedPhoto(photo);
+          }
+          return false; // 写真グループを処理したので他のヒットテストは行わない
         }
       }
 
@@ -1669,6 +1711,8 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       trackMetadata.totalPoints,
       trackPhotos,
       setSelectedPhoto,
+      expandedClusterId,
+      setExpandedClusterId,
       getPXY,
       mapRegion,
       mapSize,

@@ -48,7 +48,6 @@ export interface TrackPhotoType {
   latitude: number; // 時刻照合による補間位置
   longitude: number;
   thumbnail: string | null; // base64 data URI（生成失敗時はnull）
-  direction: number | null; // 真北基準の撮影方位（度）。EXIFになければnull
   uri: string; // ph://（iOS）またはfile://（Android）
   localUri?: string; // 拡大表示用のfile:// URI
 }

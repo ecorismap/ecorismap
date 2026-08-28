@@ -2,13 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { Platform } from 'react-native';
 import { LocationType, TrackPhotoType } from '../types';
 import { createThumbnail } from '../utils/Photo';
-import {
-  TRACK_PHOTO_TIME_MARGIN_MS,
-  interpolateTrackPositionAtTime,
-  parseImgDirectionFromExif,
-  toTrueDirection,
-} from '../utils/trackPhoto';
-import { magneticDeclination } from '../utils/geomag/wmm';
+import { TRACK_PHOTO_TIME_MARGIN_MS, interpolateTrackPositionAtTime } from '../utils/trackPhoto';
 
 // 端末の写真ライブラリを軌跡の記録時間帯で照合し、軌跡上に表示する写真を返す（スーパー地形方式）。
 // 写真はアプリ内にコピーせず、ライブラリから都度読み出す。Webは写真ライブラリがないため常に空。
@@ -19,7 +13,6 @@ const QUERY_MAX_ASSETS = 500;
 
 interface CachedPhotoInfo {
   thumbnail: string | null;
-  direction: number | null;
   localUri?: string;
 }
 
@@ -113,7 +106,7 @@ export const useTrackPhotos = (coords: LocationType[] | undefined, enabled: bool
         const cacheKey = `${asset.id}:${asset.modificationTime}`;
         let info = photoInfoCache.get(cacheKey);
         if (info === undefined) {
-          info = await loadPhotoInfo(MediaLibrary, asset, position);
+          info = await loadPhotoInfo(MediaLibrary, asset);
           cacheSet(cacheKey, info);
         }
         if (isCancelled) return;
@@ -123,7 +116,6 @@ export const useTrackPhotos = (coords: LocationType[] | undefined, enabled: bool
           latitude: position.latitude,
           longitude: position.longitude,
           thumbnail: info.thumbnail,
-          direction: info.direction,
           uri: asset.uri,
           localUri: info.localUri,
         });
@@ -143,22 +135,14 @@ export const useTrackPhotos = (coords: LocationType[] | undefined, enabled: bool
 
 const loadPhotoInfo = async (
   MediaLibrary: typeof import('expo-media-library/legacy'),
-  asset: import('expo-media-library/legacy').Asset,
-  position: { latitude: number; longitude: number }
+  asset: import('expo-media-library/legacy').Asset
 ): Promise<CachedPhotoInfo> => {
   let localUri: string | undefined;
-  let direction: number | null = null;
   try {
     // shouldDownloadFromNetwork:false でiCloud未ダウンロード写真の巨大DLを避ける。
-    // その場合はexif/localUriが欠けることがあり、方向なし・サムネイルなしの劣化表示になる
+    // その場合はlocalUriが欠けることがあり、サムネイルなしの劣化表示になる
     const info = await MediaLibrary.getAssetInfoAsync(asset, { shouldDownloadFromNetwork: false });
     localUri = info.localUri;
-    const parsed = parseImgDirectionFromExif(info.exif);
-    if (parsed !== null) {
-      const declination =
-        parsed.ref === 'M' ? magneticDeclination(position.latitude, position.longitude, asset.creationTime) : 0;
-      direction = toTrueDirection(parsed.direction, parsed.ref, declination);
-    }
   } catch {
     // 情報取得に失敗しても位置だけで表示する
   }
@@ -169,5 +153,5 @@ const loadPhotoInfo = async (
   } catch {
     thumbnail = null;
   }
-  return { thumbnail, direction, localUri };
+  return { thumbnail, localUri };
 };
