@@ -1631,7 +1631,8 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
         if (route.params?.mode !== 'editPosition') {
           unselectRecord();
         }
-        // 記録中の軌跡ログはレコード化前でselectSingleFeatureの対象外のため、別途ヒットテストして時刻を表示する
+        // 記録中の軌跡ログはレコード化前でselectSingleFeatureの対象外のため、別途ヒットテストする。
+        // 保存済み軌跡と同様に、時刻ポップアップとあわせてサマリー（記録中はライブ更新）を開く
         if (Platform.OS !== 'web' && trackMetadata.totalPoints > 0) {
           const pXY = getPXY(event);
           const latlon = xyToLatLon(pXY, mapRegion, mapSize, mapViewRef.current);
@@ -1645,7 +1646,13 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
               altitude: nearest.point.altitude,
               speed: nearest.point.speed,
             });
-            return false; // ポップアップを表示したのでgetInfoOfMapは実行しない
+            bottomSheetRef.current?.snapToIndex(isLandscape ? 2 : 1);
+            navigateToSplit('TrackSummary', {
+              recording: true,
+              previous: 'Home',
+              initialFocusLatLon: { latitude: nearest.point.latitude, longitude: nearest.point.longitude },
+            });
+            return false; // ポップアップとサマリーを表示したのでgetInfoOfMapは実行しない
           }
         }
         return true; // 何も見つからなかったのでtrueを返す

@@ -27,9 +27,9 @@ interface StatItem {
 
 export default function TrackSummary() {
   const {
-    record,
     statistics,
     profile,
+    isRecording,
     gotoBack,
     isTrackPhotoVisible,
     toggleTrackPhotoVisible,
@@ -100,7 +100,7 @@ export default function TrackSummary() {
   return (
     <View style={{ flex: 1 }}>
       <BottomSheetHeader
-        title={t('TrackSummary.navigation.title')}
+        title={isRecording ? t('TrackSummary.navigation.titleRecording') : t('TrackSummary.navigation.title')}
         showBackButton
         onBack={gotoBack}
         rightComponent={
@@ -122,7 +122,7 @@ export default function TrackSummary() {
           ) : undefined
         }
       />
-      {record === undefined || statistics === null ? (
+      {statistics === null ? (
         <View style={styles.emptyContainer}>
           <Text style={styles.emptyText}>{`${t('TrackSummary.notFound')}`}</Text>
         </View>

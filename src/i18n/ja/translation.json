@@ -1137,7 +1137,8 @@
   },
   "TrackSummary": {
     "navigation": {
-      "title": "軌跡サマリー"
+      "title": "軌跡サマリー",
+      "titleRecording": "軌跡サマリー（記録中）"
     },
     "label": {
       "distance": "総距離",
