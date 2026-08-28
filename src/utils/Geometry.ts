@@ -818,9 +818,15 @@ export const generateTrackGPXWithPhotos = (
 // 写真ポイントをCSV/GeoJSON/KMLでも出力するための擬似レイヤ・レコード。
 // 既存のgenerateCSV/generateGeoJson/generateKMLをそのまま使えるようにする
 // （軌跡本体はGPXのtrkとして出力するため、ここでは写真だけを扱う）
-// Google Earth用の写真ポイントKML。descriptionにimgタグを入れて吹き出しに写真を表示する。
-// 写真はKMLと同じ階層にある前提の相対参照（KMZに同梱するか、zipを解凍して同じフォルダに置く）
-export const generateTrackPhotoKML = (photos: TrackExportPhoto[], docName: string): string => {
+// Google Earth用のKML（KMZのdoc.kmlにもなる）。軌跡のラインと写真ポイントを1つにまとめる。
+// 写真のdescriptionはimgタグをCDATAで囲い、吹き出しに写真を表示する。
+// 写真はKMLと同じ階層にある前提の相対参照（KMZに同梱するか、解凍して同じフォルダに置く）
+export const generateTrackKML = (
+  coords: LocationType[],
+  trackName: string,
+  photos: TrackExportPhoto[] = [],
+  photoFolderName = 'Photos'
+): string => {
   const kml = xmlBuilder
     .create('kml', {
       encoding: 'UTF-8',
@@ -828,25 +834,48 @@ export const generateTrackPhotoKML = (photos: TrackExportPhoto[], docName: strin
     .att('xmlns', 'http://www.opengis.net/kml/2.2');
 
   const document = kml.ele('Document');
-  document.ele('name', docName);
+  document.ele('name', trackName);
 
-  photos.forEach((photo) => {
-    const placemark = document.ele('Placemark');
-    placemark.ele('name', photo.filename);
-    // CDATAで囲うことでGoogle EarthがHTMLとして解釈する
-    placemark
-      .ele('description')
-      .cdata(
-        `<img src="${photo.filename}" width="480" /><br/>${dayjs(photo.timestamp).format('YYYY-MM-DD HH:mm:ss')}`
-      );
-    // タイムスライダーで撮影時刻順に辿れるようにする
-    placemark.ele('TimeStamp').ele('when', new Date(photo.timestamp).toISOString());
-    const style = placemark.ele('Style');
-    const iconStyle = style.ele('IconStyle');
-    const icon = iconStyle.ele('Icon');
-    icon.ele('href', 'http://maps.google.com/mapfiles/kml/shapes/camera.png');
-    placemark.ele('Point').ele('coordinates', `${photo.longitude},${photo.latitude}`);
-  });
+  const trackPlacemark = document.ele('Placemark');
+  trackPlacemark.ele('name', trackName);
+  const lineStyle = trackPlacemark.ele('Style').ele('LineStyle');
+  // KMLの色はaabbggrr順
+  lineStyle.ele('color', 'ffff0000');
+  lineStyle.ele('width', 4);
+  const lineString = trackPlacemark.ele('LineString');
+  // 地形に沿わせて表示する（GPSの標高は誤差が大きく、絶対高度だと浮いて見えるため）
+  lineString.ele('tessellate', 1);
+  lineString.ele(
+    'coordinates',
+    coords
+      .map((coord) =>
+        coord.altitude !== null && coord.altitude !== undefined
+          ? `${coord.longitude},${coord.latitude},${coord.altitude}`
+          : `${coord.longitude},${coord.latitude}`
+      )
+      .join(' ')
+  );
+
+  if (photos.length > 0) {
+    // Google Earthのサイドバーで軌跡と写真を分けて扱えるようフォルダにまとめる
+    const folder = document.ele('Folder');
+    folder.ele('name', photoFolderName);
+    photos.forEach((photo) => {
+      const placemark = folder.ele('Placemark');
+      placemark.ele('name', photo.filename);
+      // CDATAで囲うことでGoogle EarthがHTMLとして解釈する
+      placemark
+        .ele('description')
+        .cdata(
+          `<img src="${photo.filename}" width="480" /><br/>${dayjs(photo.timestamp).format('YYYY-MM-DD HH:mm:ss')}`
+        );
+      // タイムスライダーで撮影時刻順に辿れるようにする
+      placemark.ele('TimeStamp').ele('when', new Date(photo.timestamp).toISOString());
+      const iconStyle = placemark.ele('Style').ele('IconStyle');
+      iconStyle.ele('Icon').ele('href', 'http://maps.google.com/mapfiles/kml/shapes/camera.png');
+      placemark.ele('Point').ele('coordinates', `${photo.longitude},${photo.latitude}`);
+    });
+  }
 
   return kml.end({
     allowEmpty: true,
@@ -854,6 +883,46 @@ export const generateTrackPhotoKML = (photos: TrackExportPhoto[], docName: strin
     newline: '\n',
     pretty: true,
   });
+};
+
+// 軌跡本体をGeoJSONで出力するための擬似レイヤ・レコード（写真ポイントと同じ考え方）
+export const trackExportLayer = (layerName: string): LayerType => ({
+  id: 'track_export',
+  name: layerName,
+  type: 'LINE',
+  permission: 'PRIVATE',
+  colorStyle: {
+    colorType: 'SINGLE',
+    transparency: 0.2,
+    color: COLOR.TRACK,
+    fieldName: 'name',
+    customFieldValue: '',
+    colorRamp: 'RANDOM',
+    colorList: [],
+    lineWidth: 4,
+  },
+  label: 'name',
+  visible: true,
+  active: false,
+  field: [
+    { id: ulid(), name: 'name', format: 'STRING' },
+    { id: ulid(), name: 'time', format: 'DATETIME' },
+  ],
+});
+
+export const trackExportRecords = (coords: LocationType[], trackName: string): RecordType[] => {
+  const startTime = coords.find((c) => c.timestamp !== undefined)?.timestamp;
+  return [
+    {
+      id: ulid(),
+      userId: undefined,
+      displayName: null,
+      visible: true,
+      redraw: false,
+      coords,
+      field: { name: trackName, time: startTime === undefined ? '' : new Date(startTime).toISOString() },
+    },
+  ];
 };
 
 export const trackPhotoExportLayer = (layerName: string): LayerType => ({
