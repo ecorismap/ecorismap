@@ -14,7 +14,9 @@ import {
   generateCSV,
   generateGeoJson,
   generateTrackGPXWithPhotos,
-  generateTrackPhotoKML,
+  generateTrackKML,
+  trackExportLayer,
+  trackExportRecords,
   trackPhotoExportLayer,
   trackPhotoExportRecords,
 } from '../utils/Geometry';
@@ -207,18 +209,32 @@ export default function TrackSummaryContainers() {
         }
       }
 
-      const gpx = generateTrackGPXWithPhotos(exportCoords, recordName, exportPhotos);
+      setExportProgress(t('TrackSummary.label.exportingFile'));
+
+      const trackLayer = trackExportLayer(label);
       const exportData: { data: string; name: string; folder: string; type: ExportType }[] = [
-        { data: gpx, name: `${label}_${time}.gpx`, folder: '', type: 'GPX' },
+        {
+          data: generateTrackGPXWithPhotos(exportCoords, recordName, exportPhotos),
+          name: `${label}_${time}.gpx`,
+          folder: '',
+          type: 'GPX',
+        },
+        {
+          data: JSON.stringify(
+            generateGeoJson(trackExportRecords(exportCoords, recordName), trackLayer.field, 'LINE', label)
+          ),
+          name: `${label}_${time}.geojson`,
+          folder: '',
+          type: 'GeoJSON',
+        },
         ...exportPhotos.map((photo) => ({ data: photo.fileUri, name: photo.filename, folder: '', type: 'PHOTO' as ExportType })),
       ];
 
-      // 写真ポイントは他ソフトで扱いやすいようCSV/GeoJSONでも出力する（軌跡本体はGPXのtrk）
+      // 写真ポイントは他ソフトで扱いやすいようCSV/GeoJSONでも出力する
       if (exportPhotos.length > 0) {
         const photoLayerName = `${label}_photo`;
         const photoLayer = trackPhotoExportLayer(photoLayerName);
         const photoRecords = trackPhotoExportRecords(exportPhotos);
-        const photoKml = generateTrackPhotoKML(exportPhotos, photoLayerName);
         exportData.push(
           {
             data: generateCSV(photoRecords, photoLayer.field, 'POINT'),
@@ -233,19 +249,21 @@ export default function TrackSummaryContainers() {
             type: 'GeoJSON',
           }
         );
-
-        // Google Earth用に写真を同梱したKMZ（1ファイルで写真つきの吹き出しが開けるためKMLは出力しない）
-        setExportProgress(t('TrackSummary.label.exportingFile'));
-        kmzPath = await generateKMZFile(
-          photoKml,
-          exportPhotos.map((photo) => ({ name: photo.filename, uri: photo.fileUri })),
-          `${photoLayerName}_${time}`
-        );
-        if (kmzPath !== undefined) {
-          exportData.push({ data: kmzPath, name: `${photoLayerName}_${time}.kmz`, folder: '', type: 'KMZ' });
-        }
       }
-      setExportProgress(t('TrackSummary.label.exportingFile'));
+
+      // Google Earth用に軌跡と写真をまとめたKMZ（1ファイルで完結するためKMLは出力しない）。
+      // Webは写真同梱のKMZを作れないため、代わりに単体のKMLを出力する
+      const kml = generateTrackKML(exportCoords, recordName, exportPhotos, t('TrackSummary.label.photos'));
+      kmzPath = await generateKMZFile(
+        kml,
+        exportPhotos.map((photo) => ({ name: photo.filename, uri: photo.fileUri })),
+        `${label}_${time}`
+      );
+      if (kmzPath !== undefined) {
+        exportData.push({ data: kmzPath, name: `${label}_${time}.kmz`, folder: '', type: 'KMZ' });
+      } else {
+        exportData.push({ data: kml, name: `${label}_${time}.kml`, folder: '', type: 'KML' });
+      }
       const result = await exportGeoFile(exportData, `track_${label}_${time}`, 'zip');
       if (result === 'saved') {
         await AlertAsync(t('hooks.message.successExportData'));

@@ -5,7 +5,8 @@ import {
   generateKML,
   generateGPX,
   generateTrackGPXWithPhotos,
-  generateTrackPhotoKML,
+  generateTrackKML,
+  trackExportRecords,
   trackPhotoExportLayer,
   trackPhotoExportRecords,
   generateGeoJson,
@@ -423,26 +424,62 @@ describe('trackPhotoExportLayer / trackPhotoExportRecords', () => {
   });
 });
 
-describe('generateTrackPhotoKML', () => {
+describe('generateTrackKML', () => {
+  const T0 = Date.UTC(2026, 7, 28, 1, 0, 0);
+  const coords = [
+    { latitude: 35.0, longitude: 135.0, altitude: 100, timestamp: T0 },
+    { latitude: 35.001, longitude: 135.0, altitude: 110, timestamp: T0 + 10000 },
+  ];
   const photos = [
-    { filename: 'IMG_0001.jpg', timestamp: Date.UTC(2026, 7, 28, 1, 0, 5), latitude: 35.0005, longitude: 135.0001 },
+    { filename: 'IMG_0001.jpg', timestamp: T0 + 5000, latitude: 35.0005, longitude: 135.0001 },
   ];
 
-  it('descriptionにCDATAのimgタグを入れる（Google Earthで写真が表示される）', () => {
-    const kml = generateTrackPhotoKML(photos, 'track_photo');
-    expect(kml).toContain('<![CDATA[<img src="IMG_0001.jpg" width="480" />');
-    expect(kml).toContain('<name>IMG_0001.jpg</name>');
+  it('軌跡をLineStringとして出力する（地形に沿わせるtessellate付き）', () => {
+    const kml = generateTrackKML(coords, 'test track');
+    expect(kml).toContain('<tessellate>1</tessellate>');
+    expect(kml).toContain('<coordinates>135,35,100 135,35.001,110</coordinates>');
+    expect(kml).toContain('<name>test track</name>');
   });
 
-  it('タイムスライダー用のTimeStampと座標を出力する', () => {
-    const kml = generateTrackPhotoKML(photos, 'track_photo');
+  it('写真がなければPlacemarkは軌跡のみでフォルダを作らない', () => {
+    const kml = generateTrackKML(coords, 'test track');
+    expect(kml).not.toContain('<Folder>');
+    expect(kml).not.toContain('<Point>');
+  });
+
+  it('写真はフォルダにまとめ、descriptionにCDATAのimgタグを入れる', () => {
+    const kml = generateTrackKML(coords, 'test track', photos, '写真');
+    expect(kml).toContain('<Folder>');
+    expect(kml).toContain('<name>写真</name>');
+    expect(kml).toContain('<![CDATA[<img src="IMG_0001.jpg" width="480" />');
     expect(kml).toContain('<when>2026-08-28T01:00:05.000Z</when>');
     expect(kml).toContain('<coordinates>135.0001,35.0005</coordinates>');
   });
 
-  it('写真がなくてもDocument名を持つ有効なKMLになる', () => {
-    const kml = generateTrackPhotoKML([], 'track_photo');
-    expect(kml).toContain('<name>track_photo</name>');
-    expect(kml).not.toContain('<Placemark>');
+  it('標高がない点は経度緯度のみ出力する', () => {
+    const kml = generateTrackKML([{ latitude: 35, longitude: 135 }, { latitude: 35.001, longitude: 135 }], 't');
+    expect(kml).toContain('<coordinates>135,35 135,35.001</coordinates>');
+  });
+});
+
+describe('trackExportRecords', () => {
+  it('軌跡を1件のLINEレコードにし、開始時刻をtimeに入れる', () => {
+    const T0 = Date.UTC(2026, 7, 28, 1, 0, 0);
+    const records = trackExportRecords(
+      [
+        { latitude: 35, longitude: 135, timestamp: T0 },
+        { latitude: 35.001, longitude: 135, timestamp: T0 + 10000 },
+      ],
+      'test track'
+    );
+    expect(records).toHaveLength(1);
+    expect(records[0].field.name).toBe('test track');
+    expect(records[0].field.time).toBe('2026-08-28T01:00:00.000Z');
+    expect(records[0].coords).toHaveLength(2);
+  });
+
+  it('timestampがない軌跡はtimeが空文字', () => {
+    const records = trackExportRecords([{ latitude: 35, longitude: 135 }], 'test track');
+    expect(records[0].field.time).toBe('');
   });
 });
