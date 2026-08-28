@@ -1,5 +1,6 @@
 import React, { useContext, useCallback, useMemo, useState, useEffect } from 'react';
-import { View, Text } from 'react-native';
+import { View, Text, TouchableOpacity } from 'react-native';
+import { MaterialIcons } from '@expo/vector-icons';
 import { Pressable } from '../atoms/Pressable';
 import { MapViewContext } from '../../contexts/MapView';
 import { TrackFocusContext } from '../../contexts/TrackFocus';
@@ -11,9 +12,9 @@ import { t } from '../../i18n/config';
 import dayjs from '../../i18n/dayjs';
 
 export const HomeTrackPointPopup = React.memo(() => {
-  const { trackPointInfo, mapViewRef } = useContext(MapViewContext);
+  const { trackPointInfo, setTrackPointInfo, mapViewRef } = useContext(MapViewContext);
   // 軌跡サマリーのグラフカーソル（フォーカス地点）があればそちらを優先し、ポップアップも追随させる
-  const { trackFocusPoint } = useContext(TrackFocusContext);
+  const { trackFocusPoint, setTrackFocusPoint } = useContext(TrackFocusContext);
   const { mapRegion, mapSize } = useWindow();
   const WIDTH = 150;
 
@@ -70,6 +71,12 @@ export const HomeTrackPointPopup = React.memo(() => {
     if (success) setCopied(true);
   }, [coordinateText]);
 
+  // フォーカス由来の表示はフォーカスも解除しないと再表示されるため両方クリアする
+  const handleClose = useCallback(() => {
+    setTrackPointInfo(null);
+    setTrackFocusPoint(null);
+  }, [setTrackPointInfo, setTrackFocusPoint]);
+
   const HEIGHT = 36 + (timeText ? 22 : 0) + (elevationText ? 20 : 0) + (speedText ? 20 : 0) + (coordinateText ? 20 : 0);
 
   // 画面座標を計算。タップ位置のpositionがあればそれを使い、なければ座標から計算
@@ -106,6 +113,21 @@ export const HomeTrackPointPopup = React.memo(() => {
           padding: 8,
         }}
       >
+        <TouchableOpacity
+          style={{
+            position: 'absolute',
+            top: 2,
+            right: 2,
+            zIndex: 1,
+            width: 20,
+            height: 20,
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+          onPress={handleClose}
+        >
+          <MaterialIcons name="close" size={14} color={COLOR.GRAY2} />
+        </TouchableOpacity>
         <View style={{ alignItems: 'center' }}>
           <Text style={{ color: COLOR.GRAY4, fontSize: 12, paddingBottom: 4 }}>{t('Home.trackPoint.title')}</Text>
           <Text style={{ color: COLOR.BLACK, fontSize: 14, fontWeight: 'bold', paddingBottom: 4 }}>{timeText}</Text>
