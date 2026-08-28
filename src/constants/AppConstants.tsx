@@ -151,6 +151,7 @@ export const EXPORTTYPE = {
   JSON: 'json',
   KML: 'kml',
   KMZ: 'kmz',
+  SVG: 'svg',
   SQLITE: 'sqlite',
   PHOTO: 'photo',
 } as const;
