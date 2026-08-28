@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { Platform } from 'react-native';
 import { LocationType, TrackPhotoType } from '../types';
 import { createThumbnail } from '../utils/Photo';
@@ -43,6 +43,12 @@ export type UseTrackPhotosReturnType = {
 export const useTrackPhotos = (coords: LocationType[] | undefined, enabled: boolean): UseTrackPhotosReturnType => {
   const [trackPhotos, setTrackPhotos] = useState<TrackPhotoType[]>([]);
   const [isLimitedAccess, setIsLimitedAccess] = useState(false);
+  // 再照合（記録中のライブ更新）でのちらつき防止に現在の表示内容を参照するためのref
+  const trackPhotosRef = useRef<TrackPhotoType[]>([]);
+  const applyTrackPhotos = useCallback((photos: TrackPhotoType[]) => {
+    trackPhotosRef.current = photos;
+    setTrackPhotos(photos);
+  }, []);
 
   const presentLimitedPicker = useCallback(async () => {
     if (Platform.OS === 'web') return;
@@ -52,12 +58,12 @@ export const useTrackPhotos = (coords: LocationType[] | undefined, enabled: bool
 
   useEffect(() => {
     if (Platform.OS === 'web' || !enabled || coords === undefined || coords.length < 2) {
-      setTrackPhotos([]);
+      applyTrackPhotos([]);
       return;
     }
     const timestamps = coords.map((c) => c.timestamp).filter((t): t is number => t !== undefined);
     if (timestamps.length < 2) {
-      setTrackPhotos([]);
+      applyTrackPhotos([]);
       return;
     }
     const trackStart = timestamps[0];
@@ -71,7 +77,7 @@ export const useTrackPhotos = (coords: LocationType[] | undefined, enabled: bool
       const permission = await MediaLibrary.requestPermissionsAsync(false, ['photo']);
       if (isCancelled) return;
       if (!permission.granted) {
-        setTrackPhotos([]);
+        applyTrackPhotos([]);
         return;
       }
       setIsLimitedAccess(permission.accessPrivileges === 'limited');
@@ -99,7 +105,10 @@ export const useTrackPhotos = (coords: LocationType[] | undefined, enabled: bool
         .map((asset) => ({ asset, position: interpolateTrackPositionAtTime(coords, asset.creationTime) }))
         .filter((item): item is { asset: (typeof assets)[number]; position: { latitude: number; longitude: number } } => item.position !== null);
 
-      // EXIF・サムネイルを1枚ずつ取得し、逐次stateへ反映して漸進表示する
+      // サムネイルを1枚ずつ取得する。初回（未表示）は逐次stateへ反映して漸進表示し、
+      // 表示中の再照合（記録中のライブ更新）は走査完了時に内容が変わったときだけ
+      // 一括で差し替えてマーカーのちらつきを防ぐ
+      const progressive = trackPhotosRef.current.length === 0;
       const results: TrackPhotoType[] = [];
       for (const { asset, position } of positioned) {
         if (isCancelled) return;
@@ -119,16 +128,22 @@ export const useTrackPhotos = (coords: LocationType[] | undefined, enabled: bool
           uri: asset.uri,
           localUri: info.localUri,
         });
-        setTrackPhotos([...results]);
+        if (progressive) applyTrackPhotos([...results]);
       }
-      if (!isCancelled && results.length === 0) setTrackPhotos([]);
+      if (isCancelled) return;
+      if (progressive) {
+        if (results.length === 0) applyTrackPhotos([]);
+      } else {
+        const signature = (list: TrackPhotoType[]) =>
+          list.map((p) => `${p.assetId}:${p.latitude}:${p.longitude}:${p.thumbnail !== null ? 1 : 0}`).join('|');
+        if (signature(results) !== signature(trackPhotosRef.current)) applyTrackPhotos(results);
+      }
     })();
 
     return () => {
       isCancelled = true;
-      setTrackPhotos([]);
     };
-  }, [coords, enabled]);
+  }, [coords, enabled, applyTrackPhotos]);
 
   return { trackPhotos, isLimitedAccess, presentLimitedPicker };
 };

@@ -64,14 +64,21 @@ export type BottomSheetScreenParams = {
   Licenses: { previous: 'Settings' };
   GoogleDriveProjects: { previous: 'Settings' | 'Home'; mode?: 'save' | 'open' };
   GpsSettings: { previous: 'Settings' };
-  TrackSummary: {
-    layerId: string;
-    recordId: string;
-    userId: string | undefined;
-    previous: 'Home';
-    // タップ地点から開いたときの初期マーカー位置
-    initialFocusLatLon?: { latitude: number; longitude: number };
-  };
+  TrackSummary:
+    | {
+        layerId: string;
+        recordId: string;
+        userId: string | undefined;
+        previous: 'Home';
+        // タップ地点から開いたときの初期マーカー位置
+        initialFocusLatLon?: { latitude: number; longitude: number };
+      }
+    | {
+        // 記録中の軌跡ログを対象にする（レコード化前のためid指定なし）
+        recording: true;
+        previous: 'Home';
+        initialFocusLatLon?: { latitude: number; longitude: number };
+      };
 };
 
 export type BottomSheetScreenName = keyof BottomSheetScreenParams;
