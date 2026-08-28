@@ -118,7 +118,7 @@ export default function TrackSummary() {
               accessibilityLabel={t('TrackSummary.label.export')}
             >
               <MaterialCommunityIcons
-                name="export-variant"
+                name="tray-arrow-down"
                 size={22}
                 color={isExporting || statistics === null ? COLOR.GRAY3 : COLOR.BLACK}
               />
