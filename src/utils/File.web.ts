@@ -120,7 +120,9 @@ export const exportGeoFile = async (
     key?: string | null;
   }[],
   exportFileName: string,
-  ext: string
+  ext: string,
+  // Webはブラウザダウンロード固定のため未使用（ネイティブ版とのシグネチャ互換用）
+  _destination?: 'save' | 'share'
 ): Promise<ExportResultType> => {
   const zipFile = await generateZipBlob(exportData);
   if (zipFile === undefined) return 'error';

@@ -354,7 +354,17 @@
       "saveTitle": "Select destination",
       "loadTitle": "Select source",
       "local": "This device",
-      "drive": "Google Drive"
+      "localDescription": "Choose a file on this device",
+      "drive": "Google Drive",
+      "driveSaveDescription": "Save to Google Drive",
+      "driveLoadDescription": "Load a file from Google Drive",
+      "device": "Save to device",
+      "deviceDescription": "Save to the Download folder",
+      "deviceDescriptionWeb": "Download the file",
+      "share": "Share to another app",
+      "shareDescription": "Choose an app to share with",
+      "shareIOS": "Share",
+      "shareIOSDescription": "Save to Files or share to another app"
     },
     "backup_restore": {
       "text": "Restore from backup"

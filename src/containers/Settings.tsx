@@ -20,7 +20,7 @@ import { exportGeoFile } from '../utils/File';
 import { usePermission } from '../hooks/usePermission';
 import { SettingsModalMapListURL } from '../components/organisms/SettingsModalMapListURL';
 import { SettingsModalProximityAlert } from '../components/organisms/SettingsModalProximityAlert';
-import { SettingsModalStorageSelect } from '../components/organisms/SettingsModalStorageSelect';
+import { SettingsModalStorageSelect, StorageSelectChoice } from '../components/organisms/SettingsModalStorageSelect';
 import { SettingsModalLanguageSelect } from '../components/organisms/SettingsModalLanguageSelect';
 import { getStoredLanguage, setStoredLanguage } from '../utils/appLanguage';
 import { editSettingsAction } from '../modules/settings';
@@ -62,7 +62,7 @@ export default function SettingsContainers() {
     });
   }, [navigateToHome]);
 
-  const saveFileToLocal = useCallback(async () => {
+  const saveFileToLocal = useCallback(async (destination: 'save' | 'share') => {
     // if (isRunningProject) {
     //   //ToDo バックアップできた方がいいかも？もしくは裏で自動
     //   await AlertAsync(t('hooks.message.cannotInRunningProject'));
@@ -77,7 +77,7 @@ export default function SettingsContainers() {
     const fileName = `ecorismap_${time}`;
     const data = { dataSet, layers, settings: createExportSettings(), maps };
     const exportData = await generateEcorisMapData(data, { includePhoto, fromProject: false });
-    const result = await exportGeoFile(exportData, fileName, 'zip');
+    const result = await exportGeoFile(exportData, fileName, 'zip', destination);
     setIsLoading(false);
     if (result === 'error') {
       await AlertAsync(t('hooks.message.failSaveFile'));
@@ -125,21 +125,21 @@ export default function SettingsContainers() {
     setStorageSelectMode('open');
   }, [isRunningProject]);
 
-  const pressStorageSelectLocal = useCallback(async () => {
-    const mode = storageSelectMode;
-    setStorageSelectMode(undefined);
-    if (mode === 'save') {
-      await saveFileToLocal();
-    } else if (mode === 'open') {
-      await openFileFromLocal();
-    }
-  }, [openFileFromLocal, saveFileToLocal, storageSelectMode]);
-
-  const pressStorageSelectDrive = useCallback(() => {
-    const mode = storageSelectMode;
-    setStorageSelectMode(undefined);
-    navigate('GoogleDriveProjects', { previous: 'Settings', mode });
-  }, [navigate, storageSelectMode]);
+  const pressStorageSelect = useCallback(
+    async (choice: StorageSelectChoice) => {
+      const mode = storageSelectMode;
+      setStorageSelectMode(undefined);
+      if (choice === 'drive') {
+        navigate('GoogleDriveProjects', { previous: 'Settings', mode });
+      } else if (mode === 'save') {
+        // device=デバイスへ保存（Android:Download/Web:ダウンロード）、share=共有シート（iOSの"ファイル"に保存もこちら）
+        await saveFileToLocal(choice === 'share' ? 'share' : 'save');
+      } else if (mode === 'open') {
+        await openFileFromLocal();
+      }
+    },
+    [navigate, openFileFromLocal, saveFileToLocal, storageSelectMode]
+  );
 
   const pressStorageSelectCancel = useCallback(() => {
     setStorageSelectMode(undefined);
@@ -393,9 +393,8 @@ export default function SettingsContainers() {
       <SettingsModalStorageSelect
         visible={storageSelectMode !== undefined}
         mode={storageSelectMode ?? 'save'}
-        pressLocal={pressStorageSelectLocal}
-        pressDrive={pressStorageSelectDrive}
-        pressCancel={pressStorageSelectCancel}
+        onSelect={pressStorageSelect}
+        onCancel={pressStorageSelectCancel}
       />
       <SettingsModalLanguageSelect
         visible={isLanguageSettingsOpen}

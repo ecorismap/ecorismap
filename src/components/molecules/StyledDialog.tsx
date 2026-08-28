@@ -39,7 +39,9 @@ const resolveRole = (button: StyledDialogButton, index: number, total: number): 
 
 export const StyledDialog = React.memo(() => {
   const [queue, setQueue] = useState<DialogRequest[]>([]);
+  const [visible, setVisible] = useState(false);
   const current: DialogRequest | undefined = queue[0];
+  const hasCurrent = current !== undefined;
 
   useEffect(() => {
     enqueueDialog = (request) => setQueue((prev) => [...prev, request]);
@@ -47,6 +49,17 @@ export const StyledDialog = React.memo(() => {
       enqueueDialog = null;
     };
   }, []);
+
+  // 他のModal（ローディング等）の消滅と同一フレームで表示するとAndroidでダイアログが
+  // 表示されないことがあるため、キューが空→非空になったときはワンテンポ置いてから表示する
+  useEffect(() => {
+    if (!hasCurrent) {
+      setVisible(false);
+      return;
+    }
+    const timer = setTimeout(() => setVisible(true), 150);
+    return () => clearTimeout(timer);
+  }, [hasCurrent]);
 
   const closeCurrent = useCallback((action?: () => void) => {
     setQueue((prev) => prev.slice(1));
@@ -92,7 +105,7 @@ export const StyledDialog = React.memo(() => {
   };
 
   return (
-    <Modal animationType="fade" visible={current !== undefined} transparent={true} onRequestClose={handleDismiss}>
+    <Modal animationType="fade" visible={hasCurrent && visible} transparent={true} onRequestClose={handleDismiss}>
       <Pressable style={styles.modalOverlay} onPress={handleDismiss} disablePressedAnimation>
         <Pressable style={styles.modalCard} onPress={() => null} disablePressedAnimation>
           {!!current?.title && <Text style={styles.title}>{current.title}</Text>}

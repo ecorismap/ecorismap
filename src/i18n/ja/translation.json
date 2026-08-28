@@ -469,7 +469,17 @@
       "saveTitle": "保存先を選択",
       "loadTitle": "読み込み元を選択",
       "local": "この端末",
-      "drive": "Google Drive"
+      "localDescription": "端末内のファイルを選択します",
+      "drive": "Google Drive",
+      "driveSaveDescription": "Google Driveに保存します",
+      "driveLoadDescription": "Google Driveのファイルを読み込みます",
+      "device": "デバイスに保存",
+      "deviceDescription": "Downloadフォルダに保存します",
+      "deviceDescriptionWeb": "ファイルをダウンロードします",
+      "share": "他のアプリで共有",
+      "shareDescription": "共有先のアプリを選択します",
+      "shareIOS": "共有",
+      "shareIOSDescription": "「ファイル」に保存や他のアプリへ共有します"
     },
     "backup_restore": {
       "text": "バックアップから復元"

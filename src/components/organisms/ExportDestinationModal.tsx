@@ -42,8 +42,11 @@ export const ExportDestinationModal = React.memo(() => {
 
   const handleSelect = useCallback((choice: ExportDestinationChoice) => {
     setVisible(false);
-    resolverRef.current?.(choice);
+    const resolver = resolverRef.current;
     resolverRef.current = null;
+    // Modalの消滅と後続ダイアログ（保存完了アラート等）の表示が同一フレームに重なると
+    // Androidで新しいダイアログが表示されないため、消滅を待ってからresolveする
+    setTimeout(() => resolver?.(choice), 200);
   }, []);
 
   return (
