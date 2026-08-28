@@ -20,6 +20,8 @@ export const MARKER_BAND = {
   TRACK_PHOTO: 7, // 軌跡上の写真サムネイル。地物・ラベルより前面
 } as const;
 
+// 展開中の写真グループ（引き出し線つき）は他の写真・選択中マーカーの背面ぎりぎり前面
+export const TRACK_PHOTO_EXPANDED_ZINDEX = 0x7fffffec;
 // 選択中マーカーと現在地マーカーは全バンドより前面
 export const SELECTED_MARKER_ZINDEX = 0x7ffffff0;
 // 軌跡サマリーのフォーカスマーカーは選択中より前面・現在地より背面
