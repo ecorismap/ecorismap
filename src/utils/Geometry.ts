@@ -854,11 +854,12 @@ export const generateGPX = (data: RecordType[], type: FeatureType) => {
             point.field.time === undefined || point.field.time === '' ? undefined : dayjs(point.field.time as string);
           const wpt = gpx.ele('wpt').att('lat', point.coords.latitude).att('lon', point.coords.longitude);
 
-          wpt.ele('name', point.field.name);
-          wpt.ele('time', time === undefined ? undefined : time.isValid() ? time.toISOString() : undefined);
+          // GPX 1.1スキーマの要素順: ele → time → name → cmt → desc
           if (point.coords.altitude !== null && point.coords.altitude !== undefined) {
             wpt.ele('ele', point.coords.altitude);
           }
+          wpt.ele('time', time === undefined ? undefined : time.isValid() ? time.toISOString() : undefined);
+          wpt.ele('name', point.field.name);
           wpt.ele('cmt', point.field.cmt);
           // Add all other fields to description
           const desc = generateGPXDescription(point);
@@ -887,13 +888,12 @@ export const generateGPX = (data: RecordType[], type: FeatureType) => {
           line.coords.forEach((coord) => {
             //console.log(dayjs.unix(coord.timestamp!).toISOString());
             const trkpt = trkseg.ele('trkpt').att('lat', coord.latitude).att('lon', coord.longitude);
-            // timestampをISO形式に変換（秒単位、ミリ秒部分を除外）
-            if (coord.timestamp) {
-              const timeString = dayjs(coord.timestamp).format('YYYY-MM-DDTHH:mm:ss[Z]');
-              trkpt.ele('time', timeString);
-            }
+            // GPX 1.1スキーマの要素順: ele → time。時刻はUTC（ISO形式）で出力する
             if (coord.altitude !== null && coord.altitude !== undefined) {
               trkpt.ele('ele', coord.altitude);
+            }
+            if (coord.timestamp) {
+              trkpt.ele('time', dayjs(coord.timestamp).toISOString());
             }
           });
         }
