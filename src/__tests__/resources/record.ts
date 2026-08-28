@@ -28,8 +28,8 @@ export const expectedLineGpx = `<?xml version="1.0" encoding="UTF-8"?>
     <desc>User: mizutani</desc>
     <trkseg>
       <trkpt lat="42.498248918" lon="139.8534992896">
-        <time>2021-02-02T09:28:38Z</time>
         <ele>100</ele>
+        <time>2021-02-02T00:28:38.000Z</time>
       </trkpt>
       <trkpt lat="42.4982588924" lon="139.853411112"></trkpt>
       <trkpt lat="42.4982816912" lon="139.8532861378"></trkpt>
@@ -79,16 +79,16 @@ export const point_record: RecordType[] = [
 export const expectedPointGpx = `<?xml version="1.0" encoding="UTF-8"?>
 <gpx creator="ecoris" version="1.1">
   <wpt lat="38.24715800176878" lon="140.71658064854364">
-    <name>St.1</name>
-    <time>2020-01-01T00:28:38.000Z</time>
     <ele>100</ele>
+    <time>2020-01-01T00:28:38.000Z</time>
+    <name>St.1</name>
     <cmt></cmt>
     <desc>User: mizutani
 photo: </desc>
   </wpt>
   <wpt lat="38.24101016421964" lon="140.71548306286388">
-    <name>St.3</name>
     <time></time>
+    <name>St.3</name>
     <cmt></cmt>
     <desc>photo: test.jpg</desc>
   </wpt>
