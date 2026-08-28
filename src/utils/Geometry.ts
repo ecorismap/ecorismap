@@ -764,6 +764,57 @@ export const generateKML = (data: RecordType[], layer: LayerType) => {
     pretty: true,
   });
 };
+// TrackSummaryからのエクスポート用: 軌跡(trk)と軌跡上の写真(wpt)を1つのGPXにまとめる。
+// 既存generateGPXとは独立実装とする（要素順をGPX 1.1スキーマの正規順=wpt→trk、
+// trkpt内はele→timeにし、時刻をUTCのISO形式で出力するため。既存関数の出力は変えない）
+export interface TrackExportPhoto {
+  filename: string; // wptのname・link href（zip内の写真ファイル名と一致させる）
+  timestamp: number; // 撮影時刻（ms）
+  latitude: number; // 軌跡上の補間位置
+  longitude: number;
+}
+
+export const generateTrackGPXWithPhotos = (
+  coords: LocationType[],
+  trackName: string,
+  photos: TrackExportPhoto[] = []
+): string => {
+  const gpx = xmlBuilder
+    .create('gpx', {
+      encoding: 'UTF-8',
+    })
+    .att('creator', 'ecoris')
+    .att('version', '1.1');
+
+  // GPX 1.1の要素順はwpt*→trk*
+  photos.forEach((photo) => {
+    const wpt = gpx.ele('wpt').att('lat', photo.latitude).att('lon', photo.longitude);
+    wpt.ele('time', new Date(photo.timestamp).toISOString());
+    wpt.ele('name', photo.filename);
+    wpt.ele('link').att('href', photo.filename);
+  });
+
+  const trk = gpx.ele('trk');
+  trk.ele('name', trackName);
+  const trkseg = trk.ele('trkseg');
+  coords.forEach((coord) => {
+    const trkpt = trkseg.ele('trkpt').att('lat', coord.latitude).att('lon', coord.longitude);
+    if (coord.altitude !== null && coord.altitude !== undefined) {
+      trkpt.ele('ele', coord.altitude);
+    }
+    if (coord.timestamp !== undefined) {
+      trkpt.ele('time', new Date(coord.timestamp).toISOString());
+    }
+  });
+
+  return gpx.end({
+    allowEmpty: true,
+    indent: '  ',
+    newline: '\n',
+    pretty: true,
+  });
+};
+
 export const generateGPX = (data: RecordType[], type: FeatureType) => {
   const gpx = xmlBuilder
     .create('gpx', {

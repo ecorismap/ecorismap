@@ -7,11 +7,18 @@ import { TrackPhotoContext } from '../contexts/TrackPhoto';
 import { LocationTrackingContext } from '../contexts/LocationTracking';
 import { useBottomSheetNavigation, useBottomSheetRoute } from '../contexts/BottomSheetNavigationContext';
 import { RootState } from '../store';
-import { LineRecordType, LocationType } from '../types';
+import { ExportType, LineRecordType, LocationType } from '../types';
 import { getAllTrackPoints } from '../utils/Location';
 import { calcTrackStatistics, buildElevationProfile, findNearestProfileIndex } from '../utils/trackStatistics';
+import { generateTrackGPXWithPhotos } from '../utils/Geometry';
+import { exportGeoFile } from '../utils/File';
+import { MAX_BACKUP_LABEL_LENGTH, truncateForFileName } from '../utils/General';
 import { useTrackPhotos } from '../hooks/useTrackPhotos';
 import { editSettingsAction } from '../modules/settings';
+import { AlertAsync } from '../components/molecules/AlertAsync';
+import { t } from '../i18n/config';
+import { Platform } from 'react-native';
+import dayjs from '../i18n/dayjs';
 
 // 記録中サマリーのライブ更新間隔。統計・グラフはMMKV全点読み出しを伴うため間引き、
 // 写真はメディアライブラリ走査を伴うためさらに長い間隔にする
@@ -132,6 +139,70 @@ export default function TrackSummaryContainers() {
     dispatch(editSettingsAction({ isTrackPhotoVisible: !isTrackPhotoVisible }));
   }, [dispatch, isTrackPhotoVisible]);
 
+  // 表示中の軌跡をGPX（trk+写真wpt）+写真ファイルのzipでエクスポートする。
+  // 写真は表示トグルONのネイティブのみ。localUriがない写真（iCloud未DL等）は
+  // GPXのlink参照切れを防ぐためwpt・ファイルともスキップする
+  const [isExporting, setIsExporting] = useState(false);
+  const pressExportTrack = useCallback(async () => {
+    if (isExporting) return;
+    setIsExporting(true);
+    try {
+      // 記録中は間引き更新前の最新点まで含めるためその場で再取得する
+      const exportCoords = isRecordingTarget ? getAllTrackPoints() : record?.coords;
+      if (exportCoords === undefined || exportCoords.length < 2) {
+        await AlertAsync(t('TrackSummary.notFound'));
+        return;
+      }
+      const time = dayjs().format('YYYY-MM-DD_HH-mm-ss');
+      const recordName =
+        !isRecordingTarget && typeof record?.field.name === 'string' && record.field.name !== ''
+          ? record.field.name
+          : `track_${time}`;
+      const label = truncateForFileName(recordName, MAX_BACKUP_LABEL_LENGTH);
+
+      let exportPhotos: { filename: string; timestamp: number; latitude: number; longitude: number; localUri: string }[] =
+        [];
+      if (Platform.OS !== 'web' && isTrackPhotoVisible) {
+        // zip内の同名衝突はname_1.jpg形式でリネームし、wptのlinkと一致させる
+        const usedNames = new Map<string, number>();
+        exportPhotos = trackPhotos
+          .filter((photo) => photo.localUri !== undefined)
+          .map((photo) => {
+            const count = usedNames.get(photo.filename) ?? 0;
+            usedNames.set(photo.filename, count + 1);
+            let filename = photo.filename;
+            if (count > 0) {
+              const dot = filename.lastIndexOf('.');
+              filename = dot === -1 ? `${filename}_${count}` : `${filename.slice(0, dot)}_${count}${filename.slice(dot)}`;
+            }
+            return {
+              filename,
+              timestamp: photo.timestamp,
+              latitude: photo.latitude,
+              longitude: photo.longitude,
+              localUri: photo.localUri as string,
+            };
+          });
+      }
+
+      const gpx = generateTrackGPXWithPhotos(exportCoords, recordName, exportPhotos);
+      const exportData: { data: string; name: string; folder: string; type: ExportType }[] = [
+        { data: gpx, name: `${label}_${time}.gpx`, folder: '', type: 'GPX' },
+        ...exportPhotos.map((photo) => ({ data: photo.localUri, name: photo.filename, folder: '', type: 'PHOTO' as ExportType })),
+      ];
+      const result = await exportGeoFile(exportData, `track_${label}_${time}`, 'zip');
+      if (result === 'saved') {
+        await AlertAsync(t('hooks.message.successExportData'));
+      } else if (result === 'error') {
+        await AlertAsync(t('hooks.message.failExport'));
+      }
+    } catch (e) {
+      await AlertAsync(t('hooks.message.failExport'));
+    } finally {
+      setIsExporting(false);
+    }
+  }, [isExporting, isRecordingTarget, record, isTrackPhotoVisible, trackPhotos]);
+
   // 両導線とも地図（Home）から開くため、戻る＝シートを閉じて地図に戻る
   const gotoBack = useCallback(() => {
     closeBottomSheet();
@@ -145,6 +216,8 @@ export default function TrackSummaryContainers() {
         profile,
         isRecording: isRecordingTarget,
         gotoBack,
+        pressExportTrack,
+        isExporting,
         isTrackPhotoVisible,
         toggleTrackPhotoVisible,
         trackPhotoCount: trackPhotos.length,

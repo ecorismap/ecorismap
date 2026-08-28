@@ -50,6 +50,7 @@ export interface TrackPhotoType {
   thumbnail: string | null; // base64 data URI（生成失敗時はnull）
   uri: string; // ph://（iOS）またはfile://（Android）
   localUri?: string; // 拡大表示用のfile:// URI
+  filename: string; // 元のファイル名（エクスポート時のzip内ファイル名・GPXのlink参照に使用）
 }
 
 export interface MemberLocationType {

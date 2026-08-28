@@ -1141,6 +1141,7 @@
       "titleRecording": "Track Summary (Recording)"
     },
     "label": {
+      "export": "Export track",
       "distance": "Distance",
       "duration": "Duration",
       "averageSpeed": "Avg Speed",
