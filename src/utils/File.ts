@@ -209,14 +209,15 @@ export const exportGeoFile = async (
   }[],
   exportFileName: string,
   // ecorismap拡張子は廃止済み（読み込みのみ互換維持）
-  ext: 'zip'
+  ext: 'zip',
+  destination?: 'save' | 'share'
 ): Promise<ExportResultType> => {
   try {
     const fileName = sanitize(exportFileName.normalize('NFC'));
     const path = await generateZipFile(exportData, exportFileName, ext);
     if (path === undefined) return 'error';
 
-    const result = await exportFileFromUri(path, `${fileName}.${ext}`);
+    const result = await exportFileFromUri(path, `${fileName}.${ext}`, undefined, destination);
     await RNFS.unlink(path);
     return result;
   } catch (e) {
@@ -247,14 +248,16 @@ export const generateEcorisMapZip = async (
 
 // Androidの共有シートには「デバイスに保存」がないため、保存/共有/キャンセルを事前に選ばせる。
 // キャンセル時は何も書き込まずに'cancelled'を返す（以前は共有前に無条件でDownloadへ保存していた）。
+// destination指定時（呼び出し側で選択済みの場合）はモーダルを出さずにそのまま実行する。
 export async function exportFileFromUri(
   uri: string,
   fileName: string,
-  options?: Sharing.SharingOptions
+  options?: Sharing.SharingOptions,
+  destination?: 'save' | 'share'
 ): Promise<ExportResultType> {
   try {
     if (Platform.OS === 'android') {
-      const choice = await showExportDestinationModal();
+      const choice = destination ?? (await showExportDestinationModal());
       if (choice === 'cancel') return 'cancelled';
       if (choice === 'save') {
         await RNFS.copyFile(uri, `${RNFS.DownloadDirectoryPath}/${sanitize(fileName)}`);
