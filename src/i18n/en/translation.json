@@ -1152,6 +1152,8 @@
     },
     "label": {
       "export": "Export track",
+      "exportingPhotos": "Preparing photos {{current}}/{{total}}",
+      "exportingFile": "Creating file...",
       "distance": "Distance",
       "duration": "Duration",
       "averageSpeed": "Avg Speed",

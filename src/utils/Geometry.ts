@@ -815,6 +815,82 @@ export const generateTrackGPXWithPhotos = (
   });
 };
 
+// 写真ポイントをCSV/GeoJSON/KMLでも出力するための擬似レイヤ・レコード。
+// 既存のgenerateCSV/generateGeoJson/generateKMLをそのまま使えるようにする
+// （軌跡本体はGPXのtrkとして出力するため、ここでは写真だけを扱う）
+// Google Earth用の写真ポイントKML。descriptionにimgタグを入れて吹き出しに写真を表示する。
+// 写真はKMLと同じ階層にある前提の相対参照（KMZに同梱するか、zipを解凍して同じフォルダに置く）
+export const generateTrackPhotoKML = (photos: TrackExportPhoto[], docName: string): string => {
+  const kml = xmlBuilder
+    .create('kml', {
+      encoding: 'UTF-8',
+    })
+    .att('xmlns', 'http://www.opengis.net/kml/2.2');
+
+  const document = kml.ele('Document');
+  document.ele('name', docName);
+
+  photos.forEach((photo) => {
+    const placemark = document.ele('Placemark');
+    placemark.ele('name', photo.filename);
+    // CDATAで囲うことでGoogle EarthがHTMLとして解釈する
+    placemark
+      .ele('description')
+      .cdata(
+        `<img src="${photo.filename}" width="480" /><br/>${dayjs(photo.timestamp).format('YYYY-MM-DD HH:mm:ss')}`
+      );
+    // タイムスライダーで撮影時刻順に辿れるようにする
+    placemark.ele('TimeStamp').ele('when', new Date(photo.timestamp).toISOString());
+    const style = placemark.ele('Style');
+    const iconStyle = style.ele('IconStyle');
+    const icon = iconStyle.ele('Icon');
+    icon.ele('href', 'http://maps.google.com/mapfiles/kml/shapes/camera.png');
+    placemark.ele('Point').ele('coordinates', `${photo.longitude},${photo.latitude}`);
+  });
+
+  return kml.end({
+    allowEmpty: true,
+    indent: '  ',
+    newline: '\n',
+    pretty: true,
+  });
+};
+
+export const trackPhotoExportLayer = (layerName: string): LayerType => ({
+  id: 'track_photo_export',
+  name: layerName,
+  type: 'POINT',
+  permission: 'PRIVATE',
+  colorStyle: {
+    colorType: 'SINGLE',
+    transparency: 0.2,
+    color: COLOR.RED,
+    fieldName: 'name',
+    customFieldValue: '',
+    colorRamp: 'RANDOM',
+    colorList: [],
+  },
+  label: 'name',
+  visible: true,
+  active: false,
+  field: [
+    { id: ulid(), name: 'name', format: 'STRING' },
+    { id: ulid(), name: 'time', format: 'DATETIME' },
+  ],
+});
+
+export const trackPhotoExportRecords = (photos: TrackExportPhoto[]): RecordType[] =>
+  photos.map((photo) => ({
+    id: ulid(),
+    userId: undefined,
+    displayName: null,
+    visible: true,
+    redraw: false,
+    coords: { latitude: photo.latitude, longitude: photo.longitude },
+    // nameはzip内の写真ファイル名。CSV/GeoJSON/KMLから写真を参照する手がかりになる
+    field: { name: photo.filename, time: new Date(photo.timestamp).toISOString() },
+  }));
+
 export const generateGPX = (data: RecordType[], type: FeatureType) => {
   const gpx = xmlBuilder
     .create('gpx', {

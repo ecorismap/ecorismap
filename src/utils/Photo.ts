@@ -16,6 +16,37 @@ export const createThumbnail = async (uri: string) => {
   return thumbnail.base64 ? `data:image/jpeg;base64,${thumbnail.base64}` : null;
 };
 
+// HEIC/HEIFはGoogle Earth・QGIS等で表示できないため、エクスポート時にJPEGへ変換する。
+// 変換した場合はisConverted=trueを返すので、呼び出し側は一時ファイルを後始末すること。
+// JPEG等はそのまま返す（再圧縮による劣化と処理時間を避ける）
+export const convertPhotoForExport = async (
+  uri: string,
+  filename: string
+): Promise<{ uri: string; filename: string; isConverted: boolean }> => {
+  if (!/\.(heic|heif)$/i.test(filename)) return { uri, filename, isConverted: false };
+  try {
+    const converted = await manipulateAsync(uri, [], { compress: 0.9, format: SaveFormat.JPEG });
+    return {
+      uri: converted.uri,
+      filename: filename.replace(/\.(heic|heif)$/i, '.jpg'),
+      isConverted: true,
+    };
+  } catch (e) {
+    // 変換に失敗したら元のファイルをそのまま使う（表示できない可能性は残るが出力はされる）
+    return { uri, filename, isConverted: false };
+  }
+};
+
+// 一時ファイルの削除（存在しなくてもエラーにしない）
+export const deletePhotoFile = async (uri: string) => {
+  if (Platform.OS === 'web') return;
+  try {
+    await FileSystem.deleteAsync(uri, { idempotent: true });
+  } catch {
+    // 後片付けの失敗は無視する
+  }
+};
+
 export const saveToStorage = async (fileUri: string, fileName: string, folder: string, options?: { copy: boolean }) => {
   await FileSystem.makeDirectoryAsync(folder, {
     intermediates: true,

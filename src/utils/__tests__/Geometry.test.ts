@@ -2,8 +2,12 @@ import {
   gpx2Data,
   geoJson2Data,
   generateCSV,
+  generateKML,
   generateGPX,
   generateTrackGPXWithPhotos,
+  generateTrackPhotoKML,
+  trackPhotoExportLayer,
+  trackPhotoExportRecords,
   generateGeoJson,
   escapeCSVValue,
   hasValidCoordinates,
@@ -373,5 +377,72 @@ describe('generateTrackGPXWithPhotos', () => {
       </trkpt>`);
     expect(gpx).toContain('<trkpt lat="35.001" lon="135"></trkpt>');
     expect(gpx).not.toContain('<ele>');
+  });
+});
+
+describe('trackPhotoExportLayer / trackPhotoExportRecords', () => {
+  const photos = [
+    { filename: 'IMG_0001.jpg', timestamp: Date.UTC(2026, 7, 28, 1, 0, 5), latitude: 35.0005, longitude: 135.0001 },
+    { filename: 'IMG_0002.jpg', timestamp: Date.UTC(2026, 7, 28, 1, 0, 30), latitude: 35.0009, longitude: 135.0002 },
+  ];
+
+  it('擬似レイヤはname/timeフィールドを持つPOINTレイヤ', () => {
+    const layer = trackPhotoExportLayer('track_photo');
+    expect(layer.type).toBe('POINT');
+    expect(layer.name).toBe('track_photo');
+    expect(layer.field.map((f) => f.name)).toEqual(['name', 'time']);
+  });
+
+  it('写真ごとにファイル名とUTC時刻を持つポイントレコードを作る', () => {
+    const records = trackPhotoExportRecords(photos);
+    expect(records).toHaveLength(2);
+    expect(records[0].coords).toEqual({ latitude: 35.0005, longitude: 135.0001 });
+    expect(records[0].field.name).toBe('IMG_0001.jpg');
+    expect(records[0].field.time).toBe('2026-08-28T01:00:05.000Z');
+  });
+
+  it('既存のCSV/GeoJSON/KML生成にそのまま渡せる', () => {
+    const layer = trackPhotoExportLayer('track_photo');
+    const records = trackPhotoExportRecords(photos);
+
+    const csv = generateCSV(records, layer.field, 'POINT');
+    expect(csv).toContain('name,time,geometry');
+    expect(csv).toContain('"IMG_0001.jpg"');
+    expect(csv).toContain('"POINT(135.0001 35.0005)"');
+
+    const geojson = generateGeoJson(records, layer.field, 'POINT', 'track_photo') as unknown as {
+      features: { properties: { name: string }; geometry: { coordinates: number[] } }[];
+    };
+    expect(geojson.features).toHaveLength(2);
+    expect(geojson.features[0].properties.name).toBe('IMG_0001.jpg');
+    expect(geojson.features[0].geometry.coordinates).toEqual([135.0001, 35.0005]);
+
+    const kml = generateKML(records, layer);
+    expect(kml).toContain('<name>IMG_0001.jpg</name>');
+    expect(kml).toContain('<coordinates>135.0001,35.0005</coordinates>');
+  });
+});
+
+describe('generateTrackPhotoKML', () => {
+  const photos = [
+    { filename: 'IMG_0001.jpg', timestamp: Date.UTC(2026, 7, 28, 1, 0, 5), latitude: 35.0005, longitude: 135.0001 },
+  ];
+
+  it('descriptionにCDATAのimgタグを入れる（Google Earthで写真が表示される）', () => {
+    const kml = generateTrackPhotoKML(photos, 'track_photo');
+    expect(kml).toContain('<![CDATA[<img src="IMG_0001.jpg" width="480" />');
+    expect(kml).toContain('<name>IMG_0001.jpg</name>');
+  });
+
+  it('タイムスライダー用のTimeStampと座標を出力する', () => {
+    const kml = generateTrackPhotoKML(photos, 'track_photo');
+    expect(kml).toContain('<when>2026-08-28T01:00:05.000Z</when>');
+    expect(kml).toContain('<coordinates>135.0001,35.0005</coordinates>');
+  });
+
+  it('写真がなくてもDocument名を持つ有効なKMLになる', () => {
+    const kml = generateTrackPhotoKML([], 'track_photo');
+    expect(kml).toContain('<name>track_photo</name>');
+    expect(kml).not.toContain('<Placemark>');
   });
 });

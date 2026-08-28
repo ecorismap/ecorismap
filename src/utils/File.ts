@@ -48,7 +48,7 @@ async function createZipWithJSZipDirect(
       const fileName = sanitize(d.name).normalize('NFC');
       const fullPath = folderName + fileName;
       
-      if (d.type === 'PHOTO' || d.type === 'SQLITE') {
+      if (d.type === 'PHOTO' || d.type === 'SQLITE' || d.type === 'KMZ') {
         // 実際のファイルパスを構築（exportGeoFileで作成されたもの）
         // 空のフォルダの場合は'.'を使わない
         const folder = sanitize(d.folder).normalize('NFC');
@@ -89,6 +89,43 @@ async function createZipWithJSZipDirect(
   }
 }
 
+// Google Earth用のKMZ（doc.kml＋写真を1ファイルにまとめたzip）をキャッシュへ作成し、パスを返す。
+// 呼び出し側はエクスポート後にunlinkすること
+export const generateKMZFile = async (
+  kml: string,
+  photos: { name: string; uri: string }[],
+  exportFileName: string
+): Promise<string | undefined> => {
+  try {
+    const fileName = sanitize(exportFileName.normalize('NFC'));
+    const targetPath = `${RNFS.CachesDirectoryPath}/export/${fileName}.kmz`;
+    await RNFS.mkdir(`${RNFS.CachesDirectoryPath}/export`);
+
+    const jszip = new JSZip();
+    // KMZのルートに置いたdoc.kmlがGoogle Earthの読み込み対象になる
+    jszip.file('doc.kml', kml);
+    for (const photo of photos) {
+      // RNFSのreadFileはfile://スキームを解釈しないため実パスに直す
+      const photoPath = photo.uri.startsWith('file://')
+        ? decodeURIComponent(photo.uri.replace('file://', ''))
+        : photo.uri;
+      if (!(await RNFS.exists(photoPath))) continue;
+      const content = await RNFS.readFile(photoPath, 'base64');
+      jszip.file(sanitize(photo.name).normalize('NFC'), content, { base64: true });
+    }
+    const zipContent = await jszip.generateAsync({
+      type: 'base64',
+      compression: 'DEFLATE',
+      compressionOptions: { level: 6 },
+    });
+    await RNFS.writeFile(targetPath, zipContent, 'base64');
+    return targetPath;
+  } catch (e) {
+    console.error('Error creating KMZ:', e);
+    return undefined;
+  }
+};
+
 export const generateZipFile = async (
   exportData: {
     data: string;
@@ -114,7 +151,7 @@ export const generateZipFile = async (
       if (folder !== '') {
         await RNFS.mkdir(`${sourcePath}/${folder}`);
       }
-      if (d.type === 'PHOTO' || d.type === 'SQLITE') {
+      if (d.type === 'PHOTO' || d.type === 'SQLITE' || d.type === 'KMZ') {
         console.log(d);
         
         // ローカルファイルが存在するかチェック

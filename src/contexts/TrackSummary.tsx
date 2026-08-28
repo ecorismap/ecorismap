@@ -10,6 +10,8 @@ interface TrackSummaryContextType {
   // 軌跡(trk)+写真(wpt)のGPXと写真ファイルをzipでエクスポートする
   pressExportTrack: () => Promise<void>;
   isExporting: boolean;
+  // エクスポート中の進捗メッセージ（ローディング表示用）
+  exportProgress: string;
   // 軌跡上の写真表示（ネイティブのみ。Webでは常にfalse/0件）
   isTrackPhotoVisible: boolean;
   toggleTrackPhotoVisible: () => void;
