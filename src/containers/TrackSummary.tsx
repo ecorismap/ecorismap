@@ -21,6 +21,7 @@ import {
   trackPhotoExportRecords,
 } from '../utils/Geometry';
 import { exportGeoFile, generateKMZFile } from '../utils/File';
+import { generateTrackSummarySVG } from '../utils/trackSummaryImage';
 import { convertPhotoForExport, deletePhotoFile } from '../utils/Photo';
 import { MAX_BACKUP_LABEL_LENGTH, truncateForFileName } from '../utils/General';
 import { resolveTrackPhotoFileUri, useTrackPhotos } from '../hooks/useTrackPhotos';
@@ -230,6 +231,21 @@ export default function TrackSummaryContainers() {
         ...exportPhotos.map((photo) => ({ data: photo.fileUri, name: photo.filename, folder: '', type: 'PHOTO' as ExportType })),
       ];
 
+      // アプリを開かなくても内容が分かるよう、統計と標高グラフをSVG画像でも出力する
+      const exportStatistics = isRecordingTarget ? calcTrackStatistics(exportCoords) : statistics;
+      if (exportStatistics !== null) {
+        exportData.push({
+          data: generateTrackSummarySVG(
+            recordName,
+            exportStatistics,
+            isRecordingTarget ? buildElevationProfile(exportCoords) : profile
+          ),
+          name: `${label}_${time}.svg`,
+          folder: '',
+          type: 'SVG',
+        });
+      }
+
       // 写真ポイントは他ソフトで扱いやすいようCSV/GeoJSONでも出力する
       if (exportPhotos.length > 0) {
         const photoLayerName = `${label}_photo`;
@@ -279,7 +295,7 @@ export default function TrackSummaryContainers() {
       setExportProgress('');
       setIsExporting(false);
     }
-  }, [isExporting, isRecordingTarget, record, isTrackPhotoVisible, trackPhotos]);
+  }, [isExporting, isRecordingTarget, record, isTrackPhotoVisible, trackPhotos, statistics, profile]);
 
   // 両導線とも地図（Home）から開くため、戻る＝シートを閉じて地図に戻る
   const gotoBack = useCallback(() => {
