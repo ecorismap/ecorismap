@@ -34,6 +34,24 @@ const cacheSet = (key: string, value: CachedPhotoInfo) => {
 const requireMediaLibrary = () =>
   require('expo-media-library/legacy') as typeof import('expo-media-library/legacy');
 
+// エクスポート等で写真の実ファイル（file:// URI）が必要なときに解決する。
+// AndroidのgetAssetInfoAsyncはEXIF読み取りに失敗した写真でlocalUriを返さないが、
+// uri自体が常にfile://の実パスなのでそちらへフォールバックする。
+// iOSはuriがph://のため使えず、localUri未取得（iCloud未ダウンロード等）の場合は
+// ダウンロードを許可して再取得する
+export const resolveTrackPhotoFileUri = async (photo: TrackPhotoType): Promise<string | undefined> => {
+  if (photo.localUri !== undefined) return photo.localUri;
+  if (photo.uri.startsWith('file://')) return photo.uri;
+  if (Platform.OS === 'web') return undefined;
+  try {
+    const MediaLibrary = requireMediaLibrary();
+    const info = await MediaLibrary.getAssetInfoAsync(photo.assetId, { shouldDownloadFromNetwork: true });
+    return info.localUri;
+  } catch {
+    return undefined;
+  }
+};
+
 export type UseTrackPhotosReturnType = {
   trackPhotos: TrackPhotoType[];
   isLimitedAccess: boolean;

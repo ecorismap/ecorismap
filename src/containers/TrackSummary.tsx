@@ -13,7 +13,7 @@ import { calcTrackStatistics, buildElevationProfile, findNearestProfileIndex } f
 import { generateTrackGPXWithPhotos } from '../utils/Geometry';
 import { exportGeoFile } from '../utils/File';
 import { MAX_BACKUP_LABEL_LENGTH, truncateForFileName } from '../utils/General';
-import { useTrackPhotos } from '../hooks/useTrackPhotos';
+import { resolveTrackPhotoFileUri, useTrackPhotos } from '../hooks/useTrackPhotos';
 import { editSettingsAction } from '../modules/settings';
 import { AlertAsync } from '../components/molecules/AlertAsync';
 import { t } from '../i18n/config';
@@ -160,35 +160,36 @@ export default function TrackSummaryContainers() {
           : `track_${time}`;
       const label = truncateForFileName(recordName, MAX_BACKUP_LABEL_LENGTH);
 
-      let exportPhotos: { filename: string; timestamp: number; latitude: number; longitude: number; localUri: string }[] =
+      const exportPhotos: { filename: string; timestamp: number; latitude: number; longitude: number; fileUri: string }[] =
         [];
       if (Platform.OS !== 'web' && isTrackPhotoVisible) {
         // zip内の同名衝突はname_1.jpg形式でリネームし、wptのlinkと一致させる
         const usedNames = new Map<string, number>();
-        exportPhotos = trackPhotos
-          .filter((photo) => photo.localUri !== undefined)
-          .map((photo) => {
-            const count = usedNames.get(photo.filename) ?? 0;
-            usedNames.set(photo.filename, count + 1);
-            let filename = photo.filename;
-            if (count > 0) {
-              const dot = filename.lastIndexOf('.');
-              filename = dot === -1 ? `${filename}_${count}` : `${filename.slice(0, dot)}_${count}${filename.slice(dot)}`;
-            }
-            return {
-              filename,
-              timestamp: photo.timestamp,
-              latitude: photo.latitude,
-              longitude: photo.longitude,
-              localUri: photo.localUri as string,
-            };
+        for (const photo of trackPhotos) {
+          // localUri未取得の写真もフォールバックで実ファイルを解決する（取得できない写真はスキップ）
+          const fileUri = await resolveTrackPhotoFileUri(photo);
+          if (fileUri === undefined) continue;
+          const count = usedNames.get(photo.filename) ?? 0;
+          usedNames.set(photo.filename, count + 1);
+          let filename = photo.filename;
+          if (count > 0) {
+            const dot = filename.lastIndexOf('.');
+            filename = dot === -1 ? `${filename}_${count}` : `${filename.slice(0, dot)}_${count}${filename.slice(dot)}`;
+          }
+          exportPhotos.push({
+            filename,
+            timestamp: photo.timestamp,
+            latitude: photo.latitude,
+            longitude: photo.longitude,
+            fileUri,
           });
+        }
       }
 
       const gpx = generateTrackGPXWithPhotos(exportCoords, recordName, exportPhotos);
       const exportData: { data: string; name: string; folder: string; type: ExportType }[] = [
         { data: gpx, name: `${label}_${time}.gpx`, folder: '', type: 'GPX' },
-        ...exportPhotos.map((photo) => ({ data: photo.localUri, name: photo.filename, folder: '', type: 'PHOTO' as ExportType })),
+        ...exportPhotos.map((photo) => ({ data: photo.fileUri, name: photo.filename, folder: '', type: 'PHOTO' as ExportType })),
       ];
       const result = await exportGeoFile(exportData, `track_${label}_${time}`, 'zip');
       if (result === 'saved') {
