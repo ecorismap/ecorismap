@@ -21,6 +21,13 @@ export const exportFileFromData = async (data: string, fileName: string): Promis
   return 'saved';
 };
 
+// KMZは写真同梱のためネイティブ専用（Webは写真ライブラリを扱わないので常にundefined）
+export const generateKMZFile = async (
+  _kml: string,
+  _photos: { name: string; uri: string }[],
+  _exportFileName: string
+): Promise<string | undefined> => undefined;
+
 export const generateZipBlob = async (
   exportData: {
     data: string;

@@ -7,6 +7,7 @@ import { TrackSummaryContext } from '../../contexts/TrackSummary';
 import { t } from '../../i18n/config';
 import dayjs from '../../i18n/dayjs';
 import { BottomSheetHeader } from '../molecules/BottomSheetHeader';
+import { Loading } from '../molecules/Loading';
 import { TrackSummaryChart } from '../organisms/TrackSummaryChart';
 
 const formatDuration = (seconds: number) => {
@@ -33,6 +34,7 @@ export default function TrackSummary() {
     gotoBack,
     pressExportTrack,
     isExporting,
+    exportProgress,
     isTrackPhotoVisible,
     toggleTrackPhotoVisible,
     trackPhotoCount,
@@ -101,6 +103,8 @@ export default function TrackSummary() {
 
   return (
     <View style={{ flex: 1 }}>
+      {/* エクスポートは写真の変換・zip作成で時間がかかるため進捗を全画面表示する */}
+      <Loading visible={isExporting} text={exportProgress} />
       <BottomSheetHeader
         title={isRecording ? t('TrackSummary.navigation.titleRecording') : t('TrackSummary.navigation.title')}
         showBackButton

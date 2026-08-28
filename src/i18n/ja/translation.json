@@ -1152,6 +1152,8 @@
     },
     "label": {
       "export": "軌跡をエクスポート",
+      "exportingPhotos": "写真を準備中 {{current}}/{{total}}",
+      "exportingFile": "ファイルを作成中...",
       "distance": "総距離",
       "duration": "所要時間",
       "averageSpeed": "平均速度",

@@ -150,6 +150,7 @@ export const EXPORTTYPE = {
   GPX: 'gpx',
   JSON: 'json',
   KML: 'kml',
+  KMZ: 'kmz',
   SQLITE: 'sqlite',
   PHOTO: 'photo',
 } as const;

@@ -10,8 +10,16 @@ import { RootState } from '../store';
 import { ExportType, LineRecordType, LocationType } from '../types';
 import { getAllTrackPoints } from '../utils/Location';
 import { calcTrackStatistics, buildElevationProfile, findNearestProfileIndex } from '../utils/trackStatistics';
-import { generateTrackGPXWithPhotos } from '../utils/Geometry';
-import { exportGeoFile } from '../utils/File';
+import {
+  generateCSV,
+  generateGeoJson,
+  generateTrackGPXWithPhotos,
+  generateTrackPhotoKML,
+  trackPhotoExportLayer,
+  trackPhotoExportRecords,
+} from '../utils/Geometry';
+import { exportGeoFile, generateKMZFile } from '../utils/File';
+import { convertPhotoForExport, deletePhotoFile } from '../utils/Photo';
 import { MAX_BACKUP_LABEL_LENGTH, truncateForFileName } from '../utils/General';
 import { resolveTrackPhotoFileUri, useTrackPhotos } from '../hooks/useTrackPhotos';
 import { editSettingsAction } from '../modules/settings';
@@ -143,9 +151,14 @@ export default function TrackSummaryContainers() {
   // 写真は表示トグルONのネイティブのみ。localUriがない写真（iCloud未DL等）は
   // GPXのlink参照切れを防ぐためwpt・ファイルともスキップする
   const [isExporting, setIsExporting] = useState(false);
+  const [exportProgress, setExportProgress] = useState('');
   const pressExportTrack = useCallback(async () => {
     if (isExporting) return;
     setIsExporting(true);
+    setExportProgress('');
+    // HEIC変換で作った一時ファイル。エクスポート後に削除する
+    const convertedUris: string[] = [];
+    let kmzPath: string | undefined;
     try {
       // 記録中は間引き更新前の最新点まで含めるためその場で再取得する
       const exportCoords = isRecordingTarget ? getAllTrackPoints() : record?.coords;
@@ -165,13 +178,21 @@ export default function TrackSummaryContainers() {
       if (Platform.OS !== 'web' && isTrackPhotoVisible) {
         // zip内の同名衝突はname_1.jpg形式でリネームし、wptのlinkと一致させる
         const usedNames = new Map<string, number>();
+        let processed = 0;
         for (const photo of trackPhotos) {
+          // 写真の解決・変換は1枚ずつ時間がかかるため進捗を出す
+          processed += 1;
+          setExportProgress(t('TrackSummary.label.exportingPhotos', { current: processed, total: trackPhotos.length }));
           // localUri未取得の写真もフォールバックで実ファイルを解決する（取得できない写真はスキップ）
-          const fileUri = await resolveTrackPhotoFileUri(photo);
-          if (fileUri === undefined) continue;
-          const count = usedNames.get(photo.filename) ?? 0;
-          usedNames.set(photo.filename, count + 1);
-          let filename = photo.filename;
+          const resolvedUri = await resolveTrackPhotoFileUri(photo);
+          if (resolvedUri === undefined) continue;
+          // HEIC/HEIFはGoogle EarthやQGISで表示できないためJPEGへ変換する
+          const converted = await convertPhotoForExport(resolvedUri, photo.filename);
+          const fileUri = converted.uri;
+          if (converted.isConverted) convertedUris.push(converted.uri);
+          const count = usedNames.get(converted.filename) ?? 0;
+          usedNames.set(converted.filename, count + 1);
+          let filename = converted.filename;
           if (count > 0) {
             const dot = filename.lastIndexOf('.');
             filename = dot === -1 ? `${filename}_${count}` : `${filename.slice(0, dot)}_${count}${filename.slice(dot)}`;
@@ -191,6 +212,40 @@ export default function TrackSummaryContainers() {
         { data: gpx, name: `${label}_${time}.gpx`, folder: '', type: 'GPX' },
         ...exportPhotos.map((photo) => ({ data: photo.fileUri, name: photo.filename, folder: '', type: 'PHOTO' as ExportType })),
       ];
+
+      // 写真ポイントは他ソフトで扱いやすいようCSV/GeoJSONでも出力する（軌跡本体はGPXのtrk）
+      if (exportPhotos.length > 0) {
+        const photoLayerName = `${label}_photo`;
+        const photoLayer = trackPhotoExportLayer(photoLayerName);
+        const photoRecords = trackPhotoExportRecords(exportPhotos);
+        const photoKml = generateTrackPhotoKML(exportPhotos, photoLayerName);
+        exportData.push(
+          {
+            data: generateCSV(photoRecords, photoLayer.field, 'POINT'),
+            name: `${photoLayerName}_${time}.csv`,
+            folder: '',
+            type: 'CSV',
+          },
+          {
+            data: JSON.stringify(generateGeoJson(photoRecords, photoLayer.field, 'POINT', photoLayerName)),
+            name: `${photoLayerName}_${time}.geojson`,
+            folder: '',
+            type: 'GeoJSON',
+          }
+        );
+
+        // Google Earth用に写真を同梱したKMZ（1ファイルで写真つきの吹き出しが開けるためKMLは出力しない）
+        setExportProgress(t('TrackSummary.label.exportingFile'));
+        kmzPath = await generateKMZFile(
+          photoKml,
+          exportPhotos.map((photo) => ({ name: photo.filename, uri: photo.fileUri })),
+          `${photoLayerName}_${time}`
+        );
+        if (kmzPath !== undefined) {
+          exportData.push({ data: kmzPath, name: `${photoLayerName}_${time}.kmz`, folder: '', type: 'KMZ' });
+        }
+      }
+      setExportProgress(t('TrackSummary.label.exportingFile'));
       const result = await exportGeoFile(exportData, `track_${label}_${time}`, 'zip');
       if (result === 'saved') {
         await AlertAsync(t('hooks.message.successExportData'));
@@ -200,6 +255,10 @@ export default function TrackSummaryContainers() {
     } catch (e) {
       await AlertAsync(t('hooks.message.failExport'));
     } finally {
+      // 一時ファイル（HEIC変換・KMZ）を後片付けする
+      for (const uri of convertedUris) await deletePhotoFile(uri);
+      if (kmzPath !== undefined) await deletePhotoFile(kmzPath);
+      setExportProgress('');
       setIsExporting(false);
     }
   }, [isExporting, isRecordingTarget, record, isTrackPhotoVisible, trackPhotos]);
@@ -219,6 +278,7 @@ export default function TrackSummaryContainers() {
         gotoBack,
         pressExportTrack,
         isExporting,
+        exportProgress,
         isTrackPhotoVisible,
         toggleTrackPhotoVisible,
         trackPhotoCount: trackPhotos.length,
