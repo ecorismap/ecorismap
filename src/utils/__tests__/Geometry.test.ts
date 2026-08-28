@@ -3,6 +3,7 @@ import {
   geoJson2Data,
   generateCSV,
   generateGPX,
+  generateTrackGPXWithPhotos,
   generateGeoJson,
   escapeCSVValue,
   hasValidCoordinates,
@@ -314,5 +315,63 @@ describe('generateGeoJson', () => {
       name: 'test',
       type: 'FeatureCollection',
     });
+  });
+});
+
+describe('generateTrackGPXWithPhotos', () => {
+  // UTC固定のタイムスタンプ（toISOString出力なので実行環境のTZに依存しない）
+  const T0 = Date.UTC(2026, 7, 28, 1, 0, 0); // 2026-08-28T01:00:00.000Z
+  const coords = [
+    { latitude: 35.0, longitude: 135.0, altitude: 100, timestamp: T0 },
+    { latitude: 35.001, longitude: 135.0, altitude: 110, timestamp: T0 + 10000 },
+  ];
+
+  it('写真なしはtrkのみ、trkptはele→timeの正規順・UTC ISO時刻', () => {
+    const expected = `<?xml version="1.0" encoding="UTF-8"?>
+<gpx creator="ecoris" version="1.1">
+  <trk>
+    <name>test track</name>
+    <trkseg>
+      <trkpt lat="35" lon="135">
+        <ele>100</ele>
+        <time>2026-08-28T01:00:00.000Z</time>
+      </trkpt>
+      <trkpt lat="35.001" lon="135">
+        <ele>110</ele>
+        <time>2026-08-28T01:00:10.000Z</time>
+      </trkpt>
+    </trkseg>
+  </trk>
+</gpx>`;
+    expect(generateTrackGPXWithPhotos(coords, 'test track')).toBe(expected);
+  });
+
+  it('写真ありはwptがtrkより先、wptの子はtime→name→link順でhref=ファイル名', () => {
+    const photos = [
+      { filename: 'IMG_0001.jpg', timestamp: T0 + 5000, latitude: 35.0005, longitude: 135.0 },
+    ];
+    const gpx = generateTrackGPXWithPhotos(coords, 'test track', photos);
+    const wptIndex = gpx.indexOf('<wpt');
+    const trkIndex = gpx.indexOf('<trk>');
+    expect(wptIndex).toBeGreaterThan(-1);
+    expect(wptIndex).toBeLessThan(trkIndex);
+    expect(gpx).toContain(`  <wpt lat="35.0005" lon="135">
+    <time>2026-08-28T01:00:05.000Z</time>
+    <name>IMG_0001.jpg</name>
+    <link href="IMG_0001.jpg"></link>
+  </wpt>`);
+  });
+
+  it('altitude・timestampがない点は要素を省略する', () => {
+    const mixed = [
+      { latitude: 35.0, longitude: 135.0, altitude: null, timestamp: T0 },
+      { latitude: 35.001, longitude: 135.0 },
+    ];
+    const gpx = generateTrackGPXWithPhotos(mixed, 'test track');
+    expect(gpx).toContain(`<trkpt lat="35" lon="135">
+        <time>2026-08-28T01:00:00.000Z</time>
+      </trkpt>`);
+    expect(gpx).toContain('<trkpt lat="35.001" lon="135"></trkpt>');
+    expect(gpx).not.toContain('<ele>');
   });
 });

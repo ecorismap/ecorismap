@@ -31,6 +31,8 @@ export default function TrackSummary() {
     profile,
     isRecording,
     gotoBack,
+    pressExportTrack,
+    isExporting,
     isTrackPhotoVisible,
     toggleTrackPhotoVisible,
     trackPhotoCount,
@@ -104,22 +106,36 @@ export default function TrackSummary() {
         showBackButton
         onBack={gotoBack}
         rightComponent={
-          Platform.OS !== 'web' ? (
+          <View style={styles.headerButtons}>
             <TouchableOpacity
-              style={styles.photoToggle}
-              onPress={toggleTrackPhotoVisible}
-              accessibilityLabel={t('TrackSummary.label.photos')}
+              style={styles.exportButton}
+              onPress={pressExportTrack}
+              disabled={isExporting || statistics === null}
+              accessibilityLabel={t('TrackSummary.label.export')}
             >
               <MaterialCommunityIcons
-                name={isTrackPhotoVisible ? 'image-multiple' : 'image-off-outline'}
+                name="export-variant"
                 size={22}
-                color={isTrackPhotoVisible ? COLOR.BLACK : COLOR.GRAY3}
+                color={isExporting || statistics === null ? COLOR.GRAY3 : COLOR.BLACK}
               />
-              {isTrackPhotoVisible && trackPhotoCount > 0 && (
-                <Text style={styles.photoCount}>{trackPhotoCount}</Text>
-              )}
             </TouchableOpacity>
-          ) : undefined
+            {Platform.OS !== 'web' && (
+              <TouchableOpacity
+                style={styles.photoToggle}
+                onPress={toggleTrackPhotoVisible}
+                accessibilityLabel={t('TrackSummary.label.photos')}
+              >
+                <MaterialCommunityIcons
+                  name={isTrackPhotoVisible ? 'image-multiple' : 'image-off-outline'}
+                  size={22}
+                  color={isTrackPhotoVisible ? COLOR.BLACK : COLOR.GRAY3}
+                />
+                {isTrackPhotoVisible && trackPhotoCount > 0 && (
+                  <Text style={styles.photoCount}>{trackPhotoCount}</Text>
+                )}
+              </TouchableOpacity>
+            )}
+          </View>
         }
       />
       {statistics === null ? (
@@ -250,6 +266,14 @@ const styles = StyleSheet.create({
     color: COLOR.BLACK,
     fontSize: 12,
     marginLeft: 3,
+  },
+  exportButton: {
+    alignItems: 'center',
+    padding: 5,
+  },
+  headerButtons: {
+    alignItems: 'center',
+    flexDirection: 'row',
   },
   photoToggle: {
     alignItems: 'center',

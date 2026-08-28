@@ -7,6 +7,9 @@ interface TrackSummaryContextType {
   // 記録中の軌跡ログを表示中か（サマリーは定期的にライブ更新される）
   isRecording: boolean;
   gotoBack: () => void;
+  // 軌跡(trk)+写真(wpt)のGPXと写真ファイルをzipでエクスポートする
+  pressExportTrack: () => Promise<void>;
+  isExporting: boolean;
   // 軌跡上の写真表示（ネイティブのみ。Webでは常にfalse/0件）
   isTrackPhotoVisible: boolean;
   toggleTrackPhotoVisible: () => void;

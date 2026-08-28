@@ -127,6 +127,7 @@ export const useTrackPhotos = (coords: LocationType[] | undefined, enabled: bool
           thumbnail: info.thumbnail,
           uri: asset.uri,
           localUri: info.localUri,
+          filename: asset.filename,
         });
         if (progressive) applyTrackPhotos([...results]);
       }
