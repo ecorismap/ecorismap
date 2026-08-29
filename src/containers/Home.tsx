@@ -124,7 +124,7 @@ import { useMaps } from '../hooks/useMaps';
 import { useRepository } from '../hooks/useRepository';
 import { ConflictResolverModal } from '../components/organisms/HomeModalConflictResolver';
 import { selectNonDeletedDataSet } from '../modules/selectors';
-import { TrackFocusProvider } from '../contexts/TrackFocus';
+import { TrackFocusContext, TrackFocusProvider } from '../contexts/TrackFocus';
 import { TrackPhotoProvider, TrackPhotoContext } from '../contexts/TrackPhoto';
 import { MeasureContext, MeasureProvider } from '../contexts/Measure';
 import { useLayers } from '../hooks/useLayers';
@@ -150,6 +150,8 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
   const { isMeasuring, setMeasureB, endMeasure } = useContext(MeasureContext);
   // 軌跡上の写真マーカー（タップ判定はMarkerのonPressではなくここの画面タップヒットテストで行う）
   const { trackPhotos, setSelectedPhoto, expandedClusterId, setExpandedClusterId } = useContext(TrackPhotoContext);
+  // 軌跡サマリーのフォーカス地点（時刻ポップアップとマーカーの表示元）。地図を動かしたら解除する
+  const { setTrackFocusPoint } = useContext(TrackFocusContext);
   const tileMaps = useSelector((state: RootState) => state.tileMaps);
   const user = useSelector((state: RootState) => state.user);
   const tileRegions = useSelector((state: RootState) => state.settings.tileRegions, shallowEqual);
@@ -617,9 +619,19 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       setPoiInfo(null);
       setMapLocationInfo(null);
       setTrackPointInfo(null);
+      setTrackFocusPoint(null);
       setExpandedClusterId(null);
     },
-    [changeMapRegion, closeVectorTileInfo, isDrawLineVisible, showDrawLine, setPoiInfo, setMapLocationInfo, setExpandedClusterId]
+    [
+      changeMapRegion,
+      closeVectorTileInfo,
+      isDrawLineVisible,
+      showDrawLine,
+      setPoiInfo,
+      setMapLocationInfo,
+      setTrackFocusPoint,
+      setExpandedClusterId,
+    ]
   );
 
   // const getGeologyInfo = useCallback(async (latlon: Position) => {
@@ -690,8 +702,9 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     setPoiInfo(null);
     setMapLocationInfo(null);
     setTrackPointInfo(null);
+    setTrackFocusPoint(null);
     setExpandedClusterId(null);
-  }, [setPoiInfo, setMapLocationInfo, setExpandedClusterId]);
+  }, [setPoiInfo, setMapLocationInfo, setTrackFocusPoint, setExpandedClusterId]);
 
   const togglePencilMode = useCallback(() => {
     runTutrial('PENCILMODE');
