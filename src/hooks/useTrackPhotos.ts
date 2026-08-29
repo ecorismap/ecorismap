@@ -37,7 +37,7 @@ const requireMediaLibrary = () =>
 // エクスポート等で写真の実ファイル（file:// URI）が必要なときに解決する。
 // AndroidのgetAssetInfoAsyncはEXIF読み取りに失敗した写真でlocalUriを返さないが、
 // uri自体が常にfile://の実パスなのでそちらへフォールバックする。
-// iOSはuriがph://のため使えず、localUri未取得（iCloud未ダウンロード等）の場合は
+// iOSはuriがph://のため使えず、localUri未取得（Live Photo・iCloud未ダウンロード等）の場合は
 // ダウンロードを許可して再取得する
 export const resolveTrackPhotoFileUri = async (photo: TrackPhotoType): Promise<string | undefined> => {
   if (photo.localUri !== undefined) return photo.localUri;
@@ -167,18 +167,27 @@ export const useTrackPhotos = (coords: LocationType[] | undefined, enabled: bool
   return { trackPhotos, isLimitedAccess, presentLimitedPicker };
 };
 
+// mediaSubtypesはiOSのみ返る（Androidはundefined）
+const isLivePhoto = (asset: import('expo-media-library/legacy').Asset) =>
+  asset.mediaSubtypes?.includes('livePhoto') === true;
+
 const loadPhotoInfo = async (
   MediaLibrary: typeof import('expo-media-library/legacy'),
   asset: import('expo-media-library/legacy').Asset
 ): Promise<CachedPhotoInfo> => {
   let localUri: string | undefined;
-  try {
-    // shouldDownloadFromNetwork:false でiCloud未ダウンロード写真の巨大DLを避ける。
-    // その場合はlocalUriが欠けることがあり、サムネイルなしの劣化表示になる
-    const info = await MediaLibrary.getAssetInfoAsync(asset, { shouldDownloadFromNetwork: false });
-    localUri = info.localUri;
-  } catch {
-    // 情報取得に失敗しても位置だけで表示する
+  // Live PhotoのgetAssetInfoAsyncはペアの動画を一時ファイルへ書き出すため非常に重い。
+  // 表示に必要なのはサムネイルだけで、これはph:// URIから直接作れるので情報取得ごと省く
+  // （実ファイルが必要なエクスポート時だけresolveTrackPhotoFileUriで都度解決する）
+  if (!isLivePhoto(asset)) {
+    try {
+      // shouldDownloadFromNetwork:false でiCloud未ダウンロード写真の巨大DLを避ける。
+      // その場合はlocalUriが欠けることがあり、サムネイルなしの劣化表示になる
+      const info = await MediaLibrary.getAssetInfoAsync(asset, { shouldDownloadFromNetwork: false });
+      localUri = info.localUri;
+    } catch {
+      // 情報取得に失敗しても位置だけで表示する
+    }
   }
 
   let thumbnail: string | null = null;
