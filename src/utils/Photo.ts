@@ -16,6 +16,17 @@ export const createThumbnail = async (uri: string) => {
   return thumbnail.base64 ? `data:image/jpeg;base64,${thumbnail.base64}` : null;
 };
 
+// 端末ライブラリの写真（iOSのph:// URI）は、New ArchitectureのRNのImageでは読めない
+// （ph://を扱うRCTImageURLLoaderがコード生成の登録対象外）。PhotoKitから直接読める
+// expo-image-manipulatorで拡大表示用の中サイズJPEGを一時ファイルへ書き出して肩代わりする
+export const createPreviewImage = async (uri: string) => {
+  const preview = await manipulateAsync(uri, [{ resize: { height: 1600 } }], {
+    compress: 0.8,
+    format: SaveFormat.JPEG,
+  });
+  return preview.uri;
+};
+
 // HEIC/HEIFはGoogle Earth・QGIS等で表示できないため、エクスポート時にJPEGへ変換する。
 // 変換した場合はisConverted=trueを返すので、呼び出し側は一時ファイルを後始末すること。
 // JPEG等はそのまま返す（再圧縮による劣化と処理時間を避ける）
@@ -57,7 +68,7 @@ export const saveToStorage = async (fileUri: string, fileName: string, folder: s
     // SDK 56: expo-media-library eagerly requires the native ExpoMediaLibraryNext module at
     // import time, which throws on web. Require it lazily and only on native (camera-roll save
     // is native-only anyway); the module factory then never runs in the web bundle.
-     
+
     const MediaLibrary = require('expo-media-library');
     const res = await MediaLibrary.requestPermissionsAsync();
     if (res.status === 'granted') {
