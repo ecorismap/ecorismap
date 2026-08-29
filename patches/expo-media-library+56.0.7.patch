@@ -1,0 +1,84 @@
+diff --git a/node_modules/expo-media-library/ios/MediaLibraryModule.swift b/node_modules/expo-media-library/ios/MediaLibraryModule.swift
+--- a/node_modules/expo-media-library/ios/MediaLibraryModule.swift
++++ b/node_modules/expo-media-library/ios/MediaLibraryModule.swift
+@@ -383,22 +383,29 @@
+   private func handleLivePhoto(asset: PHAsset, shouldDownloadFromNetwork: Bool, result: [String: Any?], promise: Promise) {
+     let livePhotoOptions = PHLivePhotoRequestOptions()
+     livePhotoOptions.isNetworkAccessAllowed = shouldDownloadFromNetwork
++    // Ask for a single high quality delivery instead of the default opportunistic one,
++    // which calls the result handler multiple times (degraded first, then full).
++    livePhotoOptions.deliveryMode = .highQualityFormat
+     var updatedResult = result
+       updatedResult["pairedVideoAsset"] = nil
+ 
++    // The result handler can still be called more than once, so make sure the promise
++    // is settled only once - resolving it twice crashes the app (expo/expo#46512).
++    let resolver = SingleResolvePromise(promise)
++
+     PHImageManager.default()
+       .requestLivePhoto(for: asset, targetSize: PHImageManagerMaximumSize, contentMode: .aspectFit, options: livePhotoOptions) { livePhoto, _ in
+       guard let livePhoto = livePhoto,
+         let videoResource = PHAssetResource.assetResources(for: livePhoto)
+         .first(where: { $0.type == .pairedVideo }) else {
+-        promise.resolve(updatedResult)
++        resolver.resolve(updatedResult)
+         return
+       }
+-      self.writePairedVideoAsset(videoResource: videoResource, asset: asset, result: updatedResult, promise: promise)
++      self.writePairedVideoAsset(videoResource: videoResource, asset: asset, result: updatedResult, resolver: resolver)
+       }
+   }
+ 
+-  private func writePairedVideoAsset(videoResource: PHAssetResource, asset: PHAsset, result: [String: Any?], promise: Promise) {
++  private func writePairedVideoAsset(videoResource: PHAssetResource, asset: PHAsset, result: [String: Any?], resolver: SingleResolvePromise) {
+     let fileName = videoResource.originalFilename
+     let tempDir = FileManager.default.temporaryDirectory
+     let fileExt = getFileExtension(from: fileName).replacingOccurrences(of: ".", with: "")
+@@ -408,7 +415,7 @@
+     var height = CGFloat(asset.pixelHeight)
+     PHAssetResourceManager.default().writeData(for: videoResource, toFile: fileUrl, options: nil) { error in
+       guard error == nil else {
+-        promise.resolve(result)
++        resolver.resolve(result)
+         return
+       }
+       let avAsset = AVAsset(url: fileUrl)
+@@ -432,7 +439,7 @@
+       ]
+       var updatedResult = result
+       updatedResult["pairedVideoAsset"] = pairedVideoAsset
+-      promise.resolve(updatedResult)
++      resolver.resolve(updatedResult)
+     }
+   }
+ 
+@@ -589,3 +596,29 @@
+     }
+   }
+ }
++
++/**
++ Wraps a promise so that it can be settled only once.
++ Photos framework callbacks (e.g. `requestLivePhoto`) may be invoked multiple times for a single
++ request and resolving an already settled promise crashes the app (expo/expo#46512).
++ */
++internal final class SingleResolvePromise: @unchecked Sendable {
++  private let promise: Promise
++  private let lock = NSLock()
++  private var isSettled = false
++
++  init(_ promise: Promise) {
++    self.promise = promise
++  }
++
++  func resolve(_ value: Any?) {
++    lock.lock()
++    if isSettled {
++      lock.unlock()
++      return
++    }
++    isSettled = true
++    lock.unlock()
++    promise.resolve(value)
++  }
++}
