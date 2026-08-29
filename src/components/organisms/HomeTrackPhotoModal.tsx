@@ -6,6 +6,30 @@ import dayjs from '../../i18n/dayjs';
 import { TrackPhotoContext } from '../../contexts/TrackPhoto';
 import { TrackPhotoType } from '../../types';
 import { Button } from '../atoms';
+import { createPreviewImage } from '../../utils/Photo';
+
+// 実ファイル（file://）を持たない写真（iOSのLive Photo・iCloud未ダウンロード等はph://）は
+// RNのImageで表示できないため、拡大表示用の画像を書き出して差し替える。
+// 生成中はサムネイルを引き伸ばして表示し、出来上がったら差し替わる（アスペクト比は同じなので
+// ImageViewerが測った表示サイズはそのまま使える）
+const needsPreviewFile = (photo: TrackPhotoType) => photo.localUri === undefined && !photo.uri.startsWith('file://');
+
+// 同じ写真を開き直したときの再生成を避けるセッション内キャッシュ。
+// 進行中のPromiseを入れておくことで、スワイプ中の二重生成も防ぐ
+const previewCache = new Map<string, Promise<string | null>>();
+const PREVIEW_CACHE_MAX_ENTRIES = 50;
+
+const getPreviewUri = (photo: TrackPhotoType): Promise<string | null> => {
+  const cached = previewCache.get(photo.assetId);
+  if (cached !== undefined) return cached;
+  if (previewCache.size >= PREVIEW_CACHE_MAX_ENTRIES) {
+    const oldestKey = previewCache.keys().next().value;
+    if (oldestKey !== undefined) previewCache.delete(oldestKey);
+  }
+  const promise = createPreviewImage(photo.uri).catch(() => null);
+  previewCache.set(photo.assetId, promise);
+  return promise;
+};
 
 // 軌跡上の写真マーカーをタップしたときの拡大表示モーダル。
 // 左右スワイプで軌跡上の他の写真（撮影時刻順）へ切り替えられる。
@@ -18,12 +42,14 @@ export const HomeTrackPhotoModal = () => {
   const [viewerPhotos, setViewerPhotos] = useState<TrackPhotoType[] | null>(null);
   const [initialIndex, setInitialIndex] = useState(0);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [previewUris, setPreviewUris] = useState<{ [assetId: string]: string }>({});
   const isOpenRef = useRef(false);
 
   useEffect(() => {
     if (selectedPhoto === null) {
       isOpenRef.current = false;
       setViewerPhotos(null);
+      setPreviewUris({});
       return;
     }
     // 表示中のtrackPhotos更新では再スナップショットしない（selectedPhotoは開閉時のみ変わる）
@@ -35,9 +61,33 @@ export const HomeTrackPhotoModal = () => {
     setCurrentIndex(index === -1 ? 0 : index);
   }, [selectedPhoto, trackPhotos]);
 
+  // 表示中の写真から順に拡大表示用の画像を用意する（生成済みはキャッシュから即返る）
+  useEffect(() => {
+    if (viewerPhotos === null) return;
+    const targets = [viewerPhotos[currentIndex], ...viewerPhotos.filter((_, index) => index !== currentIndex)].filter(
+      (photo): photo is TrackPhotoType => photo !== undefined && needsPreviewFile(photo)
+    );
+    if (targets.length === 0) return;
+    let isCancelled = false;
+    (async () => {
+      for (const photo of targets) {
+        const uri = await getPreviewUri(photo);
+        if (isCancelled) return;
+        if (uri !== null)
+          setPreviewUris((prev) => (prev[photo.assetId] === uri ? prev : { ...prev, [photo.assetId]: uri }));
+      }
+    })();
+    return () => {
+      isCancelled = true;
+    };
+  }, [viewerPhotos, currentIndex]);
+
   if (selectedPhoto === null || viewerPhotos === null) return null;
   const currentPhoto = viewerPhotos[currentIndex] ?? selectedPhoto;
   const close = () => setSelectedPhoto(null);
+  // 拡大表示用の画像が未生成の間はサムネイルで代用する
+  const imageUri = (photo: TrackPhotoType) =>
+    photo.localUri ?? previewUris[photo.assetId] ?? photo.thumbnail ?? photo.uri;
 
   return (
     <Modal visible={true} transparent={true} animationType="fade">
@@ -55,7 +105,7 @@ export const HomeTrackPhotoModal = () => {
         </View>
         {/* @ts-ignore - react-native-image-zoom-viewer is not compatible with React 19 types */}
         <ImageViewer
-          imageUrls={viewerPhotos.map((p) => ({ url: p.localUri ?? p.uri }))}
+          imageUrls={viewerPhotos.map((p) => ({ url: imageUri(p) }))}
           index={initialIndex}
           onChange={(index) => setCurrentIndex(index ?? 0)}
           onCancel={close}
