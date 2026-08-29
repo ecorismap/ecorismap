@@ -85,9 +85,12 @@ export const HomeTrackPhotoModal = () => {
   if (selectedPhoto === null || viewerPhotos === null) return null;
   const currentPhoto = viewerPhotos[currentIndex] ?? selectedPhoto;
   const close = () => setSelectedPhoto(null);
-  // 拡大表示用の画像が未生成の間はサムネイルで代用する
-  const imageUri = (photo: TrackPhotoType) =>
-    photo.localUri ?? previewUris[photo.assetId] ?? photo.thumbnail ?? photo.uri;
+  // 実ファイルがあるものは原画をそのまま表示する。
+  // ph://しかないものは書き出した拡大表示用の画像を使い、生成中はサムネイルで代用する
+  const imageUri = (photo: TrackPhotoType) => {
+    if (!needsPreviewFile(photo)) return photo.localUri ?? photo.uri;
+    return previewUris[photo.assetId] ?? photo.thumbnail ?? photo.uri;
+  };
 
   return (
     <Modal visible={true} transparent={true} animationType="fade">

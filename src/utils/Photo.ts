@@ -18,10 +18,11 @@ export const createThumbnail = async (uri: string) => {
 
 // 端末ライブラリの写真（iOSのph:// URI）は、New ArchitectureのRNのImageでは読めない
 // （ph://を扱うRCTImageURLLoaderがコード生成の登録対象外）。PhotoKitから直接読める
-// expo-image-manipulatorで拡大表示用の中サイズJPEGを一時ファイルへ書き出して肩代わりする
+// expo-image-manipulatorで拡大表示用のJPEGを一時ファイルへ書き出して肩代わりする。
+// ズームしても粗くならないよう縮小はせず、原画の解像度のまま書き出す
 export const createPreviewImage = async (uri: string) => {
-  const preview = await manipulateAsync(uri, [{ resize: { height: 1600 } }], {
-    compress: 0.8,
+  const preview = await manipulateAsync(uri, [], {
+    compress: 0.9,
     format: SaveFormat.JPEG,
   });
   return preview.uri;
