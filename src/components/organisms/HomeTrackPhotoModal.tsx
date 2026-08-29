@@ -108,7 +108,9 @@ export const HomeTrackPhotoModal = () => {
         </View>
         {/* @ts-ignore - react-native-image-zoom-viewer is not compatible with React 19 types */}
         <ImageViewer
-          imageUrls={viewerPhotos.map((p) => ({ url: imageUri(p) }))}
+          // 原画のサイズを渡す。ImageViewerは渡されたサイズで表示レイアウトを決めるため、
+          // 生成待ちでサムネイルを代用している間も小さく表示されない
+          imageUrls={viewerPhotos.map((p) => ({ url: imageUri(p), width: p.width, height: p.height }))}
           index={initialIndex}
           onChange={(index) => setCurrentIndex(index ?? 0)}
           onCancel={close}
