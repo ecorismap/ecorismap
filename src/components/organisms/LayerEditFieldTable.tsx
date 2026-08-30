@@ -10,8 +10,9 @@ import { FlatList } from 'react-native-gesture-handler';
 import { CheckBox } from '../molecules/CheckBox';
 
 export const LayerEditFieldTitle = () => {
-  const { pressAddField } = useContext(LayerEditContext);
-  const editable = true;
+  const { layer, pressAddField } = useContext(LayerEditContext);
+  // trackレイヤのフィールド構成は固定（name/time/cmt。軌跡の保存処理が依存するため変更不可）
+  const editable = layer.id !== 'track';
   return (
     <View style={styles.tr3}>
       <View style={[styles.td3, { flex: 2, width: 50 }]}>
@@ -56,7 +57,8 @@ export const LayerEditFieldTable = () => {
     pressDeleteField,
     gotoLayerEditFieldItem,
   } = useContext(LayerEditContext);
-  const editable = true;
+  // trackレイヤのフィールド構成は固定（name/time/cmt。軌跡の保存処理が依存するため変更不可）
+  const editable = layer.id !== 'track';
   const formatTypeValues = useMemo(() => Object.keys(DATAFORMAT), []);
   const formatTypeLabels = useMemo(() => Object.values(DATAFORMAT), []);
 
@@ -120,6 +122,7 @@ export const LayerEditFieldTable = () => {
                 color={COLOR.GRAY3}
                 name="chevron-right-circle-outline"
                 size={18}
+                disabled={!editable}
                 onPress={() => gotoLayerEditFieldItem(index, item)}
               />
             )}

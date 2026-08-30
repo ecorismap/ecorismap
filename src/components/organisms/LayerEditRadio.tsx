@@ -9,8 +9,13 @@ import { t } from '../../i18n/config';
 
 export const LayerEditRadio = () => {
   const { layer, changePermission, canChangePermission } = useContext(LayerEditContext);
-  const permissionLabels = useMemo(() => Object.values(PERMISSIONTYPE), []);
-  const permissionList = useMemo(() => Object.keys(PERMISSIONTYPE) as PermissionType[], []);
+  // trackレイヤはメンバー各自が書き込むためCOMMON（管理者専用データ）は選べない
+  const isTrackLayer = layer.id === 'track';
+  const permissionList = useMemo(
+    () => (Object.keys(PERMISSIONTYPE) as PermissionType[]).filter((v) => !isTrackLayer || v !== 'COMMON'),
+    [isTrackLayer]
+  );
+  const permissionLabels = useMemo(() => permissionList.map((v) => PERMISSIONTYPE[v]), [permissionList]);
 
   const [checkedList, setCheckedList] = useState<boolean[]>([]);
 

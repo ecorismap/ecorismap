@@ -69,6 +69,9 @@ const CustomPicker = React.memo((props: Props) => {
   const selectorRef = useRef(null);
 
   const openSelector = () => {
+    // enabledはこれまでaccessibleに渡すだけで実際には無効化されていなかった。
+    // タイプ変更不可のレイヤ等でモーダルが開いてしまうため、falseなら開かない
+    if (enabled === false) return;
     if (selectorRef.current) {
       // @ts-ignore
       selectorRef.current.open();
@@ -83,6 +86,7 @@ const CustomPicker = React.memo((props: Props) => {
           <View style={{ flex: 10 }}>
             <ModalSelector
               ref={selectorRef}
+              disabled={enabled === false}
               data={items}
               initValueTextStyle={{
                 color: COLOR.BLACK,
