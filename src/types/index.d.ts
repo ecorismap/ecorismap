@@ -535,6 +535,8 @@ export interface DataFS {
   encdata: string[];
   encryptedAt: Timestamp;
   chunkIndex: number;
+  /** この世代（同一encryptedAtのアップロード1回分）の総チャンク数。読み側の世代完全性判定に使う。レガシーdocには無い。 */
+  chunkCount?: number;
   /** このdocの暗号方式の印。'dek'ならDEKで暗号化済み。無印は旧グループ暗号または印付与開始前のDEK書き込み。 */
   cryptoScheme?: 'dek';
 }

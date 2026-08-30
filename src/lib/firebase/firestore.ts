@@ -487,14 +487,8 @@ export const deleteAllData = async (projectId: string) => {
       return { isOK: true, message: '' };
     }
 
-    // 3. バッチを作成して一括削除
-    const batch = writeBatch(firestore);
-    querySnapshot.docs.forEach(
-      (docSnap) => {
-        batch.delete(docSnap.ref);
-      }
-    );
-    await batch.commit();
+    // 3. バッチ上限に収まるよう分割して一括削除
+    await deleteDocsInBatches(querySnapshot.docs);
 
     return { isOK: true, message: '' };
   } catch (error) {
@@ -536,14 +530,8 @@ export const deleteData = async (
       return { isOK: true, message: '' };
     }
 
-    // バッチ処理で一括削除
-    const batch = writeBatch(firestore);
-    snapshot.docs.forEach(
-      (docSnap) => {
-        batch.delete(docSnap.ref);
-      }
-    );
-    await batch.commit();
+    // バッチ上限に収まるよう分割して一括削除
+    await deleteDocsInBatches(snapshot.docs);
 
     return { isOK: true, message: '' };
   } catch (error) {
@@ -696,8 +684,11 @@ const projectDataSetToDataSet = async (projectId: string, projectDataSet: any) =
   const dataMap = new Map<string, { [index: number]: string[] }>();
   const metadataMap = new Map<string, { layerId: string; userId: string; encryptedAt: Timestamp }>();
 
+  // 世代方式アップロードの残骸（不完全な新世代・削除し損ねた旧世代）を除外し、最新の完全世代のみ処理する
+  const selectedDocs = selectCompleteGenerationDocs<{ data: () => unknown }>(projectDataSet.docs);
+
   // 各ドキュメントを処理
-  projectDataSet.docs.forEach((v: any) => {
+  selectedDocs.forEach((v: any) => {
     const { encdata, layerId, chunkIndex, userId, encryptedAt } = v.data() as DataFS;
     // コンポジットキーを生成: layerId_userId の形式
     const compositeKey = `${layerId}_${userId}`;
@@ -760,12 +751,102 @@ export const collectUnmarkedDekGroups = (
   permission: 'PRIVATE' | 'PUBLIC'
 ): UnmarkedDekGroupType[] => {
   const groups = new Map<string, UnmarkedDekGroupType>();
+  // 削除し損ねた旧世代の無印docで移行が毎回再トリガーされないよう、採用世代のdocだけを判定対象にする
+  docs = selectCompleteGenerationDocs(docs);
   docs.forEach((docSnap) => {
     const d = docSnap.data() as DataFS;
     if (d.cryptoScheme === 'dek') return;
     groups.set(`${d.userId}_${d.layerId}`, { userId: d.userId, layerId: d.layerId, permission });
   });
   return [...groups.values()];
+};
+
+/**
+ * data docスナップショット配列から、(layerId×userId×permission)グループごとに
+ * 「最新の完全な世代」のdocだけを残して返す。
+ *
+ * 世代 = 同一encryptedAtのアップロード1回分。世代方式のuploadDataHelperは新世代を書き切ってから
+ * 旧世代を削除するため、書き込み中断・削除失敗で複数世代のdocが一時的に共存しうる。
+ * 読み側はこの関数で完全な最新世代だけを採用することで、原子コミットと同等の一貫性を得る。
+ *
+ * - 完全 = doc数がchunkCountと一致し、chunkIndexに重複が無い（世代IDが万一衝突して混ざった場合は
+ *   不完全と判定され旧世代へフォールバックする安全側の設計）
+ * - chunkCountを持たないレガシーdocは、グループ内でまとめて1つの完全な世代として扱う。
+ *   旧実装ではチャンクごとにencryptedAtが異なりうるため（uploadDataHelperのencryptedAt共通化の
+ *   コメント参照）、encryptedAtで世代分割してはならない（分割するとレガシーデータが喪失する）
+ * - 完全な世代が1つも無いグループは従来挙動を保つため全docをそのまま返す
+ */
+export const selectCompleteGenerationDocs = <T extends { data: () => unknown }>(docs: T[]): T[] => {
+  type Generation = {
+    docs: T[];
+    isLegacy: boolean;
+    chunkCount?: number;
+    chunkIndexes: Set<number>;
+    // 世代の新旧比較用タイムスタンプ（秒, ナノ秒）。toDateのミリ秒丸めを避けて生値で比較する
+    ts: [number, number];
+  };
+  const LEGACY_KEY = '__legacy__';
+  const groups = new Map<string, Map<string, Generation>>();
+
+  for (const docSnap of docs) {
+    const d = docSnap.data() as DataFS;
+    const groupKey = `${d.layerId}_${d.userId}_${d.permission}`;
+    const ts: [number, number] = d.encryptedAt ? [d.encryptedAt.seconds, d.encryptedAt.nanoseconds] : [0, 0];
+    const isLegacy = d.chunkCount === undefined;
+    const genKey = isLegacy ? LEGACY_KEY : `${ts[0]}_${ts[1]}`;
+
+    let generations = groups.get(groupKey);
+    if (!generations) {
+      generations = new Map();
+      groups.set(groupKey, generations);
+    }
+    let gen = generations.get(genKey);
+    if (!gen) {
+      gen = { docs: [], isLegacy, chunkCount: d.chunkCount, chunkIndexes: new Set(), ts };
+      generations.set(genKey, gen);
+    }
+    gen.docs.push(docSnap);
+    gen.chunkIndexes.add(d.chunkIndex !== undefined ? d.chunkIndex : 0);
+    // レガシー世代のタイムスタンプは所属docの最大値
+    if (gen.isLegacy && (ts[0] > gen.ts[0] || (ts[0] === gen.ts[0] && ts[1] > gen.ts[1]))) {
+      gen.ts = ts;
+    }
+    // 同一世代キー内でchunkCountが食い違う場合（世代ID衝突の兆候）は不完全扱いにするため印を消す
+    if (!gen.isLegacy && gen.chunkCount !== d.chunkCount) {
+      gen.chunkCount = undefined;
+    }
+  }
+
+  const isComplete = (gen: Generation): boolean => {
+    if (gen.isLegacy) return true;
+    return gen.chunkCount !== undefined && gen.docs.length === gen.chunkCount && gen.chunkIndexes.size === gen.chunkCount;
+  };
+
+  const result: T[] = [];
+  for (const generations of groups.values()) {
+    let selected: Generation | undefined;
+    for (const gen of generations.values()) {
+      if (!isComplete(gen)) continue;
+      if (
+        selected === undefined ||
+        gen.ts[0] > selected.ts[0] ||
+        (gen.ts[0] === selected.ts[0] && gen.ts[1] > selected.ts[1]) ||
+        // 同時刻ならchunkCount付き（新形式）を優先
+        (gen.ts[0] === selected.ts[0] && gen.ts[1] === selected.ts[1] && selected.isLegacy && !gen.isLegacy)
+      ) {
+        selected = gen;
+      }
+    }
+    if (selected !== undefined) {
+      result.push(...selected.docs);
+    } else {
+      // 完全な世代が無い（通常は起きない）場合は従来挙動のまま全docを返す
+      for (const gen of generations.values()) {
+        result.push(...gen.docs);
+      }
+    }
+  }
+  return result;
 };
 
 const chunkData = (encdataArray: string[], chunkSize: number): string[][] => {
@@ -790,8 +871,20 @@ const chunkData = (encdataArray: string[], chunkSize: number): string[][] => {
   return chunks;
 };
 
-const MAX_SIZE_KB = 5000;
+const MAX_SIZE_KB = 50000; // 50MB。世代方式で1バッチ10MiBの制約からは解放されたため、暴走データに対する保険のみ
 const CHUNK_SIZE = 900 * 1024; // 900KB
+const ATOMIC_MAX_KB = 5000; // これ以下は従来どおり削除+書き込みを1バッチで原子コミット（10MiBに収まる実績値）
+const MAX_BATCH_BYTES = 8 * 1024 * 1024; // 世代方式の書き込みバッチのサイズ上限目安（10MiBに対しマージン）
+const MAX_BATCH_OPS = 400; // 1バッチの操作数上限（旧SDKの500制限に対する保険）
+
+// 大量docの削除をバッチ上限内に収めて分割コミットする
+const deleteDocsInBatches = async (docSnaps: { ref: any }[]) => {
+  for (let i = 0; i < docSnaps.length; i += MAX_BATCH_OPS) {
+    const batch = writeBatch(firestore);
+    docSnaps.slice(i, i + MAX_BATCH_OPS).forEach((docSnap) => batch.delete(docSnap.ref));
+    await batch.commit();
+  }
+};
 
 export const uploadDataHelper = async (
   projectId: string,
@@ -811,7 +904,7 @@ export const uploadDataHelper = async (
   const crypto = await getProjectCrypto(projectId);
   const cryptoScheme = crypto.scheme === 'dek' ? ('dek' as const) : undefined;
 
-  // 既存docの取得
+  // 既存docの取得。削除対象はこのスナップショットの全doc（過去の書き込み中断・削除失敗の残骸世代を含む）
   const dataCol = collection(firestore, 'projects', projectId, 'data');
   const q = query(
     dataCol,
@@ -821,31 +914,65 @@ export const uploadDataHelper = async (
   );
   const existing = await getDocs(q);
 
-  // 既存docの削除と新チャンクの書き込みを1つのバッチで原子的にコミットする。
-  // 以前は削除→書き込みの2コミットで、その間に通信断・アプリ終了が起きると
-  // クラウド側のこのグループのデータが一時的に消えた（モバイルの自己DEK移行で露出が増えるため原子化）。
-  // データはMAX_SIZE_KB(5MB)以下に制限済みで、Firestoreのリクエスト上限(10MiB)に必ず収まる。
-  const batch = writeBatch(firestore);
-  existing.docs.forEach((docSnap) => {
-    batch.delete(docSnap.ref);
-  });
-  // 全チャンクで同一の encryptedAt を使う（楽観的ロックの基準値を決定的にするため）
+  // 全チャンクで同一の encryptedAt を使う（楽観的ロックの基準値を決定的にするため + 世代IDを兼ねる）
   const encryptedAt = Timestamp.now();
-  chunks.forEach((chunk, index) => {
-    const dataFS: DataFS = {
-      userId,
-      layerId,
-      permission,
-      encdata: chunk,
-      encryptedAt,
-      chunkIndex: index,
-      // undefinedのフィールドはFirestoreに書けないため、印がある時だけ付与する
-      ...(cryptoScheme === 'dek' ? { cryptoScheme: 'dek' as const } : {}),
-    };
-    // 自動 ID のドキュメント参照を作成してバッチに追加
-    batch.set(doc(dataCol), dataFS);
+  const makeDataFS = (chunk: string[], index: number): DataFS => ({
+    userId,
+    layerId,
+    permission,
+    encdata: chunk,
+    encryptedAt,
+    chunkIndex: index,
+    chunkCount: chunks.length,
+    // undefinedのフィールドはFirestoreに書けないため、印がある時だけ付与する
+    ...(cryptoScheme === 'dek' ? { cryptoScheme: 'dek' as const } : {}),
   });
-  await batch.commit();
+
+  if (KBytes <= ATOMIC_MAX_KB && existing.docs.length + chunks.length <= MAX_BATCH_OPS) {
+    // 小グループ（従来の5MB相当以下）: 既存docの削除と新チャンクの書き込みを1つのバッチで原子的にコミットする。
+    // 以前は削除→書き込みの2コミットで、その間に通信断・アプリ終了が起きると
+    // クラウド側のこのグループのデータが一時的に消えた（モバイルの自己DEK移行で露出が増えるため原子化）。
+    const batch = writeBatch(firestore);
+    existing.docs.forEach((docSnap) => {
+      batch.delete(docSnap.ref);
+    });
+    chunks.forEach((chunk, index) => {
+      // 自動 ID のドキュメント参照を作成してバッチに追加
+      batch.set(doc(dataCol), makeDataFS(chunk, index));
+    });
+    await batch.commit();
+  } else {
+    // 大グループ（世代方式）: 1バッチ10MiB制限に収まらないため、新世代を複数バッチで書き切ってから旧docを削除する。
+    // 書き込み途中で失敗しても、不完全な世代は読み側(selectCompleteGenerationDocs)が無視して旧世代を
+    // 採用するため、原子コミットと同等の安全性を保つ。中断の残骸は次回アップロードの削除フェーズで一掃される。
+    let batch = writeBatch(firestore);
+    let batchOps = 0;
+    let batchBytes = 0;
+    for (let index = 0; index < chunks.length; index++) {
+      const dataFS = makeDataFS(chunks[index], index);
+      const docBytes = sizeof(dataFS);
+      if (batchOps > 0 && (batchBytes + docBytes > MAX_BATCH_BYTES || batchOps >= MAX_BATCH_OPS)) {
+        await batch.commit();
+        batch = writeBatch(firestore);
+        batchOps = 0;
+        batchBytes = 0;
+      }
+      batch.set(doc(dataCol), dataFS);
+      batchOps += 1;
+      batchBytes += docBytes;
+    }
+    if (batchOps > 0) {
+      await batch.commit();
+    }
+
+    // 削除フェーズ: 新世代は完全に読める状態にあるため、ここでの失敗は成功扱いにする
+    // （旧世代の残骸は読み側が無視し、次回アップロードで一掃される。基準値を確立しない方が害が大きい）
+    try {
+      await deleteDocsInBatches(existing.docs);
+    } catch (error) {
+      console.warn('uploadDataHelper: 旧世代の削除に失敗（次回アップロードで一掃されます）:', error);
+    }
+  }
 
   // チャンクが無い（空データ）場合はクラウドにドキュメントが存在しないため基準値は未確立(undefined)とする
   return { isOK: true, message: '', encryptedAt: chunks.length > 0 ? encryptedAt.toMillis() : undefined };
@@ -1244,16 +1371,14 @@ export const updateLayerDataPermission = async (
       return { isOK: true, message: '' };
     }
 
-    // 3. バッチ作成＆更新操作を登録
-    const batch = writeBatch(firestore);
-    snapshot.docs.forEach(
-      (docSnap) => {
+    // 3. バッチ上限に収まるよう分割して一括更新
+    for (let i = 0; i < snapshot.docs.length; i += MAX_BATCH_OPS) {
+      const batch = writeBatch(firestore);
+      snapshot.docs.slice(i, i + MAX_BATCH_OPS).forEach((docSnap) => {
         batch.update(docSnap.ref, { permission: newPermission });
-      }
-    );
-
-    // 4. 一括コミットで更新を実行
-    await batch.commit();
+      });
+      await batch.commit();
+    }
     return { isOK: true, message: '' };
   } catch (error) {
     console.error('権限一括更新エラー:', error);
@@ -1294,7 +1419,8 @@ export const getCloudDataSummary = async (
       }
     >();
 
-    snapshot.docs.forEach(
+    // 世代残骸を除外して採用世代のみ集計する（doc数・最終更新の表示が実態と一致するように）
+    selectCompleteGenerationDocs(snapshot.docs).forEach(
       (docSnap) => {
         const data = docSnap.data() as DataFS;
         const key = `${data.layerId}_${data.userId}_${data.permission}`;
@@ -1350,7 +1476,9 @@ export const getMyDataUpdatedAt = async (
     const snapshot = await getDocs(q);
 
     const result = new Map<string, number>();
-    snapshot.docs.forEach((docSnap) => {
+    // 別端末の書き込み途中（不完全な新世代）や削除残骸の値を基準値に採用しないよう、完全な最新世代のみ見る
+    const selectedDocs = selectCompleteGenerationDocs(snapshot.docs);
+    selectedDocs.forEach((docSnap) => {
       const data = docSnap.data() as DataFS;
       const key = `${data.layerId}_${data.permission}`;
       const ms = toDate(data.encryptedAt).getTime();

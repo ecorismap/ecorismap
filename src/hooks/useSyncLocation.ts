@@ -13,12 +13,16 @@ import { t } from '../i18n/config';
 
 export type UseSyncLocationReturnType = { uploadLocation: (currentLocation: LocationType | null) => void };
 
+// 現在地アップロードの最小間隔
+export const POSITION_UPLOAD_INTERVAL_MS = 60 * 1000;
+
 export const useSyncLocation = (projectId: string | undefined): UseSyncLocationReturnType => {
   const dispatch = useDispatch();
   const isSynced = useSelector((state: RootState) => state.settings.isSynced, shallowEqual);
   const user = useSelector((state: RootState) => state.user);
   const syncSubscriber = useRef<any>(undefined);
-  const lastUploadTime = useRef<dayjs.Dayjs>(dayjs());
+  // 初回は即アップロードさせるため基準値はepochにする
+  const lastUploadTime = useRef<dayjs.Dayjs>(dayjs(0));
 
   const syncCurrentPosition = useCallback(
     (userId: string, projectId_: string) => {
@@ -74,7 +78,7 @@ export const useSyncLocation = (projectId: string | undefined): UseSyncLocationR
 
       if (currentLocation === null) return;
       if (isLoggedIn(user) && hasOpened(projectId)) {
-        if (isSynced && dayjs().diff(lastUploadTime.current) / (60 * 1000) > 0) {
+        if (isSynced && dayjs().diff(lastUploadTime.current) >= POSITION_UPLOAD_INTERVAL_MS) {
           //console.log('$$$ upload pos $$$', coords);
           const { isOK, message } = await uploadCurrentPosition(user.uid, projectId!, {
             icon: { photoURL: user.photoURL, initial: user.email![0].toUpperCase() },

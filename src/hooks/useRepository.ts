@@ -624,7 +624,11 @@ export const useRepository = (): UseRepositoryReturnType & {
         });
         if (!isOK) {
           //ToDo 処理続けるかどうか？
-          return { isOK: false, message: `${message} (${layer.name})` };
+          const guidance =
+            layer.id === 'track' && message === t('hooks.message.dataSizeTooLarge')
+              ? `\n${t('hooks.message.deleteOldTracks')}`
+              : '';
+          return { isOK: false, message: `${message} (${layer.name})${guidance}` };
         }
 
         // PRIVATE/PUBLIC は基準値を更新（次回以降の衝突検知に使用。空アップロード時は undefined＝未確立）

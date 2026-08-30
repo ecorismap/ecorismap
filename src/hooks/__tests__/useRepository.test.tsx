@@ -544,3 +544,76 @@ describe('uploadDataToRepository（楽観的ロック）', () => {
     expect(res.isOK).toBe(false);
   });
 });
+
+describe('uploadDataToRepository（trackレイヤのサイズ超過）', () => {
+  const project = { id: 'proj1' } as any;
+  const trackLayer = { id: 'track', name: 'トラック', permission: 'PRIVATE', field: [] } as any;
+
+  const makeTrackRecord = (numPoints: number) => ({
+    id: 'track1',
+    userId: 'test-user',
+    displayName: 'U',
+    visible: true,
+    redraw: false,
+    coords: Array.from({ length: numPoints }, (_, i) => ({
+      latitude: 35.0 + i * 0.0001 + (i % 2) * 0.0000001,
+      longitude: 135.0 + (i < numPoints / 2 ? 0 : (i - numPoints / 2) * 0.0001),
+      timestamp: 1700000000000 + i * 1000,
+    })),
+    field: {},
+    updatedAt: 100,
+  });
+
+  const makeStore = (record: any) => {
+    const initialState = {
+      user: { uid: 'test-user', email: 'a@b.c', displayName: 'U' },
+      dataSet: [{ layerId: 'track', userId: 'test-user', data: [record] }],
+      layers: [trackLayer],
+      settings: { isSettingProject: false, updatedAt: undefined },
+      tileMaps: [],
+      dataSync: {},
+    };
+    const store = configureStore({
+      reducer: {
+        user: (state = initialState.user) => state,
+        dataSet: (state = initialState.dataSet) => state,
+        layers: (state = initialState.layers) => state,
+        settings: (state = initialState.settings) => state,
+        tileMaps: (state = initialState.tileMaps) => state,
+        dataSync: (state = initialState.dataSync) => state,
+      } as any,
+      preloadedState: initialState,
+    });
+    store.dispatch = jest.fn();
+    return store;
+  };
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    jest.spyOn(projectStore, 'isSettingsUpdatedAtCurrent').mockResolvedValue(true);
+    jest
+      .spyOn(projectStore, 'getMyDataUpdatedAt')
+      .mockResolvedValue({ isOK: true, message: '', data: new Map() });
+  });
+
+  const renderWithStore = (store: any) =>
+    renderHook(() => useRepository(), {
+      wrapper: (props: any) => <Provider store={store}>{props.children}</Provider>,
+    });
+
+  test('trackレイヤがサイズ超過で拒否されたら整理を促すメッセージを付ける', async () => {
+    jest
+      .spyOn(projectStore, 'uploadDataHelper')
+      .mockResolvedValue({ isOK: false, message: 'hooks.message.dataSizeTooLarge' });
+
+    const store = makeStore(makeTrackRecord(100));
+    const { result } = renderWithStore(store);
+    let res: any;
+    await act(async () => {
+      res = await result.current.uploadDataToRepository(project, 'All');
+    });
+
+    expect(res.isOK).toBe(false);
+    expect(res.message).toContain('hooks.message.deleteOldTracks');
+  });
+});
