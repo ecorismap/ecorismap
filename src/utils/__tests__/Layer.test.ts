@@ -1,6 +1,6 @@
 import { COLOR } from '../../constants/AppConstants';
 import { LayerType } from '../../types';
-import { getColor, changeLayerId } from '../Layer';
+import { getColor, changeLayerId, applyColorStyle } from '../Layer';
 
 describe('getColor', () => {
   const layer: LayerType = {
@@ -75,6 +75,50 @@ describe('getColor', () => {
   //   };
   //   expect(getColor(layer3, feature)).toBe('#0000ff');
   // });
+});
+
+describe('applyColorStyle', () => {
+  const memoLayer: LayerType = {
+    id: '1',
+    name: 'メモ',
+    type: 'LINE',
+    permission: 'PRIVATE',
+    colorStyle: {
+      colorType: 'INDIVIDUAL',
+      color: COLOR.RED,
+      fieldName: '__CUSTOM',
+      colorRamp: 'RANDOM',
+      customFieldValue: '_strokeColor',
+      colorList: [],
+      transparency: 1,
+      savedFieldName: '区分',
+      savedCustomFieldValue: '',
+      savedLabel: '種名',
+    },
+    label: '',
+    visible: true,
+    active: true,
+    field: [],
+  };
+
+  it('カラータイプが[個別]のままなら退避したラベルは復元しない', () => {
+    const result = applyColorStyle(memoLayer, memoLayer.colorStyle);
+    expect(result.label).toBe('');
+    expect(result.colorStyle.savedLabel).toBe('種名');
+  });
+
+  it('カラータイプを戻すと退避したラベルが復元され、退避データは消える', () => {
+    const restored = applyColorStyle(memoLayer, {
+      ...memoLayer.colorStyle,
+      colorType: 'CATEGORIZED',
+      fieldName: '区分',
+      customFieldValue: '',
+      savedFieldName: undefined,
+      savedCustomFieldValue: undefined,
+    });
+    expect(restored.label).toBe('種名');
+    expect(restored.colorStyle.savedLabel).toBeUndefined();
+  });
 });
 
 describe('test ecorismap', function () {

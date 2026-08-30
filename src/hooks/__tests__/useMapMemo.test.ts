@@ -18,7 +18,7 @@ import { configureStore, combineReducers } from '@reduxjs/toolkit';
 import React from 'react';
 import { useMapMemo } from '../useMapMemo';
 import dataSetReducer from '../../modules/dataSet';
-import layersReducer from '../../modules/layers';
+import layersReducer, { updateLayerAction } from '../../modules/layers';
 import userReducer from '../../modules/user';
 import settingsReducer, { settingsInitialState } from '../../modules/settings';
 import projectsReducer from '../../modules/projects';
@@ -246,6 +246,18 @@ describe('useMapMemo', () => {
     const mockMapViewRef = {} as any;
     const { result } = renderHook(() => useMapMemo(mockMapViewRef), { wrapper });
 
+    // ユーザーが設定済みの色分けフィールドとラベルを用意する
+    const layer = store.getState().layers[0];
+    act(() => {
+      store.dispatch(
+        updateLayerAction({
+          ...layer,
+          colorStyle: { ...layer.colorStyle, colorType: 'CATEGORIZED', fieldName: '区分' },
+          label: '種名',
+        })
+      );
+    });
+
     act(() => {
       result.current.changeColorTypeToIndividual();
     });
@@ -253,6 +265,10 @@ describe('useMapMemo', () => {
     // Redux storeの状態が更新されることを確認
     const updatedLayers = store.getState().layers;
     expect(updatedLayers[0].colorStyle.colorType).toBe('INDIVIDUAL');
+    // 描画の邪魔になるラベルは非表示にするが、元の設定は退避して失わない
+    expect(updatedLayers[0].label).toBe('');
+    expect(updatedLayers[0].colorStyle.savedFieldName).toBe('区分');
+    expect(updatedLayers[0].colorStyle.savedLabel).toBe('種名');
   });
 
   it('setIsModalMapMemoToolHiddenが正しく動作すること', () => {
