@@ -561,7 +561,8 @@
       "deleteProject": "Do you want to delete the project?",
       "gotoBack": "Do you want to discard your changes?",
       "reshareKey": "Do you want to re-share the project's encryption key with this member? Run this when the member has reset their encryption key and can no longer decrypt data.",
-      "singleAdmin": "The owner is the only administrator. It is recommended to assign another administrator in case the owner resets their encryption key. Do you want to save anyway?"
+      "singleAdmin": "The owner is the only administrator. It is recommended to assign another administrator in case the owner resets their encryption key. Do you want to save anyway?",
+      "downloadAllUserData": "Do you want to open the project and also download private data from other members as an administrator?"
     },
     "navigation": {
       "title": "project"

@@ -147,8 +147,12 @@ export default function ProjectEditContainer({ navigation, route }: Props_Projec
           if (!ret) return false;
         }
 
-        //ユーザーとしてプロジェクトを開く。管理者は取得時に全てのデータを取得できる。
-        const isAdmin = false;
+        //通常はユーザーとして自分のデータのみ取得する。管理者は取得時に全てのデータを取得できる。
+        //ただしWeb版は集計・確認作業が中心のため、管理者には開く時点で他メンバーのプライベートデータも取得するか確認する。
+        let isAdmin = false;
+        if (!isSetting && Platform.OS === 'web' && isOwnerAdmin) {
+          isAdmin = await ConfirmAsync(t('ProjectEdit.confirm.downloadAllUserData'));
+        }
 
         setIsLoading(true);
         const loadE3kitGroupResult = await loadE3kitGroup(targetProject);
@@ -213,6 +217,7 @@ export default function ProjectEditContainer({ navigation, route }: Props_Projec
     },
     [
       isProjectOpen,
+      isOwnerAdmin,
       targetProject,
       loadE3kitGroup,
       navigateToKeyRestoreIfNeeded,
