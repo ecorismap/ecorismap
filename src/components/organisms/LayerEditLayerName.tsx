@@ -13,7 +13,8 @@ import { TextInput } from '../atoms';
 export const LayerName = () => {
   const { layer, isNewLayer, onChangeLayerName, submitLayerName, onChangeLayerPreset } = useContext(LayerEditContext);
   const { layerPresets } = useFeatureFlags();
-  const editable = true;
+  // trackレイヤは軌跡記録の固定レイヤのため名前は変更不可（権限とスタイルのみ変更可）
+  const editable = layer.id !== 'track';
   const showPresetSelector = isNewLayer && layerPresets;
   const presetItems = useMemo(
     () => LAYER_PRESETS.map((p, index) => ({ key: index, label: p.presetName, value: p.presetId })),

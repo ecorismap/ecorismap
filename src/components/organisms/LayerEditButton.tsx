@@ -7,8 +7,9 @@ import { Button } from '../atoms';
 import { t } from '../../i18n/config';
 
 export const LayerEditButton = () => {
-  const { isEdited, pressDeleteLayer, pressExportLayer } = useContext(LayerEditContext);
-  const editable = true;
+  const { layer, isEdited, pressDeleteLayer, pressExportLayer } = useContext(LayerEditContext);
+  // trackレイヤは軌跡記録の固定レイヤのため削除不可（エクスポートは可）
+  const editable = layer.id !== 'track';
   return (
     <View style={styles.buttonContainer}>
       <Button

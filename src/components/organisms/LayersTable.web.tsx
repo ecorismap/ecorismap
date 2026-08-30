@@ -208,14 +208,12 @@ const SortableLayerRow = React.memo(
           )}
 
           <View style={[styles.td, { flex: 2, width: 60 }]}>
-            {item.id !== 'track' && (
-              <Button
-                name="table-cog"
-                onPress={() => gotoLayerEdit(item)}
-                style={{ backgroundColor }}
-                color={isParent ? parentFg : COLOR.GRAY4}
-              />
-            )}
+            <Button
+              name="table-cog"
+              onPress={() => gotoLayerEdit(item)}
+              style={{ backgroundColor }}
+              color={isParent ? parentFg : COLOR.GRAY4}
+            />
           </View>
 
           {/* 上下移動ボタン */}
