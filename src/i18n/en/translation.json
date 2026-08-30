@@ -727,7 +727,7 @@
       "failUserCheck": "User check failed.",
       "inputEncryptPassword": "Please enter the encrypted password.",
       "migrateEncryptPassword": "The encryption key protection will be updated. Please enter your current encryption key (PIN).",
-      "inputNewPinRestore": "Please enter your 6-digit PIN.",
+      "inputNewPinRestore": "Please enter the PIN you have set.",
       "backupLocked": "Too many PIN attempts. Please try again later.",
       "backupWrongPin": "Incorrect PIN.",
       "failRestoreEncryptKey": "Failed to restore the encryption key. Please check your network connection and try again.",
