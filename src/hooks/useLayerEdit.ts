@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ColorStyle, FeatureType, FieldType, FormatType, LayerType, PermissionType } from '../types';
-import { PHOTO_FOLDER } from '../constants/AppConstants';
+import { COLOR, PHOTO_FOLDER } from '../constants/AppConstants';
+import { getUserColor } from '../utils/Color';
 
 import { cloneDeep } from 'lodash';
 import { ulid } from 'ulid';
@@ -279,10 +280,31 @@ export const useLayerEdit = (
       if (!canChangePermission) return;
       const m = cloneDeep(targetLayer);
       m.permission = val;
+      // 軌跡共有の色分け自動化: 共有ONで初期の単色のままならユーザー別色分けに切替え、
+      // 共有OFFで（自動切替した）ユーザー別色分けなら既定の単色に戻す。
+      // 管理者がスタイルをカスタム済みの場合（SINGLE/USER以外や色変更後のUSER）は触らない。
+      if (m.id === 'track') {
+        if (val === 'PUBLIC' && m.colorStyle.colorType === 'SINGLE') {
+          const displayNames = Array.from(
+            new Set(
+              dataSet
+                .flatMap((d) => (d.data.length > 0 ? [d.data[0].displayName] : []))
+                .filter((v): v is string => typeof v === 'string' && v !== '')
+            )
+          );
+          m.colorStyle.colorType = 'USER';
+          // 色はdisplayNameから決定的に生成（未登録ユーザーも描画時に同じ規則でフォールバックされる）
+          m.colorStyle.colorList = displayNames.map((name) => ({ value: name, color: getUserColor(name) }));
+        } else if (val === 'PRIVATE' && m.colorStyle.colorType === 'USER') {
+          m.colorStyle.colorType = 'SINGLE';
+          m.colorStyle.color = COLOR.TRACK;
+          m.colorStyle.colorList = [];
+        }
+      }
       setTargetLayer(m);
       setIsEdited(true);
     },
-    [canChangePermission, targetLayer]
+    [canChangePermission, dataSet, targetLayer]
   );
 
   const changeFieldOrder = useCallback(
