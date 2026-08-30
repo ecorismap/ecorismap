@@ -108,6 +108,10 @@ describe('getLineWidth', () => {
     expect(getLineWidth(layer, record({}))).toBe(3);
   });
 
+  it('数値でない_strokeWidth（再インポートの空文字など）は無視してレイヤの太さを使う', () => {
+    expect(getLineWidth(layer, record({ _strokeWidth: '' }))).toBe(3);
+  });
+
   it('どちらも無い場合は既定値になる', () => {
     const noWidth = { ...layer, colorStyle: { ...layer.colorStyle, lineWidth: undefined } };
     expect(getLineWidth(noWidth, record({}))).toBe(1.5);

@@ -25,7 +25,8 @@ export const applyColorStyle = (layer: LayerType, colorStyle: ColorStyle): Layer
  * 色と違い「凡例による意味づけ」と競合しないため、colorTypeには依存させない。
  */
 export const getLineWidth = (layer: LayerType, feature: RecordType): number => {
-  if (feature.field._strokeWidth !== undefined) return feature.field._strokeWidth as number;
+  //エクスポート済みGeoJSONの再インポートでは_strokeWidthが空文字のことがあるため、数値のみ採用する
+  if (typeof feature.field._strokeWidth === 'number') return feature.field._strokeWidth;
   return layer.colorStyle.lineWidth ?? 1.5;
 };
 
