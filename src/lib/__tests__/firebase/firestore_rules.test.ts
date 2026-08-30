@@ -1075,6 +1075,90 @@ describe('data subcollection', () => {
     );
   });
 
+  it('create: メンバーは自分のPrivateデータをchunkCount付きで作成できる（世代方式アップロード）。', async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await setDoc(doc(context.firestore(), `projects/${documentId}`), {
+        ownerUid: uid1,
+        adminsUid: [uid1, uid2],
+        membersUid: [uid1, uid2, uid3, uid4],
+        encdata: '',
+        encryptedAt: '2022年1月2日',
+      });
+    });
+    const context3 = testEnv.authenticatedContext(uid3, {
+      email: 'test3@example.com',
+      email_verified: true,
+    });
+    await firebase.assertSucceeds(
+      setDoc(doc(context3.firestore(), `projects/${documentId}/data/${dataId1}`), {
+        encdata: '',
+        userId: uid3,
+        layerId: layerId,
+        permission: 'PRIVATE',
+        encryptedAt: '2022年1月2日',
+        chunkIndex: 0,
+        chunkCount: 2,
+        cryptoScheme: 'dek',
+      })
+    );
+  });
+
+  it('create: 管理者はCommonデータをchunkCount付きで作成できる（移行ルートの世代方式）。', async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await setDoc(doc(context.firestore(), `projects/${documentId}`), {
+        ownerUid: uid1,
+        adminsUid: [uid1, uid2],
+        membersUid: [uid1, uid2, uid3, uid4],
+        encdata: '',
+        encryptedAt: '2022年1月2日',
+      });
+    });
+    const context2 = testEnv.authenticatedContext(uid2, {
+      email: 'test2@example.com',
+      email_verified: true,
+    });
+    await firebase.assertSucceeds(
+      setDoc(doc(context2.firestore(), `projects/${documentId}/data/${dataId1}`), {
+        encdata: '',
+        userId: uid3,
+        layerId: layerId,
+        permission: 'COMMON',
+        encryptedAt: '2022年1月2日',
+        chunkIndex: 0,
+        chunkCount: 1,
+        cryptoScheme: 'dek',
+      })
+    );
+  });
+
+  it('create: chunkCount付きでも未知フィールドがあれば作成できない（verifyFieldsの回帰）。', async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await setDoc(doc(context.firestore(), `projects/${documentId}`), {
+        ownerUid: uid1,
+        adminsUid: [uid1, uid2],
+        membersUid: [uid1, uid2, uid3, uid4],
+        encdata: '',
+        encryptedAt: '2022年1月2日',
+      });
+    });
+    const context3 = testEnv.authenticatedContext(uid3, {
+      email: 'test3@example.com',
+      email_verified: true,
+    });
+    await firebase.assertFails(
+      setDoc(doc(context3.firestore(), `projects/${documentId}/data/${dataId1}`), {
+        encdata: '',
+        userId: uid3,
+        layerId: layerId,
+        permission: 'PRIVATE',
+        encryptedAt: '2022年1月2日',
+        chunkIndex: 0,
+        chunkCount: 1,
+        unknownField: true,
+      })
+    );
+  });
+
   it('create: cryptoScheme以外の未知フィールド付きでは作成できない（verifyFieldsの回帰）。', async () => {
     await testEnv.withSecurityRulesDisabled(async (context) => {
       await setDoc(doc(context.firestore(), `projects/${documentId}`), {
