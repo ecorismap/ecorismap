@@ -785,6 +785,7 @@
       "updateMap": "Map settings have been updated.",
       "addMap": "Map has been added.",
       "dataSizeTooLarge": "Cannot upload data due to large size",
+      "deleteOldTracks": "Please delete old tracks and try uploading again.",
       "failDeleteFile": "Failed to delete files in the project",
       "completeDownloadMaps": "Download of {{total}} maps completed",
       "mapsWithError": "Maps with errors:",

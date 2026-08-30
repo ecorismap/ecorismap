@@ -999,6 +999,7 @@
       "updateMap": "地図の設定を更新しました。",
       "addMap": "地図を追加しました。",
       "dataSizeTooLarge": "データのサイズが大きいためアップロードできません",
+      "deleteOldTracks": "古い軌跡を削除してから、再度アップロードしてください。",
       "failDeleteFile": "プロジェクトのファイルの削除に失敗しました",
       "completeDownloadMaps": "{{total}}個の地図のダウンロードが完了しました",
       "mapsWithError": "エラーが発生した地図:",
