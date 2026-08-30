@@ -826,7 +826,6 @@
       "upload": "Data uploaded.",
       "discardChanges": "The data is being edited. \nPlease save first.",
       "termsOfuse": "If you do not agree, please stop using it.",
-      "individualColor": "Changed the layer style color type to [Individual].",
       "storage": "Loading data is full. \nDelete unnecessary data.",
       "cannotEdit": "There are no editable layers.",
       "exportPDF": "I saved the PDF.",
@@ -836,6 +835,7 @@
       "tooManyTiles": "The area is too large to download. Please zoom in or reduce the number of selected maps."
     },
     "confirm": {
+      "individualColor": "To draw with the pen, this layer's color type must be changed to [Individual] and its labels turned off, so that the color and width you draw are shown as-is without labels cluttering the map. Your original color and label settings will be restored when you change the color type back. Change it?",
       "closeProject": "Do you want to finish the project? \nAny data that has not been uploaded will be discarded! \n!",
       "deleteTiles": "Do you want to clear the map cache?",
       "discard": "Do you want to discard your changes?",

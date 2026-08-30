@@ -47,6 +47,7 @@ import {
   isFreehandTool,
   isLineTool,
   isMapMemoDrawTool,
+  isPenTool,
   isPlotTool,
   isPointTool,
   isPolygonTool,
@@ -297,6 +298,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     penWidth,
     mapMemoEditingLine,
     editableMapMemo,
+    isIndividualColorRequired,
     isPencilModeActive,
     isUndoable,
     isRedoable,
@@ -784,7 +786,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
   }, []);
 
   const selectMapMemoTool = useCallback(
-    (value: MapMemoToolType | undefined) => {
+    async (value: MapMemoToolType | undefined) => {
       setInfoToolActive(false);
       if (value === undefined) {
         setMapMemoTool('NONE');
@@ -794,14 +796,25 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
             Alert.alert('', t('Home.alert.cannotEdit'));
             return;
           }
-          const ret = changeColorTypeToIndividual();
-          if (ret) Alert.alert('', t('Home.alert.individualColor'));
+          //レイヤの色分け設定を書き換えることになるので、実際に描くペンのときだけ事前に確認する
+          if (isPenTool(value) && isIndividualColorRequired) {
+            const ret = await ConfirmAsync(t('Home.confirm.individualColor'));
+            if (!ret) return;
+            changeColorTypeToIndividual();
+          }
         }
         setDrawTool('NONE');
         setMapMemoTool(value);
       }
     },
-    [changeColorTypeToIndividual, editableMapMemo, setDrawTool, setInfoToolActive, setMapMemoTool]
+    [
+      changeColorTypeToIndividual,
+      editableMapMemo,
+      isIndividualColorRequired,
+      setDrawTool,
+      setInfoToolActive,
+      setMapMemoTool,
+    ]
   );
 
   const selectInfoTool = useCallback(

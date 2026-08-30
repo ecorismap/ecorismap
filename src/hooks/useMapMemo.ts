@@ -51,6 +51,7 @@ export type UseMapMemoReturnType = {
   penWidth: number;
   mapMemoEditingLine: RefObject<Position[]>;
   editableMapMemo: boolean;
+  isIndividualColorRequired: boolean;
   isPencilModeActive: boolean;
   isUndoable: boolean;
   isRedoable: boolean;
@@ -180,6 +181,12 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
   );
 
   const editableMapMemo = useMemo(() => activeMemoLayer !== undefined, [activeMemoLayer]);
+
+  //ペンで描くにはレコードごとの色・太さ（INDIVIDUAL）が必要。切り替えが要るかどうか
+  const isIndividualColorRequired = useMemo(
+    () => activeMemoLayer !== undefined && activeMemoLayer.colorStyle.colorType !== 'INDIVIDUAL',
+    [activeMemoLayer]
+  );
 
   const penWidth = useMemo(() => {
     switch (currentPenWidth) {
@@ -968,6 +975,9 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
   const changeColorTypeToIndividual = useCallback(() => {
     if (activeMemoLayer === undefined || activeMemoLayer.colorStyle.colorType === 'INDIVIDUAL') return false;
 
+    //描いた色と太さをそのまま表示するにはINDIVIDUALが必要。
+    //またストロークごとにラベルが出ると描画の邪魔になるのでラベルは非表示にする。
+    //どちらも元の設定を退避し、カラータイプを戻したときに復元できるようにする
     const newLayer = {
       ...activeMemoLayer,
       colorStyle: {
@@ -975,6 +985,9 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
         colorType: 'INDIVIDUAL' as const,
         fieldName: '__CUSTOM',
         customFieldValue: '_strokeColor',
+        savedFieldName: activeMemoLayer.colorStyle.fieldName,
+        savedCustomFieldValue: activeMemoLayer.colorStyle.customFieldValue,
+        savedLabel: activeMemoLayer.label,
       },
       label: '',
     };
@@ -1007,6 +1020,7 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
     penWidth,
     mapMemoEditingLine,
     editableMapMemo,
+    isIndividualColorRequired,
     isPencilModeActive,
     isUndoable,
     isRedoable,

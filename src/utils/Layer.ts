@@ -1,10 +1,34 @@
 import { cloneDeep } from 'lodash';
 import { COLOR } from '../constants/AppConstants';
 import { t } from '../i18n/config';
-import { RecordType, LayerType } from '../types';
+import { RecordType, LayerType, ColorStyle } from '../types';
 import { ulid } from 'ulid';
 import { hex2rgba } from './Color';
 import dayjs from '../i18n/dayjs';
+
+/**
+ * 編集したcolorStyleをレイヤに反映する。
+ * マップメモのペン使用時にINDIVIDUALへ切り替えた際、ラベル設定はcolorStyleへ退避してある。
+ * カラータイプが戻された時点でラベルを復元する（色分けフィールドの復元はuseFeatureStyle側で行う）。
+ */
+export const applyColorStyle = (layer: LayerType, colorStyle: ColorStyle): LayerType => {
+  if (colorStyle.savedLabel === undefined || colorStyle.colorType === 'INDIVIDUAL') {
+    return { ...layer, colorStyle };
+  }
+  const { savedLabel, ...restored } = colorStyle;
+  return { ...layer, colorStyle: restored, label: savedLabel };
+};
+
+/**
+ * 線の太さを決める。
+ * _strokeWidthはマップメモが描画時に記録する太さで、レコード自身の値なのでレイヤ一律の太さより優先する。
+ * 色と違い「凡例による意味づけ」と競合しないため、colorTypeには依存させない。
+ */
+export const getLineWidth = (layer: LayerType, feature: RecordType): number => {
+  //エクスポート済みGeoJSONの再インポートでは_strokeWidthが空文字のことがあるため、数値のみ採用する
+  if (typeof feature.field._strokeWidth === 'number') return feature.field._strokeWidth;
+  return layer.colorStyle.lineWidth ?? 1.5;
+};
 
 export const getColor = (layer: LayerType, feature: RecordType) => {
   //colorは以前はhexで保存していたが、rgbaで保存するように変更したため、hexの場合はrgbaに変換する。

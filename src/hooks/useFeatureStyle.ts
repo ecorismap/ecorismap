@@ -10,6 +10,7 @@ import { getRandomColor, hsv2rgbaString } from '../utils/Color';
 import { updateLayerAction } from '../modules/layers';
 import { t } from '../i18n/config';
 import { selectDataSetForLayer } from '../modules/selectors';
+import { applyColorStyle } from '../utils/Layer';
 
 export type UseFeatureStyleReturnType = {
   isEdited: boolean;
@@ -23,6 +24,7 @@ export type UseFeatureStyleReturnType = {
   fieldValues: string[];
   fieldLabels: string[];
   layerType: FeatureType;
+  isMapMemoLayer: boolean;
   modalVisible: boolean;
   setIsCustom: React.Dispatch<React.SetStateAction<boolean>>;
   changeCustomFieldValue: (value: string) => void;
@@ -92,6 +94,8 @@ export const useFeatureStyle = (layer_: LayerType, isEdited_: boolean): UseFeatu
   }, [colorStyle.colorType, projectId]);
   const colorTypeLabels = useMemo(() => colorTypes.map((type) => COLORTYPE[type]), [colorTypes]);
   const layerType = useMemo(() => layer_.type, [layer_.type]);
+  //マップメモで描いたレコードは自身の太さ（_strokeWidth）を持つため、レイヤ一律の太さ指定は効かない
+  const isMapMemoLayer = useMemo(() => allUserData.some((d) => d.field._strokeWidth !== undefined), [allUserData]);
 
   useEffect(() => {
     setTargetLayer(layer_);
@@ -107,10 +111,23 @@ export const useFeatureStyle = (layer_: LayerType, isEdited_: boolean): UseFeatu
 
   const changeColorType = useCallback(
     (itemValue: ItemValue) => {
-      if (colorStyle.colorType !== itemValue) {
+      if (colorStyle.colorType === itemValue) return;
+      //マップメモのペン使用でINDIVIDUALに切り替えられていた場合、退避した色分け設定をここで復元する
+      if (colorStyle.colorType === 'INDIVIDUAL' && colorStyle.savedFieldName !== undefined) {
+        const fieldName = colorStyle.savedFieldName;
+        setIsCustom(fieldName === '__CUSTOM');
+        setColorStyle({
+          ...colorStyle,
+          colorType: itemValue as ColorTypesType,
+          fieldName,
+          customFieldValue: colorStyle.savedCustomFieldValue ?? '',
+          savedFieldName: undefined,
+          savedCustomFieldValue: undefined,
+        });
+      } else {
         setColorStyle({ ...colorStyle, colorType: itemValue as ColorTypesType });
-        setIsEdited(true);
       }
+      setIsEdited(true);
     },
     [colorStyle]
   );
@@ -262,7 +279,7 @@ export const useFeatureStyle = (layer_: LayerType, isEdited_: boolean): UseFeatu
   }, []);
 
   const saveColorStyle = useCallback(() => {
-    dispatch(updateLayerAction({ ...targetLayer, colorStyle: colorStyle }));
+    dispatch(updateLayerAction(applyColorStyle(targetLayer, colorStyle)));
     setIsEdited(false);
   }, [colorStyle, dispatch, targetLayer]);
 
@@ -278,6 +295,7 @@ export const useFeatureStyle = (layer_: LayerType, isEdited_: boolean): UseFeatu
     fieldValues,
     fieldLabels,
     layerType,
+    isMapMemoLayer,
     modalVisible,
     setIsCustom,
     changeCustomFieldValue,

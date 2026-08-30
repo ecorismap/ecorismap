@@ -8,7 +8,7 @@ import { isBrushTool } from '../../utils/General';
 import { HomeMapMemoStamp } from './HomeMapMemoStamp';
 import { HomeMapMemoBrush } from './HomeMapMemoBrush';
 import { COLOR } from '../../constants/AppConstants';
-import { getColor } from '../../utils/Layer';
+import { getColor, getLineWidth } from '../../utils/Layer';
 import { LineArrow } from '../atoms';
 
 interface Props {
@@ -19,22 +19,6 @@ interface Props {
   selectedRecord: { layerId: string; record: RecordType } | undefined;
   editingLineId?: string;
 }
-
-const getStrokeWidth = (layer: LayerType, feature: LineRecordType) => {
-  let strokeWidth;
-  if (layer.colorStyle.colorType === 'INDIVIDUAL') {
-    if (feature.field._strokeWidth !== undefined) {
-      strokeWidth = feature.field._strokeWidth as number;
-    } else {
-      strokeWidth = 1.5;
-    }
-  } else if (layer.colorStyle.lineWidth !== undefined) {
-    strokeWidth = layer.colorStyle.lineWidth;
-  } else {
-    strokeWidth = 1.5;
-  }
-  return strokeWidth;
-};
 
 export const Line = React.memo((props: Props & { editingLineId?: string }) => {
   const { data, layer, zoom, selectedRecord, editingLineId } = props;
@@ -106,7 +90,7 @@ export const Line = React.memo((props: Props & { editingLineId?: string }) => {
           feature.id === selectedRecord?.record?.id || feature.field._group === selectedRecord?.record.id;
         const lineColor = selected ? COLOR.YELLOW : getColor(layer, feature);
         const arrowStyle = feature.field._strokeStyle as ArrowStyleType;
-        const strokeWidth = getStrokeWidth(layer, feature);
+        const strokeWidth = getLineWidth(layer, feature);
         return (
           <LineArrow
             key={'arrow' + feature.id}

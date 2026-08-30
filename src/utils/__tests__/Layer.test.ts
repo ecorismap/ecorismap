@@ -1,6 +1,6 @@
 import { COLOR } from '../../constants/AppConstants';
 import { LayerType } from '../../types';
-import { getColor, changeLayerId } from '../Layer';
+import { getColor, changeLayerId, applyColorStyle, getLineWidth } from '../Layer';
 
 describe('getColor', () => {
   const layer: LayerType = {
@@ -75,6 +75,91 @@ describe('getColor', () => {
   //   };
   //   expect(getColor(layer3, feature)).toBe('#0000ff');
   // });
+});
+
+describe('getLineWidth', () => {
+  const layer: LayerType = {
+    id: '1',
+    name: 'ライン',
+    type: 'LINE',
+    permission: 'PRIVATE',
+    colorStyle: {
+      colorType: 'CATEGORIZED',
+      color: COLOR.RED,
+      fieldName: '区分',
+      colorRamp: 'RANDOM',
+      customFieldValue: '',
+      colorList: [],
+      transparency: 1,
+      lineWidth: 3,
+    },
+    label: '',
+    visible: true,
+    active: true,
+    field: [],
+  };
+  const record = (field: any) => ({ id: '0', visible: true, redraw: false, coords: undefined, field } as any);
+
+  it('レコードが太さを持つ場合はカラータイプに関係なくそれを使う', () => {
+    expect(getLineWidth(layer, record({ _strokeWidth: 10 }))).toBe(10);
+  });
+
+  it('レコードが太さを持たない場合はレイヤの太さを使う', () => {
+    expect(getLineWidth(layer, record({}))).toBe(3);
+  });
+
+  it('数値でない_strokeWidth（再インポートの空文字など）は無視してレイヤの太さを使う', () => {
+    expect(getLineWidth(layer, record({ _strokeWidth: '' }))).toBe(3);
+  });
+
+  it('どちらも無い場合は既定値になる', () => {
+    const noWidth = { ...layer, colorStyle: { ...layer.colorStyle, lineWidth: undefined } };
+    expect(getLineWidth(noWidth, record({}))).toBe(1.5);
+  });
+});
+
+describe('applyColorStyle', () => {
+  const memoLayer: LayerType = {
+    id: '1',
+    name: 'メモ',
+    type: 'LINE',
+    permission: 'PRIVATE',
+    colorStyle: {
+      colorType: 'INDIVIDUAL',
+      color: COLOR.RED,
+      fieldName: '__CUSTOM',
+      colorRamp: 'RANDOM',
+      customFieldValue: '_strokeColor',
+      colorList: [],
+      transparency: 1,
+      savedFieldName: '区分',
+      savedCustomFieldValue: '',
+      savedLabel: '種名',
+    },
+    label: '',
+    visible: true,
+    active: true,
+    field: [],
+  };
+
+  it('カラータイプが[個別]のままなら退避したラベルは復元しない', () => {
+    const result = applyColorStyle(memoLayer, memoLayer.colorStyle);
+    expect(result.label).toBe('');
+    expect(result.colorStyle.savedLabel).toBe('種名');
+  });
+
+  it('カラータイプを戻すと退避したラベルが復元され、退避データは消える', () => {
+    const restored = applyColorStyle(memoLayer, {
+      ...memoLayer.colorStyle,
+      colorType: 'CATEGORIZED',
+      fieldName: '区分',
+      customFieldValue: '',
+      savedFieldName: undefined,
+      savedCustomFieldValue: undefined,
+    });
+    expect(restored.label).toBe('種名');
+    expect(restored.colorStyle.savedLabel).toBeUndefined();
+  });
 });
 
 describe('test ecorismap', function () {

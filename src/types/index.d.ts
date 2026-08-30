@@ -215,6 +215,10 @@ export interface ColorStyle {
     color: string;
   }[];
   lineWidth?: number;
+  //マップメモのペン使用時にINDIVIDUALへ切り替える前の設定。カラータイプを戻すと復元する
+  savedFieldName?: string;
+  savedCustomFieldValue?: string;
+  savedLabel?: string;
 }
 
 export interface FieldType {

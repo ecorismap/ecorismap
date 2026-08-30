@@ -4,7 +4,7 @@ import { LatLng, Marker, Polygon as Poly } from 'react-native-maps';
 import { LayerType, PolygonRecordType, RecordType } from '../../types';
 import { PointLabel, PointView, PolygonLabel } from '../atoms';
 import { COLOR } from '../../constants/AppConstants';
-import { generateLabel, getColor } from '../../utils/Layer';
+import { generateLabel, getColor, getLineWidth } from '../../utils/Layer';
 import { ViewportBounds, cullPolygons } from '../../utils/ViewportCulling';
 import { MARKER_BAND, markerZIndex } from '../../utils/markerZIndex';
 
@@ -45,18 +45,7 @@ export const Polygon = React.memo(
           const pointColor = selected ? COLOR.YELLOW : strokeColor;
           const fillColor = selected ? COLOR.ALFAYELLOW : transparency ? 'rgba(0,0,0,0)' : getColor(layer, feature);
           const borderColor = selected ? COLOR.BLACK : COLOR.WHITE;
-          let strokeWidth;
-          if (layer.colorStyle.colorType === 'INDIVIDUAL') {
-            if (feature.field._strokeWidth !== undefined) {
-              strokeWidth = feature.field._strokeWidth as number;
-            } else {
-              strokeWidth = 1.5;
-            }
-          } else if (layer.colorStyle.lineWidth !== undefined) {
-            strokeWidth = layer.colorStyle.lineWidth;
-          } else {
-            strokeWidth = 1.5;
-          }
+          const strokeWidth = getLineWidth(layer, feature);
 
           if (currentZoom >= 11) {
             return (

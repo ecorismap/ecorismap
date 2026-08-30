@@ -16,6 +16,7 @@ import { changeFieldValue, getInitialFieldValue } from '../utils/Data';
 import { LAYER_PRESETS, PRESET_LAYER_DATA } from '../constants/Presets';
 import { createLayerFromPreset, PresetDictionary } from '../utils/Preset';
 import { geoJson2Data } from '../utils/Geometry';
+import { applyColorStyle } from '../utils/Layer';
 import type { FeatureCollection } from 'geojson';
 import { importPresetDictionaries } from '../utils/PresetDictionary';
 import sanitize from 'sanitize-filename';
@@ -108,7 +109,7 @@ export const useLayerEdit = (
   useEffect(() => {
     if (isStyleEdited && colorStyle !== undefined) {
       setIsEdited(true);
-      setTargetLayer({ ...targetLayer, colorStyle: colorStyle });
+      setTargetLayer(applyColorStyle(targetLayer, colorStyle));
     }
     //targetLayerはループするので入れてはいけない
     // eslint-disable-next-line react-hooks/exhaustive-deps
