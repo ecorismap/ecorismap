@@ -193,7 +193,12 @@ track レイヤは `layersInitialState`（`src/modules/layers.ts`）で `permiss
   - 権限を変更できる条件は既存の `canChangePermission`（＝プロジェクト設定モード等）のまま。クラウド反映も既存の「設定を保存」→`updateLayerDataPermission` 一括更新（追加のサーバー実装なし）
   - **副産物のバグ修正**: `atoms/Picker.tsx` の `enabled` プロップは `accessible` に渡すだけで実際には無効化されていなかった（enabled=falseでもモーダルが開き選択操作ができた）。enabled=false時はセレクタを開かないよう修正。タイプ・データ形式ピッカーの無効化はこれで実効化（既存レイヤのタイプPicker等、他画面のenabled=false箇所にも正しい挙動として波及）
   - ユーザー別色分けは既存の色設定画面（colorType:USER＋colorList）で設定可能
-- 変更ファイル: `LayersTable.tsx`/`.web.tsx`、`LayerEditRadio.tsx`、`LayerEditLayerName.tsx`、`LayerEditFieldTable.tsx`、`LayerEditButton.tsx`、`atoms/Picker.tsx`
+- **ユーザー別色分けの自動化（2026-08-31追加、feature/track-user-colors）**:
+  - trackをPUBLICに切替時、色が初期の単色（SINGLE）のままなら colorType:USER に自動切替え、その時点のデータにいるユーザーのdisplayNameで colorList を生成。PRIVATEに戻すとUSERなら単色（COLOR.TRACK）へ復帰。カスタム済みスタイルは触らない
+  - 色は `getUserColor(displayName)`（`utils/Color.ts`）で**決定的に生成**（文字列ハッシュ→黄金角で色相を回す。全端末・いつ生成しても同じ人は同じ色）
+  - **描画側フォールバック**: `getColor`/`getColorRule`（`utils/Layer.ts`）のUSER分岐で、colorListに無いdisplayNameを透明ではなく `getUserColor` の色で描画。**色設定後に参加した新メンバーの軌跡が見えない問題を解消**（USER色分けを使う全レイヤに効く挙動変更。従来「透明で見えない」だったものが見えるようになる）
+  - 注: `project.members` にはdisplayNameが無い（uid/email/role）ため、ユーザー一覧は受信データのdisplayNameから導出（既存のUSER色分けと同じ方式）。未受信ユーザーはフォールバックが担保
+- 変更ファイル: `LayersTable.tsx`/`.web.tsx`、`LayerEditRadio.tsx`、`LayerEditLayerName.tsx`、`LayerEditFieldTable.tsx`、`LayerEditButton.tsx`、`atoms/Picker.tsx`、`utils/Color.ts`、`utils/Layer.ts`、`useLayerEdit.ts`
 - track レイヤ補完（`useRepository.fetchProjectSettings`等）は「無い場合のみ初期状態から追加」でPUBLIC設定を上書きしないことを確認済み
 
 ### ステップ3: 案B（リアルタイム共有）※需要を見て判断（**優先度低**: 現在地共有ボタン自体が「いまは不要」の判断で非表示になっており、リアルタイム系の需要が生じた時点で位置共有の再有効化とセットで設計する）
