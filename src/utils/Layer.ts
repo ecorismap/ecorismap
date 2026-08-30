@@ -3,7 +3,7 @@ import { COLOR } from '../constants/AppConstants';
 import { t } from '../i18n/config';
 import { RecordType, LayerType, ColorStyle } from '../types';
 import { ulid } from 'ulid';
-import { hex2rgba } from './Color';
+import { getUserColor, hex2rgba } from './Color';
 import dayjs from '../i18n/dayjs';
 
 /**
@@ -54,7 +54,13 @@ export const getColor = (layer: LayerType, feature: RecordType) => {
     color = (feature.field[individualColorField] as string) ?? 'rgba(0,0,0,1)';
   } else if (colorStyle.colorType === 'USER') {
     const colorObj = colorStyle.colorList.find(({ value }) => value === feature.displayName);
-    color = colorObj ? hex2rgba(colorObj.color) : 'rgba(0,0,0,0)';
+    // colorListに無いユーザー（色設定後に参加したメンバー等）は透明で見えなくなるため、
+    // displayNameから決定的に生成した色でフォールバックする（全端末で同じ色になる）
+    color = colorObj
+      ? hex2rgba(colorObj.color)
+      : feature.displayName
+      ? getUserColor(feature.displayName)
+      : 'rgba(0,0,0,0)';
   }
   return color;
 };
@@ -101,7 +107,8 @@ export function getColorRule(layer_: LayerType, displayName?: string) {
       'rgba(0,0,0,1)',
     ];
   } else if (colorType === 'USER') {
-    const defaultColor = 'rgba(0,0,0,0)';
+    // colorListに無いユーザーは決定的な色でフォールバックする（getColorのUSER分岐と同じ扱い）
+    const defaultColor = displayName ? getUserColor(displayName) : 'rgba(0,0,0,0)';
     const colorObj = colorList.find(({ value }) => value === displayName);
     colorRule = colorObj !== undefined ? hex2rgba(colorObj.color) ?? defaultColor : defaultColor;
   }

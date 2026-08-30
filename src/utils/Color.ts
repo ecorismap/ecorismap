@@ -117,3 +117,17 @@ export const getRandomColor = (): string => {
   }
   return color;
 };
+
+/**
+ * ユーザー名から決定的に色を生成する（同じ名前は全端末・いつ生成しても同じ色）。
+ * USER色分けでcolorListの生成・未登録ユーザーのフォールバックに使う。
+ * 黄金角(137.5度)で色相を回すため、ハッシュが近い名前同士でも色相が離れやすい。
+ */
+export const getUserColor = (displayName: string): string => {
+  let hash = 0;
+  for (let i = 0; i < displayName.length; i++) {
+    hash = (hash * 31 + displayName.charCodeAt(i)) % 4294967296;
+  }
+  const hue = (hash * 137.5) % 360;
+  return hsv2rgbaString(hue, 0.75, 0.9, 1);
+};
