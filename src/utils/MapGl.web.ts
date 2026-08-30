@@ -76,11 +76,8 @@ export const getDataStyleLine = (layer_: LayerType, userId: string, displayName:
     type: 'line',
     paint: {
       'line-color': colorExpression,
-      'line-width': [
-        'coalesce',
-        layer_.colorStyle.colorType === 'INDIVIDUAL' ? ['get', '_strokeWidth'] : layer_.colorStyle.lineWidth ?? 1.5,
-        layer_.colorStyle.lineWidth ?? 1.5,
-      ],
+      //レコードが太さを持つならレイヤ一律の太さより優先する
+      'line-width': ['coalesce', ['get', '_strokeWidth'], layer_.colorStyle.lineWidth ?? 1.5],
     },
     layout: {
       visibility: 'visible',
@@ -114,11 +111,8 @@ export const getDataStylePolygonOutline = (layer_: LayerType, userId: string, di
     type: 'line',
     paint: {
       'line-color': colorExpression,
-      'line-width': [
-        'coalesce',
-        layer_.colorStyle.colorType === 'INDIVIDUAL' ? ['get', '_strokeWidth'] : layer_.colorStyle.lineWidth ?? 1.5,
-        layer_.colorStyle.lineWidth ?? 1.5,
-      ],
+      //レコードが太さを持つならレイヤ一律の太さより優先する
+      'line-width': ['coalesce', ['get', '_strokeWidth'], layer_.colorStyle.lineWidth ?? 1.5],
     },
     layout: {
       visibility: 'visible',

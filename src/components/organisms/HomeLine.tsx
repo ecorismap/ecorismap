@@ -2,7 +2,7 @@ import React, { useMemo } from 'react';
 import { Polyline, LatLng } from 'react-native-maps';
 import { ArrowStyleType, LayerType, LineRecordType, RecordType } from '../../types';
 import { LineLabel } from '../atoms';
-import { generateLabel, getColor } from '../../utils/Layer';
+import { generateLabel, getColor, getLineWidth } from '../../utils/Layer';
 import { COLOR } from '../../constants/AppConstants';
 import { isBrushTool } from '../../utils/General';
 import LineArrow from '../atoms/LineArrow';
@@ -19,22 +19,6 @@ interface Props {
   editingLineId?: string; // 追加
   bounds?: ViewportBounds | null;
 }
-
-const getStrokeWidth = (layer: LayerType, feature: LineRecordType) => {
-  let strokeWidth;
-  if (layer.colorStyle.colorType === 'INDIVIDUAL') {
-    if (feature.field._strokeWidth !== undefined) {
-      strokeWidth = feature.field._strokeWidth as number;
-    } else {
-      strokeWidth = 1.5;
-    }
-  } else if (layer.colorStyle.lineWidth !== undefined) {
-    strokeWidth = layer.colorStyle.lineWidth;
-  } else {
-    strokeWidth = 1.5;
-  }
-  return strokeWidth;
-};
 
 export const Line = React.memo(
   (props: Props) => {
@@ -89,7 +73,7 @@ export const Line = React.memo(
               />
             );
           } else {
-            const strokeWidth = getStrokeWidth(layer, feature);
+            const strokeWidth = getLineWidth(layer, feature);
             return (
               <PolylineComponent
                 key={'line' + feature.id}

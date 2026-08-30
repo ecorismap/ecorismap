@@ -35,7 +35,7 @@ import {
 import { rgbaString2qgis } from './Color';
 import { cloneDeep } from 'lodash';
 import { isLocationType, isLocationTypeArray } from './General';
-import { generateLabel, getColor } from './Layer';
+import { generateLabel, getColor, getLineWidth } from './Layer';
 
 export const getGeometryType = (geometryString: string): FeatureType => {
   if (geometryString.includes('POINT')) {
@@ -661,16 +661,6 @@ const rgbaToKmlColor = (rgba: string, transparency: boolean): string => {
     : 'ff';
 
   return `${a}${b}${g}${r}`;
-};
-
-const getLineWidth = (layer: LayerType, feature: RecordType): number => {
-  if (layer.colorStyle.colorType === 'INDIVIDUAL' && feature.field._strokeWidth !== undefined) {
-    return feature.field._strokeWidth as number;
-  } else if (layer.colorStyle.lineWidth !== undefined) {
-    return layer.colorStyle.lineWidth;
-  } else {
-    return 1.5; // デフォルト値
-  }
 };
 
 export const generateKML = (data: RecordType[], layer: LayerType) => {

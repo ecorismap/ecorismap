@@ -24,6 +24,7 @@ export type UseFeatureStyleReturnType = {
   fieldValues: string[];
   fieldLabels: string[];
   layerType: FeatureType;
+  isMapMemoLayer: boolean;
   modalVisible: boolean;
   setIsCustom: React.Dispatch<React.SetStateAction<boolean>>;
   changeCustomFieldValue: (value: string) => void;
@@ -93,6 +94,8 @@ export const useFeatureStyle = (layer_: LayerType, isEdited_: boolean): UseFeatu
   }, [colorStyle.colorType, projectId]);
   const colorTypeLabels = useMemo(() => colorTypes.map((type) => COLORTYPE[type]), [colorTypes]);
   const layerType = useMemo(() => layer_.type, [layer_.type]);
+  //マップメモで描いたレコードは自身の太さ（_strokeWidth）を持つため、レイヤ一律の太さ指定は効かない
+  const isMapMemoLayer = useMemo(() => allUserData.some((d) => d.field._strokeWidth !== undefined), [allUserData]);
 
   useEffect(() => {
     setTargetLayer(layer_);
@@ -292,6 +295,7 @@ export const useFeatureStyle = (layer_: LayerType, isEdited_: boolean): UseFeatu
     fieldValues,
     fieldLabels,
     layerType,
+    isMapMemoLayer,
     modalVisible,
     setIsCustom,
     changeCustomFieldValue,

@@ -1,6 +1,6 @@
 import { COLOR } from '../../constants/AppConstants';
 import { LayerType } from '../../types';
-import { getColor, changeLayerId, applyColorStyle } from '../Layer';
+import { getColor, changeLayerId, applyColorStyle, getLineWidth } from '../Layer';
 
 describe('getColor', () => {
   const layer: LayerType = {
@@ -75,6 +75,43 @@ describe('getColor', () => {
   //   };
   //   expect(getColor(layer3, feature)).toBe('#0000ff');
   // });
+});
+
+describe('getLineWidth', () => {
+  const layer: LayerType = {
+    id: '1',
+    name: 'ライン',
+    type: 'LINE',
+    permission: 'PRIVATE',
+    colorStyle: {
+      colorType: 'CATEGORIZED',
+      color: COLOR.RED,
+      fieldName: '区分',
+      colorRamp: 'RANDOM',
+      customFieldValue: '',
+      colorList: [],
+      transparency: 1,
+      lineWidth: 3,
+    },
+    label: '',
+    visible: true,
+    active: true,
+    field: [],
+  };
+  const record = (field: any) => ({ id: '0', visible: true, redraw: false, coords: undefined, field } as any);
+
+  it('レコードが太さを持つ場合はカラータイプに関係なくそれを使う', () => {
+    expect(getLineWidth(layer, record({ _strokeWidth: 10 }))).toBe(10);
+  });
+
+  it('レコードが太さを持たない場合はレイヤの太さを使う', () => {
+    expect(getLineWidth(layer, record({}))).toBe(3);
+  });
+
+  it('どちらも無い場合は既定値になる', () => {
+    const noWidth = { ...layer, colorStyle: { ...layer.colorStyle, lineWidth: undefined } };
+    expect(getLineWidth(noWidth, record({}))).toBe(1.5);
+  });
 });
 
 describe('applyColorStyle', () => {

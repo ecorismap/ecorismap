@@ -19,6 +19,16 @@ export const applyColorStyle = (layer: LayerType, colorStyle: ColorStyle): Layer
   return { ...layer, colorStyle: restored, label: savedLabel };
 };
 
+/**
+ * 線の太さを決める。
+ * _strokeWidthはマップメモが描画時に記録する太さで、レコード自身の値なのでレイヤ一律の太さより優先する。
+ * 色と違い「凡例による意味づけ」と競合しないため、colorTypeには依存させない。
+ */
+export const getLineWidth = (layer: LayerType, feature: RecordType): number => {
+  if (feature.field._strokeWidth !== undefined) return feature.field._strokeWidth as number;
+  return layer.colorStyle.lineWidth ?? 1.5;
+};
+
 export const getColor = (layer: LayerType, feature: RecordType) => {
   //colorは以前はhexで保存していたが、rgbaで保存するように変更したため、hexの場合はrgbaに変換する。
   //rgbaになっている場合は、hex2rgbaの中でレイヤの透過率を反映する。

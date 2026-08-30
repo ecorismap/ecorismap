@@ -764,12 +764,8 @@ export const usePDF = (): UseEcorisMapFileReturnType => {
       const label = generateLabel(layer, feature);
 
       let strokeWidth;
-      if (layer.colorStyle.colorType === 'INDIVIDUAL') {
-        if (feature.field._strokeWidth !== undefined) {
-          strokeWidth = feature.field._strokeWidth as number;
-        } else {
-          strokeWidth = 1.5;
-        }
+      if (feature.field._strokeWidth !== undefined) {
+        strokeWidth = feature.field._strokeWidth as number;
       } else if (layer.colorStyle.lineWidth !== undefined) {
         strokeWidth = layer.colorStyle.lineWidth;
       } else {

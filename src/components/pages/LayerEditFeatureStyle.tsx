@@ -26,6 +26,7 @@ export default function LayerEditFeatureStyleScreen() {
     colorRamps,
     colorRampLabels,
     layerType,
+    isMapMemoLayer,
     modalVisible,
     isStyleChangeOnly,
     isEdited,
@@ -60,7 +61,7 @@ export default function LayerEditFeatureStyleScreen() {
         rightComponent={rightComponent}
       />
       <ScrollView>
-        {(layerType === 'LINE' || layerType === 'POLYGON') && colorStyle.colorType !== 'INDIVIDUAL' && (
+        {(layerType === 'LINE' || layerType === 'POLYGON') && !isMapMemoLayer && (
           <View style={{ paddingHorizontal: 10, borderBottomWidth: 1, borderColor: COLOR.GRAY2 }}>
             <Slider
               style={{ paddingHorizontal: 10 }}
