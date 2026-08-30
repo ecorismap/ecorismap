@@ -49,9 +49,11 @@
 track レイヤは `layersInitialState`（`src/modules/layers.ts`）で `permission:'PRIVATE'` に固定され、レイヤ一覧からレイヤ設定画面（LayerEdit）への遷移が
 `src/components/organisms/LayersTable.tsx:90,193` / `LayersTable.web.tsx:109,211` の `item.id !== 'track'` ガードで塞がれているため、**UI上 permission を変更する手段がない**（事実上PRIVATE固定）。
 
-### 2.4 先行実装: 現在地のリアルタイム共有
+### 2.4 先行実装: 現在地のリアルタイム共有（**現在は休眠中**）
 
-`src/hooks/useSyncLocation.ts` により、プロジェクト参加中は `projects/{id}/position/{uid}` に現在地をE2E暗号化してアップロードし、onSnapshot で他メンバーの位置を購読・地図表示している（`HomeMemberMarker`）。「記録中の軌跡のリアルタイム共有」を作る場合の直接の先行実装。
+`src/hooks/useSyncLocation.ts` により、プロジェクト参加中は `projects/{id}/position/{uid}` に現在地をE2E暗号化してアップロードし、onSnapshot で他メンバーの位置を購読・地図表示する実装がある（`HomeMemberMarker`）。「記録中の軌跡のリアルタイム共有」を作る場合の直接の先行実装。
+
+ただし**リアルタイムの位置共有は現時点では不要と判断され、ON/OFFボタン（`HomeProjectButtons.tsx` の `pressSyncPosition`）は意図的にコメントアウトされて非表示**（2026-08-31確認）。`isSynced` を有効化する経路が他に無いため、アップロード・購読とも現在は一切動作しない。将来リアルタイム軌跡共有（ステップ3）を実装する場合は、このUIの復活とセットになる。休眠中の今なら送信間隔・ペイロード・プライバシー制御を互換性の制約なしに設計し直せる。
 
 > ⚠️ 既存バグ（**ステップ0で修正済み**）: `useSyncLocation.ts` のスロットル判定が `dayjs().diff(lastUploadTime.current) / (60 * 1000) > 0` となっており、diff(ミリ秒)を60000で割っても正なら通るため意図の「60秒間隔」が効いておらず、位置更新のたびにアップロードされていた。`POSITION_UPLOAD_INTERVAL_MS`(60秒)の正しい間隔判定に修正済み（初回は即アップロード）。
 
@@ -181,16 +183,20 @@ track レイヤは `layersInitialState`（`src/modules/layers.ts`）で `permiss
 ### ステップ1: 世代方式による5MB上限撤廃（§5.5）→ **実装済み（2026-08-31）**
 - 走行単位分割は規模感に対して過剰と判断し不採用。書き込み設計の変更（世代方式）で全レイヤの5MB問題を解決
 
-### ステップ2: 案A（保存済み軌跡の共有）
-- track レイヤの permission を PRIVATE/PUBLIC で切替可能にする
-- 変更ファイルの中心:
-  - `src/components/organisms/LayersTable.tsx` / `.web.tsx`（ガード解除 or 専用トグル）
-  - `src/hooks/useLayerEdit.ts`（permission変更→`updateLayerDataPermission`の既存経路確認）
-  - `src/hooks/useRepository.ts`（track レイヤ補完時の permission 保持）
-- サイズ面の前提: ステップ1（世代方式）で解消済み
-- 概算規模: 小〜中（テスト含め数日）
+### ステップ2: 案A（保存済み軌跡の共有）→ **実装済み（2026-08-31、feature/track-share-toggle）**
+- 方式は**案2（管理者がプロジェクト単位で切替）をユーザー決定**（2026-08-31）。遡及公開（切替時にアップロード済みの全メンバーの軌跡も公開される）の性質を了解の上で採用
+- UI: 当初レイヤ一覧track行に専用トグルを実装したが「わかりにくい」とのフィードバックで方式変更。**他レイヤと同じレイヤ設定ボタン（table-cog）をtrack行にも表示し、レイヤ設定画面（LayerEdit）で権限のみ変更できる**形に（2026-08-31）
+- 実装内容:
+  - `LayersTable.tsx`/`.web.tsx`: track行のレイヤ設定ボタン非表示ガードを撤去
+  - LayerEdit内のtrack制限: レイヤ名変更不可・フィールド追加/削除/編集/詳細設定不可・タイプ変更不可・レイヤ削除不可（軌跡保存処理がname/time/cmt構成に依存するため）。**スタイル変更とエクスポートは可**
+  - 権限ラジオ（`LayerEditRadio`）: trackはCOMMON（管理者専用データ）を選択肢から除外しPRIVATE/PUBLICのみ。切替時の確認ダイアログは「不要」とのフィードバックで実装せず（ユーザー判断）
+  - 権限を変更できる条件は既存の `canChangePermission`（＝プロジェクト設定モード等）のまま。クラウド反映も既存の「設定を保存」→`updateLayerDataPermission` 一括更新（追加のサーバー実装なし）
+  - **副産物のバグ修正**: `atoms/Picker.tsx` の `enabled` プロップは `accessible` に渡すだけで実際には無効化されていなかった（enabled=falseでもモーダルが開き選択操作ができた）。enabled=false時はセレクタを開かないよう修正。タイプ・データ形式ピッカーの無効化はこれで実効化（既存レイヤのタイプPicker等、他画面のenabled=false箇所にも正しい挙動として波及）
+  - ユーザー別色分けは既存の色設定画面（colorType:USER＋colorList）で設定可能
+- 変更ファイル: `LayersTable.tsx`/`.web.tsx`、`LayerEditRadio.tsx`、`LayerEditLayerName.tsx`、`LayerEditFieldTable.tsx`、`LayerEditButton.tsx`、`atoms/Picker.tsx`
+- track レイヤ補完（`useRepository.fetchProjectSettings`等）は「無い場合のみ初期状態から追加」でPUBLIC設定を上書きしないことを確認済み
 
-### ステップ3: 案B（リアルタイム共有）※需要を見て判断
+### ステップ3: 案B（リアルタイム共有）※需要を見て判断（**優先度低**: 現在地共有ボタン自体が「いまは不要」の判断で非表示になっており、リアルタイム系の需要が生じた時点で位置共有の再有効化とセットで設計する）
 - position ペイロードの拡張（直近軌跡の座標列）＋購読側ポリライン描画
 - バックグラウンド送信の設計（headless タスクからの送信可否、送信間隔、電池影響の実測）
 - 概算規模: 中〜大
@@ -198,7 +204,7 @@ track レイヤは `layersInitialState`（`src/modules/layers.ts`）で `permiss
 
 ## 7. 未決事項
 
-1. **permission 変更のUI**: track レイヤのレイヤ設定を全面開放するか（フィールド編集等まで触れてしまう）、「軌跡を共有する」専用トグル（プロジェクト設定 or レイヤ一覧上）にするか。→ 誤操作リスクの少ない専用トグルを推奨
+1. ~~**permission 変更のUI**~~: レイヤ一覧track行の専用トグル（設定モードの管理者のみ）に決定・実装済み（ステップ2）。共有の主体は案2=管理者がプロジェクト単位で決定
 2. **共有の単位**: レイヤ一括（全軌跡を共有）か、記録単位で選択共有か。記録単位が必要になったら走行単位分割（不採用とした設計案）を再検討
 3. ~~**間引き**~~: **不採用に決定**（2026-08-30）。保存時の cleanupLine（ノイズ除去、0.1m）以上の削減は行わず、クラウドにも保存時解像度で上げる。5MB対策は世代方式（§5.5、実装済み）で解決
 4. **既存プロジェクトへの影響**: PUBLIC 化した track の permission はサーバ側 doc の permission フィールド更新（`updateLayerDataPermission`、管理者のみ）が必要になるケースの整理
