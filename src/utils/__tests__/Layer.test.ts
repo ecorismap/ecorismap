@@ -1,6 +1,7 @@
 import { COLOR } from '../../constants/AppConstants';
 import { LayerType } from '../../types';
-import { getColor, changeLayerId, applyColorStyle, getLineWidth } from '../Layer';
+import { getColor, getColorRule, changeLayerId, applyColorStyle, getLineWidth } from '../Layer';
+import { getUserColor } from '../Color';
 
 describe('getColor', () => {
   const layer: LayerType = {
@@ -267,5 +268,52 @@ describe('changeLayerId dictionaryFieldId', () => {
     };
     const { layer: newLayer } = changeLayerId(layer);
     expect(newLayer.dictionaryFieldId).toBeUndefined();
+  });
+});
+
+describe('getColor/getColorRule USERフォールバック', () => {
+  const baseLayer: LayerType = {
+    id: 'track',
+    name: 'トラック',
+    type: 'LINE',
+    permission: 'PUBLIC',
+    colorStyle: {
+      colorType: 'USER',
+      color: COLOR.RED,
+      fieldName: '',
+      colorRamp: 'RANDOM',
+      customFieldValue: '',
+      colorList: [{ value: 'user1', color: '#00ff00' }],
+      transparency: 1,
+    },
+    label: 'name',
+    visible: true,
+    active: true,
+    field: [],
+  };
+  const featureOf = (displayName: string | null) => ({
+    id: '0',
+    userId: undefined,
+    displayName,
+    checked: false,
+    visible: true,
+    type: 'LINE',
+    redraw: false,
+    coords: [],
+    field: {},
+  });
+
+  it('colorListにあるユーザーはその色', () => {
+    expect(getColor(baseLayer, featureOf('user1') as any)).toBe('rgba(0, 255, 0, 1)');
+  });
+  it('colorListに無いユーザーは透明ではなく決定的な色（色設定後に参加したメンバーも見える）', () => {
+    expect(getColor(baseLayer, featureOf('newcomer') as any)).toBe(getUserColor('newcomer'));
+  });
+  it('displayNameが無ければ従来どおり透明', () => {
+    expect(getColor(baseLayer, featureOf(null) as any)).toBe('rgba(0,0,0,0)');
+  });
+  it('getColorRuleも同じ規則でフォールバックする', () => {
+    expect(getColorRule(baseLayer, 'newcomer')).toBe(getUserColor('newcomer'));
+    expect(getColorRule(baseLayer, 'user1')).toBe('rgba(0, 255, 0, 1)');
   });
 });
