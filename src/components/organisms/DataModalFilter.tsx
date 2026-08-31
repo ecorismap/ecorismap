@@ -1,14 +1,17 @@
-import React, { useState, useEffect } from 'react';
-import { View, Modal, Text, StyleSheet } from 'react-native';
+import React, { useState, useEffect, useMemo } from 'react';
+import { View, Modal, Text, StyleSheet, FlatList } from 'react-native';
 import { Pressable } from '../atoms/Pressable';
 import { COLOR } from '../../constants/AppConstants';
 import { useWindow } from '../../hooks/useWindow';
 import { t } from '../../i18n/config';
 import { TextInput } from '../atoms';
+import { narrowFilterCandidates } from '../../utils/Data';
 
 interface Props {
   //絞り込む列の名前。空文字なら全フィールド横断
   fieldName: string;
+  //対象列のユニーク値（ソート済み）。タップで入力欄に反映する
+  candidates: string[];
   defaultValue: string;
   visible: boolean;
   //空欄でOKすると解除になるため、専用の解除ボタンは持たない
@@ -17,16 +20,36 @@ interface Props {
 }
 
 export const DataModalFilter = React.memo((props: Props) => {
-  const { fieldName, defaultValue, visible, pressOK, pressCancel } = props;
+  const { fieldName, candidates, defaultValue, visible, pressOK, pressCancel } = props;
   const [value, setValue] = useState('');
-  const { windowWidth } = useWindow();
+  const { windowWidth, windowHeight } = useWindow();
   const modalWidthScale = 0.7;
+
+  //入力中のテキストで候補も絞る（かな吸収の正規化はレコードの絞り込みと同じ）
+  const narrowedCandidates = useMemo(() => narrowFilterCandidates(candidates, value), [candidates, value]);
 
   useEffect(() => {
     if (visible) setValue(defaultValue);
   }, [defaultValue, visible]);
 
   const styles = StyleSheet.create({
+    candidateItem: {
+      borderBottomColor: COLOR.GRAY0,
+      borderBottomWidth: 1,
+      paddingHorizontal: 12,
+      paddingVertical: 10,
+    },
+    candidateItemSelected: {
+      backgroundColor: COLOR.PALEBLUE,
+    },
+    candidateList: {
+      backgroundColor: COLOR.WHITE,
+      borderColor: COLOR.GRAY1,
+      borderTopWidth: 0,
+      borderWidth: 1,
+      maxHeight: windowHeight * 0.3,
+      width: windowWidth * modalWidthScale,
+    },
     input: {
       backgroundColor: COLOR.WHITE,
       borderColor: COLOR.GRAY1,
@@ -100,6 +123,25 @@ export const DataModalFilter = React.memo((props: Props) => {
                 autoFocus
               />
             </View>
+
+            {narrowedCandidates.length > 0 && (
+              <FlatList
+                style={styles.candidateList}
+                data={narrowedCandidates}
+                keyExtractor={(item) => item}
+                keyboardShouldPersistTaps="always"
+                initialNumToRender={15}
+                getItemLayout={(_, index) => ({ length: 41, offset: 41 * index, index })}
+                renderItem={({ item }) => (
+                  <Pressable
+                    style={[styles.candidateItem, item === value && styles.candidateItemSelected]}
+                    onPress={() => setValue(item)}
+                  >
+                    <Text numberOfLines={1}>{item}</Text>
+                  </Pressable>
+                )}
+              />
+            )}
 
             <View style={styles.modalButtonContainer}>
               <Pressable style={styles.modalOKCancelButton} onPress={() => pressOK(value)}>

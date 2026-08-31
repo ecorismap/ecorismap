@@ -2,6 +2,8 @@ import { LatLonDMSType, LayerType, LocationType, RecordType } from '../../types'
 import {
   boundingBoxFromRecords,
   filterRecords,
+  getFilterCandidates,
+  narrowFilterCandidates,
   sortData,
   getInitialFieldValue,
   mergeLayerData,
@@ -638,6 +640,79 @@ describe('filterRecords', () => {
 
   it('写真フィールドは対象外', () => {
     expect(filterRecords(records, layer, '写真', '写真')).toHaveLength(3);
+  });
+
+  describe('User列(_user_)', () => {
+    const userRecords = [
+      { id: '1', displayName: '山田太郎', field: { 種名: 'スギ' } },
+      { id: '2', displayName: 'ヤマダハナコ', field: { 種名: 'ミズナラ' } },
+      { id: '3', displayName: null, field: { 種名: 'アカマツ' } },
+    ] as unknown as RecordType[];
+
+    it('displayNameで部分一致する', () => {
+      expect(filterRecords(userRecords, layer, '山田', '_user_').map((r) => r.id)).toEqual(['1']);
+    });
+
+    it('ひらがなで入力してもカタカナの値に一致する', () => {
+      expect(filterRecords(userRecords, layer, 'やまだはなこ', '_user_').map((r) => r.id)).toEqual(['2']);
+    });
+
+    it('displayNameが無いレコードは一致しない', () => {
+      expect(filterRecords(userRecords, layer, 'マツ', '_user_')).toHaveLength(0);
+    });
+  });
+});
+
+describe('getFilterCandidates', () => {
+  const layer = {
+    id: 'layer1',
+    field: [
+      { id: 'f1', name: '種名', format: 'STRING' },
+      { id: 'f2', name: '株数', format: 'INTEGER' },
+      { id: 'f3', name: '写真', format: 'PHOTO' },
+    ],
+  } as unknown as LayerType;
+
+  const records = [
+    { id: '1', displayName: '山田', field: { 種名: 'スギ', 株数: 10 } },
+    { id: '2', displayName: '佐藤', field: { 種名: 'アカマツ', 株数: 2 } },
+    { id: '3', displayName: '山田', field: { 種名: 'スギ', 株数: 10 } },
+    { id: '4', displayName: null, field: { 種名: '', 株数: undefined } },
+  ] as unknown as RecordType[];
+
+  it('ユニーク値を昇順で返す（重複と空値は除く）', () => {
+    expect(getFilterCandidates(records, layer, '種名')).toEqual(['アカマツ', 'スギ']);
+  });
+
+  it('数値フィールドは数値順に並ぶ', () => {
+    const numRecords = [
+      { id: '1', field: { 株数: 10 } },
+      { id: '2', field: { 株数: 2 } },
+    ] as unknown as RecordType[];
+    expect(getFilterCandidates(numRecords, layer, '株数')).toEqual(['2', '10']);
+  });
+
+  it('_user_はdisplayNameから作る', () => {
+    expect(getFilterCandidates(records, layer, '_user_')).toEqual(['佐藤', '山田']);
+  });
+
+  it('写真フィールドと存在しないフィールドは空を返す', () => {
+    expect(getFilterCandidates(records, layer, '写真')).toEqual([]);
+    expect(getFilterCandidates(records, layer, '削除済みの列')).toEqual([]);
+  });
+});
+
+describe('narrowFilterCandidates', () => {
+  const candidates = ['アカマツ', 'スギ', 'ミズナラ'];
+
+  it('空文字なら全候補を返す', () => {
+    expect(narrowFilterCandidates(candidates, '')).toEqual(candidates);
+    expect(narrowFilterCandidates(candidates, '  ')).toEqual(candidates);
+  });
+
+  it('部分一致で絞る（ひらがな入力でもカタカナに一致）', () => {
+    expect(narrowFilterCandidates(candidates, 'マツ')).toEqual(['アカマツ']);
+    expect(narrowFilterCandidates(candidates, 'すぎ')).toEqual(['スギ']);
   });
 });
 

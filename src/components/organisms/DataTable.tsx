@@ -172,6 +172,7 @@ export const DataTable = React.memo(() => {
     filterFieldName,
     setFilter,
     clearFilter,
+    getFieldCandidates,
   } = useContext(DataContext);
 
   const [checkedAll, setCheckedAll] = useState(false);
@@ -180,6 +181,12 @@ export const DataTable = React.memo(() => {
   const [filterTarget, setFilterTarget] = useState<string | undefined>(undefined);
 
   const onFilterField = useCallback((fieldName: string) => setFilterTarget(fieldName), []);
+
+  //候補はモーダルを開いたときだけ作る
+  const filterCandidates = useMemo(
+    () => (filterTarget === undefined ? [] : getFieldCandidates(filterTarget)),
+    [filterTarget, getFieldCandidates]
+  );
 
   const applyFilter = useCallback(
     (value: string) => {
@@ -321,7 +328,8 @@ export const DataTable = React.memo(() => {
       {filterTarget !== undefined && (
         <DataModalFilter
           visible={true}
-          fieldName={filterTarget}
+          fieldName={filterTarget === '_user_' ? 'User' : filterTarget}
+          candidates={filterCandidates}
           defaultValue={filterTarget === filterFieldName ? filterText : ''}
           pressOK={applyFilter}
           pressCancel={() => setFilterTarget(undefined)}
@@ -385,10 +393,15 @@ const DataTitle = React.memo((props: Props) => {
         />
       </View>
       {projectId !== undefined && layer.permission !== 'COMMON' && (
-        <Pressable style={[styles.th, { flex: 2, width: 100 }]} onPress={() => onChangeOrder('_user_', '_user_')}>
+        <Pressable
+          style={[styles.th, { flex: 2, width: 100 }]}
+          onPress={() => onChangeOrder('_user_', '_user_')}
+          onLongPress={() => onFilterField('_user_')}
+        >
           <Text adjustsFontSizeToFit={true} numberOfLines={2}>
             User
           </Text>
+          {filterFieldName === '_user_' && <MaterialCommunityIcons name="filter" size={14} color={COLOR.BLUE} />}
           {sortedName === '_user_' && sortedOrder === 'ASCENDING' && (
             <MaterialCommunityIcons name="sort-alphabetical-ascending" size={16} color="black" />
           )}
