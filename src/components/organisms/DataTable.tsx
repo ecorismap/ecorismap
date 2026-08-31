@@ -9,7 +9,6 @@ import dayjs from '../../i18n/dayjs';
 import { DataContext } from '../../contexts/Data';
 import { SortOrderType } from '../../utils/Data';
 import DraggableFlatList, { RenderItemParams } from 'react-native-draggable-flatlist';
-import { DataModalFilter } from './DataModalFilter';
 
 // メモ化されたデータ行コンポーネント
 const DataRow = React.memo(
@@ -168,39 +167,12 @@ export const DataTable = React.memo(() => {
     changeCheckedAll,
     changeVisibleAll,
     isFiltering,
-    filterText,
     filterFieldName,
-    setFilter,
-    clearFilter,
-    getFieldCandidates,
+    openFilterDialog,
   } = useContext(DataContext);
 
   const [checkedAll, setCheckedAll] = useState(false);
   const [visibleAll, setVisibleAll] = useState(true);
-  //列ヘッダ長押しで開く絞り込みモーダル。開いている列名を保持する
-  const [filterTarget, setFilterTarget] = useState<string | undefined>(undefined);
-
-  const onFilterField = useCallback((fieldName: string) => setFilterTarget(fieldName), []);
-
-  //候補はモーダルを開いたときだけ作る
-  const filterCandidates = useMemo(
-    () => (filterTarget === undefined ? [] : getFieldCandidates(filterTarget)),
-    [filterTarget, getFieldCandidates]
-  );
-
-  const applyFilter = useCallback(
-    (value: string) => {
-      //空欄でOKしたら解除扱い。対象列も戻さないとヘッダのフィルタアイコンが残る
-      if (value.trim() === '') {
-        clearFilter();
-      } else {
-        setFilter(value, filterTarget ?? '');
-      }
-      setFilterTarget(undefined);
-    },
-    [clearFilter, filterTarget, setFilter]
-  );
-
   const onCheckAll = useCallback(() => {
     setCheckedAll(!checkedAll);
     changeCheckedAll(!checkedAll);
@@ -269,7 +241,7 @@ export const DataTable = React.memo(() => {
         projectId={projectId}
         layer={layer}
         filterFieldName={filterFieldName}
-        onFilterField={onFilterField}
+        onFilterField={openFilterDialog}
       />
     ),
     [
@@ -284,7 +256,7 @@ export const DataTable = React.memo(() => {
       projectId,
       layer,
       filterFieldName,
-      onFilterField,
+      openFilterDialog,
     ]
   );
 
@@ -321,18 +293,7 @@ export const DataTable = React.memo(() => {
           projectId={projectId}
           layer={layer}
           filterFieldName={filterFieldName}
-          onFilterField={onFilterField}
-        />
-      )}
-      {/* 開いているときだけマウントする（Modalを常設すると毎回のレンダリングコストになる） */}
-      {filterTarget !== undefined && (
-        <DataModalFilter
-          visible={true}
-          fieldName={filterTarget === '_user_' ? 'User' : filterTarget}
-          candidates={filterCandidates}
-          defaultValue={filterTarget === filterFieldName ? filterText : ''}
-          pressOK={applyFilter}
-          pressCancel={() => setFilterTarget(undefined)}
+          onFilterField={openFilterDialog}
         />
       )}
     </>

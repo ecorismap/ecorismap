@@ -507,6 +507,10 @@ const normalizeForFilter = (value: string) => wanakana.toKatakana(value.toLowerC
 /** 絞り込み対象にできないフォーマット（値が文字列として比較できないもの） */
 const UNFILTERABLE_FORMATS: FormatType[] = ['PHOTO', 'REFERENCE'];
 
+//「空白」「空白以外」の特殊フィルタをfilterTextに載せるためのトークン。表示時はi18nのラベルに変換する
+export const FILTER_BLANK = '__BLANK__';
+export const FILTER_NOT_BLANK = '__NOT_BLANK__';
+
 /**
  * データ一覧の絞り込み。filterFieldNameが空文字なら全フィールド横断で部分一致する。
  * '_user_'はレイヤのフィールドではなくプロジェクト時のUser列(displayName)を指す。
@@ -517,10 +521,21 @@ export const filterRecords = (
   filterText: string,
   filterFieldName: string
 ): RecordType[] => {
-  const query = normalizeForFilter(filterText.trim());
-  if (query === '') return records;
+  const trimmed = filterText.trim();
+  if (trimmed === '') return records;
+
+  const isBlank = trimmed === FILTER_BLANK;
+  const isNotBlank = trimmed === FILTER_NOT_BLANK;
+  const query = normalizeForFilter(trimmed);
+  const matchesValue = (value: unknown): boolean => {
+    const str = value === undefined || value === null ? '' : String(value);
+    if (isBlank) return str.trim() === '';
+    if (isNotBlank) return str.trim() !== '';
+    return normalizeForFilter(str).includes(query);
+  };
+
   if (filterFieldName === '_user_') {
-    return records.filter((record) => normalizeForFilter(record.displayName ?? '').includes(query));
+    return records.filter((record) => matchesValue(record.displayName));
   }
   const targetFields = layer.field.filter(
     (f) => !UNFILTERABLE_FORMATS.includes(f.format) && (filterFieldName === '' || f.name === filterFieldName)
@@ -528,13 +543,7 @@ export const filterRecords = (
   //対象列が無い場合（削除された列を指したままなど）は絞り込まない
   if (targetFields.length === 0) return records;
 
-  return records.filter((record) =>
-    targetFields.some((f) => {
-      const value = record.field[f.name];
-      if (value === undefined || value === null) return false;
-      return normalizeForFilter(String(value)).includes(query);
-    })
-  );
+  return records.filter((record) => targetFields.some((f) => matchesValue(record.field[f.name])));
 };
 
 /**
@@ -556,6 +565,10 @@ export const getFilterCandidates = (records: RecordType[], layer: LayerType, fie
   const unique = Array.from(new Set(values.filter((v) => v.trim() !== '')));
   return unique.sort((a, b) => a.localeCompare(b, 'ja', { numeric: true }));
 };
+
+/** 絞り込み対象にできるフィールド名の一覧（モーダルの対象列セレクタ用） */
+export const getFilterableFieldNames = (layer: LayerType): string[] =>
+  layer.field.filter((f) => !UNFILTERABLE_FORMATS.includes(f.format)).map((f) => f.name);
 
 /** 候補一覧を入力途中のテキストで絞る。filterRecordsと同じ正規化（かな吸収）で部分一致 */
 export const narrowFilterCandidates = (candidates: string[], text: string): string[] => {

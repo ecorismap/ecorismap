@@ -1,8 +1,9 @@
-import React, { useContext } from 'react';
+import React, { useContext, useMemo } from 'react';
 import { View, StyleSheet, Platform, Text, ActivityIndicator, Switch } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 import { DataTable } from '../organisms/DataTable';
+import { DataModalFilter } from '../organisms/DataModalFilter';
 import { DataButton } from '../organisms/DataButton';
 
 import { DataContext } from '../../contexts/Data';
@@ -12,6 +13,7 @@ import { DictionaryTextInput } from '../molecules/DictionaryTextInput';
 import { DynamicDictionaryTextInput } from '../molecules/DynamicDictionaryTextInput';
 import { t } from '../../i18n/config';
 import { COLOR, DATA_BTN, DATAEDIT_BTN } from '../../constants/AppConstants';
+import { FILTER_BLANK, FILTER_NOT_BLANK, getFilterableFieldNames } from '../../utils/Data';
 import { BottomSheetHeader } from '../molecules/BottomSheetHeader';
 import { Button } from '../atoms';
 import { Pressable } from '../atoms/Pressable';
@@ -21,6 +23,7 @@ export default function DataScreen() {
 
   const {
     layer,
+    projectId,
     gotoBack,
     addDataByDictionary,
     isExporting,
@@ -35,7 +38,28 @@ export default function DataScreen() {
     clearFilter,
     showOnlyFilteredRecords,
     sortedRecordSet,
+    getFieldCandidates,
+    filterTarget,
+    openFilterDialog,
+    closeFilterDialog,
+    applyFilter,
   } = useContext(DataContext);
+
+  //空白/空白以外のトークンは表示用ラベルに変換する
+  const filterValueLabel =
+    filterText === FILTER_BLANK
+      ? t('Data.label.blank')
+      : filterText === FILTER_NOT_BLANK
+        ? t('Data.label.notBlank')
+        : filterText;
+
+  //絞り込みモーダルの対象列の選択肢。データ表の列と同じ並び（User→フィールド順）
+  const fieldOptions = useMemo(() => {
+    const options: { value: string; label: string }[] = [];
+    if (projectId !== undefined && layer.permission !== 'COMMON') options.push({ value: '_user_', label: 'User' });
+    getFilterableFieldNames(layer).forEach((name) => options.push({ value: name, label: name }));
+    return options;
+  }, [layer, projectId]);
 
   // 過去の不具合でdictionaryFieldIdが残留したレイヤがあるため、対応フィールドの実在も確認する
   const dictionaryField = layer.field.find(
@@ -58,7 +82,23 @@ export default function DataScreen() {
 
   return (
     <View style={styles.container}>
-      <BottomSheetHeader title={layer.name} showBackButton onBack={gotoBack} />
+      <BottomSheetHeader
+        title={layer.name}
+        showBackButton
+        onBack={gotoBack}
+        rightComponent={
+          <Pressable style={styles.headerFilterButton} onPress={() => openFilterDialog(filterFieldName || (fieldOptions[0]?.value ?? ''))}>
+            <MaterialCommunityIcons
+              name={isFiltering ? 'filter' : 'filter-outline'}
+              size={20}
+              color={isFiltering ? COLOR.BLUE : COLOR.GRAY4}
+            />
+            <Text style={[styles.headerFilterButtonText, isFiltering && { color: COLOR.BLUE }]}>
+              {t('Data.label.filter')}
+            </Text>
+          </Pressable>
+        }
+      />
       {hasValidDictionaryField && (
         <View style={styles.dictionaryContainer}>
           {/* 位置あり/なし切替。辞書からのデータ追加時に現在地を付与するかを制御する */}
@@ -115,8 +155,8 @@ export default function DataScreen() {
           <MaterialCommunityIcons name="filter" size={18} color={COLOR.BLUE} />
           <Text style={styles.filterLabel} numberOfLines={1}>
             {filterFieldName === ''
-              ? `${t('Data.label.filter')}: ${filterText}`
-              : `${filterFieldName === '_user_' ? 'User' : filterFieldName}: ${filterText}`}
+              ? `${t('Data.label.filter')}: ${filterValueLabel}`
+              : `${filterFieldName === '_user_' ? 'User' : filterFieldName}: ${filterValueLabel}`}
           </Text>
           <Text style={styles.filterCount}>{t('Data.message.filterResult', { count: sortedRecordSet.length })}</Text>
           <View style={styles.filterSpacer} />
@@ -148,6 +188,22 @@ export default function DataScreen() {
         </ScrollView>
       </View>
       <DataButton />
+      {/* 開いているときだけマウントする（Modalを常設すると毎回のレンダリングコストになる） */}
+      {filterTarget !== undefined && (
+        <DataModalFilter
+          visible={true}
+          fieldOptions={fieldOptions}
+          initialFieldName={filterTarget}
+          defaultValue={
+            filterTarget === filterFieldName && filterText !== FILTER_BLANK && filterText !== FILTER_NOT_BLANK
+              ? filterText
+              : ''
+          }
+          getFieldCandidates={getFieldCandidates}
+          pressOK={applyFilter}
+          pressCancel={closeFilterDialog}
+        />
+      )}
       {isExporting && (
         <View style={styles.exportingOverlay}>
           <View style={styles.exportingOverlayContent}>
@@ -219,6 +275,16 @@ const styles = StyleSheet.create({
   },
   filterSpacer: {
     flex: 1,
+  },
+  headerFilterButton: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    padding: 5,
+  },
+  headerFilterButtonText: {
+    color: COLOR.GRAY4,
+    fontSize: 12,
+    marginLeft: 2,
   },
   tableContainer: {
     flex: 1,

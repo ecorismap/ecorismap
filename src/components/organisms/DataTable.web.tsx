@@ -19,7 +19,6 @@ import {
 } from '@dnd-kit/core';
 import { SortableContext, useSortable, verticalListSortingStrategy, arrayMove } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { DataModalFilter } from './DataModalFilter';
 
 // ドラッグ可能なデータ行コンポーネント
 const SortableDataRow = React.memo(
@@ -173,39 +172,12 @@ export const DataTable = React.memo(() => {
     changeCheckedAll,
     changeVisibleAll,
     isFiltering,
-    filterText,
     filterFieldName,
-    setFilter,
-    clearFilter,
-    getFieldCandidates,
+    openFilterDialog,
   } = useContext(DataContext);
 
   const [checkedAll, setCheckedAll] = useState(false);
   const [visibleAll, setVisibleAll] = useState(true);
-  //列ヘッダ長押しで開く絞り込みモーダル。開いている列名を保持する
-  const [filterTarget, setFilterTarget] = useState<string | undefined>(undefined);
-
-  const onFilterField = useCallback((fieldName: string) => setFilterTarget(fieldName), []);
-
-  //候補はモーダルを開いたときだけ作る
-  const filterCandidates = useMemo(
-    () => (filterTarget === undefined ? [] : getFieldCandidates(filterTarget)),
-    [filterTarget, getFieldCandidates]
-  );
-
-  const applyFilter = useCallback(
-    (value: string) => {
-      //空欄でOKしたら解除扱い。対象列も戻さないとヘッダのフィルタアイコンが残る
-      if (value.trim() === '') {
-        clearFilter();
-      } else {
-        setFilter(value, filterTarget ?? '');
-      }
-      setFilterTarget(undefined);
-    },
-    [clearFilter, filterTarget, setFilter]
-  );
-
   const onCheckAll = useCallback(() => {
     setCheckedAll(!checkedAll);
     changeCheckedAll(!checkedAll);
@@ -256,17 +228,6 @@ export const DataTable = React.memo(() => {
 
   const itemIds = useMemo(() => sortedRecordSet.map((record) => record.id), [sortedRecordSet]);
 
-  //開いているときだけマウントする（Modalを常設すると毎回のレンダリングコストになる）
-  const filterModal = filterTarget !== undefined && (
-    <DataModalFilter
-      visible={true}
-      fieldName={filterTarget === '_user_' ? 'User' : filterTarget}
-      candidates={filterCandidates}
-      defaultValue={filterTarget === filterFieldName ? filterText : ''}
-      pressOK={applyFilter}
-      pressCancel={() => setFilterTarget(undefined)}
-    />
-  );
 
   return sortedRecordSet.length !== 0 ? (
     <View style={styles.container}>
@@ -282,7 +243,7 @@ export const DataTable = React.memo(() => {
         projectId={projectId}
         layer={layer}
         filterFieldName={filterFieldName}
-        onFilterField={onFilterField}
+        onFilterField={openFilterDialog}
       />
       {/* @ts-ignore - dnd-kit is not compatible with React 19 types */}
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
@@ -309,7 +270,6 @@ export const DataTable = React.memo(() => {
           })}
         </SortableContext>
       </DndContext>
-      {filterModal}
     </View>
   ) : (
     <View style={styles.container}>
@@ -325,9 +285,8 @@ export const DataTable = React.memo(() => {
         projectId={projectId}
         layer={layer}
         filterFieldName={filterFieldName}
-        onFilterField={onFilterField}
+        onFilterField={openFilterDialog}
       />
-      {filterModal}
     </View>
   );
 });

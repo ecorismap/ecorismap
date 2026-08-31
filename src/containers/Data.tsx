@@ -48,6 +48,8 @@ export default function DataContainer() {
     shallowEqual
   );
   const [isExporting, setIsExporting] = useState(false);
+  //絞り込みモーダル。列ヘッダ長押しとヘッダの絞り込みボタンの両方から開くため、ここで状態を持つ
+  const [filterTarget, setFilterTarget] = useState<string | undefined>(undefined);
 
   // MapViewContextから現在地とGPS状態を取得
   const { currentLocation, gpsState } = useContext(MapViewContext);
@@ -333,6 +335,22 @@ export default function DataContainer() {
     [navigate, sortedRecordSet, layer]
   );
 
+  const openFilterDialog = useCallback((fieldName: string) => setFilterTarget(fieldName), []);
+  const closeFilterDialog = useCallback(() => setFilterTarget(undefined), []);
+
+  const applyFilter = useCallback(
+    (value: string, fieldName: string) => {
+      //空欄でOKしたら解除扱い。対象列も戻さないとヘッダのフィルタアイコンが残る
+      if (value.trim() === '') {
+        clearFilter();
+      } else {
+        setFilter(value, fieldName);
+      }
+      setFilterTarget(undefined);
+    },
+    [clearFilter, setFilter]
+  );
+
   const gotoBack = useCallback(() => {
     navigate('Layers', undefined);
   }, [navigate]);
@@ -359,6 +377,10 @@ export default function DataContainer() {
       setFilter,
       clearFilter,
       getFieldCandidates,
+      filterTarget,
+      openFilterDialog,
+      closeFilterDialog,
+      applyFilter,
       showOnlyFilteredRecords: pressShowFilteredOnMap,
       changeOrder,
       changeChecked,
@@ -395,6 +417,10 @@ export default function DataContainer() {
       setFilter,
       clearFilter,
       getFieldCandidates,
+      filterTarget,
+      openFilterDialog,
+      closeFilterDialog,
+      applyFilter,
       pressShowFilteredOnMap,
       changeOrder,
       changeChecked,

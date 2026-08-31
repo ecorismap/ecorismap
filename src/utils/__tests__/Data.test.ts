@@ -2,7 +2,10 @@ import { LatLonDMSType, LayerType, LocationType, RecordType } from '../../types'
 import {
   boundingBoxFromRecords,
   filterRecords,
+  FILTER_BLANK,
+  FILTER_NOT_BLANK,
   getFilterCandidates,
+  getFilterableFieldNames,
   narrowFilterCandidates,
   sortData,
   getInitialFieldValue,
@@ -642,6 +645,31 @@ describe('filterRecords', () => {
     expect(filterRecords(records, layer, '写真', '写真')).toHaveLength(3);
   });
 
+  describe('空白/空白以外', () => {
+    const blankRecords = [
+      { id: '1', field: { 種名: 'スギ', 地区: 'A地区' } },
+      { id: '2', field: { 種名: '', 地区: 'B地区' } },
+      { id: '3', field: { 地区: '' } },
+    ] as unknown as RecordType[];
+
+    it('FILTER_BLANKは空文字と未入力に一致する', () => {
+      expect(filterRecords(blankRecords, layer, FILTER_BLANK, '種名').map((r) => r.id)).toEqual(['2', '3']);
+    });
+
+    it('FILTER_NOT_BLANKは値のあるレコードに一致する', () => {
+      expect(filterRecords(blankRecords, layer, FILTER_NOT_BLANK, '種名').map((r) => r.id)).toEqual(['1']);
+    });
+
+    it('_user_でも空白/空白以外が使える', () => {
+      const userRecords = [
+        { id: '1', displayName: '山田', field: {} },
+        { id: '2', displayName: null, field: {} },
+      ] as unknown as RecordType[];
+      expect(filterRecords(userRecords, layer, FILTER_BLANK, '_user_').map((r) => r.id)).toEqual(['2']);
+      expect(filterRecords(userRecords, layer, FILTER_NOT_BLANK, '_user_').map((r) => r.id)).toEqual(['1']);
+    });
+  });
+
   describe('User列(_user_)', () => {
     const userRecords = [
       { id: '1', displayName: '山田太郎', field: { 種名: 'スギ' } },
@@ -699,6 +727,20 @@ describe('getFilterCandidates', () => {
   it('写真フィールドと存在しないフィールドは空を返す', () => {
     expect(getFilterCandidates(records, layer, '写真')).toEqual([]);
     expect(getFilterCandidates(records, layer, '削除済みの列')).toEqual([]);
+  });
+});
+
+describe('getFilterableFieldNames', () => {
+  it('写真・参照フィールドを除いた名前一覧を返す', () => {
+    const layer = {
+      field: [
+        { id: 'f1', name: '種名', format: 'STRING' },
+        { id: 'f2', name: '写真', format: 'PHOTO' },
+        { id: 'f3', name: '参照', format: 'REFERENCE' },
+        { id: 'f4', name: '株数', format: 'INTEGER' },
+      ],
+    } as unknown as LayerType;
+    expect(getFilterableFieldNames(layer)).toEqual(['種名', '株数']);
   });
 });
 

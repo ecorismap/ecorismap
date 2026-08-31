@@ -726,6 +726,8 @@
       "delete": "削除",
       "add": "追加",
       "filter": "絞り込み",
+      "blank": "（空白）",
+      "notBlank": "（空白以外）",
       "showOnMap": "地図で表示"
     },
     "message": {
