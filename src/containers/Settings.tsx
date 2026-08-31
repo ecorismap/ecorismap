@@ -1,7 +1,7 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import Settings from '../components/pages/Settings';
 import { useBottomSheetNavigation } from '../contexts/BottomSheetNavigationContext';
-import { AlertAsync, ConfirmAsync } from '../components/molecules/AlertAsync';
+import { AlertAsync, ConfirmAsync, waitForModalTransition } from '../components/molecules/AlertAsync';
 import { DEFAULT_MAP_LIST_URL, PHOTO_FOLDER } from '../constants/AppConstants';
 import * as FileSystem from 'expo-file-system/legacy';
 import { Linking, Platform } from 'react-native';
@@ -89,6 +89,8 @@ export default function SettingsContainers() {
   const openFileFromLocal = useCallback(async () => {
     const ret = await ConfirmAsync(t('Settings.confirm.fileOpen'));
     if (ret) {
+      //確認ダイアログのdismiss完了前だとピッカーの表示に失敗する
+      await waitForModalTransition();
       const file = await DocumentPicker.getDocumentAsync({});
       if (file.assets === null) return;
 
@@ -129,6 +131,7 @@ export default function SettingsContainers() {
     async (choice: StorageSelectChoice) => {
       const mode = storageSelectMode;
       setStorageSelectMode(undefined);
+      await waitForModalTransition();
       if (choice === 'drive') {
         navigate('GoogleDriveProjects', { previous: 'Settings', mode });
       } else if (mode === 'save') {
@@ -177,11 +180,21 @@ export default function SettingsContainers() {
     setIsBackupSelectOpen(true);
   }, [refreshBackupList]);
 
+  //iOSはRN Modalを兄弟で2枚同時に表示できないため、確認ダイアログの前に選択モーダルを閉じる。
+  //dismiss完了前に出すと同様に表示に失敗するのでワンテンポ待つ
+  const confirmWithBackupSelectClosed = useCallback(async (message: string) => {
+    setIsBackupSelectOpen(false);
+    await waitForModalTransition();
+    return await ConfirmAsync(message);
+  }, []);
+
   const pressBackupSelect = useCallback(
     async (id: string) => {
-      const ret = await ConfirmAsync(t('Settings.confirm.restoreBackup'));
-      if (!ret) return;
-      setIsBackupSelectOpen(false);
+      const ret = await confirmWithBackupSelectClosed(t('Settings.confirm.restoreBackup'));
+      if (!ret) {
+        setIsBackupSelectOpen(true);
+        return;
+      }
       const { isOK, region, reason } = restoreBackup(id);
       if (!isOK) {
         await AlertAsync(
@@ -198,7 +211,7 @@ export default function SettingsContainers() {
         mode: 'openEcorisMap',
       });
     },
-    [navigateToHome, restoreBackup]
+    [confirmWithBackupSelectClosed, navigateToHome, restoreBackup]
   );
 
   const pressBackupSelectCancel = useCallback(() => {
@@ -207,18 +220,19 @@ export default function SettingsContainers() {
 
   const pressBackupDelete = useCallback(
     async (id: string) => {
-      const ret = await ConfirmAsync(t('Settings.confirm.deleteBackup'));
-      if (!ret) return;
-      deleteBackup(id);
+      const ret = await confirmWithBackupSelectClosed(t('Settings.confirm.deleteBackup'));
+      if (ret) deleteBackup(id);
+      //一覧の操作を続けられるように、確認後は選択モーダルへ戻す
+      setIsBackupSelectOpen(true);
     },
-    [deleteBackup]
+    [confirmWithBackupSelectClosed, deleteBackup]
   );
 
   const pressBackupClearAll = useCallback(async () => {
-    const ret = await ConfirmAsync(t('Settings.confirm.clearAllBackups'));
-    if (!ret) return;
-    clearAllBackups();
-  }, [clearAllBackups]);
+    const ret = await confirmWithBackupSelectClosed(t('Settings.confirm.clearAllBackups'));
+    if (ret) clearAllBackups();
+    setIsBackupSelectOpen(true);
+  }, [clearAllBackups, confirmWithBackupSelectClosed]);
 
   // const pressResetAll = useCallback(async () => {
   //   const ret = await ConfirmAsync(t('Settings.confirm.clearLocalStorage'));
@@ -329,6 +343,7 @@ export default function SettingsContainers() {
       //リロードで新しい言語のリソースを読み込み直す
       window.location.reload();
     } else {
+      await waitForModalTransition();
       await AlertAsync(t('Settings.alert.languageChanged'));
     }
   }, []);

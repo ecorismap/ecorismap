@@ -1,16 +1,24 @@
 import React, { useCallback, useMemo } from 'react';
 import { View, Modal, Text, StyleSheet, ScrollView } from 'react-native';
 import { Pressable } from '../atoms/Pressable';
-import { COLOR, VERSION } from '../../constants/AppConstants';
+import { COLOR, CURRENT_TERMS_VERSION, VERSION } from '../../constants/AppConstants';
 import { t } from '../../i18n/config';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '../../store';
 import { editSettingsAction } from '../../modules/settings';
+import { useModalYieldingToDialog } from '../molecules/StyledDialog';
 
 export const HomeModalUpdateInfo = React.memo(() => {
   const dispatch = useDispatch();
   const lastSeenVersion = useSelector((state: RootState) => state.settings.lastSeenVersion);
-  const isUpdateInfoOpen = useMemo(() => lastSeenVersion !== VERSION && lastSeenVersion !== '', [lastSeenVersion]);
+  const agreedTermsVersion = useSelector((state: RootState) => state.settings.agreedTermsVersion);
+  //規約モーダルと兄弟Modalで同時表示になるのを避けるため、規約合意後に表示する
+  const isUpdateInfoOpen = useMemo(
+    () => lastSeenVersion !== VERSION && lastSeenVersion !== '' && agreedTermsVersion === CURRENT_TERMS_VERSION,
+    [agreedTermsVersion, lastSeenVersion]
+  );
+  //起動時の確認ダイアログが出ている間は引っ込める
+  const shown = useModalYieldingToDialog(isUpdateInfoOpen);
 
   const updateInfoOK = useCallback(() => {
     dispatch(editSettingsAction({ lastSeenVersion: VERSION }));
@@ -102,7 +110,7 @@ export const HomeModalUpdateInfo = React.memo(() => {
   });
 
   return (
-    <Modal animationType="fade" transparent={true} visible={isUpdateInfoOpen}>
+    <Modal animationType="fade" transparent={true} visible={shown}>
       <View style={styles.modalCenteredView}>
         <View style={styles.modalFrameView}>
           <View style={styles.modalContents}>

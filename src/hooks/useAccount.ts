@@ -661,7 +661,7 @@ export const useAccount = (): UseAccountReturnType => {
       }
       setIsLoading(true);
       const { isOK: isDeleteOK } = await firebase.deleteUserAccount(password);
-      setIsLoading(true);
+      setIsLoading(false);
       if (!isDeleteOK) {
         setAccountMessage(t('hooks.message.failDeleteAccount'));
         return { isOK: false };

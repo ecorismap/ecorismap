@@ -1,5 +1,10 @@
 import { Alert } from '../atoms/Alert';
+import { MODAL_TRANSITION_MS } from './StyledDialog';
 import { t } from '../../i18n/config';
+
+//iOSはRN Modalやネイティブピッカーを、直前のModalのdismiss完了前に表示できない（黙って失敗する）。
+//モーダルやダイアログを閉じた直後に次のダイアログ・ピッカーを出すときはこれを挟む
+export const waitForModalTransition = () => new Promise<void>((resolve) => setTimeout(resolve, MODAL_TRANSITION_MS));
 
 export type DuplicateLayerChoice = 'replace' | 'newLayer' | 'cancel';
 

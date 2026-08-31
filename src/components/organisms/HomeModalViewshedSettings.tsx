@@ -3,6 +3,7 @@ import { View, Modal, Text, StyleSheet, Platform, TextInput } from 'react-native
 import { COLOR } from '../../constants/AppConstants';
 import { useWindow } from '../../hooks/useWindow';
 import { t } from '../../i18n/config';
+import { useModalYieldingToDialog } from '../molecules/StyledDialog';
 import { Pressable } from '../atoms/Pressable';
 import { CheckBox } from '../molecules/CheckBox';
 
@@ -33,6 +34,8 @@ export const HomeModalViewshedSettings = React.memo((props: Props) => {
     pressOK,
     pressCancel,
   } = props;
+  //入力値エラーのアラートが出ている間は引っ込める（値はコンテナ側stateなので消えない）
+  const shown = useModalYieldingToDialog(visible);
 
   const { windowWidth } = useWindow();
   const modalWidthScale = 0.7;
@@ -97,7 +100,7 @@ export const HomeModalViewshedSettings = React.memo((props: Props) => {
   });
 
   return (
-    <Modal animationType="none" transparent={true} visible={visible}>
+    <Modal animationType="none" transparent={true} visible={shown}>
       <View style={styles.modalCenteredView}>
         <View style={styles.modalFrameView}>
           <View style={styles.modalContents}>

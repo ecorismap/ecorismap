@@ -6,15 +6,18 @@ import { t } from '../../i18n/config';
 import ImageViewer from 'react-native-image-zoom-viewer';
 import { useWindow } from '../../hooks/useWindow';
 import { Button } from '../atoms';
+import { useModalYieldingToDialog } from '../molecules/StyledDialog';
 
 export const DataEditModalPhotoView = () => {
   const { photo, isPhotoViewOpen, pressClosePhoto, pressRemovePhoto, pressDownloadPhoto } = useContext(DataEditContext);
   const { windowWidth } = useWindow();
+  //削除・ダウンロードの確認ダイアログが出ている間は引っ込める（iOSのModal二枚制約）
+  const shown = useModalYieldingToDialog(isPhotoViewOpen);
 
   if (!isPhotoViewOpen) return null;
 
   return (
-    <Modal visible={isPhotoViewOpen} transparent={true} animationType="fade">
+    <Modal visible={shown} transparent={true} animationType="fade">
       <View style={{ flex: 1, backgroundColor: COLOR.BLACK }}>
         <View style={{ flexDirection: 'row' }}>
           <View style={styles.headerLeft}>

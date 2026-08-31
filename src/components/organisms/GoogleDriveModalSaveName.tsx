@@ -3,6 +3,7 @@ import { View, Modal, Text, StyleSheet } from 'react-native';
 import { Pressable } from '../atoms/Pressable';
 import { COLOR } from '../../constants/AppConstants';
 import { useWindow } from '../../hooks/useWindow';
+import { useModalYieldingToDialog } from '../molecules/StyledDialog';
 import { t } from '../../i18n/config';
 import { TextInput } from '../atoms';
 
@@ -15,6 +16,8 @@ interface Props {
 
 export const GoogleDriveModalSaveName = React.memo((props: Props) => {
   const { defaultName, visible, pressOK, pressCancel } = props;
+  //実行中プロジェクトの確認ダイアログの直後に開くため、dismiss完了を待ってから表示する
+  const shown = useModalYieldingToDialog(visible);
   const [value, setValue] = useState('');
   const { windowWidth } = useWindow();
   const modalWidthScale = 0.7;
@@ -88,7 +91,7 @@ export const GoogleDriveModalSaveName = React.memo((props: Props) => {
   });
 
   return (
-    <Modal animationType="none" transparent={true} visible={visible}>
+    <Modal animationType="none" transparent={true} visible={shown}>
       <View style={styles.modalCenteredView}>
         <View style={styles.modalFrameView}>
           <View style={styles.modalContents}>
