@@ -791,17 +791,16 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       if (value === undefined) {
         setMapMemoTool('NONE');
       } else {
-        if (value.includes('PEN')) {
-          if (!editableMapMemo) {
-            Alert.alert('', t('Home.alert.cannotEdit'));
-            return;
-          }
-          //レイヤの色分け設定を書き換えることになるので、実際に描くペンのときだけ事前に確認する
-          if (isPenTool(value) && isIndividualColorRequired) {
-            const ret = await ConfirmAsync(t('Home.confirm.individualColor'));
-            if (!ret) return;
-            changeColorTypeToIndividual();
-          }
+        //どのツールもマップメモの内容を書き換えるため、ブラシ・スタンプ・消しゴム含め全てで編集可否を確認する
+        if (!editableMapMemo) {
+          Alert.alert('', t('Home.alert.cannotEdit'));
+          return;
+        }
+        //レイヤの色分け設定を書き換えることになるので、実際に描くペンのときだけ事前に確認する
+        if (isPenTool(value) && isIndividualColorRequired) {
+          const ret = await ConfirmAsync(t('Home.confirm.individualColor'));
+          if (!ret) return;
+          changeColorTypeToIndividual();
         }
         setDrawTool('NONE');
         setMapMemoTool(value);

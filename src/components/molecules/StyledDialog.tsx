@@ -18,6 +18,77 @@ type ButtonRole = 'primary' | 'secondary' | 'destructive' | 'cancel';
 
 let enqueueDialog: ((request: DialogRequest) => void) | null = null;
 
+//iOSはRN Modalを兄弟で2枚同時に表示できないため、ダイアログとオーバーレイ系Modal（Loading等）が
+//時間的に重ならないよう協調するための仕組み。dismiss/present遷移の安全マージンも共通化する
+export const MODAL_TRANSITION_MS = 300;
+
+const dialogActiveKeys = new Set<string>();
+const dialogActiveListeners = new Set<(active: boolean) => void>();
+
+const setDialogActiveKey = (key: string, active: boolean) => {
+  const wasActive = dialogActiveKeys.size > 0;
+  if (active) {
+    dialogActiveKeys.add(key);
+  } else {
+    dialogActiveKeys.delete(key);
+  }
+  const isActive = dialogActiveKeys.size > 0;
+  if (wasActive !== isActive) dialogActiveListeners.forEach((listener) => listener(isActive));
+};
+
+/** ダイアログ（またはダイアログ相当のModal）が表示中かを購読する */
+const useDialogActive = () => {
+  const [active, setActive] = useState(dialogActiveKeys.size > 0);
+  useEffect(() => {
+    dialogActiveListeners.add(setActive);
+    return () => {
+      dialogActiveListeners.delete(setActive);
+    };
+  }, []);
+  return active;
+};
+
+/**
+ * オーバーレイ系Modal（Loading・ダウンロード進捗等）用。ダイアログ表示中は一時的に引っ込み、
+ * 表示はMODAL_TRANSITION_MS遅らせて直前のModalのdismiss完了を待つ。
+ * 注意: RN Modalはvisible=falseで子をアンマウントするため、モーダル内にローカル入力stateを持つ画面には使わない
+ */
+export const useModalYieldingToDialog = (visible: boolean) => {
+  const dialogActive = useDialogActive();
+  const target = visible && !dialogActive;
+  const [shown, setShown] = useState(false);
+  useEffect(() => {
+    if (!target) {
+      setShown(false);
+      return;
+    }
+    const timer = setTimeout(() => setShown(true), MODAL_TRANSITION_MS);
+    return () => clearTimeout(timer);
+  }, [target]);
+  return shown;
+};
+
+/**
+ * StyledDialog以外の「ダイアログ相当」のModal（競合解決モーダル等）用。
+ * 表示中はLoading等のyielding系Modalを引っ込ませ、自身の表示もMODAL_TRANSITION_MS遅らせる
+ */
+export const useDialogPresence = (key: string, visible: boolean) => {
+  useEffect(() => {
+    setDialogActiveKey(key, visible);
+    return () => setDialogActiveKey(key, false);
+  }, [key, visible]);
+  const [shown, setShown] = useState(false);
+  useEffect(() => {
+    if (!visible) {
+      setShown(false);
+      return;
+    }
+    const timer = setTimeout(() => setShown(true), MODAL_TRANSITION_MS);
+    return () => clearTimeout(timer);
+  }, [visible]);
+  return shown;
+};
+
 /**
  * Alertアトムから呼ばれるスタイル付きダイアログの表示。
  * ホスト（StyledDialog）未マウント時はfalseを返し、呼び出し側でネイティブAlert等へフォールバックする。
@@ -50,14 +121,20 @@ export const StyledDialog = React.memo(() => {
     };
   }, []);
 
-  // 他のModal（ローディング等）の消滅と同一フレームで表示するとAndroidでダイアログが
-  // 表示されないことがあるため、キューが空→非空になったときはワンテンポ置いてから表示する
+  //Loading等のyielding系Modalに表示中であることを知らせる（キュー投入時点から。先方が引っ込む時間を作る）
+  useEffect(() => {
+    setDialogActiveKey('styled-dialog', hasCurrent);
+    return () => setDialogActiveKey('styled-dialog', false);
+  }, [hasCurrent]);
+
+  // 他のModal（ローディング・各種モーダル）のdismiss完了と同一フレームで表示すると
+  // iOS/Androidともダイアログが表示されないことがあるため、ワンテンポ置いてから表示する
   useEffect(() => {
     if (!hasCurrent) {
       setVisible(false);
       return;
     }
-    const timer = setTimeout(() => setVisible(true), 150);
+    const timer = setTimeout(() => setVisible(true), MODAL_TRANSITION_MS);
     return () => clearTimeout(timer);
   }, [hasCurrent]);
 

@@ -33,6 +33,7 @@ import { SvgView } from '../organisms/HomeSvgView';
 import { HomeProjectButtons } from '../organisms/HomeProjectButtons';
 import { BottomSheetContent } from '../organisms/BottomSheetContent';
 import { Loading } from '../molecules/Loading';
+import { useModalYieldingToDialog } from '../molecules/StyledDialog';
 import { t } from '../../i18n/config';
 import { DEM_VIEWSHED_MAP_ID } from '../../constants/DemSources';
 import { useWindow } from '../../hooks/useWindow';
@@ -179,6 +180,9 @@ export default function HomeScreen() {
     pressStopDownloadTiles,
     pressDeleteTiles,
   } = useContext(TileManagementContext);
+
+  //停止確認ダイアログや失敗通知が出ている間は進捗モーダルを引っ込める（iOSのModal二枚制約）
+  const downloadModalVisible = useModalYieldingToDialog(isDownloading);
 
   // 選択した地図のsavedAreaのみ表示
   const filteredSavedArea = useMemo(() => {
@@ -741,7 +745,7 @@ export default function HomeScreen() {
         </View>
       </View>
 
-      <Modal visible={isDownloading} transparent animationType="fade">
+      <Modal visible={downloadModalVisible} transparent animationType="fade">
         <View
           style={{
             flex: 1,

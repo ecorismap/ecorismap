@@ -5,6 +5,7 @@ import { ScrollView } from 'react-native-gesture-handler';
 import { Pressable } from '../atoms/Pressable';
 import { COLOR } from '../../constants/AppConstants';
 import { useWindow } from '../../hooks/useWindow';
+import { useModalYieldingToDialog } from '../molecules/StyledDialog';
 import { t } from '../../i18n/config';
 import dayjs from '../../i18n/dayjs';
 import { BackupMetaType, BackupTriggerType } from '../../utils/projectBackup';
@@ -37,6 +38,8 @@ const triggerLabel = (trigger: BackupTriggerType) => {
 
 export const SettingsModalBackupSelect = React.memo((props: Props) => {
   const { visible, backupList, pressSelect, pressCancel, pressDelete, pressClearAll } = props;
+  //確認ダイアログとの行き来があるため、ダイアログ表示中は引っ込み、再表示はdismiss完了を待つ
+  const shown = useModalYieldingToDialog(visible);
   const { windowWidth, windowHeight } = useWindow();
   const modalWidthScale = 0.7;
 
@@ -138,7 +141,7 @@ export const SettingsModalBackupSelect = React.memo((props: Props) => {
   });
 
   return (
-    <Modal animationType="none" transparent={true} visible={visible}>
+    <Modal animationType="none" transparent={true} visible={shown}>
       <View style={styles.modalCenteredView}>
         <View style={styles.modalFrameView}>
           <View style={styles.modalContents}>

@@ -5,6 +5,7 @@ import { RecordType } from '../../types';
 import { COLOR } from '../../constants/AppConstants';
 import dayjs from '../../i18n/dayjs';
 import { t } from '../../i18n/config';
+import { useDialogPresence } from '../molecules/StyledDialog';
 
 const MODAL_OVERLAY_COLOR = 'rgba(0,0,0,0.5)';
 const MODAL_BG_COLOR = '#fff';
@@ -81,6 +82,8 @@ export const ConflictResolverModal = React.memo(
     onBulkSelect: (mode: 'self' | 'latest') => void;
   }) => {
     const { i18n } = useTranslation();
+    //Loading表示中に呼ばれるため、表示中はLoadingを引っ込ませ、自身の表示もdismiss完了を待つ
+    const shown = useDialogPresence('conflict-resolver', visible);
 
     const formatDate = (unixtime?: number) => {
       if (!unixtime) return '';
@@ -88,7 +91,7 @@ export const ConflictResolverModal = React.memo(
     };
 
     return (
-      <Modal visible={visible} transparent animationType="slide">
+      <Modal visible={shown} transparent animationType="slide">
         <View style={modalStyles.overlay}>
           <View style={modalStyles.modal}>
             <Text style={modalStyles.bold}>{t('conflict.title', { id })}</Text>

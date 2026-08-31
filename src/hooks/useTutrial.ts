@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 import { Platform } from 'react-native';
 import { shallowEqual, useDispatch, useSelector } from 'react-redux';
-import { AlertAsync } from '../components/molecules/AlertAsync';
+import { AlertAsync, waitForModalTransition } from '../components/molecules/AlertAsync';
 import { TUTRIALS_MESSAGE } from '../constants/Tutrials';
 import { RootState } from '../store';
 import { editSettingsAction } from '../modules/settings';
@@ -21,6 +21,8 @@ export const useTutrial = (): UseTutrialReturnType => {
       const tutrial = tutrials[key];
       if ((tutrial === undefined || tutrial === true) && Platform.OS !== 'web') {
         await AlertAsync(TUTRIALS_MESSAGE[key]);
+        //呼び出し元が直後にピッカーやダイアログを出すケースがあるため、dismiss完了を待ってから戻る
+        await waitForModalTransition();
         const updatedTutrials = {
           ...tutrials,
           [key]: false,

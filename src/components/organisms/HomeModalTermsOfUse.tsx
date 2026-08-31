@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { View, Modal, Text, StyleSheet, Linking, Platform } from 'react-native';
 import { Pressable } from '../atoms/Pressable';
 import { COLOR, CURRENT_TERMS_VERSION } from '../../constants/AppConstants';
@@ -6,7 +6,7 @@ import { t } from '../../i18n/config';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '../../store';
 import { editSettingsAction } from '../../modules/settings';
-import { AlertAsync } from '../molecules/AlertAsync';
+import { useModalYieldingToDialog } from '../molecules/StyledDialog';
 import { db } from '../../utils/db';
 
 export const HomeModalTermsOfUse = React.memo(() => {
@@ -14,13 +14,17 @@ export const HomeModalTermsOfUse = React.memo(() => {
   const dispatch = useDispatch();
   const agreedTermsVersion = useSelector((state: RootState) => state.settings.agreedTermsVersion);
   const isTermsOfUseOpen = useMemo(() => agreedTermsVersion !== CURRENT_TERMS_VERSION, [agreedTermsVersion]);
+  //Cancel時の注意文。別ダイアログを重ねられない（iOSのModal二枚制約）ためモーダル内に表示する
+  const [showCancelNotice, setShowCancelNotice] = useState(false);
+  //起動時の確認ダイアログ（ダウンロード再開等）が出ている間は引っ込める
+  const shown = useModalYieldingToDialog(isTermsOfUseOpen);
 
   const termsOfUseOK = useCallback(() => {
     dispatch(editSettingsAction({ agreedTermsVersion: CURRENT_TERMS_VERSION }));
   }, [dispatch]);
 
   const termsOfUseCancel = useCallback(() => {
-    AlertAsync(t('Home.alert.termsOfuse'));
+    setShowCancelNotice(true);
   }, []);
 
   const pressTermsOfUse = useCallback(() => {
@@ -128,7 +132,7 @@ export const HomeModalTermsOfUse = React.memo(() => {
   });
 
   return (
-    <Modal animationType="none" transparent={true} visible={isTermsOfUseOpen}>
+    <Modal animationType="none" transparent={true} visible={shown}>
       <View style={styles.modalCenteredView}>
         <View style={styles.modalFrameView}>
           <View style={styles.modalContents}>
@@ -144,6 +148,7 @@ export const HomeModalTermsOfUse = React.memo(() => {
               </View>
             </View>
 
+            {showCancelNotice && <Text style={styles.updateNotice}>{t('Home.alert.termsOfuse')}</Text>}
             <View style={styles.modalButtonContainer}>
               <Pressable style={styles.modalOKCancelButton} onPress={termsOfUseOK}>
                 <Text>OK</Text>
