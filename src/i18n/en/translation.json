@@ -640,6 +640,8 @@
       "export": "export",
       "delete": "delete",
       "filter": "Filter",
+      "blank": "(Blanks)",
+      "notBlank": "(Non blanks)",
       "showOnMap": "Show on map"
     },
     "message": {

@@ -1,36 +1,43 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { View, Modal, Text, StyleSheet, FlatList } from 'react-native';
+import { View, Modal, Text, StyleSheet, FlatList, ScrollView } from 'react-native';
 import { Pressable } from '../atoms/Pressable';
 import { COLOR } from '../../constants/AppConstants';
 import { useWindow } from '../../hooks/useWindow';
 import { t } from '../../i18n/config';
 import { TextInput } from '../atoms';
-import { narrowFilterCandidates } from '../../utils/Data';
+import { FILTER_BLANK, FILTER_NOT_BLANK, narrowFilterCandidates } from '../../utils/Data';
 
 interface Props {
-  //絞り込む列の名前。空文字なら全フィールド横断
-  fieldName: string;
-  //対象列のユニーク値（ソート済み）。タップで入力欄に反映する
-  candidates: string[];
+  //対象列の選択肢。データ表の列と同じ並び。'_user_'はUser列
+  fieldOptions: { value: string; label: string }[];
+  //開いたときに選択しておく列
+  initialFieldName: string;
   defaultValue: string;
   visible: boolean;
+  //選択中の列のユニーク値を返す
+  getFieldCandidates: (fieldName: string) => string[];
   //空欄でOKすると解除になるため、専用の解除ボタンは持たない
-  pressOK: (value: string) => void;
+  pressOK: (value: string, fieldName: string) => void;
   pressCancel: () => void;
 }
 
 export const DataModalFilter = React.memo((props: Props) => {
-  const { fieldName, candidates, defaultValue, visible, pressOK, pressCancel } = props;
+  const { fieldOptions, initialFieldName, defaultValue, visible, getFieldCandidates, pressOK, pressCancel } = props;
   const [value, setValue] = useState('');
+  const [fieldName, setFieldName] = useState('');
   const { windowWidth, windowHeight } = useWindow();
   const modalWidthScale = 0.7;
 
+  const candidates = useMemo(() => getFieldCandidates(fieldName), [fieldName, getFieldCandidates]);
   //入力中のテキストで候補も絞る（かな吸収の正規化はレコードの絞り込みと同じ）
   const narrowedCandidates = useMemo(() => narrowFilterCandidates(candidates, value), [candidates, value]);
 
   useEffect(() => {
-    if (visible) setValue(defaultValue);
-  }, [defaultValue, visible]);
+    if (visible) {
+      setValue(defaultValue);
+      setFieldName(initialFieldName);
+    }
+  }, [defaultValue, initialFieldName, visible]);
 
   const styles = StyleSheet.create({
     candidateItem: {
@@ -42,6 +49,10 @@ export const DataModalFilter = React.memo((props: Props) => {
     candidateItemSelected: {
       backgroundColor: COLOR.PALEBLUE,
     },
+    candidateItemSpecialText: {
+      color: COLOR.GRAY4,
+      fontStyle: 'italic',
+    },
     candidateList: {
       backgroundColor: COLOR.WHITE,
       borderColor: COLOR.GRAY1,
@@ -49,6 +60,29 @@ export const DataModalFilter = React.memo((props: Props) => {
       borderWidth: 1,
       maxHeight: windowHeight * 0.3,
       width: windowWidth * modalWidthScale,
+    },
+    fieldChip: {
+      borderColor: COLOR.GRAY2,
+      borderRadius: 14,
+      borderWidth: 1,
+      marginRight: 6,
+      paddingHorizontal: 10,
+      paddingVertical: 5,
+    },
+    fieldChipSelected: {
+      backgroundColor: COLOR.BLUE,
+      borderColor: COLOR.BLUE,
+    },
+    fieldChipText: {
+      color: COLOR.BLACK,
+      fontSize: 13,
+    },
+    fieldChipTextSelected: {
+      color: COLOR.WHITE,
+    },
+    fieldChips: {
+      marginBottom: 10,
+      maxWidth: windowWidth * modalWidthScale,
     },
     input: {
       backgroundColor: COLOR.WHITE,
@@ -112,7 +146,23 @@ export const DataModalFilter = React.memo((props: Props) => {
       <View style={styles.modalCenteredView}>
         <View style={styles.modalFrameView}>
           <View style={styles.modalContents}>
-            <Text style={styles.modalTitle}>{`${t('Data.label.filter')}: ${fieldName}`}</Text>
+            <Text style={styles.modalTitle}>{t('Data.label.filter')}</Text>
+
+            {/* 対象列の選択。Pickerはモーダルの重ね表示になるため使わない */}
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.fieldChips}>
+              {fieldOptions.map((option) => {
+                const selected = option.value === fieldName;
+                return (
+                  <Pressable
+                    key={option.value}
+                    style={[styles.fieldChip, selected && styles.fieldChipSelected]}
+                    onPress={() => setFieldName(option.value)}
+                  >
+                    <Text style={[styles.fieldChipText, selected && styles.fieldChipTextSelected]}>{option.label}</Text>
+                  </Pressable>
+                );
+              })}
+            </ScrollView>
 
             <View style={{ flexDirection: 'row' }}>
               <TextInput
@@ -124,6 +174,19 @@ export const DataModalFilter = React.memo((props: Props) => {
               />
             </View>
 
+            {/* 空白/空白以外は値の編集が不要なため、タップで即適用する */}
+            <View style={styles.candidateList}>
+              {[
+                { token: FILTER_BLANK, label: t('Data.label.blank') },
+                { token: FILTER_NOT_BLANK, label: t('Data.label.notBlank') },
+              ].map(({ token, label }) => (
+                <Pressable key={token} style={styles.candidateItem} onPress={() => pressOK(token, fieldName)}>
+                  <Text style={styles.candidateItemSpecialText} numberOfLines={1}>
+                    {label}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
             {narrowedCandidates.length > 0 && (
               <FlatList
                 style={styles.candidateList}
@@ -144,7 +207,7 @@ export const DataModalFilter = React.memo((props: Props) => {
             )}
 
             <View style={styles.modalButtonContainer}>
-              <Pressable style={styles.modalOKCancelButton} onPress={() => pressOK(value)}>
+              <Pressable style={styles.modalOKCancelButton} onPress={() => pressOK(value, fieldName)}>
                 <Text>OK</Text>
               </Pressable>
               <Pressable style={styles.modalOKCancelButton} onPress={pressCancel}>
