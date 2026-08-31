@@ -11,7 +11,7 @@ import {
   updateRecordsAction,
 } from '../modules/dataSet';
 import { ulid } from 'ulid';
-import { filterRecords, getDefaultField, sortData, SortOrderType } from '../utils/Data';
+import { filterRecords, getDefaultField, getFilterCandidates, sortData, SortOrderType } from '../utils/Data';
 
 import { setDataFilterForLayerAction } from '../modules/settings';
 import { updateLayerAction } from '../modules/layers';
@@ -33,6 +33,7 @@ export type UseDataReturnType = {
   isFiltering: boolean;
   setFilter: (text: string, fieldName: string) => void;
   clearFilter: () => void;
+  getFieldCandidates: (fieldName: string) => string[];
   showOnlyFilteredRecords: () => void;
   changeVisible: (record: RecordType) => void;
   changeVisibleAll: (visible: boolean) => void;
@@ -247,6 +248,13 @@ export const useData = (layerId: string): UseDataReturnType => {
     if (restored.length > 0) dispatchVisibility(restored);
   }, [allUserRecordSet, dispatch, dispatchVisibility, layerId]);
 
+  //絞り込みモーダルの候補。別の値へ切り替えられるよう、絞り込み後ではなく全レコードから作る
+  const getFieldCandidates = useCallback(
+    (fieldName: string) =>
+      targetLayer === undefined ? [] : getFilterCandidates(allUserRecordSet ?? [], targetLayer, fieldName),
+    [allUserRecordSet, targetLayer]
+  );
+
   const addDefaultRecord = useCallback(
     (
       fields?: { [key: string]: string | number | PhotoType[] },
@@ -328,6 +336,7 @@ export const useData = (layerId: string): UseDataReturnType => {
     isFiltering,
     setFilter,
     clearFilter,
+    getFieldCandidates,
     showOnlyFilteredRecords,
     changeVisible,
     changeVisibleAll,

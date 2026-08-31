@@ -21,6 +21,7 @@ interface DataContextType {
   isFiltering: boolean;
   setFilter: (text: string, fieldName: string) => void;
   clearFilter: () => void;
+  getFieldCandidates: (fieldName: string) => string[];
   showOnlyFilteredRecords: () => void;
   addDataByDictionary: (fieldId: string, value: string) => void;
   pressAddData: () => void;

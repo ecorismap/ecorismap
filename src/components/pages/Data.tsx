@@ -114,7 +114,9 @@ export default function DataScreen() {
         <View style={styles.filterContainer}>
           <MaterialCommunityIcons name="filter" size={18} color={COLOR.BLUE} />
           <Text style={styles.filterLabel} numberOfLines={1}>
-            {filterFieldName === '' ? `${t('Data.label.filter')}: ${filterText}` : `${filterFieldName}: ${filterText}`}
+            {filterFieldName === ''
+              ? `${t('Data.label.filter')}: ${filterText}`
+              : `${filterFieldName === '_user_' ? 'User' : filterFieldName}: ${filterText}`}
           </Text>
           <Text style={styles.filterCount}>{t('Data.message.filterResult', { count: sortedRecordSet.length })}</Text>
           <View style={styles.filterSpacer} />

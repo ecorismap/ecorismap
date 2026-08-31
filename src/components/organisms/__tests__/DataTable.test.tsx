@@ -88,6 +88,7 @@ const mockContextValue = {
   isFiltering: false,
   setFilter: jest.fn(),
   clearFilter: jest.fn(),
+  getFieldCandidates: jest.fn(() => []),
   showOnlyFilteredRecords: jest.fn(),
   changeOrder: jest.fn(),
   changeChecked: jest.fn(),

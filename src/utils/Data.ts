@@ -509,6 +509,7 @@ const UNFILTERABLE_FORMATS: FormatType[] = ['PHOTO', 'REFERENCE'];
 
 /**
  * データ一覧の絞り込み。filterFieldNameが空文字なら全フィールド横断で部分一致する。
+ * '_user_'はレイヤのフィールドではなくプロジェクト時のUser列(displayName)を指す。
  */
 export const filterRecords = (
   records: RecordType[],
@@ -518,6 +519,9 @@ export const filterRecords = (
 ): RecordType[] => {
   const query = normalizeForFilter(filterText.trim());
   if (query === '') return records;
+  if (filterFieldName === '_user_') {
+    return records.filter((record) => normalizeForFilter(record.displayName ?? '').includes(query));
+  }
   const targetFields = layer.field.filter(
     (f) => !UNFILTERABLE_FORMATS.includes(f.format) && (filterFieldName === '' || f.name === filterFieldName)
   );
@@ -531,6 +535,33 @@ export const filterRecords = (
       return normalizeForFilter(String(value)).includes(query);
     })
   );
+};
+
+/**
+ * 絞り込みモーダルに出す候補一覧。対象フィールドのユニーク値を数値も考慮した昇順で返す。
+ * '_user_'はUser列(displayName)。全フィールド横断（空文字）は候補を出さない。
+ */
+export const getFilterCandidates = (records: RecordType[], layer: LayerType, fieldName: string): string[] => {
+  let values: string[];
+  if (fieldName === '_user_') {
+    values = records.map((r) => r.displayName ?? '');
+  } else {
+    const field = layer.field.find((f) => f.name === fieldName);
+    if (field === undefined || UNFILTERABLE_FORMATS.includes(field.format)) return [];
+    values = records.map((r) => {
+      const value = r.field[fieldName];
+      return value === undefined || value === null ? '' : String(value);
+    });
+  }
+  const unique = Array.from(new Set(values.filter((v) => v.trim() !== '')));
+  return unique.sort((a, b) => a.localeCompare(b, 'ja', { numeric: true }));
+};
+
+/** 候補一覧を入力途中のテキストで絞る。filterRecordsと同じ正規化（かな吸収）で部分一致 */
+export const narrowFilterCandidates = (candidates: string[], text: string): string[] => {
+  const query = normalizeForFilter(text.trim());
+  if (query === '') return candidates;
+  return candidates.filter((c) => normalizeForFilter(c).includes(query));
 };
 
 /**
