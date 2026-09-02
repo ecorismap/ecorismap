@@ -13,7 +13,6 @@ import {
 } from '../types';
 
 import { RootState } from '../store';
-import { getViewshedAttribution } from '../utils/viewshedLayers';
 import * as Print from 'expo-print';
 import { getTileRegion, tileToWebMercator } from '../utils/Tile';
 import { useWindow } from './useWindow';
@@ -63,8 +62,6 @@ export type UseEcorisMapFileReturnType = {
 
 export const usePDF = (): UseEcorisMapFileReturnType => {
   const tileMaps = useSelector((state: RootState) => state.tileMaps);
-  const layers = useSelector((state: RootState) => state.layers);
-  const dataSet = useSelector((state: RootState) => state.dataSet);
   const { mapRegion } = useWindow();
   const [outputVRT, setOutputVRT] = useState(false);
   const [outputDataPDF, setOutputDataPDF] = useState(false);
@@ -391,13 +388,10 @@ export const usePDF = (): UseEcorisMapFileReturnType => {
   }, [pageMargin.pixel]);
 
   const generateCaptions = useCallback(() => {
-    // 可視領域は標高タイルの加工物なので、出力範囲に関わらず表示中は標高データの出典も併記する
-    const viewshedAttribution = getViewshedAttribution(layers, dataSet);
     const captions = [
       ...new Set(
         tileMaps.filter((m) => m.visible && m.id !== 'standard' && m.id !== 'hybrid').map((m) => m.attribution)
       ),
-      ...(viewshedAttribution !== undefined ? [viewshedAttribution] : []),
       'EcorisMap',
     ].join(', ');
 
@@ -409,7 +403,7 @@ export const usePDF = (): UseEcorisMapFileReturnType => {
       <span style="margin:0 10px;font-family: Arial; font-size: 12px; color: black;">${captions}</span>
       </div>`;
     return captionContents;
-  }, [dataSet, layers, pageMargin.pixel, pageSize.heightPixel, pageSize.widthPixel, tileMaps]);
+  }, [pageMargin.pixel, pageSize.heightPixel, pageSize.widthPixel, tileMaps]);
 
   const generateComment = useCallback(() => {
     const commentContents = `

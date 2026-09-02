@@ -63,9 +63,6 @@
     "second": "秒",
     "point": "ポイント",
     "track": "軌跡",
-    "viewshed": "可視領域",
-    "viewshedCircle": "可視領域(範囲円)",
-    "viewshedCenter": "可視領域(観測点)",
     "demAttribution": "国土地理院・Terrain Tiles（標高タイルを加工して作成）",
     "polygon": "ポリゴン",
     "project": "プロジェクト",
@@ -208,7 +205,8 @@
       "downloadAllUserData": "管理者として他のメンバーのプライベートデータもダウンロードしますか？",
       "addLocationPoint": "現在地にポイントを追加しますか？",
       "discardEditPosition": "位置の変更を破棄しますか？",
-      "downloadTiles": "約{{tileCount}}枚（概算{{size}}MB）の地図タイルをダウンロードします。よろしいですか？"
+      "downloadTiles": "約{{tileCount}}枚（概算{{size}}MB）の地図タイルをダウンロードします。よろしいですか？",
+      "discardViewshed": "表示中の可視領域をすべて消去しますか？"
     },
     "alert": {
       "gps": "GPSをオンにしてください",
@@ -342,12 +340,8 @@
       "title": "可視領域の作成",
       "distance": "距離(km)",
       "observerHeight": "観測点の高さ(m)",
-      "fieldDistance": "距離(km)",
-      "fieldHeight": "高さ(m)",
-      "fieldElevation": "標高(m)",
-      "fieldNo": "観測点No",
       "useSnapPoint": "ポイント「{{name}}」を中心にする",
-      "fieldRemarks": "備考"
+      "previewCount": "可視領域 {{count}}件"
     }
   },
   "AccountSettings": {

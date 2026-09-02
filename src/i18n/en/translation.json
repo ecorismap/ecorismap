@@ -125,9 +125,6 @@
     "second": "Seconds",
     "point": "point",
     "track": "track",
-    "viewshed": "Viewshed",
-    "viewshedCircle": "Viewshed (Range circle)",
-    "viewshedCenter": "Viewshed (Observer)",
     "demAttribution": "GSI Japan, Terrain Tiles (derived from elevation tiles)",
     "polygon": "polygon",
     "message": {
@@ -857,7 +854,8 @@
       "addLocationPoint": "Add a point at the current location?",
       "discardEditPosition": "Discard position changes?",
       "splitLine": "Do you want to split the line?",
-      "downloadTiles": "About {{tileCount}} tiles (approx. {{size}} MB) will be downloaded. Do you want to continue?"
+      "downloadTiles": "About {{tileCount}} tiles (approx. {{size}} MB) will be downloaded. Do you want to continue?",
+      "discardViewshed": "Clear all displayed viewsheds?"
     },
     "navigation": {
       "download": "download",
@@ -972,12 +970,8 @@
       "title": "Create Viewshed",
       "distance": "Distance (km)",
       "observerHeight": "Observer height (m)",
-      "fieldDistance": "distance(km)",
-      "fieldHeight": "height(m)",
-      "fieldElevation": "elevation(m)",
-      "fieldNo": "observer No",
       "useSnapPoint": "Use point \"{{name}}\" as center",
-      "fieldRemarks": "remarks"
+      "previewCount": "Viewshed: {{count}}"
     }
   },
   "LayerEditFeatureStyle": {

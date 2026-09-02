@@ -15,6 +15,8 @@ import { HomeTrackPhotoMarkers } from '../organisms/HomeTrackPhotoMarkers';
 import { HomeTrackPhotoModal } from '../organisms/HomeTrackPhotoModal';
 import { HomeMeasure } from '../organisms/HomeMeasure';
 import { HomeMeasureBanner } from '../organisms/HomeMeasureBanner';
+import { HomeViewshedBanner } from '../organisms/HomeViewshedBanner';
+import { HomeViewshedPreview } from '../organisms/HomeViewshedPreview';
 import { HomeSeaLabels } from '../organisms/HomeSeaLabels';
 import { Point } from '../organisms/HomePoint';
 import { Line } from '../organisms/HomeLine';
@@ -547,6 +549,7 @@ export default function HomeScreen() {
           <HomePopup />
           <HomePoiPopup />
           <HomeMeasureBanner />
+          <HomeViewshedBanner />
           <HomeTrackPointPopup />
           <HomeTrackPhotoModal />
           {isDrawLineVisible && <SvgView />}
@@ -662,6 +665,8 @@ export default function HomeScreen() {
                 />
               );
             })}
+            {/************** Viewshed Preview (可視領域の仮表示) ****************** */}
+            <HomeViewshedPreview />
             {/************* download mode ******************** */}
             {downloadMode && (
               <DownloadArea

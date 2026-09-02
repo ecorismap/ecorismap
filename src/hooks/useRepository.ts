@@ -18,13 +18,12 @@ import { RootState } from '../store';
 import { saveProjectBackup } from '../utils/projectBackup';
 import { setDataSetAction, updateDataAction, updateRecordsAction } from '../modules/dataSet';
 import { setDataSyncTimestampsAction, dataSyncKey } from '../modules/dataSync';
-import { addLayerAction, layersInitialState, setLayersAction } from '../modules/layers';
+import { layersInitialState, setLayersAction } from '../modules/layers';
 import { tileMapsInitialState, setTileMapsAction } from '../modules/tileMaps';
 import { editSettingsAction } from '../modules/settings';
 import { addProjectAction, deleteProjectAction, updateProjectAction } from '../modules/projects';
 import { cloneDeep } from 'lodash';
 import { getPhotoFields, getTargetLayers } from '../utils/Layer';
-import { missingViewshedLayers } from '../utils/viewshedLayers';
 import { isLoggedIn } from '../utils/Account';
 import { getTargetRecordSet, mergeLayerData } from '../utils/Data';
 import { Platform } from 'react-native';
@@ -289,12 +288,6 @@ export const useRepository = (): UseRepositoryReturnType & {
         ])
       );
 
-      // 可視領域レイヤはオンデマンド作成のため設定に含まれないことがある。
-      // 受信データにあれば、データ反映より先にテンプレートで補完する
-      // （プロジェクトを開いた直後はselector経由のlayersが古いのでstoreから読む）
-      const currentLayers = store.getState().layers;
-      missingViewshedLayers(currentLayers, allLayerIds).forEach((l) => dispatch(addLayerAction(l)));
-
       for (const layerId of allLayerIds) {
         const templateItem = templateData.find((d) => d.layerId === layerId);
         const privateItems = privateData.filter((d) => d.layerId === layerId);
@@ -355,7 +348,7 @@ export const useRepository = (): UseRepositoryReturnType & {
       }
       return { isOK: true, message: '' };
     },
-    [dispatch, store, user.uid, conflictsResolver]
+    [dispatch, user.uid, conflictsResolver]
   );
 
   const fetchProjectSettings = useCallback(async (project: ProjectType) => {
