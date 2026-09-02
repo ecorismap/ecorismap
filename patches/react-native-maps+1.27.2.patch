@@ -13780,10 +13780,10 @@ index 0000000..9f3ef17
 +@end
 diff --git a/node_modules/react-native-maps/ios/AirGoogleMaps/PMTiles/FetchSource.m b/node_modules/react-native-maps/ios/AirGoogleMaps/PMTiles/FetchSource.m
 new file mode 100644
-index 0000000..5c77432
+index 0000000..50517de
 --- /dev/null
 +++ b/node_modules/react-native-maps/ios/AirGoogleMaps/PMTiles/FetchSource.m
-@@ -0,0 +1,186 @@
+@@ -0,0 +1,191 @@
 +#import "FetchSource.h"
 +
 +@interface FetchSource ()
@@ -13880,11 +13880,16 @@ index 0000000..5c77432
 +                                 signal:(NSProgress *)signal
 +                             completion:(void (^)(NSDictionary *rangeResponse,
 +                                                  NSError *error))completion {
-+  NSString *encodedUrlString =
-+      [self.url stringByAddingPercentEncodingWithAllowedCharacters:
-+                    [NSCharacterSet URLQueryAllowedCharacterSet]];
-+  NSMutableURLRequest *request = [NSMutableURLRequest
-+      requestWithURL:[NSURL URLWithString:encodedUrlString]];
++  // 既にパーセントエンコード済みのURLを再エンコードすると%が%25になり二重エンコードで404になる。
++  // まず素のままNSURL化を試み、失敗した場合（未エンコードの日本語パス等）のみエンコードする。
++  NSURL *requestURL = [NSURL URLWithString:self.url];
++  if (requestURL == nil) {
++    NSString *encodedUrlString =
++        [self.url stringByAddingPercentEncodingWithAllowedCharacters:
++                      [NSCharacterSet URLQueryAllowedCharacterSet]];
++    requestURL = [NSURL URLWithString:encodedUrlString];
++  }
++  NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:requestURL];
 +
 +  [request setValue:[NSString
 +                        stringWithFormat:@"bytes=%lu-%lu",
@@ -15184,10 +15189,10 @@ index 0000000..4e6dab3
 \ No newline at end of file
 diff --git a/node_modules/react-native-maps/ios/AirGoogleMaps/VectorTile/StyleManager.m b/node_modules/react-native-maps/ios/AirGoogleMaps/VectorTile/StyleManager.m
 new file mode 100644
-index 0000000..acac68b
+index 0000000..8c82c66
 --- /dev/null
 +++ b/node_modules/react-native-maps/ios/AirGoogleMaps/VectorTile/StyleManager.m
-@@ -0,0 +1,368 @@
+@@ -0,0 +1,371 @@
 +#import "StyleManager.h"
 +#import <Foundation/Foundation.h>
 +
@@ -15216,12 +15221,15 @@ index 0000000..acac68b
 +                                            whitespaceCharacterSet]];
 +
 +    if (trimmedStyleURL && ![trimmedStyleURL isEqualToString:@""]) {
-+      // エンコードする
-+      NSString *encodedURL =
-+          [trimmedStyleURL stringByAddingPercentEncodingWithAllowedCharacters:
-+                               [NSCharacterSet URLQueryAllowedCharacterSet]];
-+      // NSLog(@"##!encodedURL: %@", encodedURL);
-+      _urlTemplate = [NSURL URLWithString:encodedURL];
++      // 既にパーセントエンコード済みのURLを再エンコードすると二重エンコードで404になるため、
++      // まず素のままNSURL化を試み、失敗した場合のみエンコードする。
++      _urlTemplate = [NSURL URLWithString:trimmedStyleURL];
++      if (_urlTemplate == nil) {
++        NSString *encodedURL =
++            [trimmedStyleURL stringByAddingPercentEncodingWithAllowedCharacters:
++                                 [NSCharacterSet URLQueryAllowedCharacterSet]];
++        _urlTemplate = [NSURL URLWithString:encodedURL];
++      }
 +    }
 +    if (trimmedTileCachePath && ![trimmedTileCachePath isEqualToString:@""]) {
 +      _localPath = [NSURL
