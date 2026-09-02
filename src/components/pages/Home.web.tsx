@@ -67,6 +67,8 @@ import { MemberMarker } from '../organisms/HomeMemberMarker';
 import { HomeTrackFocusMarker } from '../organisms/HomeTrackFocusMarker';
 import { HomeMeasure } from '../organisms/HomeMeasure';
 import { HomeMeasureBanner } from '../organisms/HomeMeasureBanner';
+import { HomeViewshedBanner } from '../organisms/HomeViewshedBanner';
+import { HomeViewshedPreview } from '../organisms/HomeViewshedPreview';
 import { useFeatureSelectionWeb } from '../../hooks/useFeatureSelectionWeb';
 import { isPointRecordType } from '../../utils/Data';
 import * as pmtiles from 'pmtiles';
@@ -931,6 +933,7 @@ export default function HomeScreen() {
           <HomePopup />
           <HomePoiPopup />
           <HomeMeasureBanner />
+          <HomeViewshedBanner />
           <HomeTrackPointPopup />
           {isDrawLineVisible && <SvgView />}
 
@@ -1046,6 +1049,8 @@ export default function HomeScreen() {
                     />
                   );
                 })}
+                {/************** Viewshed Preview (可視領域の仮表示) ****************** */}
+                <HomeViewshedPreview />
                 {exportPDFMode && <PDFArea pdfArea={pdfArea} />}
                 <ScaleControl maxWidth={300} unit={'metric'} position="bottom-left" />
               </Map>

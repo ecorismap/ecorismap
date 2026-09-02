@@ -112,8 +112,7 @@ import {
 import { usePDF } from '../hooks/usePDF';
 import { HomeModalPDFSettings } from '../components/organisms/HomeModalPDFSettings';
 import { HomeModalViewshedSettings } from '../components/organisms/HomeModalViewshedSettings';
-import { useViewshed } from '../hooks/useViewshed';
-import { getViewshedAttribution } from '../utils/viewshedLayers';
+import { calcViewshedPreview } from '../utils/viewshedPreview';
 import dayjs from 'dayjs';
 import { HomeModalStampPicker } from '../components/organisms/HomeModalStampPicker';
 import { HomeModalPenPicker } from '../components/organisms/HomeModalPenPicker';
@@ -128,6 +127,7 @@ import { selectNonDeletedDataSet } from '../modules/selectors';
 import { TrackFocusContext, TrackFocusProvider } from '../contexts/TrackFocus';
 import { TrackPhotoProvider, TrackPhotoContext } from '../contexts/TrackPhoto';
 import { MeasureContext, MeasureProvider } from '../contexts/Measure';
+import { ViewshedContext, ViewshedProvider } from '../contexts/Viewshed';
 import { useLayers } from '../hooks/useLayers';
 
 // 内部コンポーネント - BottomSheetNavigationProvider の内側で使用
@@ -424,7 +424,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
   // 長押し位置の近くの既存ポイント（スナップ候補）と、それを中心に使うかの選択
   const [viewshedSnapPoint, setViewshedSnapPoint] = useState<{ coordinate: LocationType; name: string } | null>(null);
   const [viewshedUseSnap, setViewshedUseSnap] = useState(true);
-  const { createViewshed } = useViewshed();
+  const { addViewshedResult, hasViewshedPreview } = useContext(ViewshedContext);
   const attribution = useMemo(() => {
     const sources = Array.from(
       new Set(
@@ -434,10 +434,9 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       )
     );
     // 可視領域は標高タイルの加工物なので、表示中は標高データの出典も併記する
-    const viewshedAttribution = getViewshedAttribution(layers, polygonDataSet);
-    if (viewshedAttribution !== undefined) sources.push(viewshedAttribution);
+    if (hasViewshedPreview) sources.push(t('common.demAttribution'));
     return sources.join(', ');
-  }, [tileMaps, layers, polygonDataSet]);
+  }, [tileMaps, hasViewshedPreview]);
 
   const downloadMode = useMemo(
     () => route.params?.tileMap !== undefined || route.params?.mode === 'download',
@@ -771,14 +770,18 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     setViewshedSnapPoint(null);
     setIsLoading(true);
     try {
-      const { isOK, message } = await createViewshed(observer, distanceKm, observerHeight, snapped?.name);
+      const { isOK, message, result } = await calcViewshedPreview(observer, distanceKm, observerHeight);
       setIsLoading(false);
-      if (!isOK) await AlertAsync(message);
+      if (isOK && result !== undefined) {
+        addViewshedResult(result);
+      } else {
+        await AlertAsync(message);
+      }
     } catch (e: any) {
       setIsLoading(false);
       await AlertAsync(e.message);
     }
-  }, [viewshedTarget, viewshedDistanceKm, viewshedObserverHeight, viewshedUseSnap, viewshedSnapPoint, createViewshed]);
+  }, [viewshedTarget, viewshedDistanceKm, viewshedObserverHeight, viewshedUseSnap, viewshedSnapPoint, addViewshedResult]);
 
   const pressViewshedCancel = useCallback(() => {
     setViewshedTarget(null);
@@ -3055,14 +3058,16 @@ export default function HomeContainers(props: Props_Home) {
   );
 
   return (
-    <MeasureProvider>
-      <TrackFocusProvider>
-        <TrackPhotoProvider>
-          <BottomSheetNavigationProvider onRouteChange={setCurrentSplitRoute} onNavigateToHome={handleNavigateToHome}>
-            <HomeContainersInner {...props} />
-          </BottomSheetNavigationProvider>
-        </TrackPhotoProvider>
-      </TrackFocusProvider>
-    </MeasureProvider>
+    <ViewshedProvider>
+      <MeasureProvider>
+        <TrackFocusProvider>
+          <TrackPhotoProvider>
+            <BottomSheetNavigationProvider onRouteChange={setCurrentSplitRoute} onNavigateToHome={handleNavigateToHome}>
+              <HomeContainersInner {...props} />
+            </BottomSheetNavigationProvider>
+          </TrackPhotoProvider>
+        </TrackFocusProvider>
+      </MeasureProvider>
+    </ViewshedProvider>
   );
 }

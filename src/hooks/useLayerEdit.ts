@@ -22,9 +22,6 @@ import type { FeatureCollection } from 'geojson';
 import { importPresetDictionaries } from '../utils/PresetDictionary';
 import sanitize from 'sanitize-filename';
 import { selectDataSet, selectIsNewLayer } from '../modules/selectors';
-import { isViewshedLayer } from '../utils/viewshedLayers';
-import * as projectStore from '../lib/firebase/firestore';
-import { hasOpened } from '../utils/Project';
 
 export type UseLayerEditReturnType = {
   targetLayer: LayerType;
@@ -235,14 +232,8 @@ export const useLayerEdit = (
     } else {
       dispatch(deleteDataAction(dataSet));
       dispatch(deleteLayerAction(targetLayer));
-      // プロジェクト中に削除できるのは可視領域レイヤのみ（LayerEdit.tsx参照）。
-      // 送信済みの自分のデータもサーバーから消し、次回開いたときに復活しないようにする。
-      // 失敗（オフライン等）してもローカル削除は成立させ、残ったデータは再削除で対処する
-      if (hasOpened(projectId) && isViewshedLayer(targetLayer.id) && user.uid !== undefined) {
-        await projectStore.deleteData(projectId, targetLayer.id, 'PRIVATE', user.uid);
-      }
     }
-  }, [dataSet, dispatch, layers, projectId, targetLayer, user.uid]);
+  }, [dataSet, dispatch, layers, targetLayer]);
 
   const changeLayerName = useCallback(
     (val: string) => {

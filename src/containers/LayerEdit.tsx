@@ -8,7 +8,6 @@ import { Alert } from '../components/atoms/Alert';
 import { t } from '../i18n/config';
 import { LayerEditContext } from '../contexts/LayerEdit';
 import { checkLayerInputs } from '../utils/Layer';
-import { isViewshedLayer } from '../utils/viewshedLayers';
 import { usePermission } from '../hooks/usePermission';
 import { exportGeoFile } from '../utils/File';
 import { MAX_BACKUP_LABEL_LENGTH, truncateForFileName } from '../utils/General';
@@ -63,8 +62,7 @@ export default function LayerEditContainer() {
   }, [isRunningProject, saveLayer, targetLayer]);
 
   const pressDeleteLayer = useCallback(async () => {
-    // 可視領域レイヤはオンデマンド作成のお試しレイヤなので、プロジェクト中でも削除して元に戻せる
-    if (isRunningProject && !isViewshedLayer(targetLayer.id)) {
+    if (isRunningProject) {
       await AlertAsync(t('hooks.message.cannotInRunningProject'));
       return;
     }
@@ -74,7 +72,7 @@ export default function LayerEditContainer() {
       await deleteLayerPhotos();
       navigate('Layers', undefined);
     }
-  }, [deleteLayer, deleteLayerPhotos, isRunningProject, navigate, targetLayer.id]);
+  }, [deleteLayer, deleteLayerPhotos, isRunningProject, navigate]);
 
   const pressExportLayer = useCallback(async () => {
     const time = dayjs().format('YYYY-MM-DD_HH-mm-ss');
