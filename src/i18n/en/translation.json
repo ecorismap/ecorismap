@@ -212,6 +212,7 @@
     "selectEraser": "Select eraser",
     "accuracyAndBattery": "Accuracy and Battery",
     "selectPenEraser": "erase everything",
+    "selectPenEraserPartial": "Erase part of a line",
     "selectBrushEraser": "Erase the brush",
     "selectStampEraser": "Delete stamps",
     "snapWithLine": "snap to line",

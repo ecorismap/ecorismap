@@ -7,6 +7,7 @@ import {
   isNearWithPlot,
   cleanupLine,
   findNearestTrackPoint,
+  erasePartialLine,
 } from '../Coords';
 import { LocationType } from '../../types';
 
@@ -187,5 +188,100 @@ describe('findNearestTrackPoint', () => {
     const result = findNearestTrackPoint(noTime, [138.0005, 35.0], 0.1);
     expect(result).toBeDefined();
     expect(result!.interpolatedTimestamp).toBeUndefined();
+  });
+});
+
+describe('erasePartialLine', () => {
+  //経度0.001度 ≒ 111m の東西ライン
+  const line: [number, number][] = [
+    [0, 0],
+    [0.00025, 0],
+    [0.0005, 0],
+    [0.00075, 0],
+    [0.001, 0],
+  ];
+  const radius = 0.00005; // ≒5.5m
+
+  it('中央を消すと2区間に分割される', () => {
+    //中央を南北に横切る消しゴム軌跡
+    const eraser: [number, number][] = [
+      [0.0005, -0.0002],
+      [0.0005, 0.0002],
+    ];
+    const result = erasePartialLine(line, eraser, radius);
+    expect(result.erased).toBe(true);
+    expect(result.remainingSegments.length).toBe(2);
+    //各区間は消しゴムの左右に分かれている
+    const [seg1, seg2] = result.remainingSegments;
+    expect(Math.max(...seg1.map((p) => p[0]))).toBeLessThan(0.0005);
+    expect(Math.min(...seg2.map((p) => p[0]))).toBeGreaterThan(0.0005);
+  });
+
+  it('端を消すと1区間に短縮される', () => {
+    const eraser: [number, number][] = [
+      [0, -0.0002],
+      [0, 0.0002],
+    ];
+    const result = erasePartialLine(line, eraser, radius);
+    expect(result.erased).toBe(true);
+    expect(result.remainingSegments.length).toBe(1);
+    //始点側が削られている
+    expect(result.remainingSegments[0][0][0]).toBeGreaterThan(0);
+    //終点は変わらない
+    const seg = result.remainingSegments[0];
+    expect(seg[seg.length - 1][0]).toBeCloseTo(0.001, 6);
+  });
+
+  it('全域を消すと区間が残らない', () => {
+    const result = erasePartialLine(line, line, 0.0005);
+    expect(result.erased).toBe(true);
+    expect(result.remainingSegments.length).toBe(0);
+  });
+
+  it('交差しない場合はerased: falseで何も変更しない', () => {
+    const eraser: [number, number][] = [
+      [0.0005, 0.01],
+      [0.0006, 0.01],
+    ];
+    const result = erasePartialLine(line, eraser, radius);
+    expect(result.erased).toBe(false);
+    expect(result.remainingSegments.length).toBe(0);
+  });
+
+  it('消し残りの微小な切れ端は捨てられる', () => {
+    //始点ギリギリ内側を消して極小の切れ端を作る
+    const eraser: [number, number][] = [
+      [0.00006, -0.0002],
+      [0.00006, 0.0002],
+    ];
+    const result = erasePartialLine(line, eraser, radius);
+    expect(result.erased).toBe(true);
+    //半径の半分より短い先頭側の切れ端は残らない
+    expect(result.remainingSegments.length).toBe(1);
+    expect(result.remainingSegments[0][0][0]).toBeGreaterThan(0.0001);
+  });
+
+  it('自己交差ラインでも例外を出さず妥当な結果を返す', () => {
+    //8の字ライン
+    const figureEight: [number, number][] = [
+      [0, 0],
+      [0.001, 0.001],
+      [0.001, 0],
+      [0, 0.001],
+      [0, 0],
+    ];
+    const eraser: [number, number][] = [
+      [0.0005, 0.0003],
+      [0.0005, 0.0007],
+    ];
+    const result = erasePartialLine(figureEight, eraser, radius);
+    expect(typeof result.erased).toBe('boolean');
+    expect(Array.isArray(result.remainingSegments)).toBe(true);
+  });
+
+  it('1点の消しゴム（タップ）でも消せる', () => {
+    const result = erasePartialLine(line, [[0.0005, 0]], radius);
+    expect(result.erased).toBe(true);
+    expect(result.remainingSegments.length).toBe(2);
   });
 });
