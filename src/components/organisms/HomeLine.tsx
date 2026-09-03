@@ -161,7 +161,8 @@ const PolylineComponent = React.memo((props: PolylineProps) => {
         coordinates={feature.coords as LatLng[]}
         strokeColor={lineColor}
         strokeWidth={strokeWidth}
-        lineCap="butt"
+        //描画中のSVGプレビュー(round)と揃える。buttだと保存された瞬間に両端が線幅の半分ずつ短く見える
+        lineCap="round"
         zIndex={zIndex}
       />
       <LineLabel
