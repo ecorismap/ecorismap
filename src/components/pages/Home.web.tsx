@@ -153,6 +153,7 @@ export default function HomeScreen() {
   const {
     mapViewRef,
     zoom,
+    zoomDecimal,
     onRegionChangeMapView,
     onDrop,
     panResponder,
@@ -1034,6 +1035,7 @@ export default function HomeScreen() {
                       selectedRecord={selectedRecord}
                       editingLineId={isEditingLine ? editingLineId : undefined}
                       widthZoomLinked={isMapMemoWidthZoomLinked}
+                      zoomDecimal={zoomDecimal}
                     />
                   );
                 })}

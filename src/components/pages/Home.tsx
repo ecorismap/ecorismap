@@ -657,6 +657,7 @@ export default function HomeScreen() {
                   editingLineId={editingLineId}
                   bounds={bounds}
                   widthZoomLinked={isMapMemoWidthZoomLinked}
+                  zoomDecimal={zoomDecimal}
                 />
               );
             })}

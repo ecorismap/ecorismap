@@ -19,10 +19,12 @@ interface Props {
   selectedRecord: { layerId: string; record: RecordType } | undefined;
   editingLineId?: string;
   widthZoomLinked?: boolean;
+  //ズーム連動太さ用の小数ズーム（矢印ヘッドの太さ計算に使用。本体はMapLibre式で正確に処理される）
+  zoomDecimal?: number;
 }
 
 export const Line = React.memo((props: Props & { editingLineId?: string }) => {
-  const { data, layer, zoom, selectedRecord, editingLineId, widthZoomLinked } = props;
+  const { data, layer, zoom, selectedRecord, editingLineId, widthZoomLinked, zoomDecimal } = props;
 
   const { stampRecords, brushRecords, arrowRecords, lineRecords } = useMemo(() => {
     const stamps: LineRecordType[] = [];
@@ -91,7 +93,7 @@ export const Line = React.memo((props: Props & { editingLineId?: string }) => {
           feature.id === selectedRecord?.record?.id || feature.field._group === selectedRecord?.record.id;
         const lineColor = selected ? COLOR.YELLOW : getColor(layer, feature);
         const arrowStyle = feature.field._strokeStyle as ArrowStyleType;
-        const strokeWidth = getLineWidthAtZoom(layer, feature, zoom, widthZoomLinked ?? false);
+        const strokeWidth = getLineWidthAtZoom(layer, feature, zoomDecimal ?? zoom, widthZoomLinked ?? false);
         return (
           <LineArrow
             key={'arrow' + feature.id}
