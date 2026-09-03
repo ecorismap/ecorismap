@@ -3,11 +3,16 @@ import Svg, { Circle, G, Path, Line, Text, Rect, Polygon } from 'react-native-sv
 import { latLonArrayToXYArray, pointsToSvg } from '../../utils/Coords';
 import { MapMemoContext } from '../../contexts/MapMemo';
 import { SVGDrawingContext } from '../../contexts/SVGDrawing';
-import { View } from 'react-native';
+import { Platform, View } from 'react-native';
 import { isBrushTool, isPenTool } from '../../utils/General';
 import { ulid } from 'ulid';
 import { MapMemoToolType } from '../../types';
 import { useWindow } from '../../hooks/useWindow';
+
+//iOSのGoogle Maps SDKはポリラインの線端指定(lineCap)をサポートせず常に平端(butt)のため、
+//プレビューも平端に合わせて保存の瞬間に端の見た目が変わらないようにする。
+//Android/Webは保存側をround指定にしてあるためプレビューもroundで一致する
+const STROKE_CAP = Platform.OS === 'ios' ? 'butt' : 'round';
 
 export const MapMemoView = React.memo(() => {
   const {
@@ -74,7 +79,7 @@ export const MapMemoView = React.memo(() => {
             stroke={strokeColor}
             strokeWidth={strokeWidth}
             strokeDasharray={'none'}
-            strokeLinecap="round"
+            strokeLinecap={STROKE_CAP}
             strokeLinejoin="round"
             fill={'none'}
           />
@@ -86,7 +91,7 @@ export const MapMemoView = React.memo(() => {
             stroke={line.strokeColor}
             strokeWidth={line.strokeWidth}
             fill="none"
-            strokeLinecap="round"
+            strokeLinecap={STROKE_CAP}
             strokeLinejoin="round"
           />
         ))}
