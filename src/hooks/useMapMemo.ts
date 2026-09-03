@@ -133,6 +133,9 @@ const EDGE_PAN_STEP = 12;
 const EDGE_PAN_INTERVAL_MS = 80;
 //ピンチ中断後に同じ線の続きとみなすタッチ距離(px)
 const RESUME_DISTANCE_PX = 50;
+//保存後も地図レイヤの描画が完了するまでSVGプレビューを残す時間(ms)。
+//ネイティブのオーバーレイ追加は非同期のため、即時に消すと一瞬線が消えて点滅して見える
+const LAYER_HANDOFF_DURATION_MS = 150;
 //矢印スタイルの整形時の間引き許容誤差(px)
 const PEN_SIMPLIFY_TOLERANCE_PX = 1.0;
 //これ未満の点数のストロークは整形せず生のまま保存する（矢印スタイル用）
@@ -169,6 +172,8 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
   const [future, setFuture] = useState<HistoryType[]>([]);
   const [penColor, setPenColor] = useState('rgba(0,0,0,0.7)');
   const [mapMemoLines, setMapMemoLines] = useState<MapMemoStateType[]>([]);
+  //保存済みだが地図レイヤの描画待ちの線。受け渡しの点滅防止のため短時間SVGにも重ねて表示する
+  const [handoffLines, setHandoffLines] = useState<MapMemoStateType[]>([]);
   const [isEditingLine, setIsEditingLine] = useState(false);
   const [editingLineId, setEditingLineId] = useState<string | undefined>(undefined);
   const [_editingLineIndex, setEditingLineIndex] = useState<number | undefined>(undefined);
@@ -210,6 +215,7 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
   const snappedStartPoint = useRef<Position>([]);
   const offset = useRef([0, 0]);
   const timer = useRef<NodeJS.Timeout | undefined>(undefined);
+  const handoffTimer = useRef<NodeJS.Timeout | undefined>(undefined);
   const longPressTimer = useRef<NodeJS.Timeout | undefined>(undefined);
   const longPressStartPosition = useRef<Position | null>(null);
   const longPressMoveThreshold = 20;
@@ -255,6 +261,12 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
 
   const isUndoable = useMemo(() => history.length > 0, [history]);
   const isRedoable = useMemo(() => future.length > 0, [future]);
+
+  //表示用: 未保存の線＋地図レイヤ描画待ちの線（保存処理はmapMemoLines stateのみを対象とする）
+  const displayMapMemoLines = useMemo(
+    () => (handoffLines.length === 0 ? mapMemoLines : [...mapMemoLines, ...handoffLines]),
+    [handoffLines, mapMemoLines]
+  );
 
   /**
    * Sets the visibility of the map memo tool modal
@@ -421,7 +433,15 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
       // Update history and reset future
       setHistory((prev) => [...(prev.length === MAX_HISTORY ? prev.slice(1) : prev), ...newHistoryItems]);
       setFuture([]);
+      //地図レイヤ側の描画が反映されるまでSVGプレビューを残してから消す（受け渡しの点滅防止）
+      setHandoffLines(newMapMemoLines);
       setMapMemoLines([]);
+      if (handoffTimer.current) {
+        clearTimeout(handoffTimer.current);
+      }
+      handoffTimer.current = setTimeout(() => {
+        setHandoffLines([]);
+      }, LAYER_HANDOFF_DURATION_MS);
     },
     [activeMemoLayer, activeMemoRecordSet, dataUser.uid, dispatch, generateRecord, memoLines]
   );
@@ -1399,6 +1419,9 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
       if (edgePanTimer.current !== undefined) {
         clearInterval(edgePanTimer.current);
       }
+      if (handoffTimer.current) {
+        clearTimeout(handoffTimer.current);
+      }
     };
   }, []);
 
@@ -1419,7 +1442,7 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
     isPencilModeActive,
     isUndoable,
     isRedoable,
-    mapMemoLines,
+    mapMemoLines: displayMapMemoLines,
     snapWithLine,
     arrowStyle,
     isStraightStyle,
