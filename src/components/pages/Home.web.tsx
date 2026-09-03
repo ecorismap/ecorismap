@@ -147,7 +147,7 @@ export default function HomeScreen() {
   );
 
   // SVGDrawingContext
-  const { mapMemoEditingLine } = useContext(SVGDrawingContext);
+  const { mapMemoEditingLine, mapMemoEditingLineLatLon } = useContext(SVGDrawingContext);
 
   // MapViewContext
   const {
@@ -957,7 +957,9 @@ export default function HomeScreen() {
                 //onMouseMove={onMouseMove}
                 dragPan={
                   isPinch ||
-                  (isMapMemoDrawTool(currentMapMemoTool) && mapMemoEditingLine.length === 0) ||
+                  (isMapMemoDrawTool(currentMapMemoTool) &&
+                    mapMemoEditingLine.length === 0 &&
+                    mapMemoEditingLineLatLon.length === 0) ||
                   (currentMapMemoTool === 'NONE' &&
                     (currentDrawTool === 'NONE' || currentDrawTool === 'MOVE' || currentDrawTool.includes('INFO')))
                 }

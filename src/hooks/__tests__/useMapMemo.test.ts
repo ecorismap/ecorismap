@@ -71,6 +71,10 @@ jest.mock('../../utils/Coords', () => ({
   calcDegreeRadius: jest.fn(() => 0.0001),
   calcLineMidPoint: jest.fn(() => ({ latitude: 35.001, longitude: 135.001 })),
   erasePartialLine: jest.fn(() => ({ erased: false, remainingSegments: [] })),
+  //スクリーン座標⇔緯度経度の決定的な相互変換（1px = 0.00001度）
+  xyToLatLon: jest.fn((xy: any) => [135 + xy[0] * 0.00001, 35 - xy[1] * 0.00001]),
+  latLonToXY: jest.fn((latlon: any) => [(latlon[0] - 135) / 0.00001, (35 - latlon[1]) / 0.00001]),
+  latLonArrayToXYArray: jest.fn((arr: any) => arr.map((p: any) => [(p[0] - 135) / 0.00001, (35 - p[1]) / 0.00001])),
   getSnappedPositionWithLine: jest.fn(() => ({ position: [150, 150] })),
   getSnappedLine: jest.fn(() => [
     [100, 100],
@@ -541,7 +545,9 @@ describe('useMapMemo', () => {
       result.current.handleGrantMapMemo(mockEvent);
     });
 
-    expect(result.current.mapMemoEditingLine.current.length).toBe(1);
+    //ペンのストロークは緯度経度で記録される
+    expect(result.current.mapMemoEditingLineLatLon.current.length).toBe(1);
+    expect(result.current.mapMemoEditingLineLatLon.current[0]).toEqual([135 + 100 * 0.00001, 35 - 200 * 0.00001]);
   });
 
   it('handleGrantMapMemoがBRUSHモードでsnappedLineを設定すること', () => {
@@ -605,7 +611,8 @@ describe('useMapMemo', () => {
       result.current.handleGrantMapMemo(mockEvent);
     });
 
-    expect(result.current.mapMemoEditingLine.current.length).toBe(1);
+    //消しゴムの軌跡も緯度経度で記録される
+    expect(result.current.mapMemoEditingLineLatLon.current.length).toBe(1);
   });
 
   it('handleGrantMapMemoがSTAMPモードで座標を正しく記録すること', () => {
@@ -728,8 +735,8 @@ describe('useMapMemo', () => {
       result.current.handleMoveMapMemo(moveEvent);
     });
 
-    // エディティングラインが存在することを確認
-    expect(Array.isArray(result.current.mapMemoEditingLine.current)).toBe(true);
+    // エディティングラインが緯度経度で2点になっていることを確認
+    expect(result.current.mapMemoEditingLineLatLon.current.length).toBe(2);
   });
 
   it('直線モードで描画すると開始点と終了点のみを記録すること', () => {
@@ -791,7 +798,7 @@ describe('useMapMemo', () => {
     });
 
     // 直線モードでは開始点と現在点の2点のみで表現されるはず
-    expect(result.current.mapMemoEditingLine.current.length).toBe(2);
+    expect(result.current.mapMemoEditingLineLatLon.current.length).toBe(2);
   });
 
   it('handleReleaseMapMemoがPENモードで描画内容を保存すること', () => {
@@ -833,7 +840,7 @@ describe('useMapMemo', () => {
     });
 
     // データ保存が実行されたことを確認するため、編集ラインがリセットされたかを確認
-    expect(result.current.mapMemoEditingLine.current).toEqual([]);
+    expect(result.current.mapMemoEditingLineLatLon.current).toEqual([]);
   });
 
   it('handleReleaseMapMemoがSTAMPモードでstampデータを保存すること', () => {
@@ -1035,7 +1042,7 @@ describe('useMapMemo', () => {
     });
 
     // 正常に座標が記録されていることを確認
-    expect(result.current.mapMemoEditingLine.current.length).toBeGreaterThan(1);
+    expect(result.current.mapMemoEditingLineLatLon.current.length).toBeGreaterThan(1);
   });
 
   it('編集機能が存在し正しい形で出力されること', () => {
@@ -1206,6 +1213,132 @@ describe('useMapMemo', () => {
 
     expect(getMemoData().length).toBe(1);
     expect(result.current.isUndoable).toBe(false);
+  });
+
+  it('ピンチ中断後に終点近くから再開すると1本の線として継続されること', () => {
+    const mockMapViewRef = { current: {} } as any;
+    const { result } = renderHook(() => useMapMemo(mockMapViewRef), { wrapper });
+    jest.useFakeTimers();
+
+    act(() => {
+      result.current.setMapMemoTool('PEN');
+    });
+
+    const makeEvent = (x: number, y: number) =>
+      ({
+        nativeEvent: { locationX: x, locationY: y, pageX: x, pageY: y, touches: [{}] },
+        persist: jest.fn(),
+      } as any);
+
+    act(() => {
+      result.current.handleGrantMapMemo(makeEvent(100, 100));
+    });
+    act(() => {
+      result.current.handleMoveMapMemo(makeEvent(150, 150));
+    });
+    expect(result.current.mapMemoEditingLineLatLon.current.length).toBe(2);
+
+    // 2本指ピンチによる中断（線は破棄されない）
+    act(() => {
+      result.current.pauseMapMemoDrawing();
+    });
+    expect(result.current.mapMemoEditingLineLatLon.current.length).toBe(2);
+
+    // 終点(150,150)の近く(160,160)から再開 → 続きとして追記される
+    act(() => {
+      result.current.handleGrantMapMemo(makeEvent(160, 160));
+    });
+    expect(result.current.mapMemoEditingLineLatLon.current.length).toBe(3);
+
+    act(() => {
+      result.current.handleReleaseMapMemo(makeEvent(160, 160));
+      jest.runAllTimers();
+    });
+
+    // 1本の線として1レコードだけ保存される
+    expect(getMemoData().length).toBe(1);
+  });
+
+  it('ピンチ中断後に離れた場所から描くと前の線が確定され2本になること', () => {
+    const mockMapViewRef = { current: {} } as any;
+    const { result } = renderHook(() => useMapMemo(mockMapViewRef), { wrapper });
+    jest.useFakeTimers();
+
+    act(() => {
+      result.current.setMapMemoTool('PEN');
+    });
+
+    const makeEvent = (x: number, y: number) =>
+      ({
+        nativeEvent: { locationX: x, locationY: y, pageX: x, pageY: y, touches: [{}] },
+        persist: jest.fn(),
+      } as any);
+
+    act(() => {
+      result.current.handleGrantMapMemo(makeEvent(100, 100));
+    });
+    act(() => {
+      result.current.handleMoveMapMemo(makeEvent(150, 150));
+    });
+    act(() => {
+      result.current.pauseMapMemoDrawing();
+    });
+
+    // 終点(150,150)から50px以上離れた場所で再開 → 前の線を確定して新しい線を開始
+    act(() => {
+      result.current.handleGrantMapMemo(makeEvent(400, 400));
+    });
+    expect(result.current.mapMemoEditingLineLatLon.current.length).toBe(1);
+
+    act(() => {
+      result.current.handleMoveMapMemo(makeEvent(450, 450));
+    });
+    act(() => {
+      result.current.handleReleaseMapMemo(makeEvent(450, 450));
+      jest.runAllTimers();
+    });
+
+    // 2本の線として2レコード保存される
+    expect(getMemoData().length).toBe(2);
+  });
+
+  it('画面端に近づくと自動パンで線が伸び、mapRegionが更新されること', () => {
+    const mockMapViewRef = { current: {} } as any;
+    const { result } = renderHook(() => useMapMemo(mockMapViewRef), { wrapper });
+    jest.useFakeTimers();
+
+    act(() => {
+      result.current.setMapMemoTool('PEN');
+    });
+
+    const makeEvent = (x: number, y: number) =>
+      ({
+        nativeEvent: { locationX: x, locationY: y, pageX: x, pageY: y, touches: [{}] },
+        persist: jest.fn(),
+      } as any);
+
+    act(() => {
+      result.current.handleGrantMapMemo(makeEvent(100, 100));
+    });
+    // 左端(しきい値40px内)へ移動 → 自動パン開始
+    act(() => {
+      result.current.handleMoveMapMemo(makeEvent(10, 300));
+    });
+    const lengthBeforePan = result.current.mapMemoEditingLineLatLon.current.length;
+
+    // 3tick分進める → 指が止まっていても線が伸びる
+    act(() => {
+      jest.advanceTimersByTime(250);
+    });
+    expect(result.current.mapMemoEditingLineLatLon.current.length).toBeGreaterThan(lengthBeforePan);
+    // 楽観更新でmapRegionが動いている
+    expect(store.getState().settings.mapRegion.longitude).not.toBe(135);
+
+    act(() => {
+      result.current.handleReleaseMapMemo(makeEvent(10, 300));
+      jest.runAllTimers();
+    });
+    expect(getMemoData().length).toBe(1);
   });
 
   //部分消去テスト用のヘルパー
