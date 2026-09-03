@@ -4,7 +4,6 @@ import { Position } from 'geojson';
 
 export interface MapMemoLine {
   id?: string;
-  xy: Position[];
   latlon: Position[];
   strokeColor: string;
   strokeWidth: number;

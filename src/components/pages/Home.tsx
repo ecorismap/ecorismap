@@ -233,7 +233,7 @@ export default function HomeScreen() {
   );
 
   // SVGDrawingContext
-  const { isPencilTouch, mapMemoEditingLine } = useContext(SVGDrawingContext);
+  const { isPencilTouch, mapMemoEditingLine, mapMemoEditingLineLatLon } = useContext(SVGDrawingContext);
 
   // MapViewContext
   const {
@@ -296,14 +296,23 @@ export default function HomeScreen() {
       (isMapMemoDrawTool(currentMapMemoTool) &&
         isPencilModeActive &&
         !isPencilTouch &&
-        mapMemoEditingLine.length === 0) ||
+        mapMemoEditingLine.length === 0 &&
+        mapMemoEditingLineLatLon.length === 0) ||
       (currentMapMemoTool === 'NONE' &&
         (currentDrawTool === 'NONE' ||
           currentDrawTool === 'MOVE' ||
           currentDrawTool.includes('INFO') ||
           currentDrawTool === 'MOVE_POINT' ||
           (isPencilModeActive && !isPencilTouch))),
-    [currentDrawTool, currentMapMemoTool, isPencilModeActive, isPencilTouch, isPinch, mapMemoEditingLine.length]
+    [
+      currentDrawTool,
+      currentMapMemoTool,
+      isPencilModeActive,
+      isPencilTouch,
+      isPinch,
+      mapMemoEditingLine.length,
+      mapMemoEditingLineLatLon.length,
+    ]
   );
 
   const styles = StyleSheet.create({

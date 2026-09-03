@@ -1,12 +1,13 @@
 import React, { useContext, useMemo } from 'react';
 import Svg, { Circle, G, Path, Line, Text, Rect, Polygon } from 'react-native-svg';
-import { pointsToSvg } from '../../utils/Coords';
+import { latLonArrayToXYArray, pointsToSvg } from '../../utils/Coords';
 import { MapMemoContext } from '../../contexts/MapMemo';
 import { SVGDrawingContext } from '../../contexts/SVGDrawing';
 import { View } from 'react-native';
 import { isBrushTool, isPenTool } from '../../utils/General';
 import { ulid } from 'ulid';
 import { MapMemoToolType } from '../../types';
+import { useWindow } from '../../hooks/useWindow';
 
 export const MapMemoView = React.memo(() => {
   const {
@@ -15,7 +16,15 @@ export const MapMemoView = React.memo(() => {
     currentMapMemoTool,
     mapMemoLines,
   } = useContext(MapMemoContext);
-  const { mapMemoEditingLine } = useContext(SVGDrawingContext);
+  const { mapMemoEditingLine, mapMemoEditingLineLatLon, mapViewRef } = useContext(SVGDrawingContext);
+  const { mapRegion, mapSize } = useWindow();
+
+  //ペン・消しゴムのストロークは緯度経度で保持されているため、現在の地図表示に合わせて再投影する。
+  //これにより描画途中のピンチや自動パン、保存デバウンス中の地図移動にも線が追従する
+  const editingLineXY = useMemo(
+    () => latLonArrayToXYArray(mapMemoEditingLineLatLon, mapRegion, mapSize, mapViewRef),
+    [mapMemoEditingLineLatLon, mapRegion, mapSize, mapViewRef]
+  );
 
   const stampPos = useMemo(
     () => (mapMemoEditingLine.length === 1 ? { x: mapMemoEditingLine[0][0], y: mapMemoEditingLine[0][1] } : undefined),
@@ -61,7 +70,7 @@ export const MapMemoView = React.memo(() => {
         )}
         {(isPenTool(currentMapMemoTool) || currentMapMemoTool.includes('ERASER')) && (
           <Path
-            d={pointsToSvg(mapMemoEditingLine)}
+            d={pointsToSvg(editingLineXY)}
             stroke={strokeColor}
             strokeWidth={strokeWidth}
             strokeDasharray={'none'}
@@ -73,7 +82,7 @@ export const MapMemoView = React.memo(() => {
         {mapMemoLines.map((line, index) => (
           <Path
             key={index}
-            d={`M${line.xy.map((p) => `${p[0]},${p[1]}`).join(' L')}`}
+            d={pointsToSvg(latLonArrayToXYArray(line.latlon, mapRegion, mapSize, mapViewRef))}
             stroke={line.strokeColor}
             strokeWidth={line.strokeWidth}
             fill="none"

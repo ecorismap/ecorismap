@@ -165,6 +165,8 @@ export const mockSVGDrawingContextValue: SVGDrawingContextType = {
 
   // MapMemo SVG data
   mapMemoEditingLine: [],
+  mapMemoEditingLineLatLon: [],
+  mapViewRef: null,
   isPencilTouch: undefined,
 };
 

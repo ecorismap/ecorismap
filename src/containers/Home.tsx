@@ -297,6 +297,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     penColor,
     penWidth,
     mapMemoEditingLine,
+    mapMemoEditingLineLatLon,
     editableMapMemo,
     isIndividualColorRequired,
     isPencilModeActive,
@@ -325,7 +326,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     pressUndoMapMemo,
     pressRedoMapMemo,
     clearMapMemoHistory,
-    clearMapMemoEditingLine,
+    pauseMapMemoDrawing,
     changeColorTypeToIndividual,
     setPencilModeActive,
     setSnapWithLine,
@@ -1943,7 +1944,8 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       }
       if (gesture.numberActiveTouches === 2) {
         hideDrawLine();
-        clearMapMemoEditingLine();
+        //ペンで描画中はストロークを破棄せず中断し、ピンチ後に続きを描けるようにする
+        pauseMapMemoDrawing();
         setIsPinch(true);
       } else if (isMapMemoDrawTool(currentMapMemoTool)) {
         handleMoveMapMemo(event);
@@ -1954,7 +1956,6 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       }
     },
     [
-      clearMapMemoEditingLine,
       currentDrawTool,
       currentMapMemoTool,
       getPXY,
@@ -1963,6 +1964,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       handleMovePlot,
       hideDrawLine,
       isPinch,
+      pauseMapMemoDrawing,
       setIsPinch,
     ]
   );
@@ -2685,6 +2687,8 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
 
     // MapMemo SVG data
     mapMemoEditingLine: mapMemoEditingLine.current,
+    mapMemoEditingLineLatLon: mapMemoEditingLineLatLon.current,
+    mapViewRef: mapViewRef.current,
     isPencilTouch: isPencilTouch.current,
   };
 

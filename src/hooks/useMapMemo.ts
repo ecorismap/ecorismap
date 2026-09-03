@@ -12,16 +12,19 @@ import {
   erasePartialLine,
   getSnappedLine,
   getSnappedPositionWithLine,
+  latLonArrayToXYArray,
   latLonObjectsToLatLonArray,
   latLonObjectsToXYArray,
+  latLonToXY,
   latlonArrayToLatLonObjects,
   smoothingByBezier,
   trimHane,
   xyArrayToLatLonArray,
+  xyToLatLon,
 } from '../utils/Coords';
 import MapView from 'react-native-maps';
 import { MapRef } from 'react-map-gl/maplibre';
-import { GestureResponderEvent } from 'react-native';
+import { GestureResponderEvent, Platform } from 'react-native';
 //@ts-ignore
 import { booleanContains, buffer } from '@turf/turf';
 import * as turf from '@turf/helpers';
@@ -53,6 +56,7 @@ export type UseMapMemoReturnType = {
   penColor: string;
   penWidth: number;
   mapMemoEditingLine: RefObject<Position[]>;
+  mapMemoEditingLineLatLon: RefObject<Position[]>;
   editableMapMemo: boolean;
   isIndividualColorRequired: boolean;
   isPencilModeActive: boolean;
@@ -84,6 +88,7 @@ export type UseMapMemoReturnType = {
   pressRedoMapMemo: () => void;
   changeColorTypeToIndividual: () => boolean;
   clearMapMemoEditingLine: () => void;
+  pauseMapMemoDrawing: () => void;
   setPencilModeActive: Dispatch<SetStateAction<boolean>>;
   setSnapWithLine: Dispatch<SetStateAction<boolean>>;
   setIsStraightStyle: Dispatch<SetStateAction<boolean>>;
@@ -108,7 +113,6 @@ export type HistoryType =
 
 export type MapMemoStateType = {
   id?: string;
-  xy: Position[];
   latlon: Position[];
   strokeColor: string;
   strokeWidth: number;
@@ -121,6 +125,12 @@ export type MapMemoStateType = {
 
 // Constants
 const MAX_HISTORY = 10;
+//画面端自動パン: 端からのしきい値(px)・1tickの移動量(px)・tick間隔(ms)
+const EDGE_PAN_THRESHOLD = 40;
+const EDGE_PAN_STEP = 12;
+const EDGE_PAN_INTERVAL_MS = 80;
+//ピンチ中断後に同じ線の続きとみなすタッチ距離(px)
+const RESUME_DISTANCE_PX = 50;
 
 /**
  * Custom hook to manage map memo functionality
@@ -169,7 +179,17 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
   const [, setRedraw] = useState('');
 
   // Refs
+  //スタンプ・ブラシ用（スクリーン座標）。スナップ計算がXY空間実装のため従来のまま
   const mapMemoEditingLine = useRef<Position[]>([]);
+  //ペン・消しゴム用（緯度経度）。描画中の地図操作（ピンチ・自動パン）に追従できるよう地理座標で保持する
+  const mapMemoEditingLineLatLon = useRef<Position[]>([]);
+  //ピンチによる描画中断フラグ。中断中はストロークを保持し、次のタッチで継続/確定を判定する
+  const isDrawingPaused = useRef(false);
+  //画面端自動パン
+  const edgePanTimer = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
+  const lastTouchXY = useRef<Position | null>(null);
+  //自動パン中の楽観更新を含む最新のmapRegion（useCallbackの古いclosure対策）
+  const mapRegionRef = useRef(mapRegion);
   const snappedLine = useRef<{ coordsXY: Position[]; id: string } | undefined>(undefined);
   const snappedStartPoint = useRef<Position>([]);
   const offset = useRef([0, 0]);
@@ -240,11 +260,45 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
     [dispatch]
   );
 
+  useEffect(() => {
+    mapRegionRef.current = mapRegion;
+  }, [mapRegion]);
+
+  /**
+   * Stops the edge auto-pan timer
+   */
+  const stopEdgePan = useCallback(() => {
+    if (edgePanTimer.current !== undefined) {
+      clearInterval(edgePanTimer.current);
+      edgePanTimer.current = undefined;
+    }
+    lastTouchXY.current = null;
+  }, []);
+
+  /**
+   * タッチ位置が画面端に近い場合のパン移動量(px)を返す
+   */
+  const calcEdgePanDelta = useCallback(
+    (pXY: Position): Position => {
+      let dx = 0;
+      let dy = 0;
+      if (pXY[0] < EDGE_PAN_THRESHOLD) dx = -EDGE_PAN_STEP;
+      else if (pXY[0] > mapSize.width - EDGE_PAN_THRESHOLD) dx = EDGE_PAN_STEP;
+      if (pXY[1] < EDGE_PAN_THRESHOLD) dy = -EDGE_PAN_STEP;
+      else if (pXY[1] > mapSize.height - EDGE_PAN_THRESHOLD) dy = EDGE_PAN_STEP;
+      return [dx, dy];
+    },
+    [mapSize.height, mapSize.width]
+  );
+
   /**
    * Clears the editing line
    */
   const clearMapMemoEditingLine = useCallback(() => {
+    stopEdgePan();
+    isDrawingPaused.current = false;
     mapMemoEditingLine.current = [];
+    mapMemoEditingLineLatLon.current = [];
     snappedLine.current = undefined;
     if (isEditingLine) {
       setIsEditingLine(false);
@@ -252,7 +306,20 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
       setEditingLineIndex(undefined);
       setEditingPointIndex(undefined);
     }
-  }, [isEditingLine]);
+  }, [isEditingLine, stopEdgePan]);
+
+  /**
+   * ピンチ操作の開始時に呼ばれる。ペンで描画中ならストロークを破棄せず中断し、
+   * ピンチ後のタッチで継続できるようにする。それ以外は従来通り破棄する。
+   */
+  const pauseMapMemoDrawing = useCallback(() => {
+    stopEdgePan();
+    if (isPenTool(currentMapMemoTool) && !isEditingLine && mapMemoEditingLineLatLon.current.length > 0) {
+      isDrawingPaused.current = true;
+    } else {
+      clearMapMemoEditingLine();
+    }
+  }, [clearMapMemoEditingLine, currentMapMemoTool, isEditingLine, stopEdgePan]);
 
   /**
    * Finds a line that the given point is near to
@@ -401,18 +468,126 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
   }, []);
 
   /**
-   * Handles drawing tool move event
+   * ペン・消しゴムのストロークに緯度経度の1点を追加する（直線スタイルは終点を置き換え）
    */
-  const handleDrawingToolMove = useCallback(
-    (pXY: Position) => {
+  const appendPenPointLatLon = useCallback(
+    (latlon: Position) => {
       if (isStraightStyle && isPenTool(currentMapMemoTool)) {
-        mapMemoEditingLine.current = [mapMemoEditingLine.current[0], pXY];
+        mapMemoEditingLineLatLon.current = [mapMemoEditingLineLatLon.current[0] ?? latlon, latlon];
       } else {
-        mapMemoEditingLine.current = [...mapMemoEditingLine.current, pXY];
+        mapMemoEditingLineLatLon.current = [...mapMemoEditingLineLatLon.current, latlon];
       }
     },
     [currentMapMemoTool, isStraightStyle]
   );
+
+  /**
+   * 画面端自動パンの1tick。地図を少しずらし、止まっている指の位置を
+   * 新しい地図位置で緯度経度に変換して線を伸ばす。
+   */
+  const edgePanTick = useCallback(() => {
+    const pXY = lastTouchXY.current;
+    if (pXY === null) return;
+    const [dx, dy] = calcEdgePanDelta(pXY);
+    if (dx === 0 && dy === 0) {
+      stopEdgePan();
+      return;
+    }
+    if (Platform.OS === 'web') {
+      //onMoveが同期的にmapRegionを更新し、座標変換はproject/unproject直参照のため常に整合する
+      const map = mapViewRef ? (mapViewRef as MapRef).getMap() : undefined;
+      if (map === undefined) return;
+      map.panBy([dx, dy], { duration: 0 });
+    } else {
+      //ネイティブはアニメーション中にmapRegionが更新されず座標変換が破綻するため、
+      //新しいregionを自前で計算して楽観的に反映し、地図はアニメーションなしで追従させる
+      const region = mapRegionRef.current;
+      const [lon, lat] = xyToLatLon([mapSize.width / 2 + dx, mapSize.height / 2 + dy], region, mapSize, mapViewRef);
+      const newRegion = { ...region, longitude: lon, latitude: lat };
+      mapRegionRef.current = newRegion;
+      dispatch(editSettingsAction({ mapRegion: newRegion }));
+      (mapViewRef as MapView | null)?.animateToRegion?.(
+        {
+          latitude: lat,
+          longitude: lon,
+          latitudeDelta: region.latitudeDelta,
+          longitudeDelta: region.longitudeDelta,
+        },
+        0
+      );
+    }
+    appendPenPointLatLon(xyToLatLon(pXY, mapRegionRef.current, mapSize, mapViewRef));
+    setRedraw(ulid());
+  }, [appendPenPointLatLon, calcEdgePanDelta, dispatch, mapSize, mapViewRef, stopEdgePan]);
+
+  /**
+   * Handles drawing tool move event
+   */
+  const handleDrawingToolMove = useCallback(
+    (pXY: Position) => {
+      appendPenPointLatLon(xyToLatLon(pXY, mapRegionRef.current, mapSize, mapViewRef));
+
+      //ペンのみ画面端に近づいたら自動パンして一筆で描き続けられるようにする
+      if (isPenTool(currentMapMemoTool)) {
+        lastTouchXY.current = pXY;
+        const [dx, dy] = calcEdgePanDelta(pXY);
+        if (dx !== 0 || dy !== 0) {
+          if (edgePanTimer.current === undefined) {
+            edgePanTimer.current = setInterval(edgePanTick, EDGE_PAN_INTERVAL_MS);
+          }
+        } else {
+          stopEdgePan();
+        }
+      }
+    },
+    [appendPenPointLatLon, calcEdgePanDelta, currentMapMemoTool, edgePanTick, mapSize, mapViewRef, stopEdgePan]
+  );
+
+  /**
+   * 現在のペンストローク（緯度経度）を整形して保存キューに積む
+   */
+  const finishPenStroke = useCallback(() => {
+    let latlonLine = [...mapMemoEditingLineLatLon.current];
+    mapMemoEditingLineLatLon.current = [];
+    if (latlonLine.length === 0) return;
+    if (latlonLine.length === 1) {
+      //1点だけの場合は極小の線に変換する
+      latlonLine.push([latlonLine[0][0] + 0.0000001, latlonLine[0][1] + 0.0000001]);
+    }
+
+    //矢印スタイルの平滑化はピクセル単位のパラメータのため、
+    //現在ビューのスクリーン座標へ再投影して行い、緯度経度へ戻す
+    if (arrowStyle !== 'NONE' && !isStraightStyle) {
+      let lineXY = latLonArrayToXYArray(latlonLine, mapRegionRef.current, mapSize, mapViewRef);
+      if (lineXY.length > 8) {
+        lineXY = lineXY.slice(2, -2);
+        lineXY = trimHane(lineXY, 50); // 角度閾値は50°くらいから調整
+      }
+      lineXY = smoothingByBezier(lineXY);
+      latlonLine = xyArrayToLatLonArray(lineXY, mapRegionRef.current, mapSize, mapViewRef);
+    }
+
+    const newMapMemoLines = [
+      ...mapMemoLines,
+      {
+        latlon: latlonLine,
+        zoom: mapRegionRef.current.zoom,
+        strokeColor: penColor,
+        strokeWidth: penWidth,
+        strokeStyle: arrowStyle,
+        stamp: '',
+      },
+    ];
+
+    setMapMemoLines(newMapMemoLines);
+
+    if (timer.current) {
+      clearTimeout(timer.current);
+    }
+    timer.current = setTimeout(() => {
+      saveMapMemo(newMapMemoLines);
+    }, 1000);
+  }, [arrowStyle, isStraightStyle, mapMemoLines, mapSize, mapViewRef, penColor, penWidth, saveMapMemo]);
 
   /**
    * Handle long press to start line editing
@@ -447,9 +622,12 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
 
           // Store original line information
           const lineRecord = memoLines[lineIndex];
-          if (lineRecord) {
-            // Start editing from the found point
-            mapMemoEditingLine.current = result.coordsXY.slice(0, closestInfo.index + 1);
+          if (lineRecord && lineRecord.coords !== undefined) {
+            // Start editing from the found point（緯度経度で保持する）
+            mapMemoEditingLineLatLon.current = latLonObjectsToLatLonArray(lineRecord.coords).slice(
+              0,
+              closestInfo.index + 1
+            );
 
             // We set our tool to PEN for editing
             if (!isPenTool(currentMapMemoTool)) {
@@ -500,15 +678,37 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
       } else if (isBrushTool(currentMapMemoTool)) {
         handleBrushToolGrant(pXY);
       } else if (isPenTool(currentMapMemoTool) || isEraserTool(currentMapMemoTool)) {
-        // If not already editing, start a new line
-        if (!isEditingLine) {
-          mapMemoEditingLine.current = [pXY];
+        if (isPenTool(currentMapMemoTool) && isDrawingPaused.current && mapMemoEditingLineLatLon.current.length > 0) {
+          //ピンチ中断からの再開。終点の近くなら続きとして追記、離れていれば前の線を確定して新しい線を開始
+          isDrawingPaused.current = false;
+          const lastLatLon = mapMemoEditingLineLatLon.current[mapMemoEditingLineLatLon.current.length - 1];
+          const lastXY = latLonToXY(lastLatLon, mapRegionRef.current, mapSize, mapViewRef);
+          const distance = Math.hypot(pXY[0] - lastXY[0], pXY[1] - lastXY[1]);
+          if (distance <= RESUME_DISTANCE_PX) {
+            appendPenPointLatLon(xyToLatLon(pXY, mapRegionRef.current, mapSize, mapViewRef));
+          } else {
+            finishPenStroke();
+            mapMemoEditingLineLatLon.current = [xyToLatLon(pXY, mapRegionRef.current, mapSize, mapViewRef)];
+          }
+        } else if (!isEditingLine) {
+          // If not already editing, start a new line
+          mapMemoEditingLineLatLon.current = [xyToLatLon(pXY, mapRegionRef.current, mapSize, mapViewRef)];
         }
       }
 
       setRedraw(ulid());
     },
-    [currentMapMemoTool, handleBrushToolGrant, handleLongPressMapMemo, handleStampToolGrant, isEditingLine]
+    [
+      appendPenPointLatLon,
+      currentMapMemoTool,
+      finishPenStroke,
+      handleBrushToolGrant,
+      handleLongPressMapMemo,
+      handleStampToolGrant,
+      isEditingLine,
+      mapSize,
+      mapViewRef,
+    ]
   );
 
   /**
@@ -558,7 +758,7 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
       longPressTimer.current = undefined;
     }
 
-    let drawingLine = [...mapMemoEditingLine.current];
+    const drawingLine = [...mapMemoEditingLineLatLon.current];
 
     // Handle edge cases with line points
     if (drawingLine.length === 0) {
@@ -571,14 +771,20 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
     }
     // Handle editing an existing line
     if (isEditingLine && editingLineId && editingPointIndex !== undefined) {
-      let newLineCoords = drawingLine;
-      if (arrowStyle !== 'NONE' && !isStraightStyle && newLineCoords.length > 8) {
-        const line1 = newLineCoords.slice(0, editingPointIndex - 2);
-        const line2 = newLineCoords.slice(editingPointIndex + 2);
+      let latlonCoords = drawingLine;
+      if (arrowStyle !== 'NONE' && !isStraightStyle && latlonCoords.length > 8) {
+        //平滑化はピクセル単位のパラメータのため、現在ビューのスクリーン座標で行って緯度経度へ戻す
+        const lineXY = latLonArrayToXYArray(latlonCoords, mapRegionRef.current, mapSize, mapViewRef);
+        const line1 = lineXY.slice(0, editingPointIndex - 2);
+        const line2 = lineXY.slice(editingPointIndex + 2);
 
-        newLineCoords = smoothingByBezier([...line1, ...line2]);
+        latlonCoords = xyArrayToLatLonArray(
+          smoothingByBezier([...line1, ...line2]),
+          mapRegionRef.current,
+          mapSize,
+          mapViewRef
+        );
       }
-      const latlonCoords = xyArrayToLatLonArray(newLineCoords, mapRegion, mapSize, mapViewRef);
 
       const lineIndex = memoLines.findIndex((line) => line.id === editingLineId);
       if (lineIndex >= 0) {
@@ -636,52 +842,25 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
     }
 
     // Normal new line drawing
-    if (arrowStyle !== 'NONE' && !isStraightStyle) {
-      if (drawingLine.length > 8) {
-        drawingLine = drawingLine.slice(2, -2);
-        drawingLine = trimHane(drawingLine, 50); // 角度閾値は50°くらいから調整
-      }
-      drawingLine = smoothingByBezier(drawingLine);
-    }
-
-    const newMapMemoLines = [
-      ...mapMemoLines,
-      {
-        xy: drawingLine,
-        latlon: xyArrayToLatLonArray(drawingLine, mapRegion, mapSize, mapViewRef),
-        zoom: mapRegion.zoom,
-        strokeColor: penColor,
-        strokeWidth: penWidth,
-        strokeStyle: arrowStyle,
-        stamp: '',
-      },
-    ];
-
-    setMapMemoLines(newMapMemoLines);
+    finishPenStroke();
     clearMapMemoEditingLine();
-
-    timer.current = setTimeout(() => {
-      saveMapMemo(newMapMemoLines);
-    }, 1000);
   }, [
     isEditingLine,
     editingLineId,
     editingPointIndex,
     isStraightStyle,
-    mapMemoLines,
-    mapRegion,
     mapSize,
     mapViewRef,
     penColor,
     penWidth,
     arrowStyle,
     clearMapMemoEditingLine,
+    finishPenStroke,
     memoLines,
     dataUser.uid,
     dataUser.displayName,
     dispatch,
     activeMemoLayer,
-    saveMapMemo,
   ]);
 
   /**
@@ -690,7 +869,6 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
   const handleStampToolRelease = useCallback(() => {
     const newMapMemoLines = [
       {
-        xy: mapMemoEditingLine.current,
         latlon: xyArrayToLatLonArray(mapMemoEditingLine.current, mapRegion, mapSize, mapViewRef),
         zoom: mapRegion.zoom,
         strokeColor: penColor,
@@ -717,7 +895,6 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
       const newMapMemoLines = [
         ...mapMemoLines,
         {
-          xy: mapMemoEditingLine.current,
           latlon: xyArrayToLatLonArray(brushLine, mapRegion, mapSize, mapViewRef),
           zoom: mapRegion.zoom,
           strokeColor: penColor,
@@ -767,7 +944,7 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
    * Handles pen eraser release
    */
   const handlePenEraserRelease = useCallback(() => {
-    const eraserLineLatLonArray = xyArrayToLatLonArray(mapMemoEditingLine.current, mapRegion, mapSize, mapViewRef);
+    const eraserLineLatLonArray = [...mapMemoEditingLineLatLon.current];
 
     if (eraserLineLatLonArray.length === 1) {
       eraserLineLatLonArray.push([eraserLineLatLonArray[0][0] + 0.0000001, eraserLineLatLonArray[0][1] + 0.0000001]);
@@ -806,7 +983,7 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
 
     setFuture([]);
     clearMapMemoEditingLine();
-  }, [clearMapMemoEditingLine, mapRegion, mapSize, mapViewRef, memoLines, updateHistoryAndDeleteRecords]);
+  }, [clearMapMemoEditingLine, memoLines, updateHistoryAndDeleteRecords]);
 
   /**
    * Handles pen eraser (partial) release.
@@ -815,7 +992,7 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
    * ぶら下がるブラシ・スタンプは生存する（全消し時のみ巻き込み削除）。
    */
   const handlePenEraserPartialRelease = useCallback(() => {
-    const eraserLineLatLonArray = xyArrayToLatLonArray(mapMemoEditingLine.current, mapRegion, mapSize, mapViewRef);
+    const eraserLineLatLonArray = [...mapMemoEditingLineLatLon.current];
     //消しゴムの表示幅(10px)相当を度に変換してバッファ半径にする
     const radiusDeg = calcDegreeRadius(10, mapRegion, mapSize);
 
@@ -906,7 +1083,6 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
     dispatch,
     mapRegion,
     mapSize,
-    mapViewRef,
     memoLines,
   ]);
 
@@ -914,7 +1090,7 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
    * Handles brush eraser release
    */
   const handleBrushEraserRelease = useCallback(() => {
-    const eraserLineLatLonArray = xyArrayToLatLonArray(mapMemoEditingLine.current, mapRegion, mapSize, mapViewRef);
+    const eraserLineLatLonArray = [...mapMemoEditingLineLatLon.current];
     const deletedLines: { idx: number; line: LineRecordType }[] = [];
 
     memoLines.forEach((line, idx) => {
@@ -935,13 +1111,13 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
 
     setFuture([]);
     clearMapMemoEditingLine();
-  }, [clearMapMemoEditingLine, mapRegion, mapSize, mapViewRef, memoLines, updateHistoryAndDeleteRecords]);
+  }, [clearMapMemoEditingLine, memoLines, updateHistoryAndDeleteRecords]);
 
   /**
    * Handles stamp eraser release
    */
   const handleStampEraserRelease = useCallback(() => {
-    const eraserLineLatLonArray = xyArrayToLatLonArray(mapMemoEditingLine.current, mapRegion, mapSize, mapViewRef);
+    const eraserLineLatLonArray = [...mapMemoEditingLineLatLon.current];
     const deletedLines: { idx: number; line: LineRecordType }[] = [];
 
     memoLines.forEach((line, idx) => {
@@ -973,12 +1149,13 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
 
     setFuture([]);
     clearMapMemoEditingLine();
-  }, [clearMapMemoEditingLine, mapRegion, mapSize, mapViewRef, memoLines, updateHistoryAndDeleteRecords]);
+  }, [clearMapMemoEditingLine, mapRegion, memoLines, updateHistoryAndDeleteRecords]);
 
   /**
    * Handles the end of a touch gesture
    */
   const handleReleaseMapMemo = useCallback(() => {
+    stopEdgePan();
     if (longPressTimer.current) {
       clearTimeout(longPressTimer.current);
       longPressTimer.current = undefined;
@@ -1011,6 +1188,7 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
     handlePenToolRelease,
     handleStampEraserRelease,
     handleStampToolRelease,
+    stopEdgePan,
   ]);
 
   /**
@@ -1157,6 +1335,9 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
       if (longPressTimer.current) {
         clearTimeout(longPressTimer.current);
       }
+      if (edgePanTimer.current !== undefined) {
+        clearInterval(edgePanTimer.current);
+      }
     };
   }, []);
 
@@ -1171,6 +1352,7 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
     penColor,
     penWidth,
     mapMemoEditingLine,
+    mapMemoEditingLineLatLon,
     editableMapMemo,
     isIndividualColorRequired,
     isPencilModeActive,
@@ -1202,6 +1384,7 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
     clearMapMemoHistory,
     changeColorTypeToIndividual,
     clearMapMemoEditingLine,
+    pauseMapMemoDrawing,
     setPencilModeActive,
     setSnapWithLine,
     setIsStraightStyle,
