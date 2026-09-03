@@ -112,7 +112,6 @@ const createTestStore = (initialRecords: RecordType[] = []) => {
         agreedTermsVersion: '',
         lastSeenVersion: '',
         isModalInfoToolHidden: false,
-        isModalMapMemoToolHidden: false,
         currentInfoTool: 'ALL_INFO' as const,
         showMockGPSButton: false,
         proximityAlert: {

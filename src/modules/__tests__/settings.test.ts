@@ -46,7 +46,6 @@ describe('modules/settings', () => {
     agreedTermsVersion: '',
     lastSeenVersion: '',
     isModalInfoToolHidden: false,
-    isModalMapMemoToolHidden: false,
     currentInfoTool: 'ALL_INFO',
     proximityAlert: {
       enabled: false,

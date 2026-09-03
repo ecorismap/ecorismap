@@ -14,7 +14,6 @@ export const HomeMapMemoTools = React.memo(() => {
     isPencilModeActive,
     isUndoable,
     isRedoable,
-    isModalMapMemoToolHidden,
     selectMapMemoTool,
     setVisibleMapMemoColor,
     setVisibleMapMemoPen,
@@ -56,15 +55,19 @@ export const HomeMapMemoTools = React.memo(() => {
           name={MAPMEMOTOOL.PEN}
           backgroundColor={currentMapMemoTool === 'PEN' ? COLOR.ALFARED : COLOR.ALFABLUE}
           borderRadius={10}
-          onPress={() =>
-            isModalMapMemoToolHidden
-              ? currentMapMemoTool === 'PEN'
-                ? selectMapMemoTool(undefined)
-                : selectMapMemoTool('PEN')
-              : setVisibleMapMemoPen(true)
-          }
-          onLongPress={() => setVisibleMapMemoPen(true)}
+          //タップで選択⇔解除のトグル。設定は下の歯車ボタンから開く
+          onPress={() => (currentMapMemoTool === 'PEN' ? selectMapMemoTool(undefined) : selectMapMemoTool('PEN'))}
           labelText={t('Home.label.pen')}
+        />
+      </View>
+      <View style={styles.button}>
+        <Button
+          name="cog"
+          backgroundColor={COLOR.ALFABLUE}
+          borderRadius={10}
+          onPress={() => setVisibleMapMemoPen(true)}
+          labelText={t('Home.label.penSetting')}
+          labelFontSize={9}
         />
       </View>
       <View style={styles.button}>

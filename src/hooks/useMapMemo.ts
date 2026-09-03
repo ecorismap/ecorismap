@@ -43,7 +43,6 @@ import { STAMP } from '../constants/AppConstants';
 import { isBrushTool, isEraserTool, isPenTool, isStampTool } from '../utils/General';
 import { PositionFilter } from '../utils/OneEuroFilter';
 import { Position } from 'geojson';
-import { editSettingsAction } from '../modules/settings';
 import { selectNonDeletedDataSet } from '../modules/selectors';
 
 // Type Definitions
@@ -68,7 +67,6 @@ export type UseMapMemoReturnType = {
   snapWithLine: boolean;
   arrowStyle: ArrowStyleType;
   isStraightStyle: boolean;
-  isModalMapMemoToolHidden: boolean;
   isEditingLine: boolean;
   editingLineId: string | undefined;
   setMapMemoTool: Dispatch<SetStateAction<MapMemoToolType>>;
@@ -93,7 +91,6 @@ export type UseMapMemoReturnType = {
   setPencilModeActive: Dispatch<SetStateAction<boolean>>;
   setSnapWithLine: Dispatch<SetStateAction<boolean>>;
   setIsStraightStyle: Dispatch<SetStateAction<boolean>>;
-  setIsModalMapMemoToolHidden: (value: boolean) => void;
 };
 
 export type HistoryType =
@@ -158,7 +155,6 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
 
   const layers = useSelector((state: RootState) => state.layers);
   const dataSet = useSelector(selectNonDeletedDataSet);
-  const isModalMapMemoToolHidden = useSelector((state: RootState) => state.settings.isModalMapMemoToolHidden);
 
   // State management
   const [history, setHistory] = useState<HistoryType[]>([]);
@@ -258,16 +254,6 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
   const displayMapMemoLines = useMemo(
     () => (handoffLines.length === 0 ? mapMemoLines : [...mapMemoLines, ...handoffLines]),
     [handoffLines, mapMemoLines]
-  );
-
-  /**
-   * Sets the visibility of the map memo tool modal
-   */
-  const setIsModalMapMemoToolHidden = useCallback(
-    (value: boolean) => {
-      dispatch(editSettingsAction({ isModalMapMemoToolHidden: value }));
-    },
-    [dispatch]
   );
 
   useEffect(() => {
@@ -1336,7 +1322,6 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
     snapWithLine,
     arrowStyle,
     isStraightStyle,
-    isModalMapMemoToolHidden,
     isEditingLine,
     editingLineId,
     setMapMemoTool,
@@ -1361,6 +1346,5 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
     setPencilModeActive,
     setSnapWithLine,
     setIsStraightStyle,
-    setIsModalMapMemoToolHidden,
   } as const;
 };

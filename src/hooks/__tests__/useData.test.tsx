@@ -98,7 +98,6 @@ const createTestStore = (initialData: RecordType[] = [], layerOverrides: Partial
         agreedTermsVersion: '',
         lastSeenVersion: '',
         isModalInfoToolHidden: false,
-        isModalMapMemoToolHidden: false,
         currentInfoTool: 'ALL_INFO' as const,
         showMockGPSButton: false,
         proximityAlert: {
@@ -272,7 +271,6 @@ describe('useData', () => {
             agreedTermsVersion: '',
             lastSeenVersion: '',
             isModalInfoToolHidden: false,
-            isModalMapMemoToolHidden: false,
             currentInfoTool: 'ALL_INFO' as const,
             showMockGPSButton: false,
             proximityAlert: {
@@ -388,7 +386,6 @@ describe('useData', () => {
             agreedTermsVersion: '',
             lastSeenVersion: '',
             isModalInfoToolHidden: false,
-            isModalMapMemoToolHidden: false,
             currentInfoTool: 'ALL_INFO' as const,
             showMockGPSButton: false,
             proximityAlert: {
