@@ -133,9 +133,9 @@ const EDGE_PAN_STEP = 12;
 const EDGE_PAN_INTERVAL_MS = 80;
 //ピンチ中断後に同じ線の続きとみなすタッチ距離(px)
 const RESUME_DISTANCE_PX = 50;
-//ペンストローク保存時の間引き許容誤差(px)。1px許容なので見た目を変えずに点数を削減する
+//矢印スタイルの整形時の間引き許容誤差(px)
 const PEN_SIMPLIFY_TOLERANCE_PX = 1.0;
-//これ未満の点数のストロークは整形せず生のまま保存する
+//これ未満の点数のストロークは整形せず生のまま保存する（矢印スタイル用）
 const MIN_POINTS_FOR_REFINE = 5;
 
 //1€フィルタ用のタイムスタンプ(ms)。native=タッチイベントのtimestamp、web=performance.now()
@@ -585,22 +585,19 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
       latlonLine.push([latlonLine[0][0] + 0.0000001, latlonLine[0][1] + 0.0000001]);
     }
 
-    //平滑化・間引きはピクセル単位のパラメータのため、
-    //現在ビューのスクリーン座標へ再投影して行い、緯度経度へ戻す。
-    //ベジエ整形は離した瞬間に線の形が変わって見えるため矢印スタイル限定（従来どおり）。
-    //通常ペンの手ぶれ除去は描画中の1€フィルタが担い、描いた形をそのまま保存する
-    if (!isStraightStyle && latlonLine.length >= MIN_POINTS_FOR_REFINE) {
+    //通常ペンは「離した瞬間に何も変わらない」を仕様とし、描いた点列を一切整形せずそのまま保存する
+    //（手ぶれ除去は描画中の1€フィルタが担う）。
+    //整形（ハネ切り・ベジエ平滑化・間引き）は向きの綺麗さが必要な矢印スタイルのみ（従来どおり）。
+    //ピクセル単位のパラメータのため現在ビューのスクリーン座標へ再投影して行い、緯度経度へ戻す
+    if (arrowStyle !== 'NONE' && !isStraightStyle && latlonLine.length >= MIN_POINTS_FOR_REFINE) {
       try {
         let lineXY = latLonArrayToXYArray(latlonLine, mapRegionRef.current, mapSize, mapViewRef);
-        if (arrowStyle !== 'NONE') {
-          if (lineXY.length > 8) {
-            //ハネ切りは矢印の向きを守るための処理
-            lineXY = lineXY.slice(2, -2);
-            lineXY = trimHane(lineXY, 50); // 角度閾値は50°くらいから調整
-          }
-          lineXY = smoothingByBezier(lineXY);
+        if (lineXY.length > 8) {
+          //ハネ切りは矢印の向きを守るための処理
+          lineXY = lineXY.slice(2, -2);
+          lineXY = trimHane(lineXY, 50); // 角度閾値は50°くらいから調整
         }
-        //間引きは1px許容なので見た目は変わらず、データだけ軽量化される
+        lineXY = smoothingByBezier(lineXY);
         lineXY = simplifyWithTolerance(lineXY, PEN_SIMPLIFY_TOLERANCE_PX);
         latlonLine = xyArrayToLatLonArray(lineXY, mapRegionRef.current, mapSize, mapViewRef);
       } catch (e) {
@@ -819,19 +816,16 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
     // Handle editing an existing line
     if (isEditingLine && editingLineId && editingPointIndex !== undefined) {
       let latlonCoords = drawingLine;
-      if (!isStraightStyle && latlonCoords.length > 8) {
-        //平滑化・間引きはピクセル単位のパラメータのため、現在ビューのスクリーン座標で行って緯度経度へ戻す。
-        //ベジエ整形（連結部の均し）は形が変わって見えるため矢印スタイル限定。通常ペンは間引きのみ
+      //通常ペンは編集時も無整形（離した瞬間に何も変わらない）。矢印スタイルのみ連結部を均す
+      if (arrowStyle !== 'NONE' && !isStraightStyle && latlonCoords.length > 8) {
+        //ピクセル単位のパラメータのため、現在ビューのスクリーン座標で行って緯度経度へ戻す
         try {
-          let lineXY = latLonArrayToXYArray(latlonCoords, mapRegionRef.current, mapSize, mapViewRef);
-          if (arrowStyle !== 'NONE') {
-            //連結部の前後2点を除いて滑らかに繋ぐ
-            const line1 = lineXY.slice(0, editingPointIndex - 2);
-            const line2 = lineXY.slice(editingPointIndex + 2);
-            lineXY = smoothingByBezier([...line1, ...line2]);
-          }
+          const lineXY = latLonArrayToXYArray(latlonCoords, mapRegionRef.current, mapSize, mapViewRef);
+          //連結部の前後2点を除いて滑らかに繋ぐ
+          const line1 = lineXY.slice(0, editingPointIndex - 2);
+          const line2 = lineXY.slice(editingPointIndex + 2);
           latlonCoords = xyArrayToLatLonArray(
-            simplifyWithTolerance(lineXY, PEN_SIMPLIFY_TOLERANCE_PX),
+            simplifyWithTolerance(smoothingByBezier([...line1, ...line2]), PEN_SIMPLIFY_TOLERANCE_PX),
             mapRegionRef.current,
             mapSize,
             mapViewRef
