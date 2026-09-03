@@ -2,7 +2,7 @@ import React, { useMemo } from 'react';
 import { Polyline, LatLng } from 'react-native-maps';
 import { ArrowStyleType, LayerType, LineRecordType, RecordType } from '../../types';
 import { LineLabel } from '../atoms';
-import { generateLabel, getColor, getLineWidth } from '../../utils/Layer';
+import { generateLabel, getColor, getLineWidthAtZoom } from '../../utils/Layer';
 import { COLOR } from '../../constants/AppConstants';
 import { isBrushTool } from '../../utils/General';
 import LineArrow from '../atoms/LineArrow';
@@ -18,12 +18,13 @@ interface Props {
   selectedRecord: { layerId: string; record: RecordType } | undefined;
   editingLineId?: string; // 追加
   bounds?: ViewportBounds | null;
+  widthZoomLinked?: boolean;
 }
 
 export const Line = React.memo(
   (props: Props) => {
     //console.log('render Line', now());
-    const { data, layer, zoom, zIndex, selectedRecord, editingLineId, bounds } = props;
+    const { data, layer, zoom, zIndex, selectedRecord, editingLineId, bounds, widthZoomLinked } = props;
 
     const culledData = useMemo(() => {
       const visibleData = (data ?? []).filter((feature) => feature.visible);
@@ -73,7 +74,7 @@ export const Line = React.memo(
               />
             );
           } else {
-            const strokeWidth = getLineWidth(layer, feature);
+            const strokeWidth = getLineWidthAtZoom(layer, feature, zoom, widthZoomLinked ?? false);
             return (
               <PolylineComponent
                 key={'line' + feature.id}
@@ -100,6 +101,7 @@ export const Line = React.memo(
     if (prevProps.zIndex !== nextProps.zIndex) return false;
     if (prevProps.editingLineId !== nextProps.editingLineId) return false;
     if (prevProps.bounds !== nextProps.bounds) return false;
+    if (prevProps.widthZoomLinked !== nextProps.widthZoomLinked) return false;
 
     // もし以前選択されていたレコードが現在選択されていない場合、かつ、そのレコードが現在のレイヤと関連していたならば更新する
     if (

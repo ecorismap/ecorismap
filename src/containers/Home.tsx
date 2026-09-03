@@ -307,6 +307,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     arrowStyle,
     isStraightStyle,
     isModalMapMemoToolHidden,
+    isMapMemoWidthZoomLinked,
     isEditingLine,
     editingLineId,
     setMapMemoTool,
@@ -330,6 +331,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     setSnapWithLine,
     setIsStraightStyle,
     setIsModalMapMemoToolHidden,
+    setIsMapMemoWidthZoomLinked,
   } = useMapMemo(mapViewRef.current);
   const { importPdfFile, importPmtilesFile, updatePmtilesURL } = useMaps();
   const { addCurrentPoint, resetPointPosition, updatePointPosition } = usePointTool();
@@ -2738,6 +2740,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       isRedoable,
       mapMemoLines,
       isModalMapMemoToolHidden,
+      isMapMemoWidthZoomLinked,
       selectMapMemoTool,
       setPenWidth,
       setVisibleMapMemoColor,
@@ -2761,6 +2764,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       isRedoable,
       mapMemoLines,
       isModalMapMemoToolHidden,
+      isMapMemoWidthZoomLinked,
       selectMapMemoTool,
       setPenWidth,
       setVisibleMapMemoColor,
@@ -2874,6 +2878,8 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
                             selectMapMemoStraightStyle={setIsStraightStyle}
                             setVisibleMapMemoPen={setVisibleMapMemoPen}
                             setIsModalMapMemoToolHidden={setIsModalMapMemoToolHidden}
+                            isMapMemoWidthZoomLinked={isMapMemoWidthZoomLinked}
+                            setIsMapMemoWidthZoomLinked={setIsMapMemoWidthZoomLinked}
                           />
                           <HomeModalBrushPicker
                             modalVisible={visibleMapMemoBrush}
