@@ -13,10 +13,8 @@ interface Props {
   arrowStyle: ArrowStyleType;
   isStraightStyle: boolean;
   isModalMapMemoToolHidden: boolean;
-  isMapMemoWidthZoomLinked: boolean;
   currentPenWidth: PenWidthType;
   setIsModalMapMemoToolHidden: (value: boolean) => void;
-  setIsMapMemoWidthZoomLinked: (value: boolean) => void;
   selectMapMemoTool: (mapMemoTool: MapMemoToolType | undefined) => void;
   selectMapMemoPenWidth: (penWidth: PenWidthType) => void;
   selectMapMemoArrowStyle: (arrowStyle: ArrowStyleType) => void;
@@ -31,10 +29,8 @@ export const HomeModalPenPicker = React.memo((props: Props) => {
     arrowStyle,
     isStraightStyle,
     isModalMapMemoToolHidden,
-    isMapMemoWidthZoomLinked,
     currentPenWidth,
     setIsModalMapMemoToolHidden,
-    setIsMapMemoWidthZoomLinked,
     selectMapMemoTool,
     selectMapMemoArrowStyle,
     selectMapMemoStraightStyle,
@@ -179,7 +175,7 @@ export const HomeModalPenPicker = React.memo((props: Props) => {
           >
             <Text style={styles.closeButtonText}>×</Text>
           </Pressable>
-          <View style={[styles.modalContents, { width: 200, height: 450 }]}>
+          <View style={[styles.modalContents, { width: 200, height: 400 }]}>
             <Text style={styles.modalTitle}>{`${t('common.selectPen')}`} </Text>
 
             <View
@@ -300,16 +296,6 @@ export const HomeModalPenPicker = React.memo((props: Props) => {
               </Pressable>
             </View>
 
-            <View style={{ width: 200, height: 50 }}>
-              <CheckBox
-                style={{ backgroundColor: COLOR.WHITE }}
-                label={t('Home.penPicker.zoomLinkedWidth')}
-                width={200}
-                checked={isMapMemoWidthZoomLinked}
-                onCheck={() => setIsMapMemoWidthZoomLinked(!isMapMemoWidthZoomLinked)}
-                numberOfLines={2}
-              />
-            </View>
             <View style={{ width: 200, height: 50 }}>
               <CheckBox
                 style={{ backgroundColor: COLOR.WHITE }}

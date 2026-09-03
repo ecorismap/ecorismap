@@ -31,15 +31,17 @@ export const getLineWidth = (layer: LayerType, feature: RecordType): number => {
 };
 
 /**
- * ズーム連動オプションを考慮した線の太さ。
- * _zoomはマップメモが描画時に記録したズームレベル。連動ONでは描画時の見た目の太さを基準に、
- * 地理的な幅として2^(zoom - _zoom)倍でスケーリングする。
- * _zoomを持たない旧レコードやマップメモ以外のレコードは従来通りの固定幅。
+ * ズームに応じた線の太さ。
+ * _zoomはマップメモが描画時に記録したズームレベル。描画時よりズームアウトした場合のみ
+ * 2^(zoom - _zoom)倍で地理的に縮小し、ズームアウトで線が地図を覆い尽くすのを防ぐ。
+ * ズームイン側は画面上の太さを維持する。
+ * _zoomを持たない旧レコードやマップメモ以外のレコードは常に固定幅。
  */
-export const getLineWidthAtZoom = (layer: LayerType, feature: RecordType, zoom: number, zoomLinked: boolean): number => {
+export const getLineWidthAtZoom = (layer: LayerType, feature: RecordType, zoom: number): number => {
   const width = getLineWidth(layer, feature);
   const drawnZoom = feature.field._zoom;
-  if (!zoomLinked || typeof drawnZoom !== 'number' || drawnZoom <= 0) return width;
+  if (typeof drawnZoom !== 'number' || drawnZoom <= 0) return width;
+  if (zoom >= drawnZoom) return width;
   return width * 2 ** (zoom - drawnZoom);
 };
 

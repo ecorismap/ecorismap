@@ -68,30 +68,26 @@ export const getLabelStyle = (layer_: LayerType, userId: string, displayName: st
 };
 
 // editingLineIdを受け取れるように引数追加
-export const getDataStyleLine = (
-  layer_: LayerType,
-  userId: string,
-  displayName: string,
-  editingLineId?: string,
-  widthZoomLinked?: boolean
-) => {
+export const getDataStyleLine = (layer_: LayerType, userId: string, displayName: string, editingLineId?: string) => {
   const colorExpression = getColorExpression(layer_, displayName, editingLineId);
 
   //レコードが太さを持つならレイヤ一律の太さより優先する。数値以外（未設定・空文字）はレイヤ既定値
   const fixedWidth = ['number', ['get', '_strokeWidth'], layer_.colorStyle.lineWidth ?? 1.5];
-  //ズーム連動: 描画時ズーム(_zoom)での見た目を基準に2^(zoom - _zoom)倍する。
-  //['zoom']はトップレベルのinterpolateでしか使えないため、各ストップの出力側で_zoom有無のフォールバックを分岐する。
-  //exponential base2補間により式全体は正確に 2^(zoom - _zoom) * width になる。
+  //マップメモ(_zoom持ち)は描画時よりズームアウトした場合のみ2^(zoom - _zoom)倍で地理的に縮小し、
+  //ズームアウトで線が地図を覆い尽くすのを防ぐ（ズームイン側は画面上の太さを維持）。
+  //['zoom']はトップレベルのinterpolateでしか使えないため、整数ズームごとのストップ出力側で
+  //min(固定幅, 2^(stop - _zoom) * 固定幅)を計算する（隣接ストップ間はexponential base2補間でほぼ正確）
   const drawnZoom = ['number', ['get', '_zoom'], 0];
-  const zoomLinkedWidthAt = (stopZoom: number) => [
-    'case',
-    ['>', drawnZoom, 0],
-    ['*', fixedWidth, ['^', 2, ['-', stopZoom, drawnZoom]]],
-    fixedWidth,
-  ];
-  const lineWidth = widthZoomLinked
-    ? ['interpolate', ['exponential', 2], ['zoom'], 0, zoomLinkedWidthAt(0), 24, zoomLinkedWidthAt(24)]
-    : fixedWidth;
+  const stops: unknown[] = [];
+  for (let z = 0; z <= 24; z++) {
+    stops.push(z, [
+      'case',
+      ['>', drawnZoom, 0],
+      ['min', fixedWidth, ['*', fixedWidth, ['^', 2, ['-', z, drawnZoom]]]],
+      fixedWidth,
+    ]);
+  }
+  const lineWidth = ['interpolate', ['exponential', 2], ['zoom'], ...stops];
 
   return {
     id: `${layer_.id}_${userId}`,

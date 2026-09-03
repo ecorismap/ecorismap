@@ -202,7 +202,6 @@ export default function HomeScreen() {
     visibleMapMemoColor,
     penColor,
     isPencilModeActive,
-    isMapMemoWidthZoomLinked,
     setVisibleMapMemoColor,
     selectPenColor,
   } = useContext(MapMemoContext);
@@ -656,7 +655,6 @@ export default function HomeScreen() {
                   selectedRecord={selectedRecord}
                   editingLineId={editingLineId}
                   bounds={bounds}
-                  widthZoomLinked={isMapMemoWidthZoomLinked}
                   zoomDecimal={zoomDecimal}
                 />
               );

@@ -25,7 +25,7 @@ import {
 } from '../utils/Coords';
 import MapView from 'react-native-maps';
 import { MapRef } from 'react-map-gl/maplibre';
-import { GestureResponderEvent, Platform } from 'react-native';
+import { GestureResponderEvent } from 'react-native';
 //@ts-ignore
 import { booleanContains, buffer } from '@turf/turf';
 import * as turf from '@turf/helpers';
@@ -69,7 +69,6 @@ export type UseMapMemoReturnType = {
   arrowStyle: ArrowStyleType;
   isStraightStyle: boolean;
   isModalMapMemoToolHidden: boolean;
-  isMapMemoWidthZoomLinked: boolean;
   isEditingLine: boolean;
   editingLineId: string | undefined;
   setMapMemoTool: Dispatch<SetStateAction<MapMemoToolType>>;
@@ -95,7 +94,6 @@ export type UseMapMemoReturnType = {
   setSnapWithLine: Dispatch<SetStateAction<boolean>>;
   setIsStraightStyle: Dispatch<SetStateAction<boolean>>;
   setIsModalMapMemoToolHidden: (value: boolean) => void;
-  setIsMapMemoWidthZoomLinked: (value: boolean) => void;
 };
 
 export type HistoryType =
@@ -127,10 +125,6 @@ export type MapMemoStateType = {
 
 // Constants
 const MAX_HISTORY = 10;
-//画面端自動パン: 端からのしきい値(px)・1tickの移動量(px)・tick間隔(ms)
-const EDGE_PAN_THRESHOLD = 40;
-const EDGE_PAN_STEP = 12;
-const EDGE_PAN_INTERVAL_MS = 80;
 //ピンチ中断後に同じ線の続きとみなすタッチ距離(px)
 const RESUME_DISTANCE_PX = 50;
 //保存後も地図レイヤの描画が完了するまでSVGプレビューを残す時間(ms)。
@@ -165,7 +159,6 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
   const layers = useSelector((state: RootState) => state.layers);
   const dataSet = useSelector(selectNonDeletedDataSet);
   const isModalMapMemoToolHidden = useSelector((state: RootState) => state.settings.isModalMapMemoToolHidden);
-  const isMapMemoWidthZoomLinked = useSelector((state: RootState) => state.settings.isMapMemoWidthZoomLinked ?? false);
 
   // State management
   const [history, setHistory] = useState<HistoryType[]>([]);
@@ -206,10 +199,9 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
   const isDrawingPaused = useRef(false);
   //ペンの手ぶれ補正（1€フィルタ）。スクリーン座標に適用してから緯度経度化する
   const strokeFilter = useRef(new PositionFilter());
-  //画面端自動パン
-  const edgePanTimer = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
+  //最後の生タッチ位置（終点キャッチアップ用）
   const lastTouchXY = useRef<Position | null>(null);
-  //自動パン中の楽観更新を含む最新のmapRegion（useCallbackの古いclosure対策）
+  //最新のmapRegion（ピンチ後の再開判定などでuseCallbackの古いclosureを避けるため）
   const mapRegionRef = useRef(mapRegion);
   const snappedLine = useRef<{ coordsXY: Position[]; id: string } | undefined>(undefined);
   const snappedStartPoint = useRef<Position>([]);
@@ -278,52 +270,14 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
     [dispatch]
   );
 
-  /**
-   * Sets whether the map memo stroke width scales with zoom
-   */
-  const setIsMapMemoWidthZoomLinked = useCallback(
-    (value: boolean) => {
-      dispatch(editSettingsAction({ isMapMemoWidthZoomLinked: value }));
-    },
-    [dispatch]
-  );
-
   useEffect(() => {
     mapRegionRef.current = mapRegion;
   }, [mapRegion]);
 
   /**
-   * Stops the edge auto-pan timer.
-   * lastTouchXYは終点キャッチアップでも使うためここではクリアしない（クリアはclearMapMemoEditingLineで行う）
-   */
-  const stopEdgePan = useCallback(() => {
-    if (edgePanTimer.current !== undefined) {
-      clearInterval(edgePanTimer.current);
-      edgePanTimer.current = undefined;
-    }
-  }, []);
-
-  /**
-   * タッチ位置が画面端に近い場合のパン移動量(px)を返す
-   */
-  const calcEdgePanDelta = useCallback(
-    (pXY: Position): Position => {
-      let dx = 0;
-      let dy = 0;
-      if (pXY[0] < EDGE_PAN_THRESHOLD) dx = -EDGE_PAN_STEP;
-      else if (pXY[0] > mapSize.width - EDGE_PAN_THRESHOLD) dx = EDGE_PAN_STEP;
-      if (pXY[1] < EDGE_PAN_THRESHOLD) dy = -EDGE_PAN_STEP;
-      else if (pXY[1] > mapSize.height - EDGE_PAN_THRESHOLD) dy = EDGE_PAN_STEP;
-      return [dx, dy];
-    },
-    [mapSize.height, mapSize.width]
-  );
-
-  /**
    * Clears the editing line
    */
   const clearMapMemoEditingLine = useCallback(() => {
-    stopEdgePan();
     lastTouchXY.current = null;
     isDrawingPaused.current = false;
     mapMemoEditingLine.current = [];
@@ -335,20 +289,19 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
       setEditingLineIndex(undefined);
       setEditingPointIndex(undefined);
     }
-  }, [isEditingLine, stopEdgePan]);
+  }, [isEditingLine]);
 
   /**
    * ピンチ操作の開始時に呼ばれる。ペンで描画中ならストロークを破棄せず中断し、
    * ピンチ後のタッチで継続できるようにする。それ以外は従来通り破棄する。
    */
   const pauseMapMemoDrawing = useCallback(() => {
-    stopEdgePan();
     if (isPenTool(currentMapMemoTool) && !isEditingLine && mapMemoEditingLineLatLon.current.length > 0) {
       isDrawingPaused.current = true;
     } else {
       clearMapMemoEditingLine();
     }
-  }, [clearMapMemoEditingLine, currentMapMemoTool, isEditingLine, stopEdgePan]);
+  }, [clearMapMemoEditingLine, currentMapMemoTool, isEditingLine]);
 
   /**
    * Finds a line that the given point is near to
@@ -519,47 +472,6 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
   );
 
   /**
-   * 画面端自動パンの1tick。地図を少しずらし、止まっている指の位置を
-   * 新しい地図位置で緯度経度に変換して線を伸ばす。
-   */
-  const edgePanTick = useCallback(() => {
-    const pXY = lastTouchXY.current;
-    if (pXY === null) return;
-    const [dx, dy] = calcEdgePanDelta(pXY);
-    if (dx === 0 && dy === 0) {
-      stopEdgePan();
-      return;
-    }
-    if (Platform.OS === 'web') {
-      //onMoveが同期的にmapRegionを更新し、座標変換はproject/unproject直参照のため常に整合する
-      const map = mapViewRef ? (mapViewRef as MapRef).getMap() : undefined;
-      if (map === undefined) return;
-      map.panBy([dx, dy], { duration: 0 });
-    } else {
-      //ネイティブはアニメーション中にmapRegionが更新されず座標変換が破綻するため、
-      //新しいregionを自前で計算して楽観的に反映し、地図はアニメーションなしで追従させる
-      const region = mapRegionRef.current;
-      const [lon, lat] = xyToLatLon([mapSize.width / 2 + dx, mapSize.height / 2 + dy], region, mapSize, mapViewRef);
-      const newRegion = { ...region, longitude: lon, latitude: lat };
-      mapRegionRef.current = newRegion;
-      dispatch(editSettingsAction({ mapRegion: newRegion }));
-      (mapViewRef as MapView | null)?.animateToRegion?.(
-        {
-          latitude: lat,
-          longitude: lon,
-          latitudeDelta: region.latitudeDelta,
-          longitudeDelta: region.longitudeDelta,
-        },
-        0
-      );
-    }
-    //パン中はスクリーン上の指は静止しているため、フィルタは通さずリセットして次のMoveで再初期化する
-    strokeFilter.current.reset();
-    appendPenPointLatLon(xyToLatLon(pXY, mapRegionRef.current, mapSize, mapViewRef));
-    setRedraw(ulid());
-  }, [appendPenPointLatLon, calcEdgePanDelta, dispatch, mapSize, mapViewRef, stopEdgePan]);
-
-  /**
    * Handles drawing tool move event
    */
   const handleDrawingToolMove = useCallback(
@@ -569,29 +481,12 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
         isPenTool(currentMapMemoTool) && !isStraightStyle ? strokeFilter.current.filter(pXY, timestampMs) : pXY;
       appendPenPointLatLon(xyToLatLon(filteredXY, mapRegionRef.current, mapSize, mapViewRef));
 
-      //ペンのみ画面端に近づいたら自動パンして一筆で描き続けられるようにする
+      //終点キャッチアップ用に最後の生タッチ位置を保持する
       if (isPenTool(currentMapMemoTool)) {
         lastTouchXY.current = pXY;
-        const [dx, dy] = calcEdgePanDelta(pXY);
-        if (dx !== 0 || dy !== 0) {
-          if (edgePanTimer.current === undefined) {
-            edgePanTimer.current = setInterval(edgePanTick, EDGE_PAN_INTERVAL_MS);
-          }
-        } else {
-          stopEdgePan();
-        }
       }
     },
-    [
-      appendPenPointLatLon,
-      calcEdgePanDelta,
-      currentMapMemoTool,
-      edgePanTick,
-      isStraightStyle,
-      mapSize,
-      mapViewRef,
-      stopEdgePan,
-    ]
+    [appendPenPointLatLon, currentMapMemoTool, isStraightStyle, mapSize, mapViewRef]
   );
 
   /**
@@ -1229,7 +1124,6 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
     //1€フィルタは実際のタッチ位置より少し遅れて追従するため、
     //離した瞬間に最後の生タッチ位置を終点として追加し、止めた場所まで線を届かせる
     const finalTouchXY = lastTouchXY.current;
-    stopEdgePan();
     if (longPressTimer.current) {
       clearTimeout(longPressTimer.current);
       longPressTimer.current = undefined;
@@ -1269,7 +1163,6 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
     isStraightStyle,
     mapSize,
     mapViewRef,
-    stopEdgePan,
   ]);
 
   /**
@@ -1416,9 +1309,6 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
       if (longPressTimer.current) {
         clearTimeout(longPressTimer.current);
       }
-      if (edgePanTimer.current !== undefined) {
-        clearInterval(edgePanTimer.current);
-      }
       if (handoffTimer.current) {
         clearTimeout(handoffTimer.current);
       }
@@ -1447,7 +1337,6 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
     arrowStyle,
     isStraightStyle,
     isModalMapMemoToolHidden,
-    isMapMemoWidthZoomLinked,
     isEditingLine,
     editingLineId,
     setMapMemoTool,
@@ -1473,6 +1362,5 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
     setSnapWithLine,
     setIsStraightStyle,
     setIsModalMapMemoToolHidden,
-    setIsMapMemoWidthZoomLinked,
   } as const;
 };

@@ -18,13 +18,12 @@ interface Props {
   zIndex: number;
   selectedRecord: { layerId: string; record: RecordType } | undefined;
   editingLineId?: string;
-  widthZoomLinked?: boolean;
-  //ズーム連動太さ用の小数ズーム（矢印ヘッドの太さ計算に使用。本体はMapLibre式で正確に処理される）
+  //矢印ヘッドの太さ計算用の小数ズーム（線本体はMapLibre式で正確に処理される）
   zoomDecimal?: number;
 }
 
 export const Line = React.memo((props: Props & { editingLineId?: string }) => {
-  const { data, layer, zoom, selectedRecord, editingLineId, widthZoomLinked, zoomDecimal } = props;
+  const { data, layer, zoom, selectedRecord, editingLineId, zoomDecimal } = props;
 
   const { stampRecords, brushRecords, arrowRecords, lineRecords } = useMemo(() => {
     const stamps: LineRecordType[] = [];
@@ -93,7 +92,7 @@ export const Line = React.memo((props: Props & { editingLineId?: string }) => {
           feature.id === selectedRecord?.record?.id || feature.field._group === selectedRecord?.record.id;
         const lineColor = selected ? COLOR.YELLOW : getColor(layer, feature);
         const arrowStyle = feature.field._strokeStyle as ArrowStyleType;
-        const strokeWidth = getLineWidthAtZoom(layer, feature, zoomDecimal ?? zoom, widthZoomLinked ?? false);
+        const strokeWidth = getLineWidthAtZoom(layer, feature, zoomDecimal ?? zoom);
         return (
           <LineArrow
             key={'arrow' + feature.id}
@@ -111,7 +110,6 @@ export const Line = React.memo((props: Props & { editingLineId?: string }) => {
         displayName={displayName}
         zoom={zoom}
         editingLineId={editingLineId}
-        widthZoomLinked={widthZoomLinked}
       />
     </>
   );
@@ -124,17 +122,16 @@ interface PolylineProps {
   displayName: string;
   zoom: number;
   editingLineId?: string; // 追加
-  widthZoomLinked?: boolean;
 }
 
 const PolylineComponent = React.memo((props: PolylineProps) => {
-  const { data, layer, userId, displayName, zoom, editingLineId, widthZoomLinked } = props;
+  const { data, layer, userId, displayName, zoom, editingLineId } = props;
 
   const labelStyle = useMemo(() => getLabelStyle(layer, userId, displayName), [layer, userId, displayName]);
 
   const dataStyle = useMemo(
-    () => getDataStyleLine(layer, userId, displayName, editingLineId, widthZoomLinked),
-    [layer, userId, displayName, editingLineId, widthZoomLinked]
+    () => getDataStyleLine(layer, userId, displayName, editingLineId),
+    [layer, userId, displayName, editingLineId]
   );
 
   const geojsonData = useMemo(

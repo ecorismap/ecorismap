@@ -116,7 +116,7 @@ export default function HomeScreen() {
   const { downloadMode, tileMaps } = useContext(TileManagementContext);
 
   // MapMemoContext
-  const { currentMapMemoTool, visibleMapMemoColor, penColor, isMapMemoWidthZoomLinked, setVisibleMapMemoColor, selectPenColor } =
+  const { currentMapMemoTool, visibleMapMemoColor, penColor, setVisibleMapMemoColor, selectPenColor } =
     useContext(MapMemoContext);
 
   // DataSelectionContext
@@ -1034,7 +1034,6 @@ export default function HomeScreen() {
                       zIndex={101}
                       selectedRecord={selectedRecord}
                       editingLineId={isEditingLine ? editingLineId : undefined}
-                      widthZoomLinked={isMapMemoWidthZoomLinked}
                       zoomDecimal={zoomDecimal}
                     />
                   );
