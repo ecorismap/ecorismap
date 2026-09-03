@@ -297,6 +297,7 @@ export const BRUSH = {
 export const ERASER = {
   ERASER: 'eraser',
   PEN_ERASER: 'checkbox-blank-circle-outline',
+  PEN_ERASER_PARTIAL: 'checkbox-blank-circle-outline',
   BRUSH_ERASER: 'checkbox-blank-circle-outline',
   STAMP_ERASER: 'checkbox-blank-circle-outline',
 } as const;

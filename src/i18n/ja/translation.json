@@ -151,6 +151,7 @@
     "selectEraser": "消しゴムを選択",
     "accuracyAndBattery": "位置精度とバッテリー消費",
     "selectPenEraser": "ラインを消す",
+    "selectPenEraserPartial": "ラインを部分的に消す",
     "selectBrushEraser": "ブラシを消す",
     "selectStampEraser": "スタンプを消す",
     "snapWithLine": "ラインにスナップ",

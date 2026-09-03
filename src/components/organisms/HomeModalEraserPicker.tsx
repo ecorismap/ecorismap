@@ -146,7 +146,7 @@ export const HomeModalEraserPicker = React.memo((props: Props) => {
           >
             <Text style={styles.closeButtonText}>×</Text>
           </Pressable>
-          <View style={[styles.modalContents, { width: 200, height: 230 }]}>
+          <View style={[styles.modalContents, { width: 200, height: 280 }]}>
             <Text style={styles.modalTitle}>{`${t('common.selectEraser')}`} </Text>
             <View
               style={{
@@ -185,6 +185,37 @@ export const HomeModalEraserPicker = React.memo((props: Props) => {
                   />
                 </View>
                 <Text style={{ fontSize: 15, textAlignVertical: 'center' }}>{`${t('common.selectPenEraser')}`}</Text>
+              </Pressable>
+
+              <Pressable
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  backgroundColor: COLOR.WHITE,
+                  borderRadius: 5,
+                  width: 200,
+                  marginVertical: 5,
+                }}
+                onPress={() => handleEraserPress('PEN_ERASER_PARTIAL')}
+              >
+                <View style={{ marginVertical: 0, marginRight: 10 }}>
+                  <Button
+                    id={'PEN_ERASER_PARTIAL'}
+                    name={
+                      currentMapMemoTool === 'PEN_ERASER_PARTIAL'
+                        ? 'checkbox-marked-circle-outline'
+                        : 'checkbox-blank-circle-outline'
+                    }
+                    color={COLOR.GRAY4}
+                    backgroundColor={COLOR.WHITE}
+                    borderRadius={50}
+                    onPress={() => handleEraserPress('PEN_ERASER_PARTIAL')}
+                    size={24}
+                  />
+                </View>
+                <Text style={{ fontSize: 15, textAlignVertical: 'center' }}>{`${t(
+                  'common.selectPenEraserPartial'
+                )}`}</Text>
               </Pressable>
 
               <Pressable

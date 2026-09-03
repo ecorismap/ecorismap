@@ -68,6 +68,9 @@ jest.mock('../../utils/Coords', () => ({
     { latitude: 35.002, longitude: 135.002 },
   ]),
   checkDistanceFromLine: jest.fn(() => ({ isNear: true })),
+  calcDegreeRadius: jest.fn(() => 0.0001),
+  calcLineMidPoint: jest.fn(() => ({ latitude: 35.001, longitude: 135.001 })),
+  erasePartialLine: jest.fn(() => ({ erased: false, remainingSegments: [] })),
   getSnappedPositionWithLine: jest.fn(() => ({ position: [150, 150] })),
   getSnappedLine: jest.fn(() => [
     [100, 100],
@@ -1046,4 +1049,187 @@ describe('useMapMemo', () => {
     // handleLongPressMapMemo関数が存在することを確認
     expect(typeof result.current.handleLongPressMapMemo).toBe('function');
   });
+
+  it('部分消去で線が2分割され、Undo/Redoで完全に往復すること', () => {
+    const Coords = require('../../utils/Coords');
+    // 消しゴム軌跡と交差して中央が消え、2区間が残るケースをモック
+    Coords.erasePartialLine.mockReturnValue({
+      erased: true,
+      remainingSegments: [
+        [
+          [135.0, 35.0],
+          [135.0005, 35.0005],
+        ],
+        [
+          [135.0015, 35.0015],
+          [135.002, 35.002],
+        ],
+      ],
+    });
+    Coords.latlonArrayToLatLonObjects.mockImplementation((arr: any) =>
+      arr.map(([lon, lat]: [number, number]) => ({ latitude: lat, longitude: lon }))
+    );
+
+    //activeMemoRecordSetはuserId: undefinedで検索されるため、それに合わせたレコードセットを用意する
+    store.dispatch({
+      type: 'dataSet/addRecordsAction',
+      payload: { layerId: 'memo1', userId: undefined, data: [makeParentRecord()] },
+    });
+
+    const mockMapViewRef = { current: {} } as any;
+    const { result } = renderHook(() => useMapMemo(mockMapViewRef), { wrapper });
+
+    act(() => {
+      result.current.setMapMemoTool('PEN_ERASER_PARTIAL');
+    });
+
+    const grantEvent = {
+      nativeEvent: { locationX: 100, locationY: 100, pageX: 100, pageY: 100, touches: [{}] },
+      persist: jest.fn(),
+    } as any;
+    act(() => {
+      result.current.handleGrantMapMemo(grantEvent);
+    });
+    act(() => {
+      result.current.handleReleaseMapMemo(grantEvent);
+    });
+
+    // 元レコードが先頭区間で更新され、2本目の区間が新規レコードとして追加される
+    const afterErase = getMemoData();
+    expect(afterErase.length).toBe(2);
+    expect(afterErase[0].id).toBe('test-line-id');
+    expect(afterErase[0].coords.length).toBe(2);
+    expect(afterErase[0].coords[0]).toEqual({ latitude: 35.0, longitude: 135.0 });
+    expect(afterErase[1].id).not.toBe('test-line-id');
+    expect(afterErase[1].coords[0]).toEqual({ latitude: 35.0015, longitude: 135.0015 });
+    expect(afterErase[1].field._strokeColor).toBe('rgba(255,0,0,0.7)');
+    expect(result.current.isUndoable).toBe(true);
+
+    // Undoで元の1レコード・元の座標に戻る
+    act(() => {
+      result.current.pressUndoMapMemo();
+    });
+    const afterUndo = getMemoData();
+    expect(afterUndo.length).toBe(1);
+    expect(afterUndo[0].id).toBe('test-line-id');
+    expect(afterUndo[0].coords.length).toBe(3);
+
+    // Redoで再び部分消去後の状態になる
+    act(() => {
+      result.current.pressRedoMapMemo();
+    });
+    const afterRedo = getMemoData();
+    expect(afterRedo.length).toBe(2);
+    expect(afterRedo[0].id).toBe('test-line-id');
+    expect(afterRedo[0].coords.length).toBe(2);
+  });
+
+  it('部分消去で全区間が消えると_groupの子レコードも巻き込み削除されること', () => {
+    const Coords = require('../../utils/Coords');
+    Coords.erasePartialLine.mockReturnValue({ erased: true, remainingSegments: [] });
+
+    // 親ライン＋_groupでぶら下がる子レコードを持つストアを作る
+    const childRecord = {
+      id: 'child-id',
+      userId: 'user1',
+      displayName: 'Test User',
+      visible: true,
+      redraw: false,
+      coords: [{ latitude: 35.0, longitude: 135.0 }],
+      field: {
+        _strokeWidth: 5,
+        _strokeColor: 'rgba(0,0,0,1)',
+        _strokeStyle: '',
+        _stamp: 'TOMARI',
+        _group: 'test-line-id',
+        _zoom: 15,
+      },
+    };
+    store.dispatch({
+      type: 'dataSet/addRecordsAction',
+      payload: { layerId: 'memo1', userId: undefined, data: [makeParentRecord(), childRecord] },
+    });
+
+    const mockMapViewRef = { current: {} } as any;
+    const { result } = renderHook(() => useMapMemo(mockMapViewRef), { wrapper });
+
+    act(() => {
+      result.current.setMapMemoTool('PEN_ERASER_PARTIAL');
+    });
+    const grantEvent = {
+      nativeEvent: { locationX: 100, locationY: 100, pageX: 100, pageY: 100, touches: [{}] },
+      persist: jest.fn(),
+    } as any;
+    act(() => {
+      result.current.handleGrantMapMemo(grantEvent);
+    });
+    act(() => {
+      result.current.handleReleaseMapMemo(grantEvent);
+    });
+
+    expect(getMemoData().length).toBe(0);
+
+    // Undoで親も子も復元される
+    act(() => {
+      result.current.pressUndoMapMemo();
+    });
+    const afterUndo = getMemoData();
+    expect(afterUndo.length).toBe(2);
+    expect(afterUndo.map((l: any) => l.id).sort()).toEqual(['child-id', 'test-line-id']);
+  });
+
+  it('消しゴム軌跡が交差しない場合は何も変更しないこと', () => {
+    const Coords = require('../../utils/Coords');
+    Coords.erasePartialLine.mockReturnValue({ erased: false, remainingSegments: [] });
+
+    store.dispatch({
+      type: 'dataSet/addRecordsAction',
+      payload: { layerId: 'memo1', userId: undefined, data: [makeParentRecord()] },
+    });
+
+    const mockMapViewRef = { current: {} } as any;
+    const { result } = renderHook(() => useMapMemo(mockMapViewRef), { wrapper });
+
+    act(() => {
+      result.current.setMapMemoTool('PEN_ERASER_PARTIAL');
+    });
+    const grantEvent = {
+      nativeEvent: { locationX: 100, locationY: 100, pageX: 100, pageY: 100, touches: [{}] },
+      persist: jest.fn(),
+    } as any;
+    act(() => {
+      result.current.handleGrantMapMemo(grantEvent);
+    });
+    act(() => {
+      result.current.handleReleaseMapMemo(grantEvent);
+    });
+
+    expect(getMemoData().length).toBe(1);
+    expect(result.current.isUndoable).toBe(false);
+  });
+
+  //部分消去テスト用のヘルパー
+  const makeParentRecord = () => ({
+    id: 'test-line-id',
+    userId: 'user1',
+    displayName: 'Test User',
+    visible: true,
+    redraw: false,
+    coords: [
+      { latitude: 35.0, longitude: 135.0 },
+      { latitude: 35.001, longitude: 135.001 },
+      { latitude: 35.002, longitude: 135.002 },
+    ],
+    field: {
+      _strokeWidth: 5,
+      _strokeColor: 'rgba(255,0,0,0.7)',
+      _strokeStyle: '',
+      _stamp: '',
+      _group: '',
+      _zoom: 15,
+    },
+  });
+
+  const getMemoData = () =>
+    store.getState().dataSet.find((d: any) => d.layerId === 'memo1' && d.userId === undefined)?.data ?? [];
 });

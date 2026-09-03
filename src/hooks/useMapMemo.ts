@@ -6,7 +6,10 @@ import { RootState } from '../store';
 import { ulid } from 'ulid';
 import {
   booleanIntersects,
+  calcDegreeRadius,
+  calcLineMidPoint,
   checkDistanceFromLine,
+  erasePartialLine,
   getSnappedLine,
   getSnappedPositionWithLine,
   latLonObjectsToLatLonArray,
@@ -88,10 +91,20 @@ export type UseMapMemoReturnType = {
   setIsMapMemoWidthZoomLinked: (value: boolean) => void;
 };
 
-export type HistoryType = {
-  operation: 'add' | 'remove' | 'update';
-  data: { idx: number; line: LineRecordType; updatedLine?: LineRecordType }[];
-};
+export type HistoryType =
+  | {
+      operation: 'add' | 'remove' | 'update';
+      data: { idx: number; line: LineRecordType; updatedLine?: LineRecordType }[];
+    }
+  | {
+      //部分消去。1回のUndo/Redoで削除・更新・追加をまとめて往復させる
+      operation: 'erase';
+      data: {
+        removed: { idx: number; line: LineRecordType }[];
+        updated: { idx: number; line: LineRecordType; updatedLine: LineRecordType }[];
+        added: LineRecordType[];
+      };
+    };
 
 export type MapMemoStateType = {
   id?: string;
@@ -796,6 +809,108 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
   }, [clearMapMemoEditingLine, mapRegion, mapSize, mapViewRef, memoLines, updateHistoryAndDeleteRecords]);
 
   /**
+   * Handles pen eraser (partial) release.
+   * 消しゴム軌跡と交差した区間だけを消し、残った区間は先頭を元レコードの更新、
+   * 2本目以降を新規レコードとして保存する。元レコードidが残るため_groupで
+   * ぶら下がるブラシ・スタンプは生存する（全消し時のみ巻き込み削除）。
+   */
+  const handlePenEraserPartialRelease = useCallback(() => {
+    const eraserLineLatLonArray = xyArrayToLatLonArray(mapMemoEditingLine.current, mapRegion, mapSize, mapViewRef);
+    //消しゴムの表示幅(10px)相当を度に変換してバッファ半径にする
+    const radiusDeg = calcDegreeRadius(10, mapRegion, mapSize);
+
+    const removed: { idx: number; line: LineRecordType }[] = [];
+    const updated: { idx: number; line: LineRecordType; updatedLine: LineRecordType }[] = [];
+    const added: LineRecordType[] = [];
+
+    memoLines.forEach((line, idx) => {
+      if (line.coords === undefined) return;
+      //対象はペンストロークのみ。スタンプ・ブラシは専用の消しゴムを使う
+      if (line.field._stamp !== '' || isBrushTool(line.field._strokeStyle as string)) return;
+
+      const lineArray = latLonObjectsToLatLonArray(line.coords);
+      if (lineArray.length < 2) return;
+
+      const { erased, remainingSegments } = erasePartialLine(lineArray, eraserLineLatLonArray, radiusDeg);
+      if (!erased) return;
+
+      if (remainingSegments.length === 0) {
+        removed.push({ idx, line });
+      } else {
+        const [firstSegment, ...restSegments] = remainingSegments;
+        const firstCoords = latlonArrayToLatLonObjects(firstSegment);
+        updated.push({
+          idx,
+          line,
+          updatedLine: { ...line, coords: firstCoords, centroid: calcLineMidPoint(firstCoords), updatedAt: Date.now() },
+        });
+        restSegments.forEach((segment) => {
+          const coords = latlonArrayToLatLonObjects(segment);
+          added.push({
+            ...line,
+            id: ulid(),
+            coords,
+            centroid: calcLineMidPoint(coords),
+            field: { ...line.field },
+            updatedAt: Date.now(),
+          });
+        });
+      }
+    });
+
+    if (activeMemoRecordSet !== undefined && (removed.length > 0 || updated.length > 0)) {
+      //全消しになった線に_groupでぶら下がるブラシ・スタンプは巻き込み削除（既存の丸ごと消しゴムと同じ挙動）
+      const removedIds = new Set(removed.map((item) => item.line.id));
+      memoLines.forEach((line, idx) => {
+        if (removedIds.has(line.id)) return;
+        const group = line.field._group;
+        if (typeof group === 'string' && group !== '' && removedIds.has(group)) removed.push({ idx, line });
+      });
+      removed.sort((a, b) => a.idx - b.idx);
+
+      if (removed.length > 0) {
+        dispatch(
+          deleteRecordsAction({
+            layerId: activeMemoLayer!.id,
+            userId: dataUser.uid,
+            data: removed.map((item) => item.line),
+          })
+        );
+      }
+      if (updated.length > 0) {
+        dispatch(
+          updateRecordsAction({
+            layerId: activeMemoLayer!.id,
+            userId: dataUser.uid,
+            data: updated.map((item) => item.updatedLine),
+          })
+        );
+      }
+      if (added.length > 0) {
+        dispatch(addRecordsAction({ ...activeMemoRecordSet, data: added }));
+      }
+
+      setHistory((prev) => [
+        ...(prev.length === MAX_HISTORY ? prev.slice(1) : prev),
+        { operation: 'erase', data: { removed, updated, added } },
+      ]);
+    }
+
+    setFuture([]);
+    clearMapMemoEditingLine();
+  }, [
+    activeMemoLayer,
+    activeMemoRecordSet,
+    clearMapMemoEditingLine,
+    dataUser.uid,
+    dispatch,
+    mapRegion,
+    mapSize,
+    mapViewRef,
+    memoLines,
+  ]);
+
+  /**
    * Handles brush eraser release
    */
   const handleBrushEraserRelease = useCallback(() => {
@@ -884,12 +999,15 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
       handleStampEraserRelease();
     } else if (currentMapMemoTool === 'PEN_ERASER') {
       handlePenEraserRelease();
+    } else if (currentMapMemoTool === 'PEN_ERASER_PARTIAL') {
+      handlePenEraserPartialRelease();
     }
   }, [
     currentMapMemoTool,
     handleBrushEraserRelease,
     handleBrushToolRelease,
     handlePenEraserRelease,
+    handlePenEraserPartialRelease,
     handlePenToolRelease,
     handleStampEraserRelease,
     handleStampToolRelease,
@@ -933,6 +1051,18 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
       });
     } else if (lastOperation.operation === 'update') {
       newDrawLine[lastOperation.data[0].idx] = lastOperation.data[0].line;
+    } else if (lastOperation.operation === 'erase') {
+      const { removed, updated, added } = lastOperation.data;
+      //追加セグメントを除去 → 更新レコードを元に戻す → 削除レコードを元の位置へ復元
+      const addedIds = new Set(added.map((line) => line.id));
+      newDrawLine = newDrawLine.filter((line) => !addedIds.has(line.id));
+      updated.forEach(({ line, updatedLine }) => {
+        const index = newDrawLine.findIndex((l) => l.id === updatedLine.id);
+        if (index !== -1) newDrawLine[index] = line;
+      });
+      removed.forEach(({ idx, line }) => {
+        newDrawLine.splice(idx, 0, line);
+      });
     }
 
     dispatch(
@@ -972,6 +1102,15 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
           }
         }
       });
+    } else if (nextOperation.operation === 'erase') {
+      const { removed, updated, added } = nextOperation.data;
+      const removedIds = new Set(removed.map((item) => item.line.id));
+      newDrawLine = newDrawLine.filter((line) => !removedIds.has(line.id));
+      updated.forEach(({ updatedLine }) => {
+        const index = newDrawLine.findIndex((l) => l.id === updatedLine.id);
+        if (index !== -1) newDrawLine[index] = updatedLine;
+      });
+      newDrawLine = [...newDrawLine, ...added];
     }
 
     dispatch(

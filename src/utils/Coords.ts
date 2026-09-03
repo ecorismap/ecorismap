@@ -1043,6 +1043,50 @@ export const cleanupLine = (line: LocationType[]): LocationType[] => {
 export const booleanIntersects = (feature1: Feature<any> | Geometry, feature2: Feature<any> | Geometry) =>
   turf.lineIntersect(feature1, feature2, { ignoreSelfIntersections: true }).features.length > 0;
 
+/**
+ * 消しゴム軌跡のバッファと交差する区間をラインから取り除く（部分消去）。
+ * 自己交差などでturfの分割が失敗した場合は、誤削除を避けるため何もしない（erased: false）。
+ * remainingSegmentsが空で erased: true の場合はライン全体が消されたことを意味する。
+ */
+export const erasePartialLine = (
+  lineLatLon: Position[],
+  eraserLatLon: Position[],
+  radiusDeg: number
+): { erased: boolean; remainingSegments: Position[][] } => {
+  try {
+    if (lineLatLon.length < 2 || eraserLatLon.length === 0 || radiusDeg <= 0) {
+      return { erased: false, remainingSegments: [] };
+    }
+    const eraserGeometry = eraserLatLon.length === 1 ? turf.point(eraserLatLon[0]) : turf.lineString(eraserLatLon);
+    const eraserBuffer = turf.buffer(eraserGeometry, radiusDeg, { units: 'degrees' });
+    if (eraserBuffer === undefined) return { erased: false, remainingSegments: [] };
+
+    const line = turf.lineString(lineLatLon);
+    const isInsideBuffer = (segment: Feature<any>) => {
+      const midPoint = turf.along(segment, turf.length(segment) / 2);
+      return turf.booleanPointInPolygon(midPoint, eraserBuffer);
+    };
+
+    //バッファ境界との交点でラインを分割。交差しない場合は空になるのでライン全体を1区間として扱う
+    const split = turf.lineSplit(line, eraserBuffer);
+    const segments = split.features.length > 0 ? split.features : [line];
+    const remaining = segments.filter((segment) => !isInsideBuffer(segment));
+    if (remaining.length === segments.length) return { erased: false, remainingSegments: [] };
+
+    //消し残りの微小な切れ端は捨てる（半径の半分より短い区間。1度≒111km換算）
+    const minLengthKm = radiusDeg * 111 * 0.5;
+    const remainingSegments = remaining
+      .filter((segment) => turf.length(segment) >= minLengthKm)
+      .map((segment) => segment.geometry.coordinates as Position[])
+      .filter((coords) => coords.length >= 2);
+
+    return { erased: true, remainingSegments };
+  } catch (e) {
+    console.log('erasePartialLine error', e);
+    return { erased: false, remainingSegments: [] };
+  }
+};
+
 // 1. 角度計算ヘルパー
 function calcAngleDeg(p0: Position, p1: Position, p2: Position): number {
   const v1x = p1[0] - p0[0];
