@@ -102,6 +102,9 @@ export const getDataStyleLine = (
     },
     layout: {
       visibility: 'visible',
+      //描画中のSVGプレビュー(round)と揃える。デフォルトのbutt/miterだと保存された瞬間に両端が縮んで見え、角に尖りが出る
+      'line-cap': 'round',
+      'line-join': 'round',
     },
     filter: ['==', '_visible', true],
   };
