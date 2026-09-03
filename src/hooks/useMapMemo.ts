@@ -281,14 +281,14 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
   }, [mapRegion]);
 
   /**
-   * Stops the edge auto-pan timer
+   * Stops the edge auto-pan timer.
+   * lastTouchXYは終点キャッチアップでも使うためここではクリアしない（クリアはclearMapMemoEditingLineで行う）
    */
   const stopEdgePan = useCallback(() => {
     if (edgePanTimer.current !== undefined) {
       clearInterval(edgePanTimer.current);
       edgePanTimer.current = undefined;
     }
-    lastTouchXY.current = null;
   }, []);
 
   /**
@@ -312,6 +312,7 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
    */
   const clearMapMemoEditingLine = useCallback(() => {
     stopEdgePan();
+    lastTouchXY.current = null;
     isDrawingPaused.current = false;
     mapMemoEditingLine.current = [];
     mapMemoEditingLineLatLon.current = [];
@@ -721,6 +722,7 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
           //手ぶれ補正フィルタを初期化し、開始点で初期値を与える（開始点自体は補正せずそのまま使う）
           strokeFilter.current.reset();
           strokeFilter.current.filter(pXY, getEventTimestamp(event));
+          lastTouchXY.current = pXY;
         }
         if (isPenTool(currentMapMemoTool) && isDrawingPaused.current && mapMemoEditingLineLatLon.current.length > 0) {
           //ピンチ中断からの再開。終点の近くなら続きとして追記、離れていれば前の線を確定して新しい線を開始
@@ -1204,6 +1206,9 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
    * Handles the end of a touch gesture
    */
   const handleReleaseMapMemo = useCallback(() => {
+    //1€フィルタは実際のタッチ位置より少し遅れて追従するため、
+    //離した瞬間に最後の生タッチ位置を終点として追加し、止めた場所まで線を届かせる
+    const finalTouchXY = lastTouchXY.current;
     stopEdgePan();
     if (longPressTimer.current) {
       clearTimeout(longPressTimer.current);
@@ -1214,6 +1219,9 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
     const isSnappedWithLine = snappedLine.current !== undefined && snappedLine.current.coordsXY.length > 1;
 
     if (isPenTool(currentMapMemoTool)) {
+      if (finalTouchXY !== null && !isStraightStyle && mapMemoEditingLineLatLon.current.length > 0) {
+        appendPenPointLatLon(xyToLatLon(finalTouchXY, mapRegionRef.current, mapSize, mapViewRef));
+      }
       handlePenToolRelease();
     } else if (isStampTool(currentMapMemoTool)) {
       handleStampToolRelease();
@@ -1229,6 +1237,7 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
       handlePenEraserPartialRelease();
     }
   }, [
+    appendPenPointLatLon,
     currentMapMemoTool,
     handleBrushEraserRelease,
     handleBrushToolRelease,
@@ -1237,6 +1246,9 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
     handlePenToolRelease,
     handleStampEraserRelease,
     handleStampToolRelease,
+    isStraightStyle,
+    mapSize,
+    mapViewRef,
     stopEdgePan,
   ]);
 
