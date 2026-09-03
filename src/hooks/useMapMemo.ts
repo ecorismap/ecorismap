@@ -17,6 +17,7 @@ import {
   latLonObjectsToXYArray,
   latLonToXY,
   latlonArrayToLatLonObjects,
+  simplifyWithTolerance,
   smoothingByBezier,
   trimHane,
   xyArrayToLatLonArray,
@@ -40,6 +41,7 @@ import { useRecord } from './useRecord';
 import { updateLayerAction } from '../modules/layers';
 import { STAMP } from '../constants/AppConstants';
 import { isBrushTool, isEraserTool, isPenTool, isStampTool } from '../utils/General';
+import { PositionFilter } from '../utils/OneEuroFilter';
 import { Position } from 'geojson';
 import { editSettingsAction } from '../modules/settings';
 import { selectNonDeletedDataSet } from '../modules/selectors';
@@ -131,6 +133,18 @@ const EDGE_PAN_STEP = 12;
 const EDGE_PAN_INTERVAL_MS = 80;
 //ピンチ中断後に同じ線の続きとみなすタッチ距離(px)
 const RESUME_DISTANCE_PX = 50;
+//ペンストローク保存時の間引き許容誤差(px)。ベジエ平滑化で増えた点を軽量化する
+const PEN_SIMPLIFY_TOLERANCE_PX = 1.0;
+//これ未満の点数のストロークは整形せず生のまま保存する
+const MIN_POINTS_FOR_REFINE = 5;
+
+//1€フィルタ用のタイムスタンプ(ms)。native=タッチイベントのtimestamp、web=performance.now()
+const getEventTimestamp = (event: GestureResponderEvent): number => {
+  //@ts-ignore react-native-webのイベントにはtimestampが無い場合がある
+  const t = event.nativeEvent?.timestamp;
+  if (typeof t === 'number') return t;
+  return typeof performance !== 'undefined' ? performance.now() : Date.now();
+};
 
 /**
  * Custom hook to manage map memo functionality
@@ -185,6 +199,8 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
   const mapMemoEditingLineLatLon = useRef<Position[]>([]);
   //ピンチによる描画中断フラグ。中断中はストロークを保持し、次のタッチで継続/確定を判定する
   const isDrawingPaused = useRef(false);
+  //ペンの手ぶれ補正（1€フィルタ）。スクリーン座標に適用してから緯度経度化する
+  const strokeFilter = useRef(new PositionFilter());
   //画面端自動パン
   const edgePanTimer = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
   const lastTouchXY = useRef<Position | null>(null);
@@ -516,6 +532,8 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
         0
       );
     }
+    //パン中はスクリーン上の指は静止しているため、フィルタは通さずリセットして次のMoveで再初期化する
+    strokeFilter.current.reset();
     appendPenPointLatLon(xyToLatLon(pXY, mapRegionRef.current, mapSize, mapViewRef));
     setRedraw(ulid());
   }, [appendPenPointLatLon, calcEdgePanDelta, dispatch, mapSize, mapViewRef, stopEdgePan]);
@@ -524,8 +542,11 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
    * Handles drawing tool move event
    */
   const handleDrawingToolMove = useCallback(
-    (pXY: Position) => {
-      appendPenPointLatLon(xyToLatLon(pXY, mapRegionRef.current, mapSize, mapViewRef));
+    (pXY: Position, timestampMs: number) => {
+      //ペン（曲線）は1€フィルタで手ぶれを補正してから緯度経度化する
+      const filteredXY =
+        isPenTool(currentMapMemoTool) && !isStraightStyle ? strokeFilter.current.filter(pXY, timestampMs) : pXY;
+      appendPenPointLatLon(xyToLatLon(filteredXY, mapRegionRef.current, mapSize, mapViewRef));
 
       //ペンのみ画面端に近づいたら自動パンして一筆で描き続けられるようにする
       if (isPenTool(currentMapMemoTool)) {
@@ -540,7 +561,16 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
         }
       }
     },
-    [appendPenPointLatLon, calcEdgePanDelta, currentMapMemoTool, edgePanTick, mapSize, mapViewRef, stopEdgePan]
+    [
+      appendPenPointLatLon,
+      calcEdgePanDelta,
+      currentMapMemoTool,
+      edgePanTick,
+      isStraightStyle,
+      mapSize,
+      mapViewRef,
+      stopEdgePan,
+    ]
   );
 
   /**
@@ -555,16 +585,24 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
       latlonLine.push([latlonLine[0][0] + 0.0000001, latlonLine[0][1] + 0.0000001]);
     }
 
-    //矢印スタイルの平滑化はピクセル単位のパラメータのため、
+    //平滑化・間引きはピクセル単位のパラメータのため、
     //現在ビューのスクリーン座標へ再投影して行い、緯度経度へ戻す
-    if (arrowStyle !== 'NONE' && !isStraightStyle) {
-      let lineXY = latLonArrayToXYArray(latlonLine, mapRegionRef.current, mapSize, mapViewRef);
-      if (lineXY.length > 8) {
-        lineXY = lineXY.slice(2, -2);
-        lineXY = trimHane(lineXY, 50); // 角度閾値は50°くらいから調整
+    if (!isStraightStyle && latlonLine.length >= MIN_POINTS_FOR_REFINE) {
+      try {
+        let lineXY = latLonArrayToXYArray(latlonLine, mapRegionRef.current, mapSize, mapViewRef);
+        //ハネ切りは矢印の向きを守るための処理。通常ペンは意図的な筆致を残すため矢印スタイルのみ
+        if (arrowStyle !== 'NONE' && lineXY.length > 8) {
+          lineXY = lineXY.slice(2, -2);
+          lineXY = trimHane(lineXY, 50); // 角度閾値は50°くらいから調整
+        }
+        lineXY = smoothingByBezier(lineXY);
+        //ベジエ平滑化で増えた点を間引いてデータを軽量化する
+        lineXY = simplifyWithTolerance(lineXY, PEN_SIMPLIFY_TOLERANCE_PX);
+        latlonLine = xyArrayToLatLonArray(lineXY, mapRegionRef.current, mapSize, mapViewRef);
+      } catch (e) {
+        //整形に失敗した場合は生のストロークをそのまま保存する
+        console.log('refine pen stroke error', e);
       }
-      lineXY = smoothingByBezier(lineXY);
-      latlonLine = xyArrayToLatLonArray(lineXY, mapRegionRef.current, mapSize, mapViewRef);
     }
 
     const newMapMemoLines = [
@@ -678,6 +716,11 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
       } else if (isBrushTool(currentMapMemoTool)) {
         handleBrushToolGrant(pXY);
       } else if (isPenTool(currentMapMemoTool) || isEraserTool(currentMapMemoTool)) {
+        if (isPenTool(currentMapMemoTool)) {
+          //手ぶれ補正フィルタを初期化し、開始点で初期値を与える（開始点自体は補正せずそのまま使う）
+          strokeFilter.current.reset();
+          strokeFilter.current.filter(pXY, getEventTimestamp(event));
+        }
         if (isPenTool(currentMapMemoTool) && isDrawingPaused.current && mapMemoEditingLineLatLon.current.length > 0) {
           //ピンチ中断からの再開。終点の近くなら続きとして追記、離れていれば前の線を確定して新しい線を開始
           isDrawingPaused.current = false;
@@ -741,7 +784,7 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
         handleBrushToolMove(pXY, isSnappedWithLine);
       } else {
         // Normal drawing
-        handleDrawingToolMove(pXY);
+        handleDrawingToolMove(pXY, getEventTimestamp(event));
       }
 
       setRedraw(ulid());
@@ -772,18 +815,23 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
     // Handle editing an existing line
     if (isEditingLine && editingLineId && editingPointIndex !== undefined) {
       let latlonCoords = drawingLine;
-      if (arrowStyle !== 'NONE' && !isStraightStyle && latlonCoords.length > 8) {
-        //平滑化はピクセル単位のパラメータのため、現在ビューのスクリーン座標で行って緯度経度へ戻す
-        const lineXY = latLonArrayToXYArray(latlonCoords, mapRegionRef.current, mapSize, mapViewRef);
-        const line1 = lineXY.slice(0, editingPointIndex - 2);
-        const line2 = lineXY.slice(editingPointIndex + 2);
+      if (!isStraightStyle && latlonCoords.length > 8) {
+        //平滑化・間引きはピクセル単位のパラメータのため、現在ビューのスクリーン座標で行って緯度経度へ戻す
+        try {
+          const lineXY = latLonArrayToXYArray(latlonCoords, mapRegionRef.current, mapSize, mapViewRef);
+          //連結部の前後2点を除いて滑らかに繋ぐ
+          const line1 = lineXY.slice(0, editingPointIndex - 2);
+          const line2 = lineXY.slice(editingPointIndex + 2);
 
-        latlonCoords = xyArrayToLatLonArray(
-          smoothingByBezier([...line1, ...line2]),
-          mapRegionRef.current,
-          mapSize,
-          mapViewRef
-        );
+          latlonCoords = xyArrayToLatLonArray(
+            simplifyWithTolerance(smoothingByBezier([...line1, ...line2]), PEN_SIMPLIFY_TOLERANCE_PX),
+            mapRegionRef.current,
+            mapSize,
+            mapViewRef
+          );
+        } catch (e) {
+          console.log('refine pen stroke error', e);
+        }
       }
 
       const lineIndex = memoLines.findIndex((line) => line.id === editingLineId);
