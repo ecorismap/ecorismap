@@ -72,6 +72,9 @@ jest.mock('../../utils/Coords', () => ({
   calcLineMidPoint: jest.fn(() => ({ latitude: 35.001, longitude: 135.001 })),
   erasePartialLine: jest.fn(() => ({ erased: false, remainingSegments: [] })),
   //スクリーン座標⇔緯度経度の決定的な相互変換（1px = 0.00001度）
+  smoothingByBezier: jest.fn((line: any) => line),
+  trimHane: jest.fn((line: any) => line),
+  simplifyWithTolerance: jest.fn((line: any) => line),
   xyToLatLon: jest.fn((xy: any) => [135 + xy[0] * 0.00001, 35 - xy[1] * 0.00001]),
   latLonToXY: jest.fn((latlon: any) => [(latlon[0] - 135) / 0.00001, (35 - latlon[1]) / 0.00001]),
   latLonArrayToXYArray: jest.fn((arr: any) => arr.map((p: any) => [(p[0] - 135) / 0.00001, (35 - p[1]) / 0.00001])),
@@ -1244,14 +1247,15 @@ describe('useMapMemo', () => {
     });
     expect(result.current.mapMemoEditingLineLatLon.current.length).toBe(2);
 
-    // 終点(150,150)の近く(160,160)から再開 → 続きとして追記される
+    // 終点の近くから再開 → 続きとして追記される
+    //（1€フィルタにより記録された終点は(150,150)より始点側に補正されている）
     act(() => {
-      result.current.handleGrantMapMemo(makeEvent(160, 160));
+      result.current.handleGrantMapMemo(makeEvent(120, 120));
     });
     expect(result.current.mapMemoEditingLineLatLon.current.length).toBe(3);
 
     act(() => {
-      result.current.handleReleaseMapMemo(makeEvent(160, 160));
+      result.current.handleReleaseMapMemo(makeEvent(120, 120));
       jest.runAllTimers();
     });
 

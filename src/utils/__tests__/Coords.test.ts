@@ -8,6 +8,8 @@ import {
   cleanupLine,
   findNearestTrackPoint,
   erasePartialLine,
+  simplifyWithTolerance,
+  smoothingByBezier,
 } from '../Coords';
 import { LocationType } from '../../types';
 
@@ -283,5 +285,52 @@ describe('erasePartialLine', () => {
     const result = erasePartialLine(line, [[0.0005, 0]], radius);
     expect(result.erased).toBe(true);
     expect(result.remainingSegments.length).toBe(2);
+  });
+});
+
+describe('simplifyWithTolerance', () => {
+  it('ほぼ一直線の点列は端点近くまで間引かれる', () => {
+    //わずかなノイズを持つ100点の直線
+    const points: [number, number][] = Array.from({ length: 100 }, (_, i) => [i * 2, (i % 2) * 0.2]);
+    const result = simplifyWithTolerance(points, 1.0);
+    expect(result.length).toBeLessThan(10);
+    //始点と終点は保持される
+    expect(result[0]).toEqual(points[0]);
+    expect(result[result.length - 1]).toEqual(points[points.length - 1]);
+  });
+
+  it('toleranceより大きな特徴は保持される', () => {
+    const points: [number, number][] = [
+      [0, 0],
+      [50, 0],
+      [50, 50],
+      [100, 50],
+    ];
+    const result = simplifyWithTolerance(points, 1.0);
+    expect(result.length).toBe(4);
+  });
+
+  it('2点以下はそのまま返す', () => {
+    const points: [number, number][] = [
+      [0, 0],
+      [10, 10],
+    ];
+    expect(simplifyWithTolerance(points, 1.0)).toEqual(points);
+  });
+});
+
+describe('smoothingByBezier + simplifyWithTolerance（ペン整形パイプライン）', () => {
+  it('ギザギザの手描き線が平滑化され、間引き後も点数が爆発しない', () => {
+    //ジッタを持つ手描き風の線
+    const points: [number, number][] = Array.from({ length: 50 }, (_, i) => [i * 4, 100 + Math.sin(i * 0.3) * 30 + (i % 2) * 3]);
+    const smoothed = smoothingByBezier(points);
+    const simplified = simplifyWithTolerance(smoothed, 1.0);
+    //ベジエ補間で増えた点が間引きで抑えられる
+    expect(simplified.length).toBeLessThan(smoothed.length);
+    //始点と終点は大きく動かない
+    expect(Math.abs(simplified[0][0] - points[0][0])).toBeLessThan(5);
+    const lastS = simplified[simplified.length - 1];
+    const lastP = points[points.length - 1];
+    expect(Math.abs(lastS[0] - lastP[0])).toBeLessThan(5);
   });
 });

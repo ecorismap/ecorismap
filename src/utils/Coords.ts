@@ -602,16 +602,18 @@ export const booleanNearEqual = (p1: Position, p2: Position) => {
   return Math.abs(p2[0] - p1[0]) <= 0.001 && Math.abs(p2[1] - p1[1]) <= 0.001;
 };
 
-export const simplify = (points: Position[]) => {
+export const simplifyWithTolerance = (points: Position[], tolerance: number): Position[] => {
   try {
-    if (points.length < 2) return points;
-    const simplified = turf.simplify(turf.lineString(points), { tolerance: 0.1, highQuality: false });
-    return simplified.geometry.coordinates;
+    if (points.length < 3) return points;
+    const simplified = turf.simplify(turf.lineString(points), { tolerance, highQuality: false });
+    return simplified.geometry.coordinates as Position[];
   } catch (e) {
     console.log('simplify error', e);
     return points;
   }
 };
+
+export const simplify = (points: Position[]) => simplifyWithTolerance(points, 0.1);
 
 export const calcDegreeRadius = (
   size: number,
