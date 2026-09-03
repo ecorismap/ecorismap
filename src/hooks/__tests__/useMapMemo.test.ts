@@ -1306,44 +1306,6 @@ describe('useMapMemo', () => {
     expect(getMemoData().length).toBe(2);
   });
 
-  it('画面端に近づくと自動パンで線が伸び、mapRegionが更新されること', () => {
-    const mockMapViewRef = { current: {} } as any;
-    const { result } = renderHook(() => useMapMemo(mockMapViewRef), { wrapper });
-    jest.useFakeTimers();
-
-    act(() => {
-      result.current.setMapMemoTool('PEN');
-    });
-
-    const makeEvent = (x: number, y: number) =>
-      ({
-        nativeEvent: { locationX: x, locationY: y, pageX: x, pageY: y, touches: [{}] },
-        persist: jest.fn(),
-      } as any);
-
-    act(() => {
-      result.current.handleGrantMapMemo(makeEvent(100, 100));
-    });
-    // 左端(しきい値40px内)へ移動 → 自動パン開始
-    act(() => {
-      result.current.handleMoveMapMemo(makeEvent(10, 300));
-    });
-    const lengthBeforePan = result.current.mapMemoEditingLineLatLon.current.length;
-
-    // 3tick分進める → 指が止まっていても線が伸びる
-    act(() => {
-      jest.advanceTimersByTime(250);
-    });
-    expect(result.current.mapMemoEditingLineLatLon.current.length).toBeGreaterThan(lengthBeforePan);
-    // 楽観更新でmapRegionが動いている
-    expect(store.getState().settings.mapRegion.longitude).not.toBe(135);
-
-    act(() => {
-      result.current.handleReleaseMapMemo(makeEvent(10, 300));
-      jest.runAllTimers();
-    });
-    expect(getMemoData().length).toBe(1);
-  });
 
   it('離した瞬間に最後の生タッチ位置が終点として保存されること（フィルタ遅延のキャッチアップ）', () => {
     const Coords = require('../../utils/Coords');

@@ -836,7 +836,7 @@
       "tooManyTiles": "The area is too large to download. Please zoom in or reduce the number of selected maps."
     },
     "confirm": {
-      "individualColor": "To draw with the pen, this layer's color type must be changed to [Individual] and its labels turned off, so that the color and width you draw are shown as-is without labels cluttering the map. Your original color and label settings will be restored when you change the color type back. Change it?",
+      "individualColor": "The layer's color type will be changed to [Individual] for the pen (restored when you change it back). Continue?",
       "closeProject": "Do you want to finish the project? \nAny data that has not been uploaded will be discarded! \n!",
       "deleteTiles": "Do you want to clear the map cache?",
       "discard": "Do you want to discard your changes?",
@@ -891,7 +891,6 @@
       "bugFix2": "Various minor bug fixes"
     },
     "penPicker": {
-      "zoomLinkedWidth": "Scale width with zoom",
       "thin": "Thin",
       "medium": "Medium",
       "thick": "Thick",

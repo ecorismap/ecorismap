@@ -430,8 +430,6 @@ export interface SettingsType {
   lastSeenVersion: string;
   isModalInfoToolHidden: boolean;
   isModalMapMemoToolHidden: boolean;
-  //マップメモの線の太さをズームに連動させるか（表示のみの端末ローカル設定）。既存の永続化済みsettingsにはキーがないためoptional（未定義=OFF）
-  isMapMemoWidthZoomLinked?: boolean;
   currentInfoTool: InfoToolType;
   proximityAlert: ProximityAlertSettingsType;
   //レイヤごとの「レコード追加時に現在地を付与するか」（端末ローカル設定。プロジェクト設定には同期しない）

@@ -18,15 +18,14 @@ interface Props {
   selectedRecord: { layerId: string; record: RecordType } | undefined;
   editingLineId?: string; // 追加
   bounds?: ViewportBounds | null;
-  widthZoomLinked?: boolean;
-  //ズーム連動太さ用の小数ズーム。zoomはfloor済み整数のため、_zoom(小数)との差分計算に使うと太さが跳ぶ
+  //線の太さ計算用の小数ズーム。zoomはfloor済み整数のため、_zoom(小数)との差分計算に使うと太さが跳ぶ
   zoomDecimal?: number;
 }
 
 export const Line = React.memo(
   (props: Props) => {
     //console.log('render Line', now());
-    const { data, layer, zoom, zIndex, selectedRecord, editingLineId, bounds, widthZoomLinked, zoomDecimal } = props;
+    const { data, layer, zoom, zIndex, selectedRecord, editingLineId, bounds, zoomDecimal } = props;
 
     const culledData = useMemo(() => {
       const visibleData = (data ?? []).filter((feature) => feature.visible);
@@ -76,7 +75,7 @@ export const Line = React.memo(
               />
             );
           } else {
-            const strokeWidth = getLineWidthAtZoom(layer, feature, zoomDecimal ?? zoom, widthZoomLinked ?? false);
+            const strokeWidth = getLineWidthAtZoom(layer, feature, zoomDecimal ?? zoom);
             return (
               <PolylineComponent
                 key={'line' + feature.id}
@@ -103,7 +102,6 @@ export const Line = React.memo(
     if (prevProps.zIndex !== nextProps.zIndex) return false;
     if (prevProps.editingLineId !== nextProps.editingLineId) return false;
     if (prevProps.bounds !== nextProps.bounds) return false;
-    if (prevProps.widthZoomLinked !== nextProps.widthZoomLinked) return false;
     if (prevProps.zoomDecimal !== nextProps.zoomDecimal) return false;
 
     // もし以前選択されていたレコードが現在選択されていない場合、かつ、そのレコードが現在のレイヤと関連していたならば更新する
