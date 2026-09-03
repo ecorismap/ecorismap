@@ -191,7 +191,6 @@ const createTestStore = () => {
         currentPenWidth: 'PEN_MEDIUM',
         mapMemoHistoryItems: [],
         mapMemoFutureItems: [],
-        isModalMapMemoToolHidden: false,
         mapMemoStrokeColor: { h: 0, s: 1, v: 1, a: 0.7 },
         mapMemoFillColor: { h: 0, s: 1, v: 1, a: 0.3 },
         mapMemoStampType: 'STAMP1',
@@ -279,19 +278,6 @@ describe('useMapMemo', () => {
     expect(updatedLayers[0].label).toBe('');
     expect(updatedLayers[0].colorStyle.savedFieldName).toBe('区分');
     expect(updatedLayers[0].colorStyle.savedLabel).toBe('種名');
-  });
-
-  it('setIsModalMapMemoToolHiddenが正しく動作すること', () => {
-    const mockMapViewRef = {} as any;
-    const { result } = renderHook(() => useMapMemo(mockMapViewRef), { wrapper });
-
-    act(() => {
-      result.current.setIsModalMapMemoToolHidden(true);
-    });
-
-    // Redux storeの状態が更新されることを確認
-    const updatedSettings = store.getState().settings;
-    expect(updatedSettings.isModalMapMemoToolHidden).toBe(true);
   });
 
   it('setMapMemoToolがローカルステートを更新すること', () => {

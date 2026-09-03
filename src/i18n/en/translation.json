@@ -940,6 +940,7 @@
       "uploadData": "push",
       "closeProject": "end",
       "pen": "pen",
+      "penSetting": "pen options",
       "stamp": "stamp",
       "eraser": "eraser",
       "brush": "brush",

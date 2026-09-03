@@ -211,7 +211,6 @@ export const mockMapMemoContextValue: MapMemoContextType = {
   isUndoable: false,
   isRedoable: false,
   mapMemoLines: [],
-  isModalMapMemoToolHidden: true,
   selectMapMemoTool: jest.fn(),
   setPenWidth: jest.fn(),
   setVisibleMapMemoColor: jest.fn(),

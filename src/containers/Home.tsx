@@ -307,7 +307,6 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     snapWithLine,
     arrowStyle,
     isStraightStyle,
-    isModalMapMemoToolHidden,
     isEditingLine,
     editingLineId,
     setMapMemoTool,
@@ -330,7 +329,6 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     setPencilModeActive,
     setSnapWithLine,
     setIsStraightStyle,
-    setIsModalMapMemoToolHidden,
   } = useMapMemo(mapViewRef.current);
   const { importPdfFile, importPmtilesFile, updatePmtilesURL } = useMaps();
   const { addCurrentPoint, resetPointPosition, updatePointPosition } = usePointTool();
@@ -2741,7 +2739,6 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       isUndoable,
       isRedoable,
       mapMemoLines,
-      isModalMapMemoToolHidden,
       selectMapMemoTool,
       setPenWidth,
       setVisibleMapMemoColor,
@@ -2764,7 +2761,6 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       isUndoable,
       isRedoable,
       mapMemoLines,
-      isModalMapMemoToolHidden,
       selectMapMemoTool,
       setPenWidth,
       setVisibleMapMemoColor,
@@ -2870,14 +2866,12 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
                             currentMapMemoTool={currentMapMemoTool}
                             arrowStyle={arrowStyle}
                             isStraightStyle={isStraightStyle}
-                            isModalMapMemoToolHidden={isModalMapMemoToolHidden}
                             currentPenWidth={currentPenWidth}
                             selectMapMemoTool={selectMapMemoTool}
                             selectMapMemoPenWidth={setPenWidth}
                             selectMapMemoArrowStyle={setArrowStyle}
                             selectMapMemoStraightStyle={setIsStraightStyle}
                             setVisibleMapMemoPen={setVisibleMapMemoPen}
-                            setIsModalMapMemoToolHidden={setIsModalMapMemoToolHidden}
                           />
                           <HomeModalBrushPicker
                             modalVisible={visibleMapMemoBrush}

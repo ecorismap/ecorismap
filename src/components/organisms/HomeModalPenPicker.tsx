@@ -4,7 +4,6 @@ import { COLOR, PEN_STYLE, PEN_WIDTH } from '../../constants/AppConstants';
 import { t } from '../../i18n/config';
 import { ArrowStyleType, MapMemoToolType, PenWidthType } from '../../types';
 import Button from '../atoms/Button';
-import { CheckBox } from '../molecules/CheckBox';
 import { Pressable } from '../atoms/Pressable';
 
 interface Props {
@@ -12,9 +11,7 @@ interface Props {
   modalVisible: boolean;
   arrowStyle: ArrowStyleType;
   isStraightStyle: boolean;
-  isModalMapMemoToolHidden: boolean;
   currentPenWidth: PenWidthType;
-  setIsModalMapMemoToolHidden: (value: boolean) => void;
   selectMapMemoTool: (mapMemoTool: MapMemoToolType | undefined) => void;
   selectMapMemoPenWidth: (penWidth: PenWidthType) => void;
   selectMapMemoArrowStyle: (arrowStyle: ArrowStyleType) => void;
@@ -28,9 +25,7 @@ export const HomeModalPenPicker = React.memo((props: Props) => {
     currentMapMemoTool,
     arrowStyle,
     isStraightStyle,
-    isModalMapMemoToolHidden,
     currentPenWidth,
-    setIsModalMapMemoToolHidden,
     selectMapMemoTool,
     selectMapMemoArrowStyle,
     selectMapMemoStraightStyle,
@@ -50,8 +45,8 @@ export const HomeModalPenPicker = React.memo((props: Props) => {
     }
   }, [modalVisible, arrowStyle, currentMapMemoTool, currentPenWidth, isStraightStyle]);
 
+  //キャンセルは閉じるだけ（現在のツール選択状態は変えない）
   const handleCancel = () => {
-    selectMapMemoTool(undefined);
     setVisibleMapMemoPen(false);
   };
 
@@ -175,7 +170,7 @@ export const HomeModalPenPicker = React.memo((props: Props) => {
           >
             <Text style={styles.closeButtonText}>×</Text>
           </Pressable>
-          <View style={[styles.modalContents, { width: 200, height: 400 }]}>
+          <View style={[styles.modalContents, { width: 200, height: 350 }]}>
             <Text style={styles.modalTitle}>{`${t('common.selectPen')}`} </Text>
 
             <View
@@ -296,16 +291,6 @@ export const HomeModalPenPicker = React.memo((props: Props) => {
               </Pressable>
             </View>
 
-            <View style={{ width: 200, height: 50 }}>
-              <CheckBox
-                style={{ backgroundColor: COLOR.WHITE }}
-                label={t('Home.modal.infoTool.checkbox')}
-                width={200}
-                checked={isModalMapMemoToolHidden}
-                onCheck={() => setIsModalMapMemoToolHidden(!isModalMapMemoToolHidden)}
-                numberOfLines={2}
-              />
-            </View>
           </View>
         </Pressable>
       </Pressable>

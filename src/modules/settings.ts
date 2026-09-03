@@ -41,7 +41,6 @@ export const settingsInitialState: SettingsType = {
   agreedTermsVersion: '',
   lastSeenVersion: '',
   isModalInfoToolHidden: false,
-  isModalMapMemoToolHidden: false,
   currentInfoTool: 'ALL_INFO',
   proximityAlert: {
     enabled: false,
