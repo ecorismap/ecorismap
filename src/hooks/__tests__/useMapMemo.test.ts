@@ -1345,6 +1345,47 @@ describe('useMapMemo', () => {
     expect(getMemoData().length).toBe(1);
   });
 
+  it('離した瞬間に最後の生タッチ位置が終点として保存されること（フィルタ遅延のキャッチアップ）', () => {
+    const Coords = require('../../utils/Coords');
+    const mockMapViewRef = { current: {} } as any;
+    const { result } = renderHook(() => useMapMemo(mockMapViewRef), { wrapper });
+    jest.useFakeTimers();
+
+    act(() => {
+      result.current.setMapMemoTool('PEN');
+    });
+
+    const makeEvent = (x: number, y: number) =>
+      ({
+        nativeEvent: { locationX: x, locationY: y, pageX: x, pageY: y, touches: [{}] },
+        persist: jest.fn(),
+      } as any);
+
+    act(() => {
+      result.current.handleGrantMapMemo(makeEvent(100, 100));
+    });
+    act(() => {
+      result.current.handleMoveMapMemo(makeEvent(200, 200));
+    });
+
+    // 1€フィルタの遅延により、記録された点は実際のタッチ位置(200,200)より手前にある
+    const lastBefore =
+      result.current.mapMemoEditingLineLatLon.current[result.current.mapMemoEditingLineLatLon.current.length - 1];
+    expect(lastBefore[0]).toBeLessThan(135 + 200 * 0.00001);
+
+    act(() => {
+      result.current.handleReleaseMapMemo(makeEvent(200, 200));
+      jest.runAllTimers();
+    });
+
+    // 保存された線の終点は最後の生タッチ位置(200,200)に一致する
+    const calls = Coords.latlonArrayToLatLonObjects.mock.calls;
+    const savedLatLon = calls[calls.length - 1][0];
+    const endPoint = savedLatLon[savedLatLon.length - 1];
+    expect(endPoint[0]).toBeCloseTo(135 + 200 * 0.00001, 10);
+    expect(endPoint[1]).toBeCloseTo(35 - 200 * 0.00001, 10);
+  });
+
   //部分消去テスト用のヘルパー
   const makeParentRecord = () => ({
     id: 'test-line-id',
