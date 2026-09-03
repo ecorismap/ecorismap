@@ -13,12 +13,9 @@ export const MapMemoView = React.memo(() => {
     penColor,
     penWidth,
     currentMapMemoTool,
-    //zoom: currentZoom,
     mapMemoLines,
   } = useContext(MapMemoContext);
   const { mapMemoEditingLine } = useContext(SVGDrawingContext);
-  // Note: We don't need isEditingLine from DrawingToolsContext for MapMemo functionality
-  //const strokeWidth = 2 ** (currentZoom - 18) * penWidth;
 
   const stampPos = useMemo(
     () => (mapMemoEditingLine.length === 1 ? { x: mapMemoEditingLine[0][0], y: mapMemoEditingLine[0][1] } : undefined),

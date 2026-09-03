@@ -30,6 +30,19 @@ export const getLineWidth = (layer: LayerType, feature: RecordType): number => {
   return layer.colorStyle.lineWidth ?? 1.5;
 };
 
+/**
+ * ズーム連動オプションを考慮した線の太さ。
+ * _zoomはマップメモが描画時に記録したズームレベル。連動ONでは描画時の見た目の太さを基準に、
+ * 地理的な幅として2^(zoom - _zoom)倍でスケーリングする。
+ * _zoomを持たない旧レコードやマップメモ以外のレコードは従来通りの固定幅。
+ */
+export const getLineWidthAtZoom = (layer: LayerType, feature: RecordType, zoom: number, zoomLinked: boolean): number => {
+  const width = getLineWidth(layer, feature);
+  const drawnZoom = feature.field._zoom;
+  if (!zoomLinked || typeof drawnZoom !== 'number' || drawnZoom <= 0) return width;
+  return width * 2 ** (zoom - drawnZoom);
+};
+
 export const getColor = (layer: LayerType, feature: RecordType) => {
   //colorは以前はhexで保存していたが、rgbaで保存するように変更したため、hexの場合はrgbaに変換する。
   //rgbaになっている場合は、hex2rgbaの中でレイヤの透過率を反映する。

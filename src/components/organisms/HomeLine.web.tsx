@@ -8,7 +8,7 @@ import { isBrushTool } from '../../utils/General';
 import { HomeMapMemoStamp } from './HomeMapMemoStamp';
 import { HomeMapMemoBrush } from './HomeMapMemoBrush';
 import { COLOR } from '../../constants/AppConstants';
-import { getColor, getLineWidth } from '../../utils/Layer';
+import { getColor, getLineWidthAtZoom } from '../../utils/Layer';
 import { LineArrow } from '../atoms';
 
 interface Props {
@@ -18,10 +18,11 @@ interface Props {
   zIndex: number;
   selectedRecord: { layerId: string; record: RecordType } | undefined;
   editingLineId?: string;
+  widthZoomLinked?: boolean;
 }
 
 export const Line = React.memo((props: Props & { editingLineId?: string }) => {
-  const { data, layer, zoom, selectedRecord, editingLineId } = props;
+  const { data, layer, zoom, selectedRecord, editingLineId, widthZoomLinked } = props;
 
   const { stampRecords, brushRecords, arrowRecords, lineRecords } = useMemo(() => {
     const stamps: LineRecordType[] = [];
@@ -90,7 +91,7 @@ export const Line = React.memo((props: Props & { editingLineId?: string }) => {
           feature.id === selectedRecord?.record?.id || feature.field._group === selectedRecord?.record.id;
         const lineColor = selected ? COLOR.YELLOW : getColor(layer, feature);
         const arrowStyle = feature.field._strokeStyle as ArrowStyleType;
-        const strokeWidth = getLineWidth(layer, feature);
+        const strokeWidth = getLineWidthAtZoom(layer, feature, zoom, widthZoomLinked ?? false);
         return (
           <LineArrow
             key={'arrow' + feature.id}
@@ -108,6 +109,7 @@ export const Line = React.memo((props: Props & { editingLineId?: string }) => {
         displayName={displayName}
         zoom={zoom}
         editingLineId={editingLineId}
+        widthZoomLinked={widthZoomLinked}
       />
     </>
   );
@@ -120,16 +122,17 @@ interface PolylineProps {
   displayName: string;
   zoom: number;
   editingLineId?: string; // 追加
+  widthZoomLinked?: boolean;
 }
 
 const PolylineComponent = React.memo((props: PolylineProps) => {
-  const { data, layer, userId, displayName, zoom, editingLineId } = props;
+  const { data, layer, userId, displayName, zoom, editingLineId, widthZoomLinked } = props;
 
   const labelStyle = useMemo(() => getLabelStyle(layer, userId, displayName), [layer, userId, displayName]);
 
   const dataStyle = useMemo(
-    () => getDataStyleLine(layer, userId, displayName, editingLineId),
-    [layer, userId, displayName, editingLineId]
+    () => getDataStyleLine(layer, userId, displayName, editingLineId, widthZoomLinked),
+    [layer, userId, displayName, editingLineId, widthZoomLinked]
   );
 
   const geojsonData = useMemo(

@@ -260,6 +260,7 @@
       "bugFix2": "その他の細かいバグ修正"
     },
     "penPicker": {
+      "zoomLinkedWidth": "太さをズームに連動",
       "thin": "細",
       "medium": "中",
       "thick": "太",

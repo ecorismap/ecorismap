@@ -60,6 +60,7 @@ export type UseMapMemoReturnType = {
   arrowStyle: ArrowStyleType;
   isStraightStyle: boolean;
   isModalMapMemoToolHidden: boolean;
+  isMapMemoWidthZoomLinked: boolean;
   isEditingLine: boolean;
   editingLineId: string | undefined;
   setMapMemoTool: Dispatch<SetStateAction<MapMemoToolType>>;
@@ -84,6 +85,7 @@ export type UseMapMemoReturnType = {
   setSnapWithLine: Dispatch<SetStateAction<boolean>>;
   setIsStraightStyle: Dispatch<SetStateAction<boolean>>;
   setIsModalMapMemoToolHidden: (value: boolean) => void;
+  setIsMapMemoWidthZoomLinked: (value: boolean) => void;
 };
 
 export type HistoryType = {
@@ -123,6 +125,7 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
   const layers = useSelector((state: RootState) => state.layers);
   const dataSet = useSelector(selectNonDeletedDataSet);
   const isModalMapMemoToolHidden = useSelector((state: RootState) => state.settings.isModalMapMemoToolHidden);
+  const isMapMemoWidthZoomLinked = useSelector((state: RootState) => state.settings.isMapMemoWidthZoomLinked ?? false);
 
   // State management
   const [history, setHistory] = useState<HistoryType[]>([]);
@@ -210,6 +213,16 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
   const setIsModalMapMemoToolHidden = useCallback(
     (value: boolean) => {
       dispatch(editSettingsAction({ isModalMapMemoToolHidden: value }));
+    },
+    [dispatch]
+  );
+
+  /**
+   * Sets whether the map memo stroke width scales with zoom
+   */
+  const setIsMapMemoWidthZoomLinked = useCallback(
+    (value: boolean) => {
+      dispatch(editSettingsAction({ isMapMemoWidthZoomLinked: value }));
     },
     [dispatch]
   );
@@ -1029,6 +1042,7 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
     arrowStyle,
     isStraightStyle,
     isModalMapMemoToolHidden,
+    isMapMemoWidthZoomLinked,
     isEditingLine,
     editingLineId,
     setMapMemoTool,
@@ -1053,5 +1067,6 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
     setSnapWithLine,
     setIsStraightStyle,
     setIsModalMapMemoToolHidden,
+    setIsMapMemoWidthZoomLinked,
   } as const;
 };

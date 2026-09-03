@@ -1,6 +1,6 @@
 import { COLOR } from '../../constants/AppConstants';
 import { LayerType } from '../../types';
-import { getColor, getColorRule, changeLayerId, applyColorStyle, getLineWidth } from '../Layer';
+import { getColor, getColorRule, changeLayerId, applyColorStyle, getLineWidth, getLineWidthAtZoom } from '../Layer';
 import { getUserColor } from '../Color';
 
 describe('getColor', () => {
@@ -116,6 +116,56 @@ describe('getLineWidth', () => {
   it('どちらも無い場合は既定値になる', () => {
     const noWidth = { ...layer, colorStyle: { ...layer.colorStyle, lineWidth: undefined } };
     expect(getLineWidth(noWidth, record({}))).toBe(1.5);
+  });
+});
+
+describe('getLineWidthAtZoom', () => {
+  const layer: LayerType = {
+    id: '1',
+    name: 'ライン',
+    type: 'LINE',
+    permission: 'PRIVATE',
+    colorStyle: {
+      colorType: 'CATEGORIZED',
+      color: COLOR.RED,
+      fieldName: '区分',
+      colorRamp: 'RANDOM',
+      customFieldValue: '',
+      colorList: [],
+      transparency: 1,
+      lineWidth: 3,
+    },
+    label: '',
+    visible: true,
+    active: true,
+    field: [],
+  };
+  const record = (field: any) => ({ id: '0', visible: true, redraw: false, coords: undefined, field } as any);
+
+  it('連動OFFなら現在ズームに関係なく固定幅', () => {
+    expect(getLineWidthAtZoom(layer, record({ _strokeWidth: 10, _zoom: 15 }), 18, false)).toBe(10);
+  });
+
+  it('連動ONで描画時ズームと同じなら等倍', () => {
+    expect(getLineWidthAtZoom(layer, record({ _strokeWidth: 10, _zoom: 15 }), 15, true)).toBe(10);
+  });
+
+  it('連動ONでズームインすると2^n倍、ズームアウトすると1/2^n倍', () => {
+    expect(getLineWidthAtZoom(layer, record({ _strokeWidth: 10, _zoom: 15 }), 17, true)).toBe(40);
+    expect(getLineWidthAtZoom(layer, record({ _strokeWidth: 10, _zoom: 15 }), 13, true)).toBe(2.5);
+  });
+
+  it('_zoomを持たない旧レコードは連動ONでも固定幅', () => {
+    expect(getLineWidthAtZoom(layer, record({ _strokeWidth: 10 }), 18, true)).toBe(10);
+  });
+
+  it('_zoomが0や数値以外（再インポートの空文字など）は固定幅', () => {
+    expect(getLineWidthAtZoom(layer, record({ _strokeWidth: 10, _zoom: 0 }), 18, true)).toBe(10);
+    expect(getLineWidthAtZoom(layer, record({ _strokeWidth: 10, _zoom: '' }), 18, true)).toBe(10);
+  });
+
+  it('_strokeWidthを持たないレコードはレイヤ既定幅を基準にスケーリング', () => {
+    expect(getLineWidthAtZoom(layer, record({ _zoom: 15 }), 16, true)).toBe(6);
   });
 });
 

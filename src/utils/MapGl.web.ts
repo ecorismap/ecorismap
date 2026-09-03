@@ -68,16 +68,37 @@ export const getLabelStyle = (layer_: LayerType, userId: string, displayName: st
 };
 
 // editingLineIdを受け取れるように引数追加
-export const getDataStyleLine = (layer_: LayerType, userId: string, displayName: string, editingLineId?: string) => {
+export const getDataStyleLine = (
+  layer_: LayerType,
+  userId: string,
+  displayName: string,
+  editingLineId?: string,
+  widthZoomLinked?: boolean
+) => {
   const colorExpression = getColorExpression(layer_, displayName, editingLineId);
+
+  //レコードが太さを持つならレイヤ一律の太さより優先する。数値以外（未設定・空文字）はレイヤ既定値
+  const fixedWidth = ['number', ['get', '_strokeWidth'], layer_.colorStyle.lineWidth ?? 1.5];
+  //ズーム連動: 描画時ズーム(_zoom)での見た目を基準に2^(zoom - _zoom)倍する。
+  //['zoom']はトップレベルのinterpolateでしか使えないため、各ストップの出力側で_zoom有無のフォールバックを分岐する。
+  //exponential base2補間により式全体は正確に 2^(zoom - _zoom) * width になる。
+  const drawnZoom = ['number', ['get', '_zoom'], 0];
+  const zoomLinkedWidthAt = (stopZoom: number) => [
+    'case',
+    ['>', drawnZoom, 0],
+    ['*', fixedWidth, ['^', 2, ['-', stopZoom, drawnZoom]]],
+    fixedWidth,
+  ];
+  const lineWidth = widthZoomLinked
+    ? ['interpolate', ['exponential', 2], ['zoom'], 0, zoomLinkedWidthAt(0), 24, zoomLinkedWidthAt(24)]
+    : fixedWidth;
 
   return {
     id: `${layer_.id}_${userId}`,
     type: 'line',
     paint: {
       'line-color': colorExpression,
-      //レコードが太さを持つならレイヤ一律の太さより優先する。数値以外（未設定・空文字）はレイヤ既定値
-      'line-width': ['number', ['get', '_strokeWidth'], layer_.colorStyle.lineWidth ?? 1.5],
+      'line-width': lineWidth,
     },
     layout: {
       visibility: 'visible',

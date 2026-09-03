@@ -890,6 +890,7 @@
       "bugFix2": "Various minor bug fixes"
     },
     "penPicker": {
+      "zoomLinkedWidth": "Scale width with zoom",
       "thin": "Thin",
       "medium": "Medium",
       "thick": "Thick",

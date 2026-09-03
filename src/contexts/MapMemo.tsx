@@ -24,6 +24,7 @@ export interface MapMemoContextType {
   isRedoable: boolean;
   mapMemoLines: MapMemoLine[];
   isModalMapMemoToolHidden: boolean;
+  isMapMemoWidthZoomLinked: boolean;
 
   // Map memo actions
   selectMapMemoTool: (tool: MapMemoToolType | undefined) => void;
@@ -50,6 +51,7 @@ export const MapMemoContext = createContext<MapMemoContextType>({
   isRedoable: false,
   mapMemoLines: [],
   isModalMapMemoToolHidden: true,
+  isMapMemoWidthZoomLinked: false,
   selectMapMemoTool: () => {},
   setPenWidth: () => {},
   setVisibleMapMemoColor: () => {},
