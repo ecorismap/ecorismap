@@ -104,6 +104,9 @@ import {
   selectLineFeatureByLatLon,
   selectPointFeatureByLatLon,
   isNearWithPlot,
+  checkDistanceFromLine,
+  findNearNodeIndex,
+  xyArrayToLatLonArray,
 } from '../../utils/Coords';
 import { LayerType, LineRecordType, PointRecordType, RecordType } from '../../types';
 
@@ -906,6 +909,116 @@ describe('useDrawTool', () => {
       expect(result.current.drawLine.current[0].layerId).toBe(mockPointLayer.id);
       expect(result.current.drawLine.current[0].record).toBe(mockPointRecord);
       expect(result.current.drawLine.current[0].properties).toEqual(['POINT']);
+    });
+  });
+
+  describe('編集時の座標精度保存（latlonの部分更新）', () => {
+    const selectExistingLine = (result: any) => {
+      (selectLineFeatureByLatLon as jest.Mock).mockReturnValue(mockLineRecord);
+      mockGetEditableLayerAndRecordSetWithCheck.mockReturnValue({
+        isOK: true,
+        message: '',
+        layer: mockLineLayer,
+        recordSet: [mockLineRecord],
+      });
+      act(() => {
+        result.current.setFeatureButton('LINE');
+      });
+      act(() => {
+        result.current.handleReleaseSelect([135, 35]);
+      });
+    };
+
+    afterEach(() => {
+      (checkDistanceFromLine as jest.Mock).mockReturnValue({ isNear: false, distance: 9999 });
+      (findNearNodeIndex as jest.Mock).mockReturnValue(-1);
+      (selectLineFeatureByLatLon as jest.Mock).mockReturnValue(undefined);
+    });
+
+    it('ノード移動では動かした頂点のみ更新され、他頂点のlatlonは同一参照のまま保持される', () => {
+      const { result } = renderDrawTool();
+      selectExistingLine(result);
+
+      const before = result.current.drawLine.current[0].latlon;
+      const untouchedRef = before[0];
+
+      //ノード1をつかんでドラッグ（6回移動=タップ扱いにならない）
+      (checkDistanceFromLine as jest.Mock).mockReturnValue({ isNear: true, distance: 1 });
+      (findNearNodeIndex as jest.Mock).mockReturnValue(1);
+      act(() => {
+        result.current.handleGrantPlot([135.001, 35.001]);
+      });
+      act(() => {
+        for (let i = 1; i <= 6; i++) result.current.handleMovePlot([135.001 + i, 35.001 + i]);
+      });
+      (xyArrayToLatLonArray as jest.Mock).mockClear();
+      act(() => {
+        result.current.handleReleasePlotLinePolygon();
+      });
+
+      const after = result.current.drawLine.current[0].latlon;
+      //全再生成が走っていない＝画面ピクセル量子化が起きない
+      expect(xyArrayToLatLonArray).not.toHaveBeenCalled();
+      //動かしていない頂点は同一参照のまま（値の劣化ゼロの直接証明）
+      expect(after[0]).toBe(untouchedRef);
+      //動かした頂点のみ新しい位置
+      expect(after[1]).toEqual([141.001, 41.001]);
+      //不変条件: xyとlatlonは常に同数
+      expect(after.length).toBe(result.current.drawLine.current[0].xy.length);
+    });
+
+    it('新規プロット作図でもrelease毎にlatlonが同数を保ち、全再生成が呼ばれない', () => {
+      const { result } = renderDrawTool();
+      act(() => {
+        result.current.setDrawTool('PLOT_LINE');
+      });
+      (xyArrayToLatLonArray as jest.Mock).mockClear();
+
+      act(() => {
+        result.current.handleGrantPlot([10, 10]);
+      });
+      act(() => {
+        result.current.handleReleasePlotLinePolygon();
+      });
+      act(() => {
+        result.current.handleGrantPlot([20, 20]);
+      });
+      act(() => {
+        result.current.handleReleasePlotLinePolygon();
+      });
+
+      const line = result.current.drawLine.current[0];
+      expect(line.latlon).toEqual([
+        [10, 10],
+        [20, 20],
+      ]);
+      expect(line.latlon.length).toBe(line.xy.length);
+      expect(xyArrayToLatLonArray).not.toHaveBeenCalled();
+    });
+
+    it('ノード削除では該当頂点のみlatlonから除去され、他頂点は保持される', () => {
+      const { result } = renderDrawTool();
+      selectExistingLine(result);
+
+      const before = result.current.drawLine.current[0].latlon;
+      const untouchedRef = before[0];
+
+      //ノード1をタップ（移動なし）→削除
+      (checkDistanceFromLine as jest.Mock).mockReturnValue({ isNear: true, distance: 1 });
+      (findNearNodeIndex as jest.Mock).mockReturnValue(1);
+      act(() => {
+        result.current.handleGrantPlot([135.001, 35.001]);
+      });
+      (xyArrayToLatLonArray as jest.Mock).mockClear();
+      act(() => {
+        result.current.handleReleasePlotLinePolygon();
+      });
+
+      const line = result.current.drawLine.current[0];
+      expect(xyArrayToLatLonArray).not.toHaveBeenCalled();
+      expect(line.latlon.length).toBe(1);
+      expect(line.latlon.length).toBe(line.xy.length);
+      expect(line.latlon[0]).toBe(untouchedRef);
     });
   });
 
