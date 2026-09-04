@@ -124,6 +124,11 @@ export const useRecord = (): UseRecordReturnType => {
 
   const selectRecord = useCallback(
     (layerId: string, record: RecordType) => {
+      //recordがundefinedのまま入ると描画側のrecord.id参照でクラッシュするため選択解除として扱う
+      if (record === undefined) {
+        dispatch(editSettingsAction({ selectedRecord: undefined }));
+        return;
+      }
       dispatch(editSettingsAction({ selectedRecord: { layerId, record } }));
     },
     [dispatch]

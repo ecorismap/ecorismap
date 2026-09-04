@@ -45,7 +45,7 @@ export const Line = React.memo(
           const color = getColor(layer, feature);
           const selected =
             selectedRecord?.record?.id !== undefined &&
-            (feature.id === selectedRecord?.record?.id || feature.field._group === selectedRecord?.record.id);
+            (feature.id === selectedRecord?.record?.id || feature.field._group === selectedRecord?.record?.id);
 
           // 編集対象ラインは水色、それ以外は従来通り
           const isEditingTarget = editingLineId && feature.id === editingLineId;
@@ -120,7 +120,7 @@ export const Line = React.memo(
       if (prevProps.selectedRecord?.layerId !== nextProps.selectedRecord?.layerId) return false;
 
       // 選択レイヤが変更されていないが、選択レコードが変更された場合
-      if (prevProps.selectedRecord?.record.id !== nextProps.selectedRecord?.record.id) return false;
+      if (prevProps.selectedRecord?.record?.id !== nextProps.selectedRecord?.record?.id) return false;
     }
 
     return true;

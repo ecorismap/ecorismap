@@ -110,7 +110,9 @@ export const useDataEdit = (record: RecordType, layer: LayerType): UseDataEditRe
     if (currentScreen.name !== 'DataEdit') return;
 
     //recordNumberが変更された場合、targetRecordを変更する
+    //部分消去などでレコード数が減っていると範囲外になり得るため、その場合は何もしない
     const newRecord = allUserRecordSet[recordNumber - 1];
+    if (newRecord === undefined) return;
     selectRecord(targetLayer.id, newRecord);
     setTargetRecord(newRecord);
     setTargetRecordSet(allUserRecordSet);
