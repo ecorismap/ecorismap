@@ -1106,6 +1106,111 @@ describe('useDrawTool', () => {
     });
   });
 
+  describe('Undo/Redo', () => {
+    it('編集前はisUndoable/isRedoableがfalse、編集後にUndo可能になる', () => {
+      const { result } = renderDrawTool();
+      expect(result.current.isUndoable).toBe(false);
+      expect(result.current.isRedoable).toBe(false);
+
+      act(() => {
+        result.current.setDrawTool('PLOT_LINE');
+      });
+      act(() => {
+        result.current.handleGrantPlot([10, 10]);
+      });
+      act(() => {
+        result.current.handleReleasePlotLinePolygon();
+      });
+      expect(result.current.isUndoable).toBe(true);
+    });
+
+    it('ノード編集をUndo→Redoすると編集後の状態に戻る', () => {
+      const { result } = renderDrawTool();
+      //既存ライン選択
+      (selectLineFeatureByLatLon as jest.Mock).mockReturnValue(mockLineRecord);
+      mockGetEditableLayerAndRecordSetWithCheck.mockReturnValue({
+        isOK: true,
+        message: '',
+        layer: mockLineLayer,
+        recordSet: [mockLineRecord],
+      });
+      act(() => {
+        result.current.setFeatureButton('LINE');
+      });
+      act(() => {
+        result.current.handleReleaseSelect([135, 35]);
+      });
+
+      //ノード1を移動して確定
+      (checkDistanceFromLine as jest.Mock).mockReturnValue({ isNear: true, distance: 1 });
+      (findNearNodeIndex as jest.Mock).mockReturnValue(1);
+      act(() => {
+        result.current.handleGrantPlot([135.001, 35.001]);
+      });
+      act(() => {
+        for (let i = 1; i <= 6; i++) result.current.handleMovePlot([135.001 + i, 35.001 + i]);
+      });
+      act(() => {
+        result.current.handleReleasePlotLinePolygon();
+      });
+
+      const editedLatLon = result.current.drawLine.current[0].latlon.map((p) => [...p]);
+      expect(result.current.isRedoable).toBe(false);
+
+      //Undo → 移動前に戻る
+      act(() => {
+        result.current.undoDraw();
+      });
+      expect(result.current.drawLine.current[0].latlon[1]).toEqual([135.001, 35.001]);
+      expect(result.current.isRedoable).toBe(true);
+
+      //Redo → 移動後に戻る
+      act(() => {
+        result.current.redoDraw();
+      });
+      expect(result.current.drawLine.current[0].latlon).toEqual(editedLatLon);
+      expect(result.current.isRedoable).toBe(false);
+      expect(result.current.isUndoable).toBe(true);
+
+      //後始末（モックを既定値に）
+      (checkDistanceFromLine as jest.Mock).mockReturnValue({ isNear: false, distance: 9999 });
+      (findNearNodeIndex as jest.Mock).mockReturnValue(-1);
+      (selectLineFeatureByLatLon as jest.Mock).mockReturnValue(undefined);
+    });
+
+    it('新しい編集を行うとRedo履歴が無効化される', () => {
+      const { result } = renderDrawTool();
+      act(() => {
+        result.current.setDrawTool('PLOT_LINE');
+      });
+      act(() => {
+        result.current.handleGrantPlot([10, 10]);
+      });
+      act(() => {
+        result.current.handleReleasePlotLinePolygon();
+      });
+      act(() => {
+        result.current.handleGrantPlot([20, 20]);
+      });
+      act(() => {
+        result.current.handleReleasePlotLinePolygon();
+      });
+      //EDITをundo → redo可能
+      act(() => {
+        result.current.undoDraw();
+      });
+      expect(result.current.isRedoable).toBe(true);
+      //新しい編集（release時にundoが積まれredo履歴が消える）
+      act(() => {
+        result.current.handleGrantPlot([30, 30]);
+      });
+      act(() => {
+        result.current.handleReleasePlotLinePolygon();
+      });
+      expect(result.current.isRedoable).toBe(false);
+    });
+  });
+
   describe('toggleTerrain', () => {
     it('Webでない場合は何もしない（isTerrainActiveはfalseのまま）', () => {
       const { result } = renderDrawTool();

@@ -260,6 +260,9 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     savePolygon,
     deleteDraw,
     undoDraw,
+    redoDraw,
+    isUndoable: isDrawUndoable,
+    isRedoable: isDrawRedoable,
     finishEditObject,
     selectSingleFeature,
     showDrawLine,
@@ -1089,6 +1092,10 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       if (finished) finishEditPosition(true);
     }
   }, [finishEditPosition, route.params?.mode, undoDraw]);
+
+  const pressRedoDraw = useCallback(() => {
+    redoDraw();
+  }, [redoDraw]);
 
   const pressSaveDraw = useCallback(async () => {
     let result;
@@ -2600,6 +2607,9 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       // Drawing actions (stable references)
       onDragEndPoint,
       pressUndoDraw,
+      pressRedoDraw,
+      isUndoable: isDrawUndoable,
+      isRedoable: isDrawRedoable,
       pressSaveDraw,
       pressDeleteDraw,
       finishEditObject,
@@ -2635,6 +2645,9 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       setPolygonTool,
       onDragEndPoint,
       pressUndoDraw,
+      pressRedoDraw,
+      isDrawUndoable,
+      isDrawRedoable,
       pressSaveDraw,
       pressDeleteDraw,
       finishEditObject,

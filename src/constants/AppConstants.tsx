@@ -232,6 +232,7 @@ export const DRAWTOOL = {
   MOVE: 'cursor-move',
   FINISH_EDIT_POSITION: 'undo-variant',
   UNDO: 'undo-variant',
+  REDO: 'redo-variant',
   SAVE: 'content-save',
   DELETE: 'delete',
   NONE: 'none',
