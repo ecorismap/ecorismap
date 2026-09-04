@@ -118,10 +118,7 @@ import { HomeModalPDFSettings } from '../components/organisms/HomeModalPDFSettin
 import { HomeModalViewshedSettings } from '../components/organisms/HomeModalViewshedSettings';
 import { calcViewshedPreview } from '../utils/viewshedPreview';
 import dayjs from 'dayjs';
-import { HomeModalStampPicker } from '../components/organisms/HomeModalStampPicker';
-import { HomeModalPenPicker } from '../components/organisms/HomeModalPenPicker';
-import { HomeModalBrushPicker } from '../components/organisms/HomeModalBrushPicker';
-import { HomeModalEraserPicker } from '../components/organisms/HomeModalEraserPicker';
+import { HomeModalMapMemoSettings } from '../components/organisms/HomeModalMapMemoSettings';
 import { HomeModalInfoPicker } from '../components/organisms/HomeModalInfoPicker';
 import { Position } from 'geojson';
 import { useMaps } from '../hooks/useMaps';
@@ -292,10 +289,8 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
 
   const {
     visibleMapMemoColor,
-    visibleMapMemoPen,
-    visibleMapMemoStamp,
-    visibleMapMemoBrush,
-    visibleMapMemoEraser,
+    visibleMapMemoSettings,
+    mapMemoSettingsTab,
     currentMapMemoTool,
     currentPenWidth,
     penColor,
@@ -316,10 +311,8 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     setMapMemoTool,
     setPenWidth,
     setVisibleMapMemoColor,
-    setVisibleMapMemoPen,
-    setVisibleMapMemoStamp,
-    setVisibleMapMemoBrush,
-    setVisibleMapMemoEraser,
+    setVisibleMapMemoSettings,
+    setMapMemoSettingsTab,
     setArrowStyle,
     selectPenColor,
     handleGrantMapMemo,
@@ -859,13 +852,15 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
    */
   const openMapMemoSettingsTab = useCallback(
     (tab: MapMemoToolGroupType) => {
-      setVisibleMapMemoPen(tab === 'PEN');
-      setVisibleMapMemoStamp(tab === 'STAMP');
-      setVisibleMapMemoBrush(tab === 'BRUSH');
-      setVisibleMapMemoEraser(tab === 'ERASER');
+      setMapMemoSettingsTab(tab);
+      setVisibleMapMemoSettings(true);
     },
-    [setVisibleMapMemoPen, setVisibleMapMemoStamp, setVisibleMapMemoBrush, setVisibleMapMemoEraser]
+    [setMapMemoSettingsTab, setVisibleMapMemoSettings]
   );
+
+  const closeMapMemoSettings = useCallback(() => {
+    setVisibleMapMemoSettings(false);
+  }, [setVisibleMapMemoSettings]);
 
   /**
    * マップメモのツールボタン押下。
@@ -2918,41 +2913,21 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
                           <Home />
                           <HomeModalTermsOfUse />
                           <HomeModalUpdateInfo />
-                          <HomeModalPenPicker
-                            modalVisible={visibleMapMemoPen}
+                          <HomeModalMapMemoSettings
+                            visible={visibleMapMemoSettings}
+                            tab={mapMemoSettingsTab}
                             currentMapMemoTool={currentMapMemoTool}
+                            currentPenWidth={currentPenWidth}
                             arrowStyle={arrowStyle}
                             isStraightStyle={isStraightStyle}
-                            currentPenWidth={currentPenWidth}
+                            snapWithLine={snapWithLine}
                             selectMapMemoTool={selectMapMemoTool}
                             selectMapMemoPenWidth={setPenWidth}
                             selectMapMemoArrowStyle={setArrowStyle}
                             selectMapMemoStraightStyle={setIsStraightStyle}
-                            setVisibleMapMemoPen={setVisibleMapMemoPen}
-                            onSelectTab={openMapMemoSettingsTab}
-                          />
-                          <HomeModalBrushPicker
-                            modalVisible={visibleMapMemoBrush}
-                            currentMapMemoTool={currentMapMemoTool}
-                            selectMapMemoTool={selectMapMemoTool}
-                            setVisibleMapMemoBrush={setVisibleMapMemoBrush}
-                            onSelectTab={openMapMemoSettingsTab}
-                          />
-                          <HomeModalStampPicker
-                            modalVisible={visibleMapMemoStamp}
-                            currentMapMemoTool={currentMapMemoTool}
-                            snapWithLine={snapWithLine}
-                            selectMapMemoTool={selectMapMemoTool}
                             selectMapMemoSnapWithLine={setSnapWithLine}
-                            setVisibleMapMemoStamp={setVisibleMapMemoStamp}
-                            onSelectTab={openMapMemoSettingsTab}
-                          />
-                          <HomeModalEraserPicker
-                            modalVisible={visibleMapMemoEraser}
-                            currentMapMemoTool={currentMapMemoTool}
-                            selectMapMemoTool={selectMapMemoTool}
-                            setVisibleMapMemoEraser={setVisibleMapMemoEraser}
-                            onSelectTab={openMapMemoSettingsTab}
+                            setTab={setMapMemoSettingsTab}
+                            close={closeMapMemoSettings}
                           />
                           <HomeModalInfoPicker
                             modalVisible={visibleInfoPicker}

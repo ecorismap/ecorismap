@@ -1,5 +1,5 @@
 import { Dispatch, RefObject, SetStateAction, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowStyleType, LineRecordType, MapMemoToolType, PenWidthType } from '../types';
+import { ArrowStyleType, LineRecordType, MapMemoToolGroupType, MapMemoToolType, PenWidthType } from '../types';
 import { useWindow } from './useWindow';
 import { shallowEqual, useDispatch, useSelector } from 'react-redux';
 import { RootState } from '../store';
@@ -48,10 +48,8 @@ import { selectNonDeletedDataSet } from '../modules/selectors';
 // Type Definitions
 export type UseMapMemoReturnType = {
   visibleMapMemoColor: boolean;
-  visibleMapMemoPen: boolean;
-  visibleMapMemoStamp: boolean;
-  visibleMapMemoBrush: boolean;
-  visibleMapMemoEraser: boolean;
+  visibleMapMemoSettings: boolean;
+  mapMemoSettingsTab: MapMemoToolGroupType;
   currentMapMemoTool: MapMemoToolType;
   currentPenWidth: PenWidthType;
   penColor: string;
@@ -72,10 +70,8 @@ export type UseMapMemoReturnType = {
   setMapMemoTool: Dispatch<SetStateAction<MapMemoToolType>>;
   setPenWidth: Dispatch<SetStateAction<PenWidthType>>;
   setVisibleMapMemoColor: Dispatch<SetStateAction<boolean>>;
-  setVisibleMapMemoPen: Dispatch<SetStateAction<boolean>>;
-  setVisibleMapMemoStamp: Dispatch<SetStateAction<boolean>>;
-  setVisibleMapMemoBrush: Dispatch<SetStateAction<boolean>>;
-  setVisibleMapMemoEraser: Dispatch<SetStateAction<boolean>>;
+  setVisibleMapMemoSettings: Dispatch<SetStateAction<boolean>>;
+  setMapMemoSettingsTab: Dispatch<SetStateAction<MapMemoToolGroupType>>;
   setArrowStyle: Dispatch<SetStateAction<ArrowStyleType>>;
   selectPenColor: (hue: number, sat: number, val: number, alpha: number) => void;
   clearMapMemoHistory: () => void;
@@ -170,10 +166,9 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
 
   // Visibility state
   const [visibleMapMemoColor, setVisibleMapMemoColor] = useState(false);
-  const [visibleMapMemoPen, setVisibleMapMemoPen] = useState(false);
-  const [visibleMapMemoStamp, setVisibleMapMemoStamp] = useState(false);
-  const [visibleMapMemoBrush, setVisibleMapMemoBrush] = useState(false);
-  const [visibleMapMemoEraser, setVisibleMapMemoEraser] = useState(false);
+  //タブ統合された設定モーダル
+  const [visibleMapMemoSettings, setVisibleMapMemoSettings] = useState(false);
+  const [mapMemoSettingsTab, setMapMemoSettingsTab] = useState<MapMemoToolGroupType>('PEN');
 
   // Tool settings
   const [currentMapMemoTool, setMapMemoTool] = useState<MapMemoToolType>('NONE');
@@ -1303,10 +1298,8 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
 
   return {
     visibleMapMemoColor,
-    visibleMapMemoPen,
-    visibleMapMemoStamp,
-    visibleMapMemoBrush,
-    visibleMapMemoEraser,
+    visibleMapMemoSettings,
+    mapMemoSettingsTab,
     currentMapMemoTool,
     currentPenWidth,
     penColor,
@@ -1327,10 +1320,8 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
     setMapMemoTool,
     setPenWidth,
     setVisibleMapMemoColor,
-    setVisibleMapMemoPen,
-    setVisibleMapMemoStamp,
-    setVisibleMapMemoBrush,
-    setVisibleMapMemoEraser,
+    setVisibleMapMemoSettings,
+    setMapMemoSettingsTab,
     setArrowStyle,
     selectPenColor,
     handleGrantMapMemo,
