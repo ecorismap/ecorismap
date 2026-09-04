@@ -1,5 +1,5 @@
 import { Dispatch, RefObject, SetStateAction, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowStyleType, LineRecordType, MapMemoToolGroupType, MapMemoToolType, PenWidthType } from '../types';
+import { ArrowStyleType, LayerType, LineRecordType, MapMemoToolGroupType, MapMemoToolType, PenWidthType } from '../types';
 import { useWindow } from './useWindow';
 import { shallowEqual, useDispatch, useSelector } from 'react-redux';
 import { RootState } from '../store';
@@ -57,6 +57,7 @@ export type UseMapMemoReturnType = {
   mapMemoEditingLine: RefObject<Position[]>;
   mapMemoEditingLineLatLon: RefObject<Position[]>;
   editableMapMemo: boolean;
+  activeMemoLayer: LayerType | undefined;
   isIndividualColorRequired: boolean;
   isPencilModeActive: boolean;
   isUndoable: boolean;
@@ -1299,6 +1300,7 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
     mapMemoEditingLine,
     mapMemoEditingLineLatLon,
     editableMapMemo,
+    activeMemoLayer,
     isIndividualColorRequired,
     isPencilModeActive,
     isUndoable,

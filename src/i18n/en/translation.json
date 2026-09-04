@@ -829,6 +829,7 @@
       "termsOfuse": "If you do not agree, please stop using it.",
       "storage": "Loading data is full. \nDelete unnecessary data.",
       "cannotEdit": "There are no editable layers.",
+      "hiddenLayerEdit": "The layer to edit is hidden. Make it visible first.",
       "exportPDF": "I saved the PDF.",
       "noInternet": "I'm not connected to the internet. \nPlease connect and try again.",
       "viewshedDistanceRange": "Enter a distance between 0.1 and 100 km. Beyond 10 km, the resolution becomes coarser with distance.",

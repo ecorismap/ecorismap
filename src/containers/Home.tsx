@@ -222,12 +222,10 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     lineDataSet,
     polygonDataSet,
     selectedRecord,
-    activePointLayer,
-    activeLineLayer,
-    activePolygonLayer,
     selectRecord,
     unselectRecord,
     checkRecordEditable,
+    getEditableLayerAndRecordSetWithCheck,
     calculateStorageSize,
     setIsEditingRecord,
   } = useRecord();
@@ -301,6 +299,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     mapMemoEditingLine,
     mapMemoEditingLineLatLon,
     editableMapMemo,
+    activeMemoLayer,
     isIndividualColorRequired,
     isPencilModeActive,
     isUndoable,
@@ -787,6 +786,43 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     setViewshedSnapPoint(null);
   }, []);
 
+  /**
+   * 作図ツール選択時の編集可否チェック。
+   * レイヤの存在に加えプロジェクト実行中のロックと非表示も確認し、
+   * 保存時まで気づけない「このレイヤは編集できません」を防ぐ
+   */
+  const checkEditableLayerForDraw = useCallback(
+    async (type: 'POINT' | 'LINE' | 'POLYGON') => {
+      const { isOK, message, layer } = getEditableLayerAndRecordSetWithCheck(type);
+      if (!isOK || layer === undefined) {
+        await AlertAsync(message !== '' ? message : t('Home.alert.cannotEdit'));
+        return false;
+      }
+      if (!layer.visible) {
+        await AlertAsync(t('Home.alert.hiddenLayerEdit'));
+        return false;
+      }
+      return true;
+    },
+    [getEditableLayerAndRecordSetWithCheck]
+  );
+
+  /**
+   * マップメモの編集可否チェック（設定モーダルを開く前やツール選択時に使う）
+   */
+  const checkEditableMapMemo = useCallback(async () => {
+    if (!editableMapMemo || activeMemoLayer === undefined) {
+      await AlertAsync(t('Home.alert.cannotEdit'));
+      return false;
+    }
+    const { isOK, message } = checkRecordEditable(activeMemoLayer);
+    if (!isOK) {
+      await AlertAsync(message);
+      return false;
+    }
+    return true;
+  }, [activeMemoLayer, checkRecordEditable, editableMapMemo]);
+
   const selectMapMemoTool = useCallback(
     async (value: MapMemoToolType | undefined) => {
       setInfoToolActive(false);
@@ -794,10 +830,8 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
         setMapMemoTool('NONE');
       } else {
         //どのツールもマップメモの内容を書き換えるため、ブラシ・スタンプ・消しゴム含め全てで編集可否を確認する
-        if (!editableMapMemo) {
-          Alert.alert('', t('Home.alert.cannotEdit'));
-          return;
-        }
+        //（プロジェクト実行中のロック等も選択時に検出する）
+        if (!(await checkEditableMapMemo())) return;
         //レイヤの色分け設定を書き換えることになるので、実際に描くペンのときだけ事前に確認する
         if (isPenTool(value) && isIndividualColorRequired) {
           const ret = await ConfirmAsync(t('Home.confirm.individualColor'));
@@ -810,7 +844,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     },
     [
       changeColorTypeToIndividual,
-      editableMapMemo,
+      checkEditableMapMemo,
       isIndividualColorRequired,
       setDrawTool,
       setInfoToolActive,
@@ -854,11 +888,13 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
    * マップメモ設定モーダルを指定タブで開く（タブバーからの切替にも使う）
    */
   const openMapMemoSettingsTab = useCallback(
-    (tab: MapMemoToolGroupType) => {
+    async (tab: MapMemoToolGroupType) => {
+      //設定を選ばせてからOKで断られると無駄なので、モーダルを開く前に編集可否を確認する
+      if (!(await checkEditableMapMemo())) return;
       setMapMemoSettingsTab(tab);
       setVisibleMapMemoSettings(true);
     },
-    [setMapMemoSettingsTab, setVisibleMapMemoSettings]
+    [checkEditableMapMemo, setMapMemoSettingsTab, setVisibleMapMemoSettings]
   );
 
   const closeMapMemoSettings = useCallback(() => {
@@ -989,10 +1025,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
           //ドローツールをオン
 
           if (isPointTool(value)) {
-            if (activePointLayer === undefined) {
-              await AlertAsync(t('Home.alert.cannotEdit'));
-              return;
-            }
+            if (!(await checkEditableLayerForDraw('POINT'))) return;
 
             // ADD_LOCATION_POINTの場合は現在地でポイント編集を開始
             if (value === 'ADD_LOCATION_POINT') {
@@ -1001,16 +1034,10 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
             }
             //await runTutrial(`POINTTOOL_${value}`);
           } else if (isLineTool(value)) {
-            if (activeLineLayer === undefined) {
-              await AlertAsync(t('Home.alert.cannotEdit'));
-              return;
-            }
+            if (!(await checkEditableLayerForDraw('LINE'))) return;
             //await runTutrial(`LINETOOL_${value}`);
           } else if (isPolygonTool(value)) {
-            if (activePolygonLayer === undefined) {
-              await AlertAsync(t('Home.alert.cannotEdit'));
-              return;
-            }
+            if (!(await checkEditableLayerForDraw('POLYGON'))) return;
             //await runTutrial(`POLYGONTOOL_${value}`);
           }
 
@@ -1021,12 +1048,10 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
           resetDrawTools();
           setDrawTool('NONE');
         } else {
-          if (featureButton === 'LINE' && activeLineLayer === undefined) {
-            await AlertAsync(t('Home.alert.cannotEdit'));
-            return;
-          } else if (featureButton === 'POLYGON' && activePolygonLayer === undefined) {
-            await AlertAsync(t('Home.alert.cannotEdit'));
-            return;
+          if (featureButton === 'LINE') {
+            if (!(await checkEditableLayerForDraw('LINE'))) return;
+          } else if (featureButton === 'POLYGON') {
+            if (!(await checkEditableLayerForDraw('POLYGON'))) return;
           }
           setDrawTool(value);
           //await runTutrial('SELECTIONTOOL');
@@ -1036,10 +1061,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
           resetDrawTools();
           setDrawTool('NONE');
         } else {
-          if (activePointLayer === undefined) {
-            await AlertAsync(t('Home.alert.cannotEdit'));
-            return;
-          }
+          if (!(await checkEditableLayerForDraw('POINT'))) return;
           setDrawTool(value);
         }
       } else {
@@ -1065,9 +1087,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       }
     },
     [
-      activeLineLayer,
-      activePointLayer,
-      activePolygonLayer,
+      checkEditableLayerForDraw,
       currentDrawTool,
       currentLineTool,
       currentPolygonTool,
