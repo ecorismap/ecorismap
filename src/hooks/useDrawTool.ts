@@ -159,6 +159,10 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
   const [visibleInfoPicker, setVisibleInfoPicker] = useState(false);
   const [isDrawLineVisible, setDrawLineVisible] = useState(true);
   const refreshDrawLine = useRef(true);
+  //latlonが座標の真。xyは表示・ヒットテスト用の派生値で、地図移動時にlatlonから再投影される。
+  //編集操作ではxy全体からlatlonを再生成せず、変更した頂点のみxyToLatLonで部分更新する
+  //（全再生成すると全頂点が画面ピクセル解像度に丸められ、編集のたびに精度劣化が累積するため）。
+  //latlonはundoスナップショットが参照を保持するため、in-place変更せず常に新配列で置き換えること。
   const drawLine = useRef<DrawLineType[]>([]);
   const editingLineXY = useRef<Position[]>([]);
   const undoLine = useRef<UndoLineType[]>([]);
@@ -391,11 +395,11 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
       drawLine.current[index].properties = [...drawLine.current[index].properties, 'EDIT'];
       if (featureType === 'POLYGON') {
         lineXY.pop(); //閉じたポイントを一旦削除
-        drawLine.current[index].latlon = xyArrayToLatLonArray(lineXY, mapRegion, mapSize, mapViewRef);
+        drawLine.current[index].latlon = drawLine.current[index].latlon.slice(0, -1);
       }
       isEditingObject.current = true;
     },
-    [mapRegion, mapSize, mapViewRef]
+    []
   );
 
   const selectObjectByFeature = useCallback(
@@ -541,18 +545,18 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     if (editingNodeIndex.current === 0) return false;
     if (editingLineXY.current.length > 5) return false;
     const index = editingObjectIndex.current;
-    const lineXY = drawLine.current[index].xy;
     undoLine.current.push({
       index: index,
       latlon: drawLine.current[index].latlon,
       action: 'EDIT',
     });
     //途中のノードをタッチでノード削除
-    drawLine.current[index].xy.splice(editingNodeIndex.current, 1);
-    drawLine.current[index].latlon = xyArrayToLatLonArray(lineXY, mapRegion, mapSize, mapViewRef);
+    const deleteIndex = editingNodeIndex.current;
+    drawLine.current[index].xy.splice(deleteIndex, 1);
+    drawLine.current[index].latlon = drawLine.current[index].latlon.filter((_, i) => i !== deleteIndex);
     editingLineXY.current = [];
     return true;
-  }, [editingLineXY, editingObjectIndex, drawLine, undoLine, mapRegion, mapSize, mapViewRef]);
+  }, [editingLineXY, editingObjectIndex, drawLine, undoLine]);
 
   const fixLittleMovement = useCallback(() => {
     //タッチでズレるので、タッチ前の位置に戻す。
@@ -579,25 +583,16 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
       action: 'FINISH',
     });
     //最初のノードをタッチで編集終了（ポリゴンのみ）
-    if (currentDrawTool === 'PLOT_POLYGON') lineXY.push(lineXY[0]);
-    drawLine.current[index].latlon = xyArrayToLatLonArray(lineXY, mapRegion, mapSize, mapViewRef);
+    if (currentDrawTool === 'PLOT_POLYGON') {
+      lineXY.push(lineXY[0]);
+      drawLine.current[index].latlon = [...drawLine.current[index].latlon, drawLine.current[index].latlon[0]];
+    }
     drawLine.current[index].properties = drawLine.current[index].properties.filter((p) => p !== 'EDIT');
     editingObjectIndex.current = -1;
     isEditingObject.current = false;
     editingLineXY.current = [];
     return true;
-  }, [
-    editingLineXY,
-    fixLittleMovement,
-    editingObjectIndex,
-    drawLine,
-    currentDrawTool,
-    undoLine,
-    mapRegion,
-    mapSize,
-    mapViewRef,
-    isEditingObject,
-  ]);
+  }, [editingLineXY, fixLittleMovement, editingObjectIndex, drawLine, currentDrawTool, undoLine, isEditingObject]);
 
   const finishEditObject = useCallback(() => {
     if (!isEditingObject.current) return false;
@@ -616,7 +611,11 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
       action: 'FINISH',
     });
 
-    drawLine.current[index].latlon = xyArrayToLatLonArray(lineXY, mapRegion, mapSize, mapViewRef);
+    //latlonは各操作で部分更新済み。不変条件が崩れている場合のみ全再生成にフォールバック
+    if (drawLine.current[index].latlon.length !== lineXY.length) {
+      if (__DEV__) console.warn('finishEditObject: xy/latlon length mismatch, regenerating');
+      drawLine.current[index].latlon = xyArrayToLatLonArray(lineXY, mapRegion, mapSize, mapViewRef);
+    }
     drawLine.current[index].properties = drawLine.current[index].properties.filter((p) => p !== 'EDIT');
     editingObjectIndex.current = -1;
     isEditingObject.current = false;
@@ -638,7 +637,23 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
         action: 'EDIT',
       });
     }
-    drawLine.current[index].latlon = xyArrayToLatLonArray(lineXY, mapRegion, mapSize, mapViewRef);
+    //編集された頂点のみ変換して部分更新する。
+    //既存ノード移動(MOVE)は該当indexを置換、新規ノード(NEW: 先頭/中間挿入/末尾追加)は該当indexへ挿入
+    const nodeIndex = editingNodeIndex.current;
+    const latlon = drawLine.current[index].latlon;
+    if (latlon.length === lineXY.length && nodeIndex >= 0 && nodeIndex < lineXY.length) {
+      const newLatLon = [...latlon];
+      newLatLon[nodeIndex] = xyToLatLon(lineXY[nodeIndex], mapRegion, mapSize, mapViewRef);
+      drawLine.current[index].latlon = newLatLon;
+    } else if (latlon.length === lineXY.length - 1 && nodeIndex >= 0 && nodeIndex < lineXY.length) {
+      const newLatLon = [...latlon];
+      newLatLon.splice(nodeIndex, 0, xyToLatLon(lineXY[nodeIndex], mapRegion, mapSize, mapViewRef));
+      drawLine.current[index].latlon = newLatLon;
+    } else {
+      //不変条件が崩れている場合のフォールバック（本来通らない）
+      if (__DEV__) console.warn('updateNodePosition: xy/latlon length mismatch, regenerating');
+      drawLine.current[index].latlon = xyArrayToLatLonArray(lineXY, mapRegion, mapSize, mapViewRef);
+    }
     editingLineXY.current = [];
     if (currentDrawTool === 'ADD_LOCATION_POINT') isEditingObject.current = false;
   }, [
@@ -674,9 +689,15 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
       //最初のノードをタッチで編集終了
       if (currentDrawTool === 'PLOT_POLYGON') {
         //ポリゴンは閉じてなかったら閉じる
-        if (!isClosedPolygon(lineXY)) lineXY.push(lineXY[0]);
+        if (!isClosedPolygon(lineXY)) {
+          lineXY.push(lineXY[0]);
+          drawLine.current[index].latlon = [...drawLine.current[index].latlon, drawLine.current[index].latlon[0]];
+        }
       }
-      drawLine.current[index].latlon = xyArrayToLatLonArray(lineXY, mapRegion, mapSize, mapViewRef);
+      if (drawLine.current[index].latlon.length !== lineXY.length) {
+        if (__DEV__) console.warn('tryFinishFreehandEditObject: xy/latlon length mismatch, regenerating');
+        drawLine.current[index].latlon = xyArrayToLatLonArray(lineXY, mapRegion, mapSize, mapViewRef);
+      }
       drawLine.current[index].properties = drawLine.current[index].properties.filter((p) => p !== 'EDIT');
       editingObjectIndex.current = -1;
       isEditingObject.current = false;
@@ -890,7 +911,12 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
       const lineXY = line.xy;
       if (lineXY.length >= 3 && (lineXY[0][0] !== lineXY[lineXY.length - 1][0] || lineXY[0][1] !== lineXY[lineXY.length - 1][1])) {
         lineXY.push(lineXY[0]);
-        line.latlon = xyArrayToLatLonArray(lineXY, mapRegion, mapSize, mapViewRef);
+        if (line.latlon.length === lineXY.length - 1) {
+          line.latlon = [...line.latlon, line.latlon[0]];
+        } else {
+          if (__DEV__) console.warn('savePolygon: xy/latlon length mismatch, regenerating');
+          line.latlon = xyArrayToLatLonArray(lineXY, mapRegion, mapSize, mapViewRef);
+        }
       }
     });
 
@@ -1286,19 +1312,21 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
           isXY: true,
         });
         lineXY.splice(idx + 1, 0, pXY);
+        //挿入した補間ノード1点のみ変換してlatlonにも挿入（既存頂点の座標は保持）
+        const newLatLon = [...drawLine.current[index].latlon];
+        newLatLon.splice(idx + 1, 0, xyToLatLon(pXY, mapRegion, mapSize, mapViewRef));
+        drawLine.current[index].latlon = newLatLon;
         nodeIndex = idx + 1;
       }
 
       const record = drawLine.current[index].record;
       const layerId = drawLine.current[index].layerId;
 
-      // 前半部分のxyとlatlonを作成
+      // 前半・後半のxyとlatlonを分割（latlonは既存値を保持したままsliceする）
       const frontXY = lineXY.slice(0, nodeIndex + 1);
-      const frontLatlon = xyArrayToLatLonArray(frontXY, mapRegion, mapSize, mapViewRef);
-
-      // 後半部分のxyとlatlonを作成
+      const frontLatlon = drawLine.current[index].latlon.slice(0, nodeIndex + 1);
       const backXY = lineXY.slice(nodeIndex);
-      const backLatlon = xyArrayToLatLonArray(backXY, mapRegion, mapSize, mapViewRef);
+      const backLatlon = drawLine.current[index].latlon.slice(nodeIndex);
 
       const newLine = {
         ...drawLine.current[index],
