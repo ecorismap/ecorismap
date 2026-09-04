@@ -2,7 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, Modal } from 'react-native';
 import { COLOR, PEN_STYLE, PEN_WIDTH } from '../../constants/AppConstants';
 import { t } from '../../i18n/config';
-import { ArrowStyleType, MapMemoToolType, PenWidthType } from '../../types';
+import { ArrowStyleType, MapMemoToolGroupType, MapMemoToolType, PenWidthType } from '../../types';
+import { MapMemoToolTabBar } from '../molecules/MapMemoToolTabBar';
 import Button from '../atoms/Button';
 import { Pressable } from '../atoms/Pressable';
 
@@ -17,6 +18,7 @@ interface Props {
   selectMapMemoArrowStyle: (arrowStyle: ArrowStyleType) => void;
   selectMapMemoStraightStyle: (straightStyle: boolean) => void;
   setVisibleMapMemoPen: React.Dispatch<React.SetStateAction<boolean>>;
+  onSelectTab: (tab: MapMemoToolGroupType) => void;
 }
 
 export const HomeModalPenPicker = React.memo((props: Props) => {
@@ -31,6 +33,7 @@ export const HomeModalPenPicker = React.memo((props: Props) => {
     selectMapMemoStraightStyle,
     setVisibleMapMemoPen,
     selectMapMemoPenWidth,
+    onSelectTab,
   } = props;
 
   const [penWidth, setPenWidth] = useState<PenWidthType>('PEN_THIN');
@@ -171,7 +174,7 @@ export const HomeModalPenPicker = React.memo((props: Props) => {
             <Text style={styles.closeButtonText}>×</Text>
           </Pressable>
           <View style={[styles.modalContents, { width: 200, height: 350 }]}>
-            <Text style={styles.modalTitle}>{`${t('common.selectPen')}`} </Text>
+            <MapMemoToolTabBar active="PEN" onSelect={onSelectTab} />
 
             <View
               style={{
