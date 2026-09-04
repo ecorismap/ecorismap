@@ -28,6 +28,9 @@ export const HomeDrawTools = React.memo(() => {
     setLineTool,
     setPolygonTool,
     pressUndoDraw,
+    pressRedoDraw,
+    isUndoable,
+    isRedoable,
     pressDeleteDraw,
     finishEditObject,
     pressSaveDraw,
@@ -230,11 +233,24 @@ export const HomeDrawTools = React.memo(() => {
           <View style={styles.button}>
             <Button
               name={DRAWTOOL.UNDO}
-              backgroundColor={COLOR.ALFABLUE}
+              backgroundColor={isUndoable ? COLOR.ALFABLUE : COLOR.ALFAGRAY}
               borderRadius={10}
-              disabled={false}
+              disabled={!isUndoable}
               onPress={pressUndoDraw}
               labelText={t('Home.label.undo')}
+              labelFontSize={9}
+            />
+          </View>
+        )}
+        {featureButton !== 'POINT' && (isEditingDraw || isEditingObject) && (
+          <View style={styles.button}>
+            <Button
+              name={DRAWTOOL.REDO}
+              backgroundColor={isRedoable ? COLOR.ALFABLUE : COLOR.ALFAGRAY}
+              borderRadius={10}
+              disabled={!isRedoable}
+              onPress={pressRedoDraw}
+              labelText={t('Home.label.redo')}
               labelFontSize={9}
             />
           </View>

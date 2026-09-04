@@ -58,6 +58,8 @@ import { RootState } from '../store';
 
 export type UseDrawToolReturnType = {
   isEditingDraw: boolean;
+  isUndoable: boolean;
+  isRedoable: boolean;
   isEditingObject: boolean;
   isSelectedDraw: boolean;
   drawLine: React.RefObject<DrawLineType[]>;
@@ -137,6 +139,7 @@ export type UseDrawToolReturnType = {
   handleReleaseSelect: (pXY: Position) => void;
   handleReleaseFreehand: () => void;
   commitFreehandStroke: () => void;
+  redoDraw: () => void;
   handleReleasePlotPoint: () => void;
   handleReleasePlotLinePolygon: () => boolean;
   selectObjectByFeature: (layer: LayerType, feature: RecordType, shouldRefreshCoordinates?: boolean) => void;
@@ -173,6 +176,16 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
   const editingObjectIndex = useRef(-1);
   const selectLine = useRef<Position[]>([]);
   const isEditingDraw = useRef(false);
+  //Redo用スタック。新しい編集操作(pushUndo)が入ると無効化される
+  const redoLine = useRef<(UndoLineType & { line?: DrawLineType; objectIndex?: number })[]>([]);
+
+  /**
+   * undoスタックへ積む（新しい編集が入ったのでredo履歴は無効化する）
+   */
+  const pushUndo = useCallback((item: UndoLineType) => {
+    undoLine.current.push(item);
+    redoLine.current = [];
+  }, []);
   const isEditingObject = useRef(false);
   const isSelectedDraw = useRef(false);
   const isPencilTouch = useRef<boolean | undefined>(undefined);
@@ -369,7 +382,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
         return line.xy.length > 0 && isNearWithPlot(pXY, line.xy[0]);
       });
       if (deleteIndex !== -1) {
-        undoLine.current.push({
+        pushUndo({
           index: deleteIndex,
           latlon: drawLine.current[deleteIndex].latlon,
           action: 'DELETE',
@@ -384,14 +397,14 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
       }
       return false;
     },
-    [convertFeatureToDrawLine, currentDrawTool]
+    [convertFeatureToDrawLine, currentDrawTool, pushUndo]
   );
 
   const changeToEditingObject = useCallback(
     (index: number, featureType: FeatureButtonType) => {
       editingObjectIndex.current = index;
       const lineXY = drawLine.current[index].xy;
-      undoLine.current.push({
+      pushUndo({
         index: index,
         latlon: drawLine.current[index].latlon,
         action: 'SELECT',
@@ -403,7 +416,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
       }
       isEditingObject.current = true;
     },
-    []
+    [pushUndo]
   );
 
   const selectObjectByFeature = useCallback(
@@ -475,7 +488,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
         properties: ['EDIT'],
       });
       if (isPlotTool(currentDrawTool))
-        undoLine.current.push({
+        pushUndo({
           index: -1,
           latlon: [],
           action: 'NEW',
@@ -485,7 +498,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
       editingNodeState.current = 'NEW';
       editingObjectIndex.current = drawLine.current.length - 1;
     },
-    [currentDrawTool, drawLine, editingObjectIndex, isEditingObject, undoLine]
+    [currentDrawTool, drawLine, editingObjectIndex, isEditingObject, pushUndo]
   );
 
   const tryStartEditNode = useCallback(
@@ -549,7 +562,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     if (editingNodeIndex.current === 0) return false;
     if (editingLineXY.current.length > 5) return false;
     const index = editingObjectIndex.current;
-    undoLine.current.push({
+    pushUndo({
       index: index,
       latlon: drawLine.current[index].latlon,
       action: 'EDIT',
@@ -560,7 +573,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     drawLine.current[index].latlon = drawLine.current[index].latlon.filter((_, i) => i !== deleteIndex);
     editingLineXY.current = [];
     return true;
-  }, [editingLineXY, editingObjectIndex, drawLine, undoLine]);
+  }, [pushUndo, editingLineXY, editingObjectIndex, drawLine]);
 
   const fixLittleMovement = useCallback(() => {
     //タッチでズレるので、タッチ前の位置に戻す。
@@ -581,7 +594,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
 
     if (currentDrawTool === 'PLOT_POLYGON' && lineXY.length < 3) return false;
 
-    undoLine.current.push({
+    pushUndo({
       index: index,
       latlon: drawLine.current[index].latlon,
       action: 'FINISH',
@@ -596,7 +609,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     isEditingObject.current = false;
     editingLineXY.current = [];
     return true;
-  }, [editingLineXY, fixLittleMovement, editingObjectIndex, drawLine, currentDrawTool, undoLine, isEditingObject]);
+  }, [pushUndo, editingLineXY, fixLittleMovement, editingObjectIndex, drawLine, currentDrawTool, isEditingObject]);
 
   const finishEditObject = useCallback(() => {
     if (!isEditingObject.current) return false;
@@ -609,7 +622,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     if ((currentDrawTool === 'PLOT_LINE' || currentDrawTool === 'FREEHAND_LINE') && lineXY.length < 2) return false;
     if ((currentDrawTool === 'PLOT_POLYGON' || currentDrawTool === 'FREEHAND_POLYGON') && lineXY.length < 3) return false;
 
-    undoLine.current.push({
+    pushUndo({
       index: index,
       latlon: drawLine.current[index].latlon,
       action: 'FINISH',
@@ -628,14 +641,14 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     editingNodeIndex.current = -1;
     setRedraw(ulid());
     return true;
-  }, [currentDrawTool, drawLine, editingObjectIndex, isEditingObject, mapRegion, mapSize, mapViewRef, undoLine]);
+  }, [pushUndo, currentDrawTool, drawLine, editingObjectIndex, isEditingObject, mapRegion, mapSize, mapViewRef]);
 
   const updateNodePosition = useCallback(() => {
     const index = editingObjectIndex.current;
     const lineXY = drawLine.current[index].xy;
     if (isPointTool(currentDrawTool) || drawLine.current[index].latlon.length !== 0) {
       //ラインは新規以外。新規の場合はNEWで追加している。
-      undoLine.current.push({
+      pushUndo({
         index: index,
         latlon: drawLine.current[index].latlon,
         action: 'EDIT',
@@ -661,6 +674,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     editingLineXY.current = [];
     if (currentDrawTool === 'ADD_LOCATION_POINT') isEditingObject.current = false;
   }, [
+    pushUndo,
     editingObjectIndex,
     drawLine,
     currentDrawTool,
@@ -669,7 +683,6 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     mapViewRef,
     editingLineXY,
     isEditingObject,
-    undoLine,
   ]);
 
   /******************************************************************: */
@@ -685,7 +698,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
       const isNearWithFirstNode = isNearWithPlot(pXY, lineXY[0]);
       if (!isNearWithFirstNode) return false;
 
-      undoLine.current.push({
+      pushUndo({
         index: index,
         latlon: drawLine.current[index].latlon,
         action: 'FINISH',
@@ -713,7 +726,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
       editingObjectIndex,
       drawLine,
       currentDrawTool,
-      undoLine,
+      pushUndo,
       mapRegion,
       mapSize,
       mapViewRef,
@@ -736,7 +749,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
         properties: ['EDIT'],
       });
 
-      undoLine.current.push({
+      pushUndo({
         index: -1,
         latlon: [],
         action: 'NEW',
@@ -744,7 +757,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
       isEditingObject.current = true;
       editingObjectIndex.current = -1;
     },
-    [drawLine, editingObjectIndex, isEditingObject, undoLine, mapRegion, mapSize, mapViewRef]
+    [drawLine, editingObjectIndex, isEditingObject, pushUndo, mapRegion, mapSize, mapViewRef]
   );
 
   const drawFreehandNewLine = useCallback(
@@ -812,7 +825,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     editingLineXY.current = [];
     if (modified.xy.length <= 0) return;
 
-    undoLine.current.push({
+    pushUndo({
       index: index,
       latlon: drawLine.current[index].latlon,
       action: 'EDIT',
@@ -823,7 +836,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
       xy: modified.xy,
       latlon: modified.latlon,
     };
-  }, [currentDrawTool, drawLine, editingLineXY, editingObjectIndex, mapRegion, mapSize, mapViewRef, undoLine]);
+  }, [pushUndo, currentDrawTool, drawLine, editingLineXY, editingObjectIndex, mapRegion, mapSize, mapViewRef]);
 
   ////////////////////////////////////////////////////
 
@@ -1104,13 +1117,31 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     //undo.indexが-1の時(選択時)はリセットする
     if (undo === undefined) return;
 
+    //Redo用に取り消し前の状態を退避（SELECTのundoと最後のリセットはredo対象外）
+    if (undo.action === 'NEW') {
+      redoLine.current = [
+        ...redoLine.current,
+        {
+          ...undo,
+          line: drawLine.current[drawLine.current.length - 1],
+          objectIndex: editingObjectIndex.current,
+        },
+      ];
+    } else if (undo.action !== 'SELECT') {
+      redoLine.current = [
+        ...redoLine.current,
+        { index: undo.index, latlon: drawLine.current[undo.index].latlon, action: undo.action },
+      ];
+    }
+
     if (undo.action === 'NEW') {
       //追加の場合
       drawLine.current.pop();
       isEditingObject.current = false;
       editingObjectIndex.current = -1;
     } else if (undo.action === 'SELECT') {
-      //オブジェクトの選択をアンドゥする場合
+      //オブジェクトの選択をアンドゥする場合（状態がリセットされるためredoは不可）
+      redoLine.current = [];
       resetDrawTools();
       setDrawTool('NONE');
       return true;
@@ -1137,11 +1168,51 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
       editingObjectIndex.current = currentDrawTool === 'PLOT_POINT' ? -1 : undo.index;
     }
     if (undoLine.current.length === 0) {
+      //最後まで戻すと描画状態ごとリセットされるためredoは不可
+      redoLine.current = [];
       resetDrawTools();
       setDrawTool('NONE');
     }
     setRedraw(ulid());
   }, [currentDrawTool, mapRegion, mapSize, mapViewRef, resetDrawTools]);
+
+  /**
+   * undoDrawで取り消した操作をやり直す。
+   * SELECTのundoや最後まで戻した後（状態リセット）はredo履歴が無効になる
+   */
+  const redoDraw = useCallback(() => {
+    const redo = redoLine.current[redoLine.current.length - 1];
+    if (redo === undefined) return;
+    redoLine.current = redoLine.current.slice(0, -1);
+
+    //redo中のundoスタック積み直しはpushUndoを使わない（redo履歴を消さないため）
+    if (redo.action === 'NEW') {
+      if (redo.line !== undefined) {
+        drawLine.current.push(redo.line);
+        undoLine.current.push({ index: -1, latlon: [], action: 'NEW' });
+        isEditingObject.current = true;
+        editingObjectIndex.current = redo.objectIndex ?? -1;
+      }
+    } else if (redo.action === 'DELETE') {
+      undoLine.current.push({ index: redo.index, latlon: drawLine.current[redo.index].latlon, action: 'DELETE' });
+      drawLine.current[redo.index] = { ...drawLine.current[redo.index], xy: [], latlon: [] };
+    } else if (redo.action === 'FINISH') {
+      undoLine.current.push({ index: redo.index, latlon: drawLine.current[redo.index].latlon, action: 'FINISH' });
+      drawLine.current[redo.index].xy = latLonArrayToXYArray(redo.latlon, mapRegion, mapSize, mapViewRef);
+      drawLine.current[redo.index].latlon = redo.latlon;
+      drawLine.current[redo.index].properties = drawLine.current[redo.index].properties.filter((p) => p !== 'EDIT');
+      isEditingObject.current = false;
+      editingObjectIndex.current = -1;
+      editingLineXY.current = [];
+    } else if (redo.action === 'EDIT') {
+      undoLine.current.push({ index: redo.index, latlon: drawLine.current[redo.index].latlon, action: 'EDIT' });
+      drawLine.current[redo.index].xy = latLonArrayToXYArray(redo.latlon, mapRegion, mapSize, mapViewRef);
+      drawLine.current[redo.index].latlon = redo.latlon;
+      isEditingObject.current = currentDrawTool === 'PLOT_POINT' ? false : true;
+      editingObjectIndex.current = currentDrawTool === 'PLOT_POINT' ? -1 : redo.index;
+    }
+    setRedraw(ulid());
+  }, [currentDrawTool, mapRegion, mapSize, mapViewRef]);
 
   const toggleTerrain = useCallback(
     (activate?: boolean) => {
@@ -1430,6 +1501,8 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
 
   return {
     isEditingDraw: isEditingDraw.current,
+    isUndoable: undoLine.current.length > 0,
+    isRedoable: redoLine.current.length > 0,
     isEditingObject: isEditingObject.current,
     isSelectedDraw: isSelectedDraw.current,
     currentDrawTool,
@@ -1449,6 +1522,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     isInfoToolActive,
     deleteDraw,
     undoDraw,
+    redoDraw,
     finishEditObject,
     savePoint,
     saveLine,
