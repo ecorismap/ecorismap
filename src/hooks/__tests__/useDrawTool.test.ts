@@ -40,9 +40,20 @@ jest.mock('../../utils/Coords', () => ({
       xy.length > 2 && xy[0][0] === xy[xy.length - 1][0] && xy[0][1] === xy[xy.length - 1][1]
   ),
   isNearWithPlot: jest.fn(() => false),
-  modifyLine: jest.fn(() => []),
+  modifyLineWithSource: jest.fn(() => ({ xy: [], latlon: [] })),
   simplify: jest.fn((xy: [number, number][]) => xy),
   smoothingByBezier: jest.fn((xy: [number, number][]) => xy),
+}));
+
+// OneEuroFilterの恒等モック（テストを決定的にする）
+jest.mock('../../utils/OneEuroFilter', () => ({
+  PositionFilter: class {
+    filter(xy: [number, number]) {
+      return xy;
+    }
+    reset() {}
+  },
+  getEventTimestamp: jest.fn(() => 0),
 }));
 
 // useRecordのモック（テストから差し替え可能にする）
@@ -1019,6 +1030,79 @@ describe('useDrawTool', () => {
       expect(line.latlon.length).toBe(1);
       expect(line.latlon.length).toBe(line.xy.length);
       expect(line.latlon[0]).toBe(untouchedRef);
+    });
+  });
+
+  describe('フリーハンド描画（逐次latlon化・終点キャッチアップ・ピンチ確定）', () => {
+    it('描画中もxyとlatlonが同数で保たれ、離した位置まで線が届く', () => {
+      const { result } = renderDrawTool();
+      act(() => {
+        result.current.setDrawTool('FREEHAND_LINE');
+      });
+      act(() => {
+        result.current.handleGrantFreehand([10, 10]);
+      });
+      act(() => {
+        result.current.handleMoveFreehand([20, 20], 16);
+        result.current.handleMoveFreehand([30, 30], 32);
+        result.current.handleMoveFreehand([40, 40], 48);
+      });
+      //描画中からlatlonが揃っている（ピンチ時の再投影で消えない）
+      const during = result.current.drawLine.current[0];
+      expect(during.latlon.length).toBe(during.xy.length);
+      expect(during.latlon.length).toBeGreaterThanOrEqual(4);
+
+      act(() => {
+        result.current.handleReleaseFreehand();
+      });
+      const line = result.current.drawLine.current[0];
+      //終点は最後の生タッチ位置（切り捨てなし）
+      expect(line.xy[line.xy.length - 1]).toEqual([40, 40]);
+      expect(line.latlon[line.latlon.length - 1]).toEqual([40, 40]);
+      //始点もそのまま
+      expect(line.xy[0]).toEqual([10, 10]);
+      expect(line.latlon.length).toBe(line.xy.length);
+    });
+
+    it('commitFreehandStrokeで描きかけが確定し、1点だけなら破棄される', () => {
+      const { result } = renderDrawTool();
+      act(() => {
+        result.current.setDrawTool('FREEHAND_LINE');
+      });
+      //2点以上 → 確定
+      act(() => {
+        result.current.handleGrantFreehand([10, 10]);
+      });
+      act(() => {
+        result.current.handleMoveFreehand([20, 20], 16);
+      });
+      act(() => {
+        result.current.commitFreehandStroke();
+      });
+      expect(result.current.drawLine.current).toHaveLength(1);
+      expect(result.current.drawLine.current[0].latlon.length).toBe(result.current.drawLine.current[0].xy.length);
+      expect(result.current.isEditingObject).toBe(true);
+
+      //確定済みなので次のGrantは修正ストロークの開始になる（drawLineが増えない）
+      act(() => {
+        result.current.handleGrantFreehand([100, 100]);
+      });
+      expect(result.current.drawLine.current).toHaveLength(1);
+    });
+
+    it('commitFreehandStroke: 1点だけのストロークは破棄されundoのNEWも取り除かれる', () => {
+      const { result } = renderDrawTool();
+      act(() => {
+        result.current.setDrawTool('FREEHAND_LINE');
+      });
+      act(() => {
+        result.current.handleGrantFreehand([10, 10]);
+      });
+      act(() => {
+        result.current.commitFreehandStroke();
+      });
+      expect(result.current.drawLine.current).toHaveLength(0);
+      expect(result.current.isEditingObject).toBe(false);
     });
   });
 

@@ -1,7 +1,6 @@
 import { cloneDeep } from 'lodash';
 import {
   DMSType,
-  DrawLineType,
   DrawToolType,
   LatLonDMSKey,
   LatLonDMSType,
@@ -334,17 +333,30 @@ export const calcInnerProduct = (pA: Position[], pB: Position[]) => {
   return dot(vecA, vecB);
 };
 
-export const modifyLine = (original: DrawLineType, modified: Position[], currentDrawTool: DrawToolType) => {
-  if (modified.length < 2) return original.xy;
+/**
+ * 修正ストロークを元のラインに合成する（フリーハンド修正）。
+ * xyとlatlonを並行して合成し、元のラインの頂点はoriginal.latlonの値をそのまま保持する
+ * （xyから再変換すると画面ピクセル解像度に丸められ精度が劣化するため）。
+ * 新規に生じる点（修正ストローク・スナップ位置）のみtoLatLonで変換する。
+ */
+export const modifyLineWithSource = (
+  original: { xy: Position[]; latlon: Position[] },
+  modified: Position[],
+  currentDrawTool: DrawToolType,
+  toLatLon: (xy: Position) => Position
+): { xy: Position[]; latlon: Position[] } => {
+  const noChange = { xy: original.xy, latlon: original.latlon };
+  if (modified.length < 2) return noChange;
   const startPoint = modified[0];
   const endPoint = modified[modified.length - 1];
   const firstPlot = original.xy[0];
   const lastPlot = original.xy[original.xy.length - 1];
   const startIsNearWithLast = isNearWithPlot(startPoint, lastPlot);
   const endIsNearWithFirst = isNearWithPlot(endPoint, firstPlot);
+  const modifiedLatLon = modified.map(toLatLon);
 
   if (original.xy.length === 1) {
-    if (isNearWithPlot(startPoint, firstPlot)) return modified;
+    if (isNearWithPlot(startPoint, firstPlot)) return { xy: modified, latlon: modifiedLatLon };
   }
 
   const {
@@ -359,50 +371,70 @@ export const modifyLine = (original: DrawLineType, modified: Position[], current
   } = checkDistanceFromLine(endPoint, original.xy, 1000);
 
   //最初が離れている場合（修正にはならないのでありえない）
-  if (!startIsNear || startPosition === undefined) return original.xy;
-  if (!endIsNear || endPosition === undefined) {
-    //console.log('最後が離れている');
+  if (!startIsNear || startPosition === undefined) return noChange;
 
-    const firstLine = startIsNearWithLast ? original.xy : original.xy.slice(0, startIndex + 1);
-    return [...firstLine, startPosition, ...modified.slice(1)];
+  const firstXY = startIsNearWithLast ? original.xy : original.xy.slice(0, startIndex + 1);
+  const firstLatLon = startIsNearWithLast ? original.latlon : original.latlon.slice(0, startIndex + 1);
+
+  if (!endIsNear || endPosition === undefined) {
+    //最後が離れている
+    return {
+      xy: [...firstXY, startPosition, ...modified.slice(1)],
+      latlon: [...firstLatLon, toLatLon(startPosition), ...modifiedLatLon.slice(1)],
+    };
   }
   //最初も最後も元のラインに近い場合
   if (endIsNearWithFirst && currentDrawTool === 'FREEHAND_POLYGON') {
     //修正ラインの最後がオリジナルラインの最初にスナップ。閉じる。
-    //console.log('修正ラインの最後がオリジナルラインの最初にスナップ。閉じる');
-
-    const firstLine = startIsNearWithLast ? original.xy : original.xy.slice(0, startIndex + 1);
-    const secondLine = [...modified.slice(1, -1), original.xy[0]];
-    return [...firstLine, startPosition, ...secondLine];
+    return {
+      xy: [...firstXY, startPosition, ...modified.slice(1, -1), original.xy[0]],
+      latlon: [...firstLatLon, toLatLon(startPosition), ...modifiedLatLon.slice(1, -1), original.latlon[0]],
+    };
   }
   if (startIndex === endIndex) {
-    //console.log('修正ラインがぐるっと一周');
-    return modified;
+    //修正ラインがぐるっと一周
+    return { xy: modified, latlon: modifiedLatLon };
   }
   if (startIndex < endIndex) {
-    //console.log('途中の修正');
-    const firstLine = original.xy.slice(0, startIndex + 1);
-    const secondLine = modified.slice(1, -1);
-    return [...firstLine, startPosition, ...secondLine, endPosition, ...original.xy.slice(endIndex + 1)];
+    //途中の修正
+    return {
+      xy: [
+        ...original.xy.slice(0, startIndex + 1),
+        startPosition,
+        ...modified.slice(1, -1),
+        endPosition,
+        ...original.xy.slice(endIndex + 1),
+      ],
+      latlon: [
+        ...original.latlon.slice(0, startIndex + 1),
+        toLatLon(startPosition),
+        ...modifiedLatLon.slice(1, -1),
+        toLatLon(endPosition),
+        ...original.latlon.slice(endIndex + 1),
+      ],
+    };
   }
   if (startIndex > endIndex) {
-    //console.log('終点が始点より前に戻る。ぐるっと円を書いた場合。');
     //終点が始点より前に戻る。ぐるっと円を書いた場合。
     if (currentDrawTool === 'FREEHAND_POLYGON') {
-      //console.log('ポリゴンの場合はポリゴンにする');
       //ポリゴンの場合はポリゴンにする
-      const firstLine = original.xy.slice(endIndex + 1, startIndex + 1);
-      const secondLine = modified.slice(1);
-      return [endPosition, ...firstLine, startPosition, ...secondLine];
+      return {
+        xy: [endPosition, ...original.xy.slice(endIndex + 1, startIndex + 1), startPosition, ...modified.slice(1)],
+        latlon: [
+          toLatLon(endPosition),
+          ...original.latlon.slice(endIndex + 1, startIndex + 1),
+          toLatLon(startPosition),
+          ...modifiedLatLon.slice(1),
+        ],
+      };
     }
     //ラインの場合は終点のスナップは無いものとして処理
-    //console.log('ラインの場合は終点のスナップは無いものとして処理');
-    const firstLine = startIsNearWithLast ? original.xy : original.xy.slice(0, startIndex + 1);
-    const secondLine = modified.slice(1);
-    return [...firstLine, startPosition, ...secondLine];
+    return {
+      xy: [...firstXY, startPosition, ...modified.slice(1)],
+      latlon: [...firstLatLon, toLatLon(startPosition), ...modifiedLatLon.slice(1)],
+    };
   }
-  //console.log('どれも該当しない');
-  return [];
+  return { xy: [], latlon: [] };
 };
 
 export const selectPointFeaturesByArea = (pointFeatures: PointRecordType[], areaLineCoords: Position[]) => {

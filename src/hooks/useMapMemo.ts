@@ -41,7 +41,7 @@ import { useRecord } from './useRecord';
 import { updateLayerAction } from '../modules/layers';
 import { STAMP } from '../constants/AppConstants';
 import { isBrushTool, isEraserTool, isPenTool, isStampTool } from '../utils/General';
-import { PositionFilter } from '../utils/OneEuroFilter';
+import { getEventTimestamp, PositionFilter } from '../utils/OneEuroFilter';
 import { Position } from 'geojson';
 import { selectNonDeletedDataSet } from '../modules/selectors';
 
@@ -127,14 +127,6 @@ const LAYER_HANDOFF_DURATION_MS = 150;
 const PEN_SIMPLIFY_TOLERANCE_PX = 1.0;
 //これ未満の点数のストロークは整形せず生のまま保存する（矢印スタイル用）
 const MIN_POINTS_FOR_REFINE = 5;
-
-//1€フィルタ用のタイムスタンプ(ms)。native=タッチイベントのtimestamp、web=performance.now()
-const getEventTimestamp = (event: GestureResponderEvent): number => {
-  //@ts-ignore react-native-webのイベントにはtimestampが無い場合がある
-  const t = event.nativeEvent?.timestamp;
-  if (typeof t === 'number') return t;
-  return typeof performance !== 'undefined' ? performance.now() : Date.now();
-};
 
 /**
  * Custom hook to manage map memo functionality
