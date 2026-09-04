@@ -70,20 +70,19 @@ export const HomeDrawTools = React.memo(() => {
       gap: 10,
       paddingHorizontal: 20,
     },
-    //アイコンと文字を横並びにする（Buttonアトムはアイコン下に極小ラベルを重ねる設計のため文字が重なる）
+    //アイコン上・文字下の縦並び（Buttonアトムはアイコン下に極小ラベルを重ねる設計のため文字が重なる）
     editButton: {
       alignItems: 'center',
       borderRadius: 8,
-      flexDirection: 'row',
-      gap: 6,
+      gap: 2,
       justifyContent: 'center',
-      paddingVertical: 10,
+      paddingVertical: 6,
       //文字数に関係なく2つのボタンの幅を揃える
-      width: 140,
+      width: 84,
     },
     editButtonText: {
       color: COLOR.WHITE,
-      fontSize: 14,
+      fontSize: 12,
       fontWeight: 'bold',
     },
   });
