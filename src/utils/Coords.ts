@@ -344,8 +344,10 @@ export const modifyLineWithSource = (
   modified: Position[],
   currentDrawTool: DrawToolType,
   toLatLon: (xy: Position) => Position
-): { xy: Position[]; latlon: Position[] } => {
-  const noChange = { xy: original.xy, latlon: original.latlon };
+): { xy: Position[]; latlon: Position[]; junctions: number[] } => {
+  //junctionsは元ラインと修正ストロークの接続点（出力配列内のインデックス）。
+  //接続部の平滑化(smoothJunctions)に使う
+  const noChange = { xy: original.xy, latlon: original.latlon, junctions: [] as number[] };
   if (modified.length < 2) return noChange;
   const startPoint = modified[0];
   const endPoint = modified[modified.length - 1];
@@ -356,7 +358,7 @@ export const modifyLineWithSource = (
   const modifiedLatLon = modified.map(toLatLon);
 
   if (original.xy.length === 1) {
-    if (isNearWithPlot(startPoint, firstPlot)) return { xy: modified, latlon: modifiedLatLon };
+    if (isNearWithPlot(startPoint, firstPlot)) return { xy: modified, latlon: modifiedLatLon, junctions: [] };
   }
 
   const {
@@ -381,6 +383,7 @@ export const modifyLineWithSource = (
     return {
       xy: [...firstXY, startPosition, ...modified.slice(1)],
       latlon: [...firstLatLon, toLatLon(startPosition), ...modifiedLatLon.slice(1)],
+      junctions: [firstXY.length],
     };
   }
   //最初も最後も元のラインに近い場合
@@ -389,14 +392,15 @@ export const modifyLineWithSource = (
     return {
       xy: [...firstXY, startPosition, ...modified.slice(1, -1), original.xy[0]],
       latlon: [...firstLatLon, toLatLon(startPosition), ...modifiedLatLon.slice(1, -1), original.latlon[0]],
+      junctions: [firstXY.length],
     };
   }
   if (startIndex === endIndex) {
     //修正ラインがぐるっと一周
-    return { xy: modified, latlon: modifiedLatLon };
+    return { xy: modified, latlon: modifiedLatLon, junctions: [] };
   }
   if (startIndex < endIndex) {
-    //途中の修正
+    //途中の修正。接続点は挿入したstartPositionとendPositionの位置
     return {
       xy: [
         ...original.xy.slice(0, startIndex + 1),
@@ -412,6 +416,7 @@ export const modifyLineWithSource = (
         toLatLon(endPosition),
         ...original.latlon.slice(endIndex + 1),
       ],
+      junctions: [startIndex + 1, startIndex + modified.length],
     };
   }
   if (startIndex > endIndex) {
@@ -426,15 +431,70 @@ export const modifyLineWithSource = (
           toLatLon(startPosition),
           ...modifiedLatLon.slice(1),
         ],
+        junctions: [1 + (startIndex - endIndex)],
       };
     }
     //ラインの場合は終点のスナップは無いものとして処理
     return {
       xy: [...firstXY, startPosition, ...modified.slice(1)],
       latlon: [...firstLatLon, toLatLon(startPosition), ...modifiedLatLon.slice(1)],
+      junctions: [firstXY.length],
     };
   }
-  return { xy: [], latlon: [] };
+  return { xy: [], latlon: [], junctions: [] };
+};
+
+//接続部の平滑化: この折れ角(度)より浅ければなめらかに繋ぎ、急ならかくっと維持する
+const JUNCTION_SMOOTH_ANGLE_DEG = 60;
+//平滑化する接続点の前後の点数
+const JUNCTION_WINDOW = 4;
+
+//接続点での折れ角（0=直進、180=Uターン）。ノイズに強いよう前後k点の平均方向で計算する
+const junctionAngleDeg = (line: Position[], j: number, k = 3): number => {
+  const i0 = Math.max(0, j - k);
+  const i1 = Math.min(line.length - 1, j + k);
+  if (i0 === j || i1 === j) return 180;
+  const v1 = [line[j][0] - line[i0][0], line[j][1] - line[i0][1]];
+  const v2 = [line[i1][0] - line[j][0], line[i1][1] - line[j][1]];
+  const m1 = Math.hypot(v1[0], v1[1]);
+  const m2 = Math.hypot(v2[0], v2[1]);
+  if (m1 === 0 || m2 === 0) return 180;
+  const cos = Math.max(-1, Math.min(1, (v1[0] * v2[0] + v1[1] * v2[1]) / (m1 * m2)));
+  return (Math.acos(cos) * 180) / Math.PI;
+};
+
+/**
+ * 修正ストロークの接続部をなぞり方に応じて平滑化する。
+ * 線の流れに沿って（浅い折れ角で）繋いだ接続点は前後数点をベジエで均し、
+ * 急な角度でぶつけた接続点はそのまま（かくっと）維持する。
+ * 平滑化した窓内の点はtoLatLonで再変換する（窓外の頂点は元のlatlonを保持）
+ */
+export const smoothJunctions = (
+  xy: Position[],
+  latlon: Position[],
+  junctions: number[],
+  toLatLon: (p: Position) => Position
+): { xy: Position[]; latlon: Position[] } => {
+  let outXY = xy;
+  let outLatLon = latlon;
+  //後ろの接続点から処理してインデックスのズレを防ぐ
+  const sorted = [...junctions].filter((j) => j > 0 && j < xy.length - 1).sort((a, b) => b - a);
+  for (const j of sorted) {
+    const angle = junctionAngleDeg(outXY, j);
+    if (angle >= JUNCTION_SMOOTH_ANGLE_DEG) continue; //急角度は意図的な折れとして維持
+    const s = Math.max(0, j - JUNCTION_WINDOW);
+    const e = Math.min(outXY.length - 1, j + JUNCTION_WINDOW);
+    if (e - s < 2) continue;
+    try {
+      //fitCurveは端点を通るため、窓の両端で元のラインと連続に繋がる
+      const smoothed = smoothingByBezier(outXY.slice(s, e + 1));
+      outXY = [...outXY.slice(0, s), ...smoothed, ...outXY.slice(e + 1)];
+      outLatLon = [...outLatLon.slice(0, s), ...smoothed.map(toLatLon), ...outLatLon.slice(e + 1)];
+    } catch (err) {
+      console.log('smoothJunctions error', err);
+    }
+  }
+  return { xy: outXY, latlon: outLatLon };
 };
 
 export const selectPointFeaturesByArea = (pointFeatures: PointRecordType[], areaLineCoords: Position[]) => {

@@ -11,6 +11,7 @@ import {
   simplifyWithTolerance,
   smoothingByBezier,
   modifyLineWithSource,
+  smoothJunctions,
 } from '../Coords';
 import { LocationType } from '../../types';
 
@@ -419,5 +420,50 @@ describe('modifyLineWithSource', () => {
     const result = modifyLineWithSource(original as any, [[10, 10]] as any, 'FREEHAND_LINE', toLatLon as any);
     expect(result.xy).toBe(original.xy);
     expect(result.latlon).toBe(original.latlon);
+  });
+});
+
+describe('smoothJunctions', () => {
+  const toLatLon = ([x, y]: [number, number]): [number, number] => [x + 9000, y + 9000];
+
+  it('浅い折れ角の接続点は前後が均されて点が変化する', () => {
+    //ほぼ直進（浅い折れ角 約27度）の接続点
+    const xy: [number, number][] = [];
+    for (let i = 0; i <= 10; i++) xy.push([i * 10, 0]);
+    for (let i = 1; i <= 10; i++) xy.push([100 + i * 10, i * 5]);
+    const latlon = xy.map(toLatLon);
+    const junction = 10;
+    const result = smoothJunctions(xy as any, latlon as any, [junction], toLatLon as any);
+    //端点は変わらない（連続性維持）
+    expect(result.xy[0]).toEqual([0, 0]);
+    expect(result.xy[result.xy.length - 1]).toEqual([200, 50]);
+    //窓の外の点は元のまま（同一参照）
+    expect(result.latlon[0]).toBe(latlon[0]);
+    expect(result.latlon[result.latlon.length - 1]).toBe(latlon[latlon.length - 1]);
+    //xyとlatlonは同数のまま
+    expect(result.latlon.length).toBe(result.xy.length);
+  });
+
+  it('急な折れ角（90度）の接続点はそのまま維持される', () => {
+    const xy: [number, number][] = [];
+    for (let i = 0; i <= 10; i++) xy.push([i * 10, 0]);
+    for (let i = 1; i <= 10; i++) xy.push([100, i * 10]); //90度に折れる
+    const latlon = xy.map(toLatLon);
+    const result = smoothJunctions(xy as any, latlon as any, [10], toLatLon as any);
+    //一切変更されない
+    expect(result.xy).toBe(xy);
+    expect(result.latlon).toBe(latlon);
+  });
+
+  it('接続点が無ければ何もしない', () => {
+    const xy: [number, number][] = [
+      [0, 0],
+      [10, 0],
+      [20, 0],
+    ];
+    const latlon = xy.map(toLatLon);
+    const result = smoothJunctions(xy as any, latlon as any, [], toLatLon as any);
+    expect(result.xy).toBe(xy);
+    expect(result.latlon).toBe(latlon);
   });
 });
