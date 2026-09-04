@@ -7,6 +7,7 @@ import Button from '../atoms/Button';
 import { CheckBox } from '../molecules/CheckBox';
 import { Pressable } from '../atoms/Pressable';
 import { useFeatureFlags } from '../../hooks/useFeatureFlags';
+import { isBrushTool, isEraserTool, isStampTool } from '../../utils/General';
 
 interface Props {
   visible: boolean;
@@ -32,13 +33,22 @@ const TABS: { key: MapMemoToolGroupType; labelKey: string }[] = [
   { key: 'ERASER', labelKey: 'Home.label.eraser' },
 ];
 
+//消しゴムのアイコン（他タブと同じアイコンボタン形式で表示する）
+const ERASER_ICONS: { [key: string]: string } = {
+  PEN_ERASER: 'eraser',
+  PEN_ERASER_PARTIAL: 'eraser-variant',
+  BRUSH_ERASER: 'brush',
+  STAMP_ERASER: 'stamper',
+};
+
 //タブを切り替えても高さが変わらないよう、コンテンツ領域は固定高にする
-const CONTENT_HEIGHT = 380;
+const CONTENT_HEIGHT = 330;
 
 /**
  * マップメモの設定モーダル（ペン/スタンプ/ブラシ/消しゴムをタブで切替）。
+ * どのタブも選択はハイライトのみで、OKで確定・Cancelで変更なしに統一。
  * StyledDialogのデザイントークン（角丸20・白カード・プライマリボタン）に合わせている。
- * ペンタブがローカル入力stateを持つため、useModalYieldingToDialogは使わない（規律コメント参照）
+ * ローカル入力stateを持つため、useModalYieldingToDialogは使わない（規律コメント参照）
  */
 export const HomeModalMapMemoSettings = React.memo((props: Props) => {
   const {
@@ -59,10 +69,13 @@ export const HomeModalMapMemoSettings = React.memo((props: Props) => {
   } = props;
   const { hisyouTool } = useFeatureFlags();
 
-  //ペンタブのローカル編集state（OKで確定）
+  //各タブのローカル編集state（OKで確定）
   const [penWidth, setPenWidth] = useState<PenWidthType>('PEN_MEDIUM');
   const [arrowStyle_, setArrowStyle] = useState<ArrowStyleType>('NONE');
   const [straightStyle, setStraightStyle] = useState(false);
+  const [stampSel, setStampSel] = useState<MapMemoToolType | undefined>(undefined);
+  const [brushSel, setBrushSel] = useState<MapMemoToolType | undefined>(undefined);
+  const [eraserSel, setEraserSel] = useState<MapMemoToolType>('PEN_ERASER');
   const [snapped, setSnapped] = useState(true);
 
   useEffect(() => {
@@ -71,30 +84,28 @@ export const HomeModalMapMemoSettings = React.memo((props: Props) => {
       setArrowStyle(arrowStyle);
       setStraightStyle(isStraightStyle);
       setSnapped(snapWithLine);
+      setStampSel(isStampTool(currentMapMemoTool) ? currentMapMemoTool : undefined);
+      setBrushSel(isBrushTool(currentMapMemoTool) ? currentMapMemoTool : undefined);
+      setEraserSel(isEraserTool(currentMapMemoTool) ? currentMapMemoTool : 'PEN_ERASER');
     }
-  }, [visible, arrowStyle, currentPenWidth, isStraightStyle, snapWithLine]);
+  }, [visible, arrowStyle, currentMapMemoTool, currentPenWidth, isStraightStyle, snapWithLine]);
 
-  const handlePenOK = () => {
-    selectMapMemoTool('PEN');
-    selectMapMemoPenWidth(penWidth);
-    selectMapMemoArrowStyle(arrowStyle_);
-    selectMapMemoStraightStyle(straightStyle);
-    close();
-  };
-
-  const handleStampPress = (tool: MapMemoToolType) => {
-    selectMapMemoTool(tool);
-    selectMapMemoSnapWithLine(snapped);
-    close();
-  };
-
-  const handleBrushPress = (tool: MapMemoToolType) => {
-    selectMapMemoTool(tool);
-    close();
-  };
-
-  const handleEraserPress = (tool: MapMemoToolType) => {
-    selectMapMemoTool(tool);
+  const handleOK = () => {
+    if (tab === 'PEN') {
+      selectMapMemoTool('PEN');
+      selectMapMemoPenWidth(penWidth);
+      selectMapMemoArrowStyle(arrowStyle_);
+      selectMapMemoStraightStyle(straightStyle);
+    } else if (tab === 'STAMP') {
+      if (stampSel !== undefined) {
+        selectMapMemoTool(stampSel);
+        selectMapMemoSnapWithLine(snapped);
+      }
+    } else if (tab === 'BRUSH') {
+      if (brushSel !== undefined) selectMapMemoTool(brushSel);
+    } else if (tab === 'ERASER') {
+      selectMapMemoTool(eraserSel);
+    }
     close();
   };
 
@@ -137,15 +148,6 @@ export const HomeModalMapMemoSettings = React.memo((props: Props) => {
         {optionButton('ARROW_END', PEN_STYLE.ARROW_END, arrowStyle_ === 'ARROW_END', () => setArrowStyle('ARROW_END'), t('Home.penPicker.end'))}
         {optionButton('ARROW_BOTH', PEN_STYLE.ARROW_BOTH, arrowStyle_ === 'ARROW_BOTH', () => setArrowStyle('ARROW_BOTH'), t('Home.penPicker.bothSides'))}
       </View>
-      <View style={styles.spacer} />
-      <View style={styles.footerRow}>
-        <Pressable style={styles.secondaryButton} onPress={close}>
-          <Text style={styles.secondaryButtonText}>Cancel</Text>
-        </Pressable>
-        <Pressable style={styles.primaryButton} onPress={handlePenOK}>
-          <Text style={styles.primaryButtonText}>OK</Text>
-        </Pressable>
-      </View>
     </View>
   );
 
@@ -155,20 +157,19 @@ export const HomeModalMapMemoSettings = React.memo((props: Props) => {
         <>
           <Text style={styles.sectionLabel}>飛翔図</Text>
           <View style={styles.optionRow}>
-            {optionButton('TOMARI', STAMP.TOMARI, currentMapMemoTool === 'TOMARI', () => handleStampPress('TOMARI'), 'とまり')}
-            {optionButton('KARI', STAMP.KARI, currentMapMemoTool === 'KARI', () => handleStampPress('KARI'), '狩り')}
-            {optionButton('KOUBI', STAMP.KOUBI, currentMapMemoTool === 'KOUBI', () => handleStampPress('KOUBI'), '交尾')}
-            {optionButton('VOICE', STAMP.VOICE, currentMapMemoTool === 'VOICE', () => handleStampPress('VOICE'), '声のみ')}
+            {optionButton('TOMARI', STAMP.TOMARI, stampSel === 'TOMARI', () => setStampSel('TOMARI'), 'とまり')}
+            {optionButton('KARI', STAMP.KARI, stampSel === 'KARI', () => setStampSel('KARI'), '狩り')}
+            {optionButton('KOUBI', STAMP.KOUBI, stampSel === 'KOUBI', () => setStampSel('KOUBI'), '交尾')}
+            {optionButton('VOICE', STAMP.VOICE, stampSel === 'VOICE', () => setStampSel('VOICE'), '声のみ')}
           </View>
         </>
       )}
       <Text style={styles.sectionLabel}>{t('common.common')}</Text>
       <View style={styles.optionRow}>
-        {optionButton('CIRCLE', STAMP.CIRCLE, currentMapMemoTool === 'CIRCLE', () => handleStampPress('CIRCLE'))}
-        {optionButton('TRIANGLE', STAMP.TRIANGLE, currentMapMemoTool === 'TRIANGLE', () => handleStampPress('TRIANGLE'))}
-        {optionButton('SQUARE', STAMP.SQUARE, currentMapMemoTool === 'SQUARE', () => handleStampPress('SQUARE'))}
+        {optionButton('CIRCLE', STAMP.CIRCLE, stampSel === 'CIRCLE', () => setStampSel('CIRCLE'))}
+        {optionButton('TRIANGLE', STAMP.TRIANGLE, stampSel === 'TRIANGLE', () => setStampSel('TRIANGLE'))}
+        {optionButton('SQUARE', STAMP.SQUARE, stampSel === 'SQUARE', () => setStampSel('SQUARE'))}
       </View>
-      <View style={styles.spacer} />
       <View style={styles.checkboxRow}>
         <CheckBox
           label={t('common.snapWithLine')}
@@ -176,10 +177,7 @@ export const HomeModalMapMemoSettings = React.memo((props: Props) => {
           labelColor="black"
           width={280}
           checked={snapped}
-          onCheck={(isChecked) => {
-            setSnapped(isChecked);
-            selectMapMemoSnapWithLine(isChecked);
-          }}
+          onCheck={setSnapped}
         />
       </View>
     </View>
@@ -191,55 +189,39 @@ export const HomeModalMapMemoSettings = React.memo((props: Props) => {
         <>
           <Text style={styles.sectionLabel}>飛翔図</Text>
           <View style={styles.optionRow}>
-            {optionButton('SENKAI', BRUSH.SENKAI, currentMapMemoTool === 'SENKAI', () => handleBrushPress('SENKAI'), '旋回')}
-            {optionButton('SENJYOU', BRUSH.SENJYOU, currentMapMemoTool === 'SENJYOU', () => handleBrushPress('SENJYOU'), '旋上')}
-            {optionButton('KYUKOKA', BRUSH.KYUKOKA, currentMapMemoTool === 'KYUKOKA', () => handleBrushPress('KYUKOKA'), '急降下')}
+            {optionButton('SENKAI', BRUSH.SENKAI, brushSel === 'SENKAI', () => setBrushSel('SENKAI'), '旋回')}
+            {optionButton('SENJYOU', BRUSH.SENJYOU, brushSel === 'SENJYOU', () => setBrushSel('SENJYOU'), '旋上')}
+            {optionButton('KYUKOKA', BRUSH.KYUKOKA, brushSel === 'KYUKOKA', () => setBrushSel('KYUKOKA'), '急降下')}
           </View>
           <View style={styles.optionRow}>
-            {optionButton('DISPLAY1', BRUSH.DISPLAY1, currentMapMemoTool === 'DISPLAY1', () => handleBrushPress('DISPLAY1'), '誇示1')}
-            {optionButton('DISPLAY2', BRUSH.DISPLAY2, currentMapMemoTool === 'DISPLAY2', () => handleBrushPress('DISPLAY2'), '誇示2')}
-            {optionButton('KOUGEKI', BRUSH.KOUGEKI, currentMapMemoTool === 'KOUGEKI', () => handleBrushPress('KOUGEKI'), '排斥')}
+            {optionButton('DISPLAY1', BRUSH.DISPLAY1, brushSel === 'DISPLAY1', () => setBrushSel('DISPLAY1'), '誇示1')}
+            {optionButton('DISPLAY2', BRUSH.DISPLAY2, brushSel === 'DISPLAY2', () => setBrushSel('DISPLAY2'), '誇示2')}
+            {optionButton('KOUGEKI', BRUSH.KOUGEKI, brushSel === 'KOUGEKI', () => setBrushSel('KOUGEKI'), '排斥')}
           </View>
           <View style={styles.optionRow}>
-            {optionButton('TANJI', BRUSH.TANJI, currentMapMemoTool === 'TANJI', () => handleBrushPress('TANJI'), '探餌')}
-            {optionButton('ESA', BRUSH.ESA, currentMapMemoTool === 'ESA', () => handleBrushPress('ESA'), '餌運搬')}
-            {optionButton('SUZAI', BRUSH.SUZAI, currentMapMemoTool === 'SUZAI', () => handleBrushPress('SUZAI'), '巣材運搬')}
+            {optionButton('TANJI', BRUSH.TANJI, brushSel === 'TANJI', () => setBrushSel('TANJI'), '探餌')}
+            {optionButton('ESA', BRUSH.ESA, brushSel === 'ESA', () => setBrushSel('ESA'), '餌運搬')}
+            {optionButton('SUZAI', BRUSH.SUZAI, brushSel === 'SUZAI', () => setBrushSel('SUZAI'), '巣材運搬')}
           </View>
         </>
       )}
       <Text style={styles.sectionLabel}>{t('common.common')}</Text>
       <View style={styles.optionRow}>
-        {optionButton('PLUS', BRUSH.PLUS, currentMapMemoTool === 'PLUS', () => handleBrushPress('PLUS'))}
-        {optionButton('CROSS', BRUSH.CROSS, currentMapMemoTool === 'CROSS', () => handleBrushPress('CROSS'))}
+        {optionButton('PLUS', BRUSH.PLUS, brushSel === 'PLUS', () => setBrushSel('PLUS'))}
+        {optionButton('CROSS', BRUSH.CROSS, brushSel === 'CROSS', () => setBrushSel('CROSS'))}
       </View>
     </View>
   );
 
-  const eraserOption = (tool: MapMemoToolType, labelKey: string) => (
-    <Pressable
-      key={tool}
-      style={[styles.eraserOption, currentMapMemoTool === tool && styles.eraserOptionSelected]}
-      onPress={() => handleEraserPress(tool)}
-    >
-      <Button
-        id={tool}
-        name={currentMapMemoTool === tool ? 'checkbox-marked-circle-outline' : 'checkbox-blank-circle-outline'}
-        color={currentMapMemoTool === tool ? COLOR.BLUE : COLOR.GRAY4}
-        backgroundColor={COLOR.TRANSPARENT}
-        borderRadius={50}
-        onPress={() => handleEraserPress(tool)}
-        size={22}
-      />
-      <Text style={[styles.eraserLabel, currentMapMemoTool === tool && styles.eraserLabelSelected]}>{t(labelKey)}</Text>
-    </Pressable>
-  );
-
   const renderEraserTab = () => (
     <View style={styles.tabContent}>
-      {eraserOption('PEN_ERASER', 'common.selectPenEraser')}
-      {eraserOption('PEN_ERASER_PARTIAL', 'common.selectPenEraserPartial')}
-      {eraserOption('BRUSH_ERASER', 'common.selectBrushEraser')}
-      {eraserOption('STAMP_ERASER', 'common.selectStampEraser')}
+      <View style={styles.optionRow}>
+        {optionButton('PEN_ERASER', ERASER_ICONS.PEN_ERASER, eraserSel === 'PEN_ERASER', () => setEraserSel('PEN_ERASER'), t('Home.eraserPicker.line'))}
+        {optionButton('PEN_ERASER_PARTIAL', ERASER_ICONS.PEN_ERASER_PARTIAL, eraserSel === 'PEN_ERASER_PARTIAL', () => setEraserSel('PEN_ERASER_PARTIAL'), t('Home.eraserPicker.partial'))}
+        {optionButton('BRUSH_ERASER', ERASER_ICONS.BRUSH_ERASER, eraserSel === 'BRUSH_ERASER', () => setEraserSel('BRUSH_ERASER'), t('Home.eraserPicker.brush'))}
+        {optionButton('STAMP_ERASER', ERASER_ICONS.STAMP_ERASER, eraserSel === 'STAMP_ERASER', () => setEraserSel('STAMP_ERASER'), t('Home.eraserPicker.stamp'))}
+      </View>
+      <Text style={styles.eraserDescription}>{t(`Home.eraserPicker.description_${eraserSel}`)}</Text>
     </View>
   );
 
@@ -247,22 +229,17 @@ export const HomeModalMapMemoSettings = React.memo((props: Props) => {
     <Modal animationType="none" transparent={true} visible={visible}>
       <Pressable style={styles.overlay} onPress={close} disablePressedAnimation>
         <Pressable style={styles.card} onPress={() => {}} disablePressedAnimation>
-          <View style={styles.header}>
-            <View style={styles.segmentContainer}>
-              {TABS.map(({ key, labelKey }) => (
-                <Pressable
-                  key={key}
-                  style={[styles.segment, tab === key && styles.segmentActive]}
-                  onPress={() => tab !== key && setTab(key)}
-                  disablePressedAnimation
-                >
-                  <Text style={[styles.segmentLabel, tab === key && styles.segmentLabelActive]}>{t(labelKey)}</Text>
-                </Pressable>
-              ))}
-            </View>
-            <Pressable style={styles.closeButton} onPress={close} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-              <Text style={styles.closeButtonText}>×</Text>
-            </Pressable>
+          <View style={styles.segmentContainer}>
+            {TABS.map(({ key, labelKey }) => (
+              <Pressable
+                key={key}
+                style={[styles.segment, tab === key && styles.segmentActive]}
+                onPress={() => tab !== key && setTab(key)}
+                disablePressedAnimation
+              >
+                <Text style={[styles.segmentLabel, tab === key && styles.segmentLabelActive]}>{t(labelKey)}</Text>
+              </Pressable>
+            ))}
           </View>
           <View style={styles.contentArea}>
             <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
@@ -271,6 +248,14 @@ export const HomeModalMapMemoSettings = React.memo((props: Props) => {
               {tab === 'BRUSH' && renderBrushTab()}
               {tab === 'ERASER' && renderEraserTab()}
             </ScrollView>
+          </View>
+          <View style={styles.footerRow}>
+            <Pressable style={styles.secondaryButton} onPress={close}>
+              <Text style={styles.secondaryButtonText}>Cancel</Text>
+            </Pressable>
+            <Pressable style={styles.primaryButton} onPress={handleOK}>
+              <Text style={styles.primaryButtonText}>OK</Text>
+            </Pressable>
           </View>
         </Pressable>
       </Pressable>
@@ -296,51 +281,20 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     marginTop: 8,
   },
-  closeButton: {
-    alignItems: 'center',
-    height: 28,
-    justifyContent: 'center',
-    marginLeft: 6,
-    width: 28,
-  },
-  closeButtonText: {
-    color: COLOR.GRAY2,
-    fontSize: 22,
-    lineHeight: 26,
-  },
   contentArea: {
     height: CONTENT_HEIGHT,
     marginTop: 14,
   },
-  eraserLabel: {
+  eraserDescription: {
     color: COLOR.GRAY4,
-    fontSize: 15,
-    marginLeft: 6,
-  },
-  eraserLabelSelected: {
-    color: COLOR.BLUE,
-    fontWeight: 'bold',
-  },
-  eraserOption: {
-    alignItems: 'center',
-    borderColor: COLOR.GRAY1,
-    borderRadius: 12,
-    borderWidth: 1,
-    flexDirection: 'row',
-    marginBottom: 10,
-    minHeight: 52,
-    paddingHorizontal: 10,
-  },
-  eraserOptionSelected: {
-    borderColor: COLOR.BLUE,
+    fontSize: 14,
+    lineHeight: 20,
+    marginTop: 10,
   },
   footerRow: {
     flexDirection: 'row',
     gap: 10,
-  },
-  header: {
-    alignItems: 'center',
-    flexDirection: 'row',
+    marginTop: 12,
   },
   optionButton: {
     margin: 5,
@@ -413,7 +367,6 @@ const styles = StyleSheet.create({
   segmentContainer: {
     backgroundColor: COLOR.GRAY1,
     borderRadius: 12,
-    flex: 1,
     flexDirection: 'row',
     padding: 3,
   },
@@ -424,10 +377,6 @@ const styles = StyleSheet.create({
   segmentLabelActive: {
     color: COLOR.BLUE,
     fontWeight: 'bold',
-  },
-  spacer: {
-    flex: 1,
-    minHeight: 8,
   },
   tabContent: {
     flex: 1,
