@@ -77,9 +77,9 @@ export const HomeDrawTools = React.memo(() => {
       flexDirection: 'row',
       gap: 6,
       justifyContent: 'center',
-      minWidth: 96,
-      paddingHorizontal: 16,
       paddingVertical: 10,
+      //文字数に関係なく2つのボタンの幅を揃える
+      width: 140,
     },
     editButtonText: {
       color: COLOR.WHITE,
@@ -103,7 +103,9 @@ export const HomeDrawTools = React.memo(() => {
             }}
           >
             <MaterialCommunityIcons name="check" size={18} color={COLOR.WHITE} />
-            <Text style={styles.editButtonText}>{t('common.finish')}</Text>
+            <Text style={styles.editButtonText} numberOfLines={1}>
+              {t('common.finish')}
+            </Text>
           </Pressable>
           <Pressable
             style={[styles.editButton, { backgroundColor: COLOR.RED }]}
@@ -112,7 +114,9 @@ export const HomeDrawTools = React.memo(() => {
             }}
           >
             <MaterialCommunityIcons name="close" size={18} color={COLOR.WHITE} />
-            <Text style={styles.editButtonText}>{t('common.cancel')}</Text>
+            <Text style={styles.editButtonText} numberOfLines={1}>
+              {t('common.cancel')}
+            </Text>
           </Pressable>
         </View>
       )}
