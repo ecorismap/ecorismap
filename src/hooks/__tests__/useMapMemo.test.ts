@@ -359,52 +359,18 @@ describe('useMapMemo', () => {
     expect(result.current.visibleMapMemoColor).toBe(true);
   });
 
-  it('setVisibleMapMemoPenが正しく動作すること', () => {
+  it('設定モーダルの表示とタブ切替が正しく動作すること', () => {
     const mockMapViewRef = {} as any;
     const { result } = renderHook(() => useMapMemo(mockMapViewRef), { wrapper });
 
     act(() => {
-      result.current.setVisibleMapMemoPen(true);
+      result.current.setVisibleMapMemoSettings(true);
+      result.current.setMapMemoSettingsTab('ERASER');
     });
 
     // ローカルステートを直接検証
-    expect(result.current.visibleMapMemoPen).toBe(true);
-  });
-
-  it('setVisibleMapMemoStampが正しく動作すること', () => {
-    const mockMapViewRef = {} as any;
-    const { result } = renderHook(() => useMapMemo(mockMapViewRef), { wrapper });
-
-    act(() => {
-      result.current.setVisibleMapMemoStamp(true);
-    });
-
-    // ローカルステートを直接検証
-    expect(result.current.visibleMapMemoStamp).toBe(true);
-  });
-
-  it('setVisibleMapMemoBrushが正しく動作すること', () => {
-    const mockMapViewRef = {} as any;
-    const { result } = renderHook(() => useMapMemo(mockMapViewRef), { wrapper });
-
-    act(() => {
-      result.current.setVisibleMapMemoBrush(true);
-    });
-
-    // ローカルステートを直接検証
-    expect(result.current.visibleMapMemoBrush).toBe(true);
-  });
-
-  it('setVisibleMapMemoEraserが正しく動作すること', () => {
-    const mockMapViewRef = {} as any;
-    const { result } = renderHook(() => useMapMemo(mockMapViewRef), { wrapper });
-
-    act(() => {
-      result.current.setVisibleMapMemoEraser(true);
-    });
-
-    // ローカルステートを直接検証
-    expect(result.current.visibleMapMemoEraser).toBe(true);
+    expect(result.current.visibleMapMemoSettings).toBe(true);
+    expect(result.current.mapMemoSettingsTab).toBe('ERASER');
   });
 
   it('setArrowStyleが正しく動作すること', () => {
