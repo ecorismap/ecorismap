@@ -45,6 +45,7 @@ import {
   isClosedPolygon,
   isNearWithPlot,
   modifyLineWithSource,
+  smoothJunctions,
 } from '../utils/Coords';
 import { useWindow } from './useWindow';
 import { deleteRecordsAction } from '../modules/dataSet';
@@ -819,11 +820,13 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     }
     if (lineXY.length < 2) return;
     //元のラインの頂点はlatlonを保持したまま、修正ストローク部分のみ変換して合成する
-    const modified = modifyLineWithSource(drawLine.current[index], lineXY, currentDrawTool, (xy) =>
-      xyToLatLon(xy, mapRegion, mapSize, mapViewRef)
-    );
+    const toLatLon = (xy: Position) => xyToLatLon(xy, mapRegion, mapSize, mapViewRef);
+    const modified = modifyLineWithSource(drawLine.current[index], lineXY, currentDrawTool, toLatLon);
     editingLineXY.current = [];
     if (modified.xy.length <= 0) return;
+
+    //接続部をなぞり方に応じて平滑化（浅い角度=なめらか、急角度=かくっと維持）
+    const blended = smoothJunctions(modified.xy, modified.latlon, modified.junctions, toLatLon);
 
     pushUndo({
       index: index,
@@ -833,8 +836,8 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
 
     drawLine.current[index] = {
       ...drawLine.current[index],
-      xy: modified.xy,
-      latlon: modified.latlon,
+      xy: blended.xy,
+      latlon: blended.latlon,
     };
   }, [pushUndo, currentDrawTool, drawLine, editingLineXY, editingObjectIndex, mapRegion, mapSize, mapViewRef]);
 
