@@ -61,7 +61,7 @@ export const Line = React.memo((props: Props & { editingLineId?: string }) => {
         if (feature.coords === undefined) return null;
 
         const selected =
-          feature.id === selectedRecord?.record?.id || feature.field._group === selectedRecord?.record.id;
+          feature.id === selectedRecord?.record?.id || feature.field._group === selectedRecord?.record?.id;
         const lineColor = selected ? COLOR.YELLOW : getColor(layer, feature);
         return (
           <HomeMapMemoStamp
@@ -74,7 +74,7 @@ export const Line = React.memo((props: Props & { editingLineId?: string }) => {
       })}
       {brushRecords.map((feature) => {
         const selected =
-          feature.id === selectedRecord?.record?.id || feature.field._group === selectedRecord?.record.id;
+          feature.id === selectedRecord?.record?.id || feature.field._group === selectedRecord?.record?.id;
         const lineColor = selected ? COLOR.YELLOW : getColor(layer, feature);
         return (
           <HomeMapMemoBrush
@@ -89,7 +89,7 @@ export const Line = React.memo((props: Props & { editingLineId?: string }) => {
       {arrowRecords.map((feature) => {
         if (feature.coords === undefined) return null;
         const selected =
-          feature.id === selectedRecord?.record?.id || feature.field._group === selectedRecord?.record.id;
+          feature.id === selectedRecord?.record?.id || feature.field._group === selectedRecord?.record?.id;
         const lineColor = selected ? COLOR.YELLOW : getColor(layer, feature);
         const arrowStyle = feature.field._strokeStyle as ArrowStyleType;
         const strokeWidth = getLineWidthAtZoom(layer, feature, zoomDecimal ?? zoom);

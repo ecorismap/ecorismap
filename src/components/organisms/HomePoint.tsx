@@ -94,7 +94,7 @@ export const Point = React.memo(
       if (prevProps.selectedRecord?.layerId !== nextProps.selectedRecord?.layerId) return false;
 
       // 選択レイヤが変更されていないが、選択レコードが変更された場合
-      if (prevProps.selectedRecord?.record.id !== nextProps.selectedRecord?.record.id) return false;
+      if (prevProps.selectedRecord?.record?.id !== nextProps.selectedRecord?.record?.id) return false;
     }
 
     return true;
