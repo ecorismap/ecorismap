@@ -891,15 +891,10 @@
       "bugFix2": "Various minor bug fixes"
     },
     "eraserPicker": {
-      "line": "line",
-      "partial": "partial",
-      "brush": "brush",
-      "stamp": "stamp",
       "description_PEN_ERASER": "Erase the entire traced line",
       "description_PEN_ERASER_PARTIAL": "Erase only the traced part of the line",
       "description_BRUSH_ERASER": "Erase the traced brush",
-      "description_STAMP_ERASER": "Erase stamps in the circled area",
-      "dummy": ""
+      "description_STAMP_ERASER": "Erase stamps in the circled area"
     },
     "penPicker": {
       "thin": "Thin",
