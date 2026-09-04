@@ -563,6 +563,8 @@ export type InfoToolType = keyof typeof INFOTOOL;
 export type SelectionToolType = keyof typeof SELECTIONTOOL;
 export type InfoToolType = keyof typeof INFOTOOL;
 export type MapMemoToolType = keyof typeof MAPMEMOTOOL;
+//マップメモのツール大分類（設定タブ・ツールボタンのグループ単位）
+export type MapMemoToolGroupType = 'PEN' | 'STAMP' | 'BRUSH' | 'ERASER';
 export type PenWidthType = keyof typeof PEN_WIDTH;
 export type StampType = keyof typeof STAMP;
 export type BrushType = keyof typeof BRUSH;

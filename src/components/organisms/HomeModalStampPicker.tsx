@@ -2,7 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, Modal } from 'react-native';
 import { COLOR, STAMP } from '../../constants/AppConstants';
 import { t } from '../../i18n/config';
-import { MapMemoToolType } from '../../types';
+import { MapMemoToolGroupType, MapMemoToolType } from '../../types';
+import { MapMemoToolTabBar } from '../molecules/MapMemoToolTabBar';
 import Button from '../atoms/Button';
 import { CheckBox } from '../molecules/CheckBox';
 import { Pressable } from '../atoms/Pressable';
@@ -16,6 +17,7 @@ interface Props {
   selectMapMemoTool: (mapMemoTool: MapMemoToolType | undefined) => void;
   selectMapMemoSnapWithLine: (snapWithLine: boolean) => void;
   setVisibleMapMemoStamp: React.Dispatch<React.SetStateAction<boolean>>;
+  onSelectTab: (tab: MapMemoToolGroupType) => void;
 }
 
 export const HomeModalStampPicker = React.memo((props: Props) => {
@@ -26,6 +28,7 @@ export const HomeModalStampPicker = React.memo((props: Props) => {
     selectMapMemoTool,
     setVisibleMapMemoStamp,
     selectMapMemoSnapWithLine,
+    onSelectTab,
   } = props;
   const { hisyouTool } = useFeatureFlags();
   const [snapped, setSnapped] = useState(false);
@@ -136,10 +139,7 @@ export const HomeModalStampPicker = React.memo((props: Props) => {
     <Modal animationType="none" transparent={true} visible={modalVisible}>
       <Pressable
         style={styles.modalCenteredView}
-        onPress={() => {
-          selectMapMemoTool(undefined);
-          setVisibleMapMemoStamp(false);
-        }}
+        onPress={() => setVisibleMapMemoStamp(false)}
         disablePressedAnimation
       >
         <Pressable
@@ -150,16 +150,13 @@ export const HomeModalStampPicker = React.memo((props: Props) => {
           {/* バツボタン追加 */}
           <Pressable
             style={styles.closeButton}
-            onPress={() => {
-              selectMapMemoTool(undefined);
-              setVisibleMapMemoStamp(false);
-            }}
+            onPress={() => setVisibleMapMemoStamp(false)}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
             <Text style={styles.closeButtonText}>×</Text>
           </Pressable>
           <View style={[styles.modalContents, { width: 200, height: hisyouTool ? 320 : 200 }]}>
-            <Text style={styles.modalTitle}>{`${t('common.selectStamp')}`} </Text>
+            <MapMemoToolTabBar active="STAMP" onSelect={onSelectTab} />
             <View style={{ flexDirection: 'column', margin: 10, width: 260 }}>
               {hisyouTool && (
                 <View

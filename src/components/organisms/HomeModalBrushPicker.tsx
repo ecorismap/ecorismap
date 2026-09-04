@@ -3,7 +3,8 @@ import { View, Text, StyleSheet, Modal } from 'react-native';
 import { Pressable } from '../atoms/Pressable';
 import { BRUSH, COLOR } from '../../constants/AppConstants';
 import { t } from '../../i18n/config';
-import { MapMemoToolType } from '../../types';
+import { MapMemoToolGroupType, MapMemoToolType } from '../../types';
+import { MapMemoToolTabBar } from '../molecules/MapMemoToolTabBar';
 import Button from '../atoms/Button';
 import { useFeatureFlags } from '../../hooks/useFeatureFlags';
 
@@ -13,10 +14,11 @@ interface Props {
 
   selectMapMemoTool: (mapMemoTool: MapMemoToolType | undefined) => void;
   setVisibleMapMemoBrush: React.Dispatch<React.SetStateAction<boolean>>;
+  onSelectTab: (tab: MapMemoToolGroupType) => void;
 }
 
 export const HomeModalBrushPicker = React.memo((props: Props) => {
-  const { currentMapMemoTool, modalVisible, selectMapMemoTool, setVisibleMapMemoBrush } = props;
+  const { currentMapMemoTool, modalVisible, selectMapMemoTool, setVisibleMapMemoBrush, onSelectTab } = props;
   const { hisyouTool } = useFeatureFlags();
   const [_brush, setBrush] = useState<MapMemoToolType | undefined>(undefined);
 
@@ -131,10 +133,7 @@ export const HomeModalBrushPicker = React.memo((props: Props) => {
     <Modal animationType="none" transparent={true} visible={modalVisible}>
       <Pressable
         style={styles.modalCenteredView}
-        onPress={() => {
-          selectMapMemoTool(undefined);
-          setVisibleMapMemoBrush(false);
-        }}
+        onPress={() => setVisibleMapMemoBrush(false)}
         disablePressedAnimation
       >
         <Pressable
@@ -145,16 +144,13 @@ export const HomeModalBrushPicker = React.memo((props: Props) => {
           {/* バツボタン */}
           <Pressable
             style={styles.closeButton}
-            onPress={() => {
-              selectMapMemoTool(undefined);
-              setVisibleMapMemoBrush(false);
-            }}
+            onPress={() => setVisibleMapMemoBrush(false)}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
             <Text style={styles.closeButtonText}>×</Text>
           </Pressable>
           <View style={[styles.modalContents, { width: 200, height: hisyouTool ? 380 : 180 }]}>
-            <Text style={styles.modalTitle}>{`${t('common.selectBrush')}`} </Text>
+            <MapMemoToolTabBar active="BRUSH" onSelect={onSelectTab} />
             <View style={{ flexDirection: 'column', margin: 10, width: 220 }}>
               {hisyouTool && (
                 <View

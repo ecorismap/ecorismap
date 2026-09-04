@@ -1,5 +1,5 @@
 import { createContext } from 'react';
-import { MapMemoToolType, PenWidthType } from '../types';
+import { MapMemoToolGroupType, MapMemoToolType, PenWidthType } from '../types';
 import { Position } from 'geojson';
 
 export interface MapMemoLine {
@@ -27,10 +27,10 @@ export interface MapMemoContextType {
   selectMapMemoTool: (tool: MapMemoToolType | undefined) => void;
   setPenWidth: (width: PenWidthType) => void;
   setVisibleMapMemoColor: (visible: boolean) => void;
-  setVisibleMapMemoPen: (visible: boolean) => void;
-  setVisibleMapMemoStamp: (visible: boolean) => void;
-  setVisibleMapMemoBrush: (visible: boolean) => void;
-  setVisibleMapMemoEraser: (visible: boolean) => void;
+  //ツールボタン押下（選択中=解除、初回=設定タブを開く、以降=前回の種別で即選択）
+  pressMapMemoToolButton: (group: MapMemoToolGroupType) => void;
+  //設定モーダルを指定タブで開く（歯車ボタン用）
+  openMapMemoSettingsTab: (tab: MapMemoToolGroupType) => void;
   selectPenColor: (hue: number, sat: number, val: number, alpha: number) => void;
   pressUndoMapMemo: () => void;
   pressRedoMapMemo: () => void;
@@ -50,10 +50,8 @@ export const MapMemoContext = createContext<MapMemoContextType>({
   selectMapMemoTool: () => {},
   setPenWidth: () => {},
   setVisibleMapMemoColor: () => {},
-  setVisibleMapMemoPen: () => {},
-  setVisibleMapMemoStamp: () => {},
-  setVisibleMapMemoBrush: () => {},
-  setVisibleMapMemoEraser: () => {},
+  pressMapMemoToolButton: () => {},
+  openMapMemoSettingsTab: () => {},
   selectPenColor: () => {},
   pressUndoMapMemo: () => {},
   pressRedoMapMemo: () => {},

@@ -2,7 +2,8 @@ import React, { useEffect } from 'react';
 import { View, Text, StyleSheet, Modal } from 'react-native';
 import { COLOR } from '../../constants/AppConstants';
 import { t } from '../../i18n/config';
-import { MapMemoToolType } from '../../types';
+import { MapMemoToolGroupType, MapMemoToolType } from '../../types';
+import { MapMemoToolTabBar } from '../molecules/MapMemoToolTabBar';
 import { isEraserTool } from '../../utils/General';
 import { Button } from '../atoms';
 import { Pressable } from '../atoms/Pressable';
@@ -13,10 +14,11 @@ interface Props {
 
   selectMapMemoTool: (mapMemoTool: MapMemoToolType | undefined) => void;
   setVisibleMapMemoEraser: React.Dispatch<React.SetStateAction<boolean>>;
+  onSelectTab: (tab: MapMemoToolGroupType) => void;
 }
 
 export const HomeModalEraserPicker = React.memo((props: Props) => {
-  const { currentMapMemoTool, modalVisible, selectMapMemoTool, setVisibleMapMemoEraser } = props;
+  const { currentMapMemoTool, modalVisible, selectMapMemoTool, setVisibleMapMemoEraser, onSelectTab } = props;
   const [_eraser, setEraser] = React.useState<MapMemoToolType | undefined>(undefined);
 
   useEffect(() => {
@@ -124,10 +126,7 @@ export const HomeModalEraserPicker = React.memo((props: Props) => {
     <Modal animationType="none" transparent={true} visible={modalVisible}>
       <Pressable
         style={styles.modalCenteredView}
-        onPress={() => {
-          selectMapMemoTool(undefined);
-          setVisibleMapMemoEraser(false);
-        }}
+        onPress={() => setVisibleMapMemoEraser(false)}
         disablePressedAnimation
       >
         <Pressable
@@ -138,16 +137,13 @@ export const HomeModalEraserPicker = React.memo((props: Props) => {
           {/* バツボタン */}
           <Pressable
             style={styles.closeButton}
-            onPress={() => {
-              selectMapMemoTool(undefined);
-              setVisibleMapMemoEraser(false);
-            }}
+            onPress={() => setVisibleMapMemoEraser(false)}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
             <Text style={styles.closeButtonText}>×</Text>
           </Pressable>
           <View style={[styles.modalContents, { width: 200, height: 280 }]}>
-            <Text style={styles.modalTitle}>{`${t('common.selectEraser')}`} </Text>
+            <MapMemoToolTabBar active="ERASER" onSelect={onSelectTab} />
             <View
               style={{
                 flexDirection: 'column',

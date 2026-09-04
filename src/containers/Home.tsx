@@ -15,6 +15,7 @@ import MapView, { Region } from 'react-native-maps';
 import {
   FeatureButtonType,
   DrawToolType,
+  MapMemoToolGroupType,
   MapMemoToolType,
   LayerType,
   RecordType,
@@ -44,6 +45,8 @@ import { MapRef, ViewState } from 'react-map-gl/maplibre';
 import { useProject } from '../hooks/useProject';
 import {
   getExt,
+  isBrushTool,
+  isEraserTool,
   isFreehandTool,
   isLineTool,
   isMapMemoDrawTool,
@@ -51,6 +54,7 @@ import {
   isPlotTool,
   isPointTool,
   isPolygonTool,
+  isStampTool,
 } from '../utils/General';
 import { t } from '../i18n/config';
 import { COLOR, TILE_FOLDER } from '../constants/AppConstants';
@@ -838,6 +842,61 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
 
   /************** select button ************/
 
+  //MEMOモード内で各ツールの設定を一度開いたかどうか。モード入場ごとにリセットし、
+  //初回タップでは設定タブを開いて確認してもらう
+  const mapMemoToolVisited = useRef<{ [key in MapMemoToolGroupType]?: boolean }>({});
+  //各グループで最後に使った種別（トグルON時に復元する）
+  const mapMemoLastTool = useRef<{ [key in MapMemoToolGroupType]?: MapMemoToolType }>({ PEN: 'PEN' });
+
+  useEffect(() => {
+    if (isStampTool(currentMapMemoTool)) mapMemoLastTool.current.STAMP = currentMapMemoTool;
+    else if (isBrushTool(currentMapMemoTool)) mapMemoLastTool.current.BRUSH = currentMapMemoTool;
+    else if (isEraserTool(currentMapMemoTool)) mapMemoLastTool.current.ERASER = currentMapMemoTool;
+  }, [currentMapMemoTool]);
+
+  /**
+   * マップメモ設定モーダルを指定タブで開く（タブバーからの切替にも使う）
+   */
+  const openMapMemoSettingsTab = useCallback(
+    (tab: MapMemoToolGroupType) => {
+      setVisibleMapMemoPen(tab === 'PEN');
+      setVisibleMapMemoStamp(tab === 'STAMP');
+      setVisibleMapMemoBrush(tab === 'BRUSH');
+      setVisibleMapMemoEraser(tab === 'ERASER');
+    },
+    [setVisibleMapMemoPen, setVisibleMapMemoStamp, setVisibleMapMemoBrush, setVisibleMapMemoEraser]
+  );
+
+  /**
+   * マップメモのツールボタン押下。
+   * 選択中なら解除、未選択ならMEMOモード入場後の初回は設定タブを開き、
+   * 2回目以降は前回の種別で即選択するトグル動作
+   */
+  const pressMapMemoToolButton = useCallback(
+    (group: MapMemoToolGroupType) => {
+      const isActive =
+        group === 'PEN'
+          ? isPenTool(currentMapMemoTool)
+          : group === 'STAMP'
+          ? isStampTool(currentMapMemoTool)
+          : group === 'BRUSH'
+          ? isBrushTool(currentMapMemoTool)
+          : isEraserTool(currentMapMemoTool);
+      if (isActive) {
+        selectMapMemoTool(undefined);
+        return;
+      }
+      const lastTool = group === 'PEN' ? 'PEN' : mapMemoLastTool.current[group];
+      if (!mapMemoToolVisited.current[group] || lastTool === undefined) {
+        mapMemoToolVisited.current[group] = true;
+        openMapMemoSettingsTab(group);
+        return;
+      }
+      selectMapMemoTool(lastTool);
+    },
+    [currentMapMemoTool, openMapMemoSettingsTab, selectMapMemoTool]
+  );
+
   const selectFeatureButton = useCallback(
     (value: FeatureButtonType) => {
       setDrawTool('NONE');
@@ -846,6 +905,8 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       setFeatureButton(value);
       resetDrawTools();
       clearMapMemoHistory();
+      //MEMOモードに入るたびに「初回タップで設定を開く」をリセットする
+      if (value === 'MEMO') mapMemoToolVisited.current = {};
       if (Platform.OS !== 'web') toggleHeadingUp(false);
     },
     [setDrawTool, setMapMemoTool, toggleTerrain, setFeatureButton, resetDrawTools, clearMapMemoHistory, toggleHeadingUp]
@@ -2742,10 +2803,8 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       selectMapMemoTool,
       setPenWidth,
       setVisibleMapMemoColor,
-      setVisibleMapMemoPen,
-      setVisibleMapMemoStamp,
-      setVisibleMapMemoBrush,
-      setVisibleMapMemoEraser,
+      pressMapMemoToolButton,
+      openMapMemoSettingsTab,
       selectPenColor,
       pressUndoMapMemo,
       pressRedoMapMemo,
@@ -2764,10 +2823,8 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       selectMapMemoTool,
       setPenWidth,
       setVisibleMapMemoColor,
-      setVisibleMapMemoPen,
-      setVisibleMapMemoStamp,
-      setVisibleMapMemoBrush,
-      setVisibleMapMemoEraser,
+      pressMapMemoToolButton,
+      openMapMemoSettingsTab,
       selectPenColor,
       pressUndoMapMemo,
       pressRedoMapMemo,
@@ -2872,12 +2929,14 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
                             selectMapMemoArrowStyle={setArrowStyle}
                             selectMapMemoStraightStyle={setIsStraightStyle}
                             setVisibleMapMemoPen={setVisibleMapMemoPen}
+                            onSelectTab={openMapMemoSettingsTab}
                           />
                           <HomeModalBrushPicker
                             modalVisible={visibleMapMemoBrush}
                             currentMapMemoTool={currentMapMemoTool}
                             selectMapMemoTool={selectMapMemoTool}
                             setVisibleMapMemoBrush={setVisibleMapMemoBrush}
+                            onSelectTab={openMapMemoSettingsTab}
                           />
                           <HomeModalStampPicker
                             modalVisible={visibleMapMemoStamp}
@@ -2886,12 +2945,14 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
                             selectMapMemoTool={selectMapMemoTool}
                             selectMapMemoSnapWithLine={setSnapWithLine}
                             setVisibleMapMemoStamp={setVisibleMapMemoStamp}
+                            onSelectTab={openMapMemoSettingsTab}
                           />
                           <HomeModalEraserPicker
                             modalVisible={visibleMapMemoEraser}
                             currentMapMemoTool={currentMapMemoTool}
                             selectMapMemoTool={selectMapMemoTool}
                             setVisibleMapMemoEraser={setVisibleMapMemoEraser}
+                            onSelectTab={openMapMemoSettingsTab}
                           />
                           <HomeModalInfoPicker
                             modalVisible={visibleInfoPicker}

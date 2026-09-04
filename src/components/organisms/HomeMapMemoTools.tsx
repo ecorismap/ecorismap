@@ -7,6 +7,8 @@ import { MapMemoContext } from '../../contexts/MapMemo';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { isTablet } from 'react-native-device-info';
 import { t } from 'i18next';
+import { isBrushTool, isEraserTool, isStampTool } from '../../utils/General';
+import { MapMemoToolGroupType } from '../../types';
 
 export const HomeMapMemoTools = React.memo(() => {
   const {
@@ -14,18 +16,24 @@ export const HomeMapMemoTools = React.memo(() => {
     isPencilModeActive,
     isUndoable,
     isRedoable,
-    selectMapMemoTool,
+    pressMapMemoToolButton,
+    openMapMemoSettingsTab,
     setVisibleMapMemoColor,
-    setVisibleMapMemoPen,
-    setVisibleMapMemoStamp,
-    setVisibleMapMemoBrush,
-    setVisibleMapMemoEraser,
     pressUndoMapMemo,
     pressRedoMapMemo,
     togglePencilMode,
   } = useContext(MapMemoContext);
 
   const insets = useSafeAreaInsets();
+
+  //歯車ボタンで開くタブ。選択中ツールのグループ、未選択ならペン
+  const currentGroup: MapMemoToolGroupType = isStampTool(currentMapMemoTool)
+    ? 'STAMP'
+    : isBrushTool(currentMapMemoTool)
+    ? 'BRUSH'
+    : isEraserTool(currentMapMemoTool)
+    ? 'ERASER'
+    : 'PEN';
 
   const styles = StyleSheet.create({
     button: {
@@ -55,19 +63,8 @@ export const HomeMapMemoTools = React.memo(() => {
           name={MAPMEMOTOOL.PEN}
           backgroundColor={currentMapMemoTool === 'PEN' ? COLOR.ALFARED : COLOR.ALFABLUE}
           borderRadius={10}
-          //タップで選択⇔解除のトグル。設定は下の歯車ボタンから開く
-          onPress={() => (currentMapMemoTool === 'PEN' ? selectMapMemoTool(undefined) : selectMapMemoTool('PEN'))}
+          onPress={() => pressMapMemoToolButton('PEN')}
           labelText={t('Home.label.pen')}
-        />
-      </View>
-      <View style={styles.button}>
-        <Button
-          name="cog"
-          backgroundColor={COLOR.ALFABLUE}
-          borderRadius={10}
-          onPress={() => setVisibleMapMemoPen(true)}
-          labelText={t('Home.label.penSetting')}
-          labelFontSize={9}
         />
       </View>
       <View style={styles.button}>
@@ -76,8 +73,7 @@ export const HomeMapMemoTools = React.memo(() => {
           name={STAMP[currentMapMemoTool] || STAMP.STAMP}
           backgroundColor={Object.keys(STAMP).includes(currentMapMemoTool) ? COLOR.ALFARED : COLOR.ALFABLUE}
           borderRadius={10}
-          onPress={() => setVisibleMapMemoStamp(true)}
-          onLongPress={() => selectMapMemoTool(undefined)}
+          onPress={() => pressMapMemoToolButton('STAMP')}
           labelText={t('Home.label.stamp')}
           labelFontSize={9}
         />
@@ -88,8 +84,7 @@ export const HomeMapMemoTools = React.memo(() => {
           name={BRUSH[currentMapMemoTool] || BRUSH.BRUSH}
           backgroundColor={Object.keys(BRUSH).includes(currentMapMemoTool) ? COLOR.ALFARED : COLOR.ALFABLUE}
           borderRadius={10}
-          onPress={() => setVisibleMapMemoBrush(true)}
-          onLongPress={() => selectMapMemoTool(undefined)}
+          onPress={() => pressMapMemoToolButton('BRUSH')}
           labelText={t('Home.label.brush')}
         />
       </View>
@@ -100,9 +95,18 @@ export const HomeMapMemoTools = React.memo(() => {
           name={ERASER.ERASER}
           backgroundColor={Object.keys(ERASER).includes(currentMapMemoTool) ? COLOR.ALFARED : COLOR.ALFABLUE}
           borderRadius={10}
-          onPress={() => setVisibleMapMemoEraser(true)}
-          onLongPress={() => selectMapMemoTool(undefined)}
+          onPress={() => pressMapMemoToolButton('ERASER')}
           labelText={t('Home.label.eraser')}
+        />
+      </View>
+      <View style={styles.button}>
+        <Button
+          name="cog"
+          backgroundColor={COLOR.ALFABLUE}
+          borderRadius={10}
+          onPress={() => openMapMemoSettingsTab(currentGroup)}
+          labelText={t('Home.label.memoSetting')}
+          labelFontSize={9}
         />
       </View>
       <View style={styles.button}>
