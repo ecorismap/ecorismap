@@ -260,6 +260,17 @@
       "bugFix1": "iOSでPMTilesの数値属性のエラーを修正",
       "bugFix2": "その他の細かいバグ修正"
     },
+    "eraserPicker": {
+      "line": "ライン",
+      "partial": "部分消し",
+      "brush": "ブラシ",
+      "stamp": "スタンプ",
+      "description_PEN_ERASER": "なぞったラインを丸ごと消します",
+      "description_PEN_ERASER_PARTIAL": "なぞった部分だけラインを消します",
+      "description_BRUSH_ERASER": "なぞったブラシを消します",
+      "description_STAMP_ERASER": "囲んだ範囲のスタンプを消します",
+      "dummy": ""
+    },
     "penPicker": {
       "thin": "細",
       "medium": "中",
