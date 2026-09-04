@@ -213,15 +213,33 @@ export const HomeModalMapMemoSettings = React.memo((props: Props) => {
     </View>
   );
 
+  const eraserRow = (tool: MapMemoToolType) => (
+    <Pressable
+      key={tool}
+      style={[styles.eraserRow, eraserSel === tool && styles.eraserRowSelected]}
+      onPress={() => setEraserSel(tool)}
+      disablePressedAnimation
+    >
+      <Button
+        id={tool}
+        name={ERASER_ICONS[tool]}
+        backgroundColor={eraserSel === tool ? COLOR.ALFARED : COLOR.ALFABLUE}
+        borderRadius={10}
+        onPress={() => setEraserSel(tool)}
+        size={20}
+      />
+      <Text style={[styles.eraserRowText, eraserSel === tool && styles.eraserRowTextSelected]}>
+        {t(`Home.eraserPicker.description_${tool}`)}
+      </Text>
+    </Pressable>
+  );
+
   const renderEraserTab = () => (
     <View style={styles.tabContent}>
-      <View style={styles.optionRow}>
-        {optionButton('PEN_ERASER', ERASER_ICONS.PEN_ERASER, eraserSel === 'PEN_ERASER', () => setEraserSel('PEN_ERASER'), t('Home.eraserPicker.line'))}
-        {optionButton('PEN_ERASER_PARTIAL', ERASER_ICONS.PEN_ERASER_PARTIAL, eraserSel === 'PEN_ERASER_PARTIAL', () => setEraserSel('PEN_ERASER_PARTIAL'), t('Home.eraserPicker.partial'))}
-        {optionButton('BRUSH_ERASER', ERASER_ICONS.BRUSH_ERASER, eraserSel === 'BRUSH_ERASER', () => setEraserSel('BRUSH_ERASER'), t('Home.eraserPicker.brush'))}
-        {optionButton('STAMP_ERASER', ERASER_ICONS.STAMP_ERASER, eraserSel === 'STAMP_ERASER', () => setEraserSel('STAMP_ERASER'), t('Home.eraserPicker.stamp'))}
-      </View>
-      <Text style={styles.eraserDescription}>{t(`Home.eraserPicker.description_${eraserSel}`)}</Text>
+      {eraserRow('PEN_ERASER')}
+      {eraserRow('PEN_ERASER_PARTIAL')}
+      {eraserRow('BRUSH_ERASER')}
+      {eraserRow('STAMP_ERASER')}
     </View>
   );
 
@@ -285,11 +303,28 @@ const styles = StyleSheet.create({
     height: CONTENT_HEIGHT,
     marginTop: 14,
   },
-  eraserDescription: {
+  eraserRow: {
+    alignItems: 'center',
+    borderColor: COLOR.GRAY1,
+    borderRadius: 12,
+    borderWidth: 1,
+    flexDirection: 'row',
+    marginBottom: 10,
+    padding: 8,
+  },
+  eraserRowSelected: {
+    borderColor: COLOR.BLUE,
+  },
+  eraserRowText: {
     color: COLOR.GRAY4,
-    fontSize: 14,
-    lineHeight: 20,
-    marginTop: 10,
+    flex: 1,
+    fontSize: 13,
+    lineHeight: 18,
+    marginLeft: 10,
+  },
+  eraserRowTextSelected: {
+    color: COLOR.BLACK,
+    fontWeight: 'bold',
   },
   footerRow: {
     flexDirection: 'row',
