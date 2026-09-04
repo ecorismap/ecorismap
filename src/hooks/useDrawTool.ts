@@ -5,7 +5,6 @@ import { shallowEqual, useDispatch, useSelector } from 'react-redux';
 import MapView from 'react-native-maps';
 import { ulid } from 'ulid';
 import { t } from '../i18n/config';
-//import * as turf from '@turf/turf';
 import {
   DrawLineType,
   DrawToolType,
@@ -76,7 +75,6 @@ export type UseDrawToolReturnType = {
   isPencilTouch: RefObject<boolean | undefined>;
   isPinch: boolean;
   isTerrainActive: boolean;
-  isModalInfoToolHidden: boolean;
   isInfoToolActive: boolean;
   setCurrentInfoTool: (tool: InfoToolType) => void;
   setVisibleInfoPicker: React.Dispatch<React.SetStateAction<boolean>>;
@@ -144,13 +142,11 @@ export type UseDrawToolReturnType = {
   selectObjectByFeature: (layer: LayerType, feature: RecordType, shouldRefreshCoordinates?: boolean) => void;
   handleGrantSplitLine: (pXY: Position) => void;
   checkSplitLine: (pXY: Position) => boolean;
-  setIsModalInfoToolHidden: (value: boolean) => void;
   setInfoToolActive: Dispatch<SetStateAction<boolean>>;
 };
 
 export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolReturnType => {
   const dispatch = useDispatch();
-  const isModalInfoToolHidden = useSelector((state: RootState) => state.settings.isModalInfoToolHidden, shallowEqual);
   const currentInfoTool = useSelector((state: RootState) => state.settings.currentInfoTool, shallowEqual);
   const [currentDrawTool, setDrawTool] = useState<DrawToolType>('NONE');
   const [currentPointTool, setPointTool] = useState<PointToolType>('PLOT_POINT');
@@ -699,7 +695,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
       isEditingObject,
       editingLineXY,
     ]
-  );;
+  );
 
   const editStartNewFreehandObject = useCallback(
     (pXY: Position) => {
@@ -1324,13 +1320,6 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     [mapRegion, mapSize, mapViewRef, saveLine]
   );
 
-  const setIsModalInfoToolHidden = useCallback(
-    (value: boolean) => {
-      dispatch(editSettingsAction({ isModalInfoToolHidden: value }));
-    },
-    [dispatch]
-  );
-
   const setCurrentInfoTool = useCallback(
     (tool: InfoToolType) => {
       dispatch(editSettingsAction({ currentInfoTool: tool }));
@@ -1372,7 +1361,6 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     isPencilTouch,
     isPinch,
     isTerrainActive,
-    isModalInfoToolHidden,
     isInfoToolActive,
     deleteDraw,
     undoDraw,
@@ -1407,7 +1395,6 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     handleGrantSplitLine,
     selectObjectByFeature,
     checkSplitLine,
-    setIsModalInfoToolHidden,
     setInfoToolActive,
   } as const;
 };

@@ -40,7 +40,6 @@ export const settingsInitialState: SettingsType = {
   gpsAccuracy: 'HIGH',
   agreedTermsVersion: '',
   lastSeenVersion: '',
-  isModalInfoToolHidden: false,
   currentInfoTool: 'ALL_INFO',
   proximityAlert: {
     enabled: false,

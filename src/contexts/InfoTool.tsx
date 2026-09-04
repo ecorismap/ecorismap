@@ -5,7 +5,6 @@ import { Position } from 'geojson';
 export interface InfoToolContextType {
   // Info tool states
   currentInfoTool: InfoToolType;
-  isModalInfoToolHidden: boolean;
   isInfoToolActive: boolean;
   vectorTileInfo:
     | {
@@ -23,7 +22,6 @@ export interface InfoToolContextType {
 
 export const InfoToolContext = createContext<InfoToolContextType>({
   currentInfoTool: 'ALL_INFO',
-  isModalInfoToolHidden: true,
   isInfoToolActive: false,
   vectorTileInfo: undefined,
   selectInfoTool: () => {},

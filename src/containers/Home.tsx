@@ -250,7 +250,6 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     isPencilTouch,
     isPinch,
     isTerrainActive,
-    isModalInfoToolHidden,
     setDrawTool,
     setPointTool,
     setLineTool,
@@ -283,7 +282,6 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     savePoint,
     selectObjectByFeature,
     checkSplitLine,
-    setIsModalInfoToolHidden,
     setInfoToolActive,
   } = useDrawTool(mapViewRef.current);
 
@@ -2843,7 +2841,6 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
   const infoToolContextValue = useMemo(
     () => ({
       currentInfoTool,
-      isModalInfoToolHidden,
       isInfoToolActive,
       vectorTileInfo,
       selectInfoTool,
@@ -2853,7 +2850,6 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     }),
     [
       currentInfoTool,
-      isModalInfoToolHidden,
       isInfoToolActive,
       vectorTileInfo,
       selectInfoTool,
@@ -2932,10 +2928,8 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
                           <HomeModalInfoPicker
                             modalVisible={visibleInfoPicker}
                             currentInfoTool={currentInfoTool}
-                            isModalInfoToolHidden={isModalInfoToolHidden}
                             selectInfoTool={selectInfoTool}
                             setVisibleInfoPicker={setVisibleInfoPicker}
-                            setIsModalInfoToolHidden={setIsModalInfoToolHidden}
                           />
                           <HomeModalPDFSettings
                             visible={isPDFSettingsVisible}
