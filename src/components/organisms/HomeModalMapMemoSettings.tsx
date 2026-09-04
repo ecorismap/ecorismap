@@ -138,9 +138,14 @@ export const HomeModalMapMemoSettings = React.memo((props: Props) => {
         {optionButton('ARROW_BOTH', PEN_STYLE.ARROW_BOTH, arrowStyle_ === 'ARROW_BOTH', () => setArrowStyle('ARROW_BOTH'), t('Home.penPicker.bothSides'))}
       </View>
       <View style={styles.spacer} />
-      <Pressable style={styles.primaryButton} onPress={handlePenOK}>
-        <Text style={styles.primaryButtonText}>OK</Text>
-      </Pressable>
+      <View style={styles.footerRow}>
+        <Pressable style={styles.secondaryButton} onPress={close}>
+          <Text style={styles.secondaryButtonText}>Cancel</Text>
+        </Pressable>
+        <Pressable style={styles.primaryButton} onPress={handlePenOK}>
+          <Text style={styles.primaryButtonText}>OK</Text>
+        </Pressable>
+      </View>
     </View>
   );
 
@@ -329,6 +334,10 @@ const styles = StyleSheet.create({
   eraserOptionSelected: {
     borderColor: COLOR.BLUE,
   },
+  footerRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
   header: {
     alignItems: 'center',
     flexDirection: 'row',
@@ -351,6 +360,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: COLOR.BLUE,
     borderRadius: 12,
+    flex: 1,
     justifyContent: 'center',
     minHeight: 48,
   },
@@ -361,6 +371,21 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
+  },
+  secondaryButton: {
+    alignItems: 'center',
+    backgroundColor: COLOR.WHITE,
+    borderColor: COLOR.GRAY2,
+    borderRadius: 12,
+    borderWidth: 1,
+    flex: 1,
+    justifyContent: 'center',
+    minHeight: 48,
+  },
+  secondaryButtonText: {
+    color: COLOR.GRAY4,
+    fontSize: 16,
+    fontWeight: 'bold',
   },
   sectionLabel: {
     alignSelf: 'flex-start',
