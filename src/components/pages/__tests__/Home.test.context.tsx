@@ -234,7 +234,6 @@ export const mockDataSelectionContextValue: DataSelectionContextType = {
 // Mock implementation for InfoToolContext
 export const mockInfoToolContextValue: InfoToolContextType = {
   currentInfoTool: 'ALL_INFO',
-  isModalInfoToolHidden: true,
   isInfoToolActive: false,
   vectorTileInfo: undefined,
   selectInfoTool: jest.fn(),

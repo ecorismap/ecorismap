@@ -428,7 +428,6 @@ export interface SettingsType {
   gpsAccuracy: GpsAccuracyType;
   agreedTermsVersion: string;
   lastSeenVersion: string;
-  isModalInfoToolHidden: boolean;
   currentInfoTool: InfoToolType;
   proximityAlert: ProximityAlertSettingsType;
   //レイヤごとの「レコード追加時に現在地を付与するか」（端末ローカル設定。プロジェクト設定には同期しない）

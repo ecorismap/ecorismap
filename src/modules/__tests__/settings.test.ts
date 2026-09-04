@@ -45,7 +45,6 @@ describe('modules/settings', () => {
     gpsAccuracy: 'HIGH',
     agreedTermsVersion: '',
     lastSeenVersion: '',
-    isModalInfoToolHidden: false,
     currentInfoTool: 'ALL_INFO',
     proximityAlert: {
       enabled: false,

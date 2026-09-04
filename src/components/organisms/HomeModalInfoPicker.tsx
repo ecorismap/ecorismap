@@ -9,11 +9,9 @@ import { InfoToolType } from '../../types';
 interface Props {
   currentInfoTool: InfoToolType;
   modalVisible: boolean;
-  isModalInfoToolHidden: boolean;
 
   selectInfoTool: (infoTool: InfoToolType | undefined) => void;
   setVisibleInfoPicker: React.Dispatch<React.SetStateAction<boolean>>;
-  setIsModalInfoToolHidden: (value: boolean) => void;
 }
 
 export const HomeModalInfoPicker = React.memo((props: Props) => {
@@ -25,14 +23,6 @@ export const HomeModalInfoPicker = React.memo((props: Props) => {
   }, [currentInfoTool]);
 
   const styles = StyleSheet.create({
-    checkbox: {
-      //backgroundColor: COLOR.BLUE,
-      flexDirection: 'column',
-      height: 120,
-      //justifyContent: 'space-between',
-      margin: 5,
-      width: 180,
-    },
     modalButtonContainer: {
       flexDirection: 'row',
       justifyContent: 'space-evenly',
