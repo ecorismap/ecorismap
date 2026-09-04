@@ -497,6 +497,30 @@ export const smoothJunctions = (
   return { xy: outXY, latlon: outLatLon };
 };
 
+/**
+ * フリーハンドポリゴンを閉じる。閉じ目（終点→始点のシーム）を接続部として扱い、
+ * 線の流れに沿って戻ってきた場合（浅い折れ角）はシーム前後を均して滑らかに閉じ、
+ * 急な角度でぶつけた場合はそのまま（かくっと）閉じる。
+ * ポリゴンの頂点順は保持されるが、開始頂点はシーム平滑化の都合で回転する（GeoJSON的に等価）
+ */
+export const closeFreehandPolygonSeam = (
+  xy: Position[],
+  latlon: Position[],
+  toLatLon: (p: Position) => Position
+): { xy: Position[]; latlon: Position[] } => {
+  const n = xy.length;
+  //点数が少ない・xyとlatlonが不一致の場合は従来どおり直線で閉じる
+  if (n < 2 * JUNCTION_WINDOW + 2 || latlon.length !== n) {
+    return { xy: [...xy, xy[0]], latlon: [...latlon, latlon[0]] };
+  }
+  //シームが配列の中央に来るよう回転し、通常の接続部として角度判定＋平滑化する
+  const w = JUNCTION_WINDOW;
+  const rotXY = [...xy.slice(n - w), ...xy.slice(0, n - w)];
+  const rotLatLon = [...latlon.slice(n - w), ...latlon.slice(0, n - w)];
+  const smoothed = smoothJunctions(rotXY, rotLatLon, [w], toLatLon);
+  return { xy: [...smoothed.xy, smoothed.xy[0]], latlon: [...smoothed.latlon, smoothed.latlon[0]] };
+};
+
 export const selectPointFeaturesByArea = (pointFeatures: PointRecordType[], areaLineCoords: Position[]) => {
   try {
     const areaPolygon = turf.multiPolygon([[areaLineCoords]]);
