@@ -1,5 +1,7 @@
 import React, { useContext, useMemo } from 'react';
-import { StyleSheet, View, Platform } from 'react-native';
+import { StyleSheet, Text, View, Platform } from 'react-native';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { Pressable } from '../atoms/Pressable';
 import { COLOR, DRAWTOOL, MAPMEMOTOOL, POINTTOOL } from '../../constants/AppConstants';
 import { isFreehandTool, isPlotTool } from '../../utils/General';
 
@@ -68,11 +70,21 @@ export const HomeDrawTools = React.memo(() => {
       gap: 10,
       paddingHorizontal: 20,
     },
+    //アイコンと文字を横並びにする（Buttonアトムはアイコン下に極小ラベルを重ねる設計のため文字が重なる）
     editButton: {
-      paddingHorizontal: 20,
-      paddingVertical: 10,
+      alignItems: 'center',
       borderRadius: 8,
-      minWidth: 80,
+      flexDirection: 'row',
+      gap: 6,
+      justifyContent: 'center',
+      minWidth: 96,
+      paddingHorizontal: 16,
+      paddingVertical: 10,
+    },
+    editButtonText: {
+      color: COLOR.WHITE,
+      fontSize: 14,
+      fontWeight: 'bold',
     },
   });
 
@@ -81,29 +93,27 @@ export const HomeDrawTools = React.memo(() => {
       {/* 編集完了・キャンセルボタン */}
       {isEditingObject && (isPlotTool(currentDrawTool) || isFreehandTool(currentDrawTool)) && (
         <View style={styles.editControlContainer}>
-          <Button
-            name="check"
-            backgroundColor={COLOR.BLUE}
-            borderRadius={8}
+          <Pressable
+            style={[styles.editButton, { backgroundColor: COLOR.BLUE }]}
             onPress={async () => {
               const saved = await pressSaveDraw();
               if (saved) {
                 finishEditObject();
               }
             }}
-            labelText={t('common.finish')}
-            style={styles.editButton}
-          />
-          <Button
-            name="close"
-            backgroundColor={COLOR.RED}
-            borderRadius={8}
+          >
+            <MaterialCommunityIcons name="check" size={18} color={COLOR.WHITE} />
+            <Text style={styles.editButtonText}>{t('common.finish')}</Text>
+          </Pressable>
+          <Pressable
+            style={[styles.editButton, { backgroundColor: COLOR.RED }]}
             onPress={() => {
-              selectDrawTool(currentDrawTool);  // addボタンを押した時と同じ処理（resetDrawToolsも内部で呼ばれる）
+              selectDrawTool(currentDrawTool); // addボタンを押した時と同じ処理（resetDrawToolsも内部で呼ばれる）
             }}
-            labelText={t('common.cancel')}
-            style={styles.editButton}
-          />
+          >
+            <MaterialCommunityIcons name="close" size={18} color={COLOR.WHITE} />
+            <Text style={styles.editButtonText}>{t('common.cancel')}</Text>
+          </Pressable>
         </View>
       )}
 
