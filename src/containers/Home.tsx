@@ -56,6 +56,7 @@ import {
   isPolygonTool,
   isStampTool,
 } from '../utils/General';
+import { getEventTimestamp } from '../utils/OneEuroFilter';
 import { t } from '../i18n/config';
 import { COLOR, TILE_FOLDER } from '../constants/AppConstants';
 import * as FileSystem from 'expo-file-system/legacy';
@@ -277,6 +278,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     handleGrantFreehand,
     handleMoveFreehand,
     handleReleaseFreehand,
+    commitFreehandStroke,
     handleGrantSplitLine,
     getPXY,
     savePoint,
@@ -1864,6 +1866,8 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
 
       //if (route.params?.mode === 'editPosition') hideDrawLine();
       if (isPencilModeActive && isPencilTouch.current === false) {
+        //フリーハンドの描きかけがあれば確定してから地図操作へ
+        commitFreehandStroke();
         hideDrawLine();
         setIsPinch(true);
       } else if (currentDrawTool === 'MOVE') {
@@ -1917,6 +1921,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     },
     [
       checkSplitLine,
+      commitFreehandStroke,
       currentDrawTool,
       currentMapMemoTool,
       featureButton,
@@ -1993,6 +1998,8 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
         return;
       }
       if (gesture.numberActiveTouches === 2) {
+        //フリーハンドの描きかけがあれば確定してから地図操作へ（描きかけの消失防止）
+        commitFreehandStroke();
         hideDrawLine();
         //ペンで描画中はストロークを破棄せず中断し、ピンチ後に続きを描けるようにする
         pauseMapMemoDrawing();
@@ -2002,10 +2009,11 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       } else if (isPlotTool(currentDrawTool)) {
         handleMovePlot(pXY);
       } else if (isFreehandTool(currentDrawTool)) {
-        handleMoveFreehand(pXY);
+        handleMoveFreehand(pXY, getEventTimestamp(event));
       }
     },
     [
+      commitFreehandStroke,
       currentDrawTool,
       currentMapMemoTool,
       getPXY,

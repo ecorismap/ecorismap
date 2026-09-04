@@ -1,4 +1,5 @@
 import { Position } from 'geojson';
+import { GestureResponderEvent } from 'react-native';
 
 /**
  * 1€フィルタ（Casiez et al. 2012, https://gery.casiez.net/1euro/）による手ぶれ補正。
@@ -75,6 +76,16 @@ export class OneEuroFilter {
     this.lastValue = undefined;
   }
 }
+
+/**
+ * 1€フィルタ用のタイムスタンプ(ms)。native=タッチイベントのtimestamp、web=performance.now()
+ */
+export const getEventTimestamp = (event: GestureResponderEvent): number => {
+  //@ts-ignore react-native-webのイベントにはtimestampが無い場合がある
+  const t = event.nativeEvent?.timestamp;
+  if (typeof t === 'number') return t;
+  return typeof performance !== 'undefined' ? performance.now() : Date.now();
+};
 
 /**
  * スクリーン座標(x, y)用の1€フィルタ。ペンの手ぶれ補正に使う。

@@ -10,6 +10,7 @@ import {
   erasePartialLine,
   simplifyWithTolerance,
   smoothingByBezier,
+  modifyLineWithSource,
 } from '../Coords';
 import { LocationType } from '../../types';
 
@@ -332,5 +333,91 @@ describe('smoothingByBezier + simplifyWithTolerance（ペン整形パイプラ�
     const lastS = simplified[simplified.length - 1];
     const lastP = points[points.length - 1];
     expect(Math.abs(lastS[0] - lastP[0])).toBeLessThan(5);
+  });
+});
+
+describe('modifyLineWithSource', () => {
+  //latlonはxy+9000のタグ付き値。toLatLonも同じ規則にして、
+  //「出力のlatlonが常にxyと対応する」＋「元の頂点は同一参照が保持される」ことを検証する
+  const toLatLon = ([x, y]: [number, number]): [number, number] => [x + 9000, y + 9000];
+  const makeOriginal = (xy: [number, number][]) => ({
+    xy: xy.map((p) => [...p] as [number, number]),
+    latlon: xy.map((p) => toLatLon(p)),
+  });
+
+  const verify = (
+    original: { xy: number[][]; latlon: number[][] },
+    result: { xy: number[][]; latlon: number[][] }
+  ) => {
+    //不変条件1: xyとlatlonは常に同数
+    expect(result.latlon.length).toBe(result.xy.length);
+    result.xy.forEach((xy, i) => {
+      //不変条件2: latlonは常にxyに対応する値
+      expect(result.latlon[i]).toEqual([xy[0] + 9000, xy[1] + 9000]);
+      //不変条件3: 元の頂点と同じ位置の点は、元のlatlonの同一参照が保持される（再変換されていない）
+      const origIndex = original.xy.findIndex((o) => o[0] === xy[0] && o[1] === xy[1]);
+      if (origIndex >= 0) {
+        expect(result.latlon[i]).toBe(original.latlon[origIndex]);
+      }
+    });
+  };
+
+  it('途中を修正するストロークでも元の頂点のlatlonが同一参照で保持される', () => {
+    const original = makeOriginal([
+      [0, 0],
+      [500, 0],
+      [1000, 0],
+    ]);
+    const modified: [number, number][] = [
+      [200, 50],
+      [300, 80],
+      [800, 50],
+    ];
+    const result = modifyLineWithSource(original as any, modified as any, 'FREEHAND_LINE', toLatLon as any);
+    expect(result.xy.length).toBeGreaterThan(0);
+    verify(original, result);
+  });
+
+  it('末尾を延長するストロークでも不変条件を満たす', () => {
+    const original = makeOriginal([
+      [0, 0],
+      [500, 0],
+      [1000, 0],
+    ]);
+    const modified: [number, number][] = [
+      [990, 10],
+      [1500, 300],
+      [2500, 600],
+    ];
+    const result = modifyLineWithSource(original as any, modified as any, 'FREEHAND_LINE', toLatLon as any);
+    expect(result.xy.length).toBeGreaterThan(0);
+    verify(original, result);
+  });
+
+  it('FREEHAND_POLYGONで一周するストロークでも不変条件を満たす', () => {
+    const original = makeOriginal([
+      [0, 0],
+      [500, 0],
+      [1000, 0],
+      [1000, 500],
+    ]);
+    const modified: [number, number][] = [
+      [900, 400],
+      [500, 800],
+      [100, 100],
+    ];
+    const result = modifyLineWithSource(original as any, modified as any, 'FREEHAND_POLYGON', toLatLon as any);
+    expect(result.xy.length).toBeGreaterThan(0);
+    verify(original, result);
+  });
+
+  it('修正ストロークが2点未満なら元のxy/latlonをそのまま返す', () => {
+    const original = makeOriginal([
+      [0, 0],
+      [500, 0],
+    ]);
+    const result = modifyLineWithSource(original as any, [[10, 10]] as any, 'FREEHAND_LINE', toLatLon as any);
+    expect(result.xy).toBe(original.xy);
+    expect(result.latlon).toBe(original.latlon);
   });
 });

@@ -44,16 +44,15 @@ import {
   getSnappedPositionWithLine,
   isClosedPolygon,
   isNearWithPlot,
-  modifyLine,
-  simplify,
-  smoothingByBezier,
+  modifyLineWithSource,
 } from '../utils/Coords';
 import { useWindow } from './useWindow';
 import { deleteRecordsAction } from '../modules/dataSet';
 import { MapRef } from 'react-map-gl/maplibre';
 import { editSettingsAction } from '../modules/settings';
 import { useRecord } from './useRecord';
-import { isPlotTool, isPointTool } from '../utils/General';
+import { isFreehandTool, isPlotTool, isPointTool } from '../utils/General';
+import { PositionFilter } from '../utils/OneEuroFilter';
 import { Position } from 'geojson';
 import { RootState } from '../store';
 
@@ -134,9 +133,10 @@ export type UseDrawToolReturnType = {
   handleGrantPlot: (pXY: Position) => void;
   handleGrantFreehand: (pXY: Position) => boolean;
   handleMovePlot: (pXY: Position) => void;
-  handleMoveFreehand: (pXY: Position) => void;
+  handleMoveFreehand: (pXY: Position, timestampMs: number) => void;
   handleReleaseSelect: (pXY: Position) => void;
   handleReleaseFreehand: () => void;
+  commitFreehandStroke: () => void;
   handleReleasePlotPoint: () => void;
   handleReleasePlotLinePolygon: () => boolean;
   selectObjectByFeature: (layer: LayerType, feature: RecordType, shouldRefreshCoordinates?: boolean) => void;
@@ -164,6 +164,10 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
   //（全再生成すると全頂点が画面ピクセル解像度に丸められ、編集のたびに精度劣化が累積するため）。
   //latlonはundoスナップショットが参照を保持するため、in-place変更せず常に新配列で置き換えること。
   const drawLine = useRef<DrawLineType[]>([]);
+  //フリーハンドの手ぶれ補正（1€フィルタ）。スクリーン座標に適用してから緯度経度化する
+  const strokeFilter = useRef(new PositionFilter());
+  //最後の生タッチ位置（終点キャッチアップ用）
+  const lastTouchXY = useRef<Position | null>(null);
   const editingLineXY = useRef<Position[]>([]);
   const undoLine = useRef<UndoLineType[]>([]);
   const editingObjectIndex = useRef(-1);
@@ -722,13 +726,13 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     (pXY: Position) => {
       //console.log('New Line');
 
-      //新規ラインの場合
+      //新規ラインの場合。描画中も地図移動に追従できるよう最初から緯度経度も持つ
       drawLine.current.push({
         id: ulid(),
         layerId: undefined,
         record: undefined,
         xy: [pXY],
-        latlon: [],
+        latlon: [xyToLatLon(pXY, mapRegion, mapSize, mapViewRef)],
         properties: ['EDIT'],
       });
 
@@ -740,37 +744,53 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
       isEditingObject.current = true;
       editingObjectIndex.current = -1;
     },
-    [drawLine, editingObjectIndex, isEditingObject, undoLine]
+    [drawLine, editingObjectIndex, isEditingObject, undoLine, mapRegion, mapSize, mapViewRef]
   );
 
   const drawFreehandNewLine = useCallback(
-    (pXY: Position) => {
-      //新規ラインの場合
+    (pXY: Position, timestampMs: number) => {
+      //新規ラインの場合。1€フィルタで手ぶれを補正し、xyと緯度経度を同時に追加する
       const index = drawLine.current.length - 1;
-      drawLine.current[index].xy = [...drawLine.current[index].xy, pXY];
+      const filteredXY = strokeFilter.current.filter(pXY, timestampMs);
+      const xy = drawLine.current[index].xy;
+      const last = xy[xy.length - 1];
+      //ほぼ動いていない点は追加しない（点数の無駄な増加を防ぐ）
+      if (last !== undefined && Math.hypot(filteredXY[0] - last[0], filteredXY[1] - last[1]) < 1) return;
+      drawLine.current[index].xy = [...xy, filteredXY];
+      drawLine.current[index].latlon = [
+        ...drawLine.current[index].latlon,
+        xyToLatLon(filteredXY, mapRegion, mapSize, mapViewRef),
+      ];
     },
-    [drawLine]
+    [drawLine, mapRegion, mapSize, mapViewRef]
   );
 
   const drawFreehandEditingLine = useCallback(
-    (pXY: Position) => {
-      //ライン修正の場合
-      editingLineXY.current = [...editingLineXY.current, pXY];
+    (pXY: Position, timestampMs: number) => {
+      //ライン修正の場合も手ぶれ補正を適用する
+      editingLineXY.current = [...editingLineXY.current, strokeFilter.current.filter(pXY, timestampMs)];
     },
     [editingLineXY]
   );
 
   const createNewFreehandObject = useCallback(() => {
     const index = drawLine.current.length - 1;
-    const lineXY = drawLine.current[index].xy;
-    lineXY.splice(-2);
-    if (lineXY.length < 2) return;
-    const smoothedXY = smoothingByBezier(lineXY);
-    const simplifiedXY = simplify(smoothedXY);
-    drawLine.current[index].xy = simplifiedXY;
-    drawLine.current[index].latlon = xyArrayToLatLonArray(simplifiedXY, mapRegion, mapSize, mapViewRef);
+    //1€フィルタの遅延で終点が実際のタッチ位置より手前になるため、最後の生タッチ位置で終点を確定する
+    const finalXY = lastTouchXY.current;
+    if (finalXY !== null) {
+      const xy = drawLine.current[index].xy;
+      const last = xy[xy.length - 1];
+      if (last === undefined || finalXY[0] !== last[0] || finalXY[1] !== last[1]) {
+        drawLine.current[index].xy = [...xy, finalXY];
+        drawLine.current[index].latlon = [
+          ...drawLine.current[index].latlon,
+          xyToLatLon(finalXY, mapRegion, mapSize, mapViewRef),
+        ];
+      }
+    }
+    if (drawLine.current[index].xy.length < 2) return;
+    //描いた形をそのまま保持する（手ぶれ除去は描画中の1€フィルタが担い、離した瞬間に形を変えない）
     drawLine.current[index].properties = ['EDIT'];
-
     editingObjectIndex.current = index;
   }, [drawLine, editingObjectIndex, mapRegion, mapSize, mapViewRef]);
 
@@ -778,13 +798,19 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     // //ライン修正の場合
     const index = editingObjectIndex.current;
     const lineXY = editingLineXY.current;
-    lineXY.splice(-2);
+    //終点キャッチアップ（フィルタ遅延対策）
+    const finalXY = lastTouchXY.current;
+    if (finalXY !== null) {
+      const last = lineXY[lineXY.length - 1];
+      if (last === undefined || finalXY[0] !== last[0] || finalXY[1] !== last[1]) lineXY.push(finalXY);
+    }
     if (lineXY.length < 2) return;
-    const smoothedXY = smoothingByBezier(lineXY);
-    const simplifiedXY = simplify(smoothedXY);
-    const modifiedXY = modifyLine(drawLine.current[index], simplifiedXY, currentDrawTool);
+    //元のラインの頂点はlatlonを保持したまま、修正ストローク部分のみ変換して合成する
+    const modified = modifyLineWithSource(drawLine.current[index], lineXY, currentDrawTool, (xy) =>
+      xyToLatLon(xy, mapRegion, mapSize, mapViewRef)
+    );
     editingLineXY.current = [];
-    if (modifiedXY.length <= 0) return;
+    if (modified.xy.length <= 0) return;
 
     undoLine.current.push({
       index: index,
@@ -794,8 +820,8 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
 
     drawLine.current[index] = {
       ...drawLine.current[index],
-      xy: modifiedXY,
-      latlon: xyArrayToLatLonArray(modifiedXY, mapRegion, mapSize, mapViewRef),
+      xy: modified.xy,
+      latlon: modified.latlon,
     };
   }, [currentDrawTool, drawLine, editingLineXY, editingObjectIndex, mapRegion, mapSize, mapViewRef, undoLine]);
 
@@ -1247,6 +1273,8 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
 
   const handleGrantFreehand = useCallback(
     (pXY: Position) => {
+      strokeFilter.current.reset();
+      lastTouchXY.current = pXY;
       if (isEditingObject.current) {
         //編集中なら、
         const isFishished = tryFinishFreehandEditObject(pXY);
@@ -1265,13 +1293,14 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
   );
 
   const handleMoveFreehand = useCallback(
-    (pXY: Position) => {
+    (pXY: Position, timestampMs: number) => {
       if (!isEditingObject.current) return;
 
+      lastTouchXY.current = pXY;
       if (editingObjectIndex.current === -1) {
-        drawFreehandNewLine(pXY);
+        drawFreehandNewLine(pXY, timestampMs);
       } else {
-        drawFreehandEditingLine(pXY);
+        drawFreehandEditingLine(pXY, timestampMs);
       }
       setRedraw(ulid());
     },
@@ -1288,6 +1317,34 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     if (drawLine.current.length > 0) isEditingDraw.current = true;
     setRedraw(ulid());
   }, [createNewFreehandObject, editFreehandObject]);
+
+  /**
+   * フリーハンドの新規ストロークをその場で確定する。
+   * ピンチ開始時に呼ぶことで、描きかけの消失や中断点から再開点への直線化を防ぐ。
+   * 確定後の続き描きは既存の修正ストロークフローに乗る
+   */
+  const commitFreehandStroke = useCallback(() => {
+    if (!isEditingObject.current) return;
+    if (!isFreehandTool(currentDrawTool)) return;
+    if (editingObjectIndex.current !== -1) {
+      //修正ストローク中は軌跡を破棄するだけ（次のタッチで再初期化される）
+      editingLineXY.current = [];
+      return;
+    }
+    const index = drawLine.current.length - 1;
+    if (index < 0) return;
+    if (drawLine.current[index].xy.length >= 2) {
+      //2点以上なら確定して修正モードへ
+      drawLine.current[index].properties = ['EDIT'];
+      editingObjectIndex.current = index;
+    } else {
+      //1点だけなら破棄（undoのNEWも取り除く）
+      drawLine.current = drawLine.current.slice(0, -1);
+      const lastUndo = undoLine.current[undoLine.current.length - 1];
+      if (lastUndo !== undefined && lastUndo.action === 'NEW') undoLine.current.pop();
+      isEditingObject.current = false;
+    }
+  }, [currentDrawTool, drawLine, editingLineXY, editingObjectIndex, isEditingObject, undoLine]);
 
   const checkSplitLine = useCallback((pXY: Position) => {
     const index = editingObjectIndex.current;
@@ -1420,6 +1477,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     handleReleasePlotPoint,
     handleReleasePlotLinePolygon,
     handleReleaseFreehand,
+    commitFreehandStroke,
     handleGrantSplitLine,
     selectObjectByFeature,
     checkSplitLine,
