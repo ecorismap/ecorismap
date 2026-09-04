@@ -63,7 +63,7 @@ export const HomeDrawTools = React.memo(() => {
     editControlContainer: {
       flexDirection: 'row',
       position: 'absolute',
-      top: insets.top + 110,
+      top: insets.top + 60,
       left: 0,
       right: 0,
       justifyContent: 'center',
