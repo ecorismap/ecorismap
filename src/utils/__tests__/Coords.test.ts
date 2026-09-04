@@ -12,6 +12,7 @@ import {
   smoothingByBezier,
   modifyLineWithSource,
   smoothJunctions,
+  closeFreehandPolygonSeam,
 } from '../Coords';
 import { LocationType } from '../../types';
 
@@ -465,5 +466,64 @@ describe('smoothJunctions', () => {
     const result = smoothJunctions(xy as any, latlon as any, [], toLatLon as any);
     expect(result.xy).toBe(xy);
     expect(result.latlon).toBe(latlon);
+  });
+});
+
+describe('closeFreehandPolygonSeam', () => {
+  const toLatLon = ([x, y]: [number, number]): [number, number] => [x + 9000, y + 9000];
+
+  //円弧状のループ（終点が始点近くへ流れに沿って戻る＝浅い折れ角）
+  const makeLoop = (gapDeg: number) => {
+    const xy: [number, number][] = [];
+    const n = 36;
+    for (let i = 0; i < n - Math.round((gapDeg / 360) * n); i++) {
+      const t = (i / n) * Math.PI * 2;
+      xy.push([Math.cos(t) * 300, Math.sin(t) * 300]);
+    }
+    return xy;
+  };
+
+  it('流れに沿って戻るループはシームが均されて閉じる', () => {
+    const xy = makeLoop(20);
+    const latlon = xy.map(toLatLon);
+    const closed = closeFreehandPolygonSeam(xy as any, latlon as any, toLatLon as any);
+    //閉じている（先頭と末尾が一致）
+    expect(closed.xy[0]).toEqual(closed.xy[closed.xy.length - 1]);
+    expect(closed.latlon[0]).toEqual(closed.latlon[closed.latlon.length - 1]);
+    //xyとlatlonは同数・対応
+    expect(closed.latlon.length).toBe(closed.xy.length);
+    closed.xy.forEach((p, i) => {
+      expect(closed.latlon[i]).toEqual([p[0] + 9000, p[1] + 9000]);
+    });
+  });
+
+  it('急角度でぶつけたシームはかくっと閉じる（点が変化しない）', () => {
+    //コの字型: 終点が始点に垂直方向からぶつかる
+    const xy: [number, number][] = [];
+    for (let x = 0; x <= 300; x += 20) xy.push([x, 0]);
+    for (let y = 20; y <= 300; y += 20) xy.push([300, y]);
+    for (let x = 280; x >= 0; x -= 20) xy.push([x, 300]);
+    for (let y = 280; y >= 40; y -= 20) xy.push([0, y]); //始点(0,0)へ垂直に接近
+    const latlon = xy.map(toLatLon);
+    const closed = closeFreehandPolygonSeam(xy as any, latlon as any, toLatLon as any);
+    //閉じ点の追加以外は変化しない（回転はするが頂点集合は同じ）
+    expect(closed.xy.length).toBe(xy.length + 1);
+    expect(closed.xy[0]).toEqual(closed.xy[closed.xy.length - 1]);
+    //全ての元頂点が保存されている
+    xy.forEach((p) => {
+      expect(closed.xy.some((q) => q[0] === p[0] && q[1] === p[1])).toBe(true);
+    });
+  });
+
+  it('点数が少ない場合は従来どおり直線で閉じる', () => {
+    const xy: [number, number][] = [
+      [0, 0],
+      [100, 0],
+      [50, 100],
+    ];
+    const latlon = xy.map(toLatLon);
+    const closed = closeFreehandPolygonSeam(xy as any, latlon as any, toLatLon as any);
+    expect(closed.xy).toEqual([...xy, xy[0]]);
+    expect(closed.latlon).toEqual([...latlon, latlon[0]]);
   });
 });

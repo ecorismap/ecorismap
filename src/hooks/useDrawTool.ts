@@ -46,6 +46,7 @@ import {
   isNearWithPlot,
   modifyLineWithSource,
   smoothJunctions,
+  closeFreehandPolygonSeam,
 } from '../utils/Coords';
 import { useWindow } from './useWindow';
 import { deleteRecordsAction } from '../modules/dataSet';
@@ -952,12 +953,21 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     drawLine.current.forEach((line) => {
       const lineXY = line.xy;
       if (lineXY.length >= 3 && (lineXY[0][0] !== lineXY[lineXY.length - 1][0] || lineXY[0][1] !== lineXY[lineXY.length - 1][1])) {
-        lineXY.push(lineXY[0]);
-        if (line.latlon.length === lineXY.length - 1) {
-          line.latlon = [...line.latlon, line.latlon[0]];
+        if (currentDrawTool === 'FREEHAND_POLYGON' && line.latlon.length === lineXY.length) {
+          //フリーハンドは閉じ目をなぞり方の角度に応じて平滑化して閉じる（急角度ならかくっと閉じる）
+          const closed = closeFreehandPolygonSeam(lineXY, line.latlon, (p) =>
+            xyToLatLon(p, mapRegion, mapSize, mapViewRef)
+          );
+          line.xy = closed.xy;
+          line.latlon = closed.latlon;
         } else {
-          if (__DEV__) console.warn('savePolygon: xy/latlon length mismatch, regenerating');
-          line.latlon = xyArrayToLatLonArray(lineXY, mapRegion, mapSize, mapViewRef);
+          lineXY.push(lineXY[0]);
+          if (line.latlon.length === lineXY.length - 1) {
+            line.latlon = [...line.latlon, line.latlon[0]];
+          } else {
+            if (__DEV__) console.warn('savePolygon: xy/latlon length mismatch, regenerating');
+            line.latlon = xyArrayToLatLonArray(lineXY, mapRegion, mapSize, mapViewRef);
+          }
         }
       }
     });
@@ -993,7 +1003,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
 
     resetDrawTools();
     return { isOK: true, message: '', layer: layer, recordSet: savedRecordSet };
-  }, [addRecord, findLayer, generateRecord, getEditableLayerAndRecordSetWithCheck, mapRegion, mapSize, mapViewRef, resetDrawTools, updateRecord]);
+  }, [addRecord, currentDrawTool, findLayer, generateRecord, getEditableLayerAndRecordSetWithCheck, mapRegion, mapSize, mapViewRef, resetDrawTools, updateRecord]);
 
   const selectSingleFeature = useCallback(
     (event: GestureResponderEvent) => {

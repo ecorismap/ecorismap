@@ -42,6 +42,10 @@ jest.mock('../../utils/Coords', () => ({
   isNearWithPlot: jest.fn(() => false),
   modifyLineWithSource: jest.fn(() => ({ xy: [], latlon: [], junctions: [] })),
   smoothJunctions: jest.fn((xy: unknown[], latlon: unknown[]) => ({ xy, latlon })),
+  closeFreehandPolygonSeam: jest.fn((xy: [number, number][], latlon: [number, number][]) => ({
+    xy: [...xy, xy[0]],
+    latlon: [...latlon, latlon[0]],
+  })),
   simplify: jest.fn((xy: [number, number][]) => xy),
   smoothingByBezier: jest.fn((xy: [number, number][]) => xy),
 }));
