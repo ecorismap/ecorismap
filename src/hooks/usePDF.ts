@@ -717,7 +717,7 @@ export const usePDF = (): UseEcorisMapFileReturnType => {
       const bearingStart = Math.atan2(p0[1] - p1[1], p0[0] - p1[0]) * (180 / Math.PI);
       const angleStart = (bearingStart + 360 + 90) % 360;
 
-      const scale = Math.sqrt(strokeWidth - 1) / tileScale;
+      const scale = Math.sqrt(Math.max(strokeWidth - 1, 0.25)) / tileScale;
       const originalSize = 20;
       // scaleに基づいた新しいサイズを計算
       const size = originalSize * scale;
