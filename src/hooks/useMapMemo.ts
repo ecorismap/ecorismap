@@ -279,6 +279,11 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
    */
   const pauseMapMemoDrawing = useCallback(
     (discardGrantStroke = false) => {
+      //ピンチ中に長押し編集が誤発火しないようタイマーをクリア
+      if (longPressTimer.current) {
+        clearTimeout(longPressTimer.current);
+        longPressTimer.current = undefined;
+      }
       if (isPenTool(currentMapMemoTool) && !isEditingLine) {
         //タッチ直後のピンチ移行、またはGrant以降ほとんど動いていない（描画意図なし）場合は、
         //Grant以降に拾った点を捨ててGrant前の状態へ巻き戻す
