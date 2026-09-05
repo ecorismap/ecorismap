@@ -121,6 +121,8 @@ export type MapMemoStateType = {
 const MAX_HISTORY = 10;
 //ピンチ中断後に同じ線の続きとみなすタッチ距離(px)
 const RESUME_DISTANCE_PX = 50;
+//ピンチ開始時にGrant以降の移動距離がこの値未満なら描画意図なしとみなして破棄する
+const PINCH_DISCARD_DISTANCE_PX = 10;
 //保存後も地図レイヤの描画が完了するまでSVGプレビューを残す時間(ms)。
 //ネイティブのオーバーレイ追加は非同期のため、即時に消すと一瞬線が消えて点滅して見える
 const LAYER_HANDOFF_DURATION_MS = 150;
@@ -183,6 +185,8 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
   const isDrawingPaused = useRef(false);
   //Grant直前のペンストローク（緯度経度）。ピンチ意図と判明したときにGrantで加えた点を巻き戻すために保持する
   const penGrantSnapshot = useRef<Position[] | null>(null);
+  //Grant以降に指が動いた累計距離(px)。ピンチ開始時にこれが極小なら描画意図なしとみなす
+  const penStrokeDistancePx = useRef(0);
   //ペンの手ぶれ補正（1€フィルタ）。スクリーン座標に適用してから緯度経度化する
   const strokeFilter = useRef(new PositionFilter());
   //最後の生タッチ位置（終点キャッチアップ用）
@@ -276,8 +280,10 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
   const pauseMapMemoDrawing = useCallback(
     (discardGrantStroke = false) => {
       if (isPenTool(currentMapMemoTool) && !isEditingLine) {
-        if (discardGrantStroke && penGrantSnapshot.current !== null) {
-          //タッチ直後にピンチへ移行した場合は、Grant以降に拾った点を捨ててGrant前の状態へ巻き戻す
+        //タッチ直後のピンチ移行、またはGrant以降ほとんど動いていない（描画意図なし）場合は、
+        //Grant以降に拾った点を捨ててGrant前の状態へ巻き戻す
+        const isGrantArtifact = discardGrantStroke || penStrokeDistancePx.current < PINCH_DISCARD_DISTANCE_PX;
+        if (isGrantArtifact && penGrantSnapshot.current !== null) {
           mapMemoEditingLineLatLon.current = [...penGrantSnapshot.current];
         }
         if (mapMemoEditingLineLatLon.current.length > 0) {
@@ -470,8 +476,11 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
         isPenTool(currentMapMemoTool) && !isStraightStyle ? strokeFilter.current.filter(pXY, timestampMs) : pXY;
       appendPenPointLatLon(xyToLatLon(filteredXY, mapRegionRef.current, mapSize, mapViewRef));
 
-      //終点キャッチアップ用に最後の生タッチ位置を保持する
+      //終点キャッチアップ用に最後の生タッチ位置を保持し、Grant以降の移動距離を累積する
       if (isPenTool(currentMapMemoTool)) {
+        if (lastTouchXY.current !== null) {
+          penStrokeDistancePx.current += Math.hypot(pXY[0] - lastTouchXY.current[0], pXY[1] - lastTouchXY.current[1]);
+        }
         lastTouchXY.current = pXY;
       }
     },
@@ -627,6 +636,13 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
           strokeFilter.current.reset();
           strokeFilter.current.filter(pXY, getEventTimestamp(event));
           lastTouchXY.current = pXY;
+          penStrokeDistancePx.current = 0;
+        }
+        //中断中のストロークが1点だけの場合はピンチの副産物なので破棄する
+        //（意図した点はタップ＋リリースで即確定されるため、1点だけが中断状態で残ることは正規操作では起きない）
+        if (isPenTool(currentMapMemoTool) && isDrawingPaused.current && mapMemoEditingLineLatLon.current.length <= 1) {
+          isDrawingPaused.current = false;
+          mapMemoEditingLineLatLon.current = [];
         }
         if (isPenTool(currentMapMemoTool) && isDrawingPaused.current && mapMemoEditingLineLatLon.current.length > 0) {
           //ピンチ中断からの再開。終点の近くなら続きとして追記、離れていれば前の線を確定して新しい線を開始

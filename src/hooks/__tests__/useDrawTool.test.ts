@@ -1112,6 +1112,27 @@ describe('useDrawTool', () => {
   });
 
   describe('ピンチ意図の取り消し（cancelFreehandStroke / cancelPlotGrant）', () => {
+    it('commitFreehandStroke: 微小な動きだけのストロークは複数点でも破棄される', () => {
+      const { result } = renderDrawTool();
+      act(() => {
+        result.current.setDrawTool('FREEHAND_LINE');
+      });
+      act(() => {
+        result.current.handleGrantFreehand([10, 10]);
+      });
+      //2本指タッチの1本目で拾う微小な動き（合計6px未満）
+      act(() => {
+        result.current.handleMoveFreehand([12, 12], 16);
+        result.current.handleMoveFreehand([14, 14], 32);
+      });
+      act(() => {
+        result.current.commitFreehandStroke();
+      });
+      expect(result.current.drawLine.current).toHaveLength(0);
+      expect(result.current.isEditingObject).toBe(false);
+      expect(result.current.isUndoable).toBe(false);
+    });
+
     it('cancelFreehandStroke: 新規ストロークは複数点でもオブジェクトごと破棄される', () => {
       const { result } = renderDrawTool();
       act(() => {
