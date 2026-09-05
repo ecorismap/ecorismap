@@ -1,5 +1,5 @@
 import { createContext } from 'react';
-import { MapMemoToolGroupType, MapMemoToolType, PenWidthType } from '../types';
+import { ArrowStyleType, MapMemoToolGroupType, MapMemoToolType, PenWidthType } from '../types';
 import { Position } from 'geojson';
 
 export interface MapMemoLine {
@@ -22,6 +22,7 @@ export interface MapMemoContextType {
   isUndoable: boolean;
   isRedoable: boolean;
   mapMemoLines: MapMemoLine[];
+  arrowStyle: ArrowStyleType;
 
   // Map memo actions
   selectMapMemoTool: (tool: MapMemoToolType | undefined) => void;
@@ -47,6 +48,7 @@ export const MapMemoContext = createContext<MapMemoContextType>({
   isUndoable: false,
   isRedoable: false,
   mapMemoLines: [],
+  arrowStyle: 'NONE',
   selectMapMemoTool: () => {},
   setPenWidth: () => {},
   setVisibleMapMemoColor: () => {},

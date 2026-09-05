@@ -213,6 +213,7 @@ export const mockMapMemoContextValue: MapMemoContextType = {
   isPencilModeActive: false,
   isUndoable: false,
   isRedoable: false,
+  arrowStyle: 'NONE',
   mapMemoLines: [],
   selectMapMemoTool: jest.fn(),
   setPenWidth: jest.fn(),

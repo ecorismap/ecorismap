@@ -6,7 +6,8 @@ import { SVGDrawingContext } from '../../contexts/SVGDrawing';
 import { Platform, View } from 'react-native';
 import { isBrushTool, isPenTool } from '../../utils/General';
 import { ulid } from 'ulid';
-import { MapMemoToolType } from '../../types';
+import { Position } from 'geojson';
+import { ArrowStyleType, MapMemoToolType } from '../../types';
 import { useWindow } from '../../hooks/useWindow';
 
 //iOSのGoogle Maps SDKはポリラインの線端指定(lineCap)をサポートせず常に平端(butt)のため、
@@ -20,6 +21,7 @@ export const MapMemoView = React.memo(() => {
     penWidth,
     currentMapMemoTool,
     mapMemoLines,
+    arrowStyle,
   } = useContext(MapMemoContext);
   const { mapMemoEditingLine, mapMemoEditingLineLatLon, mapViewRef } = useContext(SVGDrawingContext);
   const { mapRegion, mapSize } = useWindow();
@@ -84,21 +86,87 @@ export const MapMemoView = React.memo(() => {
             fill={'none'}
           />
         )}
-        {mapMemoLines.map((line, index) => (
-          <Path
-            key={index}
-            d={pointsToSvg(latLonArrayToXYArray(line.latlon, mapRegion, mapSize, mapViewRef))}
-            stroke={line.strokeColor}
-            strokeWidth={line.strokeWidth}
-            fill="none"
-            strokeLinecap={STROKE_CAP}
-            strokeLinejoin="round"
-          />
-        ))}
+        {isPenTool(currentMapMemoTool) && (
+          <ArrowHeads points={editingLineXY} strokeColor={penColor} strokeWidth={penWidth} arrowStyle={arrowStyle} />
+        )}
+        {mapMemoLines.map((line, index) => {
+          const lineXY = latLonArrayToXYArray(line.latlon, mapRegion, mapSize, mapViewRef);
+          return (
+            <G key={index}>
+              <Path
+                d={pointsToSvg(lineXY)}
+                stroke={line.strokeColor}
+                strokeWidth={line.strokeWidth}
+                fill="none"
+                strokeLinecap={STROKE_CAP}
+                strokeLinejoin="round"
+              />
+              <ArrowHeads
+                points={lineXY}
+                strokeColor={line.strokeColor}
+                strokeWidth={line.strokeWidth}
+                arrowStyle={(line.strokeStyle || 'NONE') as ArrowStyleType}
+              />
+            </G>
+          );
+        })}
       </Svg>
     </View>
   );
 });
+
+//作図中・保存待ちの線に付ける矢印プレビュー。保存後に表示されるLineArrow(マーカー)と同じ形状・サイズを
+//スクリーン座標のSVGで描き、指を離して保存されるまでの間も矢印が途切れず見えるようにする
+const ArrowHeads = React.memo(
+  ({
+    points,
+    strokeColor,
+    strokeWidth,
+    arrowStyle,
+  }: {
+    points: Position[];
+    strokeColor: string;
+    strokeWidth: number;
+    arrowStyle: ArrowStyleType;
+  }) => {
+    if (arrowStyle === 'NONE' || points.length < 2) return null;
+    //LineArrow.tsxと同じスケール計算。strokeWidthが1未満でも負の平方根にならないようクランプ
+    const scale = Math.sqrt(Math.max(strokeWidth - 1, 0.25));
+    const size = 20 * scale;
+    const d = `M${10 * scale} ${7 * scale} L${5 * scale} ${20 * scale} L${10 * scale} ${18 * scale} L${
+      15 * scale
+    } ${20 * scale} Z`;
+    const p0 = points[0];
+    const p1 = points[1];
+    const p2 = points[points.length - 2];
+    const p3 = points[points.length - 1];
+    //矢印形状は上向きが基準のため+90度補正(+450=+360+90)
+    const angleEnd = (Math.atan2(p3[1] - p2[1], p3[0] - p2[0]) * (180 / Math.PI) + 450) % 360;
+    const angleStart = (Math.atan2(p0[1] - p1[1], p0[0] - p1[0]) * (180 / Math.PI) + 450) % 360;
+    return (
+      <G>
+        <Path
+          d={d}
+          fill={strokeColor}
+          stroke="white"
+          transform={`translate(${p3[0] - size / 2},${p3[1] - size / 2}) rotate(${angleEnd}, ${size / 2}, ${
+            size / 2
+          })`}
+        />
+        {arrowStyle === 'ARROW_BOTH' && (
+          <Path
+            d={d}
+            fill={strokeColor}
+            stroke="white"
+            transform={`translate(${p0[0] - size / 2},${p0[1] - size / 2}) rotate(${angleStart}, ${size / 2}, ${
+              size / 2
+            })`}
+          />
+        )}
+      </G>
+    );
+  }
+);
 
 const RenderStamp = React.memo(
   ({
