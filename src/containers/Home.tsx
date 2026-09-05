@@ -145,6 +145,9 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
   const dragStartPosition = useRef<{ x: number; y: number } | null>(null);
   // タッチ開始時刻。直後に2本目の指が着いた場合はピンチ意図とみなしGrantで加えた点を取り消す
   const touchStartTimeRef = useRef(0);
+  // このタッチに2本目の指が関与したか。指が動かないズーム系ジェスチャー（2本指タップ・その場ピンチ）は
+  // Moveイベントが発火せず2本指検出を通らないため、タッチ開始時にも記録してリリース時に地図操作として扱う
+  const multiTouchSeenRef = useRef(false);
   const longPressTimerRef = useRef<NodeJS.Timeout | null>(null);
   // 長押しポップアップが表示されたタッチでは、リリース時のフィーチャー選択を抑止する
   const longPressFiredRef = useRef(false);
@@ -1861,6 +1864,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       // ドラッグ開始位置とタッチ開始時刻を記録
       dragStartPosition.current = { x: pXY[0], y: pXY[1] };
       touchStartTimeRef.current = getEventTimestamp(event);
+      multiTouchSeenRef.current = event.nativeEvent.touches.length >= 2;
 
       // 新しいタッチの開始時に長押し発火フラグをリセット
       longPressFiredRef.current = false;
@@ -2032,7 +2036,8 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       if (currentDrawTool === 'MOVE' || isPinch) {
         return;
       }
-      if (gesture.numberActiveTouches === 2) {
+      if (gesture.numberActiveTouches === 2 || event.nativeEvent.touches.length >= 2) {
+        multiTouchSeenRef.current = true;
         //タッチ開始直後の2本目着地はピンチ意図とみなし、1本目のGrantで拾った点を取り消す
         const isPinchIntentFromStart = getEventTimestamp(event) - touchStartTimeRef.current < PINCH_INTENT_DURATION_MS;
         if (isPinchIntentFromStart) {
@@ -2046,6 +2051,11 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
         hideDrawLine();
         //ペンで描画中はストロークを破棄せず中断し、ピンチ後に続きを描けるようにする
         pauseMapMemoDrawing(isPinchIntentFromStart);
+        //長押しタイマーが残っているとピンチ中に発火するためクリア
+        if (longPressTimerRef.current) {
+          clearTimeout(longPressTimerRef.current);
+          longPressTimerRef.current = null;
+        }
         setIsPinch(true);
       } else if (isMapMemoDrawTool(currentMapMemoTool)) {
         handleMoveMapMemo(event);
@@ -2104,9 +2114,23 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
 
       if (route.params?.mode === 'editPosition') showDrawLine();
 
-      if (isPinch) {
+      //同時リフト時はchangedTouchesに複数入るため、記録漏れの保険としてここでも確認する
+      const wasMultiTouch = multiTouchSeenRef.current || (event.nativeEvent.changedTouches?.length ?? 0) >= 2;
+      multiTouchSeenRef.current = false;
+
+      if (isPinch || wasMultiTouch) {
+        //2本指が関与したタッチは地図操作（パン・ズーム）なので描画は確定しない。
+        //指が動かないズーム（2本指タップ・その場ピンチ）はMoveの2本指検出を通らないため、ここでも取り消す
+        if (!isPinch && wasMultiTouch) {
+          commitFreehandStroke();
+          cancelPlotGrant();
+          pauseMapMemoDrawing();
+        }
         showDrawLine();
-        setIsPinch(false);
+        if (isPinch) setIsPinch(false);
+        isMapDragging.current = false;
+        freehandFinishedRef.current = false;
+        longPressFiredRef.current = false;
         return;
       } else if (currentDrawTool === 'MOVE') {
         showDrawLine();
@@ -2196,6 +2220,8 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       longPressFiredRef.current = false;
     },
     [
+      cancelPlotGrant,
+      commitFreehandStroke,
       currentDrawTool,
       currentMapMemoTool,
       deleteDraw,
@@ -2204,6 +2230,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       getInfoOfMap,
       getPXY,
       handleReleaseDeletePoint,
+      pauseMapMemoDrawing,
       handleReleaseFreehand,
       handleReleaseMapMemo,
       handleReleasePlotLinePolygon,
@@ -2226,16 +2253,48 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     ]
   );
 
+  const handlePanResponderTerminate = useCallback(() => {
+    //地図側のネイティブジェスチャー（ピンチズーム等）にタッチが奪われた場合の後始末。
+    //Grantで拾った点を取り消し、実質的な描きかけは保全する（リリースは呼ばれない）
+    commitFreehandStroke();
+    cancelPlotGrant();
+    pauseMapMemoDrawing();
+    isPencilTouch.current = undefined;
+    dragStartPosition.current = null;
+    multiTouchSeenRef.current = false;
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+    isMapDragging.current = false;
+    freehandFinishedRef.current = false;
+    longPressFiredRef.current = false;
+  }, [cancelPlotGrant, commitFreehandStroke, isPencilTouch, pauseMapMemoDrawing]);
+
+  const recordMultiTouch = useCallback((event: GestureResponderEvent) => {
+    //2本目の指の着地はGrantを再発火しないため、ここで記録する（指が動かないズーム対策）
+    if (event.nativeEvent.touches.length >= 2) multiTouchSeenRef.current = true;
+    return true;
+  }, []);
+
   const panResponder: PanResponderInstance = useMemo(
     () =>
       PanResponder.create({
-        onStartShouldSetPanResponder: () => true,
+        onStartShouldSetPanResponder: recordMultiTouch,
         onMoveShouldSetPanResponder: () => true,
+        onPanResponderStart: recordMultiTouch,
         onPanResponderGrant: handlePanResponderGrant,
         onPanResponderMove: handlePanResponderMove,
         onPanResponderRelease: handlePanResponderRelease,
+        onPanResponderTerminate: handlePanResponderTerminate,
       }),
-    [handlePanResponderGrant, handlePanResponderMove, handlePanResponderRelease]
+    [
+      handlePanResponderGrant,
+      handlePanResponderMove,
+      handlePanResponderRelease,
+      handlePanResponderTerminate,
+      recordMultiTouch,
+    ]
   );
 
   // editPosition用の遅延実行状態
