@@ -62,6 +62,7 @@ export const Line = React.memo(
                 feature={{ ...feature, coords: feature.coords[0] }}
                 lineColor={lineColor}
                 selected={selected}
+                zoom={zoom}
               />
             );
           } else if (isBrushTool(feature.field._strokeStyle as string)) {

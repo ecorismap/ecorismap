@@ -26,7 +26,8 @@ const LineArrow = React.memo((props: Props) => {
   const angleEnd = (bearingEnd + 360) % 360;
   const bearingStart = bearing(turf.point(p1), turf.point(p0));
   const angleStart = (bearingStart + 360) % 360;
-  const scale = Math.sqrt(strokeWidth - 1);
+  // ズームアウトでstrokeWidthが1未満に縮むと負の平方根でNaNになるため下限をクランプ（最小でもscale=0.5で矢印を維持）
+  const scale = Math.sqrt(Math.max(strokeWidth - 1, 0.25));
   const originalSize = 20;
   // scaleに基づいた新しいサイズを計算
   const size = originalSize * scale;

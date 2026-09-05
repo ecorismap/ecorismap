@@ -69,6 +69,7 @@ export const Line = React.memo((props: Props & { editingLineId?: string }) => {
             feature={{ ...feature, coords: feature.coords[0] }}
             lineColor={lineColor}
             selected={selected}
+            zoom={zoom}
           />
         );
       })}

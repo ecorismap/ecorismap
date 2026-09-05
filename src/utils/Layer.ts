@@ -45,6 +45,18 @@ export const getLineWidthAtZoom = (layer: LayerType, feature: RecordType, zoom: 
   return width * 2 ** (zoom - drawnZoom);
 };
 
+/**
+ * ズームに応じたマップメモ記号（スタンプ・ブラシ）の縮小率。
+ * 線幅と同じく、描画時（_zoom）よりズームアウトした場合のみ2^(zoom - _zoom)倍に縮小する。
+ * _zoomを持たない旧レコードは常に1（固定サイズ）。
+ */
+export const getMapMemoSymbolScaleAtZoom = (feature: RecordType, zoom: number): number => {
+  const drawnZoom = feature.field._zoom;
+  if (typeof drawnZoom !== 'number' || drawnZoom <= 0) return 1;
+  if (zoom >= drawnZoom) return 1;
+  return 2 ** (zoom - drawnZoom);
+};
+
 export const getColor = (layer: LayerType, feature: RecordType) => {
   //colorは以前はhexで保存していたが、rgbaで保存するように変更したため、hexの場合はrgbaに変換する。
   //rgbaになっている場合は、hex2rgbaの中でレイヤの透過率を反映する。
