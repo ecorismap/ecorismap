@@ -58,6 +58,9 @@ import { PositionFilter } from '../utils/OneEuroFilter';
 import { Position } from 'geojson';
 import { RootState } from '../store';
 
+//ピンチ開始時にGrant以降の移動距離がこの値未満なら描画意図なしとみなして破棄する
+const PINCH_DISCARD_DISTANCE_PX = 10;
+
 export type UseDrawToolReturnType = {
   isEditingDraw: boolean;
   isUndoable: boolean;
@@ -1465,12 +1468,18 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     }
     const index = drawLine.current.length - 1;
     if (index < 0) return;
-    if (drawLine.current[index].xy.length >= 2) {
-      //2点以上なら確定して修正モードへ
+    const xy = drawLine.current[index].xy;
+    //Grant以降の累計移動距離。極小なら描画意図なし（2本指タッチの1本目）とみなす
+    let pathLength = 0;
+    for (let i = 1; i < xy.length; i++) {
+      pathLength += Math.hypot(xy[i][0] - xy[i - 1][0], xy[i][1] - xy[i - 1][1]);
+    }
+    if (xy.length >= 2 && pathLength >= PINCH_DISCARD_DISTANCE_PX) {
+      //実質的に描かれたストロークなら確定して修正モードへ
       drawLine.current[index].properties = ['EDIT'];
       editingObjectIndex.current = index;
     } else {
-      //1点だけなら破棄
+      //1点だけ・ほぼ動いていない場合は破棄
       cancelFreehandStroke();
     }
   }, [cancelFreehandStroke, currentDrawTool, drawLine, editingObjectIndex, isEditingObject]);

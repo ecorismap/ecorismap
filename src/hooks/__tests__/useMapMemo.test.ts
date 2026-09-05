@@ -1299,6 +1299,49 @@ describe('useMapMemo', () => {
     expect(getMemoData().length).toBe(1);
   });
 
+  it('ほぼ動いていないGrant直後のストロークはピンチ中断で破棄され点として確定されないこと', () => {
+    const mockMapViewRef = { current: {} } as any;
+    const { result } = renderHook(() => useMapMemo(mockMapViewRef), { wrapper });
+    jest.useFakeTimers();
+
+    act(() => {
+      result.current.setMapMemoTool('PEN');
+    });
+
+    const makeEvent = (x: number, y: number) =>
+      ({
+        nativeEvent: { locationX: x, locationY: y, pageX: x, pageY: y, touches: [{}] },
+        persist: jest.fn(),
+      } as any);
+
+    // 2本指タッチの1本目: Grantで1点拾い、指はほぼ動かない（2本目が遅れて着地するケース）
+    act(() => {
+      result.current.handleGrantMapMemo(makeEvent(100, 100));
+    });
+    act(() => {
+      result.current.handleMoveMapMemo(makeEvent(103, 103));
+    });
+
+    // 時間判定に関係なくピンチ移行で破棄される（移動距離が極小のため）
+    act(() => {
+      result.current.pauseMapMemoDrawing();
+    });
+    expect(result.current.mapMemoEditingLineLatLon.current.length).toBe(0);
+
+    // その後に1本描いても、点は確定されず1レコードだけ保存される
+    act(() => {
+      result.current.handleGrantMapMemo(makeEvent(400, 400));
+    });
+    act(() => {
+      result.current.handleMoveMapMemo(makeEvent(450, 450));
+    });
+    act(() => {
+      result.current.handleReleaseMapMemo(makeEvent(450, 450));
+      jest.runAllTimers();
+    });
+    expect(getMemoData().length).toBe(1);
+  });
+
   it('中断中のストロークがあってもピンチ意図なら再開点だけ巻き戻されて中断が継続すること', () => {
     const mockMapViewRef = { current: {} } as any;
     const { result } = renderHook(() => useMapMemo(mockMapViewRef), { wrapper });
