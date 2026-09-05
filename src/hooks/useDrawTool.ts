@@ -141,6 +141,8 @@ export type UseDrawToolReturnType = {
   handleReleaseSelect: (pXY: Position) => void;
   handleReleaseFreehand: () => void;
   commitFreehandStroke: () => void;
+  cancelFreehandStroke: () => void;
+  cancelPlotGrant: () => void;
   redoDraw: () => void;
   handleReleasePlotPoint: () => void;
   handleReleasePlotLinePolygon: () => boolean;
@@ -1355,6 +1357,31 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     return finished;
   }, [tryDeleteLineNode, tryFinishEditObject, updateNodePosition]);
 
+  /**
+   * ピンチ開始時にGrantで加えられたプロット操作を取り消す。
+   * 2本指タッチの1本目でノードが追加・移動されたまま残るのを防ぐ。
+   * Grantで作成した新規オブジェクトは丸ごと取り消し、編集中はlatlonを正としてxyを復元する。
+   */
+  const cancelPlotGrant = useCallback(() => {
+    if (!isPlotTool(currentDrawTool)) return;
+    if (!isEditingObject.current) return;
+    const index = editingObjectIndex.current;
+    if (index < 0 || index >= drawLine.current.length) return;
+    const line = drawLine.current[index];
+    if (line.latlon.length === 0) {
+      //Grantで作成した直後の新規オブジェクトを取り消す（undoのNEWも取り除く）
+      drawLine.current = drawLine.current.filter((_, i) => i !== index);
+      const lastUndo = undoLine.current[undoLine.current.length - 1];
+      if (lastUndo !== undefined && lastUndo.action === 'NEW') undoLine.current.pop();
+      isEditingObject.current = false;
+      editingObjectIndex.current = -1;
+      editingLineXY.current = [];
+    } else {
+      line.xy = latLonArrayToXYArray(line.latlon, mapRegion, mapSize, mapViewRef);
+    }
+    setRedraw(ulid());
+  }, [currentDrawTool, drawLine, editingLineXY, editingObjectIndex, isEditingObject, mapRegion, mapSize, mapViewRef, undoLine]);
+
   const handleGrantFreehand = useCallback(
     (pXY: Position) => {
       strokeFilter.current.reset();
@@ -1407,6 +1434,27 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
    * ピンチ開始時に呼ぶことで、描きかけの消失や中断点から再開点への直線化を防ぐ。
    * 確定後の続き描きは既存の修正ストロークフローに乗る
    */
+  /**
+   * ピンチ開始がタッチ直後の場合に、Grantで始まったフリーハンドの描きかけを破棄する。
+   * 2本指タッチの1本目で拾った点がストロークとして確定されるのを防ぐ。
+   * 新規ストロークはオブジェクトごと取り消し（undoのNEWも取り除く）、修正ストロークは軌跡のみ破棄する。
+   */
+  const cancelFreehandStroke = useCallback(() => {
+    if (!isEditingObject.current) return;
+    if (!isFreehandTool(currentDrawTool)) return;
+    if (editingObjectIndex.current !== -1) {
+      //修正ストローク中は軌跡を破棄するだけ（次のタッチで再初期化される）
+      editingLineXY.current = [];
+      return;
+    }
+    if (drawLine.current.length === 0) return;
+    drawLine.current = drawLine.current.slice(0, -1);
+    const lastUndo = undoLine.current[undoLine.current.length - 1];
+    if (lastUndo !== undefined && lastUndo.action === 'NEW') undoLine.current.pop();
+    isEditingObject.current = false;
+    setRedraw(ulid());
+  }, [currentDrawTool, drawLine, editingLineXY, editingObjectIndex, isEditingObject, undoLine]);
+
   const commitFreehandStroke = useCallback(() => {
     if (!isEditingObject.current) return;
     if (!isFreehandTool(currentDrawTool)) return;
@@ -1422,13 +1470,10 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
       drawLine.current[index].properties = ['EDIT'];
       editingObjectIndex.current = index;
     } else {
-      //1点だけなら破棄（undoのNEWも取り除く）
-      drawLine.current = drawLine.current.slice(0, -1);
-      const lastUndo = undoLine.current[undoLine.current.length - 1];
-      if (lastUndo !== undefined && lastUndo.action === 'NEW') undoLine.current.pop();
-      isEditingObject.current = false;
+      //1点だけなら破棄
+      cancelFreehandStroke();
     }
-  }, [currentDrawTool, drawLine, editingLineXY, editingObjectIndex, isEditingObject, undoLine]);
+  }, [cancelFreehandStroke, currentDrawTool, drawLine, editingObjectIndex, isEditingObject]);
 
   const checkSplitLine = useCallback((pXY: Position) => {
     const index = editingObjectIndex.current;
@@ -1565,6 +1610,8 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     handleReleasePlotLinePolygon,
     handleReleaseFreehand,
     commitFreehandStroke,
+    cancelFreehandStroke,
+    cancelPlotGrant,
     handleGrantSplitLine,
     selectObjectByFeature,
     checkSplitLine,

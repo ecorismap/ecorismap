@@ -1258,6 +1258,96 @@ describe('useMapMemo', () => {
     expect(getMemoData().length).toBe(2);
   });
 
+  it('タッチ直後のピンチ移行（discardGrantStroke）ではGrantで拾った点が破棄されること', () => {
+    const mockMapViewRef = { current: {} } as any;
+    const { result } = renderHook(() => useMapMemo(mockMapViewRef), { wrapper });
+    jest.useFakeTimers();
+
+    act(() => {
+      result.current.setMapMemoTool('PEN');
+    });
+
+    const makeEvent = (x: number, y: number) =>
+      ({
+        nativeEvent: { locationX: x, locationY: y, pageX: x, pageY: y, touches: [{}] },
+        persist: jest.fn(),
+      } as any);
+
+    // 2本指タッチの1本目でGrantが発火し1点拾ってしまう
+    act(() => {
+      result.current.handleGrantMapMemo(makeEvent(100, 100));
+    });
+    expect(result.current.mapMemoEditingLineLatLon.current.length).toBe(1);
+
+    // タッチ直後のピンチ移行 → Grantで拾った点は破棄される
+    act(() => {
+      result.current.pauseMapMemoDrawing(true);
+    });
+    expect(result.current.mapMemoEditingLineLatLon.current.length).toBe(0);
+
+    // その後に普通に1本描くと、点は増えず1レコードだけ保存される
+    act(() => {
+      result.current.handleGrantMapMemo(makeEvent(300, 300));
+    });
+    act(() => {
+      result.current.handleMoveMapMemo(makeEvent(350, 350));
+    });
+    act(() => {
+      result.current.handleReleaseMapMemo(makeEvent(350, 350));
+      jest.runAllTimers();
+    });
+    expect(getMemoData().length).toBe(1);
+  });
+
+  it('中断中のストロークがあってもピンチ意図なら再開点だけ巻き戻されて中断が継続すること', () => {
+    const mockMapViewRef = { current: {} } as any;
+    const { result } = renderHook(() => useMapMemo(mockMapViewRef), { wrapper });
+    jest.useFakeTimers();
+
+    act(() => {
+      result.current.setMapMemoTool('PEN');
+    });
+
+    const makeEvent = (x: number, y: number) =>
+      ({
+        nativeEvent: { locationX: x, locationY: y, pageX: x, pageY: y, touches: [{}] },
+        persist: jest.fn(),
+      } as any);
+
+    act(() => {
+      result.current.handleGrantMapMemo(makeEvent(100, 100));
+    });
+    act(() => {
+      result.current.handleMoveMapMemo(makeEvent(150, 150));
+    });
+    act(() => {
+      result.current.pauseMapMemoDrawing();
+    });
+    expect(result.current.mapMemoEditingLineLatLon.current.length).toBe(2);
+
+    // もう一度2本指パン: 1本目の指のGrantが終点近くで再開扱いになり1点追記される
+    act(() => {
+      result.current.handleGrantMapMemo(makeEvent(120, 120));
+    });
+    expect(result.current.mapMemoEditingLineLatLon.current.length).toBe(3);
+
+    // タッチ直後のピンチ移行 → 追記された点は巻き戻され、中断中のストロークは保持される
+    act(() => {
+      result.current.pauseMapMemoDrawing(true);
+    });
+    expect(result.current.mapMemoEditingLineLatLon.current.length).toBe(2);
+
+    // 終点近くから再開して描き終えると1本の線として保存される
+    act(() => {
+      result.current.handleGrantMapMemo(makeEvent(120, 120));
+    });
+    act(() => {
+      result.current.handleReleaseMapMemo(makeEvent(120, 120));
+      jest.runAllTimers();
+    });
+    expect(getMemoData().length).toBe(1);
+  });
+
 
   it('離した瞬間に最後の生タッチ位置が終点として保存されること（フィルタ遅延のキャッチアップ）', () => {
     const Coords = require('../../utils/Coords');
