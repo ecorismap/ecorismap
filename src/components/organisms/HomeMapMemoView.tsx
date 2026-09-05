@@ -115,6 +115,9 @@ export const MapMemoView = React.memo(() => {
   );
 });
 
+//端点の向き決めに使う点は端点からこの距離以上離れた点を採用する（微小セグメントの向きは不安定なため）
+const ARROW_DIRECTION_MIN_DISTANCE_PX = 10;
+
 //作図中・保存待ちの線に付ける矢印プレビュー。保存後に表示されるLineArrow(マーカー)と同じ形状・サイズを
 //スクリーン座標のSVGで描き、指を離して保存されるまでの間も矢印が途切れず見えるようにする
 const ArrowHeads = React.memo(
@@ -137,12 +140,26 @@ const ArrowHeads = React.memo(
       15 * scale
     } ${20 * scale} Z`;
     const p0 = points[0];
-    const p1 = points[1];
-    const p2 = points[points.length - 2];
     const p3 = points[points.length - 1];
+    //描き始めは手ぶれ補正の初期化直後で隣接点がほぼ同一位置になり、隣の点だけで向きを決めると
+    //不定な向きに固定される。端点から一定距離離れた点を探して向きを決める
+    let startRef = p3;
+    for (let i = 1; i < points.length; i++) {
+      if (Math.hypot(points[i][0] - p0[0], points[i][1] - p0[1]) >= ARROW_DIRECTION_MIN_DISTANCE_PX) {
+        startRef = points[i];
+        break;
+      }
+    }
+    let endRef = p0;
+    for (let i = points.length - 2; i >= 0; i--) {
+      if (Math.hypot(points[i][0] - p3[0], points[i][1] - p3[1]) >= ARROW_DIRECTION_MIN_DISTANCE_PX) {
+        endRef = points[i];
+        break;
+      }
+    }
     //矢印形状は上向きが基準のため+90度補正(+450=+360+90)
-    const angleEnd = (Math.atan2(p3[1] - p2[1], p3[0] - p2[0]) * (180 / Math.PI) + 450) % 360;
-    const angleStart = (Math.atan2(p0[1] - p1[1], p0[0] - p1[0]) * (180 / Math.PI) + 450) % 360;
+    const angleEnd = (Math.atan2(p3[1] - endRef[1], p3[0] - endRef[0]) * (180 / Math.PI) + 450) % 360;
+    const angleStart = (Math.atan2(p0[1] - startRef[1], p0[0] - startRef[0]) * (180 / Math.PI) + 450) % 360;
     return (
       <G>
         <Path
