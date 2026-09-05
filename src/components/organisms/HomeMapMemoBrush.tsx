@@ -6,6 +6,7 @@ import Svg, { Circle, Path, Polygon } from 'react-native-svg';
 
 import { interpolateLineString, latLonObjectsToLatLonArray } from '../../utils/Coords';
 import { MARKER_BAND, markerZIndex } from '../../utils/markerZIndex';
+import { getMapMemoSymbolScaleAtZoom } from '../../utils/Layer';
 
 interface Props {
   lineColor: string;
@@ -18,7 +19,13 @@ export const HomeMapMemoBrush = React.memo((props: Props) => {
   const { lineColor, feature, zoom, selected } = props;
   if (feature.coords === undefined) return null;
   const latlon = latLonObjectsToLatLonArray(feature.coords);
-  const points = interpolateLineString(latlon, 1 / 2 ** (zoom - 10));
+  //描画時よりズームアウトしたら記号を線幅と同様に縮小し、間隔も描画時ズーム基準で固定して
+  //ストローク全体が地図と一緒に相似縮小されるようにする（ズームイン側は従来どおり画面上の見た目を維持）
+  const scale = getMapMemoSymbolScaleAtZoom(feature, zoom);
+  const drawnZoom = feature.field._zoom;
+  const intervalZoom = scale < 1 && typeof drawnZoom === 'number' ? drawnZoom : zoom;
+  const size = 20 * scale;
+  const points = interpolateLineString(latlon, 1 / 2 ** (intervalZoom - 10));
   //turfで
   return (
     <>
@@ -34,47 +41,47 @@ export const HomeMapMemoBrush = React.memo((props: Props) => {
           style={{ zIndex: -1, alignItems: 'center' }}
           // 同一zIndexのマーカーは重なると描画順が不定で点滅するため、idハッシュで一意にする
           zIndex={Platform.OS === 'ios' ? markerZIndex(MARKER_BAND.MAPMEMO, `${feature.id}:${idx}`) : undefined}
-          key={`${idx}-${selected}-${feature.field._strokeStyle}-${lineColor}`}
+          key={`${idx}-${selected}-${feature.field._strokeStyle}-${lineColor}-${size}`}
         >
-          <View style={{ width: 20, height: 20 }}>
+          <View style={{ width: size, height: size }}>
             {feature.field._strokeStyle === 'PLUS' && (
-              <Svg height="20" width="20" viewBox="0 0 20 20">
+              <Svg height={size} width={size} viewBox="0 0 20 20">
                 <Path d="M5,10 L15,10" stroke={lineColor} strokeWidth="1.5" fill="none" />
               </Svg>
             )}
             {feature.field._strokeStyle === 'CROSS' && (
-              <Svg height="20" width="20" viewBox="0 0 20 20">
+              <Svg height={size} width={size} viewBox="0 0 20 20">
                 <Path d="M10,10 L20,10" stroke={lineColor} strokeWidth="1.5" fill="none" />
               </Svg>
             )}
             {feature.field._strokeStyle === 'SENKAI' && (
-              <Svg height="20" width="20" viewBox="0 0 20 20">
+              <Svg height={size} width={size} viewBox="0 0 20 20">
                 <Circle cx="15" cy="10" r="4" stroke={lineColor} strokeWidth="1.5" fill="none" />
               </Svg>
             )}
             {feature.field._strokeStyle === 'SENJYOU' && (
-              <Svg height="20" width="20" viewBox="0 0 20 20">
+              <Svg height={size} width={size} viewBox="0 0 20 20">
                 <Circle cx="15" cy="10" r="4" stroke={lineColor} strokeWidth="1.5" fill="none" />
                 <Circle cx="15" cy="10" r="2" stroke={lineColor} strokeWidth="1.5" fill="none" />
               </Svg>
             )}
             {feature.field._strokeStyle === 'KOUGEKI' && (
-              <Svg height="20" width="20" viewBox="0 0 20 20">
+              <Svg height={size} width={size} viewBox="0 0 20 20">
                 <Polygon points="10,4 20,10 10,16" stroke={lineColor} strokeWidth="0" fill={lineColor} />
               </Svg>
             )}
             {feature.field._strokeStyle === 'DISPLAY1' && (
-              <Svg height="20" width="20" viewBox="0 0 20 20">
+              <Svg height={size} width={size} viewBox="0 0 20 20">
                 <Path d="M4,19 L16,13 L4,7 L16,1" stroke={lineColor} strokeWidth="1.5" fill="none" />
               </Svg>
             )}
             {feature.field._strokeStyle === 'DISPLAY2' && (
-              <Svg height="20" width="20" viewBox="0 0 20 20">
+              <Svg height={size} width={size} viewBox="0 0 20 20">
                 <Path d="M16,19 L16,1" stroke={lineColor} strokeWidth="2" strokeDasharray={[10, 10]} fill="none" />
               </Svg>
             )}
             {feature.field._strokeStyle === 'KYUKOKA' && (
-              <Svg height="20" width="20" viewBox="0 0 20 20">
+              <Svg height={size} width={size} viewBox="0 0 20 20">
                 {/* 上のくさび型 */}
                 <Path d="M5 7 L10 2 L15 7" stroke={lineColor} strokeWidth="1.5" fill="none" />
                 {/* 中央のくさび型 */}
@@ -84,18 +91,18 @@ export const HomeMapMemoBrush = React.memo((props: Props) => {
               </Svg>
             )}
             {feature.field._strokeStyle === 'TANJI' && (
-              <Svg height="20" width="20" viewBox="0 0 20 20">
+              <Svg height={size} width={size} viewBox="0 0 20 20">
                 <Path d="M10 10 L4 4 V16 L10 10 Z" stroke={lineColor} strokeWidth="0" fill={lineColor} />
                 <Path d="M10 10 L16 4 V16 L10 10 Z" stroke={lineColor} strokeWidth="0" fill={lineColor} />
               </Svg>
             )}
             {feature.field._strokeStyle === 'ESA' && (
-              <Svg height="20" width="20" viewBox="0 0 20 20">
+              <Svg height={size} width={size} viewBox="0 0 20 20">
                 <Circle cx="15" cy="10" r="2" stroke={lineColor} strokeWidth="1.5" fill={lineColor} />
               </Svg>
             )}
             {feature.field._strokeStyle === 'SUZAI' && (
-              <Svg height="20" width="20" viewBox="0 0 20 20">
+              <Svg height={size} width={size} viewBox="0 0 20 20">
                 <Path d="M10 10 H34" stroke={lineColor} strokeWidth="2" fill={lineColor} />
               </Svg>
             )}
