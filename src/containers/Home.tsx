@@ -132,6 +132,9 @@ import { MeasureContext, MeasureProvider } from '../contexts/Measure';
 import { ViewshedContext, ViewshedProvider } from '../contexts/Viewshed';
 import { useLayers } from '../hooks/useLayers';
 
+//タッチ開始からこの時間内に2本目の指が着いたらピンチ意図とみなす（2本指の着地ずれの許容時間）
+const PINCH_INTENT_DURATION_MS = 300;
+
 // 内部コンポーネント - BottomSheetNavigationProvider の内側で使用
 function HomeContainersInner({ navigation, route }: Props_Home) {
   const [restored] = useState(true);
@@ -140,6 +143,8 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
   const isMapDragging = useRef(false);
   const dragTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const dragStartPosition = useRef<{ x: number; y: number } | null>(null);
+  // タッチ開始時刻。直後に2本目の指が着いた場合はピンチ意図とみなしGrantで加えた点を取り消す
+  const touchStartTimeRef = useRef(0);
   const longPressTimerRef = useRef<NodeJS.Timeout | null>(null);
   // 長押しポップアップが表示されたタッチでは、リリース時のフィーチャー選択を抑止する
   const longPressFiredRef = useRef(false);
@@ -280,6 +285,8 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     handleMoveFreehand,
     handleReleaseFreehand,
     commitFreehandStroke,
+    cancelFreehandStroke,
+    cancelPlotGrant,
     handleGrantSplitLine,
     getPXY,
     savePoint,
@@ -1851,8 +1858,9 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
 
       const pXY = getPXY(event);
 
-      // ドラッグ開始位置を記録
+      // ドラッグ開始位置とタッチ開始時刻を記録
       dragStartPosition.current = { x: pXY[0], y: pXY[1] };
+      touchStartTimeRef.current = getEventTimestamp(event);
 
       // 新しいタッチの開始時に長押し発火フラグをリセット
       longPressFiredRef.current = false;
@@ -2025,11 +2033,19 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
         return;
       }
       if (gesture.numberActiveTouches === 2) {
-        //フリーハンドの描きかけがあれば確定してから地図操作へ（描きかけの消失防止）
-        commitFreehandStroke();
+        //タッチ開始直後の2本目着地はピンチ意図とみなし、1本目のGrantで拾った点を取り消す
+        const isPinchIntentFromStart = getEventTimestamp(event) - touchStartTimeRef.current < PINCH_INTENT_DURATION_MS;
+        if (isPinchIntentFromStart) {
+          cancelFreehandStroke();
+        } else {
+          //フリーハンドの描きかけがあれば確定してから地図操作へ（描きかけの消失防止）
+          commitFreehandStroke();
+        }
+        //プロットはGrantで追加・移動したノードを取り消す（タップ確定はリリース時のため）
+        cancelPlotGrant();
         hideDrawLine();
         //ペンで描画中はストロークを破棄せず中断し、ピンチ後に続きを描けるようにする
-        pauseMapMemoDrawing();
+        pauseMapMemoDrawing(isPinchIntentFromStart);
         setIsPinch(true);
       } else if (isMapMemoDrawTool(currentMapMemoTool)) {
         handleMoveMapMemo(event);
@@ -2040,6 +2056,8 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       }
     },
     [
+      cancelFreehandStroke,
+      cancelPlotGrant,
       commitFreehandStroke,
       currentDrawTool,
       currentMapMemoTool,

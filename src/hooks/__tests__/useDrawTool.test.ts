@@ -1111,6 +1111,105 @@ describe('useDrawTool', () => {
     });
   });
 
+  describe('ピンチ意図の取り消し（cancelFreehandStroke / cancelPlotGrant）', () => {
+    it('cancelFreehandStroke: 新規ストロークは複数点でもオブジェクトごと破棄される', () => {
+      const { result } = renderDrawTool();
+      act(() => {
+        result.current.setDrawTool('FREEHAND_LINE');
+      });
+      act(() => {
+        result.current.handleGrantFreehand([10, 10]);
+      });
+      act(() => {
+        result.current.handleMoveFreehand([20, 20], 16);
+        result.current.handleMoveFreehand([30, 30], 32);
+      });
+      act(() => {
+        result.current.cancelFreehandStroke();
+      });
+      expect(result.current.drawLine.current).toHaveLength(0);
+      expect(result.current.isEditingObject).toBe(false);
+      expect(result.current.isUndoable).toBe(false);
+    });
+
+    it('cancelFreehandStroke: 修正ストローク中は軌跡のみ破棄されオブジェクトは残る', () => {
+      const { result } = renderDrawTool();
+      act(() => {
+        result.current.setDrawTool('FREEHAND_LINE');
+      });
+      act(() => {
+        result.current.handleGrantFreehand([10, 10]);
+      });
+      act(() => {
+        result.current.handleMoveFreehand([20, 20], 16);
+        result.current.handleMoveFreehand([30, 30], 32);
+      });
+      act(() => {
+        result.current.handleReleaseFreehand();
+      });
+      const before = result.current.drawLine.current[0].xy.length;
+      //修正ストロークの開始（ピンチの1本目の指を想定）
+      act(() => {
+        result.current.handleGrantFreehand([100, 100]);
+      });
+      act(() => {
+        result.current.cancelFreehandStroke();
+      });
+      expect(result.current.drawLine.current).toHaveLength(1);
+      expect(result.current.drawLine.current[0].xy.length).toBe(before);
+      expect(result.current.isEditingObject).toBe(true);
+    });
+
+    it('cancelPlotGrant: 編集開始前のGrantで作られた新規プロットは取り消される', () => {
+      const { result } = renderDrawTool();
+      act(() => {
+        result.current.setDrawTool('PLOT_LINE');
+      });
+      act(() => {
+        result.current.handleGrantPlot([10, 10]);
+      });
+      expect(result.current.drawLine.current).toHaveLength(1);
+      act(() => {
+        result.current.cancelPlotGrant();
+      });
+      expect(result.current.drawLine.current).toHaveLength(0);
+      expect(result.current.isEditingObject).toBe(false);
+      expect(result.current.isUndoable).toBe(false);
+    });
+
+    it('cancelPlotGrant: 編集中はGrantで追加されたノードが取り消される', () => {
+      const { result } = renderDrawTool();
+      act(() => {
+        result.current.setDrawTool('PLOT_LINE');
+      });
+      act(() => {
+        result.current.handleGrantPlot([10, 10]);
+      });
+      act(() => {
+        result.current.handleReleasePlotLinePolygon();
+      });
+      act(() => {
+        result.current.handleGrantPlot([50, 50]);
+      });
+      act(() => {
+        result.current.handleReleasePlotLinePolygon();
+      });
+      //ピンチの1本目の指でノードが追加された状態
+      act(() => {
+        result.current.handleGrantPlot([90, 90]);
+      });
+      expect(result.current.drawLine.current[0].xy).toHaveLength(3);
+      act(() => {
+        result.current.cancelPlotGrant();
+      });
+      //latlonを正としてxyが復元され、Grantで追加されたノードが消える
+      const line = result.current.drawLine.current[0];
+      expect(line.xy).toHaveLength(2);
+      expect(line.xy.length).toBe(line.latlon.length);
+      expect(result.current.isEditingObject).toBe(true);
+    });
+  });
+
   describe('Undo/Redo', () => {
     it('編集前はisUndoable/isRedoableがfalse、編集後にUndo可能になる', () => {
       const { result } = renderDrawTool();

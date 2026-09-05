@@ -84,7 +84,7 @@ export type UseMapMemoReturnType = {
   pressRedoMapMemo: () => void;
   changeColorTypeToIndividual: () => boolean;
   clearMapMemoEditingLine: () => void;
-  pauseMapMemoDrawing: () => void;
+  pauseMapMemoDrawing: (discardGrantStroke?: boolean) => void;
   setPencilModeActive: Dispatch<SetStateAction<boolean>>;
   setSnapWithLine: Dispatch<SetStateAction<boolean>>;
   setIsStraightStyle: Dispatch<SetStateAction<boolean>>;
@@ -181,6 +181,8 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
   const mapMemoEditingLineLatLon = useRef<Position[]>([]);
   //ピンチによる描画中断フラグ。中断中はストロークを保持し、次のタッチで継続/確定を判定する
   const isDrawingPaused = useRef(false);
+  //Grant直前のペンストローク（緯度経度）。ピンチ意図と判明したときにGrantで加えた点を巻き戻すために保持する
+  const penGrantSnapshot = useRef<Position[] | null>(null);
   //ペンの手ぶれ補正（1€フィルタ）。スクリーン座標に適用してから緯度経度化する
   const strokeFilter = useRef(new PositionFilter());
   //最後の生タッチ位置（終点キャッチアップ用）
@@ -268,14 +270,27 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
   /**
    * ピンチ操作の開始時に呼ばれる。ペンで描画中ならストロークを破棄せず中断し、
    * ピンチ後のタッチで継続できるようにする。それ以外は従来通り破棄する。
+   * discardGrantStroke=trueの場合（タッチ開始直後のピンチ移行）は、
+   * Grant以降に拾った点を捨ててGrant前の状態へ巻き戻してから中断する。
    */
-  const pauseMapMemoDrawing = useCallback(() => {
-    if (isPenTool(currentMapMemoTool) && !isEditingLine && mapMemoEditingLineLatLon.current.length > 0) {
-      isDrawingPaused.current = true;
-    } else {
-      clearMapMemoEditingLine();
-    }
-  }, [clearMapMemoEditingLine, currentMapMemoTool, isEditingLine]);
+  const pauseMapMemoDrawing = useCallback(
+    (discardGrantStroke = false) => {
+      if (isPenTool(currentMapMemoTool) && !isEditingLine) {
+        if (discardGrantStroke && penGrantSnapshot.current !== null) {
+          //タッチ直後にピンチへ移行した場合は、Grant以降に拾った点を捨ててGrant前の状態へ巻き戻す
+          mapMemoEditingLineLatLon.current = [...penGrantSnapshot.current];
+        }
+        if (mapMemoEditingLineLatLon.current.length > 0) {
+          isDrawingPaused.current = true;
+        } else {
+          clearMapMemoEditingLine();
+        }
+      } else {
+        clearMapMemoEditingLine();
+      }
+    },
+    [clearMapMemoEditingLine, currentMapMemoTool, isEditingLine]
+  );
 
   /**
    * Finds a line that the given point is near to
@@ -620,13 +635,17 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
           const lastXY = latLonToXY(lastLatLon, mapRegionRef.current, mapSize, mapViewRef);
           const distance = Math.hypot(pXY[0] - lastXY[0], pXY[1] - lastXY[1]);
           if (distance <= RESUME_DISTANCE_PX) {
+            //ピンチ意図だった場合に中断中のストロークへ巻き戻せるよう、追記前の状態を保持する
+            penGrantSnapshot.current = [...mapMemoEditingLineLatLon.current];
             appendPenPointLatLon(xyToLatLon(pXY, mapRegionRef.current, mapSize, mapViewRef));
           } else {
             finishPenStroke();
+            penGrantSnapshot.current = [];
             mapMemoEditingLineLatLon.current = [xyToLatLon(pXY, mapRegionRef.current, mapSize, mapViewRef)];
           }
         } else if (!isEditingLine) {
           // If not already editing, start a new line
+          if (isPenTool(currentMapMemoTool)) penGrantSnapshot.current = [];
           mapMemoEditingLineLatLon.current = [xyToLatLon(pXY, mapRegionRef.current, mapSize, mapViewRef)];
         }
       }
