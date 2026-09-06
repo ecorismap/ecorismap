@@ -85,6 +85,10 @@ export interface DrawingToolsContextType {
   finishEditObject: () => boolean;
   resetDrawTools: () => void;
 
+  // Editing layer chip (toolbar)
+  editingLayerName: string | undefined;
+  pressEditingLayerButton: () => Promise<void>;
+
   // Backward compatibility (to be deprecated gradually)
   isEditingDraw: boolean;
   isEditingObject: boolean;

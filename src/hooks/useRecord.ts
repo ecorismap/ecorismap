@@ -1,6 +1,6 @@
 import { useCallback, useMemo } from 'react';
 import { shallowEqual, useDispatch, useSelector } from 'react-redux';
-import { RootState } from '../store';
+import { RootState, AppDispatch } from '../store';
 import {
   DataType,
   FeatureType,
@@ -101,7 +101,7 @@ export type UseRecordReturnType = {
 };
 
 export const useRecord = (): UseRecordReturnType => {
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
 
   const layers = useSelector((state: RootState) => state.layers);
   const user = useSelector((state: RootState) => state.user);
@@ -158,17 +158,19 @@ export const useRecord = (): UseRecordReturnType => {
 
   const getEditableLayerAndRecordSet = useCallback(
     (type: string) => {
+      //ツール選択ハンドラ内でactive化した直後でも正しく解決できるよう、最新のレイヤ状態を読む（stale closure対策）
+      const currentLayers = dispatch((_thunkDispatch, getState) => (getState() as RootState).layers);
       let editingLayer: LayerType | undefined;
       let dataSet: DataType[] = [];
       if (type === 'POINT') {
-        editingLayer = activePointLayer;
+        editingLayer = currentLayers.find((d) => d.active && d.type === 'POINT');
         dataSet = pointDataSet;
       } else if (type === 'LINE' || type === 'MEMO') {
         //マップメモはアクティブなラインレイヤに保存されるため、LINEと同じ扱い
-        editingLayer = activeLineLayer;
+        editingLayer = currentLayers.find((d) => d.active && d.type === 'LINE');
         dataSet = lineDataSet;
       } else if (type === 'POLYGON') {
-        editingLayer = activePolygonLayer;
+        editingLayer = currentLayers.find((d) => d.active && d.type === 'POLYGON');
         dataSet = polygonDataSet;
       }
       const editingData = dataSet.find((d) => d.layerId === editingLayer?.id && d.userId === dataUser.uid);
@@ -176,7 +178,7 @@ export const useRecord = (): UseRecordReturnType => {
 
       return { editingLayer, editingRecordSet };
     },
-    [activeLineLayer, activePointLayer, activePolygonLayer, dataUser.uid, lineDataSet, pointDataSet, polygonDataSet]
+    [dataUser.uid, dispatch, lineDataSet, pointDataSet, polygonDataSet]
   );
 
   const checkRecordEditable = useCallback(
