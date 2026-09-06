@@ -48,6 +48,18 @@ jest.mock('../../utils/Coords', () => ({
   })),
   simplify: jest.fn((xy: [number, number][]) => xy),
   smoothingByBezier: jest.fn((xy: [number, number][]) => xy),
+  POINTS_TRANSFORM_HANDLE_RADIUS_PX: 14,
+  getPointsTransformFrame: jest.fn((points: [number, number][]) => {
+    const xs = points.map((p) => p[0]);
+    const ys = points.map((p) => p[1]);
+    const pad = 20;
+    const minX = Math.min(...xs) - pad;
+    const maxX = Math.max(...xs) + pad;
+    const minY = Math.min(...ys) - pad;
+    const maxY = Math.max(...ys) + pad;
+    const center = [(minX + maxX) / 2, (minY + maxY) / 2];
+    return { minX, maxX, minY, maxY, center, handle: [center[0], minY - 40] };
+  }),
 }));
 
 // OneEuroFilterの恒等モック（テストを決定的にする）
@@ -119,6 +131,7 @@ import tileMapsReducer from '../../modules/tileMaps';
 import {
   selectLineFeatureByLatLon,
   selectPointFeatureByLatLon,
+  selectPointFeaturesByArea,
   isNearWithPlot,
   checkDistanceFromLine,
   findNearNodeIndex,
@@ -1333,6 +1346,158 @@ describe('useDrawTool', () => {
         result.current.handleReleasePlotLinePolygon();
       });
       expect(result.current.isRedoable).toBe(false);
+    });
+  });
+
+  describe('複数ポイントの一括移動・回転', () => {
+    const multiPoints = [
+      { ...mockPointRecord, id: 'p1', coords: { latitude: 10, longitude: 10 } },
+      { ...mockPointRecord, id: 'p2', coords: { latitude: 10, longitude: 20 } },
+      { ...mockPointRecord, id: 'p3', coords: { latitude: 20, longitude: 20 } },
+    ] as unknown as PointRecordType[];
+    //xy: p1=[10,10], p2=[20,10], p3=[20,20]（恒等変換モック）
+    //frame: minX=-10, maxX=40, minY=-10, maxY=40, center=[15,15], handle=[15,-50]
+
+    const selectMultiPoints = (result: { current: ReturnType<typeof useDrawTool> }, features = multiPoints) => {
+      mockGetEditableLayerAndRecordSetWithCheck.mockReturnValue({
+        isOK: true,
+        message: '',
+        layer: mockPointLayer,
+        recordSet: multiPoints,
+      });
+      (selectPointFeaturesByArea as jest.Mock).mockReturnValue(features);
+      act(() => {
+        result.current.setFeatureButton('POINT');
+      });
+      act(() => {
+        result.current.setDrawTool('SELECT');
+      });
+      act(() => {
+        result.current.handleGrantSelect([0, 0]);
+        for (let i = 1; i <= 6; i++) result.current.handleMoveSelect([i * 5, 0]);
+      });
+      act(() => {
+        result.current.handleReleaseSelect([30, 0]);
+      });
+    };
+
+    it('なげなわ選択で範囲内の全ポイントが選択され一括変形モードになる', () => {
+      const { result } = renderDrawTool();
+      selectMultiPoints(result);
+      expect(result.current.drawLine.current.length).toBe(3);
+      expect(result.current.drawLine.current.every((l) => l.properties.includes('POINT'))).toBe(true);
+      expect(result.current.currentDrawTool).toBe('PLOT_POINT');
+      expect(result.current.isEditingObject).toBe(true);
+    });
+
+    it('1件だけ選択された場合は従来の単一ポイント編集になる', () => {
+      const { result } = renderDrawTool();
+      selectMultiPoints(result, [multiPoints[0]] as unknown as PointRecordType[]);
+      expect(result.current.drawLine.current.length).toBe(1);
+      expect(result.current.drawLine.current[0].properties).toContain('EDIT');
+    });
+
+    it('ドラッグで全ポイントが平行移動しリリースでlatlonが更新される', () => {
+      const { result } = renderDrawTool();
+      selectMultiPoints(result);
+      act(() => {
+        result.current.handleGrantPlot([15, 15]);
+      });
+      act(() => {
+        result.current.handleMovePlot([25, 20]); //dx=10, dy=5
+      });
+      act(() => {
+        result.current.handleReleasePlotPoint();
+      });
+      expect(result.current.drawLine.current[0].latlon[0]).toEqual([20, 15]);
+      expect(result.current.drawLine.current[1].latlon[0]).toEqual([30, 15]);
+      expect(result.current.drawLine.current[2].latlon[0]).toEqual([30, 25]);
+    });
+
+    it('回転ハンドルのドラッグで全ポイントが中心周りに回転する', () => {
+      const { result } = renderDrawTool();
+      selectMultiPoints(result);
+      act(() => {
+        result.current.handleGrantPlot([15, -50]); //ハンドル位置から開始
+      });
+      act(() => {
+        result.current.handleMovePlot([80, 15]); //center[15,15]周りに+90度
+      });
+      act(() => {
+        result.current.handleReleasePlotPoint();
+      });
+      const latlons = result.current.drawLine.current.map((l) => l.latlon[0].map((v: number) => Math.round(v)));
+      //90度回転: (x,y) -> (15-(y-15), 15+(x-15))
+      expect(latlons[0]).toEqual([20, 10]);
+      expect(latlons[1]).toEqual([20, 20]);
+      expect(latlons[2]).toEqual([10, 20]);
+    });
+
+    it('一括変形はUNDOで元に戻りREDOでやり直せる', () => {
+      const { result } = renderDrawTool();
+      selectMultiPoints(result);
+      act(() => {
+        result.current.handleGrantPlot([15, 15]);
+      });
+      act(() => {
+        result.current.handleMovePlot([25, 25]);
+      });
+      act(() => {
+        result.current.handleReleasePlotPoint();
+      });
+      expect(result.current.drawLine.current[0].latlon[0]).toEqual([20, 20]);
+      act(() => {
+        result.current.undoDraw();
+      });
+      expect(result.current.drawLine.current[0].latlon[0]).toEqual([10, 10]);
+      expect(result.current.drawLine.current[2].latlon[0]).toEqual([20, 20]);
+      act(() => {
+        result.current.redoDraw();
+      });
+      expect(result.current.drawLine.current[0].latlon[0]).toEqual([20, 20]);
+    });
+
+    it('動かさずにリリースした場合はundo履歴が積まれない', () => {
+      const { result } = renderDrawTool();
+      selectMultiPoints(result);
+      const undoCountAfterSelect = result.current.isUndoable;
+      act(() => {
+        result.current.handleGrantPlot([15, 15]);
+      });
+      act(() => {
+        result.current.handleReleasePlotPoint();
+      });
+      //SELECTのundoのみ（変形のEDIT_MULTIは積まれない）
+      expect(result.current.isUndoable).toBe(undoCountAfterSelect);
+      act(() => {
+        result.current.undoDraw();
+      });
+      //SELECTのundoで選択が解除される
+      expect(result.current.drawLine.current.length).toBe(0);
+      expect(result.current.currentDrawTool).toBe('NONE');
+    });
+
+    it('保存で全ポイントのレコードが更新される', () => {
+      const { result } = renderDrawTool();
+      selectMultiPoints(result);
+      mockFindLayer.mockReturnValue(mockPointLayer);
+      act(() => {
+        result.current.handleGrantPlot([15, 15]);
+      });
+      act(() => {
+        result.current.handleMovePlot([25, 20]);
+      });
+      act(() => {
+        result.current.handleReleasePlotPoint();
+      });
+      let saveResult;
+      act(() => {
+        saveResult = result.current.savePoint();
+      });
+      expect(saveResult!.isOK).toBe(true);
+      expect(mockUpdateRecord).toHaveBeenCalledTimes(3);
+      const savedCoords = mockUpdateRecord.mock.calls.map((c) => (c[1] as RecordType).coords);
+      expect(savedCoords[0]).toEqual({ longitude: 20, latitude: 15 });
     });
   });
 

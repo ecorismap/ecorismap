@@ -279,6 +279,8 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     setCurrentInfoTool,
     setIsPinch,
     handleReleaseDeletePoint,
+    handleGrantSelect,
+    handleMoveSelect,
     handleReleaseSelect,
     handleGrantPlot,
     handleMovePlot,
@@ -1911,6 +1913,9 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
         setIsPinch(true);
       } else if (currentDrawTool === 'MOVE') {
         hideDrawLine();
+      } else if (currentDrawTool === 'SELECT') {
+        //なげなわ選択の開始
+        handleGrantSelect(pXY);
       } else if (currentDrawTool === 'SPLIT_LINE') {
         const isOK = checkSplitLine(pXY);
         if (isOK) {
@@ -1969,6 +1974,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       handleGrantFreehand,
       handleGrantMapMemo,
       handleGrantPlot,
+      handleGrantSelect,
       hideDrawLine,
       isPencilModeActive,
       isPencilTouch,
@@ -2048,6 +2054,8 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
         }
         //プロットはGrantで追加・移動したノードを取り消す（タップ確定はリリース時のため）
         cancelPlotGrant();
+        //なげなわ選択の描きかけは破棄する
+        if (currentDrawTool === 'SELECT') selectLine.current = [];
         hideDrawLine();
         //ペンで描画中はストロークを破棄せず中断し、ピンチ後に続きを描けるようにする
         pauseMapMemoDrawing(isPinchIntentFromStart);
@@ -2059,6 +2067,9 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
         setIsPinch(true);
       } else if (isMapMemoDrawTool(currentMapMemoTool)) {
         handleMoveMapMemo(event);
+      } else if (currentDrawTool === 'SELECT') {
+        //なげなわ選択の軌跡を伸ばす
+        handleMoveSelect(pXY);
       } else if (isPlotTool(currentDrawTool)) {
         handleMovePlot(pXY);
       } else if (isFreehandTool(currentDrawTool)) {
@@ -2075,6 +2086,8 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       handleMoveFreehand,
       handleMoveMapMemo,
       handleMovePlot,
+      handleMoveSelect,
+      selectLine,
       hideDrawLine,
       isPinch,
       pauseMapMemoDrawing,

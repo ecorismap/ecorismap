@@ -229,7 +229,7 @@ export const HomeDrawTools = React.memo(() => {
             />
           </View>
         )}
-        {featureButton !== 'POINT' && (isEditingDraw || isEditingObject) && (
+        {(isEditingDraw || isEditingObject) && (
           <View style={styles.button}>
             <Button
               name={DRAWTOOL.UNDO}
@@ -242,7 +242,7 @@ export const HomeDrawTools = React.memo(() => {
             />
           </View>
         )}
-        {featureButton !== 'POINT' && (isEditingDraw || isEditingObject) && (
+        {(isEditingDraw || isEditingObject) && (
           <View style={styles.button}>
             <Button
               name={DRAWTOOL.REDO}
@@ -255,7 +255,8 @@ export const HomeDrawTools = React.memo(() => {
             />
           </View>
         )}
-        {featureButton !== 'POINT' && (isEditingDraw || isEditingObject) && !editPositionMode && (
+        {/* ポイントは選択中（編集選択）のみ削除可。新規作図中の表示は避ける（ライン・ポリゴンは従来どおり） */}
+        {(featureButton === 'POINT' ? isSelectedDraw : isEditingDraw || isEditingObject) && !editPositionMode && (
           <View style={styles.button}>
             <Button
               name={DRAWTOOL.DELETE}
