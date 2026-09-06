@@ -133,7 +133,6 @@ import {
   selectPointFeatureByLatLon,
   selectPointFeaturesByArea,
   selectLineFeaturesByArea,
-  isNearWithPlot,
   checkDistanceFromLine,
   findNearNodeIndex,
   xyArrayToLatLonArray,
@@ -857,31 +856,6 @@ describe('useDrawTool', () => {
       expect(res?.layer).toBe(mockPointLayer);
       expect(res?.feature).toBe(mockPointRecord);
       expect(res?.recordIndex).toBe(0);
-    });
-  });
-
-  describe('handleReleaseDeletePoint（オブジェクト削除）', () => {
-    it('始点近くをタッチしたオブジェクトは座標が空になる', () => {
-      const { result } = renderDrawTool();
-      (selectLineFeatureByLatLon as jest.Mock).mockReturnValue(mockLineRecord);
-      (isNearWithPlot as jest.Mock).mockReturnValue(true);
-      mockGetEditableLayerAndRecordSetWithCheck.mockReturnValue({
-        isOK: true,
-        message: '',
-        layer: mockLineLayer,
-        recordSet: [mockLineRecord],
-      });
-
-      act(() => {
-        result.current.setFeatureButton('LINE');
-      });
-      act(() => {
-        result.current.handleReleaseDeletePoint([135, 35]);
-      });
-
-      expect(result.current.drawLine.current).toHaveLength(1);
-      expect(result.current.drawLine.current[0].xy).toEqual([]);
-      expect(result.current.drawLine.current[0].latlon).toEqual([]);
     });
   });
 

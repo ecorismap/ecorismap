@@ -139,7 +139,6 @@ export type UseDrawToolReturnType = {
   convertPointFeatureToDrawLine: (layerId: string, features: PointRecordType[]) => void;
   setIsPinch: Dispatch<SetStateAction<boolean>>;
   getPXY: (event: GestureResponderEvent) => Position;
-  handleReleaseDeletePoint: (pXY: Position) => void;
   handleGrantPlot: (pXY: Position) => void;
   handleGrantFreehand: (pXY: Position) => boolean;
   handleMovePlot: (pXY: Position) => void;
@@ -395,33 +394,6 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
   );
 
   ///////////////////////////////////////////////////
-  const tryDeleteObjectAtPosition = useCallback(
-    (pXY: Position) => {
-      convertFeatureToDrawLine(pXY);
-      //始点のノードに近ければ配列を空にして見えなくする。保存時に配列が空のものを除く。
-      if (currentDrawTool === 'PLOT_POINT') return false;
-      const deleteIndex = drawLine.current.findIndex((line) => {
-        return line.xy.length > 0 && isNearWithPlot(pXY, line.xy[0]);
-      });
-      if (deleteIndex !== -1) {
-        pushUndo({
-          index: deleteIndex,
-          latlon: drawLine.current[deleteIndex].latlon,
-          action: 'DELETE',
-        });
-        drawLine.current[deleteIndex] = {
-          ...drawLine.current[deleteIndex],
-          xy: [],
-          latlon: [],
-          //properties: [],
-        };
-        return true;
-      }
-      return false;
-    },
-    [convertFeatureToDrawLine, currentDrawTool, pushUndo]
-  );
-
   const changeToEditingObject = useCallback(
     (index: number, featureType: FeatureButtonType) => {
       editingObjectIndex.current = index;
@@ -1313,14 +1285,6 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     return [event.nativeEvent.pageX + offset.current[0], event.nativeEvent.pageY + offset.current[1]];
   };
 
-  const handleReleaseDeletePoint = useCallback(
-    (pXY: Position) => {
-      tryDeleteObjectAtPosition(pXY);
-      setRedraw(ulid());
-    },
-    [tryDeleteObjectAtPosition]
-  );
-
   const handleGrantSelect = useCallback(
     (pXY: Position) => {
       selectLine.current = [pXY];
@@ -1816,7 +1780,6 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     convertPointFeatureToDrawLine,
     setIsPinch,
     getPXY,
-    handleReleaseDeletePoint,
     handleGrantPlot,
     handleGrantFreehand,
     handleMovePlot,
