@@ -328,8 +328,7 @@
       "color": "色選択",
       "redo": "やり直す",
       "download": "取得",
-      "noEditingLayer": "レイヤ未選択",
-      "editingLayer": "編集レイヤ"
+      "noEditingLayer": "レイヤ未選択"
     },
     "poi": {
       "openInGoogleMaps": "Google Mapsへ",
