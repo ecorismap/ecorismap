@@ -279,6 +279,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     setCurrentInfoTool,
     setIsPinch,
     handleReleaseDeletePoint,
+    isAreaSelected,
     handleGrantSelect,
     handleMoveSelect,
     handleReleaseSelect,
@@ -2728,6 +2729,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       // Backward compatibility (to be deprecated gradually)
       isEditingDraw,
       isEditingObject,
+      isAreaSelected,
       isSelectedDraw,
       isEditingLine,
       editingLineId,
@@ -2740,6 +2742,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     [
       isEditingDraw,
       isEditingObject,
+      isAreaSelected,
       isSelectedDraw,
       isEditingLine,
       editingLineId,

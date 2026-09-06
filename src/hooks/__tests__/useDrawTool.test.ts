@@ -132,6 +132,7 @@ import {
   selectLineFeatureByLatLon,
   selectPointFeatureByLatLon,
   selectPointFeaturesByArea,
+  selectLineFeaturesByArea,
   isNearWithPlot,
   checkDistanceFromLine,
   findNearNodeIndex,
@@ -1390,11 +1391,23 @@ describe('useDrawTool', () => {
       expect(result.current.isEditingObject).toBe(true);
     });
 
-    it('1件だけ選択された場合は従来の単一ポイント編集になる', () => {
+    it('1件だけ囲んだ場合も変形モードになりドラッグで移動できる', () => {
       const { result } = renderDrawTool();
       selectMultiPoints(result, [multiPoints[0]] as unknown as PointRecordType[]);
       expect(result.current.drawLine.current.length).toBe(1);
-      expect(result.current.drawLine.current[0].properties).toContain('EDIT');
+      //ノード編集(EDIT)ではなく変形モード
+      expect(result.current.drawLine.current[0].properties).not.toContain('EDIT');
+      expect(result.current.isAreaSelected).toBe(true);
+      act(() => {
+        result.current.handleGrantPlot([10, 10]);
+      });
+      act(() => {
+        result.current.handleMovePlot([15, 20]); //dx=5, dy=10
+      });
+      act(() => {
+        result.current.handleReleasePlotPoint();
+      });
+      expect(result.current.drawLine.current[0].latlon[0]).toEqual([15, 20]);
     });
 
     it('ドラッグで全ポイントが平行移動しリリースでlatlonが更新される', () => {
@@ -1498,6 +1511,132 @@ describe('useDrawTool', () => {
       expect(mockUpdateRecord).toHaveBeenCalledTimes(3);
       const savedCoords = mockUpdateRecord.mock.calls.map((c) => (c[1] as RecordType).coords);
       expect(savedCoords[0]).toEqual({ longitude: 20, latitude: 15 });
+    });
+  });
+
+  describe('複数ラインの一括移動・回転', () => {
+    const multiLines = [
+      {
+        ...mockLineRecord,
+        id: 'l1',
+        coords: [
+          { latitude: 0, longitude: 0 },
+          { latitude: 0, longitude: 10 },
+        ],
+      },
+      {
+        ...mockLineRecord,
+        id: 'l2',
+        coords: [
+          { latitude: 20, longitude: 0 },
+          { latitude: 20, longitude: 10 },
+        ],
+      },
+    ] as unknown as LineRecordType[];
+
+    const selectMultiLines = (result: { current: ReturnType<typeof useDrawTool> }) => {
+      mockGetEditableLayerAndRecordSetWithCheck.mockReturnValue({
+        isOK: true,
+        message: '',
+        layer: mockLineLayer,
+        recordSet: multiLines,
+      });
+      (selectLineFeaturesByArea as jest.Mock).mockReturnValue(multiLines);
+      act(() => {
+        result.current.setFeatureButton('LINE');
+      });
+      act(() => {
+        result.current.setDrawTool('SELECT');
+      });
+      act(() => {
+        result.current.handleGrantSelect([0, 0]);
+        for (let i = 1; i <= 6; i++) result.current.handleMoveSelect([i * 5, 0]);
+      });
+      act(() => {
+        result.current.handleReleaseSelect([30, 0]);
+      });
+    };
+
+    it('なげなわ選択で複数ラインが選択されPLOT_LINEの一括変形モードになる', () => {
+      const { result } = renderDrawTool();
+      selectMultiLines(result);
+      expect(result.current.drawLine.current.length).toBe(2);
+      expect(result.current.currentDrawTool).toBe('PLOT_LINE');
+      expect(result.current.isAreaSelected).toBe(true);
+      //単一編集(EDIT)にはなっていない
+      expect(result.current.drawLine.current.every((l) => !l.properties.includes('EDIT'))).toBe(true);
+    });
+
+    it('ドラッグで全ラインの全頂点が平行移動しリリースでlatlonが更新される', () => {
+      const { result } = renderDrawTool();
+      selectMultiLines(result);
+      act(() => {
+        result.current.handleGrantPlot([5, 10]);
+      });
+      act(() => {
+        result.current.handleMovePlot([15, 15]); //dx=10, dy=5
+      });
+      act(() => {
+        result.current.handleReleasePlotLinePolygon();
+      });
+      //l1: [0,0],[10,0] -> [10,5],[20,5] / l2: [0,20],[10,20] -> [10,25],[20,25]（恒等変換）
+      expect(result.current.drawLine.current[0].latlon).toEqual([
+        [10, 5],
+        [20, 5],
+      ]);
+      expect(result.current.drawLine.current[1].latlon).toEqual([
+        [10, 25],
+        [20, 25],
+      ]);
+    });
+
+    it('一括変形はUNDOで全ラインが元に戻る', () => {
+      const { result } = renderDrawTool();
+      selectMultiLines(result);
+      act(() => {
+        result.current.handleGrantPlot([5, 10]);
+      });
+      act(() => {
+        result.current.handleMovePlot([15, 15]);
+      });
+      act(() => {
+        result.current.handleReleasePlotLinePolygon();
+      });
+      act(() => {
+        result.current.undoDraw();
+      });
+      expect(result.current.drawLine.current[0].latlon).toEqual([
+        [0, 0],
+        [10, 0],
+      ]);
+      expect(result.current.drawLine.current[1].latlon).toEqual([
+        [0, 20],
+        [10, 20],
+      ]);
+    });
+
+    it('保存で全ラインのレコードが更新される', () => {
+      const { result } = renderDrawTool();
+      selectMultiLines(result);
+      mockFindLayer.mockReturnValue(mockLineLayer);
+      mockFindRecord.mockImplementation((_layerId: string, _userId: string, id: string) =>
+        multiLines.find((r) => r.id === id)
+      );
+      act(() => {
+        result.current.handleGrantPlot([5, 10]);
+      });
+      act(() => {
+        result.current.handleMovePlot([15, 15]);
+      });
+      act(() => {
+        result.current.handleReleasePlotLinePolygon();
+      });
+      let saveResult;
+      act(() => {
+        saveResult = result.current.saveLine();
+      });
+      expect(saveResult!.isOK).toBe(true);
+      expect(mockUpdateRecord).toHaveBeenCalledTimes(2);
     });
   });
 

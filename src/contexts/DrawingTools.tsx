@@ -83,6 +83,7 @@ export interface DrawingToolsContextType {
   // Backward compatibility (to be deprecated gradually)
   isEditingDraw: boolean;
   isEditingObject: boolean;
+  isAreaSelected: boolean;
   isSelectedDraw: boolean;
   isEditingLine: boolean;
   editingLineId: string | undefined;
