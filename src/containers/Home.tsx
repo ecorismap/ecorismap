@@ -278,7 +278,6 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     setVisibleInfoPicker,
     setCurrentInfoTool,
     setIsPinch,
-    handleReleaseDeletePoint,
     isAreaSelected,
     handleGrantSelect,
     handleMoveSelect,
@@ -1076,14 +1075,6 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
           setDrawTool(value);
           //await runTutrial('SELECTIONTOOL');
         }
-      } else if (value === 'DELETE_POINT') {
-        if (currentDrawTool === value) {
-          resetDrawTools();
-          setDrawTool('NONE');
-        } else {
-          if (!(await checkEditableLayerForDraw('POINT'))) return;
-          setDrawTool(value);
-        }
       } else {
         if (value === 'MOVE') {
           if (currentDrawTool === value) {
@@ -1138,6 +1129,26 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
   const pressRedoDraw = useCallback(() => {
     redoDraw();
   }, [redoDraw]);
+
+  //undo/redoの統一ハンドラ。メモモードの通常時はメモ書き込み履歴、
+  //それ以外（作図モード、メモの編集選択操作中）は作図編集のundoを使う
+  const usesDrawHistory = featureButton !== 'MEMO' || currentDrawTool === 'SELECT' || isSelectedDraw;
+  const isUndoAvailable = usesDrawHistory ? isDrawUndoable : isUndoable;
+  const isRedoAvailable = usesDrawHistory ? isDrawRedoable : isRedoable;
+  const pressUndo = useCallback(async () => {
+    if (usesDrawHistory) {
+      await pressUndoDraw();
+    } else {
+      pressUndoMapMemo();
+    }
+  }, [pressUndoDraw, pressUndoMapMemo, usesDrawHistory]);
+  const pressRedo = useCallback(() => {
+    if (usesDrawHistory) {
+      pressRedoDraw();
+    } else {
+      pressRedoMapMemo();
+    }
+  }, [pressRedoDraw, pressRedoMapMemo, usesDrawHistory]);
 
   const pressSaveDraw = useCallback(async () => {
     let result;
@@ -2161,19 +2172,6 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
         return;
       } else if (currentDrawTool === 'SELECT') {
         handleReleaseSelect(pXY);
-      } else if (currentDrawTool === 'DELETE_POINT') {
-        const ret = await ConfirmAsync(t('DataEdit.confirm.deleteData'));
-        if (!ret) return;
-        handleReleaseDeletePoint(pXY);
-
-        const { isOK, message, layer } = deleteDraw();
-        if (!isOK || layer === undefined) {
-          await AlertAsync(message);
-          return;
-        }
-
-        bottomSheetRef.current?.close();
-        navigateToSplit?.('Data', { targetLayer: layer });
       } else if (currentDrawTool === 'PLOT_POINT' || currentDrawTool === 'ADD_LOCATION_POINT') {
         handleReleasePlotPoint();
       } else if (currentDrawTool === 'PLOT_LINE' || currentDrawTool === 'PLOT_POLYGON') {
@@ -2248,13 +2246,11 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       commitFreehandStroke,
       currentDrawTool,
       currentMapMemoTool,
-      deleteDraw,
       finishEditPosition,
       getInfoOfFeature,
       getInfoOfMap,
       getPXY,
-      handleReleaseDeletePoint,
-      pauseMapMemoDrawing,
+        pauseMapMemoDrawing,
       handleReleaseFreehand,
       handleReleaseMapMemo,
       handleReleasePlotLinePolygon,
@@ -2731,6 +2727,10 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       pressRedoDraw,
       isUndoable: isDrawUndoable,
       isRedoable: isDrawRedoable,
+      pressUndo,
+      pressRedo,
+      isUndoAvailable,
+      isRedoAvailable,
       pressSaveDraw,
       pressDeleteDraw,
       finishEditObject,
@@ -2771,6 +2771,10 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       pressRedoDraw,
       isDrawUndoable,
       isDrawRedoable,
+      pressUndo,
+      pressRedo,
+      isUndoAvailable,
+      isRedoAvailable,
       pressSaveDraw,
       pressDeleteDraw,
       finishEditObject,

@@ -1,23 +1,26 @@
 import React, { useContext, useMemo } from 'react';
-import { StyleSheet, Text, View, Platform } from 'react-native';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { Pressable } from '../atoms/Pressable';
-import { COLOR, DRAWTOOL, MAPMEMOTOOL, POINTTOOL } from '../../constants/AppConstants';
-import { isFreehandTool, isPlotTool } from '../../utils/General';
+import { StyleSheet, View } from 'react-native';
+import { COLOR, DRAWTOOL, POINTTOOL } from '../../constants/AppConstants';
 
 import { Button } from '../atoms';
 import { HomeLineToolButton } from './HomeLineToolButton';
 import { HomePolygonToolButton } from './HomePolygonToolButton';
-import { MapMemoContext } from '../../contexts/MapMemo';
+import { HomeEditControlButtons } from './HomeEditControlButtons';
+import {
+  DeleteToolButton,
+  MoveToolButton,
+  PencilLockButton,
+  RedoToolButton,
+  SelectToolButton,
+  UndoToolButton,
+} from './HomeCommonToolButtons';
 import { DrawingToolsContext } from '../../contexts/DrawingTools';
 import { LocationTrackingContext } from '../../contexts/LocationTracking';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { isTablet } from 'react-native-device-info';
 import { t } from '../../i18n/config';
 import { useRootRoute } from '../../contexts/RootNavigationContext';
 
 export const HomeDrawTools = React.memo(() => {
-  const { isPencilModeActive, togglePencilMode } = useContext(MapMemoContext);
   const {
     isEditingDraw,
     isSelectedDraw,
@@ -27,13 +30,6 @@ export const HomeDrawTools = React.memo(() => {
     selectDrawTool,
     setLineTool,
     setPolygonTool,
-    pressUndoDraw,
-    pressRedoDraw,
-    isUndoable,
-    isRedoable,
-    pressDeleteDraw,
-    finishEditObject,
-    pressSaveDraw,
   } = useContext(DrawingToolsContext);
   const { editPositionMode, finishEditPosition } = useContext(LocationTrackingContext);
   const { params } = useRootRoute<'Home'>();
@@ -63,65 +59,12 @@ export const HomeDrawTools = React.memo(() => {
       top: insets.top + 340,
       // zIndex: 101,
     },
-    editControlContainer: {
-      flexDirection: 'row',
-      position: 'absolute',
-      top: insets.top + 60,
-      left: 0,
-      right: 0,
-      justifyContent: 'center',
-      gap: 10,
-      paddingHorizontal: 20,
-    },
-    //アイコン上・文字下の縦並び（Buttonアトムはアイコン下に極小ラベルを重ねる設計のため文字が重なる）
-    editButton: {
-      alignItems: 'center',
-      borderRadius: 8,
-      gap: 2,
-      justifyContent: 'center',
-      paddingVertical: 6,
-      //文字数に関係なく2つのボタンの幅を揃える
-      width: 84,
-    },
-    editButtonText: {
-      color: COLOR.WHITE,
-      fontSize: 12,
-      fontWeight: 'bold',
-    },
   });
 
   return (
     <>
       {/* 編集完了・キャンセルボタン */}
-      {isEditingObject && (isPlotTool(currentDrawTool) || isFreehandTool(currentDrawTool)) && (
-        <View style={styles.editControlContainer}>
-          <Pressable
-            style={[styles.editButton, { backgroundColor: COLOR.BLUE }]}
-            onPress={async () => {
-              const saved = await pressSaveDraw();
-              if (saved) {
-                finishEditObject();
-              }
-            }}
-          >
-            <MaterialCommunityIcons name="check" size={18} color={COLOR.WHITE} />
-            <Text style={styles.editButtonText} numberOfLines={1}>
-              {t('common.finish')}
-            </Text>
-          </Pressable>
-          <Pressable
-            style={[styles.editButton, { backgroundColor: COLOR.RED }]}
-            onPress={() => {
-              selectDrawTool(currentDrawTool); // addボタンを押した時と同じ処理（resetDrawToolsも内部で呼ばれる）
-            }}
-          >
-            <MaterialCommunityIcons name="close" size={18} color={COLOR.WHITE} />
-            <Text style={styles.editButtonText} numberOfLines={1}>
-              {t('common.cancel')}
-            </Text>
-          </Pressable>
-        </View>
-      )}
+      <HomeEditControlButtons />
 
       <View style={styles.buttonContainer}>
         <View>
@@ -190,82 +133,14 @@ export const HomeDrawTools = React.memo(() => {
           )}
         </View>
 
-        {!editPositionMode && !isSelectedDraw && !isEditingDraw && (
-          <View style={styles.button}>
-            <Button
-              name={DRAWTOOL.SELECT}
-              backgroundColor={
-                currentDrawTool === 'SELECT' ? COLOR.ALFARED : isEditingObject ? COLOR.ALFAGRAY : COLOR.ALFABLUE
-              }
-              borderRadius={10}
-              disabled={isEditingObject}
-              onPress={() => selectDrawTool('SELECT')}
-              labelText={t('Home.label.select')}
-              labelFontSize={9}
-            />
-          </View>
-        )}
-        {(isEditingDraw || isEditingObject) && (
-          <View style={styles.button}>
-            <Button
-              name={DRAWTOOL.MOVE}
-              backgroundColor={currentDrawTool === 'MOVE' ? COLOR.ALFARED : COLOR.ALFABLUE}
-              borderRadius={10}
-              disabled={false}
-              onPress={() => selectDrawTool('MOVE')}
-              labelText={t('Home.label.move')}
-              labelFontSize={9}
-            />
-          </View>
-        )}
-        {Platform.OS === 'ios' && isTablet() && (
-          <View style={styles.button}>
-            <Button
-              name={MAPMEMOTOOL.PENCIL_LOCK}
-              backgroundColor={isPencilModeActive ? COLOR.ALFARED : COLOR.ALFABLUE}
-              borderRadius={10}
-              onPress={togglePencilMode}
-              labelText={t('Home.label.pencilLock')}
-            />
-          </View>
-        )}
-        {/* undo/redoは実行できるときだけ表示する */}
-        {(isEditingDraw || isEditingObject) && isUndoable && (
-          <View style={styles.button}>
-            <Button
-              name={DRAWTOOL.UNDO}
-              backgroundColor={COLOR.ALFABLUE}
-              borderRadius={10}
-              onPress={pressUndoDraw}
-              labelText={t('Home.label.undo')}
-              labelFontSize={9}
-            />
-          </View>
-        )}
-        {(isEditingDraw || isEditingObject) && isRedoable && (
-          <View style={styles.button}>
-            <Button
-              name={DRAWTOOL.REDO}
-              backgroundColor={COLOR.ALFABLUE}
-              borderRadius={10}
-              onPress={pressRedoDraw}
-              labelText={t('Home.label.redo')}
-              labelFontSize={9}
-            />
-          </View>
-        )}
+        {!editPositionMode && !isSelectedDraw && !isEditingDraw && <SelectToolButton disabled={isEditingObject} />}
+        {(isEditingDraw || isEditingObject) && <MoveToolButton />}
+        <PencilLockButton />
+        {(isEditingDraw || isEditingObject) && <UndoToolButton />}
+        {(isEditingDraw || isEditingObject) && <RedoToolButton />}
         {/* ポイントは選択中（編集選択）のみ削除可。新規作図中の表示は避ける（ライン・ポリゴンは従来どおり） */}
         {(featureButton === 'POINT' ? isSelectedDraw : isEditingDraw || isEditingObject) && !editPositionMode && (
-          <View style={styles.button}>
-            <Button
-              name={DRAWTOOL.DELETE}
-              backgroundColor={COLOR.ALFABLUE}
-              borderRadius={10}
-              disabled={false}
-              onPress={pressDeleteDraw}
-              labelText={t('Home.label.delete')}
-            />
-          </View>
+          <DeleteToolButton />
         )}
 
         {featureButton === 'POINT' && editPositionMode && (

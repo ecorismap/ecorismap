@@ -81,6 +81,10 @@ export const mockDrawingToolsContextValue: DrawingToolsContextType = {
   // Drawing actions
   onDragEndPoint: jest.fn().mockResolvedValue(undefined),
   pressUndoDraw: jest.fn().mockResolvedValue(undefined),
+  pressUndo: jest.fn().mockResolvedValue(undefined),
+  pressRedo: jest.fn(),
+  isUndoAvailable: false,
+  isRedoAvailable: false,
   pressRedoDraw: jest.fn(),
   isUndoable: false,
   isRedoable: false,
