@@ -279,6 +279,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     setCurrentInfoTool,
     setIsPinch,
     handleReleaseDeletePoint,
+    isAreaSelected,
     handleGrantSelect,
     handleMoveSelect,
     handleReleaseSelect,
@@ -850,6 +851,8 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
           if (!ret) return;
           changeColorTypeToIndividual();
         }
+        //編集選択の選択状態が残っていれば破棄する
+        resetDrawTools();
         setDrawTool('NONE');
         setMapMemoTool(value);
       }
@@ -858,6 +861,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       changeColorTypeToIndividual,
       checkEditableMapMemo,
       isIndividualColorRequired,
+      resetDrawTools,
       setDrawTool,
       setInfoToolActive,
       setMapMemoTool,
@@ -1064,6 +1068,10 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
             if (!(await checkEditableLayerForDraw('LINE'))) return;
           } else if (featureButton === 'POLYGON') {
             if (!(await checkEditableLayerForDraw('POLYGON'))) return;
+          } else if (featureButton === 'MEMO') {
+            //マップメモの編集選択。描画ツールは解除する
+            if (!(await checkEditableMapMemo())) return;
+            setMapMemoTool('NONE');
           }
           setDrawTool(value);
           //await runTutrial('SELECTIONTOOL');
@@ -1100,6 +1108,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     },
     [
       checkEditableLayerForDraw,
+      checkEditableMapMemo,
       currentDrawTool,
       currentLineTool,
       currentPolygonTool,
@@ -1113,6 +1122,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       route.params?.mode,
       setDrawTool,
       setInfoToolActive,
+      setMapMemoTool,
     ]
   );
 
@@ -1133,7 +1143,8 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     let result;
     if (featureButton === 'POINT') {
       result = savePoint();
-    } else if (featureButton === 'LINE') {
+    } else if (featureButton === 'LINE' || featureButton === 'MEMO') {
+      //マップメモの編集選択もラインレコードとして保存する
       result = saveLine();
     } else if (featureButton === 'POLYGON') {
       result = savePolygon();
@@ -2728,6 +2739,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       // Backward compatibility (to be deprecated gradually)
       isEditingDraw,
       isEditingObject,
+      isAreaSelected,
       isSelectedDraw,
       isEditingLine,
       editingLineId,
@@ -2740,6 +2752,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     [
       isEditingDraw,
       isEditingObject,
+      isAreaSelected,
       isSelectedDraw,
       isEditingLine,
       editingLineId,

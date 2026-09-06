@@ -14,8 +14,10 @@ import {
   smoothJunctions,
   closeFreehandPolygonSeam,
   selectPointFeaturesByArea,
+  selectLineFeaturesByArea,
+  selectPolygonFeaturesByArea,
 } from '../Coords';
-import { LocationType, PointRecordType } from '../../types';
+import { LocationType, PointRecordType, LineRecordType, PolygonRecordType } from '../../types';
 
 describe('decimal2dms', () => {
   it('return dms value from decimal', () => {
@@ -519,6 +521,85 @@ describe('selectPointFeaturesByArea', () => {
     ];
     const selected = selectPointFeaturesByArea(points, lasso as any);
     expect(selected.map((f) => f.id)).toEqual(['a', 'b']);
+  });
+});
+
+describe('selectLineFeaturesByArea / selectPolygonFeaturesByArea', () => {
+  const baseRecord = { userId: 'u1', displayName: 't', visible: true, redraw: false, field: {} };
+  //開いたなげなわ（始点に戻らない）
+  const lasso: [number, number][] = [
+    [134.88, 35.02],
+    [134.93, 35.02],
+    [134.93, 34.98],
+    [134.88, 34.98],
+    [134.88, 35.0],
+  ];
+
+  it('なげなわに完全に内包されるラインが選択される', () => {
+    const line = {
+      ...baseRecord,
+      id: 'l1',
+      coords: [
+        { latitude: 35.0, longitude: 134.9 },
+        { latitude: 35.01, longitude: 134.91 },
+      ],
+    } as unknown as LineRecordType;
+    expect(selectLineFeaturesByArea([line], lasso as any).map((f) => f.id)).toEqual(['l1']);
+  });
+
+  it('なげなわの境界と交差するラインも選択される', () => {
+    const line = {
+      ...baseRecord,
+      id: 'l2',
+      coords: [
+        { latitude: 35.0, longitude: 134.85 }, //外
+        { latitude: 35.0, longitude: 134.9 }, //内
+      ],
+    } as unknown as LineRecordType;
+    expect(selectLineFeaturesByArea([line], lasso as any).map((f) => f.id)).toEqual(['l2']);
+  });
+
+  it('範囲外のラインは選択されない', () => {
+    const line = {
+      ...baseRecord,
+      id: 'l3',
+      coords: [
+        { latitude: 35.1, longitude: 134.8 },
+        { latitude: 35.1, longitude: 134.85 },
+      ],
+    } as unknown as LineRecordType;
+    expect(selectLineFeaturesByArea([line], lasso as any)).toEqual([]);
+  });
+
+  it('なげなわに内包されるポリゴンが選択される', () => {
+    const poly = {
+      ...baseRecord,
+      id: 'p1',
+      coords: [
+        { latitude: 35.0, longitude: 134.9 },
+        { latitude: 35.01, longitude: 134.91 },
+        { latitude: 35.0, longitude: 134.92 },
+        { latitude: 35.0, longitude: 134.9 },
+      ],
+      holes: {},
+    } as unknown as PolygonRecordType;
+    expect(selectPolygonFeaturesByArea([poly], lasso as any).map((f) => f.id)).toEqual(['p1']);
+  });
+
+  it('なげなわがポリゴンの内側に完全に入っている場合も選択される', () => {
+    const bigPoly = {
+      ...baseRecord,
+      id: 'p2',
+      coords: [
+        { latitude: 34.9, longitude: 134.8 },
+        { latitude: 35.1, longitude: 134.8 },
+        { latitude: 35.1, longitude: 135.0 },
+        { latitude: 34.9, longitude: 135.0 },
+        { latitude: 34.9, longitude: 134.8 },
+      ],
+      holes: {},
+    } as unknown as PolygonRecordType;
+    expect(selectPolygonFeaturesByArea([bigPoly], lasso as any).map((f) => f.id)).toEqual(['p2']);
   });
 });
 

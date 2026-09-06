@@ -229,26 +229,25 @@ export const HomeDrawTools = React.memo(() => {
             />
           </View>
         )}
-        {(isEditingDraw || isEditingObject) && (
+        {/* undo/redoは実行できるときだけ表示する */}
+        {(isEditingDraw || isEditingObject) && isUndoable && (
           <View style={styles.button}>
             <Button
               name={DRAWTOOL.UNDO}
-              backgroundColor={isUndoable ? COLOR.ALFABLUE : COLOR.ALFAGRAY}
+              backgroundColor={COLOR.ALFABLUE}
               borderRadius={10}
-              disabled={!isUndoable}
               onPress={pressUndoDraw}
               labelText={t('Home.label.undo')}
               labelFontSize={9}
             />
           </View>
         )}
-        {(isEditingDraw || isEditingObject) && (
+        {(isEditingDraw || isEditingObject) && isRedoable && (
           <View style={styles.button}>
             <Button
               name={DRAWTOOL.REDO}
-              backgroundColor={isRedoable ? COLOR.ALFABLUE : COLOR.ALFAGRAY}
+              backgroundColor={COLOR.ALFABLUE}
               borderRadius={10}
-              disabled={!isRedoable}
               onPress={pressRedoDraw}
               labelText={t('Home.label.redo')}
               labelFontSize={9}

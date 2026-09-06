@@ -92,6 +92,7 @@ export const mockDrawingToolsContextValue: DrawingToolsContextType = {
   // Backward compatibility
   isEditingDraw: false,
   isEditingObject: false,
+  isAreaSelected: false,
   isSelectedDraw: false,
   isEditingLine: false,
   editingLineId: undefined,

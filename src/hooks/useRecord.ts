@@ -163,7 +163,8 @@ export const useRecord = (): UseRecordReturnType => {
       if (type === 'POINT') {
         editingLayer = activePointLayer;
         dataSet = pointDataSet;
-      } else if (type === 'LINE') {
+      } else if (type === 'LINE' || type === 'MEMO') {
+        //マップメモはアクティブなラインレイヤに保存されるため、LINEと同じ扱い
         editingLayer = activeLineLayer;
         dataSet = lineDataSet;
       } else if (type === 'POLYGON') {
