@@ -444,18 +444,27 @@ export const modifyLineWithSource = (
   return { xy: [], latlon: [], junctions: [] };
 };
 
-//接続部の平滑化: この折れ角(度)より浅ければなめらかに繋ぎ、急ならかくっと維持する
-const JUNCTION_SMOOTH_ANGLE_DEG = 60;
-//平滑化する接続点の前後の点数
-const JUNCTION_WINDOW = 4;
+//接続部の平滑化: この折れ角(度)以上（ほぼUターン）で接続した場合は意図的な折り返しとして丸めない
+const JUNCTION_SMOOTH_ANGLE_DEG = 150;
+//接続点の前後にこの距離(px)たどった範囲を丸め窓とする
+const JUNCTION_WINDOW_PX = 24;
 
-//接続点での折れ角（0=直進、180=Uターン）。ノイズに強いよう前後k点の平均方向で計算する
-const junctionAngleDeg = (line: Position[], j: number, k = 3): number => {
-  const i0 = Math.max(0, j - k);
-  const i1 = Math.min(line.length - 1, j + k);
-  if (i0 === j || i1 === j) return 180;
-  const v1 = [line[j][0] - line[i0][0], line[j][1] - line[i0][1]];
-  const v2 = [line[i1][0] - line[j][0], line[i1][1] - line[j][1]];
+const distancePx = (a: Position, b: Position) => Math.hypot(a[0] - b[0], a[1] - b[1]);
+
+//ポリラインに沿ったインデックスa→bの距離(px)
+const pathDistancePx = (line: Position[], a: number, b: number): number => {
+  let d = 0;
+  for (let i = a; i < b; i++) d += distancePx(line[i], line[i + 1]);
+  return d;
+};
+
+//接続部の折れ角（0=直進、180=Uターン）。j1へ入る向きとj2から出る向きを前後k点の平均方向で比較する
+const junctionAngleDeg = (line: Position[], j1: number, j2: number, k = 3): number => {
+  const i0 = Math.max(0, j1 - k);
+  const i1 = Math.min(line.length - 1, j2 + k);
+  if (i0 === j1 || i1 === j2) return 180;
+  const v1 = [line[j1][0] - line[i0][0], line[j1][1] - line[i0][1]];
+  const v2 = [line[i1][0] - line[j2][0], line[i1][1] - line[j2][1]];
   const m1 = Math.hypot(v1[0], v1[1]);
   const m2 = Math.hypot(v2[0], v2[1]);
   if (m1 === 0 || m2 === 0) return 180;
@@ -464,10 +473,37 @@ const junctionAngleDeg = (line: Position[], j: number, k = 3): number => {
 };
 
 /**
- * 修正ストロークの接続部をなぞり方に応じて平滑化する。
- * 線の流れに沿って（浅い折れ角で）繋いだ接続点は前後数点をベジエで均し、
- * 急な角度でぶつけた接続点はそのまま（かくっと）維持する。
- * 平滑化した窓内の点はtoLatLonで再変換する（窓外の頂点は元のlatlonを保持）
+ * p0→p1を接続点を制御点とするベジエで結んだ中間点列（両端点は含まない）。
+ * 接続点が1つ(c1===c2)なら2次、2つなら3次ベジエ。どちらも両端で元のラインの向きに接する
+ */
+const roundCornerPoints = (p0: Position, c1: Position, c2: Position, p1: Position): Position[] => {
+  const DIVISION = 12;
+  const pts: Position[] = [];
+  for (let i = 1; i < DIVISION; i++) {
+    const t = i / DIVISION;
+    if (c1 === c2) {
+      const a = (1 - t) ** 2;
+      const b = 2 * t * (1 - t);
+      const c = t ** 2;
+      pts.push([a * p0[0] + b * c1[0] + c * p1[0], a * p0[1] + b * c1[1] + c * p1[1]]);
+    } else {
+      const a = (1 - t) ** 3;
+      const b = 3 * t * (1 - t) ** 2;
+      const c = 3 * t ** 2 * (1 - t);
+      const d = t ** 3;
+      pts.push([a * p0[0] + b * c1[0] + c * c2[0] + d * p1[0], a * p0[1] + b * c1[1] + c * c2[1] + d * p1[1]]);
+    }
+  }
+  return pts;
+};
+
+/**
+ * 修正ストロークの接続部をなめらかに丸める。
+ * 接続点の前後JUNCTION_WINDOW_PXの範囲を、接続点を制御点とするベジエで置き換える。
+ * ベジエは両端で元のラインの向きに接するため、目に見える丸みと接線の連続性が両立する。
+ * 隣接・近接する接続点（例: ポリゴンのシーム両端）は1つの丸め区間にまとめて一括で丸める。
+ * ほぼUターン（JUNCTION_SMOOTH_ANGLE_DEG以上）で接続した場合のみ折り返しとしてそのまま維持する。
+ * 置き換えた窓内の点はtoLatLonで再変換する（窓外の頂点は元のlatlonを保持）
  */
 export const smoothJunctions = (
   xy: Position[],
@@ -477,30 +513,43 @@ export const smoothJunctions = (
 ): { xy: Position[]; latlon: Position[] } => {
   let outXY = xy;
   let outLatLon = latlon;
-  //後ろの接続点から処理してインデックスのズレを防ぐ
-  const sorted = [...junctions].filter((j) => j > 0 && j < xy.length - 1).sort((a, b) => b - a);
-  for (const j of sorted) {
-    const angle = junctionAngleDeg(outXY, j);
-    if (angle >= JUNCTION_SMOOTH_ANGLE_DEG) continue; //急角度は意図的な折れとして維持
-    const s = Math.max(0, j - JUNCTION_WINDOW);
-    const e = Math.min(outXY.length - 1, j + JUNCTION_WINDOW);
-    if (e - s < 2) continue;
-    try {
-      //fitCurveは端点を通るため、窓の両端で元のラインと連続に繋がる
-      const smoothed = smoothingByBezier(outXY.slice(s, e + 1));
-      outXY = [...outXY.slice(0, s), ...smoothed, ...outXY.slice(e + 1)];
-      outLatLon = [...outLatLon.slice(0, s), ...smoothed.map(toLatLon), ...outLatLon.slice(e + 1)];
-    } catch (err) {
-      console.log('smoothJunctions error', err);
+  const valid = junctions.filter((j) => j > 0 && j < xy.length - 1).sort((a, b) => a - b);
+  //隣接インデックス、または丸め窓が重なるほど近い接続点は1つの丸め区間にまとめる
+  const groups: number[][] = [];
+  for (const j of valid) {
+    const g = groups[groups.length - 1];
+    if (g !== undefined) {
+      const prev = g[g.length - 1];
+      if (j - prev <= 1 || pathDistancePx(xy, prev, j) < 2 * JUNCTION_WINDOW_PX) {
+        g.push(j);
+        continue;
+      }
     }
+    groups.push([j]);
+  }
+  //後ろの区間から処理してインデックスのズレを防ぐ
+  for (let gi = groups.length - 1; gi >= 0; gi--) {
+    const j1 = groups[gi][0];
+    const j2 = groups[gi][groups[gi].length - 1];
+    if (junctionAngleDeg(outXY, j1, j2) >= JUNCTION_SMOOTH_ANGLE_DEG) continue;
+    //丸め窓が隣の区間の窓と重ならないよう、区間同士の中点で範囲を区切る
+    const lo = gi === 0 ? 0 : Math.ceil((groups[gi - 1][groups[gi - 1].length - 1] + j1) / 2);
+    const hi = gi === groups.length - 1 ? outXY.length - 1 : Math.floor((j2 + groups[gi + 1][0]) / 2);
+    let s = j1;
+    for (let acc = 0; s > lo && acc < JUNCTION_WINDOW_PX; s--) acc += distancePx(outXY[s], outXY[s - 1]);
+    let e = j2;
+    for (let acc = 0; e < hi && acc < JUNCTION_WINDOW_PX; e++) acc += distancePx(outXY[e], outXY[e + 1]);
+    if (s === j1 || e === j2) continue;
+    const rounded = roundCornerPoints(outXY[s], outXY[j1], outXY[j2], outXY[e]);
+    outXY = [...outXY.slice(0, s + 1), ...rounded, ...outXY.slice(e)];
+    outLatLon = [...outLatLon.slice(0, s + 1), ...rounded.map(toLatLon), ...outLatLon.slice(e)];
   }
   return { xy: outXY, latlon: outLatLon };
 };
 
 /**
- * フリーハンドポリゴンを閉じる。閉じ目（終点→始点のシーム）を接続部として扱い、
- * 線の流れに沿って戻ってきた場合（浅い折れ角）はシーム前後を均して滑らかに閉じ、
- * 急な角度でぶつけた場合はそのまま（かくっと）閉じる。
+ * フリーハンドポリゴンを閉じる。閉じ目（終点→始点のシーム）の両端を接続部として扱い、
+ * まとめてなめらかに丸める。Uターンでぶつけた場合はそのまま（かくっと）閉じる。
  * ポリゴンの頂点順は保持されるが、開始頂点はシーム平滑化の都合で回転する（GeoJSON的に等価）
  */
 export const closeFreehandPolygonSeam = (
@@ -510,14 +559,14 @@ export const closeFreehandPolygonSeam = (
 ): { xy: Position[]; latlon: Position[] } => {
   const n = xy.length;
   //点数が少ない・xyとlatlonが不一致の場合は従来どおり直線で閉じる
-  if (n < 2 * JUNCTION_WINDOW + 2 || latlon.length !== n) {
+  if (n < 6 || latlon.length !== n) {
     return { xy: [...xy, xy[0]], latlon: [...latlon, latlon[0]] };
   }
-  //シームが配列の中央に来るよう回転し、通常の接続部として角度判定＋平滑化する
-  const w = JUNCTION_WINDOW;
-  const rotXY = [...xy.slice(n - w), ...xy.slice(0, n - w)];
-  const rotLatLon = [...latlon.slice(n - w), ...latlon.slice(0, n - w)];
-  const smoothed = smoothJunctions(rotXY, rotLatLon, [w], toLatLon);
+  //シームが配列の中央に来るよう回転し、シーム両端（終点と始点）を通常の接続部として丸める
+  const rot = Math.floor(n / 2);
+  const rotXY = [...xy.slice(n - rot), ...xy.slice(0, n - rot)];
+  const rotLatLon = [...latlon.slice(n - rot), ...latlon.slice(0, n - rot)];
+  const smoothed = smoothJunctions(rotXY, rotLatLon, [rot - 1, rot], toLatLon);
   return { xy: [...smoothed.xy, smoothed.xy[0]], latlon: [...smoothed.latlon, smoothed.latlon[0]] };
 };
 
