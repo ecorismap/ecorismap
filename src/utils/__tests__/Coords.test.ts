@@ -445,15 +445,47 @@ describe('smoothJunctions', () => {
     expect(result.latlon.length).toBe(result.xy.length);
   });
 
-  it('急な折れ角（90度）の接続点はそのまま維持される', () => {
+  it('直角（90度）の接続点も目に見えて丸められる', () => {
     const xy: [number, number][] = [];
     for (let i = 0; i <= 10; i++) xy.push([i * 10, 0]);
     for (let i = 1; i <= 10; i++) xy.push([100, i * 10]); //90度に折れる
     const latlon = xy.map(toLatLon);
     const result = smoothJunctions(xy as any, latlon as any, [10], toLatLon as any);
+    //端点は変わらない（連続性維持）
+    expect(result.xy[0]).toEqual([0, 0]);
+    expect(result.xy[result.xy.length - 1]).toEqual([100, 100]);
+    //元の角(100,0)から一定以上離れて丸まっている
+    const minDist = Math.min(...result.xy.map(([x, y]: any) => Math.hypot(x - 100, y - 0)));
+    expect(minDist).toBeGreaterThan(5);
+    expect(result.latlon.length).toBe(result.xy.length);
+  });
+
+  it('ほぼUターンで接続した場合はそのまま維持される', () => {
+    const xy: [number, number][] = [];
+    for (let i = 0; i <= 10; i++) xy.push([i * 10, 0]);
+    for (let i = 1; i <= 10; i++) xy.push([100 - i * 10, 1 + i]); //ほぼ折り返し(約170度)
+    const latlon = xy.map(toLatLon);
+    const result = smoothJunctions(xy as any, latlon as any, [10], toLatLon as any);
     //一切変更されない
     expect(result.xy).toBe(xy);
     expect(result.latlon).toBe(latlon);
+  });
+
+  it('接続点が複数あっても丸め窓が重ならず全て処理される', () => {
+    //水平→垂直→水平のクランク形状。2つの直角接続点
+    const xy: [number, number][] = [];
+    for (let i = 0; i <= 10; i++) xy.push([i * 10, 0]);
+    for (let i = 1; i <= 10; i++) xy.push([100, i * 10]);
+    for (let i = 1; i <= 10; i++) xy.push([100 + i * 10, 100]);
+    const latlon = xy.map(toLatLon);
+    const result = smoothJunctions(xy as any, latlon as any, [10, 20], toLatLon as any);
+    expect(result.xy[0]).toEqual([0, 0]);
+    expect(result.xy[result.xy.length - 1]).toEqual([200, 100]);
+    const d1 = Math.min(...result.xy.map(([x, y]: any) => Math.hypot(x - 100, y - 0)));
+    const d2 = Math.min(...result.xy.map(([x, y]: any) => Math.hypot(x - 100, y - 100)));
+    expect(d1).toBeGreaterThan(5);
+    expect(d2).toBeGreaterThan(5);
+    expect(result.latlon.length).toBe(result.xy.length);
   });
 
   it('接続点が無ければ何もしない', () => {
@@ -497,13 +529,32 @@ describe('closeFreehandPolygonSeam', () => {
     });
   });
 
-  it('急角度でぶつけたシームはかくっと閉じる（点が変化しない）', () => {
+  it('直角でぶつけたシームも丸めて閉じる', () => {
     //コの字型: 終点が始点に垂直方向からぶつかる
     const xy: [number, number][] = [];
     for (let x = 0; x <= 300; x += 20) xy.push([x, 0]);
     for (let y = 20; y <= 300; y += 20) xy.push([300, y]);
     for (let x = 280; x >= 0; x -= 20) xy.push([x, 300]);
     for (let y = 280; y >= 40; y -= 20) xy.push([0, y]); //始点(0,0)へ垂直に接近
+    const latlon = xy.map(toLatLon);
+    const closed = closeFreehandPolygonSeam(xy as any, latlon as any, toLatLon as any);
+    //閉じている
+    expect(closed.xy[0]).toEqual(closed.xy[closed.xy.length - 1]);
+    //シーム角(0,0)から一定以上離れて丸まっている
+    const minDist = Math.min(...closed.xy.map(([x, y]: any) => Math.hypot(x, y)));
+    expect(minDist).toBeGreaterThan(5);
+    //xyとlatlonは同数・対応
+    expect(closed.latlon.length).toBe(closed.xy.length);
+    closed.xy.forEach((p, i) => {
+      expect(closed.latlon[i]).toEqual([p[0] + 9000, p[1] + 9000]);
+    });
+  });
+
+  it('Uターンでぶつけたシームはかくっと閉じる（点が変化しない）', () => {
+    //細長いスリット型: 終点が始点の方向へ折り返してぶつかる（ほぼ180度）
+    const xy: [number, number][] = [];
+    for (let x = 0; x <= 300; x += 20) xy.push([x, 0]);
+    for (let x = 300; x >= 20; x -= 20) xy.push([x, 10]); //折り返して始点近くへ戻る
     const latlon = xy.map(toLatLon);
     const closed = closeFreehandPolygonSeam(xy as any, latlon as any, toLatLon as any);
     //閉じ点の追加以外は変化しない（回転はするが頂点集合は同じ）
