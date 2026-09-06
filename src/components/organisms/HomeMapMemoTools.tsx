@@ -6,6 +6,7 @@ import { Button } from '../atoms';
 import { MapMemoContext } from '../../contexts/MapMemo';
 import { DrawingToolsContext } from '../../contexts/DrawingTools';
 import { HomeEditControlButtons } from './HomeEditControlButtons';
+import { HomeEditingLayerButton } from './HomeEditingLayerButton';
 import {
   DeleteToolButton,
   MoveToolButton,
@@ -63,6 +64,9 @@ export const HomeMapMemoTools = React.memo(() => {
     <>
       {/* 編集選択の確定・キャンセルボタン */}
       <HomeEditControlButtons />
+
+      {/* 編集レイヤ名の表示・切替チップ */}
+      <HomeEditingLayerButton />
       <View style={styles.buttonContainer}>
         <View style={styles.selectionalButton}>
           <Button

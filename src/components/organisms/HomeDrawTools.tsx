@@ -6,6 +6,7 @@ import { Button } from '../atoms';
 import { HomeLineToolButton } from './HomeLineToolButton';
 import { HomePolygonToolButton } from './HomePolygonToolButton';
 import { HomeEditControlButtons } from './HomeEditControlButtons';
+import { HomeEditingLayerButton } from './HomeEditingLayerButton';
 import {
   DeleteToolButton,
   MoveToolButton,
@@ -65,6 +66,9 @@ export const HomeDrawTools = React.memo(() => {
     <>
       {/* 編集完了・キャンセルボタン */}
       <HomeEditControlButtons />
+
+      {/* 編集レイヤ名の表示・切替チップ */}
+      <HomeEditingLayerButton />
 
       <View style={styles.buttonContainer}>
         <View>
