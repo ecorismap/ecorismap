@@ -1355,7 +1355,8 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
       resetDrawTools();
       convertPointFeatureToDrawLine(layer.id, features);
       enterTransformSelection();
-    } else if (featureButton === 'LINE') {
+    } else if (featureButton === 'LINE' || featureButton === 'MEMO') {
+      //マップメモのストロークはラインレコードなのでLINEと同じ流れで選択する
       const features = selectLineFeaturesByArea(recordSet as LineRecordType[], selectLineCoords);
       if (features.length === 0) return false;
       resetDrawTools();
@@ -1395,7 +1396,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
         setRedraw(ulid());
         if (featureButton === 'POINT') {
           setDrawTool('PLOT_POINT');
-        } else if (featureButton === 'LINE') {
+        } else if (featureButton === 'LINE' || featureButton === 'MEMO') {
           setDrawTool('PLOT_LINE');
         } else {
           setDrawTool('PLOT_POLYGON');

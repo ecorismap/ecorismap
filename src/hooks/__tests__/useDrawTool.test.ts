@@ -1640,6 +1640,83 @@ describe('useDrawTool', () => {
     });
   });
 
+  describe('マップメモの編集選択', () => {
+    const memoLines = [
+      {
+        ...mockLineRecord,
+        id: 'm1',
+        coords: [
+          { latitude: 0, longitude: 0 },
+          { latitude: 0, longitude: 10 },
+        ],
+        field: { _strokeWidth: 2, _strokeColor: '#ff0000' },
+      },
+      {
+        ...mockLineRecord,
+        id: 'm2',
+        coords: [
+          { latitude: 20, longitude: 0 },
+          { latitude: 20, longitude: 10 },
+        ],
+        field: { _strokeWidth: 2, _strokeColor: '#ff0000' },
+      },
+    ] as unknown as LineRecordType[];
+
+    it('MEMOモードのなげなわ選択でストロークが選択されPLOT_LINEの変形モードになる', () => {
+      const { result } = renderDrawTool();
+      mockGetEditableLayerAndRecordSetWithCheck.mockReturnValue({
+        isOK: true,
+        message: '',
+        layer: mockLineLayer,
+        recordSet: memoLines,
+      });
+      (selectLineFeaturesByArea as jest.Mock).mockReturnValue(memoLines);
+      act(() => {
+        result.current.setFeatureButton('MEMO');
+      });
+      act(() => {
+        result.current.setDrawTool('SELECT');
+      });
+      act(() => {
+        result.current.handleGrantSelect([0, 0]);
+        for (let i = 1; i <= 6; i++) result.current.handleMoveSelect([i * 5, 0]);
+      });
+      act(() => {
+        result.current.handleReleaseSelect([30, 0]);
+      });
+      expect(mockGetEditableLayerAndRecordSetWithCheck).toHaveBeenCalledWith('MEMO');
+      expect(result.current.drawLine.current.length).toBe(2);
+      expect(result.current.currentDrawTool).toBe('PLOT_LINE');
+      expect(result.current.isAreaSelected).toBe(true);
+      //一括移動してリリースで全頂点のlatlonが更新される
+      act(() => {
+        result.current.handleGrantPlot([5, 10]);
+      });
+      act(() => {
+        result.current.handleMovePlot([15, 15]);
+      });
+      act(() => {
+        result.current.handleReleasePlotLinePolygon();
+      });
+      expect(result.current.drawLine.current[0].latlon).toEqual([
+        [10, 5],
+        [20, 5],
+      ]);
+      //保存でフィールド（太さ等）を保持したままレコードが更新される
+      mockFindLayer.mockReturnValue(mockLineLayer);
+      mockFindRecord.mockImplementation((_layerId: string, _userId: string, id: string) =>
+        memoLines.find((r) => r.id === id)
+      );
+      let saveResult;
+      act(() => {
+        saveResult = result.current.saveLine();
+      });
+      expect(saveResult!.isOK).toBe(true);
+      const saved = mockUpdateRecord.mock.calls.map((c) => c[1] as RecordType);
+      expect(saved[0].field._strokeWidth).toBe(2);
+    });
+  });
+
   describe('toggleTerrain', () => {
     it('Webでない場合は何もしない（isTerrainActiveはfalseのまま）', () => {
       const { result } = renderDrawTool();
