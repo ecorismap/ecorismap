@@ -958,8 +958,7 @@
       "redo": "redo",
       "syncPosition": "share",
       "download": "DL",
-      "noEditingLayer": "No layer selected",
-      "editingLayer": "Edit layer"
+      "noEditingLayer": "No layer selected"
     },
     "poi": {
       "openInGoogleMaps": "To Google Maps",
