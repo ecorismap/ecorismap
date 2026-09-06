@@ -1,8 +1,8 @@
 import React, { useContext } from 'react';
 import { Platform, View } from 'react-native';
 
-import Svg, { G, Path, Circle } from 'react-native-svg';
-import { pointsToSvg } from '../../utils/Coords';
+import Svg, { G, Path, Circle, Rect, Line } from 'react-native-svg';
+import { pointsToSvg, getPointsTransformFrame } from '../../utils/Coords';
 import { ulid } from 'ulid';
 import { COLOR } from '../../constants/AppConstants';
 import { isFreehandTool, isPlotTool, isPolygonTool } from '../../utils/General';
@@ -170,6 +170,55 @@ export const SvgView = React.memo(() => {
             />
           </G>
         )}
+        {/* 複数ポイント選択時の変形フレーム（ドラッグで移動・ハンドルで回転） */}
+        {(currentDrawTool === 'PLOT_POINT' || currentDrawTool === 'MOVE') &&
+          drawLine.current.length >= 2 &&
+          drawLine.current.every((line) => line.properties.includes('POINT') && line.xy.length > 0) &&
+          (() => {
+            const frame = getPointsTransformFrame(drawLine.current.map((line) => line.xy[0]));
+            const [hx, hy] = frame.handle;
+            //地図移動(MOVE)中はジェスチャが地図に取られるため回転ハンドルを隠す
+            const showHandle = currentDrawTool === 'PLOT_POINT';
+            return (
+              <G>
+                <Rect
+                  x={frame.minX}
+                  y={frame.minY}
+                  width={frame.maxX - frame.minX}
+                  height={frame.maxY - frame.minY}
+                  stroke={COLOR.BLUE}
+                  strokeWidth="1.5"
+                  strokeDasharray="4,4"
+                  fill="none"
+                />
+                {showHandle && (
+                  <G>
+                    <Line x1={frame.center[0]} y1={frame.minY} x2={hx} y2={hy} stroke={COLOR.BLUE} strokeWidth="1.5" />
+                    <Circle cx={hx} cy={hy} r={14} fill={COLOR.BLUE} stroke="white" strokeWidth="2" />
+                    {/* 回転を示す円弧矢印 */}
+                    <Path
+                      d={`M ${hx - 6} ${hy + 4} A 7 7 0 1 1 ${hx + 6} ${hy + 4}`}
+                      stroke="white"
+                      strokeWidth="2"
+                      fill="none"
+                    />
+                    <Path d={`M ${hx + 6} ${hy + 4} l -4 -1 l 3 4 z`} stroke="white" strokeWidth="1" fill="white" />
+                  </G>
+                )}
+                {drawLine.current.map((line, i) => (
+                  <Circle
+                    key={`tp-${i}`}
+                    cx={line.xy[0][0]}
+                    cy={line.xy[0][1]}
+                    r={7.2}
+                    fill="yellow"
+                    stroke="black"
+                    strokeWidth={2.4}
+                  />
+                ))}
+              </G>
+            );
+          })()}
         {/* 選択範囲のライン */}
         <G>
           <Path

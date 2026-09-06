@@ -567,7 +567,7 @@ export type MapMemoToolGroupType = 'PEN' | 'STAMP' | 'BRUSH' | 'ERASER';
 export type PenWidthType = keyof typeof PEN_WIDTH;
 export type StampType = keyof typeof STAMP;
 export type BrushType = keyof typeof BRUSH;
-export type UndoActionType = 'NEW' | 'EDIT' | 'FINISH' | 'SELECT' | 'DELETE';
+export type UndoActionType = 'NEW' | 'EDIT' | 'EDIT_MULTI' | 'FINISH' | 'SELECT' | 'DELETE';
 
 export type HomeButtonType = keyof typeof HOME_BTN;
 export type LayersButtonType = keyof typeof LAYERS_BTN;

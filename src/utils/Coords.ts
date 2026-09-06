@@ -570,9 +570,35 @@ export const closeFreehandPolygonSeam = (
   return { xy: [...smoothed.xy, smoothed.xy[0]], latlon: [...smoothed.latlon, smoothed.latlon[0]] };
 };
 
+//複数ポイント選択時の変形フレーム。外接矩形＋回転ハンドル位置を返す
+export const POINTS_TRANSFORM_FRAME_PADDING_PX = 20;
+export const POINTS_TRANSFORM_HANDLE_OFFSET_PX = 40;
+export const POINTS_TRANSFORM_HANDLE_RADIUS_PX = 14;
+
+export const getPointsTransformFrame = (points: Position[]) => {
+  const xs = points.map((p) => p[0]);
+  const ys = points.map((p) => p[1]);
+  const pad = POINTS_TRANSFORM_FRAME_PADDING_PX;
+  const minX = Math.min(...xs) - pad;
+  const maxX = Math.max(...xs) + pad;
+  const minY = Math.min(...ys) - pad;
+  const maxY = Math.max(...ys) + pad;
+  const center: Position = [(minX + maxX) / 2, (minY + maxY) / 2];
+  const handle: Position = [center[0], minY - POINTS_TRANSFORM_HANDLE_OFFSET_PX];
+  return { minX, maxX, minY, maxY, center, handle };
+};
+
+//なげなわ選択の軌跡を閉じたリングにする（指を離した位置は始点に戻っていないのが普通のため）
+const closeAreaRing = (areaLineCoords: Position[]): Position[] => {
+  const first = areaLineCoords[0];
+  const last = areaLineCoords[areaLineCoords.length - 1];
+  if (first[0] === last[0] && first[1] === last[1]) return areaLineCoords;
+  return [...areaLineCoords, first];
+};
+
 export const selectPointFeaturesByArea = (pointFeatures: PointRecordType[], areaLineCoords: Position[]) => {
   try {
-    const areaPolygon = turf.multiPolygon([[areaLineCoords]]);
+    const areaPolygon = turf.multiPolygon([[closeAreaRing(areaLineCoords)]]);
     return pointFeatures
       .map((feature) => {
         if (!feature.coords) return undefined;
@@ -589,7 +615,7 @@ export const selectPointFeaturesByArea = (pointFeatures: PointRecordType[], area
 
 export const selectLineFeaturesByArea = (lineFeatures: LineRecordType[], areaLineCoords: Position[]) => {
   try {
-    const areaPolygon = turf.multiPolygon([[areaLineCoords]]);
+    const areaPolygon = turf.multiPolygon([[closeAreaRing(areaLineCoords)]]);
     return lineFeatures
       .map((feature) => {
         let featureLine;
@@ -615,7 +641,7 @@ export const selectLineFeaturesByArea = (lineFeatures: LineRecordType[], areaLin
 
 export const selectPolygonFeaturesByArea = (polygonFeatures: PolygonRecordType[], areaLineCoords: Position[]) => {
   try {
-    const areaPolygon = turf.multiPolygon([[areaLineCoords]]);
+    const areaPolygon = turf.multiPolygon([[closeAreaRing(areaLineCoords)]]);
     return polygonFeatures
       .map((feature) => {
         if (!feature.coords) return undefined;

@@ -13,8 +13,9 @@ import {
   modifyLineWithSource,
   smoothJunctions,
   closeFreehandPolygonSeam,
+  selectPointFeaturesByArea,
 } from '../Coords';
-import { LocationType } from '../../types';
+import { LocationType, PointRecordType } from '../../types';
 
 describe('decimal2dms', () => {
   it('return dms value from decimal', () => {
@@ -498,6 +499,26 @@ describe('smoothJunctions', () => {
     const result = smoothJunctions(xy as any, latlon as any, [], toLatLon as any);
     expect(result.xy).toBe(xy);
     expect(result.latlon).toBe(latlon);
+  });
+});
+
+describe('selectPointFeaturesByArea', () => {
+  const makePoint = (id: string, longitude: number, latitude: number) =>
+    ({ id, userId: 'u1', displayName: 't', visible: true, redraw: false, coords: { latitude, longitude }, field: {} } as unknown as PointRecordType);
+
+  it('閉じていないなげなわ軌跡でも範囲内のポイントが選択される', () => {
+    const points = [makePoint('a', 5, 5), makePoint('b', 8, 8), makePoint('c', 20, 20)];
+    //コの字型の開いた軌跡（始点に戻らない）
+    const lasso: [number, number][] = [
+      [0, 0],
+      [10, 0],
+      [10, 10],
+      [0, 10],
+      [0, 2],
+      [0, 1],
+    ];
+    const selected = selectPointFeaturesByArea(points, lasso as any);
+    expect(selected.map((f) => f.id)).toEqual(['a', 'b']);
   });
 });
 
