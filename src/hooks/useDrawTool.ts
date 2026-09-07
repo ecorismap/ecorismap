@@ -1474,11 +1474,11 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     (penStyle: HandwritingPenStyleType) => {
       drawLine.current.forEach((line) => {
         if (line.record === undefined) {
-          //追加（プロット）で作成中の未保存オブジェクトも手書きストロークへ変換する
-          //（EDIT装飾のままだと手書きモードで＋丸マーカーが表示されてしまう）。
-          //既にstyleを持つ手書きストロークはそのまま
+          //追加（プロット）で作成中・プロット編集へ変換済みの未保存オブジェクトも手書きストロークへ
+          //変換する（EDIT装飾のままだと手書きモードで頂点マーカーが表示されてしまう）。
+          //styleを持っていれば（手書き→プロット→手書きの往復など）そのスタイルを保持する
+          line.properties = ['HANDWRITING'];
           if (line.style === undefined) {
-            line.properties = ['HANDWRITING'];
             line.style = {
               strokeColor: penStyle.strokeColor,
               strokeWidth: penStyle.strokeWidth,
@@ -1804,15 +1804,17 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
   }, []);
 
   /**
-   * 編集選択中のスタイル変更を画面上の選択オブジェクト（手書き変換済みストローク）へ即時反映する。
-   * レコード自体は書き換えないため、キャンセルすれば元のスタイルに戻る。
-   * 確定時の書き込みはsaveLine/savePolygonのapplyStyleToSelectedが担う
+   * 編集セッション中のスタイル変更を画面上のストロークへ即時反映する。
+   * 編集選択したオブジェクトだけでなく、新規手書きの描画済みストロークにも適用する
+   * （新規ストロークは確定時にline.styleで保存されるため、見た目と保存結果が一致する）。
+   * 選択オブジェクトのレコード自体は書き換えないため、キャンセルすれば元のスタイルに戻る。
+   * 確定時のレコード書き込みはsaveLine/savePolygonのapplyStyleToSelectedが担う
    */
   const applySelectionStylePreview = useCallback(
     (style: { strokeColor?: string; strokeWidth?: number; strokeStyle?: string }) => {
       let changed = false;
       drawLine.current.forEach((line) => {
-        if (line.record === undefined || line.style === undefined) return;
+        if (line.style === undefined) return;
         const isPenStroke = line.style.stamp === '' && !isBrushTool(line.style.strokeStyle);
         if (style.strokeColor !== undefined) {
           line.style.strokeColor = style.strokeColor;

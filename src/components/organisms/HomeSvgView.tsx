@@ -26,14 +26,6 @@ const renderVertexMarker = (markerUrl: string, x: number, y: number, key: string
       return <Circle key={key} cx={x} cy={y} r={8.4} fill={COLOR.BLUE} stroke="white" strokeWidth={3.6} />;
     case 'url(#point)':
       return <Circle key={key} cx={x} cy={y} r={7.2} fill="yellow" stroke="black" strokeWidth={2.4} />;
-    case 'url(#add)':
-      return (
-        <G key={key}>
-          <Circle cx={x} cy={y} r={12} fill={COLOR.ALFABLUE} stroke="blue" strokeWidth={2.4} />
-          <Path stroke={COLOR.WHITE} strokeWidth={3.6} d={`M ${x - 7.2} ${y} L ${x + 7.2} ${y}`} />
-          <Path stroke={COLOR.WHITE} strokeWidth={3.6} d={`M ${x} ${y - 7.2} L ${x} ${y + 7.2}`} />
-        </G>
-      );
     case 'url(#delete)':
       return (
         <G key={key}>
@@ -188,11 +180,9 @@ export const SvgView = React.memo(() => {
           // 編集中(EDIT)オブジェクトは、地図移動(MOVE)モードでも全頂点のマーカーを表示する。
           // SELECTモードと非編集ラインの挙動は従来どおり。
           const startStyle = properties.includes('EDIT')
-            ? currentDrawTool === 'SELECT'
-              ? ''
-              : isFirstPointHighlighted
+            ? isFirstPointHighlighted
               ? `url(#firstPoint)`
-              : `url(#add)`
+              : ''
             : currentDrawTool === 'SELECT' || currentDrawTool === 'MOVE'
             ? ''
             : isEditingObject

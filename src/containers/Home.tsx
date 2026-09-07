@@ -1039,36 +1039,34 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
   //選択オブジェクトの値からグローバル設定と同じ値へ変更した場合、stateが変わらず
   //上のeffectの差分検知では拾えないため（例: 連続して複数のオブジェクトに同じ矢印を設定）。
   //マークと同時に画面上の選択オブジェクトへ即時反映する（キャンセルで元に戻る）
+  //新規手書きの描画済みストロークにもプレビューを効かせる（編集選択に限らずセッション中は反映）
+  const canPreviewSelectionStyle = isSelectedDraw || isEditingDraw || isEditingObject;
   const setPenWidthMarked = useCallback(
     (width: PenWidthType) => {
-      if (isSelectedDraw) {
-        selectionStyleChanged.current.width = true;
+      if (isSelectedDraw) selectionStyleChanged.current.width = true;
+      if (canPreviewSelectionStyle) {
         //useMapMemoのpenWidth導出と同じ対応（細=2/中=5/太=10）
         applySelectionStylePreview({ strokeWidth: width === 'PEN_THIN' ? 2 : width === 'PEN_MEDIUM' ? 5 : 10 });
       }
       setPenWidth(width);
     },
-    [applySelectionStylePreview, isSelectedDraw, setPenWidth]
+    [applySelectionStylePreview, canPreviewSelectionStyle, isSelectedDraw, setPenWidth]
   );
   const setArrowStyleMarked = useCallback(
     (style: ArrowStyleType) => {
-      if (isSelectedDraw) {
-        selectionStyleChanged.current.arrow = true;
-        applySelectionStylePreview({ strokeStyle: style });
-      }
+      if (isSelectedDraw) selectionStyleChanged.current.arrow = true;
+      if (canPreviewSelectionStyle) applySelectionStylePreview({ strokeStyle: style });
       setArrowStyle(style);
     },
-    [applySelectionStylePreview, isSelectedDraw, setArrowStyle]
+    [applySelectionStylePreview, canPreviewSelectionStyle, isSelectedDraw, setArrowStyle]
   );
   const selectPenColorMarked = useCallback(
     (hue: number, sat: number, val: number, alpha: number) => {
-      if (isSelectedDraw) {
-        selectionStyleChanged.current.color = true;
-        applySelectionStylePreview({ strokeColor: hsv2rgbaString(hue, sat, val, alpha) });
-      }
+      if (isSelectedDraw) selectionStyleChanged.current.color = true;
+      if (canPreviewSelectionStyle) applySelectionStylePreview({ strokeColor: hsv2rgbaString(hue, sat, val, alpha) });
       selectPenColor(hue, sat, val, alpha);
     },
-    [applySelectionStylePreview, isSelectedDraw, selectPenColor]
+    [applySelectionStylePreview, canPreviewSelectionStyle, isSelectedDraw, selectPenColor]
   );
 
   //単一オブジェクト選択中はそのオブジェクトの色・太さを設定UIの初期値にする（プロパティパネル方式）。
