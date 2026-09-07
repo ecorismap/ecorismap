@@ -13,7 +13,6 @@ interface LayerEditFeatureStyleContextType {
   colorRamps: ColorRampType[];
   colorRampLabels: string[];
   layerType: FeatureType;
-  isMapMemoLayer: boolean;
   modalVisible: boolean;
   isStyleChangeOnly: boolean;
   isEdited: boolean;

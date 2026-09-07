@@ -26,7 +26,6 @@ export default function LayerEditFeatureStyleScreen() {
     colorRamps,
     colorRampLabels,
     layerType,
-    isMapMemoLayer,
     modalVisible,
     isStyleChangeOnly,
     isEdited,
@@ -61,7 +60,8 @@ export default function LayerEditFeatureStyleScreen() {
         rightComponent={rightComponent}
       />
       <ScrollView>
-        {(layerType === 'LINE' || layerType === 'POLYGON') && !isMapMemoLayer && (
+        {/* 太さは個別以外のスタイルでデフォルト（レイヤ一律）を設定する。個別ではストロークごとの太さを使う */}
+        {(layerType === 'LINE' || layerType === 'POLYGON') && colorStyle.colorType !== 'INDIVIDUAL' && (
           <View style={{ paddingHorizontal: 10, borderBottomWidth: 1, borderColor: COLOR.GRAY2 }}>
             <Slider
               style={{ paddingHorizontal: 10 }}
@@ -134,30 +134,7 @@ export default function LayerEditFeatureStyleScreen() {
             <ColorTable />
           </View>
         )}
-        {colorStyle.colorType === 'INDIVIDUAL' && (
-          <View>
-            <SimplePicker
-              label={t('common.fieldName')}
-              value={colorStyle.fieldName}
-              onValueChange={changeFieldName}
-              itemValueArray={fieldValues}
-              itemLabelArray={fieldLabels}
-            />
-            {isCustom && (
-              <View style={styles.td}>
-                <TextInput
-                  label={t('common.customField')}
-                  placeholder={'field1|field2'}
-                  placeholderTextColor={COLOR.GRAY3}
-                  value={customFieldValue}
-                  onChangeText={changeCustomFieldValue}
-                  style={styles.input}
-                  editable={true}
-                />
-              </View>
-            )}
-          </View>
-        )}
+        {/* 個別はストローク自身の色（_strokeColor）参照の固定運用のため、フィールド名の選択UIは出さない */}
       </ScrollView>
 
       <HomeModalColorPicker

@@ -74,6 +74,7 @@ jest.mock('../../utils/Coords', () => ({
   //スクリーン座標⇔緯度経度の決定的な相互変換（1px = 0.00001度）
   smoothingByBezier: jest.fn((line: any) => line),
   trimHane: jest.fn((line: any) => line),
+  refineArrowStroke: jest.fn((line: any) => line),
   simplifyWithTolerance: jest.fn((line: any) => line),
   xyToLatLon: jest.fn((xy: any) => [135 + xy[0] * 0.00001, 35 - xy[1] * 0.00001]),
   latLonToXY: jest.fn((latlon: any) => [(latlon[0] - 135) / 0.00001, (35 - latlon[1]) / 0.00001]),

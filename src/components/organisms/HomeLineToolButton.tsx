@@ -58,6 +58,22 @@ export const HomeLineToolButton = React.memo((props: Props) => {
           labelText={t('Home.label.freehandLine')}
         />
       </View>
+      <View style={styles.button}>
+        <Button
+          id={'HANDWRITING_LINE'}
+          name={LINETOOL.HANDWRITING_LINE}
+          disabled={disabled}
+          backgroundColor={
+            disabled ? COLOR.ALFAGRAY : currentDrawTool === 'HANDWRITING_LINE' ? COLOR.ALFARED : COLOR.ALFABLUE
+          }
+          borderRadius={10}
+          onPress={() => {
+            setLineTool('HANDWRITING_LINE');
+            selectDrawTool('HANDWRITING_LINE');
+          }}
+          labelText={t('Home.label.handwritingLine')}
+        />
+      </View>
       {isEditingDraw && (
         <View style={styles.button}>
           <Button

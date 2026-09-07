@@ -19,9 +19,9 @@ import {
   latlonArrayToLatLonObjects,
   simplifyWithTolerance,
   smoothingByBezier,
-  trimHane,
   xyArrayToLatLonArray,
   xyToLatLon,
+  refineArrowStroke,
 } from '../utils/Coords';
 import MapView from 'react-native-maps';
 import { MapRef } from 'react-map-gl/maplibre';
@@ -37,6 +37,7 @@ import {
   updateRecordsAction,
 } from '../modules/dataSet';
 import { hsv2rgbaString } from '../utils/Color';
+import { toIndividualColorLayer } from '../utils/Layer';
 import { useRecord } from './useRecord';
 import { updateLayerAction } from '../modules/layers';
 import { STAMP } from '../constants/AppConstants';
@@ -510,14 +511,10 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
     //ピクセル単位のパラメータのため現在ビューのスクリーン座標へ再投影して行い、緯度経度へ戻す
     if (arrowStyle !== 'NONE' && !isStraightStyle && latlonLine.length >= MIN_POINTS_FOR_REFINE) {
       try {
-        let lineXY = latLonArrayToXYArray(latlonLine, mapRegionRef.current, mapSize, mapViewRef);
-        if (lineXY.length > 8) {
-          //ハネ切りは矢印の向きを守るための処理
-          lineXY = lineXY.slice(2, -2);
-          lineXY = trimHane(lineXY, 50); // 角度閾値は50°くらいから調整
-        }
-        lineXY = smoothingByBezier(lineXY);
-        lineXY = simplifyWithTolerance(lineXY, PEN_SIMPLIFY_TOLERANCE_PX);
+        const lineXY = refineArrowStroke(
+          latLonArrayToXYArray(latlonLine, mapRegionRef.current, mapSize, mapViewRef),
+          PEN_SIMPLIFY_TOLERANCE_PX
+        );
         latlonLine = xyArrayToLatLonArray(lineXY, mapRegionRef.current, mapSize, mapViewRef);
       } catch (e) {
         //整形に失敗した場合は生のストロークをそのまま保存する
@@ -1293,24 +1290,8 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
   const changeColorTypeToIndividual = useCallback(() => {
     if (activeMemoLayer === undefined || activeMemoLayer.colorStyle.colorType === 'INDIVIDUAL') return false;
 
-    //描いた色と太さをそのまま表示するにはINDIVIDUALが必要。
-    //またストロークごとにラベルが出ると描画の邪魔になるのでラベルは非表示にする。
-    //どちらも元の設定を退避し、カラータイプを戻したときに復元できるようにする
-    const newLayer = {
-      ...activeMemoLayer,
-      colorStyle: {
-        ...activeMemoLayer.colorStyle,
-        colorType: 'INDIVIDUAL' as const,
-        fieldName: '__CUSTOM',
-        customFieldValue: '_strokeColor',
-        savedFieldName: activeMemoLayer.colorStyle.fieldName,
-        savedCustomFieldValue: activeMemoLayer.colorStyle.customFieldValue,
-        savedLabel: activeMemoLayer.label,
-      },
-      label: '',
-    };
-
-    dispatch(updateLayerAction(newLayer));
+    //描いた色と太さをそのまま表示するにはINDIVIDUALが必要（退避・復元の詳細はtoIndividualColorLayer参照）
+    dispatch(updateLayerAction(toIndividualColorLayer(activeMemoLayer)));
     return true;
   }, [activeMemoLayer, dispatch]);
 

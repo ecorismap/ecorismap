@@ -101,8 +101,17 @@ describe('getLineWidth', () => {
   };
   const record = (field: any) => ({ id: '0', visible: true, redraw: false, coords: undefined, field } as any);
 
-  it('レコードが太さを持つ場合はカラータイプに関係なくそれを使う', () => {
-    expect(getLineWidth(layer, record({ _strokeWidth: 10 }))).toBe(10);
+  const individualLayer = {
+    ...layer,
+    colorStyle: { ...layer.colorStyle, colorType: 'INDIVIDUAL', fieldName: '__CUSTOM', customFieldValue: '_strokeColor' },
+  } as LayerType;
+
+  it('色分けが個別のレイヤではレコードの太さを使う', () => {
+    expect(getLineWidth(individualLayer, record({ _strokeWidth: 10 }))).toBe(10);
+  });
+
+  it('色分けが個別以外のレイヤではレコードが太さを持っていてもレイヤの太さ（デフォルト）を使う', () => {
+    expect(getLineWidth(layer, record({ _strokeWidth: 10 }))).toBe(3);
   });
 
   it('レコードが太さを持たない場合はレイヤの太さを使う', () => {
@@ -110,7 +119,7 @@ describe('getLineWidth', () => {
   });
 
   it('数値でない_strokeWidth（再インポートの空文字など）は無視してレイヤの太さを使う', () => {
-    expect(getLineWidth(layer, record({ _strokeWidth: '' }))).toBe(3);
+    expect(getLineWidth(individualLayer, record({ _strokeWidth: '' }))).toBe(3);
   });
 
   it('どちらも無い場合は既定値になる', () => {
@@ -126,11 +135,11 @@ describe('getLineWidthAtZoom', () => {
     type: 'LINE',
     permission: 'PRIVATE',
     colorStyle: {
-      colorType: 'CATEGORIZED',
+      colorType: 'INDIVIDUAL',
       color: COLOR.RED,
-      fieldName: '区分',
+      fieldName: '__CUSTOM',
       colorRamp: 'RANDOM',
-      customFieldValue: '',
+      customFieldValue: '_strokeColor',
       colorList: [],
       transparency: 1,
       lineWidth: 3,
@@ -141,6 +150,11 @@ describe('getLineWidthAtZoom', () => {
     field: [],
   };
   const record = (field: any) => ({ id: '0', visible: true, redraw: false, coords: undefined, field } as any);
+
+  it('色分けが個別以外のレイヤはズーム連動せずレイヤの太さのまま', () => {
+    const categorized = { ...layer, colorStyle: { ...layer.colorStyle, colorType: 'CATEGORIZED' } } as LayerType;
+    expect(getLineWidthAtZoom(categorized, record({ _strokeWidth: 10, _zoom: 15 }), 12)).toBe(3);
+  });
 
   it('描画時ズームと同じなら固定幅', () => {
     expect(getLineWidthAtZoom(layer, record({ _strokeWidth: 10, _zoom: 15 }), 15)).toBe(10);

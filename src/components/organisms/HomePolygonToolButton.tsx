@@ -45,18 +45,18 @@ export const HomePolygonToolButton = React.memo((props: Props) => {
       </View>
       <View style={styles.button}>
         <Button
-          id={'FREEHAND_POLYGON'}
-          name={POLYGONTOOL.FREEHAND_POLYGON}
+          id={'HANDWRITING_POLYGON'}
+          name={POLYGONTOOL.HANDWRITING_POLYGON}
           disabled={disabled}
           backgroundColor={
-            disabled ? COLOR.ALFAGRAY : currentDrawTool === 'FREEHAND_POLYGON' ? COLOR.ALFARED : COLOR.ALFABLUE
+            disabled ? COLOR.ALFAGRAY : currentDrawTool === 'HANDWRITING_POLYGON' ? COLOR.ALFARED : COLOR.ALFABLUE
           }
           borderRadius={10}
           onPress={() => {
-            setPolygonTool('FREEHAND_POLYGON');
-            selectDrawTool('FREEHAND_POLYGON');
+            setPolygonTool('HANDWRITING_POLYGON');
+            selectDrawTool('HANDWRITING_POLYGON');
           }}
-          labelText={t('Home.label.freehandPolygon')}
+          labelText={t('Home.label.handwritingPolygon')}
         />
       </View>
     </View>

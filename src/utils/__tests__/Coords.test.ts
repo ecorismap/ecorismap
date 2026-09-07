@@ -399,7 +399,7 @@ describe('modifyLineWithSource', () => {
     verify(original, result);
   });
 
-  it('FREEHAND_POLYGONで一周するストロークでも不変条件を満たす', () => {
+  it('HANDWRITING_POLYGONで一周するストロークでも不変条件を満たす', () => {
     const original = makeOriginal([
       [0, 0],
       [500, 0],
@@ -411,7 +411,7 @@ describe('modifyLineWithSource', () => {
       [500, 800],
       [100, 100],
     ];
-    const result = modifyLineWithSource(original as any, modified as any, 'FREEHAND_POLYGON', toLatLon as any);
+    const result = modifyLineWithSource(original as any, modified as any, 'HANDWRITING_POLYGON', toLatLon as any);
     expect(result.xy.length).toBeGreaterThan(0);
     verify(original, result);
   });

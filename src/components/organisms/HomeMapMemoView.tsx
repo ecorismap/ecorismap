@@ -120,7 +120,8 @@ const ARROW_DIRECTION_MIN_DISTANCE_PX = 10;
 
 //作図中・保存待ちの線に付ける矢印プレビュー。保存後に表示されるLineArrow(マーカー)と同じ形状・サイズを
 //スクリーン座標のSVGで描き、指を離して保存されるまでの間も矢印が途切れず見えるようにする
-const ArrowHeads = React.memo(
+//手書きペン（HomeSvgView）でも矢印・スタンプのプレビューを共用するためexportする
+export const ArrowHeads = React.memo(
   ({
     points,
     strokeColor,
@@ -185,7 +186,7 @@ const ArrowHeads = React.memo(
   }
 );
 
-const RenderStamp = React.memo(
+export const RenderStamp = React.memo(
   ({
     stampPos,
     currentMapMemoTool,

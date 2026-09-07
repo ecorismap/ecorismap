@@ -83,7 +83,7 @@ describe('isPlotTool', () => {
 describe('isFreehandTool', () => {
   it('returns true for freehand tools', () => {
     expect(isFreehandTool('FREEHAND_LINE')).toBe(true);
-    expect(isFreehandTool('FREEHAND_POLYGON')).toBe(true);
+    expect(isFreehandTool('FREEHAND_POLYGON')).toBe(false);
   });
 
   it('returns false for non-freehand tools', () => {

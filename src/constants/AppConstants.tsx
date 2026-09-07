@@ -207,12 +207,13 @@ export const POINTTOOL = {
 export const LINETOOL = {
   PLOT_LINE: 'vector-line',
   FREEHAND_LINE: 'draw',
+  HANDWRITING_LINE: 'draw-pen',
   SPLIT_LINE: 'content-cut',
 } as const;
 
 export const POLYGONTOOL = {
   PLOT_POLYGON: 'vector-rectangle',
-  FREEHAND_POLYGON: 'draw',
+  HANDWRITING_POLYGON: 'draw-pen',
 } as const;
 
 export const INFOTOOL = {

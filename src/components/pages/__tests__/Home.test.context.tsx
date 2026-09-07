@@ -78,6 +78,13 @@ export const mockDrawingToolsContextValue: DrawingToolsContextType = {
   setLineTool: jest.fn() as React.Dispatch<React.SetStateAction<any>>,
   setPolygonTool: jest.fn() as React.Dispatch<React.SetStateAction<any>>,
 
+  //個別色レイヤ
+  isIndividualStyleLayer: false,
+  //手書きペンのサブツールと設定モーダル
+  handwritingSubTool: 'PEN',
+  setHandwritingSubTool: jest.fn() as React.Dispatch<React.SetStateAction<any>>,
+  openHandwritingSettingsTab: jest.fn(),
+
   // Drawing actions
   onDragEndPoint: jest.fn().mockResolvedValue(undefined),
   pressUndoDraw: jest.fn().mockResolvedValue(undefined),
@@ -172,6 +179,7 @@ export const mockSVGDrawingContextValue: SVGDrawingContextType = {
   drawLine: { current: [] },
   editingLine: { current: [] },
   selectLine: { current: [] },
+  featuresTransformAngle: { current: 0 },
 
   // MapMemo SVG data
   mapMemoEditingLine: [],
@@ -216,6 +224,7 @@ export const mockMapMemoContextValue: MapMemoContextType = {
   visibleMapMemoColor: false,
   currentPenWidth: 'PEN_THIN',
   penColor: '#000000',
+  colorPickerColor: '#000000',
   penWidth: 1,
   isPencilModeActive: false,
   isUndoable: false,

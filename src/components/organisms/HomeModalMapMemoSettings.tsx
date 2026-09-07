@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, Modal, ScrollView } from 'react-native';
 import { BRUSH, COLOR, PEN_STYLE, PEN_WIDTH, STAMP } from '../../constants/AppConstants';
 import { t } from '../../i18n/config';
-import { ArrowStyleType, MapMemoToolGroupType, MapMemoToolType, PenWidthType } from '../../types';
+import { ArrowStyleType, HandwritingSubToolType, MapMemoToolGroupType, MapMemoToolType, PenWidthType } from '../../types';
 import Button from '../atoms/Button';
 import { CheckBox } from '../molecules/CheckBox';
 import { Pressable } from '../atoms/Pressable';
@@ -11,6 +11,12 @@ import { isBrushTool, isEraserTool, isStampTool } from '../../utils/General';
 
 interface Props {
   visible: boolean;
+  //MEMO=マップメモ（従来）、DRAW_LINE=LINEタブの手書きペン用。
+  //手書きペン用ではツール切替せずhandwritingSubToolだけを設定する（切替するとcurrentDrawToolが解除されるため）
+  //ポリゴン手書きは太さ・色をツールバー側で直接設定するためモーダルは使わない
+  mode?: 'MEMO' | 'DRAW_LINE';
+  handwritingSubTool?: HandwritingSubToolType;
+  selectHandwritingSubTool?: (tool: HandwritingSubToolType) => void;
   tab: MapMemoToolGroupType;
   currentMapMemoTool: MapMemoToolType;
   currentPenWidth: PenWidthType;
@@ -26,7 +32,7 @@ interface Props {
   close: () => void;
 }
 
-const TABS: { key: MapMemoToolGroupType; labelKey: string }[] = [
+const ALL_TABS: { key: MapMemoToolGroupType; labelKey: string }[] = [
   { key: 'PEN', labelKey: 'Home.label.pen' },
   { key: 'STAMP', labelKey: 'Home.label.stamp' },
   { key: 'BRUSH', labelKey: 'Home.label.brush' },
@@ -53,6 +59,9 @@ const CONTENT_HEIGHT = 330;
 export const HomeModalMapMemoSettings = React.memo((props: Props) => {
   const {
     visible,
+    mode = 'MEMO',
+    handwritingSubTool,
+    selectHandwritingSubTool,
     tab,
     currentMapMemoTool,
     currentPenWidth,
@@ -69,6 +78,9 @@ export const HomeModalMapMemoSettings = React.memo((props: Props) => {
   } = props;
   const { hisyouTool } = useFeatureFlags();
 
+  //手書きペン用は消しゴムタブを出さない（セッション内の取り消しはUndoで行う）
+  const visibleTabs = mode === 'DRAW_LINE' ? ALL_TABS.filter(({ key }) => key !== 'ERASER') : ALL_TABS;
+
   //各タブのローカル編集state（OKで確定）
   const [penWidth, setPenWidth] = useState<PenWidthType>('PEN_MEDIUM');
   const [arrowStyle_, setArrowStyle] = useState<ArrowStyleType>('NONE');
@@ -84,13 +96,32 @@ export const HomeModalMapMemoSettings = React.memo((props: Props) => {
       setArrowStyle(arrowStyle);
       setStraightStyle(isStraightStyle);
       setSnapped(snapWithLine);
-      setStampSel(isStampTool(currentMapMemoTool) ? currentMapMemoTool : undefined);
-      setBrushSel(isBrushTool(currentMapMemoTool) ? currentMapMemoTool : undefined);
+      const selectionSource = mode === 'MEMO' ? currentMapMemoTool : handwritingSubTool ?? 'PEN';
+      setStampSel(isStampTool(selectionSource) ? (selectionSource as MapMemoToolType) : undefined);
+      setBrushSel(isBrushTool(selectionSource) ? (selectionSource as MapMemoToolType) : undefined);
       setEraserSel(isEraserTool(currentMapMemoTool) ? currentMapMemoTool : 'PEN_ERASER');
     }
-  }, [visible, arrowStyle, currentMapMemoTool, currentPenWidth, isStraightStyle, snapWithLine]);
+  }, [visible, arrowStyle, currentMapMemoTool, currentPenWidth, isStraightStyle, snapWithLine, mode, handwritingSubTool]);
 
   const handleOK = () => {
+    if (mode !== 'MEMO') {
+      //手書きペン: マップメモのツールは切り替えず、サブツールと共有の描画設定だけを反映する
+      if (tab === 'PEN') {
+        selectHandwritingSubTool?.('PEN');
+        selectMapMemoPenWidth(penWidth);
+        selectMapMemoArrowStyle(arrowStyle_);
+        selectMapMemoStraightStyle(straightStyle);
+      } else if (tab === 'STAMP') {
+        if (stampSel !== undefined) {
+          selectHandwritingSubTool?.(stampSel as HandwritingSubToolType);
+          selectMapMemoSnapWithLine(snapped);
+        }
+      } else if (tab === 'BRUSH') {
+        if (brushSel !== undefined) selectHandwritingSubTool?.(brushSel as HandwritingSubToolType);
+      }
+      close();
+      return;
+    }
     if (tab === 'PEN') {
       selectMapMemoTool('PEN');
       selectMapMemoPenWidth(penWidth);
@@ -248,7 +279,7 @@ export const HomeModalMapMemoSettings = React.memo((props: Props) => {
       <Pressable style={styles.overlay} onPress={close} disablePressedAnimation>
         <Pressable style={styles.card} onPress={() => {}} disablePressedAnimation>
           <View style={styles.segmentContainer}>
-            {TABS.map(({ key, labelKey }) => (
+            {visibleTabs.map(({ key, labelKey }) => (
               <Pressable
                 key={key}
                 style={[styles.segment, tab === key && styles.segmentActive]}

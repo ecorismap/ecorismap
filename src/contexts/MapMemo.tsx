@@ -17,6 +17,8 @@ export interface MapMemoContextType {
   visibleMapMemoColor: boolean;
   currentPenWidth: PenWidthType;
   penColor: string;
+  //色ピッカーの初期色。単一オブジェクト選択中はそのオブジェクトの色（プロパティパネル方式）
+  colorPickerColor: string;
   penWidth: number;
   isPencilModeActive: boolean;
   isUndoable: boolean;
@@ -43,6 +45,7 @@ export const MapMemoContext = createContext<MapMemoContextType>({
   visibleMapMemoColor: false,
   currentPenWidth: 'PEN_THIN',
   penColor: '#000000',
+  colorPickerColor: '#000000',
   penWidth: 1,
   isPencilModeActive: false,
   isUndoable: false,

@@ -16,7 +16,7 @@ export function isPlotTool(tool: string) {
 }
 
 export function isFreehandTool(tool: string) {
-  return ['FREEHAND_LINE', 'FREEHAND_POLYGON'].includes(tool);
+  return tool === 'FREEHAND_LINE';
 }
 
 export function isPointTool(tool: string): tool is PointToolType {
@@ -116,6 +116,10 @@ export function isStampTool(tool: string) {
 }
 export function isEraserTool(tool: string) {
   return Object.keys(ERASER).includes(tool);
+}
+
+export function isHandwritingTool(tool: string) {
+  return tool === 'HANDWRITING_LINE' || tool === 'HANDWRITING_POLYGON';
 }
 
 export function isMapMemoDrawTool(tool: string) {

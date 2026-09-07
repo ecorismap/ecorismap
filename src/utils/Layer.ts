@@ -11,6 +11,23 @@ import dayjs from '../i18n/dayjs';
  * マップメモのペン使用時にINDIVIDUALへ切り替えた際、ラベル設定はcolorStyleへ退避してある。
  * カラータイプが戻された時点でラベルを復元する（色分けフィールドの復元はuseFeatureStyle側で行う）。
  */
+//レイヤの色分け設定をINDIVIDUAL（ストローク個別色）へ切り替える。
+//元の設定はsaved*へ退避し、カラータイプを戻したときに復元できるようにする。
+//ストロークごとにラベルが出ると描画の邪魔になるのでラベルも非表示にする
+export const toIndividualColorLayer = (layer: LayerType): LayerType => ({
+  ...layer,
+  colorStyle: {
+    ...layer.colorStyle,
+    colorType: 'INDIVIDUAL' as const,
+    fieldName: '__CUSTOM',
+    customFieldValue: '_strokeColor',
+    savedFieldName: layer.colorStyle.fieldName,
+    savedCustomFieldValue: layer.colorStyle.customFieldValue,
+    savedLabel: layer.label,
+  },
+  label: '',
+});
+
 export const applyColorStyle = (layer: LayerType, colorStyle: ColorStyle): LayerType => {
   if (colorStyle.savedLabel === undefined || colorStyle.colorType === 'INDIVIDUAL') {
     return { ...layer, colorStyle };
@@ -21,12 +38,14 @@ export const applyColorStyle = (layer: LayerType, colorStyle: ColorStyle): Layer
 
 /**
  * 線の太さを決める。
- * _strokeWidthはマップメモが描画時に記録する太さで、レコード自身の値なのでレイヤ一律の太さより優先する。
- * 色と違い「凡例による意味づけ」と競合しないため、colorTypeには依存させない。
+ * ストロークごとの太さ（_strokeWidth）は色分けが「個別」のレイヤでのみ使う。
+ * それ以外のスタイルではレイヤ一律の太さ（デフォルト）に従う。
  */
 export const getLineWidth = (layer: LayerType, feature: RecordType): number => {
   //エクスポート済みGeoJSONの再インポートでは_strokeWidthが空文字のことがあるため、数値のみ採用する
-  if (typeof feature.field._strokeWidth === 'number') return feature.field._strokeWidth;
+  if (layer.colorStyle.colorType === 'INDIVIDUAL' && typeof feature.field._strokeWidth === 'number') {
+    return feature.field._strokeWidth;
+  }
   return layer.colorStyle.lineWidth ?? 1.5;
 };
 
@@ -39,6 +58,8 @@ export const getLineWidth = (layer: LayerType, feature: RecordType): number => {
  */
 export const getLineWidthAtZoom = (layer: LayerType, feature: RecordType, zoom: number): number => {
   const width = getLineWidth(layer, feature);
+  //レイヤ一律の太さ（個別以外）はズーム連動させない
+  if (layer.colorStyle.colorType !== 'INDIVIDUAL') return width;
   const drawnZoom = feature.field._zoom;
   if (typeof drawnZoom !== 'number' || drawnZoom <= 0) return width;
   if (zoom >= drawnZoom) return width;

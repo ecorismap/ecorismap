@@ -67,7 +67,6 @@ const createTestStore = (initialRecords: RecordType[] = []) => {
           LINETOOL_PLOT_LINE: true,
           LINETOOL_FREEHAND_LINE: true,
           POLYGONTOOL_PLOT_POLYGON: true,
-          POLYGONTOOL_FREEHAND_POLYGON: true,
           SELECTIONTOOL: true,
           INFOTOOL: true,
           LAYERS_BTN_IMPORT: true,

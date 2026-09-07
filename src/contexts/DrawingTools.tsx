@@ -2,7 +2,10 @@ import React from 'react';
 import {
   DrawToolType,
   FeatureButtonType,
+  HandwritingSubToolType,
   LayerType,
+  MapMemoToolGroupType,
+  PenWidthType,
   RecordType,
   PointToolType,
   LineToolType,
@@ -88,6 +91,15 @@ export interface DrawingToolsContextType {
   // Editing layer chip (toolbar)
   editingLayerName: string | undefined;
   pressEditingLayerButton: () => Promise<void>;
+
+  //アクティブレイヤの色分けが「個別（_strokeColor参照）」か。trueなら色・太さボタンを常時表示する
+  isIndividualStyleLayer: boolean;
+  //単一オブジェクト選択中の太さ。太さパレットを開くときの初期値にする（プロパティパネル方式）
+  selectedObjectWidthType?: PenWidthType;
+  //手書きペンのサブツール（ペン/スタンプ/ブラシ）と設定モーダルの起動
+  handwritingSubTool: HandwritingSubToolType;
+  setHandwritingSubTool: React.Dispatch<React.SetStateAction<HandwritingSubToolType>>;
+  openHandwritingSettingsTab: (tab: MapMemoToolGroupType) => void;
 
   // Backward compatibility (to be deprecated gradually)
   isEditingDraw: boolean;

@@ -200,7 +200,7 @@ export default function HomeScreen() {
   const {
     currentMapMemoTool,
     visibleMapMemoColor,
-    penColor,
+    colorPickerColor,
     isPencilModeActive,
     setVisibleMapMemoColor,
     selectPenColor,
@@ -548,7 +548,7 @@ export default function HomeScreen() {
             ))}
           <Loading visible={isLoading} text="" />
           <HomeModalColorPicker
-            color={penColor}
+            color={colorPickerColor}
             modalVisible={visibleMapMemoColor}
             withAlpha={true}
             pressSelectColorOK={selectPenColor}

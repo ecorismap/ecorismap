@@ -1,13 +1,16 @@
 import React, { useContext } from 'react';
 import { Platform, View } from 'react-native';
 
-import Svg, { G, Path, Circle, Rect, Line } from 'react-native-svg';
-import { pointsToSvg, getPointsTransformFrame } from '../../utils/Coords';
+import Svg, { G, Path, Circle, Line, Polygon } from 'react-native-svg';
+import { pointsToSvg, getRotatedPointsTransformFrame } from '../../utils/Coords';
 import { ulid } from 'ulid';
 import { COLOR } from '../../constants/AppConstants';
-import { isFreehandTool, isPlotTool, isPolygonTool } from '../../utils/General';
+import { isBrushTool, isFreehandTool, isHandwritingTool, isPlotTool, isPolygonTool } from '../../utils/General';
 import { DrawingToolsContext } from '../../contexts/DrawingTools';
+import { MapMemoContext } from '../../contexts/MapMemo';
 import { SVGDrawingContext } from '../../contexts/SVGDrawing';
+import { ArrowHeads, RenderStamp } from './HomeMapMemoView';
+import { ArrowStyleType, MapMemoToolType } from '../../types';
 
 // 頂点マーカーは markerStart/markerMid/markerEnd（ネイティブMarker定義）を使わず、
 // 各頂点に図形を直接描画する。理由:
@@ -62,7 +65,9 @@ const renderVertexMarkers = (
 
 export const SvgView = React.memo(() => {
   const { currentDrawTool, isEditingObject, isAreaSelected } = useContext(DrawingToolsContext);
-  const { drawLine, editingLine, selectLine } = useContext(SVGDrawingContext);
+  const { drawLine, editingLine, selectLine, featuresTransformAngle } = useContext(SVGDrawingContext);
+  //手書きペンの描画中ストローク（release前でstyle未確定）を現在のペン設定で表示するために参照する
+  const { penColor, penWidth } = useContext(MapMemoContext);
 
   // New Architecture（Fabric）のiOSでは、同じSvgインスタンス内の子要素をRef駆動（drawLine.current）で
   // 更新しても再描画されないため、内容が変わる境界でSvgを再マウントして反映させる。
@@ -73,7 +78,7 @@ export const SvgView = React.memo(() => {
   const iosRemountKey =
     Platform.OS !== 'ios'
       ? undefined
-      : isFreehandTool(currentDrawTool)
+      : isFreehandTool(currentDrawTool) || isHandwritingTool(currentDrawTool)
       ? drawLine.current.length === 0
         ? 'svg-empty'
         : 'svg-draw'
@@ -95,7 +100,73 @@ export const SvgView = React.memo(() => {
     >
       <Svg width="100%" height="100%" preserveAspectRatio="none">
         <G key={iosRemountKey}>
-        {drawLine.current.map(({ xy, properties }: { xy: any; properties: any }, idx: number) => {
+        {drawLine.current.map((line: any, idx: number) => {
+          const { xy, properties } = line;
+
+          //手書きペンのストロークは描いたスタイル（色・太さ・矢印・スタンプ・塗り）でプレビューする
+          if (properties.includes('HANDWRITING')) {
+            const style = line.style;
+            //release前（style未確定）の描画中ストロークは現在のペン設定で表示する
+            const strokeColor = style?.strokeColor ?? penColor;
+            const strokeWidth = style?.strokeWidth ?? penWidth;
+            if (style !== undefined && style.stamp !== '') {
+              return (
+                <G key={ulid()}>
+                  <RenderStamp
+                    stampPos={xy.length > 0 ? { x: xy[0][0], y: xy[0][1] } : undefined}
+                    currentMapMemoTool={style.stamp as MapMemoToolType}
+                    strokeColor={strokeColor}
+                  />
+                </G>
+              );
+            }
+            //ポリゴンは塗りに加えて、外枠を従来の編集スタイルと同じ縁取り線で描いて境界を見やすくする。
+            //長押しで修正対象が確定したストロークはオレンジの縁取りに変えて分かるようにする
+            if (currentDrawTool === 'HANDWRITING_POLYGON') {
+              const isModifying = properties.includes('MODIFYING');
+              return (
+                <G key={ulid()}>
+                  <Path d={pointsToSvg(xy)} stroke="none" fill={strokeColor} />
+                  <Path
+                    d={pointsToSvg(xy)}
+                    stroke={isModifying ? 'darkorange' : 'blue'}
+                    strokeWidth={isModifying ? 5 : 4}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    fill="none"
+                  />
+                  <Path
+                    d={pointsToSvg(xy)}
+                    stroke={isModifying ? 'yellow' : 'lightblue'}
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    fill="none"
+                  />
+                </G>
+              );
+            }
+            //ブラシは確定（一括保存）後に記号として描画されるため、セッション中はなぞった線で示す
+            const isBrushStroke = style !== undefined && isBrushTool(style.strokeStyle);
+            const arrowStyle = (style?.strokeStyle || 'NONE') as ArrowStyleType;
+            return (
+              <G key={ulid()}>
+                <Path
+                  d={pointsToSvg(xy)}
+                  stroke={strokeColor}
+                  strokeWidth={isBrushStroke ? 2 : strokeWidth}
+                  strokeDasharray={isBrushStroke ? '4,4' : 'none'}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  fill="none"
+                />
+                {!isBrushStroke && (arrowStyle === 'ARROW_END' || arrowStyle === 'ARROW_BOTH') && (
+                  <ArrowHeads points={xy} strokeColor={strokeColor} strokeWidth={strokeWidth} arrowStyle={arrowStyle} />
+                )}
+              </G>
+            );
+          }
+
           // フリーハンドツールの場合はマーカーを表示しない
           const isFreehand = isFreehandTool(currentDrawTool);
 
@@ -176,7 +247,11 @@ export const SvgView = React.memo(() => {
           drawLine.current.length >= 1 &&
           drawLine.current.every((line) => line.xy.length > 0) &&
           (() => {
-            const frame = getPointsTransformFrame(drawLine.current.flatMap((line) => line.xy));
+            //回転してもボックスが形を保ったままオブジェクトと一緒に回るよう、累積回転角つきで枠を求める
+            const frame = getRotatedPointsTransformFrame(
+              drawLine.current.flatMap((line) => line.xy),
+              featuresTransformAngle.current ?? 0
+            );
             const [hx, hy] = frame.handle;
             //地図移動(MOVE)中はジェスチャが地図に取られるため回転ハンドルを隠す。
             //単一ポイントは回転しても変化しないためハンドルを出さない
@@ -184,11 +259,8 @@ export const SvgView = React.memo(() => {
             const showHandle = currentDrawTool !== 'MOVE' && !isSinglePoint;
             return (
               <G>
-                <Rect
-                  x={frame.minX}
-                  y={frame.minY}
-                  width={frame.maxX - frame.minX}
-                  height={frame.maxY - frame.minY}
+                <Polygon
+                  points={frame.corners.map((c) => c.join(',')).join(' ')}
                   stroke={COLOR.BLUE}
                   strokeWidth="1.5"
                   strokeDasharray="4,4"
@@ -196,7 +268,7 @@ export const SvgView = React.memo(() => {
                 />
                 {showHandle && (
                   <G>
-                    <Line x1={frame.center[0]} y1={frame.minY} x2={hx} y2={hy} stroke={COLOR.BLUE} strokeWidth="1.5" />
+                    <Line x1={frame.topMid[0]} y1={frame.topMid[1]} x2={hx} y2={hy} stroke={COLOR.BLUE} strokeWidth="1.5" />
                     <Circle cx={hx} cy={hy} r={14} fill={COLOR.BLUE} stroke="white" strokeWidth="2" />
                     {/* 回転を示す円弧矢印 */}
                     <Path

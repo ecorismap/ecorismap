@@ -551,6 +551,30 @@ export type DrawLineType = {
   xy: Position[];
   latlon: Position[];
   properties: string[];
+  style?: DrawLineStyleType;
+};
+
+//手書きペン（HANDWRITING_LINE/HANDWRITING_POLYGON）のストローク個別スタイル。
+//保存時に_strokeColor等の隠しフィールドへ書き込まれ、マップメモのレコードと互換になる
+export type DrawLineStyleType = {
+  strokeColor: string;
+  strokeWidth: number;
+  strokeStyle: string; //矢印スタイル(ArrowStyleType) or ブラシ種別 or ''
+  stamp: string; //スタンプ種別 or ''
+  zoom: number;
+  groupId?: string; //スナップ先。セッション内ストロークのid or 保存済みレコードのid
+};
+
+//手書きペンのサブツール（LINEタブのみSTAMP/BRUSHを許可）
+export type HandwritingSubToolType = 'PEN' | StampType | BrushType;
+
+//手書きペンの描画スタイル（containerがマップメモの設定値から組み立てて渡す）
+export type HandwritingPenStyleType = {
+  strokeColor: string;
+  strokeWidth: number;
+  arrowStyle: ArrowStyleType;
+  isStraightStyle: boolean;
+  snapWithLine: boolean;
 };
 export type UndoLineType = { index: number; latlon: Position[]; latlonList?: Position[][]; action: UndoActionType };
 

@@ -35,6 +35,8 @@ jest.mock('../../utils/Coords', () => ({
   checkDistanceFromLine: jest.fn(() => ({ isNear: false, distance: 9999 })),
   findNearNodeIndex: jest.fn(() => -1),
   getSnappedPositionWithLine: jest.fn(() => ({ position: [0, 0], distance: 0, index: 0 })),
+  getSnappedLine: jest.fn((start: [number, number], end: [number, number]) => [start, end]),
+  refineArrowStroke: jest.fn((xy: [number, number][]) => xy),
   isClosedPolygon: jest.fn(
     (xy: [number, number][]) =>
       xy.length > 2 && xy[0][0] === xy[xy.length - 1][0] && xy[0][1] === xy[xy.length - 1][1]
@@ -59,6 +61,27 @@ jest.mock('../../utils/Coords', () => ({
     const maxY = Math.max(...ys) + pad;
     const center = [(minX + maxX) / 2, (minY + maxY) / 2];
     return { minX, maxX, minY, maxY, center, handle: [center[0], minY - 40] };
+  }),
+  getRotatedPointsTransformFrame: jest.fn((points: [number, number][]) => {
+    const xs = points.map((p) => p[0]);
+    const ys = points.map((p) => p[1]);
+    const pad = 20;
+    const minX = Math.min(...xs) - pad;
+    const maxX = Math.max(...xs) + pad;
+    const minY = Math.min(...ys) - pad;
+    const maxY = Math.max(...ys) + pad;
+    const center = [(minX + maxX) / 2, (minY + maxY) / 2];
+    return {
+      corners: [
+        [minX, minY],
+        [maxX, minY],
+        [maxX, maxY],
+        [minX, maxY],
+      ],
+      center,
+      topMid: [center[0], minY],
+      handle: [center[0], minY - 40],
+    };
   }),
 }));
 
@@ -135,6 +158,8 @@ import {
   selectLineFeaturesByArea,
   checkDistanceFromLine,
   findNearNodeIndex,
+  isValidLine,
+  modifyLineWithSource,
   xyArrayToLatLonArray,
 } from '../../utils/Coords';
 import { LayerType, LineRecordType, PointRecordType, RecordType } from '../../types';
@@ -164,6 +189,17 @@ const mockPointLayer = {
   id: 'layer2',
   name: 'ポイントレイヤー',
   type: 'POINT',
+} as unknown as LayerType;
+
+//色分けが「個別（_strokeColor参照）」のレイヤ。手書きの色・太さはこのレイヤでのみ書き込まれる
+const mockIndividualLineLayer = {
+  ...mockLineLayer,
+  colorStyle: {
+    ...(mockLineLayer as any).colorStyle,
+    colorType: 'INDIVIDUAL',
+    fieldName: '__CUSTOM',
+    customFieldValue: '_strokeColor',
+  },
 } as unknown as LayerType;
 
 const mockLineRecord = {
@@ -276,12 +312,12 @@ describe('useDrawTool', () => {
       act(() => {
         result.current.setPointTool('ADD_LOCATION_POINT');
         result.current.setLineTool('FREEHAND_LINE');
-        result.current.setPolygonTool('FREEHAND_POLYGON');
+        result.current.setPolygonTool('HANDWRITING_POLYGON');
       });
 
       expect(result.current.currentPointTool).toBe('ADD_LOCATION_POINT');
       expect(result.current.currentLineTool).toBe('FREEHAND_LINE');
-      expect(result.current.currentPolygonTool).toBe('FREEHAND_POLYGON');
+      expect(result.current.currentPolygonTool).toBe('HANDWRITING_POLYGON');
     });
   });
 
@@ -298,7 +334,7 @@ describe('useDrawTool', () => {
 
       expect(result.current.drawLine.current).toHaveLength(1);
       expect(result.current.drawLine.current[0].xy).toEqual([[10, 10]]);
-      expect(result.current.drawLine.current[0].properties).toContain('EDIT');
+      expect(result.current.drawLine.current[0].properties).not.toContain('HANDWRITING');
     });
 
     it('PLOT_LINEで2回目のタッチはノードを追加する', () => {
@@ -459,7 +495,7 @@ describe('useDrawTool', () => {
       });
 
       expect(result.current.isEditingObject).toBe(true);
-      expect(result.current.drawLine.current[0].properties).toContain('EDIT');
+      expect(result.current.drawLine.current[0].properties).not.toContain('HANDWRITING');
     });
   });
 
@@ -798,7 +834,7 @@ describe('useDrawTool', () => {
 
       expect(result.current.drawLine.current).toHaveLength(1);
       expect(result.current.drawLine.current[0].record).toBe(mockLineRecord);
-      expect(result.current.drawLine.current[0].properties).toContain('EDIT');
+      expect(result.current.drawLine.current[0].properties).not.toContain('HANDWRITING');
       expect(result.current.currentDrawTool).toBe('PLOT_LINE');
       expect(result.current.isEditingDraw).toBe(true);
       expect(result.current.isEditingObject).toBe(true);
@@ -1700,6 +1736,937 @@ describe('useDrawTool', () => {
       });
 
       expect(result.current.isTerrainActive).toBe(false);
+    });
+  });
+
+  describe('手書きペン（HANDWRITING）セッション', () => {
+    const penStyle = {
+      strokeColor: 'rgba(255,0,0,0.7)',
+      strokeWidth: 5,
+      arrowStyle: 'NONE' as const,
+      isStraightStyle: false,
+      snapWithLine: true,
+    };
+
+    const startHandwritingLine = (result: any) => {
+      act(() => {
+        result.current.setFeatureButton('LINE');
+      });
+      act(() => {
+        result.current.setDrawTool('HANDWRITING_LINE');
+      });
+    };
+
+    const drawPenStroke = (result: any, points: [number, number][]) => {
+      act(() => {
+        result.current.handleGrantHandwriting(points[0], penStyle);
+      });
+      points.slice(1).forEach((p) => {
+        act(() => {
+          result.current.handleMoveHandwriting(p, 0);
+        });
+      });
+      act(() => {
+        result.current.handleReleaseHandwriting();
+      });
+    };
+
+    it('ペンで複数ストロークを描きためられる（スタイル付き・確定バー維持）', () => {
+      const { result } = renderDrawTool();
+      startHandwritingLine(result);
+
+      drawPenStroke(result, [
+        [0, 0],
+        [10, 0],
+        [20, 0],
+      ]);
+      drawPenStroke(result, [
+        [0, 10],
+        [10, 10],
+      ]);
+      drawPenStroke(result, [
+        [0, 20],
+        [10, 20],
+      ]);
+
+      expect(result.current.drawLine.current).toHaveLength(3);
+      const line = result.current.drawLine.current[0];
+      expect(line.properties).toEqual(['HANDWRITING']);
+      expect(line.style).toMatchObject({
+        strokeColor: 'rgba(255,0,0,0.7)',
+        strokeWidth: 5,
+        strokeStyle: 'NONE',
+        stamp: '',
+        zoom: 15,
+      });
+      expect(result.current.isEditingObject).toBe(true);
+      expect(result.current.isEditingDraw).toBe(true);
+    });
+
+    it('saveLineで全ストロークが隠しフィールド付きで一括保存される', () => {
+      mockGetEditableLayerAndRecordSetWithCheck.mockReturnValue({
+        isOK: true,
+        message: '',
+        layer: mockIndividualLineLayer,
+        recordSet: [],
+      });
+      const { result } = renderDrawTool();
+      startHandwritingLine(result);
+
+      drawPenStroke(result, [
+        [0, 0],
+        [10, 0],
+      ]);
+      drawPenStroke(result, [
+        [0, 10],
+        [10, 10],
+      ]);
+
+      let saveResult;
+      act(() => {
+        saveResult = result.current.saveLine();
+      });
+
+      expect(saveResult!.isOK).toBe(true);
+      expect(mockAddRecord).toHaveBeenCalledTimes(2);
+      const saved = mockAddRecord.mock.calls.map((c) => c[1] as RecordType);
+      expect(saved[0].field._strokeColor).toBe('rgba(255,0,0,0.7)');
+      expect(saved[0].field._strokeWidth).toBe(5);
+      expect(saved[0].field._strokeStyle).toBe('NONE');
+      expect(saved[0].field._stamp).toBe('');
+      expect(saved[0].field._group).toBe('');
+      expect(saved[0].field._zoom).toBe(15);
+      //保存後はセッションがリセットされる
+      expect(result.current.drawLine.current).toHaveLength(0);
+      expect(result.current.isEditingObject).toBe(false);
+    });
+
+    it('スタンプはペンストロークにスナップして_groupで紐づく', () => {
+      const { result } = renderDrawTool();
+      startHandwritingLine(result);
+      //スタンプ（1点ライン）を保存できるよう実実装と同じ判定にする
+      (isValidLine as jest.Mock).mockImplementation((xy: unknown[]) => xy.length >= 1);
+      //レコードIDを一意にして_group解決を検証する
+      let recordCount = 0;
+      mockGenerateRecord.mockImplementation(
+        (_featureType: string, _layer: LayerType, _recordSet: RecordType[], coords: unknown) => ({
+          id: `record-${++recordCount}`,
+          userId: 'user1',
+          displayName: 'tester',
+          visible: true,
+          redraw: false,
+          coords,
+          field: {},
+        })
+      );
+
+      //親となるペンストローク
+      drawPenStroke(result, [
+        [0, 0],
+        [10, 0],
+      ]);
+      const parentSessionId = result.current.drawLine.current[0].id;
+
+      //スタンプ（スナップあり）
+      (checkDistanceFromLine as jest.Mock).mockReturnValue({ isNear: true, distance: 1 });
+      act(() => {
+        result.current.setHandwritingSubTool('TOMARI');
+      });
+      act(() => {
+        result.current.handleGrantHandwriting([5, 0], penStyle);
+      });
+      act(() => {
+        result.current.handleReleaseHandwriting();
+      });
+
+      expect(result.current.drawLine.current).toHaveLength(2);
+      const stamp = result.current.drawLine.current[1];
+      expect(stamp.style?.stamp).toBe('TOMARI');
+      expect(stamp.style?.groupId).toBe(parentSessionId);
+
+      //一括保存で親が先に保存され、子の_groupが親のレコードIDに解決される
+      let saveResult;
+      act(() => {
+        saveResult = result.current.saveLine();
+      });
+      expect(saveResult!.isOK).toBe(true);
+      const saved = mockAddRecord.mock.calls.map((c) => c[1] as RecordType);
+      expect(saved).toHaveLength(2);
+      expect(saved[0].field._group).toBe('');
+      expect(saved[1].field._stamp).toBe('TOMARI');
+      expect(saved[1].field._group).toBe(saved[0].id);
+      //generateRecordにgroupIdオプションが渡り、属性継承が効く
+      const childCall = mockGenerateRecord.mock.calls[1];
+      expect(childCall[4]).toEqual({ groupId: saved[0].id });
+    });
+
+    it('ブラシはスナップできないと描けない', () => {
+      const { result } = renderDrawTool();
+      startHandwritingLine(result);
+      (checkDistanceFromLine as jest.Mock).mockReturnValue({ isNear: false, distance: 9999 });
+
+      act(() => {
+        result.current.setHandwritingSubTool('SENKAI');
+      });
+      act(() => {
+        result.current.handleGrantHandwriting([5, 0], penStyle);
+      });
+      act(() => {
+        result.current.handleReleaseHandwriting();
+      });
+
+      expect(result.current.drawLine.current).toHaveLength(0);
+    });
+
+    it('undoで1ストロークずつ戻り、残りがあれば確定バーが維持される', () => {
+      const { result } = renderDrawTool();
+      startHandwritingLine(result);
+
+      drawPenStroke(result, [
+        [0, 0],
+        [10, 0],
+      ]);
+      drawPenStroke(result, [
+        [0, 10],
+        [10, 10],
+      ]);
+
+      act(() => {
+        result.current.undoDraw();
+      });
+      expect(result.current.drawLine.current).toHaveLength(1);
+      //残りのストロークがあるため編集状態（確定バー）は維持される
+      expect(result.current.isEditingObject).toBe(true);
+
+      //redoでストロークがスタイルごと復元される
+      act(() => {
+        result.current.redoDraw();
+      });
+      expect(result.current.drawLine.current).toHaveLength(2);
+      expect(result.current.drawLine.current[1].style?.strokeColor).toBe('rgba(255,0,0,0.7)');
+
+      //最後まで戻すと状態ごとリセットされる
+      act(() => {
+        result.current.undoDraw();
+      });
+      act(() => {
+        result.current.undoDraw();
+      });
+      expect(result.current.drawLine.current).toHaveLength(0);
+      expect(result.current.currentDrawTool).toBe('NONE');
+    });
+
+    it('resetDrawTools（キャンセル）で全ストロークが破棄される', () => {
+      const { result } = renderDrawTool();
+      startHandwritingLine(result);
+
+      drawPenStroke(result, [
+        [0, 0],
+        [10, 0],
+      ]);
+      drawPenStroke(result, [
+        [0, 10],
+        [10, 10],
+      ]);
+
+      act(() => {
+        result.current.resetDrawTools();
+      });
+      expect(result.current.drawLine.current).toHaveLength(0);
+      expect(result.current.isEditingObject).toBe(false);
+    });
+
+    it('手書きポリゴンは閉じて隠しフィールド付きで保存される', () => {
+      const { result } = renderDrawTool();
+      act(() => {
+        result.current.setFeatureButton('POLYGON');
+      });
+      act(() => {
+        result.current.setDrawTool('HANDWRITING_POLYGON');
+      });
+      const mockPolygonLayer = { ...mockIndividualLineLayer, id: 'layer3', type: 'POLYGON' } as unknown as LayerType;
+      mockGetEditableLayerAndRecordSetWithCheck.mockReturnValue({
+        isOK: true,
+        message: '',
+        layer: mockPolygonLayer,
+        recordSet: [],
+      });
+
+      drawPenStroke(result, [
+        [0, 0],
+        [10, 0],
+        [10, 10],
+      ]);
+
+      let saveResult;
+      act(() => {
+        saveResult = result.current.savePolygon();
+      });
+      expect(saveResult!.isOK).toBe(true);
+      expect(mockAddRecord).toHaveBeenCalledTimes(1);
+      const saved = mockAddRecord.mock.calls[0][1] as RecordType;
+      expect(saved.field._strokeColor).toBe('rgba(255,0,0,0.7)');
+      expect(saved.field._stamp).toBe('');
+      //ポリゴンは閉じられている（closeFreehandPolygonSeamモックで始点が追記される）
+      expect((saved.coords as unknown[]).length).toBeGreaterThanOrEqual(4);
+    });
+
+    describe('手書きポリゴンの長押し→なぞり修正', () => {
+      const startHandwritingPolygon = (result: any) => {
+        act(() => {
+          result.current.setFeatureButton('POLYGON');
+        });
+        act(() => {
+          result.current.setDrawTool('HANDWRITING_POLYGON');
+        });
+      };
+
+      afterEach(() => {
+        jest.useRealTimers();
+      });
+
+      it('長押しで近くのストロークを修正でき、合成後に修正モードが解除される', () => {
+        jest.useFakeTimers();
+        const { result } = renderDrawTool();
+        startHandwritingPolygon(result);
+        (checkDistanceFromLine as jest.Mock).mockReturnValue({ isNear: false, distance: 9999 });
+
+        //1面目を描く
+        drawPenStroke(result, [
+          [0, 0],
+          [10, 0],
+          [10, 10],
+        ]);
+        expect(result.current.drawLine.current).toHaveLength(1);
+
+        //長押し（近くにストロークあり）で修正モードに入る
+        (checkDistanceFromLine as jest.Mock).mockReturnValue({ isNear: true, distance: 1 });
+        (modifyLineWithSource as jest.Mock).mockReturnValue({
+          xy: [
+            [0, 0],
+            [20, 0],
+            [20, 20],
+          ],
+          latlon: [
+            [0, 0],
+            [20, 0],
+            [20, 20],
+          ],
+          junctions: [],
+        });
+        act(() => {
+          result.current.handleGrantHandwriting([5, 0], penStyle);
+        });
+        act(() => {
+          jest.advanceTimersByTime(600);
+        });
+        //描きかけの新規ストロークは破棄され、対象1本だけが残る
+        expect(result.current.drawLine.current).toHaveLength(1);
+        //修正対象が確定したことを示すハイライトが付く
+        expect(result.current.drawLine.current[0].properties).toEqual(['HANDWRITING', 'MODIFYING']);
+
+        //なぞって離すと合成され、スタイルとpropertiesは保持される
+        act(() => {
+          result.current.handleMoveHandwriting([15, 5], 0);
+        });
+        act(() => {
+          result.current.handleReleaseHandwriting();
+        });
+        const line = result.current.drawLine.current[0];
+        expect(line.xy).toEqual([
+          [0, 0],
+          [20, 0],
+          [20, 20],
+        ]);
+        expect(line.properties).toEqual(['HANDWRITING']);
+        expect(line.style?.strokeColor).toBe('rgba(255,0,0,0.7)');
+
+        //修正モードは解除されており、次のタッチは新規ストロークになる
+        (checkDistanceFromLine as jest.Mock).mockReturnValue({ isNear: false, distance: 9999 });
+        drawPenStroke(result, [
+          [50, 50],
+          [60, 50],
+        ]);
+        expect(result.current.drawLine.current).toHaveLength(2);
+      });
+
+      it('修正をundoすると座標が戻り、修正モードには残らない', () => {
+        jest.useFakeTimers();
+        const { result } = renderDrawTool();
+        startHandwritingPolygon(result);
+        (checkDistanceFromLine as jest.Mock).mockReturnValue({ isNear: false, distance: 9999 });
+        drawPenStroke(result, [
+          [0, 0],
+          [10, 0],
+          [10, 10],
+        ]);
+
+        (checkDistanceFromLine as jest.Mock).mockReturnValue({ isNear: true, distance: 1 });
+        (modifyLineWithSource as jest.Mock).mockReturnValue({
+          xy: [
+            [0, 0],
+            [20, 0],
+          ],
+          latlon: [
+            [0, 0],
+            [20, 0],
+          ],
+          junctions: [],
+        });
+        act(() => {
+          result.current.handleGrantHandwriting([5, 0], penStyle);
+        });
+        act(() => {
+          jest.advanceTimersByTime(600);
+        });
+        act(() => {
+          result.current.handleMoveHandwriting([15, 5], 0);
+        });
+        act(() => {
+          result.current.handleReleaseHandwriting();
+        });
+        expect(result.current.drawLine.current[0].xy).toEqual([
+          [0, 0],
+          [20, 0],
+        ]);
+
+        //undoで修正前の座標に戻る（EDITアクション）。修正モードには入らない
+        act(() => {
+          result.current.undoDraw();
+        });
+        expect(result.current.drawLine.current[0].xy).toEqual([
+          [0, 0],
+          [10, 0],
+          [10, 10],
+        ]);
+        expect(result.current.isEditingObject).toBe(true);
+        //修正モードでないので次のタッチは新規ストローク
+        (checkDistanceFromLine as jest.Mock).mockReturnValue({ isNear: false, distance: 9999 });
+        drawPenStroke(result, [
+          [50, 50],
+          [60, 50],
+        ]);
+        expect(result.current.drawLine.current).toHaveLength(2);
+      });
+
+      it('近くにストロークが無い長押しは通常の描画を継続する', () => {
+        jest.useFakeTimers();
+        const { result } = renderDrawTool();
+        startHandwritingPolygon(result);
+        (checkDistanceFromLine as jest.Mock).mockReturnValue({ isNear: false, distance: 9999 });
+        drawPenStroke(result, [
+          [0, 0],
+          [10, 0],
+          [10, 10],
+        ]);
+
+        //離れた場所で長押し→そのまま描き続ける
+        act(() => {
+          result.current.handleGrantHandwriting([100, 100], penStyle);
+        });
+        act(() => {
+          jest.advanceTimersByTime(600);
+        });
+        act(() => {
+          result.current.handleMoveHandwriting([120, 100], 0);
+        });
+        act(() => {
+          result.current.handleReleaseHandwriting();
+        });
+        expect(result.current.drawLine.current).toHaveLength(2);
+        expect(result.current.drawLine.current[1].style?.strokeColor).toBe('rgba(255,0,0,0.7)');
+      });
+    });
+  });
+
+  describe('個別色レイヤへの通常作図（色・太さの反映）', () => {
+    const defaultStyle = { strokeColor: 'rgba(0,255,0,0.7)', strokeWidth: 10, strokeStyle: 'NONE', stamp: '', zoom: 15 };
+
+    const drawFreehandLine = (result: any) => {
+      act(() => {
+        result.current.setFeatureButton('LINE');
+      });
+      act(() => {
+        result.current.setDrawTool('FREEHAND_LINE');
+      });
+      act(() => {
+        result.current.handleGrantFreehand([0, 0]);
+      });
+      act(() => {
+        result.current.handleMoveFreehand([10, 0], 0);
+      });
+      act(() => {
+        result.current.handleMoveFreehand([20, 5], 0);
+      });
+      act(() => {
+        result.current.handleReleaseFreehand();
+      });
+    };
+
+    it('個別色レイヤではフリーハンドの新規レコードに現在の色・太さが書き込まれる', () => {
+      mockGetEditableLayerAndRecordSetWithCheck.mockReturnValue({
+        isOK: true,
+        message: '',
+        layer: mockIndividualLineLayer,
+        recordSet: [],
+      });
+      const { result } = renderDrawTool();
+      drawFreehandLine(result);
+
+      let saveResult;
+      act(() => {
+        saveResult = result.current.saveLine(defaultStyle);
+      });
+      expect(saveResult!.isOK).toBe(true);
+      const saved = mockAddRecord.mock.calls[0][1] as RecordType;
+      expect(saved.field._strokeColor).toBe('rgba(0,255,0,0.7)');
+      expect(saved.field._strokeWidth).toBe(10);
+      expect(saved.field._stamp).toBe('');
+      expect(saved.field._group).toBe('');
+      expect(saved.field._zoom).toBe(15);
+    });
+
+    it('色分けが個別でないレイヤには書き込まれない', () => {
+      //beforeEachのデフォルト（SINGLEのmockLineLayer）を使う
+      const { result } = renderDrawTool();
+      drawFreehandLine(result);
+
+      let saveResult;
+      act(() => {
+        saveResult = result.current.saveLine(defaultStyle);
+      });
+      expect(saveResult!.isOK).toBe(true);
+      const saved = mockAddRecord.mock.calls[0][1] as RecordType;
+      expect(saved.field._strokeColor).toBeUndefined();
+      expect(saved.field._strokeWidth).toBeUndefined();
+    });
+
+    it('色分けが個別でないレイヤでは、手書きも色・太さを書かずレイヤのスタイルに従う（記号情報は書く）', () => {
+      //beforeEachのデフォルト（SINGLEのmockLineLayer）を使う
+      (isValidLine as jest.Mock).mockImplementation((xy: unknown[]) => xy.length >= 1);
+      const { result } = renderDrawTool();
+      act(() => {
+        result.current.setFeatureButton('LINE');
+      });
+      act(() => {
+        result.current.setDrawTool('HANDWRITING_LINE');
+      });
+      const penStyle = {
+        strokeColor: 'rgba(255,0,0,0.7)',
+        strokeWidth: 5,
+        arrowStyle: 'NONE' as const,
+        isStraightStyle: false,
+        snapWithLine: true,
+      };
+      //ペンストローク
+      act(() => {
+        result.current.handleGrantHandwriting([0, 0], penStyle);
+      });
+      act(() => {
+        result.current.handleMoveHandwriting([10, 0], 0);
+      });
+      act(() => {
+        result.current.handleReleaseHandwriting();
+      });
+      //スタンプ（スナップなし）
+      (checkDistanceFromLine as jest.Mock).mockReturnValue({ isNear: false, distance: 9999 });
+      act(() => {
+        result.current.setHandwritingSubTool('TOMARI');
+      });
+      act(() => {
+        result.current.handleGrantHandwriting([50, 50], penStyle);
+      });
+      act(() => {
+        result.current.handleReleaseHandwriting();
+      });
+
+      act(() => {
+        result.current.saveLine(defaultStyle);
+      });
+      const saved = mockAddRecord.mock.calls.map((c) => c[1] as RecordType);
+      //ペン: 色・太さ・_zoomは書かずレイヤのスタイルに従う。消しゴム互換の_stamp/_groupは書く
+      expect(saved[0].field._strokeColor).toBeUndefined();
+      expect(saved[0].field._strokeWidth).toBeUndefined();
+      expect(saved[0].field._zoom).toBeUndefined();
+      expect(saved[0].field._stamp).toBe('');
+      expect(saved[0].field._group).toBe('');
+      //スタンプ: 記号情報とズーム連動用の_zoomは書く
+      expect(saved[1].field._stamp).toBe('TOMARI');
+      expect(saved[1].field._zoom).toBe(15);
+      expect(saved[1].field._strokeColor).toBeUndefined();
+    });
+
+    it('編集選択中に変更した色・太さが確定で選択オブジェクトへ反映される', () => {
+      const memoLines = [
+        {
+          ...mockLineRecord,
+          id: 'sel1',
+          coords: [
+            { latitude: 10, longitude: 0 },
+            { latitude: 10, longitude: 10 },
+          ],
+          field: { _strokeWidth: 2, _strokeColor: '#ff0000', _zoom: 12 },
+        },
+      ] as unknown as LineRecordType[];
+      mockGetEditableLayerAndRecordSetWithCheck.mockReturnValue({
+        isOK: true,
+        message: '',
+        layer: mockIndividualLineLayer,
+        recordSet: memoLines,
+      });
+      (selectLineFeaturesByArea as jest.Mock).mockReturnValue(memoLines);
+      mockFindLayer.mockReturnValue(mockIndividualLineLayer);
+      mockFindRecord.mockImplementation((_layerId: string, _userId: string, id: string) =>
+        memoLines.find((r) => r.id === id)
+      );
+
+      const { result } = renderDrawTool();
+      act(() => {
+        result.current.setFeatureButton('LINE');
+      });
+      act(() => {
+        result.current.setDrawTool('SELECT');
+      });
+      act(() => {
+        result.current.handleGrantSelect([0, 0]);
+        for (let i = 1; i <= 6; i++) result.current.handleMoveSelect([i * 5, 0]);
+      });
+      act(() => {
+        result.current.handleReleaseSelect([30, 0]);
+      });
+      expect(result.current.isAreaSelected).toBe(true);
+
+      //色・太さを変更した想定で保存
+      let saveResult;
+      act(() => {
+        saveResult = result.current.saveLine(defaultStyle, { color: true, width: true });
+      });
+      expect(saveResult!.isOK).toBe(true);
+      const saved = mockUpdateRecord.mock.calls.map((c) => c[1] as RecordType);
+      expect(saved[0].field._strokeColor).toBe('rgba(0,255,0,0.7)');
+      expect(saved[0].field._strokeWidth).toBe(10);
+      expect(saved[0].field._zoom).toBe(15);
+    });
+
+    it('色・太さを変更していない編集選択の確定では元のスタイルが保持される', () => {
+      const memoLines = [
+        {
+          ...mockLineRecord,
+          id: 'sel2',
+          coords: [
+            { latitude: 10, longitude: 0 },
+            { latitude: 10, longitude: 10 },
+          ],
+          field: { _strokeWidth: 2, _strokeColor: '#ff0000' },
+        },
+      ] as unknown as LineRecordType[];
+      mockGetEditableLayerAndRecordSetWithCheck.mockReturnValue({
+        isOK: true,
+        message: '',
+        layer: mockIndividualLineLayer,
+        recordSet: memoLines,
+      });
+      (selectLineFeaturesByArea as jest.Mock).mockReturnValue(memoLines);
+      mockFindLayer.mockReturnValue(mockIndividualLineLayer);
+      mockFindRecord.mockImplementation((_layerId: string, _userId: string, id: string) =>
+        memoLines.find((r) => r.id === id)
+      );
+
+      const { result } = renderDrawTool();
+      act(() => {
+        result.current.setFeatureButton('LINE');
+      });
+      act(() => {
+        result.current.setDrawTool('SELECT');
+      });
+      act(() => {
+        result.current.handleGrantSelect([0, 0]);
+        for (let i = 1; i <= 6; i++) result.current.handleMoveSelect([i * 5, 0]);
+      });
+      act(() => {
+        result.current.handleReleaseSelect([30, 0]);
+      });
+
+      act(() => {
+        result.current.saveLine(defaultStyle, { color: false, width: false });
+      });
+      const saved = mockUpdateRecord.mock.calls.map((c) => c[1] as RecordType);
+      expect(saved[0].field._strokeColor).toBe('#ff0000');
+      expect(saved[0].field._strokeWidth).toBe(2);
+    });
+
+    it('太さだけ変更した確定では色は元のまま保持される', () => {
+      const memoLines = [
+        {
+          ...mockLineRecord,
+          id: 'sel3',
+          coords: [
+            { latitude: 10, longitude: 0 },
+            { latitude: 10, longitude: 10 },
+          ],
+          //ピンク・太のオブジェクト
+          field: { _strokeWidth: 10, _strokeColor: 'rgba(255,105,180,0.7)' },
+        },
+      ] as unknown as LineRecordType[];
+      mockGetEditableLayerAndRecordSetWithCheck.mockReturnValue({
+        isOK: true,
+        message: '',
+        layer: mockIndividualLineLayer,
+        recordSet: memoLines,
+      });
+      (selectLineFeaturesByArea as jest.Mock).mockReturnValue(memoLines);
+      mockFindLayer.mockReturnValue(mockIndividualLineLayer);
+      mockFindRecord.mockImplementation((_layerId: string, _userId: string, id: string) =>
+        memoLines.find((r) => r.id === id)
+      );
+
+      const { result } = renderDrawTool();
+      act(() => {
+        result.current.setFeatureButton('LINE');
+      });
+      act(() => {
+        result.current.setDrawTool('SELECT');
+      });
+      act(() => {
+        result.current.handleGrantSelect([0, 0]);
+        for (let i = 1; i <= 6; i++) result.current.handleMoveSelect([i * 5, 0]);
+      });
+      act(() => {
+        result.current.handleReleaseSelect([30, 0]);
+      });
+
+      //太さだけ操作（細=2へ）。色は操作していない
+      act(() => {
+        result.current.saveLine(
+          { strokeColor: 'rgba(0,0,0,0.7)', strokeWidth: 2, strokeStyle: 'NONE', stamp: '', zoom: 15 },
+          { color: false, width: true }
+        );
+      });
+      const saved = mockUpdateRecord.mock.calls.map((c) => c[1] as RecordType);
+      expect(saved[0].field._strokeWidth).toBe(2);
+      //色はピンクのまま（グローバルのペン色で塗り替えない）
+      expect(saved[0].field._strokeColor).toBe('rgba(255,105,180,0.7)');
+    });
+
+    it('編集選択→手書き切替で選択オブジェクトが手書きストロークに変換される', () => {
+      const memoLines = [
+        {
+          ...mockLineRecord,
+          id: 'conv1',
+          coords: [
+            { latitude: 10, longitude: 0 },
+            { latitude: 10, longitude: 10 },
+          ],
+          field: { _strokeWidth: 2, _strokeColor: '#ff0000', _strokeStyle: 'NONE', _stamp: '', _zoom: 12 },
+        },
+        {
+          ...mockLineRecord,
+          id: 'conv2',
+          coords: [
+            { latitude: 20, longitude: 0 },
+            { latitude: 20, longitude: 10 },
+          ],
+          //スタイルフィールドを持たないレコード（個別化前に作られた等）
+          field: {},
+        },
+      ] as unknown as LineRecordType[];
+      mockGetEditableLayerAndRecordSetWithCheck.mockReturnValue({
+        isOK: true,
+        message: '',
+        layer: mockIndividualLineLayer,
+        recordSet: memoLines,
+      });
+      (selectLineFeaturesByArea as jest.Mock).mockReturnValue(memoLines);
+
+      const { result } = renderDrawTool();
+      act(() => {
+        result.current.setFeatureButton('LINE');
+      });
+      act(() => {
+        result.current.setDrawTool('SELECT');
+      });
+      act(() => {
+        result.current.handleGrantSelect([0, 0]);
+        for (let i = 1; i <= 6; i++) result.current.handleMoveSelect([i * 5, 0]);
+      });
+      act(() => {
+        result.current.handleReleaseSelect([30, 0]);
+      });
+      expect(result.current.drawLine.current[0].properties).not.toContain('HANDWRITING');
+
+      act(() => {
+        result.current.convertSelectionToHandwriting({
+          strokeColor: 'rgba(255,0,0,0.7)',
+          strokeWidth: 5,
+          arrowStyle: 'NONE',
+          isStraightStyle: false,
+          snapWithLine: true,
+        });
+      });
+      const lines = result.current.drawLine.current;
+      //EDIT装飾が外れて手書きストロークになり、スタイルはレコードのフィールドから引き継ぐ
+      expect(lines[0].properties).toEqual(['HANDWRITING']);
+      expect(lines[0].style).toMatchObject({ strokeColor: '#ff0000', strokeWidth: 2, zoom: 12 });
+      //フィールドが無いレコードは現在のペン設定にフォールバックする
+      expect(lines[1].properties).toEqual(['HANDWRITING']);
+      expect(lines[1].style).toMatchObject({ strokeColor: 'rgba(255,0,0,0.7)', strokeWidth: 5 });
+      expect(result.current.isEditingObject).toBe(true);
+    });
+
+    it('編集選択時、単一選択で頂点が多いオブジェクトなら自動で手書きモードになる', () => {
+      const handDrawn = [
+        {
+          ...mockLineRecord,
+          id: 'auto1',
+          coords: Array.from({ length: 20 }, (_, i) => ({ latitude: 10, longitude: i })),
+          field: { _strokeWidth: 5, _strokeColor: '#ff0000', _strokeStyle: 'NONE', _stamp: '', _zoom: 15 },
+        },
+      ] as unknown as LineRecordType[];
+      mockGetEditableLayerAndRecordSetWithCheck.mockReturnValue({
+        isOK: true,
+        message: '',
+        layer: mockIndividualLineLayer,
+        recordSet: handDrawn,
+      });
+      (selectLineFeaturesByArea as jest.Mock).mockReturnValue(handDrawn);
+
+      const { result } = renderDrawTool();
+      act(() => {
+        result.current.setFeatureButton('LINE');
+      });
+      act(() => {
+        result.current.setDrawTool('SELECT');
+      });
+      act(() => {
+        result.current.handleGrantSelect([0, 0]);
+        for (let i = 1; i <= 6; i++) result.current.handleMoveSelect([i * 5, 0]);
+      });
+      act(() => {
+        result.current.handleReleaseSelect([30, 0]);
+      });
+      //手書きモードに自動切替され、選択オブジェクトは手書きストロークに変換されている
+      expect(result.current.currentDrawTool).toBe('HANDWRITING_LINE');
+      expect(result.current.drawLine.current[0].properties).toEqual(['HANDWRITING']);
+      expect(result.current.drawLine.current[0].style?.strokeColor).toBe('#ff0000');
+    });
+
+    it('編集選択時、頂点が少ないオブジェクトは_strokeColorを持っていてもプロット変形モードのまま', () => {
+      const plotted = [
+        {
+          ...mockLineRecord,
+          id: 'auto2',
+          coords: [
+            { latitude: 10, longitude: 0 },
+            { latitude: 10, longitude: 10 },
+            { latitude: 20, longitude: 10 },
+          ],
+          //個別スタイルのレイヤではプロットで描いたレコードも_strokeColorを持つ
+          field: { _strokeColor: '#ff0000', _strokeWidth: 5 },
+        },
+      ] as unknown as LineRecordType[];
+      mockGetEditableLayerAndRecordSetWithCheck.mockReturnValue({
+        isOK: true,
+        message: '',
+        layer: mockIndividualLineLayer,
+        recordSet: plotted,
+      });
+      (selectLineFeaturesByArea as jest.Mock).mockReturnValue(plotted);
+
+      const { result } = renderDrawTool();
+      act(() => {
+        result.current.setFeatureButton('LINE');
+      });
+      act(() => {
+        result.current.setDrawTool('SELECT');
+      });
+      act(() => {
+        result.current.handleGrantSelect([0, 0]);
+        for (let i = 1; i <= 6; i++) result.current.handleMoveSelect([i * 5, 0]);
+      });
+      act(() => {
+        result.current.handleReleaseSelect([30, 0]);
+      });
+      expect(result.current.currentDrawTool).toBe('PLOT_LINE');
+      expect(result.current.drawLine.current[0].properties).not.toContain('HANDWRITING');
+    });
+
+    it('編集選択時、頂点が多くても複数選択なら移動・回転モードのまま', () => {
+      const multi = [
+        {
+          ...mockLineRecord,
+          id: 'multi1',
+          coords: Array.from({ length: 20 }, (_, i) => ({ latitude: 10, longitude: i })),
+          field: { _strokeColor: '#ff0000', _strokeWidth: 5 },
+        },
+        {
+          ...mockLineRecord,
+          id: 'multi2',
+          coords: Array.from({ length: 20 }, (_, i) => ({ latitude: 20, longitude: i })),
+          field: { _strokeColor: '#ff0000', _strokeWidth: 5 },
+        },
+      ] as unknown as LineRecordType[];
+      mockGetEditableLayerAndRecordSetWithCheck.mockReturnValue({
+        isOK: true,
+        message: '',
+        layer: mockIndividualLineLayer,
+        recordSet: multi,
+      });
+      (selectLineFeaturesByArea as jest.Mock).mockReturnValue(multi);
+
+      const { result } = renderDrawTool();
+      act(() => {
+        result.current.setFeatureButton('LINE');
+      });
+      act(() => {
+        result.current.setDrawTool('SELECT');
+      });
+      act(() => {
+        result.current.handleGrantSelect([0, 0]);
+        for (let i = 1; i <= 6; i++) result.current.handleMoveSelect([i * 5, 0]);
+      });
+      act(() => {
+        result.current.handleReleaseSelect([30, 0]);
+      });
+      expect(result.current.currentDrawTool).toBe('PLOT_LINE');
+      expect(result.current.drawLine.current[0].properties).not.toContain('HANDWRITING');
+    });
+
+    it('手書きストロークは自身のスタイルが優先される', () => {
+      mockGetEditableLayerAndRecordSetWithCheck.mockReturnValue({
+        isOK: true,
+        message: '',
+        layer: mockIndividualLineLayer,
+        recordSet: [],
+      });
+      const { result } = renderDrawTool();
+      act(() => {
+        result.current.setFeatureButton('LINE');
+      });
+      act(() => {
+        result.current.setDrawTool('HANDWRITING_LINE');
+      });
+      act(() => {
+        result.current.handleGrantHandwriting([0, 0], {
+          strokeColor: 'rgba(255,0,0,0.7)',
+          strokeWidth: 5,
+          arrowStyle: 'NONE',
+          isStraightStyle: false,
+          snapWithLine: true,
+        });
+      });
+      act(() => {
+        result.current.handleMoveHandwriting([10, 0], 0);
+      });
+      act(() => {
+        result.current.handleReleaseHandwriting();
+      });
+
+      act(() => {
+        result.current.saveLine(defaultStyle);
+      });
+      const saved = mockAddRecord.mock.calls[0][1] as RecordType;
+      expect(saved.field._strokeColor).toBe('rgba(255,0,0,0.7)');
+      expect(saved.field._strokeWidth).toBe(5);
     });
   });
 });
