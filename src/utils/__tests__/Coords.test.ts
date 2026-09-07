@@ -378,7 +378,7 @@ describe('modifyLineWithSource', () => {
       [300, 80],
       [800, 50],
     ];
-    const result = modifyLineWithSource(original as any, modified as any, 'FREEHAND_LINE', toLatLon as any);
+    const result = modifyLineWithSource(original as any, modified as any, 'HANDWRITING_LINE', toLatLon as any);
     expect(result.xy.length).toBeGreaterThan(0);
     verify(original, result);
   });
@@ -394,7 +394,7 @@ describe('modifyLineWithSource', () => {
       [1500, 300],
       [2500, 600],
     ];
-    const result = modifyLineWithSource(original as any, modified as any, 'FREEHAND_LINE', toLatLon as any);
+    const result = modifyLineWithSource(original as any, modified as any, 'HANDWRITING_LINE', toLatLon as any);
     expect(result.xy.length).toBeGreaterThan(0);
     verify(original, result);
   });
@@ -421,7 +421,7 @@ describe('modifyLineWithSource', () => {
       [0, 0],
       [500, 0],
     ]);
-    const result = modifyLineWithSource(original as any, [[10, 10]] as any, 'FREEHAND_LINE', toLatLon as any);
+    const result = modifyLineWithSource(original as any, [[10, 10]] as any, 'HANDWRITING_LINE', toLatLon as any);
     expect(result.xy).toBe(original.xy);
     expect(result.latlon).toBe(original.latlon);
   });

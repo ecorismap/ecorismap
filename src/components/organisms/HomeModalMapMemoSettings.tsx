@@ -78,8 +78,8 @@ export const HomeModalMapMemoSettings = React.memo((props: Props) => {
   } = props;
   const { hisyouTool } = useFeatureFlags();
 
-  //手書きペン用は消しゴムタブを出さない（セッション内の取り消しはUndoで行う）
-  const visibleTabs = mode === 'DRAW_LINE' ? ALL_TABS.filter(({ key }) => key !== 'ERASER') : ALL_TABS;
+  //手書きペン用（DRAW_LINE）も消しゴムタブを含めて全タブを表示する
+  const visibleTabs = ALL_TABS;
 
   //各タブのローカル編集state（OKで確定）
   const [penWidth, setPenWidth] = useState<PenWidthType>('PEN_MEDIUM');
@@ -108,8 +108,6 @@ export const HomeModalMapMemoSettings = React.memo((props: Props) => {
       //手書きペン: マップメモのツールは切り替えず、サブツールと共有の描画設定だけを反映する
       if (tab === 'PEN') {
         selectHandwritingSubTool?.('PEN');
-        selectMapMemoPenWidth(penWidth);
-        selectMapMemoArrowStyle(arrowStyle_);
         selectMapMemoStraightStyle(straightStyle);
       } else if (tab === 'STAMP') {
         if (stampSel !== undefined) {
@@ -118,6 +116,9 @@ export const HomeModalMapMemoSettings = React.memo((props: Props) => {
         }
       } else if (tab === 'BRUSH') {
         if (brushSel !== undefined) selectHandwritingSubTool?.(brushSel as HandwritingSubToolType);
+      } else if (tab === 'ERASER') {
+        //消しゴムはメモのツールとして動く（手書きセッションは解除される）
+        selectMapMemoTool(eraserSel);
       }
       close();
       return;
@@ -162,23 +163,32 @@ export const HomeModalMapMemoSettings = React.memo((props: Props) => {
 
   const renderPenTab = () => (
     <View style={styles.tabContent}>
-      <Text style={styles.sectionLabel}>{t('common.strokeWidth')}</Text>
-      <View style={styles.optionRow}>
-        {optionButton('PEN_THIN', PEN_WIDTH.PEN_THIN, penWidth === 'PEN_THIN', () => setPenWidth('PEN_THIN'), t('Home.penPicker.thin'))}
-        {optionButton('PEN_MEDIUM', PEN_WIDTH.PEN_MEDIUM, penWidth === 'PEN_MEDIUM', () => setPenWidth('PEN_MEDIUM'), t('Home.penPicker.medium'))}
-        {optionButton('PEN_THICK', PEN_WIDTH.PEN_THICK, penWidth === 'PEN_THICK', () => setPenWidth('PEN_THICK'), t('Home.penPicker.thick'))}
-      </View>
+      {/* 手書きペン用（DRAW）では太さ・矢印はスタイル設定モーダルに一本化し、ここでは直線/曲線のみ */}
+      {mode === 'MEMO' && (
+        <>
+          <Text style={styles.sectionLabel}>{t('common.strokeWidth')}</Text>
+          <View style={styles.optionRow}>
+            {optionButton('PEN_THIN', PEN_WIDTH.PEN_THIN, penWidth === 'PEN_THIN', () => setPenWidth('PEN_THIN'), t('Home.penPicker.thin'))}
+            {optionButton('PEN_MEDIUM', PEN_WIDTH.PEN_MEDIUM, penWidth === 'PEN_MEDIUM', () => setPenWidth('PEN_MEDIUM'), t('Home.penPicker.medium'))}
+            {optionButton('PEN_THICK', PEN_WIDTH.PEN_THICK, penWidth === 'PEN_THICK', () => setPenWidth('PEN_THICK'), t('Home.penPicker.thick'))}
+          </View>
+        </>
+      )}
       <Text style={styles.sectionLabel}>{t('common.straight_curve')}</Text>
       <View style={styles.optionRow}>
         {optionButton('FREEHAND', PEN_STYLE.FREEHAND, !straightStyle, () => setStraightStyle(false), t('Home.penPicker.curve'))}
         {optionButton('STRAIGHT', PEN_STYLE.STRAIGHT, straightStyle, () => setStraightStyle(true), t('Home.penPicker.straight'))}
       </View>
-      <Text style={styles.sectionLabel}>{t('common.arrow')}</Text>
-      <View style={styles.optionRow}>
-        {optionButton('NONE', PEN_STYLE.NONE, arrowStyle_ === 'NONE', () => setArrowStyle('NONE'), t('Home.penPicker.none'))}
-        {optionButton('ARROW_END', PEN_STYLE.ARROW_END, arrowStyle_ === 'ARROW_END', () => setArrowStyle('ARROW_END'), t('Home.penPicker.end'))}
-        {optionButton('ARROW_BOTH', PEN_STYLE.ARROW_BOTH, arrowStyle_ === 'ARROW_BOTH', () => setArrowStyle('ARROW_BOTH'), t('Home.penPicker.bothSides'))}
-      </View>
+      {mode === 'MEMO' && (
+        <>
+          <Text style={styles.sectionLabel}>{t('common.arrow')}</Text>
+          <View style={styles.optionRow}>
+            {optionButton('NONE', PEN_STYLE.NONE, arrowStyle_ === 'NONE', () => setArrowStyle('NONE'), t('Home.penPicker.none'))}
+            {optionButton('ARROW_END', PEN_STYLE.ARROW_END, arrowStyle_ === 'ARROW_END', () => setArrowStyle('ARROW_END'), t('Home.penPicker.end'))}
+            {optionButton('ARROW_BOTH', PEN_STYLE.ARROW_BOTH, arrowStyle_ === 'ARROW_BOTH', () => setArrowStyle('ARROW_BOTH'), t('Home.penPicker.bothSides'))}
+          </View>
+        </>
+      )}
     </View>
   );
 

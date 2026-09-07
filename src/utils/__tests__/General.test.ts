@@ -2,7 +2,6 @@ import {
   nearDegree,
   splitStringsIntoChunksOfLen,
   isPlotTool,
-  isFreehandTool,
   isPointTool,
   isLineTool,
   isPolygonTool,
@@ -77,19 +76,6 @@ describe('isPlotTool', () => {
     expect(isPlotTool('FREEHAND_LINE')).toBe(false);
     expect(isPlotTool('PEN')).toBe(false);
     expect(isPlotTool('')).toBe(false);
-  });
-});
-
-describe('isFreehandTool', () => {
-  it('returns true for freehand tools', () => {
-    expect(isFreehandTool('FREEHAND_LINE')).toBe(true);
-    expect(isFreehandTool('FREEHAND_POLYGON')).toBe(false);
-  });
-
-  it('returns false for non-freehand tools', () => {
-    expect(isFreehandTool('PLOT_POINT')).toBe(false);
-    expect(isFreehandTool('PEN')).toBe(false);
-    expect(isFreehandTool('')).toBe(false);
   });
 });
 

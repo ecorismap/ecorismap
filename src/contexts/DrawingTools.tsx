@@ -1,5 +1,6 @@
 import React from 'react';
 import {
+  ArrowStyleType,
   DrawToolType,
   FeatureButtonType,
   HandwritingSubToolType,
@@ -96,6 +97,10 @@ export interface DrawingToolsContextType {
   isIndividualStyleLayer: boolean;
   //単一オブジェクト選択中の太さ。太さパレットを開くときの初期値にする（プロパティパネル方式）
   selectedObjectWidthType?: PenWidthType;
+  //単一オブジェクト選択中の矢印スタイル（スタイル設定モーダルの初期表示用）
+  selectedObjectArrowStyle?: ArrowStyleType;
+  //手書きの編集選択から分割ツールへ切り替える準備（選択オブジェクトを分割対象にする）
+  switchSelectionToSplit: () => boolean;
   //手書きペンのサブツール（ペン/スタンプ/ブラシ）と設定モーダルの起動
   handwritingSubTool: HandwritingSubToolType;
   setHandwritingSubTool: React.Dispatch<React.SetStateAction<HandwritingSubToolType>>;

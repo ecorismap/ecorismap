@@ -206,7 +206,6 @@ export const POINTTOOL = {
 
 export const LINETOOL = {
   PLOT_LINE: 'vector-line',
-  FREEHAND_LINE: 'draw',
   HANDWRITING_LINE: 'draw-pen',
   SPLIT_LINE: 'content-cut',
 } as const;

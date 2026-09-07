@@ -9,7 +9,6 @@ import { t } from 'i18next';
 interface Props {
   disabled?: boolean;
   currentDrawTool: DrawToolType;
-  isEditingDraw: boolean;
   selectDrawTool: (value: DrawToolType) => void;
   setLineTool: React.Dispatch<React.SetStateAction<LineToolType>>;
 }
@@ -24,7 +23,7 @@ const styles = StyleSheet.create({
 });
 
 export const HomeLineToolButton = React.memo((props: Props) => {
-  const { disabled, currentDrawTool, isEditingDraw, selectDrawTool, setLineTool } = props;
+  const { disabled, currentDrawTool, selectDrawTool, setLineTool } = props;
 
   return (
     <View style={styles.container}>
@@ -42,54 +41,6 @@ export const HomeLineToolButton = React.memo((props: Props) => {
           labelText={t('Home.label.plotLine')}
         />
       </View>
-      <View style={styles.button}>
-        <Button
-          id={'FREEHAND_LINE'}
-          name={LINETOOL.FREEHAND_LINE}
-          disabled={disabled}
-          backgroundColor={
-            disabled ? COLOR.ALFAGRAY : currentDrawTool === 'FREEHAND_LINE' ? COLOR.ALFARED : COLOR.ALFABLUE
-          }
-          borderRadius={10}
-          onPress={() => {
-            setLineTool('FREEHAND_LINE');
-            selectDrawTool('FREEHAND_LINE');
-          }}
-          labelText={t('Home.label.freehandLine')}
-        />
-      </View>
-      <View style={styles.button}>
-        <Button
-          id={'HANDWRITING_LINE'}
-          name={LINETOOL.HANDWRITING_LINE}
-          disabled={disabled}
-          backgroundColor={
-            disabled ? COLOR.ALFAGRAY : currentDrawTool === 'HANDWRITING_LINE' ? COLOR.ALFARED : COLOR.ALFABLUE
-          }
-          borderRadius={10}
-          onPress={() => {
-            setLineTool('HANDWRITING_LINE');
-            selectDrawTool('HANDWRITING_LINE');
-          }}
-          labelText={t('Home.label.handwritingLine')}
-        />
-      </View>
-      {isEditingDraw && (
-        <View style={styles.button}>
-          <Button
-            id={'SPLIT_LINE'}
-            name={LINETOOL.SPLIT_LINE}
-            disabled={disabled}
-            backgroundColor={disabled ? COLOR.ALFAGRAY : currentDrawTool === 'SPLIT_LINE' ? COLOR.ALFARED : COLOR.ALFABLUE}
-            borderRadius={10}
-            onPress={() => {
-              setLineTool('SPLIT_LINE');
-              selectDrawTool('SPLIT_LINE');
-            }}
-            labelText={t('Home.label.splitLine')}
-          />
-        </View>
-      )}
     </View>
   );
 });

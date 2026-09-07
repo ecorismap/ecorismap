@@ -311,12 +311,12 @@ describe('useDrawTool', () => {
 
       act(() => {
         result.current.setPointTool('ADD_LOCATION_POINT');
-        result.current.setLineTool('FREEHAND_LINE');
+        result.current.setLineTool('SPLIT_LINE');
         result.current.setPolygonTool('HANDWRITING_POLYGON');
       });
 
       expect(result.current.currentPointTool).toBe('ADD_LOCATION_POINT');
-      expect(result.current.currentLineTool).toBe('FREEHAND_LINE');
+      expect(result.current.currentLineTool).toBe('SPLIT_LINE');
       expect(result.current.currentPolygonTool).toBe('HANDWRITING_POLYGON');
     });
   });
@@ -1062,19 +1062,33 @@ describe('useDrawTool', () => {
     });
   });
 
-  describe('フリーハンド描画（逐次latlon化・終点キャッチアップ・ピンチ確定）', () => {
+  describe('手書きペン描画（逐次latlon化・終点キャッチアップ・ピンチ確定）', () => {
+    const penStyle = {
+      strokeColor: 'rgba(0,0,0,0.7)',
+      strokeWidth: 5,
+      arrowStyle: 'NONE' as const,
+      isStraightStyle: false,
+      snapWithLine: true,
+    };
+    const start = (result: any) => {
+      act(() => {
+        result.current.setFeatureButton('LINE');
+      });
+      act(() => {
+        result.current.setDrawTool('HANDWRITING_LINE');
+      });
+    };
+
     it('描画中もxyとlatlonが同数で保たれ、離した位置まで線が届く', () => {
       const { result } = renderDrawTool();
+      start(result);
       act(() => {
-        result.current.setDrawTool('FREEHAND_LINE');
+        result.current.handleGrantHandwriting([10, 10], penStyle);
       });
       act(() => {
-        result.current.handleGrantFreehand([10, 10]);
-      });
-      act(() => {
-        result.current.handleMoveFreehand([20, 20], 16);
-        result.current.handleMoveFreehand([30, 30], 32);
-        result.current.handleMoveFreehand([40, 40], 48);
+        result.current.handleMoveHandwriting([20, 20], 16);
+        result.current.handleMoveHandwriting([30, 30], 32);
+        result.current.handleMoveHandwriting([40, 40], 48);
       });
       //描画中からlatlonが揃っている（ピンチ時の再投影で消えない）
       const during = result.current.drawLine.current[0];
@@ -1082,7 +1096,7 @@ describe('useDrawTool', () => {
       expect(during.latlon.length).toBeGreaterThanOrEqual(4);
 
       act(() => {
-        result.current.handleReleaseFreehand();
+        result.current.handleReleaseHandwriting();
       });
       const line = result.current.drawLine.current[0];
       //終点は最後の生タッチ位置（切り捨てなし）
@@ -1093,118 +1107,60 @@ describe('useDrawTool', () => {
       expect(line.latlon.length).toBe(line.xy.length);
     });
 
-    it('commitFreehandStrokeで描きかけが確定し、1点だけなら破棄される', () => {
+    it('commitHandwritingStrokeで描きかけが確定してスタイルが付き、確定バーが維持される', () => {
       const { result } = renderDrawTool();
+      start(result);
       act(() => {
-        result.current.setDrawTool('FREEHAND_LINE');
-      });
-      //2点以上 → 確定
-      act(() => {
-        result.current.handleGrantFreehand([10, 10]);
+        result.current.handleGrantHandwriting([10, 10], penStyle);
       });
       act(() => {
-        result.current.handleMoveFreehand([20, 20], 16);
+        result.current.handleMoveHandwriting([20, 20], 16);
+        result.current.handleMoveHandwriting([40, 40], 32);
       });
       act(() => {
-        result.current.commitFreehandStroke();
+        result.current.commitHandwritingStroke();
       });
       expect(result.current.drawLine.current).toHaveLength(1);
-      expect(result.current.drawLine.current[0].latlon.length).toBe(result.current.drawLine.current[0].xy.length);
+      expect(result.current.drawLine.current[0].style?.strokeColor).toBe('rgba(0,0,0,0.7)');
       expect(result.current.isEditingObject).toBe(true);
-
-      //確定済みなので次のGrantは修正ストロークの開始になる（drawLineが増えない）
-      act(() => {
-        result.current.handleGrantFreehand([100, 100]);
-      });
-      expect(result.current.drawLine.current).toHaveLength(1);
     });
 
-    it('commitFreehandStroke: 1点だけのストロークは破棄されundoのNEWも取り除かれる', () => {
+    it('commitHandwritingStroke: 微小な動きだけのストロークは破棄される', () => {
       const { result } = renderDrawTool();
+      start(result);
       act(() => {
-        result.current.setDrawTool('FREEHAND_LINE');
+        result.current.handleGrantHandwriting([10, 10], penStyle);
       });
       act(() => {
-        result.current.handleGrantFreehand([10, 10]);
+        result.current.handleMoveHandwriting([12, 12], 16);
+        result.current.handleMoveHandwriting([14, 14], 32);
       });
       act(() => {
-        result.current.commitFreehandStroke();
+        result.current.commitHandwritingStroke();
       });
       expect(result.current.drawLine.current).toHaveLength(0);
-      expect(result.current.isEditingObject).toBe(false);
+      expect(result.current.isUndoable).toBe(false);
+    });
+
+    it('cancelHandwritingStroke: 新規ストロークは複数点でもオブジェクトごと破棄される', () => {
+      const { result } = renderDrawTool();
+      start(result);
+      act(() => {
+        result.current.handleGrantHandwriting([10, 10], penStyle);
+      });
+      act(() => {
+        result.current.handleMoveHandwriting([20, 20], 16);
+        result.current.handleMoveHandwriting([30, 30], 32);
+      });
+      act(() => {
+        result.current.cancelHandwritingStroke();
+      });
+      expect(result.current.drawLine.current).toHaveLength(0);
+      expect(result.current.isUndoable).toBe(false);
     });
   });
 
-  describe('ピンチ意図の取り消し（cancelFreehandStroke / cancelPlotGrant）', () => {
-    it('commitFreehandStroke: 微小な動きだけのストロークは複数点でも破棄される', () => {
-      const { result } = renderDrawTool();
-      act(() => {
-        result.current.setDrawTool('FREEHAND_LINE');
-      });
-      act(() => {
-        result.current.handleGrantFreehand([10, 10]);
-      });
-      //2本指タッチの1本目で拾う微小な動き（合計6px未満）
-      act(() => {
-        result.current.handleMoveFreehand([12, 12], 16);
-        result.current.handleMoveFreehand([14, 14], 32);
-      });
-      act(() => {
-        result.current.commitFreehandStroke();
-      });
-      expect(result.current.drawLine.current).toHaveLength(0);
-      expect(result.current.isEditingObject).toBe(false);
-      expect(result.current.isUndoable).toBe(false);
-    });
-
-    it('cancelFreehandStroke: 新規ストロークは複数点でもオブジェクトごと破棄される', () => {
-      const { result } = renderDrawTool();
-      act(() => {
-        result.current.setDrawTool('FREEHAND_LINE');
-      });
-      act(() => {
-        result.current.handleGrantFreehand([10, 10]);
-      });
-      act(() => {
-        result.current.handleMoveFreehand([20, 20], 16);
-        result.current.handleMoveFreehand([30, 30], 32);
-      });
-      act(() => {
-        result.current.cancelFreehandStroke();
-      });
-      expect(result.current.drawLine.current).toHaveLength(0);
-      expect(result.current.isEditingObject).toBe(false);
-      expect(result.current.isUndoable).toBe(false);
-    });
-
-    it('cancelFreehandStroke: 修正ストローク中は軌跡のみ破棄されオブジェクトは残る', () => {
-      const { result } = renderDrawTool();
-      act(() => {
-        result.current.setDrawTool('FREEHAND_LINE');
-      });
-      act(() => {
-        result.current.handleGrantFreehand([10, 10]);
-      });
-      act(() => {
-        result.current.handleMoveFreehand([20, 20], 16);
-        result.current.handleMoveFreehand([30, 30], 32);
-      });
-      act(() => {
-        result.current.handleReleaseFreehand();
-      });
-      const before = result.current.drawLine.current[0].xy.length;
-      //修正ストロークの開始（ピンチの1本目の指を想定）
-      act(() => {
-        result.current.handleGrantFreehand([100, 100]);
-      });
-      act(() => {
-        result.current.cancelFreehandStroke();
-      });
-      expect(result.current.drawLine.current).toHaveLength(1);
-      expect(result.current.drawLine.current[0].xy.length).toBe(before);
-      expect(result.current.isEditingObject).toBe(true);
-    });
-
+  describe('ピンチ意図の取り消し（cancelPlotGrant）', () => {
     it('cancelPlotGrant: 編集開始前のGrantで作られた新規プロットは取り消される', () => {
       const { result } = renderDrawTool();
       act(() => {
@@ -2011,6 +1967,56 @@ describe('useDrawTool', () => {
       expect((saved.coords as unknown[]).length).toBeGreaterThanOrEqual(4);
     });
 
+    it('LINEでも長押しでセッション内ストロークを修正できる', () => {
+      jest.useFakeTimers();
+      const { result } = renderDrawTool();
+      act(() => {
+        result.current.setFeatureButton('LINE');
+      });
+      act(() => {
+        result.current.setDrawTool('HANDWRITING_LINE');
+      });
+      (checkDistanceFromLine as jest.Mock).mockReturnValue({ isNear: false, distance: 9999 });
+      drawPenStroke(result, [
+        [0, 0],
+        [10, 0],
+        [10, 10],
+      ]);
+
+      (checkDistanceFromLine as jest.Mock).mockReturnValue({ isNear: true, distance: 1 });
+      (modifyLineWithSource as jest.Mock).mockReturnValue({
+        xy: [
+          [0, 0],
+          [20, 0],
+        ],
+        latlon: [
+          [0, 0],
+          [20, 0],
+        ],
+        junctions: [],
+      });
+      act(() => {
+        result.current.handleGrantHandwriting([5, 0], penStyle);
+      });
+      act(() => {
+        jest.advanceTimersByTime(600);
+      });
+      expect(result.current.drawLine.current).toHaveLength(1);
+      expect(result.current.drawLine.current[0].properties).toEqual(['HANDWRITING', 'MODIFYING']);
+      act(() => {
+        result.current.handleMoveHandwriting([15, 5], 0);
+      });
+      act(() => {
+        result.current.handleReleaseHandwriting();
+      });
+      expect(result.current.drawLine.current[0].xy).toEqual([
+        [0, 0],
+        [20, 0],
+      ]);
+      expect(result.current.drawLine.current[0].properties).toEqual(['HANDWRITING']);
+      jest.useRealTimers();
+    });
+
     describe('手書きポリゴンの長押し→なぞり修正', () => {
       const startHandwritingPolygon = (result: any) => {
         act(() => {
@@ -2182,28 +2188,28 @@ describe('useDrawTool', () => {
   describe('個別色レイヤへの通常作図（色・太さの反映）', () => {
     const defaultStyle = { strokeColor: 'rgba(0,255,0,0.7)', strokeWidth: 10, strokeStyle: 'NONE', stamp: '', zoom: 15 };
 
-    const drawFreehandLine = (result: any) => {
+    const drawPlotLine = (result: any) => {
       act(() => {
         result.current.setFeatureButton('LINE');
       });
       act(() => {
-        result.current.setDrawTool('FREEHAND_LINE');
+        result.current.setDrawTool('PLOT_LINE');
       });
       act(() => {
-        result.current.handleGrantFreehand([0, 0]);
+        result.current.handleGrantPlot([0, 0]);
       });
       act(() => {
-        result.current.handleMoveFreehand([10, 0], 0);
+        result.current.handleReleasePlotLinePolygon();
       });
       act(() => {
-        result.current.handleMoveFreehand([20, 5], 0);
+        result.current.handleGrantPlot([10, 0]);
       });
       act(() => {
-        result.current.handleReleaseFreehand();
+        result.current.handleReleasePlotLinePolygon();
       });
     };
 
-    it('個別色レイヤではフリーハンドの新規レコードに現在の色・太さが書き込まれる', () => {
+    it('個別色レイヤではプロット作図の新規レコードに現在の色・太さが書き込まれる', () => {
       mockGetEditableLayerAndRecordSetWithCheck.mockReturnValue({
         isOK: true,
         message: '',
@@ -2211,7 +2217,7 @@ describe('useDrawTool', () => {
         recordSet: [],
       });
       const { result } = renderDrawTool();
-      drawFreehandLine(result);
+      drawPlotLine(result);
 
       let saveResult;
       act(() => {
@@ -2229,7 +2235,7 @@ describe('useDrawTool', () => {
     it('色分けが個別でないレイヤには書き込まれない', () => {
       //beforeEachのデフォルト（SINGLEのmockLineLayer）を使う
       const { result } = renderDrawTool();
-      drawFreehandLine(result);
+      drawPlotLine(result);
 
       let saveResult;
       act(() => {
@@ -2334,7 +2340,9 @@ describe('useDrawTool', () => {
       act(() => {
         result.current.handleReleaseSelect([30, 0]);
       });
-      expect(result.current.isAreaSelected).toBe(true);
+      //プロット由来（頂点が少ない）の単一選択はノード編集モードに入る（一括変形にしない）
+      expect(result.current.isAreaSelected).toBe(false);
+      expect(result.current.isEditingObject).toBe(true);
 
       //色・太さを変更した想定で保存
       let saveResult;
@@ -2629,6 +2637,51 @@ describe('useDrawTool', () => {
       });
       expect(result.current.currentDrawTool).toBe('PLOT_LINE');
       expect(result.current.drawLine.current[0].properties).not.toContain('HANDWRITING');
+    });
+
+    it('switchSelectionToSplitで選択オブジェクトが分割対象になる', () => {
+      const memoLines = [
+        {
+          ...mockLineRecord,
+          id: 'split1',
+          coords: Array.from({ length: 20 }, (_, i) => ({ latitude: 10, longitude: i })),
+          field: { _strokeColor: '#ff0000', _strokeWidth: 5 },
+        },
+      ] as unknown as LineRecordType[];
+      mockGetEditableLayerAndRecordSetWithCheck.mockReturnValue({
+        isOK: true,
+        message: '',
+        layer: mockIndividualLineLayer,
+        recordSet: memoLines,
+      });
+      (selectLineFeaturesByArea as jest.Mock).mockReturnValue(memoLines);
+
+      const { result } = renderDrawTool();
+      act(() => {
+        result.current.setFeatureButton('LINE');
+      });
+      act(() => {
+        result.current.setDrawTool('SELECT');
+      });
+      act(() => {
+        result.current.handleGrantSelect([0, 0]);
+        for (let i = 1; i <= 6; i++) result.current.handleMoveSelect([i * 5, 0]);
+      });
+      act(() => {
+        result.current.handleReleaseSelect([30, 0]);
+      });
+      //頂点が多いので手書きモードに自動切替されている
+      expect(result.current.currentDrawTool).toBe('HANDWRITING_LINE');
+
+      let ok = false;
+      act(() => {
+        ok = result.current.switchSelectionToSplit();
+      });
+      expect(ok).toBe(true);
+      //分割対象（EDIT表示）に戻り、checkSplitLineが機能する状態になる
+      expect(result.current.drawLine.current[0].properties).toEqual(['EDIT']);
+      (checkDistanceFromLine as jest.Mock).mockReturnValue({ isNear: true, distance: 1 });
+      expect(result.current.checkSplitLine([5, 0])).toBe(true);
     });
 
     it('手書きストロークは自身のスタイルが優先される', () => {

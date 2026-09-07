@@ -80,6 +80,7 @@ export const mockDrawingToolsContextValue: DrawingToolsContextType = {
 
   //個別色レイヤ
   isIndividualStyleLayer: false,
+  switchSelectionToSplit: jest.fn(() => true),
   //手書きペンのサブツールと設定モーダル
   handwritingSubTool: 'PEN',
   setHandwritingSubTool: jest.fn() as React.Dispatch<React.SetStateAction<any>>,
@@ -230,6 +231,7 @@ export const mockMapMemoContextValue: MapMemoContextType = {
   isUndoable: false,
   isRedoable: false,
   arrowStyle: 'NONE',
+  setArrowStyle: jest.fn(),
   mapMemoLines: [],
   selectMapMemoTool: jest.fn(),
   setPenWidth: jest.fn(),

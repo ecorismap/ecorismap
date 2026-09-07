@@ -5,7 +5,7 @@ import Svg, { G, Path, Circle, Line, Polygon } from 'react-native-svg';
 import { pointsToSvg, getRotatedPointsTransformFrame } from '../../utils/Coords';
 import { ulid } from 'ulid';
 import { COLOR } from '../../constants/AppConstants';
-import { isBrushTool, isFreehandTool, isHandwritingTool, isPlotTool, isPolygonTool } from '../../utils/General';
+import { isBrushTool, isHandwritingTool, isPlotTool, isPolygonTool } from '../../utils/General';
 import { DrawingToolsContext } from '../../contexts/DrawingTools';
 import { MapMemoContext } from '../../contexts/MapMemo';
 import { SVGDrawingContext } from '../../contexts/SVGDrawing';
@@ -78,7 +78,7 @@ export const SvgView = React.memo(() => {
   const iosRemountKey =
     Platform.OS !== 'ios'
       ? undefined
-      : isFreehandTool(currentDrawTool) || isHandwritingTool(currentDrawTool)
+      : isHandwritingTool(currentDrawTool)
       ? drawLine.current.length === 0
         ? 'svg-empty'
         : 'svg-draw'
@@ -149,8 +149,21 @@ export const SvgView = React.memo(() => {
             //ブラシは確定（一括保存）後に記号として描画されるため、セッション中はなぞった線で示す
             const isBrushStroke = style !== undefined && isBrushTool(style.strokeStyle);
             const arrowStyle = (style?.strokeStyle || 'NONE') as ArrowStyleType;
+            //編集セッション中のストロークは新規・編集選択を問わず選択色（一括変形と同じ黄色）の
+            //半透明ハローで「編集中（未確定）」と分かるようにする（ポリゴンの縁取りと同じ考え方）。
+            //長押しで修正対象が確定したストロークはオレンジに変える
+            const isModifyingLine = properties.includes('MODIFYING');
             return (
               <G key={ulid()}>
+                <Path
+                  d={pointsToSvg(xy)}
+                  stroke={isModifyingLine ? 'darkorange' : '#F7C114'}
+                  strokeOpacity={isModifyingLine ? 1 : 0.7}
+                  strokeWidth={(isBrushStroke ? 2 : strokeWidth) + 10}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  fill="none"
+                />
                 <Path
                   d={pointsToSvg(xy)}
                   stroke={strokeColor}
@@ -167,9 +180,6 @@ export const SvgView = React.memo(() => {
             );
           }
 
-          // フリーハンドツールの場合はマーカーを表示しない
-          const isFreehand = isFreehandTool(currentDrawTool);
-
           // 最初のポイントを強調表示（編集モード時、プロット・分割・地図移動(MOVE)ツール）
           const isFirstPointHighlighted =
             properties.includes('EDIT') &&
@@ -177,9 +187,7 @@ export const SvgView = React.memo(() => {
 
           // 編集中(EDIT)オブジェクトは、地図移動(MOVE)モードでも全頂点のマーカーを表示する。
           // SELECTモードと非編集ラインの挙動は従来どおり。
-          const startStyle = isFreehand
-            ? ''
-            : properties.includes('EDIT')
+          const startStyle = properties.includes('EDIT')
             ? currentDrawTool === 'SELECT'
               ? ''
               : isFirstPointHighlighted
@@ -195,9 +203,7 @@ export const SvgView = React.memo(() => {
             (isPlotTool(currentDrawTool) || currentDrawTool === 'SPLIT_LINE' || currentDrawTool === 'MOVE')
               ? `url(#plot)`
               : '';
-          const endStyle = isFreehand
-            ? ''
-            : properties.includes('EDIT')
+          const endStyle = properties.includes('EDIT')
             ? `url(#firstPoint)`
             : properties.includes('POINT')
             ? `url(#point)`

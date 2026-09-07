@@ -15,10 +15,6 @@ export function isPlotTool(tool: string) {
   return ['PLOT_POINT', 'PLOT_LINE', 'PLOT_POLYGON', 'ADD_LOCATION_POINT'].includes(tool);
 }
 
-export function isFreehandTool(tool: string) {
-  return tool === 'FREEHAND_LINE';
-}
-
 export function isPointTool(tool: string): tool is PointToolType {
   return Object.keys(POINTTOOL).includes(tool);
 }

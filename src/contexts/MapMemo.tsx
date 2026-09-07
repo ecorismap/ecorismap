@@ -25,6 +25,7 @@ export interface MapMemoContextType {
   isRedoable: boolean;
   mapMemoLines: MapMemoLine[];
   arrowStyle: ArrowStyleType;
+  setArrowStyle: (style: ArrowStyleType) => void;
 
   // Map memo actions
   selectMapMemoTool: (tool: MapMemoToolType | undefined) => void;
@@ -52,6 +53,7 @@ export const MapMemoContext = createContext<MapMemoContextType>({
   isRedoable: false,
   mapMemoLines: [],
   arrowStyle: 'NONE',
+  setArrowStyle: () => {},
   selectMapMemoTool: () => {},
   setPenWidth: () => {},
   setVisibleMapMemoColor: () => {},

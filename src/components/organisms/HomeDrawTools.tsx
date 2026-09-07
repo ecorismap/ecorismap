@@ -1,6 +1,6 @@
 import React, { useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { BRUSH, COLOR, DRAWTOOL, MAPMEMOTOOL, PEN_WIDTH, POINTTOOL, STAMP } from '../../constants/AppConstants';
+import { BRUSH, COLOR, DRAWTOOL, ERASER, LINETOOL, MAPMEMOTOOL, POINTTOOL, STAMP } from '../../constants/AppConstants';
 
 import { Button } from '../atoms';
 import { HomeLineToolButton } from './HomeLineToolButton';
@@ -21,8 +21,10 @@ import { LocationTrackingContext } from '../../contexts/LocationTracking';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { t } from '../../i18n/config';
 import { useRootRoute } from '../../contexts/RootNavigationContext';
-import { isBrushTool, isStampTool } from '../../utils/General';
-import { HandwritingSubToolType, PenWidthType } from '../../types';
+import { isBrushTool, isEraserTool, isHandwritingTool, isStampTool } from '../../utils/General';
+import { HandwritingSubToolType, MapMemoToolGroupType, MapMemoToolType } from '../../types';
+import { ConfirmAsync } from '../molecules/AlertAsync';
+import { HomeModalStyleSettings } from './HomeModalStyleSettings';
 
 export const HomeDrawTools = React.memo(() => {
   const {
@@ -36,58 +38,118 @@ export const HomeDrawTools = React.memo(() => {
     setPolygonTool,
     isIndividualStyleLayer,
     selectedObjectWidthType,
+    selectedObjectArrowStyle,
+    switchSelectionToSplit,
     handwritingSubTool,
     setHandwritingSubTool,
     openHandwritingSettingsTab,
   } = useContext(DrawingToolsContext);
-  const { setVisibleMapMemoColor, currentPenWidth, setPenWidth } = useContext(MapMemoContext);
+  const {
+    currentPenWidth,
+    setPenWidth,
+    currentMapMemoTool,
+    selectMapMemoTool,
+    arrowStyle,
+    setArrowStyle,
+    colorPickerColor,
+    selectPenColor,
+  } = useContext(MapMemoContext);
 
-  //手書きポリゴン用の太さ選択（タップで細/中/太を横展開して選ぶ）
-  const [isWidthPaletteOpen, setWidthPaletteOpen] = useState(false);
-  const selectPenWidth = (width: PenWidthType) => {
-    setPenWidth(width);
-    setWidthPaletteOpen(false);
-  };
-  const widthLabel = (width: PenWidthType) =>
-    width === 'PEN_THIN'
-      ? t('Home.penPicker.thin')
-      : width === 'PEN_THICK'
-      ? t('Home.penPicker.thick')
-      : t('Home.penPicker.medium');
+  //スタイル設定モーダル（太さ・矢印・色をタブで設定）
+  const [visibleStyleSettings, setVisibleStyleSettings] = useState(false);
 
-  //手書きペンで最後に使ったスタンプ・ブラシ種別（ボタン再タップで復元。初回は設定を開く）
-  const lastHandwritingTool = useRef<{ STAMP?: HandwritingSubToolType; BRUSH?: HandwritingSubToolType }>({});
+  //手書きで最後に使ったスタンプ・ブラシ・消しゴム種別（グループ再選択で復元。初回は設定を開く）
+  const lastHandwritingTool = useRef<{
+    STAMP?: HandwritingSubToolType;
+    BRUSH?: HandwritingSubToolType;
+    ERASER?: MapMemoToolType;
+  }>({});
   useEffect(() => {
     if (isStampTool(handwritingSubTool)) lastHandwritingTool.current.STAMP = handwritingSubTool;
     else if (isBrushTool(handwritingSubTool)) lastHandwritingTool.current.BRUSH = handwritingSubTool;
   }, [handwritingSubTool]);
+  useEffect(() => {
+    if (isEraserTool(currentMapMemoTool)) lastHandwritingTool.current.ERASER = currentMapMemoTool;
+  }, [currentMapMemoTool]);
 
-  //サブツール選択: 選択中グループの再タップは設定モーダルを開き、未選択グループは前回種別を復元する
-  const pressHandwritingPen = () => {
-    if (handwritingSubTool === 'PEN') {
-      openHandwritingSettingsTab('PEN');
-    } else {
-      setHandwritingSubTool('PEN');
+  //スタンプ・ブラシ・消しゴム・設定・分割ボタンは一旦非表示（再表示するときはtrueに）
+  const showHandwritingSubTools = false as boolean;
+
+  //手書き系ツールは個別ボタン（ペン/スタンプ/ブラシ/消しゴム）。横展開パレットは廃止
+  const eraserActive = isEraserTool(currentMapMemoTool);
+  const handwritingActive = isHandwritingTool(currentDrawTool);
+  const hwActive = handwritingActive || eraserActive;
+  const hwGroup: MapMemoToolGroupType = eraserActive
+    ? 'ERASER'
+    : isStampTool(handwritingSubTool)
+      ? 'STAMP'
+      : isBrushTool(handwritingSubTool)
+        ? 'BRUSH'
+        : 'PEN';
+
+  //手書きツールを有効化する（消しゴム中なら解除してから）
+  const startHandwriting = () => {
+    if (eraserActive) selectMapMemoTool(undefined);
+    if (!handwritingActive) {
+      setLineTool('HANDWRITING_LINE');
+      selectDrawTool('HANDWRITING_LINE');
     }
   };
-  const pressHandwritingStamp = () => {
-    if (isStampTool(handwritingSubTool)) {
-      openHandwritingSettingsTab('STAMP');
+
+  const pressPenButton = () => {
+    if (handwritingActive && hwGroup === 'PEN') {
+      //有効中の再タップは解除（編集選択中は解除しない。抜けるのはキャンセルで）
+      if (!isSelectedDraw) selectDrawTool(currentDrawTool);
       return;
     }
+    startHandwriting();
+    setHandwritingSubTool('PEN');
+  };
+
+  const pressStampButton = () => {
+    if (handwritingActive && hwGroup === 'STAMP') {
+      if (!isSelectedDraw) selectDrawTool(currentDrawTool);
+      return;
+    }
+    startHandwriting();
     const last = lastHandwritingTool.current.STAMP;
     if (last !== undefined) setHandwritingSubTool(last);
     else openHandwritingSettingsTab('STAMP');
   };
-  const pressHandwritingBrush = () => {
-    if (isBrushTool(handwritingSubTool)) {
-      openHandwritingSettingsTab('BRUSH');
+
+  const pressBrushButton = () => {
+    if (handwritingActive && hwGroup === 'BRUSH') {
+      if (!isSelectedDraw) selectDrawTool(currentDrawTool);
       return;
     }
+    startHandwriting();
     const last = lastHandwritingTool.current.BRUSH;
     if (last !== undefined) setHandwritingSubTool(last);
     else openHandwritingSettingsTab('BRUSH');
   };
+
+  const pressEraserButton = async () => {
+    if (eraserActive) {
+      selectMapMemoTool(undefined);
+      return;
+    }
+    //消しゴムはメモのツールとして動き、手書きセッションは解除される。描きかけがあれば確認する
+    if (isEditingDraw || isEditingObject) {
+      const ret = await ConfirmAsync(t('Home.confirm.discard'));
+      if (!ret) return;
+    }
+    const last = lastHandwritingTool.current.ERASER;
+    if (last !== undefined) selectMapMemoTool(last);
+    else openHandwritingSettingsTab('ERASER');
+  };
+
+  const pressSplitButton = () => {
+    //編集選択中は選択オブジェクトを分割対象にしてから分割ツールへ
+    if (isSelectedDraw && handwritingActive && !switchSelectionToSplit()) return;
+    setLineTool('SPLIT_LINE');
+    selectDrawTool('SPLIT_LINE');
+  };
+
   const { editPositionMode, finishEditPosition } = useContext(LocationTrackingContext);
   const { params } = useRootRoute<'Home'>();
   const insets = useSafeAreaInsets();
@@ -122,15 +184,6 @@ export const HomeDrawTools = React.memo(() => {
       //子（ツールボタン群）がストレッチして中身が横ずれしないようにする
       alignItems: 'flex-start',
     },
-    widthPaletteButton: {
-      marginRight: 5,
-      width: 40,
-    },
-    widthPaletteRow: {
-      alignSelf: 'flex-start',
-      flexDirection: 'row',
-      marginTop: 2,
-    },
   });
 
   return (
@@ -138,22 +191,38 @@ export const HomeDrawTools = React.memo(() => {
       {/* 編集完了・キャンセルボタン */}
       <HomeEditControlButtons />
 
+      {/* スタイル設定モーダル（太さ・矢印・色をタブで設定） */}
+      <HomeModalStyleSettings
+        visible={visibleStyleSettings}
+        showArrow={featureButton === 'LINE'}
+        initialPenWidth={selectedObjectWidthType ?? currentPenWidth}
+        initialArrowStyle={selectedObjectArrowStyle ?? arrowStyle}
+        initialColor={colorPickerColor}
+        selectPenWidth={setPenWidth}
+        selectArrowStyle={setArrowStyle}
+        selectColor={selectPenColor}
+        close={() => setVisibleStyleSettings(false)}
+      />
+
       {/* 編集レイヤ名の表示・切替チップ */}
       <HomeEditingLayerButton />
 
       <View style={styles.buttonContainer}>
         <View style={styles.toolColumn}>
-          {featureButton === 'POINT' && (!editPositionMode || editPositionWithoutCoord) && !isSelectedDraw && !isEditingDraw && (
-            <View style={styles.button}>
-              <Button
-                name={POINTTOOL.ADD_LOCATION_POINT}
-                backgroundColor={COLOR.ALFABLUE}
-                borderRadius={10}
-                onPress={() => selectDrawTool('ADD_LOCATION_POINT')}
-                labelText={t('Home.label.addLocationPoint')}
-              />
-            </View>
-          )}
+          {featureButton === 'POINT' &&
+            (!editPositionMode || editPositionWithoutCoord) &&
+            !isSelectedDraw &&
+            !isEditingDraw && (
+              <View style={styles.button}>
+                <Button
+                  name={POINTTOOL.ADD_LOCATION_POINT}
+                  backgroundColor={COLOR.ALFABLUE}
+                  borderRadius={10}
+                  onPress={() => selectDrawTool('ADD_LOCATION_POINT')}
+                  labelText={t('Home.label.addLocationPoint')}
+                />
+              </View>
+            )}
           {featureButton === 'POINT' && currentDrawTool === 'ADD_LOCATION_POINT' && isEditingDraw && (
             <View style={styles.button}>
               <Button
@@ -193,10 +262,93 @@ export const HomeDrawTools = React.memo(() => {
             <HomeLineToolButton
               disabled={false}
               currentDrawTool={currentDrawTool}
-              isEditingDraw={isEditingDraw}
               selectDrawTool={selectDrawTool}
               setLineTool={setLineTool}
             />
+          )}
+
+          {/* 手書き系ツール（LINEのみ）。ペン/スタンプ/ブラシ/消しゴムを個別ボタンで直接選ぶ */}
+          {featureButton === 'LINE' && (
+            <>
+              <View style={styles.button}>
+                <Button
+                  name={LINETOOL.HANDWRITING_LINE}
+                  backgroundColor={handwritingActive && hwGroup === 'PEN' ? COLOR.ALFARED : COLOR.ALFABLUE}
+                  borderRadius={10}
+                  onPress={pressPenButton}
+                  labelText={t('Home.label.handwritingLine')}
+                  labelFontSize={9}
+                />
+              </View>
+              {showHandwritingSubTools && (
+                <>
+                  <View style={styles.button}>
+                    <Button
+                      name={
+                        // @ts-ignore 現在のスタンプ種別のアイコンを表示
+                        (handwritingActive && hwGroup === 'STAMP' && STAMP[handwritingSubTool]) || MAPMEMOTOOL.STAMP
+                      }
+                      backgroundColor={handwritingActive && hwGroup === 'STAMP' ? COLOR.ALFARED : COLOR.ALFABLUE}
+                      borderRadius={10}
+                      onPress={pressStampButton}
+                      labelText={t('Home.label.stamp')}
+                      labelFontSize={9}
+                    />
+                  </View>
+                  <View style={styles.button}>
+                    <Button
+                      name={
+                        // @ts-ignore 現在のブラシ種別のアイコンを表示
+                        (handwritingActive && hwGroup === 'BRUSH' && BRUSH[handwritingSubTool]) || MAPMEMOTOOL.BRUSH
+                      }
+                      backgroundColor={handwritingActive && hwGroup === 'BRUSH' ? COLOR.ALFARED : COLOR.ALFABLUE}
+                      borderRadius={10}
+                      onPress={pressBrushButton}
+                      labelText={t('Home.label.brush')}
+                    />
+                  </View>
+                  <View style={styles.button}>
+                    <Button
+                      name={
+                        // @ts-ignore 現在の消しゴム種別のアイコンを表示
+                        (eraserActive && ERASER[currentMapMemoTool]) || MAPMEMOTOOL.ERASER
+                      }
+                      backgroundColor={eraserActive ? COLOR.ALFARED : COLOR.ALFABLUE}
+                      borderRadius={10}
+                      onPress={pressEraserButton}
+                      labelText={t('Home.label.eraser')}
+                      labelFontSize={9}
+                    />
+                  </View>
+                </>
+              )}
+            </>
+          )}
+          {/* 分割は単独ボタン。プロット作図中と編集選択中に表示する */}
+          {showHandwritingSubTools &&
+            featureButton === 'LINE' &&
+            ((isEditingDraw && !handwritingActive) || (isSelectedDraw && handwritingActive)) && (
+              <View style={styles.button}>
+                <Button
+                  id={'SPLIT_LINE'}
+                  name={LINETOOL.SPLIT_LINE}
+                  backgroundColor={currentDrawTool === 'SPLIT_LINE' ? COLOR.ALFARED : COLOR.ALFABLUE}
+                  borderRadius={10}
+                  onPress={pressSplitButton}
+                  labelText={t('Home.label.splitLine')}
+                />
+              </View>
+            )}
+          {showHandwritingSubTools && featureButton === 'LINE' && hwActive && (
+            <View style={styles.button}>
+              <Button
+                name={'cog'}
+                backgroundColor={COLOR.ALFABLUE}
+                borderRadius={10}
+                onPress={() => openHandwritingSettingsTab(hwGroup)}
+                labelText={t('Home.label.setting')}
+              />
+            </View>
           )}
           {featureButton === 'POLYGON' && (
             <HomePolygonToolButton
@@ -207,94 +359,31 @@ export const HomeDrawTools = React.memo(() => {
             />
           )}
 
-          {/* LINE手書き選択中のサブツール（ペン/スタンプ/ブラシ） */}
-          {currentDrawTool === 'HANDWRITING_LINE' && (
-            <>
-              <View style={styles.button}>
-                <Button
-                  name={MAPMEMOTOOL.PEN}
-                  backgroundColor={handwritingSubTool === 'PEN' ? COLOR.ALFARED : COLOR.ALFABLUE}
-                  borderRadius={10}
-                  onPress={pressHandwritingPen}
-                  labelText={t('Home.label.pen')}
-                />
-              </View>
-              <View style={styles.button}>
-                <Button
-                  // @ts-ignore
-                  name={STAMP[handwritingSubTool] || STAMP.STAMP}
-                  backgroundColor={isStampTool(handwritingSubTool) ? COLOR.ALFARED : COLOR.ALFABLUE}
-                  borderRadius={10}
-                  onPress={pressHandwritingStamp}
-                  labelText={t('Home.label.stamp')}
-                  labelFontSize={9}
-                />
-              </View>
-              <View style={styles.button}>
-                <Button
-                  // @ts-ignore
-                  name={BRUSH[handwritingSubTool] || BRUSH.BRUSH}
-                  backgroundColor={isBrushTool(handwritingSubTool) ? COLOR.ALFARED : COLOR.ALFABLUE}
-                  borderRadius={10}
-                  onPress={pressHandwritingBrush}
-                  labelText={t('Home.label.brush')}
-                />
-              </View>
-            </>
-          )}
-
-          {/* 太さ・色ボタン。レイヤの色分けが個別のときのみ常時表示し、
-              手書き・通常の作図（プロット・フリーハンド）の両方に現在の色・太さが反映される。
-              個別でないレイヤでは描画はレイヤのスタイル設定に従うため表示しない */}
+          {/* スタイルボタン（太さ・矢印・色選択を集約）。レイヤの色分けが個別のときのみ表示し、
+              手書き・通常の作図（プロット）の両方に現在の設定が反映される。
+              タップで横に太さ/矢印/色選択が開き、太さ・矢印はさらに3択に展開する */}
           {(featureButton === 'LINE' || featureButton === 'POLYGON') && isIndividualStyleLayer && (
             <>
-              {!isWidthPaletteOpen ? (
-                <View style={styles.button}>
-                  <Button
-                    name={PEN_WIDTH[currentPenWidth]}
-                    backgroundColor={COLOR.ALFABLUE}
-                    borderRadius={10}
-                    onPress={() => {
-                      //単一オブジェクト選択中は、そのオブジェクトの太さを初期値にして開く（プロパティパネル方式）
-                      if (selectedObjectWidthType !== undefined) setPenWidth(selectedObjectWidthType);
-                      setWidthPaletteOpen(true);
-                    }}
-                    labelText={widthLabel(currentPenWidth)}
-                  />
-                </View>
-              ) : (
-                <View style={styles.widthPaletteRow}>
-                  {(['PEN_THIN', 'PEN_MEDIUM', 'PEN_THICK'] as PenWidthType[]).map((width) => (
-                    <View key={width} style={styles.widthPaletteButton}>
-                      <Button
-                        name={PEN_WIDTH[width]}
-                        backgroundColor={currentPenWidth === width ? COLOR.ALFARED : COLOR.ALFABLUE}
-                        borderRadius={10}
-                        onPress={() => selectPenWidth(width)}
-                        labelText={widthLabel(width)}
-                      />
-                    </View>
-                  ))}
-                </View>
-              )}
               <View style={styles.button}>
                 <Button
-                  name={MAPMEMOTOOL.COLOR}
+                  name={'palette'}
                   backgroundColor={COLOR.ALFABLUE}
                   borderRadius={10}
-                  onPress={() => setVisibleMapMemoColor(true)}
-                  labelText={t('Home.label.color')}
+                  onPress={() => setVisibleStyleSettings(true)}
+                  labelText={t('Home.label.styleTool')}
+                  labelFontSize={9}
                 />
               </View>
             </>
           )}
         </View>
 
-        {!editPositionMode && !isSelectedDraw && !isEditingDraw && <SelectToolButton disabled={isEditingObject} />}
+        {/* 編集中はグレーアウトではなく非表示にする */}
+        {!editPositionMode && !isSelectedDraw && !isEditingDraw && !isEditingObject && <SelectToolButton />}
         {(isEditingDraw || isEditingObject) && <MoveToolButton />}
         <PencilLockButton />
-        {(isEditingDraw || isEditingObject) && <UndoToolButton />}
-        {(isEditingDraw || isEditingObject) && <RedoToolButton />}
+        {(isEditingDraw || isEditingObject || eraserActive) && <UndoToolButton />}
+        {(isEditingDraw || isEditingObject || eraserActive) && <RedoToolButton />}
         {/* ポイントは選択中（編集選択）のみ削除可。新規作図中の表示は避ける（ライン・ポリゴンは従来どおり） */}
         {(featureButton === 'POINT' ? isSelectedDraw : isEditingDraw || isEditingObject) && !editPositionMode && (
           <DeleteToolButton />

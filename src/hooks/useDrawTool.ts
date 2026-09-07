@@ -45,8 +45,6 @@ import {
   checkDistanceFromLine,
   findNearNodeIndex,
   getSnappedPositionWithLine,
-  isClosedPolygon,
-  isNearWithPlot,
   modifyLineWithSource,
   smoothJunctions,
   closeFreehandPolygonSeam,
@@ -60,7 +58,7 @@ import { deleteRecordsAction } from '../modules/dataSet';
 import { MapRef } from 'react-map-gl/maplibre';
 import { editSettingsAction } from '../modules/settings';
 import { useRecord } from './useRecord';
-import { isBrushTool, isFreehandTool, isHandwritingTool, isPlotTool, isPointTool, isStampTool } from '../utils/General';
+import { isBrushTool, isHandwritingTool, isPlotTool, isPointTool, isStampTool } from '../utils/General';
 import { PositionFilter } from '../utils/OneEuroFilter';
 import { Position } from 'geojson';
 import { RootState } from '../store';
@@ -143,7 +141,7 @@ export type UseDrawToolReturnType = {
   };
   saveLine: (
     defaultStyle?: DrawLineStyleType,
-    applyStyleToSelected?: { color: boolean; width: boolean }
+    applyStyleToSelected?: { color: boolean; width: boolean; arrow?: boolean }
   ) => {
     isOK: boolean;
     message: string;
@@ -152,7 +150,7 @@ export type UseDrawToolReturnType = {
   };
   savePolygon: (
     defaultStyle?: DrawLineStyleType,
-    applyStyleToSelected?: { color: boolean; width: boolean }
+    applyStyleToSelected?: { color: boolean; width: boolean; arrow?: boolean }
   ) => {
     isOK: boolean;
     message: string;
@@ -189,23 +187,21 @@ export type UseDrawToolReturnType = {
   setIsPinch: Dispatch<SetStateAction<boolean>>;
   getPXY: (event: GestureResponderEvent) => Position;
   handleGrantPlot: (pXY: Position) => void;
-  handleGrantFreehand: (pXY: Position) => boolean;
   handwritingSubTool: HandwritingSubToolType;
   setHandwritingSubTool: Dispatch<SetStateAction<HandwritingSubToolType>>;
   handleGrantHandwriting: (pXY: Position, penStyle: HandwritingPenStyleType) => void;
   convertSelectionToHandwriting: (penStyle: HandwritingPenStyleType) => void;
+  switchSelectionToSplit: () => boolean;
+  convertSessionToPlot: (featureType: FeatureButtonType) => void;
+  applySelectionStylePreview: (style: { strokeColor?: string; strokeWidth?: number; strokeStyle?: string }) => void;
   handleMoveHandwriting: (pXY: Position, timestampMs: number) => void;
   handleReleaseHandwriting: () => void;
   commitHandwritingStroke: () => void;
   cancelHandwritingStroke: () => void;
   handleMovePlot: (pXY: Position) => void;
-  handleMoveFreehand: (pXY: Position, timestampMs: number) => void;
   handleGrantSelect: (pXY: Position) => void;
   handleMoveSelect: (pXY: Position) => void;
   handleReleaseSelect: (pXY: Position) => void;
-  handleReleaseFreehand: () => void;
-  commitFreehandStroke: () => void;
-  cancelFreehandStroke: () => void;
   cancelPlotGrant: () => void;
   redoDraw: () => void;
   handleReleasePlotPoint: () => void;
@@ -696,7 +692,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     const lineXY = drawLine.current[index].xy;
 
     // 最小ポイント数のチェック
-    if ((currentDrawTool === 'PLOT_LINE' || currentDrawTool === 'FREEHAND_LINE') && lineXY.length < 2) return false;
+    if (currentDrawTool === 'PLOT_LINE' && lineXY.length < 2) return false;
     if ((currentDrawTool === 'PLOT_POLYGON' || currentDrawTool === 'HANDWRITING_POLYGON') && lineXY.length < 3) return false;
 
     pushUndo({
@@ -764,54 +760,6 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
 
   /******************************************************************: */
 
-  const tryFinishFreehandEditObject = useCallback(
-    (pXY: Position) => {
-      // フリーハンドの場合は始点タップで確定しない（確定ボタンを使う）
-      if (currentDrawTool === 'FREEHAND_LINE' || isHandwritingTool(currentDrawTool)) return false;
-      const index = editingObjectIndex.current;
-      if (index === -1) return false;
-      const lineXY = drawLine.current[index].xy;
-      if (currentDrawTool === 'PLOT_POLYGON' && lineXY.length < 3) return false;
-      const isNearWithFirstNode = isNearWithPlot(pXY, lineXY[0]);
-      if (!isNearWithFirstNode) return false;
-
-      pushUndo({
-        index: index,
-        latlon: drawLine.current[index].latlon,
-        action: 'FINISH',
-      });
-      //最初のノードをタッチで編集終了
-      if (currentDrawTool === 'PLOT_POLYGON') {
-        //ポリゴンは閉じてなかったら閉じる
-        if (!isClosedPolygon(lineXY)) {
-          lineXY.push(lineXY[0]);
-          drawLine.current[index].latlon = [...drawLine.current[index].latlon, drawLine.current[index].latlon[0]];
-        }
-      }
-      if (drawLine.current[index].latlon.length !== lineXY.length) {
-        if (__DEV__) console.warn('tryFinishFreehandEditObject: xy/latlon length mismatch, regenerating');
-        drawLine.current[index].latlon = xyArrayToLatLonArray(lineXY, mapRegion, mapSize, mapViewRef);
-      }
-      drawLine.current[index].properties = drawLine.current[index].properties.filter((p) => p !== 'EDIT');
-      editingObjectIndex.current = -1;
-      isEditingObject.current = false;
-      editingLineXY.current = [];
-
-      return true;
-    },
-    [
-      editingObjectIndex,
-      drawLine,
-      currentDrawTool,
-      pushUndo,
-      mapRegion,
-      mapSize,
-      mapViewRef,
-      isEditingObject,
-      editingLineXY,
-    ]
-  );
-
   const editStartNewFreehandObject = useCallback(
     (pXY: Position) => {
       //console.log('New Line');
@@ -862,27 +810,6 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     },
     [editingLineXY]
   );
-
-  const createNewFreehandObject = useCallback(() => {
-    const index = drawLine.current.length - 1;
-    //1€フィルタの遅延で終点が実際のタッチ位置より手前になるため、最後の生タッチ位置で終点を確定する
-    const finalXY = lastTouchXY.current;
-    if (finalXY !== null) {
-      const xy = drawLine.current[index].xy;
-      const last = xy[xy.length - 1];
-      if (last === undefined || finalXY[0] !== last[0] || finalXY[1] !== last[1]) {
-        drawLine.current[index].xy = [...xy, finalXY];
-        drawLine.current[index].latlon = [
-          ...drawLine.current[index].latlon,
-          xyToLatLon(finalXY, mapRegion, mapSize, mapViewRef),
-        ];
-      }
-    }
-    if (drawLine.current[index].xy.length < 2) return;
-    //描いた形をそのまま保持する（手ぶれ除去は描画中の1€フィルタが担い、離した瞬間に形を変えない）
-    drawLine.current[index].properties = ['EDIT'];
-    editingObjectIndex.current = index;
-  }, [drawLine, editingObjectIndex, mapRegion, mapSize, mapViewRef]);
 
   const editFreehandObject = useCallback(() => {
     // //ライン修正の場合
@@ -970,7 +897,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     return { isOK: true, message: '', layer: layer, recordSet: savedRecordSet };
   }, [addRecord, findLayer, generateRecord, getEditableLayerAndRecordSetWithCheck, resetDrawTools, updateRecord]);
 
-  const saveLine = useCallback((defaultStyle?: DrawLineStyleType, applyStyleToSelected?: { color: boolean; width: boolean }) => {
+  const saveLine = useCallback((defaultStyle?: DrawLineStyleType, applyStyleToSelected?: { color: boolean; width: boolean; arrow?: boolean }) => {
     //削除したものを取り除く
     drawLine.current = drawLine.current.filter((line) => line.xy.length !== 0);
     //有効なラインかチェック(ポイントの数)
@@ -1003,11 +930,11 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
         const updatedRecord: RecordType = { ...line.record, coords, centroid };
         const recordLayer = findLayer(line.layerId);
         if (recordLayer === undefined) continue;
-        //編集選択中に操作した項目（色・太さ）だけを個別色レイヤの選択レコードへ反映する。
+        //編集選択中に操作した項目（色・太さ・矢印）だけを個別色レイヤの選択レコードへ反映する。
         //操作していない項目は元の値を保持する（太さだけ変えたのに色が変わる事故を防ぐ）
         if (
           applyStyleToSelected !== undefined &&
-          (applyStyleToSelected.color || applyStyleToSelected.width) &&
+          (applyStyleToSelected.color || applyStyleToSelected.width || applyStyleToSelected.arrow) &&
           defaultStyle !== undefined &&
           isIndividualStrokeLayer(recordLayer)
         ) {
@@ -1016,6 +943,10 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
           if (applyStyleToSelected.width) {
             updatedRecord.field._strokeWidth = defaultStyle.strokeWidth;
             updatedRecord.field._zoom = defaultStyle.zoom;
+          }
+          //ブラシストローク（_strokeStyleがブラシ種別）は矢印の対象外
+          if (applyStyleToSelected.arrow && !isBrushTool(String(updatedRecord.field._strokeStyle ?? ''))) {
+            updatedRecord.field._strokeStyle = defaultStyle.strokeStyle;
           }
         }
         //recordが存在する場合は更新。存在しない場合は新規追加。splitLineに対応するため
@@ -1063,7 +994,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     updateRecord,
   ]);
 
-  const savePolygon = useCallback((defaultStyle?: DrawLineStyleType, applyStyleToSelected?: { color: boolean; width: boolean }) => {
+  const savePolygon = useCallback((defaultStyle?: DrawLineStyleType, applyStyleToSelected?: { color: boolean; width: boolean; arrow?: boolean }) => {
     //削除したものを取り除く
     drawLine.current = drawLine.current.filter((line) => line.xy.length !== 0);
 
@@ -1494,17 +1425,33 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
       if (features.length === 0) return false;
       resetDrawTools();
       convertLineFeatureToDrawLine(layer.id, features);
-      enterTransformSelection();
+      //プロット由来（頂点が少ない）ラインの単一選択はノード編集に入る（タップ選択と同じ）。
+      //手書き由来（頂点が多い）はhandleReleaseSelectで手書きモードへ変換される
+      if (
+        featureButton === 'LINE' &&
+        features.length === 1 &&
+        drawLine.current[0].xy.length < HANDWRITING_SELECT_MIN_POINTS
+      ) {
+        changeToEditingObject(0, 'LINE');
+      } else {
+        enterTransformSelection();
+      }
     } else {
       const features = selectPolygonFeaturesByArea(recordSet as PolygonRecordType[], selectLineCoords);
       if (features.length === 0) return false;
       resetDrawTools();
       convertPolygonFeatureToDrawLine(layer.id, features);
-      enterTransformSelection();
+      //プロット由来のポリゴンも単一選択はノード編集に入る
+      if (features.length === 1 && drawLine.current[0].xy.length < HANDWRITING_SELECT_MIN_POINTS) {
+        changeToEditingObject(0, 'POLYGON');
+      } else {
+        enterTransformSelection();
+      }
     }
     isSelectedDraw.current = true;
     return true;
   }, [
+    changeToEditingObject,
     convertLineFeatureToDrawLine,
     convertPointFeatureToDrawLine,
     convertPolygonFeatureToDrawLine,
@@ -1526,7 +1473,22 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
   const convertSelectionToHandwriting = useCallback(
     (penStyle: HandwritingPenStyleType) => {
       drawLine.current.forEach((line) => {
-        if (line.record === undefined) return;
+        if (line.record === undefined) {
+          //追加（プロット）で作成中の未保存オブジェクトも手書きストロークへ変換する
+          //（EDIT装飾のままだと手書きモードで＋丸マーカーが表示されてしまう）。
+          //既にstyleを持つ手書きストロークはそのまま
+          if (line.style === undefined) {
+            line.properties = ['HANDWRITING'];
+            line.style = {
+              strokeColor: penStyle.strokeColor,
+              strokeWidth: penStyle.strokeWidth,
+              strokeStyle: penStyle.arrowStyle,
+              stamp: '',
+              zoom: mapRegion.zoom,
+            };
+          }
+          return;
+        }
         const field = line.record.field;
         line.properties = ['HANDWRITING'];
         line.style = {
@@ -1546,6 +1508,35 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     },
     [mapRegion.zoom]
   );
+
+  /**
+   * 手書きセッションのストロークをプロット編集へ変換する（手書き→追加の切り替え時）。
+   * 最後のペンストロークを編集対象にしてノード編集できるようにする。
+   * スタンプ・ブラシのストロークは対象外（手書き表示のまま）。手書きストロークが無ければ何もしない
+   */
+  const convertSessionToPlot = useCallback((featureType: FeatureButtonType) => {
+    let lastPenIndex = -1;
+    drawLine.current.forEach((line, index) => {
+      if (!line.properties.includes('HANDWRITING')) return;
+      if (line.style !== undefined && (line.style.stamp !== '' || isBrushTool(line.style.strokeStyle))) return;
+      //ポリゴンは閉じた終点を外してノード編集できるようにする（保存時に再び閉じられる）
+      if (featureType === 'POLYGON' && line.xy.length >= 2) {
+        const first = line.xy[0];
+        const last = line.xy[line.xy.length - 1];
+        if (first[0] === last[0] && first[1] === last[1]) {
+          line.xy = line.xy.slice(0, -1);
+          line.latlon = line.latlon.slice(0, -1);
+        }
+      }
+      line.properties = [];
+      lastPenIndex = index;
+    });
+    if (lastPenIndex === -1) return;
+    drawLine.current[lastPenIndex].properties = ['EDIT'];
+    editingObjectIndex.current = lastPenIndex;
+    isEditingObject.current = true;
+    setRedraw(ulid());
+  }, []);
 
   /**
    * 選択中のオブジェクトを手書きモードで編集するか。
@@ -1690,7 +1681,9 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
         startFeaturesTransform(pXY);
         return;
       }
-      if (!isEditingObject.current) {
+      //手書きセッションから切り替えた直後はisEditingObjectでも編集対象indexが無い（-1）。
+      //その場合は既存ストロークに触らず新規プロットの作成を開始する
+      if (!isEditingObject.current || editingObjectIndex.current === -1) {
         editStartNewPlotObject(pXY);
       } else {
         //プロット中なら、
@@ -1791,109 +1784,53 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     setRedraw(ulid());
   }, [currentDrawTool, drawLine, editingLineXY, editingObjectIndex, isEditingObject, mapRegion, mapSize, mapViewRef, undoLine]);
 
-  const handleGrantFreehand = useCallback(
-    (pXY: Position) => {
-      strokeFilter.current.reset();
-      lastTouchXY.current = pXY;
-      if (isEditingObject.current) {
-        //編集中なら、
-        const isFishished = tryFinishFreehandEditObject(pXY);
-        if (isFishished) {
-          return true;
-        } else {
-          editingLineXY.current = [pXY];
-          return false;
-        }
-      } else {
-        editStartNewFreehandObject(pXY);
-        return false;
-      }
-    },
-    [editStartNewFreehandObject, tryFinishFreehandEditObject]
-  );
-
-  const handleMoveFreehand = useCallback(
-    (pXY: Position, timestampMs: number) => {
-      if (!isEditingObject.current) return;
-
-      lastTouchXY.current = pXY;
-      if (editingObjectIndex.current === -1) {
-        drawFreehandNewLine(pXY, timestampMs);
-      } else {
-        drawFreehandEditingLine(pXY, timestampMs);
-      }
-      setRedraw(ulid());
-    },
-    [drawFreehandEditingLine, drawFreehandNewLine]
-  );
-
-  const handleReleaseFreehand = useCallback(() => {
-    if (editingObjectIndex.current === -1) {
-      createNewFreehandObject();
-    } else {
-      editFreehandObject();
-    }
-
-    if (drawLine.current.length > 0) isEditingDraw.current = true;
-    setRedraw(ulid());
-  }, [createNewFreehandObject, editFreehandObject]);
-
-  /**
-   * フリーハンドの新規ストロークをその場で確定する。
-   * ピンチ開始時に呼ぶことで、描きかけの消失や中断点から再開点への直線化を防ぐ。
-   * 確定後の続き描きは既存の修正ストロークフローに乗る
-   */
-  /**
-   * ピンチ開始がタッチ直後の場合に、Grantで始まったフリーハンドの描きかけを破棄する。
-   * 2本指タッチの1本目で拾った点がストロークとして確定されるのを防ぐ。
-   * 新規ストロークはオブジェクトごと取り消し（undoのNEWも取り除く）、修正ストロークは軌跡のみ破棄する。
-   */
-  const cancelFreehandStroke = useCallback(() => {
-    if (!isEditingObject.current) return;
-    if (!isFreehandTool(currentDrawTool)) return;
-    if (editingObjectIndex.current !== -1) {
-      //修正ストローク中は軌跡を破棄するだけ（次のタッチで再初期化される）
-      editingLineXY.current = [];
-      return;
-    }
-    if (drawLine.current.length === 0) return;
-    drawLine.current = drawLine.current.slice(0, -1);
-    const lastUndo = undoLine.current[undoLine.current.length - 1];
-    if (lastUndo !== undefined && lastUndo.action === 'NEW') undoLine.current.pop();
-    isEditingObject.current = false;
-    setRedraw(ulid());
-  }, [currentDrawTool, drawLine, editingLineXY, editingObjectIndex, isEditingObject, undoLine]);
-
-  const commitFreehandStroke = useCallback(() => {
-    if (!isEditingObject.current) return;
-    if (!isFreehandTool(currentDrawTool)) return;
-    if (editingObjectIndex.current !== -1) {
-      //修正ストローク中は軌跡を破棄するだけ（次のタッチで再初期化される）
-      editingLineXY.current = [];
-      return;
-    }
-    const index = drawLine.current.length - 1;
-    if (index < 0) return;
-    const xy = drawLine.current[index].xy;
-    //Grant以降の累計移動距離。極小なら描画意図なし（2本指タッチの1本目）とみなす
-    let pathLength = 0;
-    for (let i = 1; i < xy.length; i++) {
-      pathLength += Math.hypot(xy[i][0] - xy[i - 1][0], xy[i][1] - xy[i - 1][1]);
-    }
-    if (xy.length >= 2 && pathLength >= PINCH_DISCARD_DISTANCE_PX) {
-      //実質的に描かれたストロークなら確定して修正モードへ
-      drawLine.current[index].properties = ['EDIT'];
-      editingObjectIndex.current = index;
-    } else {
-      //1点だけ・ほぼ動いていない場合は破棄
-      cancelFreehandStroke();
-    }
-  }, [cancelFreehandStroke, currentDrawTool, drawLine, editingObjectIndex, isEditingObject]);
-
   /*************** 手書きペン（HANDWRITING_LINE/HANDWRITING_POLYGON） ***************
    * マップメモと同じ描き味でストロークを描きため、確定ボタンで一括保存するセッション方式。
    * ペンはフリーハンドの描画関数を再利用し、スタンプ・ブラシ（LINEタブのみ）はスナップ先へ_groupで紐づく
    */
+
+  /**
+   * 手書きの編集選択から分割ツールへ切り替える準備。
+   * 選択オブジェクトを分割対象（editingObjectIndex）にし、EDIT表示（頂点マーカー）へ戻す
+   */
+  const switchSelectionToSplit = useCallback(() => {
+    const index = drawLine.current.findIndex((line) => line.record !== undefined);
+    if (index === -1) return false;
+    editingObjectIndex.current = index;
+    drawLine.current[index].properties = ['EDIT'];
+    isEditingObject.current = true;
+    setRedraw(ulid());
+    return true;
+  }, []);
+
+  /**
+   * 編集選択中のスタイル変更を画面上の選択オブジェクト（手書き変換済みストローク）へ即時反映する。
+   * レコード自体は書き換えないため、キャンセルすれば元のスタイルに戻る。
+   * 確定時の書き込みはsaveLine/savePolygonのapplyStyleToSelectedが担う
+   */
+  const applySelectionStylePreview = useCallback(
+    (style: { strokeColor?: string; strokeWidth?: number; strokeStyle?: string }) => {
+      let changed = false;
+      drawLine.current.forEach((line) => {
+        if (line.record === undefined || line.style === undefined) return;
+        const isPenStroke = line.style.stamp === '' && !isBrushTool(line.style.strokeStyle);
+        if (style.strokeColor !== undefined) {
+          line.style.strokeColor = style.strokeColor;
+          changed = true;
+        }
+        if (style.strokeWidth !== undefined && isPenStroke) {
+          line.style.strokeWidth = style.strokeWidth;
+          changed = true;
+        }
+        if (style.strokeStyle !== undefined && isPenStroke) {
+          line.style.strokeStyle = style.strokeStyle;
+          changed = true;
+        }
+      });
+      if (changed) setRedraw(ulid());
+    },
+    []
+  );
 
   const findHandwritingSnapTarget = useCallback(
     (pXY: Position) => {
@@ -1929,8 +1866,9 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
   }, []);
 
   /**
-   * 長押しで押下点付近のセッション内ストロークを修正モードにする（手書きポリゴン用）。
-   * 以降のなぞりはeditingLineXYに積まれ、releaseでeditFreehandObjectにより合成される
+   * 長押しで押下点付近のセッション内ペンストロークを修正モードにする（LINE/POLYGON共通）。
+   * 以降のなぞりはeditingLineXYに積まれ、releaseでeditFreehandObjectにより合成される。
+   * スタンプ・ブラシは対象外
    */
   const startHandwritingModify = useCallback((pXY: Position) => {
     //押下点付近のセッションストロークを探す（末尾=描きかけの新規ストロークは除外）
@@ -1983,8 +1921,8 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
           zoom: mapRegion.zoom,
         };
         activeHandwritingStroke.current = true;
-        //ポリゴンは長押しでセッション内ストロークの修正（なぞり直し）モードに入る
-        if (featureButton === 'POLYGON' && drawLine.current.length > 1) {
+        //長押しでセッション内ストロークの修正（なぞり直し）モードに入る（LINE/POLYGON共通。ペンのみ）
+        if (drawLine.current.length > 1) {
           handwritingLongPressStartXY.current = pXY;
           handwritingLongPressTimer.current = setTimeout(() => {
             handwritingLongPressTimer.current = null;
@@ -2390,22 +2328,20 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     setIsPinch,
     getPXY,
     handleGrantPlot,
-    handleGrantFreehand,
     handleMovePlot,
-    handleMoveFreehand,
     handleGrantSelect,
     handleMoveSelect,
     handleReleaseSelect,
     handleReleasePlotPoint,
     handleReleasePlotLinePolygon,
-    handleReleaseFreehand,
-    commitFreehandStroke,
-    cancelFreehandStroke,
     featuresTransformAngle,
     handwritingSubTool,
     setHandwritingSubTool,
     handleGrantHandwriting,
     convertSelectionToHandwriting,
+    switchSelectionToSplit,
+    convertSessionToPlot,
+    applySelectionStylePreview,
     handleMoveHandwriting,
     handleReleaseHandwriting,
     commitHandwritingStroke,
