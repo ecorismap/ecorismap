@@ -951,6 +951,7 @@
       "uploadData": "push",
       "closeProject": "end",
       "pen": "pen",
+      "tools": "tools",
       "memoSetting": "options",
       "stamp": "stamp",
       "eraser": "eraser",

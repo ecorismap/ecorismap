@@ -75,6 +75,13 @@ export const HomeDrawTools = React.memo(() => {
   //スタンプ・ブラシ・消しゴム・設定・分割ボタンは一旦非表示（再表示するときはtrueに）
   const showHandwritingSubTools = false as boolean;
 
+  //スタンプ・ブラシ・設定をまとめたボタン（個別スタイルのライン編集中のみ表示。タップで横に展開）
+  const [isHwToolPaletteOpen, setHwToolPaletteOpen] = useState(false);
+  const showHwToolPalette = featureButton === 'LINE' && isIndividualStyleLayer && (isEditingDraw || isEditingObject);
+  useEffect(() => {
+    if (!showHwToolPalette) setHwToolPaletteOpen(false);
+  }, [showHwToolPalette]);
+
   //手書き系ツールは個別ボタン（ペン/スタンプ/ブラシ/消しゴム）。横展開パレットは廃止
   const eraserActive = isEraserTool(currentMapMemoTool);
   const handwritingActive = isHandwritingTool(currentDrawTool);
@@ -86,6 +93,15 @@ export const HomeDrawTools = React.memo(() => {
       : isBrushTool(handwritingSubTool)
         ? 'BRUSH'
         : 'PEN';
+
+  const hwToolPaletteIcon =
+    handwritingActive && isStampTool(handwritingSubTool)
+      ? // @ts-ignore スタンプ有効中は現在の種別アイコン
+        STAMP[handwritingSubTool]
+      : handwritingActive && isBrushTool(handwritingSubTool)
+      ? // @ts-ignore ブラシ有効中は現在の種別アイコン
+        BRUSH[handwritingSubTool]
+      : 'tools';
 
   //手書きツールを有効化する（消しゴム中なら解除してから）
   const startHandwriting = () => {
@@ -179,6 +195,15 @@ export const HomeDrawTools = React.memo(() => {
       position: 'absolute',
       top: insets.top + 340,
       // zIndex: 101,
+    },
+    hwPaletteButton: {
+      marginRight: 5,
+      width: 40,
+    },
+    hwPaletteRow: {
+      alignSelf: 'flex-start',
+      flexDirection: 'row',
+      marginTop: 2,
     },
     toolColumn: {
       //子（ツールボタン群）がストレッチして中身が横ずれしないようにする
@@ -280,6 +305,63 @@ export const HomeDrawTools = React.memo(() => {
                   labelFontSize={9}
                 />
               </View>
+              {/* スタンプ・ブラシ・設定の集約ボタン。個別スタイルのライン編集中のみ、タップで横に展開 */}
+              {showHwToolPalette &&
+                (!isHwToolPaletteOpen ? (
+                  <View style={styles.button}>
+                    <Button
+                      // @ts-ignore
+                      name={hwToolPaletteIcon}
+                      backgroundColor={
+                        handwritingActive && (hwGroup === 'STAMP' || hwGroup === 'BRUSH') ? COLOR.ALFARED : COLOR.ALFABLUE
+                      }
+                      borderRadius={10}
+                      onPress={() => setHwToolPaletteOpen(true)}
+                      labelText={t('Home.label.tools')}
+                      labelFontSize={9}
+                    />
+                  </View>
+                ) : (
+                  <View style={styles.hwPaletteRow}>
+                    <View style={styles.hwPaletteButton}>
+                      <Button
+                        name={MAPMEMOTOOL.STAMP}
+                        backgroundColor={handwritingActive && hwGroup === 'STAMP' ? COLOR.ALFARED : COLOR.ALFABLUE}
+                        borderRadius={10}
+                        onPress={() => {
+                          setHwToolPaletteOpen(false);
+                          pressStampButton();
+                        }}
+                        labelText={t('Home.label.stamp')}
+                        labelFontSize={9}
+                      />
+                    </View>
+                    <View style={styles.hwPaletteButton}>
+                      <Button
+                        name={MAPMEMOTOOL.BRUSH}
+                        backgroundColor={handwritingActive && hwGroup === 'BRUSH' ? COLOR.ALFARED : COLOR.ALFABLUE}
+                        borderRadius={10}
+                        onPress={() => {
+                          setHwToolPaletteOpen(false);
+                          pressBrushButton();
+                        }}
+                        labelText={t('Home.label.brush')}
+                      />
+                    </View>
+                    <View style={styles.hwPaletteButton}>
+                      <Button
+                        name={'cog'}
+                        backgroundColor={COLOR.ALFABLUE}
+                        borderRadius={10}
+                        onPress={() => {
+                          setHwToolPaletteOpen(false);
+                          openHandwritingSettingsTab(hwGroup);
+                        }}
+                        labelText={t('Home.label.setting')}
+                      />
+                    </View>
+                  </View>
+                ))}
               {showHandwritingSubTools && (
                 <>
                   <View style={styles.button}>
