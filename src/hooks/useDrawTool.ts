@@ -1425,33 +1425,17 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
       if (features.length === 0) return false;
       resetDrawTools();
       convertLineFeatureToDrawLine(layer.id, features);
-      //プロット由来（頂点が少ない）ラインの単一選択はノード編集に入る（タップ選択と同じ）。
-      //手書き由来（頂点が多い）はhandleReleaseSelectで手書きモードへ変換される
-      if (
-        featureButton === 'LINE' &&
-        features.length === 1 &&
-        drawLine.current[0].xy.length < HANDWRITING_SELECT_MIN_POINTS
-      ) {
-        changeToEditingObject(0, 'LINE');
-      } else {
-        enterTransformSelection();
-      }
+      enterTransformSelection();
     } else {
       const features = selectPolygonFeaturesByArea(recordSet as PolygonRecordType[], selectLineCoords);
       if (features.length === 0) return false;
       resetDrawTools();
       convertPolygonFeatureToDrawLine(layer.id, features);
-      //プロット由来のポリゴンも単一選択はノード編集に入る
-      if (features.length === 1 && drawLine.current[0].xy.length < HANDWRITING_SELECT_MIN_POINTS) {
-        changeToEditingObject(0, 'POLYGON');
-      } else {
-        enterTransformSelection();
-      }
+      enterTransformSelection();
     }
     isSelectedDraw.current = true;
     return true;
   }, [
-    changeToEditingObject,
     convertLineFeatureToDrawLine,
     convertPointFeatureToDrawLine,
     convertPolygonFeatureToDrawLine,
@@ -1557,11 +1541,14 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
       if (isSelected) {
         isEditingDraw.current = true;
         setRedraw(ulid());
-        //手書き由来のオブジェクトは手書きモードで編集する（MEMOタブは手書きツールが無いため対象外）
+        //タップ選択はオブジェクト個別の編集、なげなわ（ドラッグ）は移動・回転モードにする。
+        //個別編集では手書き由来（頂点が多い）のオブジェクトを手書きモードで編集する
+        //（MEMOタブは手書きツールが無いため対象外）
+        const editsIndividually = !isLasso && isHandwrittenSelection();
         if (featureButton === 'POINT') {
           setDrawTool('PLOT_POINT');
         } else if (featureButton === 'LINE') {
-          if (isHandwrittenSelection()) {
+          if (editsIndividually) {
             convertSelectionToHandwriting(handwritingPenStyle.current);
             setLineTool('HANDWRITING_LINE');
             setDrawTool('HANDWRITING_LINE');
@@ -1571,7 +1558,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
         } else if (featureButton === 'MEMO') {
           setDrawTool('PLOT_LINE');
         } else {
-          if (isHandwrittenSelection()) {
+          if (editsIndividually) {
             convertSelectionToHandwriting(handwritingPenStyle.current);
             setPolygonTool('HANDWRITING_POLYGON');
             setDrawTool('HANDWRITING_POLYGON');
@@ -1910,6 +1897,17 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
       if (subTool === 'PEN') {
         strokeFilter.current.reset();
         lastTouchXY.current = pXY;
+        //ポリゴンのフリーは1オブジェクトのみ。既に描いていれば、なぞるだけで修正モードに入る（長押し不要）
+        if (featureButton === 'POLYGON') {
+          const targetIndex = drawLine.current.findIndex((line) => line.properties.includes('HANDWRITING'));
+          if (targetIndex !== -1) {
+            editingObjectIndex.current = targetIndex;
+            isEditingObject.current = true;
+            editingLineXY.current = [pXY];
+            setRedraw(ulid());
+            return;
+          }
+        }
         editStartNewFreehandObject(pXY);
         //手書きストロークにはEDIT装飾（青線・頂点マーカー）を付けない。
         //styleは描き始めから設定し、プレビューも渡されたスタイルで描く（releaseで最終値に更新される）
@@ -1923,8 +1921,8 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
           zoom: mapRegion.zoom,
         };
         activeHandwritingStroke.current = true;
-        //長押しでセッション内ストロークの修正（なぞり直し）モードに入る（LINE/POLYGON共通。ペンのみ）
-        if (drawLine.current.length > 1) {
+        //長押しでセッション内ストロークの修正（なぞり直し）モードに入る（ラインのみ。ペンのみ）
+        if (featureButton === 'LINE' && drawLine.current.length > 1) {
           handwritingLongPressStartXY.current = pXY;
           handwritingLongPressTimer.current = setTimeout(() => {
             handwritingLongPressTimer.current = null;

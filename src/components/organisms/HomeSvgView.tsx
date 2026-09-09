@@ -56,7 +56,7 @@ const renderVertexMarkers = (
 };
 
 export const SvgView = React.memo(() => {
-  const { currentDrawTool, isEditingObject, isAreaSelected } = useContext(DrawingToolsContext);
+  const { currentDrawTool, isEditingObject, isAreaSelected, isIndividualStyleLayer } = useContext(DrawingToolsContext);
   const { drawLine, editingLine, selectLine, featuresTransformAngle } = useContext(SVGDrawingContext);
   //手書きペンの描画中ストローク（release前でstyle未確定）を現在のペン設定で表示するために参照する
   const { penColor, penWidth } = useContext(MapMemoContext);
@@ -113,12 +113,17 @@ export const SvgView = React.memo(() => {
               );
             }
             //ポリゴンは塗りに加えて、外枠を従来の編集スタイルと同じ縁取り線で描いて境界を見やすくする。
-            //長押しで修正対象が確定したストロークはオレンジの縁取りに変えて分かるようにする
+            //塗りは色を個別設定できるレイヤのときだけストロークの色で、そうでなければ従来の編集色
+            //（半透明の青）にする。長押しで修正対象が確定したストロークはオレンジの縁取りに変える
             if (currentDrawTool === 'HANDWRITING_POLYGON') {
               const isModifying = properties.includes('MODIFYING');
               return (
                 <G key={ulid()}>
-                  <Path d={pointsToSvg(xy)} stroke="none" fill={strokeColor} />
+                  <Path
+                    d={pointsToSvg(xy)}
+                    stroke="none"
+                    fill={isIndividualStyleLayer ? strokeColor : COLOR.ALFABLUE2}
+                  />
                   <Path
                     d={pointsToSvg(xy)}
                     stroke={isModifying ? 'darkorange' : 'blue'}

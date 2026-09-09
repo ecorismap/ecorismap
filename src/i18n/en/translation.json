@@ -937,7 +937,7 @@
       "styleTool": "style",
       "splitLine": "split",
       "plotPolygon": "add",
-      "handwritingPolygon": "pen",
+      "handwritingPolygon": "free",
       "pdfsettings": "paper",
       "pdfdownload": "PDF",
       "projects": "project",

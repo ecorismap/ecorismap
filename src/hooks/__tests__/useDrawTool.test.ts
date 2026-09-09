@@ -2017,7 +2017,7 @@ describe('useDrawTool', () => {
       jest.useRealTimers();
     });
 
-    describe('手書きポリゴンの長押し→なぞり修正', () => {
+    describe('手書きポリゴン（フリー）のなぞり修正', () => {
       const startHandwritingPolygon = (result: any) => {
         act(() => {
           result.current.setFeatureButton('POLYGON');
@@ -2027,15 +2027,9 @@ describe('useDrawTool', () => {
         });
       };
 
-      afterEach(() => {
-        jest.useRealTimers();
-      });
-
-      it('長押しで近くのストロークを修正でき、合成後に修正モードが解除される', () => {
-        jest.useFakeTimers();
+      it('描いた面はなぞるだけで修正でき、オブジェクトは増えない', () => {
         const { result } = renderDrawTool();
         startHandwritingPolygon(result);
-        (checkDistanceFromLine as jest.Mock).mockReturnValue({ isNear: false, distance: 9999 });
 
         //1面目を描く
         drawPenStroke(result, [
@@ -2045,8 +2039,7 @@ describe('useDrawTool', () => {
         ]);
         expect(result.current.drawLine.current).toHaveLength(1);
 
-        //長押し（近くにストロークあり）で修正モードに入る
-        (checkDistanceFromLine as jest.Mock).mockReturnValue({ isNear: true, distance: 1 });
+        //長押しなしで、なぞると修正になる（ポリゴンは1オブジェクトのみ）
         (modifyLineWithSource as jest.Mock).mockReturnValue({
           xy: [
             [0, 0],
@@ -2063,15 +2056,6 @@ describe('useDrawTool', () => {
         act(() => {
           result.current.handleGrantHandwriting([5, 0], penStyle);
         });
-        act(() => {
-          jest.advanceTimersByTime(600);
-        });
-        //描きかけの新規ストロークは破棄され、対象1本だけが残る
-        expect(result.current.drawLine.current).toHaveLength(1);
-        //修正対象が確定したことを示すハイライトが付く
-        expect(result.current.drawLine.current[0].properties).toEqual(['HANDWRITING', 'MODIFYING']);
-
-        //なぞって離すと合成され、スタイルとpropertiesは保持される
         act(() => {
           result.current.handleMoveHandwriting([15, 5], 0);
         });
@@ -2079,6 +2063,7 @@ describe('useDrawTool', () => {
           result.current.handleReleaseHandwriting();
         });
         const line = result.current.drawLine.current[0];
+        expect(result.current.drawLine.current).toHaveLength(1);
         expect(line.xy).toEqual([
           [0, 0],
           [20, 0],
@@ -2086,28 +2071,46 @@ describe('useDrawTool', () => {
         ]);
         expect(line.properties).toEqual(['HANDWRITING']);
         expect(line.style?.strokeColor).toBe('rgba(255,0,0,0.7)');
-
-        //修正モードは解除されており、次のタッチは新規ストロークになる
-        (checkDistanceFromLine as jest.Mock).mockReturnValue({ isNear: false, distance: 9999 });
-        drawPenStroke(result, [
-          [50, 50],
-          [60, 50],
-        ]);
-        expect(result.current.drawLine.current).toHaveLength(2);
       });
 
-      it('修正をundoすると座標が戻り、修正モードには残らない', () => {
-        jest.useFakeTimers();
+      it('離れた場所をなぞっても新規オブジェクトは作られない', () => {
         const { result } = renderDrawTool();
         startHandwritingPolygon(result);
-        (checkDistanceFromLine as jest.Mock).mockReturnValue({ isNear: false, distance: 9999 });
         drawPenStroke(result, [
           [0, 0],
           [10, 0],
           [10, 10],
         ]);
 
-        (checkDistanceFromLine as jest.Mock).mockReturnValue({ isNear: true, distance: 1 });
+        (modifyLineWithSource as jest.Mock).mockReturnValue({
+          xy: [
+            [0, 0],
+            [10, 0],
+            [10, 10],
+          ],
+          latlon: [
+            [0, 0],
+            [10, 0],
+            [10, 10],
+          ],
+          junctions: [],
+        });
+        drawPenStroke(result, [
+          [100, 100],
+          [120, 100],
+        ]);
+        expect(result.current.drawLine.current).toHaveLength(1);
+      });
+
+      it('修正をundoすると座標が戻る', () => {
+        const { result } = renderDrawTool();
+        startHandwritingPolygon(result);
+        drawPenStroke(result, [
+          [0, 0],
+          [10, 0],
+          [10, 10],
+        ]);
+
         (modifyLineWithSource as jest.Mock).mockReturnValue({
           xy: [
             [0, 0],
@@ -2121,9 +2124,6 @@ describe('useDrawTool', () => {
         });
         act(() => {
           result.current.handleGrantHandwriting([5, 0], penStyle);
-        });
-        act(() => {
-          jest.advanceTimersByTime(600);
         });
         act(() => {
           result.current.handleMoveHandwriting([15, 5], 0);
@@ -2136,7 +2136,7 @@ describe('useDrawTool', () => {
           [20, 0],
         ]);
 
-        //undoで修正前の座標に戻る（EDITアクション）。修正モードには入らない
+        //undoで修正前の座標に戻る（EDITアクション）
         act(() => {
           result.current.undoDraw();
         });
@@ -2146,41 +2146,6 @@ describe('useDrawTool', () => {
           [10, 10],
         ]);
         expect(result.current.isEditingObject).toBe(true);
-        //修正モードでないので次のタッチは新規ストローク
-        (checkDistanceFromLine as jest.Mock).mockReturnValue({ isNear: false, distance: 9999 });
-        drawPenStroke(result, [
-          [50, 50],
-          [60, 50],
-        ]);
-        expect(result.current.drawLine.current).toHaveLength(2);
-      });
-
-      it('近くにストロークが無い長押しは通常の描画を継続する', () => {
-        jest.useFakeTimers();
-        const { result } = renderDrawTool();
-        startHandwritingPolygon(result);
-        (checkDistanceFromLine as jest.Mock).mockReturnValue({ isNear: false, distance: 9999 });
-        drawPenStroke(result, [
-          [0, 0],
-          [10, 0],
-          [10, 10],
-        ]);
-
-        //離れた場所で長押し→そのまま描き続ける
-        act(() => {
-          result.current.handleGrantHandwriting([100, 100], penStyle);
-        });
-        act(() => {
-          jest.advanceTimersByTime(600);
-        });
-        act(() => {
-          result.current.handleMoveHandwriting([120, 100], 0);
-        });
-        act(() => {
-          result.current.handleReleaseHandwriting();
-        });
-        expect(result.current.drawLine.current).toHaveLength(2);
-        expect(result.current.drawLine.current[1].style?.strokeColor).toBe('rgba(255,0,0,0.7)');
       });
     });
   });
@@ -2320,7 +2285,8 @@ describe('useDrawTool', () => {
         layer: mockIndividualLineLayer,
         recordSet: memoLines,
       });
-      (selectLineFeaturesByArea as jest.Mock).mockReturnValue(memoLines);
+      //タップ選択はオブジェクト個別の編集に入る
+      (selectLineFeatureByLatLon as jest.Mock).mockReturnValue(memoLines[0]);
       mockFindLayer.mockReturnValue(mockIndividualLineLayer);
       mockFindRecord.mockImplementation((_layerId: string, _userId: string, id: string) =>
         memoLines.find((r) => r.id === id)
@@ -2335,12 +2301,11 @@ describe('useDrawTool', () => {
       });
       act(() => {
         result.current.handleGrantSelect([0, 0]);
-        for (let i = 1; i <= 6; i++) result.current.handleMoveSelect([i * 5, 0]);
       });
       act(() => {
-        result.current.handleReleaseSelect([30, 0]);
+        result.current.handleReleaseSelect([0, 0]);
       });
-      //プロット由来（頂点が少ない）の単一選択はノード編集モードに入る（一括変形にしない）
+      //タップ選択は移動・回転ではなく個別の編集モードに入る
       expect(result.current.isAreaSelected).toBe(false);
       expect(result.current.isEditingObject).toBe(true);
 
@@ -2536,6 +2501,42 @@ describe('useDrawTool', () => {
         layer: mockIndividualLineLayer,
         recordSet: handDrawn,
       });
+      (selectLineFeatureByLatLon as jest.Mock).mockReturnValue(handDrawn[0]);
+
+      const { result } = renderDrawTool();
+      act(() => {
+        result.current.setFeatureButton('LINE');
+      });
+      act(() => {
+        result.current.setDrawTool('SELECT');
+      });
+      act(() => {
+        result.current.handleGrantSelect([0, 0]);
+      });
+      act(() => {
+        result.current.handleReleaseSelect([0, 0]);
+      });
+      //手書きモードに自動切替され、選択オブジェクトは手書きストロークに変換されている
+      expect(result.current.currentDrawTool).toBe('HANDWRITING_LINE');
+      expect(result.current.drawLine.current[0].properties).toEqual(['HANDWRITING']);
+      expect(result.current.drawLine.current[0].style?.strokeColor).toBe('#ff0000');
+    });
+
+    it('なげなわ（ドラッグ）は頂点が多い単一選択でも移動・回転モードになる', () => {
+      const handDrawn = [
+        {
+          ...mockLineRecord,
+          id: 'lasso1',
+          coords: Array.from({ length: 20 }, (_, i) => ({ latitude: 10, longitude: i })),
+          field: { _strokeWidth: 5, _strokeColor: '#ff0000', _strokeStyle: 'NONE', _stamp: '', _zoom: 15 },
+        },
+      ] as unknown as LineRecordType[];
+      mockGetEditableLayerAndRecordSetWithCheck.mockReturnValue({
+        isOK: true,
+        message: '',
+        layer: mockIndividualLineLayer,
+        recordSet: handDrawn,
+      });
       (selectLineFeaturesByArea as jest.Mock).mockReturnValue(handDrawn);
 
       const { result } = renderDrawTool();
@@ -2552,10 +2553,10 @@ describe('useDrawTool', () => {
       act(() => {
         result.current.handleReleaseSelect([30, 0]);
       });
-      //手書きモードに自動切替され、選択オブジェクトは手書きストロークに変換されている
-      expect(result.current.currentDrawTool).toBe('HANDWRITING_LINE');
-      expect(result.current.drawLine.current[0].properties).toEqual(['HANDWRITING']);
-      expect(result.current.drawLine.current[0].style?.strokeColor).toBe('#ff0000');
+      //ドラッグ選択は個別編集に入らず、一括変形（移動・回転）モードになる
+      expect(result.current.isAreaSelected).toBe(true);
+      expect(result.current.currentDrawTool).toBe('PLOT_LINE');
+      expect(result.current.drawLine.current[0].properties).not.toContain('HANDWRITING');
     });
 
     it('編集選択時、頂点が少ないオブジェクトは_strokeColorを持っていてもプロット変形モードのまま', () => {
@@ -2654,7 +2655,7 @@ describe('useDrawTool', () => {
         layer: mockIndividualLineLayer,
         recordSet: memoLines,
       });
-      (selectLineFeaturesByArea as jest.Mock).mockReturnValue(memoLines);
+      (selectLineFeatureByLatLon as jest.Mock).mockReturnValue(memoLines[0]);
 
       const { result } = renderDrawTool();
       act(() => {
@@ -2665,12 +2666,11 @@ describe('useDrawTool', () => {
       });
       act(() => {
         result.current.handleGrantSelect([0, 0]);
-        for (let i = 1; i <= 6; i++) result.current.handleMoveSelect([i * 5, 0]);
       });
       act(() => {
-        result.current.handleReleaseSelect([30, 0]);
+        result.current.handleReleaseSelect([0, 0]);
       });
-      //頂点が多いので手書きモードに自動切替されている
+      //タップ選択かつ頂点が多いので手書きモードに自動切替されている
       expect(result.current.currentDrawTool).toBe('HANDWRITING_LINE');
 
       let ok = false;

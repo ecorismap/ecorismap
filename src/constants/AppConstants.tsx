@@ -212,7 +212,7 @@ export const LINETOOL = {
 
 export const POLYGONTOOL = {
   PLOT_POLYGON: 'vector-rectangle',
-  HANDWRITING_POLYGON: 'draw-pen',
+  HANDWRITING_POLYGON: 'draw',
 } as const;
 
 export const INFOTOOL = {
