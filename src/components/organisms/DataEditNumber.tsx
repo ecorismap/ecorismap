@@ -6,14 +6,16 @@ import { COLOR } from '../../constants/AppConstants';
 
 interface Props {
   name: string;
-  value: number | string;
+  //列を後から追加したレコードなどでは値が未設定（undefined）になりうる
+  value: number | string | undefined;
   type: 'INTEGER' | 'DECIMAL' | 'SERIAL';
   onChangeText: (name: string, value: string | number) => void;
   onEndEditing: () => void;
 }
 
 export const DataEditNumber = (props: Props) => {
-  const { name, value, type, onChangeText, onEndEditing } = props;
+  const { name, value: rawValue, type, onChangeText, onEndEditing } = props;
+  const value = rawValue ?? '';
   //plus minusボタンで値を変更するときは、textinputと違って数値で返す。
   //textinputはonEndEditingが呼ばれformatedInputで数値に変換されるため。
   const plus = () => {

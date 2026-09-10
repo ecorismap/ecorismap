@@ -7,7 +7,8 @@ import { t } from '../../i18n/config';
 import { Button, Picker } from '../atoms';
 
 interface Props_DataEditListTable {
-  value: string;
+  //列を後から追加したレコードなどでは値が未設定（undefined）になりうる
+  value: string | undefined;
   name: string;
   listItems: { value: string; isOther: boolean }[];
   onChangeValue: (name: string, value: string) => void;
@@ -15,10 +16,13 @@ interface Props_DataEditListTable {
 
 export const DataEditListTable = (props: Props_DataEditListTable) => {
   const { value, name, listItems, onChangeValue } = props;
-  const data = useMemo(() => (value === '' ? [] : value.split(',').map((rowItem) => rowItem.split('|'))), [value]);
+  const data = useMemo(
+    () => (value === undefined || value === '' ? [] : value.split(',').map((rowItem) => rowItem.split('|'))),
+    [value]
+  );
 
   const addValue = useCallback(() => {
-    const newValue = value === '' ? `${listItems[0].value}|` : `${listItems[0].value}|` + ',' + value;
+    const newValue = value === undefined || value === '' ? `${listItems[0].value}|` : `${listItems[0].value}|` + ',' + value;
     onChangeValue(name, newValue);
   }, [listItems, name, onChangeValue, value]);
 

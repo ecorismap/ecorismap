@@ -17,7 +17,7 @@ export const DataEditNumberRange = (props: Props) => {
   const [value2, setValue2] = useState('');
 
   useEffect(() => {
-    if (value === '') return;
+    if (value === undefined || value === '') return;
     const splitedValue = value.split(t('common.ndash'));
     setValue1(splitedValue[0]);
     setValue2(splitedValue[1]);

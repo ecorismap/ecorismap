@@ -66,13 +66,15 @@ export const getColor = (layer: LayerType, feature: RecordType) => {
   if (colorStyle.colorType === 'SINGLE') {
     color = hex2rgba(colorStyle.color);
   } else if (colorStyle.colorType === 'CATEGORIZED') {
+    //未設定（列を後から追加したレコードなど）は空欄のカテゴリに一致させる
     if (colorStyle.fieldName === '__CUSTOM') {
       const fieldNames = colorStyle.customFieldValue.split('|');
-      const customValue = fieldNames.map((name) => feature.field[name]).join('|');
+      const customValue = fieldNames.map((name) => feature.field[name] ?? '').join('|');
       const colorObj = colorStyle.colorList.find(({ value }) => value === customValue);
       color = colorObj ? hex2rgba(colorObj.color) : 'rgba(0,0,0,0)';
     } else {
-      const colorObj = colorStyle.colorList.find(({ value }) => value === feature.field[colorStyle.fieldName]);
+      const fieldValue = feature.field[colorStyle.fieldName] ?? '';
+      const colorObj = colorStyle.colorList.find(({ value }) => value === fieldValue);
       color = colorObj ? hex2rgba(colorObj.color) : 'rgba(0,0,0,0)';
     }
   } else if (colorStyle.colorType === 'INDIVIDUAL') {
@@ -112,7 +114,8 @@ export function getColorRule(layer_: LayerType, displayName?: string) {
           return [value + '|', colorValue];
         })
         .flat();
-      const field = fieldNames.map((f) => [['get', f], '|']).flat();
+      //値が無い項目はnullになりconcatで評価できないため、空文字に置き換える
+      const field = fieldNames.map((f) => [['coalesce', ['get', f], ''], '|']).flat();
       colorRule = ['match', ['concat', ...field], ...conditionalColors, defaultColor];
     } else {
       const defaultColor = 'rgba(0,0,0,0)';
@@ -123,7 +126,8 @@ export function getColorRule(layer_: LayerType, displayName?: string) {
           return [value, colorValue];
         })
         .flat();
-      colorRule = ['match', ['get', fieldName], ...conditionalColors, defaultColor];
+      //未設定（列を後から追加したレコードなど）は空欄のカテゴリに一致させる
+      colorRule = ['match', ['coalesce', ['get', fieldName], ''], ...conditionalColors, defaultColor];
     }
   } else if (colorType === 'INDIVIDUAL') {
     const individualColorField =
