@@ -11,6 +11,8 @@ interface Props {
   currentDrawTool: DrawToolType;
   selectDrawTool: (value: DrawToolType) => void;
   setPolygonTool: React.Dispatch<React.SetStateAction<PolygonToolType>>;
+  //ツールパレットがあるレイヤでは、フリーの入口はパレット側に置くのでここでは出さない
+  hideHandwriting?: boolean;
 }
 
 const styles = StyleSheet.create({
@@ -23,7 +25,7 @@ const styles = StyleSheet.create({
 });
 
 export const HomePolygonToolButton = React.memo((props: Props) => {
-  const { disabled, currentDrawTool, selectDrawTool, setPolygonTool } = props;
+  const { disabled, currentDrawTool, selectDrawTool, setPolygonTool, hideHandwriting } = props;
 
   return (
     <View style={styles.container}>
@@ -43,22 +45,24 @@ export const HomePolygonToolButton = React.memo((props: Props) => {
           labelText={t('Home.label.plotPolygon')}
         />
       </View>
-      <View style={styles.button}>
-        <Button
-          id={'HANDWRITING_POLYGON'}
-          name={POLYGONTOOL.HANDWRITING_POLYGON}
-          disabled={disabled}
-          backgroundColor={
-            disabled ? COLOR.ALFAGRAY : currentDrawTool === 'HANDWRITING_POLYGON' ? COLOR.ALFARED : COLOR.ALFABLUE
-          }
-          borderRadius={10}
-          onPress={() => {
-            setPolygonTool('HANDWRITING_POLYGON');
-            selectDrawTool('HANDWRITING_POLYGON');
-          }}
-          labelText={t('Home.label.handwritingPolygon')}
-        />
-      </View>
+      {!hideHandwriting && (
+        <View style={styles.button}>
+          <Button
+            id={'HANDWRITING_POLYGON'}
+            name={POLYGONTOOL.HANDWRITING_POLYGON}
+            disabled={disabled}
+            backgroundColor={
+              disabled ? COLOR.ALFAGRAY : currentDrawTool === 'HANDWRITING_POLYGON' ? COLOR.ALFARED : COLOR.ALFABLUE
+            }
+            borderRadius={10}
+            onPress={() => {
+              setPolygonTool('HANDWRITING_POLYGON');
+              selectDrawTool('HANDWRITING_POLYGON');
+            }}
+            labelText={t('Home.label.handwritingPolygon')}
+          />
+        </View>
+      )}
     </View>
   );
 });

@@ -25,6 +25,9 @@ import { isBrushTool, isEraserTool, isHandwritingTool, isStampTool } from '../..
 import { HandwritingSubToolType, MapMemoToolGroupType, MapMemoToolType } from '../../types';
 import { ConfirmAsync } from '../molecules/AlertAsync';
 import { HomeModalStyleSettings } from './HomeModalStyleSettings';
+import { HomeToolPalette } from './HomeToolPalette';
+import { getToolPalette } from '../../constants/ToolPalette';
+import { useFeatureFlags } from '../../hooks/useFeatureFlags';
 
 export const HomeDrawTools = React.memo(() => {
   const {
@@ -43,6 +46,7 @@ export const HomeDrawTools = React.memo(() => {
     handwritingSubTool,
     setHandwritingSubTool,
     openHandwritingSettingsTab,
+    editingLayerName,
   } = useContext(DrawingToolsContext);
   const {
     currentPenWidth,
@@ -75,6 +79,13 @@ export const HomeDrawTools = React.memo(() => {
   //スタンプ・ブラシ・消しゴム・設定・分割ボタンは一旦非表示（再表示するときはtrueに）
   const showHandwritingSubTools = false as boolean;
 
+  //編集レイヤの用途に応じたツールパレット。定義があれば手書きのボタン群をこれに差し替える
+  const { hisyouTool } = useFeatureFlags();
+  const toolPaletteItems = useMemo(
+    () => getToolPalette(editingLayerName, featureButton, hisyouTool),
+    [editingLayerName, featureButton, hisyouTool]
+  );
+
   //スタンプ・ブラシ・設定をまとめたボタン（個別スタイルのライン編集中のみ表示。タップで横に展開）
   const [isHwToolPaletteOpen, setHwToolPaletteOpen] = useState(false);
   const showHwToolPalette = featureButton === 'LINE' && isIndividualStyleLayer && (isEditingDraw || isEditingObject);
@@ -99,9 +110,9 @@ export const HomeDrawTools = React.memo(() => {
       ? // @ts-ignore スタンプ有効中は現在の種別アイコン
         STAMP[handwritingSubTool]
       : handwritingActive && isBrushTool(handwritingSubTool)
-      ? // @ts-ignore ブラシ有効中は現在の種別アイコン
-        BRUSH[handwritingSubTool]
-      : 'tools';
+        ? // @ts-ignore ブラシ有効中は現在の種別アイコン
+          BRUSH[handwritingSubTool]
+        : 'tools';
 
   //手書きツールを有効化する（消しゴム中なら解除してから）
   const startHandwriting = () => {
@@ -292,8 +303,13 @@ export const HomeDrawTools = React.memo(() => {
             />
           )}
 
+          {/* 用途別パレットがあるレイヤは、手書きのボタン群をパレットに差し替える */}
+          {featureButton === 'LINE' && toolPaletteItems !== undefined && (
+            <HomeToolPalette items={toolPaletteItems} featureType={featureButton} />
+          )}
+
           {/* 手書き系ツール（LINEのみ）。ペン/スタンプ/ブラシ/消しゴムを個別ボタンで直接選ぶ */}
-          {featureButton === 'LINE' && (
+          {featureButton === 'LINE' && toolPaletteItems === undefined && (
             <>
               <View style={styles.button}>
                 <Button
@@ -313,7 +329,9 @@ export const HomeDrawTools = React.memo(() => {
                       // @ts-ignore
                       name={hwToolPaletteIcon}
                       backgroundColor={
-                        handwritingActive && (hwGroup === 'STAMP' || hwGroup === 'BRUSH') ? COLOR.ALFARED : COLOR.ALFABLUE
+                        handwritingActive && (hwGroup === 'STAMP' || hwGroup === 'BRUSH')
+                          ? COLOR.ALFARED
+                          : COLOR.ALFABLUE
                       }
                       borderRadius={10}
                       onPress={() => setHwToolPaletteOpen(true)}
@@ -438,7 +456,11 @@ export const HomeDrawTools = React.memo(() => {
               currentDrawTool={currentDrawTool}
               selectDrawTool={selectDrawTool}
               setPolygonTool={setPolygonTool}
+              hideHandwriting={toolPaletteItems !== undefined}
             />
+          )}
+          {featureButton === 'POLYGON' && toolPaletteItems !== undefined && (
+            <HomeToolPalette items={toolPaletteItems} featureType={featureButton} />
           )}
 
           {/* スタイルボタン（太さ・矢印・色選択を集約）。レイヤの色分けが個別のときのみ表示し、

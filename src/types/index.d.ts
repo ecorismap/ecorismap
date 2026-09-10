@@ -334,7 +334,7 @@ export interface TileRegionType {
     { latitude: number; longitude: number },
     { latitude: number; longitude: number },
     { latitude: number; longitude: number },
-    { latitude: number; longitude: number }
+    { latitude: number; longitude: number },
   ];
   centroid: {
     latitude: number;
@@ -568,6 +568,20 @@ export type DrawLineStyleType = {
 //手書きペンのサブツール（LINEタブのみSTAMP/BRUSHを許可）
 export type HandwritingSubToolType = 'PEN' | StampType | BrushType;
 
+//ツールパレットの1ボタン。「道具＋設定」を1つにまとめ、タップだけで持ち替えられるようにする
+export type ToolPaletteItemType = {
+  id: string;
+  label: string;
+  icon: string;
+  subTool: HandwritingSubToolType;
+  penWidth?: PenWidthType;
+  arrowStyle?: ArrowStyleType;
+  //区分ごとに色を変える用途（植生図など）。指定するとアイコンをこの色で表示する
+  color?: { hue: number; sat: number; val: number; alpha: number };
+  //消しゴムはマップメモのツールとして動くため、種別をここで指定する（subToolは無視される）
+  eraser?: MapMemoToolType;
+};
+
 //手書きペンの描画スタイル（containerがマップメモの設定値から組み立てて渡す）
 export type HandwritingPenStyleType = {
   strokeColor: string;
@@ -609,10 +623,10 @@ export type FeatureType = keyof typeof FEATURETYPE;
 export type ReturnFeatureRecordType<T> = T extends 'POINT'
   ? { editingLayer: LayerType | undefined; editingRecordSet: PointRecordType[] }
   : T extends 'LINE'
-  ? { editingLayer: LayerType | undefined; editingRecordSet: LineRecordType[] }
-  : T extends 'POLYGON'
-  ? { editingLayer: LayerType | undefined; editingRecordSet: PolygonRecordType[] }
-  : { editingLayer: undefined; editingRecordSet: undefined };
+    ? { editingLayer: LayerType | undefined; editingRecordSet: LineRecordType[] }
+    : T extends 'POLYGON'
+      ? { editingLayer: LayerType | undefined; editingRecordSet: PolygonRecordType[] }
+      : { editingLayer: undefined; editingRecordSet: undefined };
 
 export type GeoJsonFeatureType =
   | 'POINT'
