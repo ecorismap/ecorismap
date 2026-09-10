@@ -69,9 +69,16 @@ export const sortData = (data: RecordType[], fieldName: string, order: SortOrder
   return { data: sortedData, idx };
 };
 
-//入力された文字列をそのまま保持する形式。これらの間の変更では値を変換せずに残せる
-const isPlainTextFormat = (format: FormatType) =>
-  format === 'STRING' || format === 'STRING_MULTI' || format === 'STRING_DICTIONARY' || format === 'STRING_DYNAMIC';
+//入力された値を文字列としてそのまま保持する形式。これらへの変更では値を変換せずに残せる。
+//選択肢系（LIST/RADIO/CHECK）は候補に無い値でも編集画面が壊れず、「その他」欄があればそこに入る
+const isTextValueFormat = (format: FormatType) =>
+  format === 'STRING' ||
+  format === 'STRING_MULTI' ||
+  format === 'STRING_DICTIONARY' ||
+  format === 'STRING_DYNAMIC' ||
+  format === 'LIST' ||
+  format === 'RADIO' ||
+  format === 'CHECK';
 
 export const changeFieldValue = (
   originalData: string | number | PhotoType[],
@@ -79,9 +86,9 @@ export const changeFieldValue = (
   changedFormat: FormatType,
   list?: { value: string; isOther: boolean }[]
 ): string | number | PhotoType[] => {
-  //文字列をそのまま持つ形式（辞書・動的辞書を含む）への変更は値を残す。
-  //ここで拾わないと辞書形式に変えたときに既存の値が消えてしまう
-  if (isPlainTextFormat(changedFormat) && !Array.isArray(originalData)) {
+  //文字列をそのまま持つ形式（辞書・動的辞書・選択肢系を含む）への変更は値を残す。
+  //ここで拾わないと形式を変えたときに既存の値が消えてしまう
+  if (isTextValueFormat(changedFormat) && !Array.isArray(originalData)) {
     return typeof originalData === 'string' ? originalData : originalData.toString();
   }
   if (originalFormat === 'INTEGER' && (changedFormat === 'STRING' || changedFormat === 'STRING_MULTI')) {

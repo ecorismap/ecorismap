@@ -245,6 +245,15 @@ describe('changeFieldValue', () => {
     expect(changeFieldValue(3, 'INTEGER', 'STRING_DYNAMIC')).toBe('3');
   });
 
+  it('選択肢系（チェック・リスト・ラジオ）への変更でも値が消えない', () => {
+    expect(changeFieldValue('確認済み', 'STRING', 'CHECK')).toBe('確認済み');
+    expect(changeFieldValue('確認済み', 'CHECK', 'STRING')).toBe('確認済み');
+    expect(changeFieldValue('高', 'STRING', 'RADIO')).toBe('高');
+    expect(changeFieldValue('高', 'STRING_DICTIONARY', 'LIST')).toBe('高');
+    //候補に無い値でも消さずに残す（編集画面は「その他」扱い、または未選択で表示する）
+    expect(changeFieldValue('候補外', 'STRING', 'CHECK')).toBe('候補外');
+  });
+
   it('文字列にできない形式の変更は初期値に戻す', () => {
     expect(changeFieldValue([], 'PHOTO', 'STRING_DYNAMIC')).toStrictEqual('');
     expect(changeFieldValue('あ', 'STRING', 'PHOTO')).toStrictEqual([]);
