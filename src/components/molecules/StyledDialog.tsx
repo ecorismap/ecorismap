@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState, useRef } from 'react';
 import { Modal, ScrollView, StyleSheet, Text, View, type AlertButton, type AlertOptions } from 'react-native';
 import { Pressable } from '../atoms/Pressable';
 import { COLOR } from '../../constants/AppConstants';
@@ -113,6 +113,11 @@ export const StyledDialog = React.memo(() => {
   const [visible, setVisible] = useState(false);
   const current: DialogRequest | undefined = queue[0];
   const hasCurrent = current !== undefined;
+  //閉じるとcurrentは即座に消えるが、Modalのフェードアウト中に中身が空（OKボタンだけ）に
+  //ならないよう、直前のリクエストを保持してフェード中はそれを表示し続ける
+  const lastRequestRef = useRef<DialogRequest | undefined>(undefined);
+  if (current !== undefined) lastRequestRef.current = current;
+  const displayed = current ?? lastRequestRef.current;
 
   useEffect(() => {
     enqueueDialog = (request) => setQueue((prev) => [...prev, request]);
@@ -149,7 +154,7 @@ export const StyledDialog = React.memo(() => {
     }
   }, [closeCurrent, current]);
 
-  const buttons: StyledDialogButton[] = current?.buttons?.length ? current.buttons : [{ text: 'OK' }];
+  const buttons: StyledDialogButton[] = displayed?.buttons?.length ? displayed.buttons : [{ text: 'OK' }];
   const horizontal = buttons.length === 2;
 
   const renderButton = (button: StyledDialogButton, index: number) => {
@@ -164,7 +169,11 @@ export const StyledDialog = React.memo(() => {
           role === 'secondary' && styles.buttonSecondary,
           role === 'destructive' && styles.buttonDestructive,
         ]}
-        onPress={() => closeCurrent(button.onPress as (() => void) | undefined)}
+        onPress={() => {
+          //フェードアウト中（表示はlastRequestRef）の誤タップで二重に処理しない
+          if (!hasCurrent) return;
+          closeCurrent(button.onPress as (() => void) | undefined);
+        }}
       >
         <Text
           style={[
@@ -185,10 +194,10 @@ export const StyledDialog = React.memo(() => {
     <Modal animationType="fade" visible={hasCurrent && visible} transparent={true} onRequestClose={handleDismiss}>
       <Pressable style={styles.modalOverlay} onPress={handleDismiss} disablePressedAnimation>
         <Pressable style={styles.modalCard} onPress={() => null} disablePressedAnimation>
-          {!!current?.title && <Text style={styles.title}>{current.title}</Text>}
-          {!!current?.message && (
+          {!!displayed?.title && <Text style={styles.title}>{displayed.title}</Text>}
+          {!!displayed?.message && (
             <ScrollView style={styles.messageScroll} contentContainerStyle={styles.messageContainer}>
-              <Text style={styles.message}>{current.message}</Text>
+              <Text style={styles.message}>{displayed.message}</Text>
             </ScrollView>
           )}
           <View style={horizontal ? styles.buttonRow : styles.buttonColumn}>{buttons.map(renderButton)}</View>
