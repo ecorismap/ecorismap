@@ -1,5 +1,5 @@
 import React, { useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import { View, StyleSheet, Text } from 'react-native';
+import { View, StyleSheet, Text, ScrollView } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import {
   DndContext,
@@ -313,33 +313,42 @@ export const LayersTable = React.memo(() => {
 
   return (
     <View style={styles.container}>
-      <LayersTitle hasCustomLabel={hasCustomLabel} />
-      {/* @ts-ignore - dnd-kit is not compatible with React 19 types */}
-      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd} onDragStart={handleDragStart}>
+      {/* stickyHeaderIndices={[0]}で先頭の子（ヘッダー行）をposition:stickyにする。
+          ネイティブのFlatListのstickyHeaderIndicesと同じ見た目にするための対応 */}
+      <ScrollView style={styles.container} stickyHeaderIndices={[0]}>
+        <LayersTitle hasCustomLabel={hasCustomLabel} />
         {/* @ts-ignore - dnd-kit is not compatible with React 19 types */}
-        <SortableContext items={itemIds} strategy={verticalListSortingStrategy}>
-          {filterdLayers.map((item) => (
-            <SortableLayerRow
-              key={item.id}
-              item={item}
-              isClosedProject={isClosedProject}
-              isSettingProject={isSettingProject}
-              hasCustomLabel={hasCustomLabel}
-              customLabelValue={customLabel[item.id] || ''}
-              changeExpand={changeExpand}
-              changeActiveLayer={changeActiveLayer}
-              changeVisible={changeVisible}
-              gotoColorStyle={gotoColorStyle}
-              gotoData={gotoData}
-              changeLabel={changeLabel}
-              handleCustomLabel={handleCustomLabel}
-              changeCustomLabel={changeCustomLabel}
-              gotoLayerEdit={gotoLayerEdit}
-              pressLayerOrder={pressLayerOrder}
-            />
-          ))}
-        </SortableContext>
-      </DndContext>
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEnd}
+          onDragStart={handleDragStart}
+        >
+          {/* @ts-ignore - dnd-kit is not compatible with React 19 types */}
+          <SortableContext items={itemIds} strategy={verticalListSortingStrategy}>
+            {filterdLayers.map((item) => (
+              <SortableLayerRow
+                key={item.id}
+                item={item}
+                isClosedProject={isClosedProject}
+                isSettingProject={isSettingProject}
+                hasCustomLabel={hasCustomLabel}
+                customLabelValue={customLabel[item.id] || ''}
+                changeExpand={changeExpand}
+                changeActiveLayer={changeActiveLayer}
+                changeVisible={changeVisible}
+                gotoColorStyle={gotoColorStyle}
+                gotoData={gotoData}
+                changeLabel={changeLabel}
+                handleCustomLabel={handleCustomLabel}
+                changeCustomLabel={changeCustomLabel}
+                gotoLayerEdit={gotoLayerEdit}
+                pressLayerOrder={pressLayerOrder}
+              />
+            ))}
+          </SortableContext>
+        </DndContext>
+      </ScrollView>
     </View>
   );
 });
