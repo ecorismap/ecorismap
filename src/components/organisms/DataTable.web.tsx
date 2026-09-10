@@ -1,13 +1,12 @@
 import React, { useCallback, useContext, useState, useMemo } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { Pressable } from '../atoms/Pressable';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { COLOR } from '../../constants/AppConstants';
 import { Button } from '../atoms';
-import { RecordType, PhotoType, FormatType, LayerType } from '../../types';
-import dayjs from '../../i18n/dayjs';
+import { RecordType, FormatType, LayerType } from '../../types';
 import { DataContext } from '../../contexts/Data';
-import { SortOrderType } from '../../utils/Data';
+import { SortOrderType, getFieldDisplayValue } from '../../utils/Data';
 import {
   DndContext,
   closestCenter,
@@ -113,17 +112,7 @@ const SortableDataRow = React.memo(
                 onPress={() => gotoDataEdit(index)}
                 {...listeners}
               >
-                <Text numberOfLines={2}>
-                  {item.field[name] === undefined
-                    ? ''
-                    : format === 'DATETIME'
-                      ? `${dayjs(item.field[name] as string).format('L HH:mm')}`
-                      : format === 'PHOTO'
-                        ? `${(item.field[name] as PhotoType[]).length} pic`
-                        : format === 'REFERENCE'
-                          ? 'Reference'
-                          : `${item.field[name]}`}
-                </Text>
+                <Text numberOfLines={2}>{getFieldDisplayValue(item.field[name], format)}</Text>
               </Pressable>
             ))
           )}
@@ -231,45 +220,49 @@ export const DataTable = React.memo(() => {
 
   return sortedRecordSet.length !== 0 ? (
     <View style={styles.container}>
-      <DataTitle
-        isMapMemoLayer={isMapMemoLayer}
-        visibleAll={visibleAll}
-        onVisibleAll={onVisibleAll}
-        checkedAll={checkedAll}
-        onCheckAll={onCheckAll}
-        onChangeOrder={onChangeOrder}
-        sortedName={sortedName}
-        sortedOrder={sortedOrder}
-        projectId={projectId}
-        layer={layer}
-        filterFieldName={filterFieldName}
-        onFilterField={openFilterDialog}
-      />
-      {/* @ts-ignore - dnd-kit is not compatible with React 19 types */}
-      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+      {/* stickyHeaderIndices={[0]}で先頭の子（ヘッダー行）をposition:stickyにする。
+          ネイティブのFlatListのstickyHeaderIndicesと同じ見た目にするための対応 */}
+      <ScrollView style={styles.container} stickyHeaderIndices={[0]}>
+        <DataTitle
+          isMapMemoLayer={isMapMemoLayer}
+          visibleAll={visibleAll}
+          onVisibleAll={onVisibleAll}
+          checkedAll={checkedAll}
+          onCheckAll={onCheckAll}
+          onChangeOrder={onChangeOrder}
+          sortedName={sortedName}
+          sortedOrder={sortedOrder}
+          projectId={projectId}
+          layer={layer}
+          filterFieldName={filterFieldName}
+          onFilterField={openFilterDialog}
+        />
         {/* @ts-ignore - dnd-kit is not compatible with React 19 types */}
-        <SortableContext items={itemIds} strategy={verticalListSortingStrategy}>
-          {sortedRecordSet.map((item, index) => {
-            const isGroupParent = item.field._group ? item.field._group === '' : true;
-            if (!isGroupParent) return null;
-            return (
-              <SortableDataRow
-                key={item.id}
-                item={item}
-                index={index}
-                checkList={checkList}
-                projectId={projectId}
-                layer={layer}
-                isMapMemoLayer={isMapMemoLayer}
-                changeChecked={changeChecked}
-                changeVisible={changeVisible}
-                gotoDataEdit={gotoDataEdit}
-                isFiltering={isFiltering}
-              />
-            );
-          })}
-        </SortableContext>
-      </DndContext>
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+          {/* @ts-ignore - dnd-kit is not compatible with React 19 types */}
+          <SortableContext items={itemIds} strategy={verticalListSortingStrategy}>
+            {sortedRecordSet.map((item, index) => {
+              const isGroupParent = item.field._group ? item.field._group === '' : true;
+              if (!isGroupParent) return null;
+              return (
+                <SortableDataRow
+                  key={item.id}
+                  item={item}
+                  index={index}
+                  checkList={checkList}
+                  projectId={projectId}
+                  layer={layer}
+                  isMapMemoLayer={isMapMemoLayer}
+                  changeChecked={changeChecked}
+                  changeVisible={changeVisible}
+                  gotoDataEdit={gotoDataEdit}
+                  isFiltering={isFiltering}
+                />
+              );
+            })}
+          </SortableContext>
+        </DndContext>
+      </ScrollView>
     </View>
   ) : (
     <View style={styles.container}>

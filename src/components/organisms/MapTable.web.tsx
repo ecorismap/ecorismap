@@ -1,5 +1,5 @@
 import React, { useContext, useCallback, useMemo } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { COLOR } from '../../constants/AppConstants';
 import { Button } from '../atoms';
@@ -226,25 +226,34 @@ export const MapTable = React.memo(() => {
 
   return (
     <View style={styles.container}>
-      <MapTableTitle />
-      {/* @ts-ignore - dnd-kit is not compatible with React 19 types */}
-      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd} onDragStart={handleDragStart}>
+      {/* stickyHeaderIndices={[0]}で先頭の子（ヘッダー行）をposition:stickyにする。
+          ネイティブのFlatListのstickyHeaderIndicesと同じ見た目にするための対応 */}
+      <ScrollView style={styles.container} stickyHeaderIndices={[0]}>
+        <MapTableTitle />
         {/* @ts-ignore - dnd-kit is not compatible with React 19 types */}
-        <SortableContext items={itemIds} strategy={verticalListSortingStrategy}>
-          {filterdMaps.map((item: any) => (
-            <SortableMapRow
-              key={item.id}
-              item={item}
-              changeVisible={changeVisible}
-              pressDownloadMap={pressDownloadMap}
-              gotoMapEdit={gotoMapEdit}
-              jumpToBoundary={jumpToBoundary}
-              changeExpand={changeExpand}
-              pressMapOrder={pressMapOrder}
-            />
-          ))}
-        </SortableContext>
-      </DndContext>
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEnd}
+          onDragStart={handleDragStart}
+        >
+          {/* @ts-ignore - dnd-kit is not compatible with React 19 types */}
+          <SortableContext items={itemIds} strategy={verticalListSortingStrategy}>
+            {filterdMaps.map((item: any) => (
+              <SortableMapRow
+                key={item.id}
+                item={item}
+                changeVisible={changeVisible}
+                pressDownloadMap={pressDownloadMap}
+                gotoMapEdit={gotoMapEdit}
+                jumpToBoundary={jumpToBoundary}
+                changeExpand={changeExpand}
+                pressMapOrder={pressMapOrder}
+              />
+            ))}
+          </SortableContext>
+        </DndContext>
+      </ScrollView>
     </View>
   );
 });

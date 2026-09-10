@@ -69,12 +69,21 @@ export const sortData = (data: RecordType[], fieldName: string, order: SortOrder
   return { data: sortedData, idx };
 };
 
+//入力された文字列をそのまま保持する形式。これらの間の変更では値を変換せずに残せる
+const isPlainTextFormat = (format: FormatType) =>
+  format === 'STRING' || format === 'STRING_MULTI' || format === 'STRING_DICTIONARY' || format === 'STRING_DYNAMIC';
+
 export const changeFieldValue = (
   originalData: string | number | PhotoType[],
   originalFormat: FormatType,
   changedFormat: FormatType,
   list?: { value: string; isOther: boolean }[]
 ): string | number | PhotoType[] => {
+  //文字列をそのまま持つ形式（辞書・動的辞書を含む）への変更は値を残す。
+  //ここで拾わないと辞書形式に変えたときに既存の値が消えてしまう
+  if (isPlainTextFormat(changedFormat) && !Array.isArray(originalData)) {
+    return typeof originalData === 'string' ? originalData : originalData.toString();
+  }
   if (originalFormat === 'INTEGER' && (changedFormat === 'STRING' || changedFormat === 'STRING_MULTI')) {
     return originalData.toString();
   } else if (originalFormat === 'INTEGER' && changedFormat === 'DECIMAL') {
@@ -159,6 +168,42 @@ export const getInitialFieldValue = (
   }
 };
 
+//既存レコードに後から追加した列の値。既定値（SERIALの0やDATETIMEの現在時刻など）を入れると
+//「入力済み」に見えてしまうので、未入力を意味する空の値にする
+export const getBlankFieldValue = (format: FormatType): string | number | PhotoType[] => {
+  switch (format) {
+    case 'PHOTO':
+      return [];
+    case 'NUMBERRANGE':
+    case 'TIMERANGE':
+      //範囲系は空文字だと編集画面が壊れるため、未入力を表す区切りだけの値にする
+      return `${t('common.ndash')}`;
+    default:
+      return '';
+  }
+};
+
+//一覧表示用の文字列。未入力（undefinedや空文字、SERIALの0）は空欄にする
+export const getFieldDisplayValue = (value: string | number | PhotoType[] | undefined, format: FormatType): string => {
+  if (value === undefined || value === '') return '';
+  switch (format) {
+    case 'DATETIME': {
+      //列を後から追加した既存レコードは空文字が入っているため、日付にならない値は空欄にする
+      const date = dayjs(value as string);
+      return date.isValid() ? date.format('L HH:mm') : '';
+    }
+    case 'PHOTO':
+      return `${(value as PhotoType[]).length} pic`;
+    case 'REFERENCE':
+      return 'Reference';
+    case 'SERIAL':
+      //SERIALは1から採番されるため、0は未入力を意味する
+      return value === 0 ? '' : `${value}`;
+    default:
+      return `${value}`;
+  }
+};
+
 export const getDataLastValue = (dataSet: RecordType[], fieldName: string) => {
   const value = dataSet[dataSet.length - 1]?.field[fieldName];
   return value as string | number | undefined;
@@ -185,14 +230,15 @@ export const getDefaultFieldValue = (field: FieldType, dataSet: RecordType[], op
     case 'STRING_MULTI':
       return { [field.name]: field.defaultValue ?? '' };
     case 'SERIAL': {
+      //未入力（空文字やundefined）はparseIntがNaNになるため0として扱う
+      const toSerial = (lastValue: string | number | undefined) => {
+        const parsed = typeof lastValue === 'number' ? lastValue : parseInt(lastValue ?? '0', 10);
+        return (Number.isFinite(parsed) ? parsed : 0) + 1;
+      };
       if (options?.groupId) {
-        const lastValue = getGroupLastValue(dataSet, field.name, options.groupId);
-        const serial = (typeof lastValue === 'number' ? lastValue : parseInt(lastValue ?? '0', 10)) + 1;
-        return { [field.name]: serial };
+        return { [field.name]: toSerial(getGroupLastValue(dataSet, field.name, options.groupId)) };
       } else {
-        const lastValue = getDataLastValue(dataSet, field.name);
-        const serial = (typeof lastValue === 'number' ? lastValue : parseInt(lastValue ?? '0', 10)) + 1;
-        return { [field.name]: serial };
+        return { [field.name]: toSerial(getDataLastValue(dataSet, field.name)) };
       }
     }
     case 'INTEGER': {
