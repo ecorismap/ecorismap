@@ -6,6 +6,7 @@ import { useLayers } from './useLayers';
 import { usePermission } from './usePermission';
 import { AlertAsync, ConfirmAsync } from '../components/molecules/AlertAsync';
 import { t } from '../i18n/config';
+import { MEMO_LAYER_ID } from '../modules/layers';
 
 export type EditableFeatureType = 'POINT' | 'LINE' | 'POLYGON' | 'MEMO';
 type LayerFeatureType = 'POINT' | 'LINE' | 'POLYGON';
@@ -58,14 +59,31 @@ export const useEditableLayerSelection = (opts: {
     [dispatch]
   );
 
+  //軌跡とメモは専用レイヤなので、作図の保存先候補には出さない
   const getCandidates = useCallback(
     (layerType: LayerFeatureType) =>
       getCurrentLayers().filter(
         (l: LayerType) =>
-          l.type === layerType && l.id !== 'track' && !(isRunningProject && l.permission === 'COMMON')
+          l.type === layerType &&
+          l.id !== 'track' &&
+          l.id !== MEMO_LAYER_ID &&
+          !(isRunningProject && l.permission === 'COMMON')
       ),
     [getCurrentLayers, isRunningProject]
   );
+
+  //メモは専用レイヤに固定されているので、選ばせずに表示状態だけ確認する
+  const ensureMemoLayer = useCallback(async (): Promise<boolean> => {
+    const memoLayer = getCurrentLayers().find((l: LayerType) => l.id === MEMO_LAYER_ID);
+    //起動時にuseMapMemoが作るので通常は存在する。まだ無ければ次のタップで有効になる
+    if (memoLayer === undefined) return false;
+    if (!memoLayer.visible) {
+      const ret = await ConfirmAsync(t('Home.confirm.showLayerAndEdit', { name: memoLayer.name }));
+      if (!ret) return false;
+      changeVisible(true, memoLayer);
+    }
+    return true;
+  }, [changeVisible, getCurrentLayers]);
 
   const openPicker = useCallback(
     (candidates: LayerType[], activeLayerId: string | undefined, showCreateNew: boolean): Promise<PickerResult> => {
@@ -110,7 +128,8 @@ export const useEditableLayerSelection = (opts: {
 
   const ensureEditableLayer = useCallback(
     async (featureType: EditableFeatureType): Promise<boolean> => {
-      const layerType: LayerFeatureType = featureType === 'MEMO' ? 'LINE' : featureType;
+      if (featureType === 'MEMO') return ensureMemoLayer();
+      const layerType: LayerFeatureType = featureType;
       const candidates = getCandidates(layerType);
       const activeLayer = candidates.find((l) => l.active);
 
@@ -142,12 +161,23 @@ export const useEditableLayerSelection = (opts: {
       applyLayer(result);
       return true;
     },
-    [applyLayer, changeVisible, getCandidates, handleNoCandidates, isRunningProject, onRequestCreateLayer, openPicker]
+    [
+      applyLayer,
+      changeVisible,
+      ensureMemoLayer,
+      getCandidates,
+      handleNoCandidates,
+      isRunningProject,
+      onRequestCreateLayer,
+      openPicker,
+    ]
   );
 
   const openLayerSwitcher = useCallback(
     async (featureType: EditableFeatureType): Promise<void> => {
-      const layerType: LayerFeatureType = featureType === 'MEMO' ? 'LINE' : featureType;
+      //メモは保存先が固定なので切り替える対象が無い
+      if (featureType === 'MEMO') return;
+      const layerType: LayerFeatureType = featureType;
       const candidates = getCandidates(layerType);
       if (candidates.length === 0) {
         await handleNoCandidates(layerType);

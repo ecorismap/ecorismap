@@ -39,7 +39,7 @@ import {
 import { hsv2rgbaString } from '../utils/Color';
 import { toIndividualColorLayer } from '../utils/Layer';
 import { useRecord } from './useRecord';
-import { updateLayerAction } from '../modules/layers';
+import { addLayerAction, layersInitialState, MEMO_LAYER_ID, updateLayerAction } from '../modules/layers';
 import { STAMP } from '../constants/AppConstants';
 import { isBrushTool, isEraserTool, isPenTool, isStampTool } from '../utils/General';
 import { getEventTimestamp, PositionFilter } from '../utils/OneEuroFilter';
@@ -206,10 +206,16 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
   const { generateRecord } = useRecord();
 
   // Derived state
-  const activeMemoLayer = useMemo(
-    () => layers.find((layer) => layer.type === 'LINE' && layer.active && layer.visible),
-    [layers]
-  );
+  //メモの保存先は専用レイヤに固定する。編集レイヤ（飛翔図など）に引きずられると、
+  //その場の書き込みが記録用のレイヤに混ざってしまう
+  const activeMemoLayer = useMemo(() => layers.find((layer) => layer.id === MEMO_LAYER_ID), [layers]);
+
+  //専用レイヤを持たない既存ユーザーのために、無ければ作る（今あるメモはそのレイヤに残したままにする）
+  useEffect(() => {
+    if (layers.some((layer) => layer.id === MEMO_LAYER_ID)) return;
+    const template = layersInitialState.find((layer) => layer.id === MEMO_LAYER_ID);
+    if (template !== undefined) dispatch(addLayerAction(template));
+  }, [layers, dispatch]);
 
   const activeMemoRecordSet = useMemo(
     () => dataSet.find(({ layerId, userId }) => layerId === activeMemoLayer?.id && userId === dataUser.uid),

@@ -120,7 +120,7 @@ jest.mock('../../utils/Color', () => ({
 const createTestStore = () => {
   const mockLayers = [
     {
-      id: 'memo1',
+      id: 'memo',
       name: 'メモレイヤー',
       type: 'LINE' as const,
       active: true,
@@ -163,7 +163,7 @@ const createTestStore = () => {
 
   const mockDataSet = [
     {
-      layerId: 'memo1',
+      layerId: 'memo',
       userId: 'user1',
       data: [mockLineRecord],
     },
@@ -1036,7 +1036,7 @@ describe('useMapMemo', () => {
     //activeMemoRecordSetはuserId: undefinedで検索されるため、それに合わせたレコードセットを用意する
     store.dispatch({
       type: 'dataSet/addRecordsAction',
-      payload: { layerId: 'memo1', userId: undefined, data: [makeParentRecord()] },
+      payload: { layerId: 'memo', userId: undefined, data: [makeParentRecord()] },
     });
 
     const mockMapViewRef = { current: {} } as any;
@@ -1110,7 +1110,7 @@ describe('useMapMemo', () => {
     };
     store.dispatch({
       type: 'dataSet/addRecordsAction',
-      payload: { layerId: 'memo1', userId: undefined, data: [makeParentRecord(), childRecord] },
+      payload: { layerId: 'memo', userId: undefined, data: [makeParentRecord(), childRecord] },
     });
 
     const mockMapViewRef = { current: {} } as any;
@@ -1147,7 +1147,7 @@ describe('useMapMemo', () => {
 
     store.dispatch({
       type: 'dataSet/addRecordsAction',
-      payload: { layerId: 'memo1', userId: undefined, data: [makeParentRecord()] },
+      payload: { layerId: 'memo', userId: undefined, data: [makeParentRecord()] },
     });
 
     const mockMapViewRef = { current: {} } as any;
@@ -1457,5 +1457,5 @@ describe('useMapMemo', () => {
   });
 
   const getMemoData = () =>
-    store.getState().dataSet.find((d: any) => d.layerId === 'memo1' && d.userId === undefined)?.data ?? [];
+    store.getState().dataSet.find((d: any) => d.layerId === 'memo' && d.userId === undefined)?.data ?? [];
 });

@@ -125,6 +125,7 @@
     "second": "Seconds",
     "point": "point",
     "track": "track",
+    "memo": "memo",
     "demAttribution": "GSI Japan, Terrain Tiles (derived from elevation tiles)",
     "polygon": "polygon",
     "message": {

@@ -84,17 +84,57 @@ describe('useEditableLayerSelection', () => {
       expect(result.current.layerSelectProps.candidates.map((l) => l.id)).toEqual(['L2', 'L3']);
     });
 
-    test('MEMOはLINEレイヤを候補にする', async () => {
+    test('メモ専用レイヤは作図の候補から除外される', async () => {
       mockLayers = [
+        makeLayer({ id: 'memo', name: 'メモ', type: 'LINE' }),
         makeLayer({ id: 'L1', name: 'line1', type: 'LINE' }),
-        makeLayer({ id: 'L2', name: 'line2', type: 'LINE' }),
-        makeLayer({ id: 'L3', name: 'point', type: 'POINT' }),
       ];
       const { result } = renderSelection();
       act(() => {
-        result.current.openLayerSwitcher('MEMO');
+        result.current.openLayerSwitcher('LINE');
       });
-      expect(result.current.layerSelectProps.candidates.map((l) => l.id)).toEqual(['L1', 'L2']);
+      expect(result.current.layerSelectProps.candidates.map((l) => l.id)).toEqual(['L1']);
+    });
+
+    test('MEMOは保存先が固定なのでレイヤ切替を開かない', async () => {
+      mockLayers = [
+        makeLayer({ id: 'memo', name: 'メモ', type: 'LINE' }),
+        makeLayer({ id: 'L1', name: 'line1', type: 'LINE' }),
+      ];
+      const { result } = renderSelection();
+      await act(async () => {
+        await result.current.openLayerSwitcher('MEMO');
+      });
+      expect(result.current.layerSelectProps.visible).toBe(false);
+    });
+  });
+
+  describe('メモ専用レイヤ', () => {
+    test('表示中のメモレイヤがあればダイアログなしでtrue', async () => {
+      mockLayers = [makeLayer({ id: 'memo', name: 'メモ', type: 'LINE' })];
+      const { result } = renderSelection();
+      await act(async () => {
+        await expect(result.current.ensureEditableLayer('MEMO')).resolves.toBe(true);
+      });
+      expect(mockConfirmAsync).not.toHaveBeenCalled();
+    });
+
+    test('メモレイヤが非表示なら確認後に表示化して続行', async () => {
+      mockLayers = [makeLayer({ id: 'memo', name: 'メモ', type: 'LINE', visible: false })];
+      mockConfirmAsync.mockResolvedValue(true);
+      const { result } = renderSelection();
+      await act(async () => {
+        await expect(result.current.ensureEditableLayer('MEMO')).resolves.toBe(true);
+      });
+      expect(mockChangeVisible).toHaveBeenCalledWith(true, expect.objectContaining({ id: 'memo' }));
+    });
+
+    test('メモレイヤが無ければfalse（起動時に作られるまでの間）', async () => {
+      mockLayers = [makeLayer({ id: 'L1', name: 'line1', type: 'LINE', active: true })];
+      const { result } = renderSelection();
+      await act(async () => {
+        await expect(result.current.ensureEditableLayer('MEMO')).resolves.toBe(false);
+      });
     });
   });
 

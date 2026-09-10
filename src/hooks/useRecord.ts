@@ -24,7 +24,7 @@ import { addRecordsAction, updateRecordsAction } from '../modules/dataSet';
 import { calcCentroid, calcLineMidPoint } from '../utils/Coords';
 import { usePermission } from './usePermission';
 import { selectLineDataSet, selectPointDataSet, selectPolygonDataSet } from '../modules/selectors';
-import { addLayerAction, layersInitialState } from '../modules/layers';
+import { addLayerAction, layersInitialState, MEMO_LAYER_ID } from '../modules/layers';
 import { storage, trackLogStorage } from '../utils/mmkvStorage';
 
 export type UseRecordReturnType = {
@@ -115,7 +115,11 @@ export const useRecord = (): UseRecordReturnType => {
 
   const { isRunningProject } = usePermission();
   const activePointLayer = useMemo(() => layers.find((d) => d.active && d.type === 'POINT'), [layers]);
-  const activeLineLayer = useMemo(() => layers.find((d) => d.active && d.type === 'LINE'), [layers]);
+  //メモは専用レイヤなので、アクティブにされてもラインの作図先にはしない
+  const activeLineLayer = useMemo(
+    () => layers.find((d) => d.active && d.type === 'LINE' && d.id !== MEMO_LAYER_ID),
+    [layers]
+  );
   const activePolygonLayer = useMemo(() => layers.find((d) => d.active && d.type === 'POLYGON'), [layers]);
   const dataUser = useMemo(
     () => (projectId === undefined ? { ...user, uid: undefined, displayName: null } : user),
@@ -192,8 +196,8 @@ export const useRecord = (): UseRecordReturnType => {
         return { isOK: false, message: t('hooks.message.lockProject') };
       }
 
-      if (!layer.active && layer.id !== 'track') {
-        // レイヤーがアクティブでない場合。ただし、トラックレイヤーは除外
+      if (!layer.active && layer.id !== 'track' && layer.id !== MEMO_LAYER_ID) {
+        // レイヤーがアクティブでない場合。ただし、軌跡とメモは編集レイヤにしない専用レイヤなので除外
         return { isOK: false, message: t('hooks.message.noEditMode') };
       }
 

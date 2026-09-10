@@ -316,6 +316,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
   } = useDrawTool(mapViewRef.current);
 
   const {
+    activeMemoLayer,
     visibleMapMemoColor,
     visibleMapMemoSettings,
     mapMemoSettingsTab,
@@ -850,14 +851,16 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       case 'POINT':
         return activePointLayer?.name;
       case 'LINE':
-      case 'MEMO':
         return activeLineLayer?.name;
+      //メモは専用レイヤに固定なので、切り替え先のない保存先として名前だけ出す
+      case 'MEMO':
+        return activeMemoLayer?.name;
       case 'POLYGON':
         return activePolygonLayer?.name;
       default:
         return undefined;
     }
-  }, [activeLineLayer?.name, activePointLayer?.name, activePolygonLayer?.name, featureButton]);
+  }, [activeLineLayer?.name, activeMemoLayer?.name, activePointLayer?.name, activePolygonLayer?.name, featureButton]);
 
   //チップタップで編集レイヤを切り替える。作図中は破棄確認をしてから
   const pressEditingLayerButton = useCallback(async () => {
