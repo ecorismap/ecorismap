@@ -40,7 +40,7 @@ export const LayerEditFieldTitle = () => {
         <Text style={[styles.title, { textAlign: 'center' }]}>{`${t('common.option')}`}</Text>
       </View>
       <View style={[styles.td3, { flex: 3, width: 75 }]}>
-        {/* <Text style={[styles.title, { textAlign: 'center' }]}>{`${t('common.delete')}`}</Text> */}
+        <Text style={[styles.title, { textAlign: 'center' }]}>{`${t('common.move')}`}</Text>
       </View>
     </View>
   );
@@ -140,13 +140,23 @@ export const LayerEditFieldTable = () => {
               />
             )}
           </View>
-          <View style={[styles.td, { flex: 3, width: 75 }]}>
+          {/* 上下移動ボタン */}
+          <View style={[styles.td, { flex: 3, width: 75, justifyContent: 'center' }]}>
+            {/* 上へ */}
             <Button
-              name="chevron-double-up"
-              disabled={!editable}
-              onPress={() => onChangeFieldOrder(index)}
+              name="chevron-up"
+              disabled={!editable || index === 0}
+              onPress={() => onChangeFieldOrder(index, 'up')}
               color={COLOR.GRAY2}
-              style={{ backgroundColor: COLOR.MAIN }}
+              style={[styles.orderBtn, { backgroundColor: COLOR.MAIN }]}
+            />
+            {/* 下へ */}
+            <Button
+              name="chevron-down"
+              disabled={!editable || index === layer.field.length - 1}
+              onPress={() => onChangeFieldOrder(index, 'down')}
+              color={COLOR.GRAY2}
+              style={[styles.orderBtn, { backgroundColor: COLOR.MAIN }]}
             />
           </View>
         </View>
@@ -157,6 +167,7 @@ export const LayerEditFieldTable = () => {
       formatTypeLabels,
       formatTypeValues,
       gotoLayerEditFieldItem,
+      layer.field.length,
       onChangeFieldFormat,
       onChangeFieldName,
       onChangeFieldOrder,
@@ -166,9 +177,12 @@ export const LayerEditFieldTable = () => {
     ]
   );
 
+  //ヘッダーをリストの外に置くと、リストのスクロールバー分だけ列がずれるためListHeaderComponentにする。
+  //メモ化しないと再レンダリングのたびに追加ボタンが作り直される
+  const ListHeader = useMemo(() => <LayerEditFieldTitle />, []);
+
   return (
     <View style={{ flexDirection: 'column', flex: 1, marginBottom: 10 }}>
-      <LayerEditFieldTitle />
       <FlatList
         data={layer.field}
         initialNumToRender={layer.field.length}
@@ -176,6 +190,8 @@ export const LayerEditFieldTable = () => {
         removeClippedSubviews={false}
         renderItem={renderItem}
         disableVirtualization={true}
+        ListHeaderComponent={ListHeader}
+        stickyHeaderIndices={[0]}
       />
     </View>
   );
@@ -193,6 +209,12 @@ const styles = StyleSheet.create({
     paddingLeft: 10,
     verticalAlign: 'middle',
     textAlignVertical: 'center',
+  },
+
+  orderBtn: {
+    alignItems: 'center',
+    flex: 1,
+    justifyContent: 'center',
   },
 
   td: {
