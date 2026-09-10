@@ -11,9 +11,11 @@ interface Props {
   lineColor: string;
   selected: boolean;
   zoom: number;
+  //数字・英字・文字スタンプが描く文字列。レイヤのラベル設定から生成した値を呼び出し側が渡す
+  label?: string;
 }
 export const HomeMapMemoStamp = React.memo((props: Props) => {
-  const { feature, lineColor, zoom } = props;
+  const { feature, lineColor, zoom, label } = props;
 
   const stamp = useMemo(() => feature.field._stamp as string, [feature.field]);
 
@@ -22,42 +24,33 @@ export const HomeMapMemoStamp = React.memo((props: Props) => {
   const scale = getMapMemoSymbolScaleAtZoom(feature, zoom);
   const size = 20 * scale;
   switch (stamp) {
+    //数字・英字・文字はレイヤのラベル設定の値を描く。ラベルが「なし」なら描くものが無い
     case 'NUMBERS':
-      return (
-        <Marker key={`${feature.id}-${feature.redraw}`} {...feature.coords} anchor={'center'} draggable={false}>
-          <View style={{ width: size, height: size }}>
-            <Svg height={size} width={size} viewBox="0 0 20 20">
-              <Text x="10" y="14" fontSize="16" fontWeight="bold" fill="black" textAnchor="middle">
-                1
-              </Text>
-            </Svg>
-          </View>
-        </Marker>
-      );
     case 'ALPHABETS':
+    case 'TEXT': {
+      if (label === undefined || label === '') return null;
+      //文字は桁数が多くなるので横長の枠にする
+      const isText = stamp === 'TEXT';
+      const boxWidth = (isText ? 80 : 20) * scale;
       return (
         <Marker key={`${feature.id}-${feature.redraw}`} {...feature.coords} anchor={'center'} draggable={false}>
-          <View style={{ width: size, height: size }}>
-            <Svg height={size} width={size} viewBox="0 0 20 20">
-              <Text x="10" y="14" fontSize="16" fontWeight="bold" fill="black" textAnchor="middle">
-                A
+          <View style={{ width: boxWidth, height: size }}>
+            <Svg height={size} width={boxWidth} viewBox={isText ? '0 0 80 20' : '0 0 20 20'}>
+              <Text
+                x={isText ? '40' : '10'}
+                y={isText ? '15' : '14'}
+                fontSize={isText ? '12' : '16'}
+                fontWeight="bold"
+                fill={lineColor}
+                textAnchor="middle"
+              >
+                {label}
               </Text>
             </Svg>
           </View>
         </Marker>
       );
-    case 'TEXT':
-      return (
-        <Marker key={`${feature.id}-${feature.redraw}`} {...feature.coords} anchor={'center'} draggable={false}>
-          <View style={{ width: 80 * scale, height: size }}>
-            <Svg height={size} width={80 * scale} viewBox="0 0 80 20">
-              <Text x="40" y="15" fontSize="12" fontWeight="bold" fill="black" textAnchor="middle">
-                クマタカ
-              </Text>
-            </Svg>
-          </View>
-        </Marker>
-      );
+    }
     case 'TOMARI':
       return (
         <Marker key={`${feature.id}-${feature.redraw}`} {...feature.coords} anchor={'center'} draggable={false}>

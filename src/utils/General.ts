@@ -178,3 +178,10 @@ export function runAsync<T>(fn: () => T): Promise<T> {
     }, 0);
   });
 }
+
+/**
+ * SVG・XMLのテキストや属性に安全に埋め込めるようエスケープする。
+ */
+export function escapeXml(value: string): string {
+  return value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}

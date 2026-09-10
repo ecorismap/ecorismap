@@ -16,13 +16,7 @@ import { useWindow } from '../../hooks/useWindow';
 const STROKE_CAP = Platform.OS === 'ios' ? 'butt' : 'round';
 
 export const MapMemoView = React.memo(() => {
-  const {
-    penColor,
-    penWidth,
-    currentMapMemoTool,
-    mapMemoLines,
-    arrowStyle,
-  } = useContext(MapMemoContext);
+  const { penColor, penWidth, currentMapMemoTool, mapMemoLines, arrowStyle } = useContext(MapMemoContext);
   const { mapMemoEditingLine, mapMemoEditingLineLatLon, mapViewRef } = useContext(SVGDrawingContext);
   const { mapRegion, mapSize } = useWindow();
 
@@ -167,9 +161,7 @@ export const ArrowHeads = React.memo(
           d={d}
           fill={strokeColor}
           stroke="white"
-          transform={`translate(${p3[0] - size / 2},${p3[1] - size / 2}) rotate(${angleEnd}, ${size / 2}, ${
-            size / 2
-          })`}
+          transform={`translate(${p3[0] - size / 2},${p3[1] - size / 2}) rotate(${angleEnd}, ${size / 2}, ${size / 2})`}
         />
         {arrowStyle === 'ARROW_BOTH' && (
           <Path
@@ -267,6 +259,23 @@ export const RenderStamp = React.memo(
             strokeWidth="0"
             fill={strokeColor}
           />
+        );
+      //数字・英字・文字はレコードのラベルを描くが、確定前はレコードが無くて値が決まらない。
+      //置いた位置が分かるよう仮の記号を出し、確定でラベルに置き換わる
+      case 'NUMBERS':
+      case 'ALPHABETS':
+      case 'TEXT':
+        return (
+          <Text
+            x={stampPos.x}
+            y={stampPos.y + 5}
+            fontSize="16"
+            fontWeight="bold"
+            fill={strokeColor}
+            textAnchor="middle"
+          >
+            #
+          </Text>
         );
       default:
         return null;

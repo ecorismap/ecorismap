@@ -2,6 +2,7 @@ import { TrackStatistics, ElevationProfilePoint } from './trackStatistics';
 import { buildElevationChart } from './trackChart';
 import { t } from '../i18n/config';
 import dayjs from '../i18n/dayjs';
+import { escapeXml } from './General';
 
 // 軌跡サマリー（統計＋標高グラフ）をSVG画像として書き出す。
 // エクスポートしたデータを後から見返すときに、アプリを開かなくても内容が分かるようにする
@@ -12,14 +13,6 @@ const CHART_TOP = 175;
 const STATS_TOP = 96;
 const HEIGHT = CHART_TOP + CHART_HEIGHT + 20;
 const CHART_PADDING = { top: 10, right: 20, bottom: 30, left: 60 };
-
-// SVGのテキスト・属性に埋め込めないよう文字をエスケープする
-const escapeXml = (value: string): string =>
-  value
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
 
 const formatDuration = (seconds: number) => {
   const h = Math.floor(seconds / 3600);
@@ -67,7 +60,9 @@ export const generateTrackSummarySVG = (
 ): string => {
   const parts: string[] = [];
 
-  parts.push(`<svg xmlns="http://www.w3.org/2000/svg" width="${WIDTH}" height="${HEIGHT}" viewBox="0 0 ${WIDTH} ${HEIGHT}">`);
+  parts.push(
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${WIDTH}" height="${HEIGHT}" viewBox="0 0 ${WIDTH} ${HEIGHT}">`
+  );
   parts.push(`<rect width="${WIDTH}" height="${HEIGHT}" fill="#ffffff"/>`);
   parts.push(
     `<text x="24" y="38" font-family="sans-serif" font-size="22" font-weight="bold" fill="#212121">${escapeXml(

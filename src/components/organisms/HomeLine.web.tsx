@@ -8,7 +8,7 @@ import { isBrushTool } from '../../utils/General';
 import { HomeMapMemoStamp } from './HomeMapMemoStamp';
 import { HomeMapMemoBrush } from './HomeMapMemoBrush';
 import { COLOR } from '../../constants/AppConstants';
-import { getColor, getLineWidthAtZoom } from '../../utils/Layer';
+import { generateLabel, getColor, getLineWidthAtZoom } from '../../utils/Layer';
 import { LineArrow } from '../atoms';
 
 interface Props {
@@ -70,6 +70,7 @@ export const Line = React.memo((props: Props & { editingLineId?: string }) => {
             lineColor={lineColor}
             selected={selected}
             zoom={zoom}
+            label={generateLabel(layer, feature)}
           />
         );
       })}
