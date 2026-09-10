@@ -81,10 +81,6 @@ export const mockDrawingToolsContextValue: DrawingToolsContextType = {
   // Drawing actions
   onDragEndPoint: jest.fn().mockResolvedValue(undefined),
   pressUndoDraw: jest.fn().mockResolvedValue(undefined),
-  pressUndo: jest.fn().mockResolvedValue(undefined),
-  pressRedo: jest.fn(),
-  isUndoAvailable: false,
-  isRedoAvailable: false,
   pressRedoDraw: jest.fn(),
   isUndoable: false,
   isRedoable: false,
@@ -92,13 +88,10 @@ export const mockDrawingToolsContextValue: DrawingToolsContextType = {
   pressDeleteDraw: jest.fn().mockResolvedValue(undefined),
   finishEditObject: jest.fn(() => false),
   resetDrawTools: jest.fn(),
-  editingLayerName: undefined,
-  pressEditingLayerButton: jest.fn().mockResolvedValue(undefined),
 
   // Backward compatibility
   isEditingDraw: false,
   isEditingObject: false,
-  isAreaSelected: false,
   isSelectedDraw: false,
   isEditingLine: false,
   editingLineId: undefined,

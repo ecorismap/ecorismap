@@ -61,7 +61,7 @@ const renderVertexMarkers = (
 };
 
 export const SvgView = React.memo(() => {
-  const { currentDrawTool, isEditingObject, isAreaSelected } = useContext(DrawingToolsContext);
+  const { currentDrawTool, isEditingObject } = useContext(DrawingToolsContext);
   const { drawLine, editingLine, selectLine } = useContext(SVGDrawingContext);
 
   // New Architecture（Fabric）のiOSでは、同じSvgインスタンス内の子要素をRef駆動（drawLine.current）で
@@ -170,18 +170,15 @@ export const SvgView = React.memo(() => {
             />
           </G>
         )}
-        {/* なげなわ選択時の変形フレーム（ドラッグで移動・ハンドルで回転）。ポイント・ライン・ポリゴン共通、1件でも表示 */}
-        {isAreaSelected &&
-          (isPlotTool(currentDrawTool) || currentDrawTool === 'MOVE') &&
-          drawLine.current.length >= 1 &&
-          drawLine.current.every((line) => line.xy.length > 0) &&
+        {/* 複数ポイント選択時の変形フレーム（ドラッグで移動・ハンドルで回転） */}
+        {(currentDrawTool === 'PLOT_POINT' || currentDrawTool === 'MOVE') &&
+          drawLine.current.length >= 2 &&
+          drawLine.current.every((line) => line.properties.includes('POINT') && line.xy.length > 0) &&
           (() => {
-            const frame = getPointsTransformFrame(drawLine.current.flatMap((line) => line.xy));
+            const frame = getPointsTransformFrame(drawLine.current.map((line) => line.xy[0]));
             const [hx, hy] = frame.handle;
-            //地図移動(MOVE)中はジェスチャが地図に取られるため回転ハンドルを隠す。
-            //単一ポイントは回転しても変化しないためハンドルを出さない
-            const isSinglePoint = drawLine.current.length === 1 && drawLine.current[0].xy.length === 1;
-            const showHandle = currentDrawTool !== 'MOVE' && !isSinglePoint;
+            //地図移動(MOVE)中はジェスチャが地図に取られるため回転ハンドルを隠す
+            const showHandle = currentDrawTool === 'PLOT_POINT';
             return (
               <G>
                 <Rect
@@ -208,19 +205,17 @@ export const SvgView = React.memo(() => {
                     <Path d={`M ${hx + 6} ${hy + 4} l -4 -1 l 3 4 z`} stroke="white" strokeWidth="1" fill="white" />
                   </G>
                 )}
-                {drawLine.current.map((line, i) =>
-                  line.xy.length === 1 ? (
-                    <Circle
-                      key={`tp-${i}`}
-                      cx={line.xy[0][0]}
-                      cy={line.xy[0][1]}
-                      r={7.2}
-                      fill="yellow"
-                      stroke="black"
-                      strokeWidth={2.4}
-                    />
-                  ) : null
-                )}
+                {drawLine.current.map((line, i) => (
+                  <Circle
+                    key={`tp-${i}`}
+                    cx={line.xy[0][0]}
+                    cy={line.xy[0][1]}
+                    r={7.2}
+                    fill="yellow"
+                    stroke="black"
+                    strokeWidth={2.4}
+                  />
+                ))}
               </G>
             );
           })()}

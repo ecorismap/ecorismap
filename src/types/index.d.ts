@@ -552,7 +552,7 @@ export type DrawLineType = {
   latlon: Position[];
   properties: string[];
 };
-export type UndoLineType = { index: number; latlon: Position[]; latlonList?: Position[][]; action: UndoActionType };
+export type UndoLineType = { index: number; latlon: Position[]; action: UndoActionType };
 
 export type PointToolType = keyof typeof POINTTOOL;
 export type LineToolType = keyof typeof LINETOOL;

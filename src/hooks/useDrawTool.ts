@@ -65,7 +65,6 @@ const PINCH_DISCARD_DISTANCE_PX = 10;
 
 export type UseDrawToolReturnType = {
   isEditingDraw: boolean;
-  isAreaSelected: boolean;
   isUndoable: boolean;
   isRedoable: boolean;
   isEditingObject: boolean;
@@ -139,6 +138,7 @@ export type UseDrawToolReturnType = {
   convertPointFeatureToDrawLine: (layerId: string, features: PointRecordType[]) => void;
   setIsPinch: Dispatch<SetStateAction<boolean>>;
   getPXY: (event: GestureResponderEvent) => Position;
+  handleReleaseDeletePoint: (pXY: Position) => void;
   handleGrantPlot: (pXY: Position) => void;
   handleGrantFreehand: (pXY: Position) => boolean;
   handleMovePlot: (pXY: Position) => void;
@@ -210,13 +210,12 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
   type EditingNodeStateType = 'NONE' | 'NEW' | 'MOVE';
   const editingNodeIndex = useRef(-1);
   const editingNodeState = useRef<EditingNodeStateType>('NONE');
-  //複数選択（なげなわ）の一括変形（移動・回転）状態。ポイント・ライン・ポリゴン共通
-  type FeaturesTransformModeType = 'NONE' | 'MOVE' | 'ROTATE';
-  const isAreaSelected = useRef(false);
-  const featuresTransformMode = useRef<FeaturesTransformModeType>('NONE');
-  const featuresTransformStartXY = useRef<Position | null>(null);
-  const featuresTransformSnapshot = useRef<Position[][]>([]);
-  const featuresTransformCenter = useRef<Position>([0, 0]);
+  //複数ポイント選択の一括変形（移動・回転）状態
+  type PointsTransformModeType = 'NONE' | 'MOVE' | 'ROTATE';
+  const pointsTransformMode = useRef<PointsTransformModeType>('NONE');
+  const pointsTransformStartXY = useRef<Position | null>(null);
+  const pointsTransformSnapshot = useRef<Position[]>([]);
+  const pointsTransformCenter = useRef<Position>([0, 0]);
 
   const {
     dataUser,
@@ -344,9 +343,6 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     selectLine.current = [];
     undoLine.current = [];
     isEditingObject.current = false;
-    isAreaSelected.current = false;
-    featuresTransformMode.current = 'NONE';
-    featuresTransformStartXY.current = null;
     setDrawLineVisible(true);
   }, [isEditingObject]);
 
@@ -394,6 +390,33 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
   );
 
   ///////////////////////////////////////////////////
+  const tryDeleteObjectAtPosition = useCallback(
+    (pXY: Position) => {
+      convertFeatureToDrawLine(pXY);
+      //始点のノードに近ければ配列を空にして見えなくする。保存時に配列が空のものを除く。
+      if (currentDrawTool === 'PLOT_POINT') return false;
+      const deleteIndex = drawLine.current.findIndex((line) => {
+        return line.xy.length > 0 && isNearWithPlot(pXY, line.xy[0]);
+      });
+      if (deleteIndex !== -1) {
+        pushUndo({
+          index: deleteIndex,
+          latlon: drawLine.current[deleteIndex].latlon,
+          action: 'DELETE',
+        });
+        drawLine.current[deleteIndex] = {
+          ...drawLine.current[deleteIndex],
+          xy: [],
+          latlon: [],
+          //properties: [],
+        };
+        return true;
+      }
+      return false;
+    },
+    [convertFeatureToDrawLine, currentDrawTool, pushUndo]
+  );
+
   const changeToEditingObject = useCallback(
     (index: number, featureType: FeatureButtonType) => {
       editingObjectIndex.current = index;
@@ -1135,7 +1158,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     } else if (undo.action === 'EDIT_MULTI') {
       redoLine.current = [
         ...redoLine.current,
-        { index: -1, latlon: [], latlonList: drawLine.current.map((line) => line.latlon), action: 'EDIT_MULTI' },
+        { index: -1, latlon: drawLine.current.map((line) => line.latlon[0]), action: 'EDIT_MULTI' },
       ];
     } else if (undo.action !== 'SELECT') {
       redoLine.current = [
@@ -1170,12 +1193,12 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
       isEditingObject.current = true;
       editingObjectIndex.current = undo.index;
     } else if (undo.action === 'EDIT_MULTI') {
-      //複数選択の一括移動・回転を取り消す（latlonList[i]がi番目の地物の座標列）
-      undo.latlonList?.forEach((latlon, i) => {
+      //複数ポイントの一括移動・回転を取り消す（undo.latlon[i]がi番目のポイントの座標）
+      undo.latlon.forEach((pos, i) => {
         const line = drawLine.current[i];
         if (line === undefined) return;
-        line.latlon = latlon;
-        line.xy = latLonArrayToXYArray(latlon, mapRegion, mapSize, mapViewRef);
+        line.latlon = [pos];
+        line.xy = latLonArrayToXYArray([pos], mapRegion, mapSize, mapViewRef);
       });
     } else if (undo.action === 'EDIT') {
       //修正の場合
@@ -1225,15 +1248,14 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     } else if (redo.action === 'EDIT_MULTI') {
       undoLine.current.push({
         index: -1,
-        latlon: [],
-        latlonList: drawLine.current.map((line) => line.latlon),
+        latlon: drawLine.current.map((line) => line.latlon[0]),
         action: 'EDIT_MULTI',
       });
-      redo.latlonList?.forEach((latlon, i) => {
+      redo.latlon.forEach((pos, i) => {
         const line = drawLine.current[i];
         if (line === undefined) return;
-        line.latlon = latlon;
-        line.xy = latLonArrayToXYArray(latlon, mapRegion, mapSize, mapViewRef);
+        line.latlon = [pos];
+        line.xy = latLonArrayToXYArray([pos], mapRegion, mapSize, mapViewRef);
       });
     } else if (redo.action === 'EDIT') {
       undoLine.current.push({ index: redo.index, latlon: drawLine.current[redo.index].latlon, action: 'EDIT' });
@@ -1285,6 +1307,14 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     return [event.nativeEvent.pageX + offset.current[0], event.nativeEvent.pageY + offset.current[1]];
   };
 
+  const handleReleaseDeletePoint = useCallback(
+    (pXY: Position) => {
+      tryDeleteObjectAtPosition(pXY);
+      setRedraw(ulid());
+    },
+    [tryDeleteObjectAtPosition]
+  );
+
   const handleGrantSelect = useCallback(
     (pXY: Position) => {
       selectLine.current = [pXY];
@@ -1306,36 +1336,35 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     const { isOK, layer, recordSet } = getEditableLayerAndRecordSetWithCheck(featureButton);
     if (!isOK || layer === undefined || recordSet === undefined) return false;
     const selectLineCoords = xyArrayToLatLonArray(selectLine.current, mapRegion, mapSize, mapViewRef);
-    //なげなわ選択は1件でも一括変形モード（移動・回転）にする。
-    //ノード編集をしたい場合はタップ選択を使う。UNDOで選択解除できるようにSELECTを積む
-    const enterTransformSelection = () => {
-      pushUndo({ index: -1, latlon: [], action: 'SELECT' });
-      isEditingObject.current = true;
-      isAreaSelected.current = true;
-    };
     if (featureButton === 'POINT') {
       const features = selectPointFeaturesByArea(recordSet as PointRecordType[], selectLineCoords);
       if (features.length === 0) return false;
       resetDrawTools();
       convertPointFeatureToDrawLine(layer.id, features);
-      enterTransformSelection();
-    } else if (featureButton === 'LINE' || featureButton === 'MEMO') {
-      //マップメモのストロークはラインレコードなのでLINEと同じ流れで選択する
+      if (features.length === 1) {
+        changeToEditingObject(0, 'POINT');
+      } else {
+        //複数選択。UNDOで選択解除できるようにSELECTを積む
+        pushUndo({ index: -1, latlon: [], action: 'SELECT' });
+        isEditingObject.current = true;
+      }
+    } else if (featureButton === 'LINE') {
       const features = selectLineFeaturesByArea(recordSet as LineRecordType[], selectLineCoords);
       if (features.length === 0) return false;
       resetDrawTools();
-      convertLineFeatureToDrawLine(layer.id, features);
-      enterTransformSelection();
+      convertLineFeatureToDrawLine(layer.id, [features[0]]);
+      changeToEditingObject(0, 'LINE');
     } else {
       const features = selectPolygonFeaturesByArea(recordSet as PolygonRecordType[], selectLineCoords);
       if (features.length === 0) return false;
       resetDrawTools();
-      convertPolygonFeatureToDrawLine(layer.id, features);
-      enterTransformSelection();
+      convertPolygonFeatureToDrawLine(layer.id, [features[0]]);
+      changeToEditingObject(0, 'POLYGON');
     }
     isSelectedDraw.current = true;
     return true;
   }, [
+    changeToEditingObject,
     convertLineFeatureToDrawLine,
     convertPointFeatureToDrawLine,
     convertPolygonFeatureToDrawLine,
@@ -1360,7 +1389,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
         setRedraw(ulid());
         if (featureButton === 'POINT') {
           setDrawTool('PLOT_POINT');
-        } else if (featureButton === 'LINE' || featureButton === 'MEMO') {
+        } else if (featureButton === 'LINE') {
           setDrawTool('PLOT_LINE');
         } else {
           setDrawTool('PLOT_POLYGON');
@@ -1373,67 +1402,71 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     [featureButton, selectLine, trySelectFeaturesByArea, trySelectObjectAtPosition]
   );
 
-  const startFeaturesTransform = useCallback(
+  //複数ポイントを選択して一括移動・回転するモードか
+  const isMultiPointSelection = useCallback(
+    () => drawLine.current.length >= 2 && drawLine.current.every((line) => line.properties.includes('POINT')),
+    [drawLine]
+  );
+
+  const startPointsTransform = useCallback(
     (pXY: Position) => {
-      const frame = getPointsTransformFrame(drawLine.current.flatMap((line) => line.xy));
-      featuresTransformSnapshot.current = drawLine.current.map((line) => line.xy);
-      featuresTransformCenter.current = frame.center;
-      featuresTransformStartXY.current = pXY;
+      const points = drawLine.current.map((line) => line.xy[0]);
+      const frame = getPointsTransformFrame(points);
+      pointsTransformSnapshot.current = points;
+      pointsTransformCenter.current = frame.center;
+      pointsTransformStartXY.current = pXY;
       //回転ハンドル付近から開始したら回転、それ以外はドラッグで平行移動
       const isOnHandle = Math.hypot(pXY[0] - frame.handle[0], pXY[1] - frame.handle[1]) <= POINTS_TRANSFORM_HANDLE_RADIUS_PX * 2;
-      featuresTransformMode.current = isOnHandle ? 'ROTATE' : 'MOVE';
+      pointsTransformMode.current = isOnHandle ? 'ROTATE' : 'MOVE';
     },
     [drawLine]
   );
 
-  const moveFeaturesTransform = useCallback(
+  const movePointsTransform = useCallback(
     (pXY: Position) => {
-      const start = featuresTransformStartXY.current;
-      if (start === null || featuresTransformMode.current === 'NONE') return;
-      const snapshot = featuresTransformSnapshot.current;
-      if (featuresTransformMode.current === 'MOVE') {
+      const start = pointsTransformStartXY.current;
+      if (start === null || pointsTransformMode.current === 'NONE') return;
+      const snapshot = pointsTransformSnapshot.current;
+      if (pointsTransformMode.current === 'MOVE') {
         const dx = pXY[0] - start[0];
         const dy = pXY[1] - start[1];
         drawLine.current.forEach((line, i) => {
-          line.xy = snapshot[i].map(([x, y]) => [x + dx, y + dy]);
+          line.xy = [[snapshot[i][0] + dx, snapshot[i][1] + dy]];
         });
       } else {
-        const [cx, cy] = featuresTransformCenter.current;
+        const [cx, cy] = pointsTransformCenter.current;
         const a0 = Math.atan2(start[1] - cy, start[0] - cx);
         const a1 = Math.atan2(pXY[1] - cy, pXY[0] - cx);
         const cos = Math.cos(a1 - a0);
         const sin = Math.sin(a1 - a0);
         drawLine.current.forEach((line, i) => {
-          line.xy = snapshot[i].map(([x, y]) => {
-            const vx = x - cx;
-            const vy = y - cy;
-            return [cx + vx * cos - vy * sin, cy + vx * sin + vy * cos];
-          });
+          const vx = snapshot[i][0] - cx;
+          const vy = snapshot[i][1] - cy;
+          line.xy = [[cx + vx * cos - vy * sin, cy + vx * sin + vy * cos]];
         });
       }
     },
     [drawLine]
   );
 
-  //一括変形を確定する。全頂点が動くため、取り消し用に変形前のlatlonをEDIT_MULTIで積む
-  const finishFeaturesTransform = useCallback(() => {
-    const mode = featuresTransformMode.current;
-    featuresTransformMode.current = 'NONE';
-    featuresTransformStartXY.current = null;
+  //一括変形を確定する。全ポイントが動くため、取り消し用に変形前のlatlonをEDIT_MULTIで積む
+  const finishPointsTransform = useCallback(() => {
+    const mode = pointsTransformMode.current;
+    pointsTransformMode.current = 'NONE';
+    pointsTransformStartXY.current = null;
     if (mode === 'NONE') return;
-    const snapshot = featuresTransformSnapshot.current;
-    const moved = drawLine.current.some((line, i) =>
-      line.xy.some((p, j) => p[0] !== snapshot[i]?.[j]?.[0] || p[1] !== snapshot[i]?.[j]?.[1])
+    const snapshot = pointsTransformSnapshot.current;
+    const moved = drawLine.current.some(
+      (line, i) => line.xy[0][0] !== snapshot[i]?.[0] || line.xy[0][1] !== snapshot[i]?.[1]
     );
     if (!moved) return;
     pushUndo({
       index: -1,
-      latlon: [],
-      latlonList: drawLine.current.map((line) => line.latlon),
+      latlon: drawLine.current.map((line) => line.latlon[0]),
       action: 'EDIT_MULTI',
     });
     drawLine.current.forEach((line) => {
-      line.latlon = xyArrayToLatLonArray(line.xy, mapRegion, mapSize, mapViewRef);
+      line.latlon = [xyToLatLon(line.xy[0], mapRegion, mapSize, mapViewRef)];
     });
   }, [drawLine, mapRegion, mapSize, mapViewRef, pushUndo]);
 
@@ -1449,9 +1482,9 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
           - 最初のノードをタッチするだけなら編集終了（ポリゴンは閉じる）
           - 近くなければ、最後尾にプロットを追加（ポイントの場合は位置を更新）
       */
-      if (isAreaSelected.current) {
-        //複数選択中はドラッグで一括移動・回転
-        startFeaturesTransform(pXY);
+      if (isMultiPointSelection()) {
+        //複数ポイント選択中はドラッグで一括移動・回転
+        startPointsTransform(pXY);
         return;
       }
       if (!isEditingObject.current) {
@@ -1472,42 +1505,35 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
         }
       }
     },
-    [createNewNode, currentDrawTool, editStartNewPlotObject, isEditingObject, startFeaturesTransform, tryStartEditNode]
+    [createNewNode, currentDrawTool, editStartNewPlotObject, isEditingObject, isMultiPointSelection, startPointsTransform, tryStartEditNode]
   );
 
   const handleMovePlot = useCallback(
     (pXY: Position) => {
       //編集中でなければなにもしない。
       if (!isEditingObject.current) return;
-      if (isAreaSelected.current) {
-        moveFeaturesTransform(pXY);
+      if (isMultiPointSelection()) {
+        movePointsTransform(pXY);
         setRedraw(ulid());
         return;
       }
       moveNode(pXY);
       setRedraw(ulid());
     },
-    [moveFeaturesTransform, moveNode]
+    [isMultiPointSelection, moveNode, movePointsTransform]
   );
 
   const handleReleasePlotPoint = useCallback(() => {
-    if (isAreaSelected.current) {
-      finishFeaturesTransform();
+    if (isMultiPointSelection()) {
+      finishPointsTransform();
     } else {
       updateNodePosition();
     }
     isEditingDraw.current = true;
     setRedraw(ulid());
-  }, [finishFeaturesTransform, updateNodePosition]);
+  }, [finishPointsTransform, isMultiPointSelection, updateNodePosition]);
 
   const handleReleasePlotLinePolygon = useCallback(() => {
-    if (isAreaSelected.current) {
-      //複数選択中は一括変形の確定のみ（ノード編集・確定判定はしない）
-      finishFeaturesTransform();
-      isEditingDraw.current = true;
-      setRedraw(ulid());
-      return false;
-    }
     let finished = false;
 
     const isDeleted = tryDeleteLineNode();
@@ -1518,7 +1544,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
 
     setRedraw(ulid());
     return finished;
-  }, [finishFeaturesTransform, tryDeleteLineNode, tryFinishEditObject, updateNodePosition]);
+  }, [tryDeleteLineNode, tryFinishEditObject, updateNodePosition]);
 
   /**
    * ピンチ開始時にGrantで加えられたプロット操作を取り消す。
@@ -1528,10 +1554,10 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
   const cancelPlotGrant = useCallback(() => {
     if (!isPlotTool(currentDrawTool)) return;
     if (!isEditingObject.current) return;
-    if (isAreaSelected.current) {
+    if (isMultiPointSelection()) {
       //一括変形のドラッグ中にピンチへ移行した場合、latlonを正としてxyを戻す
-      featuresTransformMode.current = 'NONE';
-      featuresTransformStartXY.current = null;
+      pointsTransformMode.current = 'NONE';
+      pointsTransformStartXY.current = null;
       drawLine.current.forEach((line) => {
         line.xy = latLonArrayToXYArray(line.latlon, mapRegion, mapSize, mapViewRef);
       });
@@ -1553,7 +1579,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
       line.xy = latLonArrayToXYArray(line.latlon, mapRegion, mapSize, mapViewRef);
     }
     setRedraw(ulid());
-  }, [currentDrawTool, drawLine, editingLineXY, editingObjectIndex, isEditingObject, mapRegion, mapSize, mapViewRef, undoLine]);
+  }, [currentDrawTool, drawLine, editingLineXY, editingObjectIndex, isEditingObject, isMultiPointSelection, mapRegion, mapSize, mapViewRef, undoLine]);
 
   const handleGrantFreehand = useCallback(
     (pXY: Position) => {
@@ -1738,7 +1764,6 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
 
   return {
     isEditingDraw: isEditingDraw.current,
-    isAreaSelected: isAreaSelected.current,
     isUndoable: undoLine.current.length > 0,
     isRedoable: redoLine.current.length > 0,
     isEditingObject: isEditingObject.current,
@@ -1780,6 +1805,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     convertPointFeatureToDrawLine,
     setIsPinch,
     getPXY,
+    handleReleaseDeletePoint,
     handleGrantPlot,
     handleGrantFreehand,
     handleMovePlot,

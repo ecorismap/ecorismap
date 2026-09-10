@@ -857,10 +857,7 @@
       "discardEditPosition": "Discard position changes?",
       "splitLine": "Do you want to split the line?",
       "downloadTiles": "About {{tileCount}} tiles (approx. {{size}} MB) will be downloaded. Do you want to continue?",
-      "discardViewshed": "Clear all displayed viewsheds?",
-      "activateLayer": "Set \"{{name}}\" as the editing layer?",
-      "showLayerAndEdit": "The editing layer \"{{name}}\" is hidden. Show it and continue?",
-      "createNewLayerForType": "There are no editable {{type}} layers. Create a new layer?"
+      "discardViewshed": "Clear all displayed viewsheds?"
     },
     "navigation": {
       "download": "download",
@@ -957,8 +954,7 @@
       "color": "color",
       "redo": "redo",
       "syncPosition": "share",
-      "download": "DL",
-      "noEditingLayer": "No layer selected"
+      "download": "DL"
     },
     "poi": {
       "openInGoogleMaps": "To Google Maps",
@@ -985,10 +981,6 @@
       "observerHeight": "Observer height (m)",
       "useSnapPoint": "Use point \"{{name}}\" as center",
       "previewCount": "Viewshed: {{count}}"
-    },
-    "layerSelect": {
-      "title": "Select a layer to edit",
-      "createNew": "Create a new layer"
     }
   },
   "LayerEditFeatureStyle": {

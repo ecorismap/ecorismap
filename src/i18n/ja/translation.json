@@ -207,10 +207,7 @@
       "addLocationPoint": "現在地にポイントを追加しますか？",
       "discardEditPosition": "位置の変更を破棄しますか？",
       "downloadTiles": "約{{tileCount}}枚（概算{{size}}MB）の地図タイルをダウンロードします。よろしいですか？",
-      "discardViewshed": "表示中の可視領域をすべて消去しますか？",
-      "activateLayer": "「{{name}}」を編集レイヤにしますか？",
-      "showLayerAndEdit": "編集レイヤ「{{name}}」が非表示です。表示して続けますか？",
-      "createNewLayerForType": "編集できる{{type}}レイヤがありません。新規レイヤを作成しますか？"
+      "discardViewshed": "表示中の可視領域をすべて消去しますか？"
     },
     "alert": {
       "gps": "GPSをオンにしてください",
@@ -327,8 +324,7 @@
       "brush": "ブラシ",
       "color": "色選択",
       "redo": "やり直す",
-      "download": "取得",
-      "noEditingLayer": "レイヤ未選択"
+      "download": "取得"
     },
     "poi": {
       "openInGoogleMaps": "Google Mapsへ",
@@ -355,10 +351,6 @@
       "observerHeight": "観測点の高さ(m)",
       "useSnapPoint": "ポイント「{{name}}」を中心にする",
       "previewCount": "可視領域 {{count}}件"
-    },
-    "layerSelect": {
-      "title": "編集するレイヤを選択",
-      "createNew": "新規レイヤを作成"
     }
   },
   "AccountSettings": {

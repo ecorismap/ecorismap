@@ -14,7 +14,6 @@ export type UseLayersReturnType = {
   changeCustomLabel: (layer: LayerType, labelValue: string) => void;
   changeVisible: (visible: boolean, layer: LayerType) => void;
   changeActiveLayer: (layer: LayerType) => void;
-  activateLayer: (layer: LayerType) => void;
   changeLayerOrder: (index: number, direction: 'up' | 'down') => void;
   updateLayersOrder: (data: LayerType[], from: number, to: number) => void;
   onDragBegin: (layer: LayerType) => void;
@@ -111,35 +110,6 @@ export const useLayers = (): UseLayersReturnType => {
           newlayers.forEach((item: LayerType, idx: number) => {
             if (currentLayers[index].type === item.type) {
               newlayers[idx].active = index === idx ? true : false;
-            }
-          });
-        }
-
-        thunkDispatch(setLayersAction(newlayers));
-      });
-    },
-    [dispatch]
-  );
-
-  const activateLayer = useCallback(
-    (layer: LayerType) => {
-      dispatch((thunkDispatch, getState) => {
-        //changeActiveLayerと違いトグルしない。既にアクティブなら何もせず、
-        //そうでなければ同じタイプの他レイヤを非アクティブにして自分をアクティブにする
-
-        // getState()から最新のlayersを取得（stale closure対策）
-        const currentLayers = (getState() as RootState).layers;
-        const index = currentLayers.findIndex((l: LayerType) => l.id === layer.id);
-        if (index === -1) return;
-        if (currentLayers[index].active) return;
-        const newlayers = cloneDeep(currentLayers);
-
-        if (currentLayers[index].type === 'NONE') {
-          newlayers[index].active = true;
-        } else {
-          newlayers.forEach((item: LayerType, idx: number) => {
-            if (currentLayers[index].type === item.type) {
-              newlayers[idx].active = index === idx;
             }
           });
         }
@@ -452,7 +422,6 @@ export const useLayers = (): UseLayersReturnType => {
     changeCustomLabel,
     changeVisible,
     changeActiveLayer,
-    activateLayer,
     changeLayerOrder,
     updateLayersOrder,
     onDragBegin,

@@ -273,53 +273,6 @@ describe('useLayers', () => {
     expect(payload).toEqual(expectedPayload);
   });
 
-  test('activateLayerは非アクティブレイヤをアクティブにし、同タイプを排他する', () => {
-    const { result } = renderHook(() => useLayers());
-    const inactiveLayer = result.current.layers.find((l) => l.id === 'L5'); // POINT, active: false
-
-    act(() => {
-      if (inactiveLayer) result.current.activateLayer(inactiveLayer);
-    });
-
-    const expectedPayload = result.current.layers.map((l) => {
-      if (l.type === 'POINT') {
-        return { ...l, active: l.id === 'L5' };
-      }
-      return l;
-    });
-    const thunkFn = mockDispatch.mock.calls[0][0];
-    const payload = executeThunkAndGetPayload(thunkFn);
-    expect(payload).toEqual(expectedPayload);
-  });
-
-  test('activateLayerは既にアクティブなら何も変更しない（トグルOFFしない）', () => {
-    const { result } = renderHook(() => useLayers());
-    const activeLayer = result.current.layers.find((l) => l.id === 'L1'); // POINT, active: true
-
-    act(() => {
-      if (activeLayer) result.current.activateLayer(activeLayer);
-    });
-
-    const thunkFn = mockDispatch.mock.calls[0][0];
-    // 内部のdispatchが呼ばれない=状態変更なし（ヘルパーは空配列を返す）
-    const payload = executeThunkAndGetPayload(thunkFn);
-    expect(payload).toEqual([]);
-  });
-
-  test('activateLayerはNONEタイプなら排他せずアクティブにする', () => {
-    const { result } = renderHook(() => useLayers());
-    const noneLayer = result.current.layers.find((l) => l.id === 'L6'); // NONE, active: false
-
-    act(() => {
-      if (noneLayer) result.current.activateLayer(noneLayer);
-    });
-
-    const expectedPayload = result.current.layers.map((l) => (l.id === 'L6' ? { ...l, active: true } : l));
-    const thunkFn = mockDispatch.mock.calls[0][0];
-    const payload = executeThunkAndGetPayload(thunkFn);
-    expect(payload).toEqual(expectedPayload);
-  });
-
   test('表示非表示ボタンを押すとレイヤの表示非表示が切り替わる (通常レイヤ)', () => {
     const { result } = renderHook(() => useLayers());
     const targetLayer = result.current.layers.find((l) => l.id === 'L1');

@@ -75,24 +75,14 @@ export interface DrawingToolsContextType {
   pressRedoDraw: () => void;
   isUndoable: boolean;
   isRedoable: boolean;
-  //undo/redoの統一ハンドラ（メモモードの通常時はメモ書き込み履歴、それ以外は作図編集の履歴）
-  pressUndo: () => Promise<void>;
-  pressRedo: () => void;
-  isUndoAvailable: boolean;
-  isRedoAvailable: boolean;
   pressSaveDraw: () => Promise<boolean>;
   pressDeleteDraw: () => Promise<void>;
   finishEditObject: () => boolean;
   resetDrawTools: () => void;
 
-  // Editing layer chip (toolbar)
-  editingLayerName: string | undefined;
-  pressEditingLayerButton: () => Promise<void>;
-
   // Backward compatibility (to be deprecated gradually)
   isEditingDraw: boolean;
   isEditingObject: boolean;
-  isAreaSelected: boolean;
   isSelectedDraw: boolean;
   isEditingLine: boolean;
   editingLineId: string | undefined;
