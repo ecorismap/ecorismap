@@ -4,10 +4,9 @@ import { Pressable } from '../atoms/Pressable';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { COLOR } from '../../constants/AppConstants';
 import { Button } from '../atoms';
-import { RecordType, PhotoType, FormatType, LayerType } from '../../types';
-import dayjs from '../../i18n/dayjs';
+import { RecordType, FormatType, LayerType } from '../../types';
 import { DataContext } from '../../contexts/Data';
-import { SortOrderType } from '../../utils/Data';
+import { SortOrderType, getFieldDisplayValue } from '../../utils/Data';
 import DraggableFlatList, { RenderItemParams } from 'react-native-draggable-flatlist';
 
 // メモ化されたデータ行コンポーネント
@@ -99,15 +98,7 @@ const DataRow = React.memo(
               onPress={() => gotoDataEdit(index)}
             >
               <Text adjustsFontSizeToFit={true} numberOfLines={2}>
-                {item.field[name] === undefined
-                  ? ''
-                  : format === 'DATETIME'
-                    ? `${dayjs(item.field[name] as string).format('L HH:mm')}`
-                    : format === 'PHOTO'
-                      ? `${(item.field[name] as PhotoType[]).length} pic`
-                      : format === 'REFERENCE'
-                        ? 'Reference'
-                        : `${item.field[name]}`}
+                {getFieldDisplayValue(item.field[name], format)}
               </Text>
             </Pressable>
           ))

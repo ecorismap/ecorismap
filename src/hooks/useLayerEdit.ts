@@ -13,7 +13,7 @@ import * as FileSystem from 'expo-file-system/legacy';
 import { addDataAction, deleteDataAction, updateDataAction } from '../modules/dataSet';
 import { addLayerAction, deleteLayerAction, setLayersAction, updateLayerAction } from '../modules/layers';
 import { editSettingsAction } from '../modules/settings';
-import { changeFieldValue, getInitialFieldValue } from '../utils/Data';
+import { changeFieldValue, getBlankFieldValue } from '../utils/Data';
 import { LAYER_PRESETS, PRESET_LAYER_DATA } from '../constants/Presets';
 import { createLayerFromPreset, PresetDictionary } from '../utils/Preset';
 import { geoJson2Data } from '../utils/Geometry';
@@ -35,7 +35,7 @@ export type UseLayerEditReturnType = {
   submitLayerName: () => void;
   changeFeatureType: (itemValue: FeatureType) => void;
   changePermission: (val: PermissionType) => void;
-  changeFieldOrder: (index: number) => void;
+  changeFieldOrder: (index: number, direction: 'up' | 'down') => void;
   changeFieldName: (index: number, val: string) => void;
   changeOption: (index: number, val: boolean) => void;
   submitFieldName: (index: number) => void;
@@ -143,9 +143,9 @@ export const useLayerEdit = (
     (initialFields: FieldType[], addedFields: FieldType[], changeFields: FieldType[], deletedFields: FieldType[]) => {
       const updateDataSet = cloneDeep(dataSet);
       updateDataSet.forEach((userData) => {
-        //既存のデータに追加フィールドの値を初期化
+        //既存のデータに追加フィールドの値を初期化。既定値を入れると入力済みに見えるため空にする
         userData.data.forEach((d) =>
-          addedFields.forEach(({ name, format, list }) => (d.field[name] = getInitialFieldValue(format, list)))
+          addedFields.forEach(({ name, format }) => (d.field[name] = getBlankFieldValue(format)))
         );
         //更新されたフィールドの値を初期化
         userData.data.forEach((d) =>
@@ -299,11 +299,12 @@ export const useLayerEdit = (
   );
 
   const changeFieldOrder = useCallback(
-    (index: number) => {
-      if (index === 0) return;
+    (index: number, direction: 'up' | 'down') => {
+      const swapIndex = direction === 'up' ? index - 1 : index + 1;
+      if (swapIndex < 0 || swapIndex > targetLayer.field.length - 1) return;
       const newTargetLayer = cloneDeep(targetLayer);
-      [newTargetLayer.field[index], newTargetLayer.field[index - 1]] = [
-        newTargetLayer.field[index - 1],
+      [newTargetLayer.field[index], newTargetLayer.field[swapIndex]] = [
+        newTargetLayer.field[swapIndex],
         newTargetLayer.field[index],
       ];
       setTargetLayer(newTargetLayer);
