@@ -26,6 +26,8 @@ export interface AppStateContextType {
   // Other
   bottomSheetRef: React.RefObject<BottomSheetMethods | null>;
   onCloseBottomSheet: (currentRouteName?: string) => Promise<void>;
+  //シートが実際に動いた位置を通知する（開く指示が効いたかの判定に使う）
+  onSheetIndexChange: (index: number) => void;
   updatePmtilesURL: () => Promise<void>;
 }
 
@@ -48,5 +50,6 @@ export const AppStateContext = createContext<AppStateContextType>({
   onSplitRouteChange: () => {},
   bottomSheetRef: React.createRef<BottomSheetMethods>(),
   onCloseBottomSheet: async () => {},
+  onSheetIndexChange: () => {},
   updatePmtilesURL: async () => {},
 });
