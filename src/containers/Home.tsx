@@ -140,6 +140,90 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
   const [restored] = useState(true);
   const mapViewRef = useRef<MapView | MapRef | null>(null);
   const bottomSheetRef = useRef<BottomSheet>(null);
+  //予約したシートのクローズ。開く操作が入ったら取り消す（開いた直後に閉じられるのを防ぐ）
+  const sheetCloseTimerRef = useRef<NodeJS.Timeout | null>(null);
+  //onChangeで受け取る実際の位置。-1が閉じた状態
+  const lastSheetIndexRef = useRef(-1);
+  const openSheetRetryRef = useRef<NodeJS.Timeout | null>(null);
+  //こちらから閉じた場合に立てる。閉じ終わったあとに届くonCloseで確認ダイアログを
+  //二度出さないために使う（シートが開いたら解除する）
+  const isClosingBySelfRef = useRef(false);
+
+  const cancelPendingSheetClose = useCallback(() => {
+    if (sheetCloseTimerRef.current !== null) {
+      clearTimeout(sheetCloseTimerRef.current);
+      sheetCloseTimerRef.current = null;
+    }
+  }, []);
+
+  const closeSheet = useCallback(() => {
+    cancelPendingSheetClose();
+    isClosingBySelfRef.current = true;
+    bottomSheetRef.current?.close();
+  }, [cancelPendingSheetClose]);
+
+  //地図の移動などを見せてから閉じたい場合に使う。予約中に開く操作があれば取り消される
+  const closeSheetLater = useCallback(
+    (delay: number) => {
+      cancelPendingSheetClose();
+      sheetCloseTimerRef.current = setTimeout(() => {
+        sheetCloseTimerRef.current = null;
+        isClosingBySelfRef.current = true;
+        bottomSheetRef.current?.close();
+      }, delay);
+    },
+    [cancelPendingSheetClose]
+  );
+
+  const openSheet = useCallback(
+    (index: number) => {
+      cancelPendingSheetClose();
+      const sheet = bottomSheetRef.current;
+      if (sheet === null) {
+        //シートが作り直されている最中はrefが空になる。そのまま捨てると「タップしても
+        //何も起きない」状態になるため、戻ってくるのを少し待って開き直す
+        if (openSheetRetryRef.current !== null) clearTimeout(openSheetRetryRef.current);
+        let remaining = 10;
+        const retry = () => {
+          openSheetRetryRef.current = null;
+          //待っている間にシートが開かれていたら、その位置を尊重して何もしない
+          //（勝手に元の位置へ戻してしまうため）
+          if (lastSheetIndexRef.current >= 0) return;
+          if (bottomSheetRef.current !== null) {
+            bottomSheetRef.current.snapToIndex(index);
+            return;
+          }
+          remaining -= 1;
+          if (remaining > 0) openSheetRetryRef.current = setTimeout(retry, 100);
+        };
+        openSheetRetryRef.current = setTimeout(retry, 100);
+        return;
+      }
+      sheet.snapToIndex(index);
+      //ライブラリは「行き先が現在と同じ」と判断すると何もしないため、内部状態が実際の位置と
+      //ずれていると開かないことがある。開けていなければ別の位置を指定してやり直す
+      if (openSheetRetryRef.current !== null) clearTimeout(openSheetRetryRef.current);
+      openSheetRetryRef.current = setTimeout(() => {
+        openSheetRetryRef.current = null;
+        if (lastSheetIndexRef.current < 0) bottomSheetRef.current?.expand();
+      }, 150);
+    },
+    [cancelPendingSheetClose]
+  );
+
+  //実際に位置が変わったことを記録する（pages/Home.tsxのonChangeから呼ばれる）
+  const onSheetIndexChange = useCallback((index: number) => {
+    lastSheetIndexRef.current = index;
+    //開いたら「こちらから閉じた」状態は終わり。取りこぼした場合もここで解除される
+    if (index >= 0) isClosingBySelfRef.current = false;
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (sheetCloseTimerRef.current !== null) clearTimeout(sheetCloseTimerRef.current);
+      if (openSheetRetryRef.current !== null) clearTimeout(openSheetRetryRef.current);
+    };
+  }, []);
   const isMapDragging = useRef(false);
   const dragTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const dragStartPosition = useRef<{ x: number; y: number } | null>(null);
@@ -539,6 +623,11 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
   const onCloseBottomSheet = useCallback(
     async (currentRouteName?: string) => {
       // currentRouteNameが渡された場合はそれを使用、なければrouteNameを使用
+      //closeSheet()で閉じた結果として届いたonCloseは、確認も後片付けも済んでいるので何もしない
+      if (isClosingBySelfRef.current) {
+        isClosingBySelfRef.current = false;
+        return;
+      }
       const effectiveRouteName = currentRouteName ?? routeName;
       if (effectiveRouteName === 'DataEdit') {
         if (isEditingRecord) {
@@ -548,7 +637,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
             unselectRecord();
             //ToDo 写真の削除処理はどうする？
           } else {
-            bottomSheetRef.current?.snapToIndex(2);
+            openSheet(2);
             return;
           }
         } else {
@@ -560,7 +649,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
           if (ret) {
             dispatch(editSettingsAction({ isEditingLayer: false }));
           } else {
-            bottomSheetRef.current?.snapToIndex(2);
+            openSheet(2);
             return;
           }
         }
@@ -570,14 +659,14 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
           if (ret) {
             dispatch(editSettingsAction({ isEditingMap: false }));
           } else {
-            bottomSheetRef.current?.snapToIndex(2);
+            openSheet(2);
             return;
           }
         }
       }
-      bottomSheetRef.current?.close();
+      closeSheet();
     },
-    [
+    [closeSheet, openSheet, 
       dispatch,
       isEditingLayer,
       isEditingMap,
@@ -592,9 +681,9 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
   // ダウンロードモードに入った時にBottomSheetを閉じる
   useEffect(() => {
     if (downloadMode) {
-      bottomSheetRef.current?.close();
+      closeSheet();
     }
-  }, [downloadMode]);
+  }, [closeSheet, downloadMode]);
 
   // PanResponder内から最新のgpsState/toggleGPSを参照するためのref同期
   useEffect(() => {
@@ -966,7 +1055,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
         if (!ret) return;
       }
 
-      bottomSheetRef.current?.snapToIndex(2);
+      openSheet(2);
       setTimeout(() => {
         //onPressMapViewでInfoToolがアクティブになるのを防ぐためSetTimeoutで遅延させる
         selectFeatureButton('NONE');
@@ -974,7 +1063,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
 
       navigation.setParams({ mode: undefined });
     },
-    [navigation, route.params?.withCoord, selectFeatureButton]
+    [openSheet, navigation, route.params?.withCoord, selectFeatureButton]
   );
 
   const addLocationPoint = useCallback(async () => {
@@ -1006,7 +1095,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     if (!isOK || layer === undefined || record === undefined) {
       await AlertAsync(message);
     } else {
-      bottomSheetRef.current?.snapToIndex(2);
+      openSheet(2);
 
       navigateToSplit?.('DataEdit', {
         previous: 'Data',
@@ -1014,7 +1103,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
         targetLayer: layer,
       });
     }
-  }, [addCurrentPoint, currentLocation, isLocationStale, gpsState, navigateToSplit, trackingState]);
+  }, [openSheet, addCurrentPoint, currentLocation, isLocationStale, gpsState, navigateToSplit, trackingState]);
 
   const handleAddLocationPoint = useCallback(async () => {
     await addLocationPoint();
@@ -1151,7 +1240,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     }
     // 編集選択の場合はボトムシートを開かない
     if (!isSelectedDraw && layer !== undefined && recordSet !== undefined && recordSet.length > 0) {
-      bottomSheetRef.current?.snapToIndex(2);
+      openSheet(2);
       navigateToSplit?.('DataEdit', {
         previous: 'Data',
         targetData: recordSet[0],
@@ -1159,7 +1248,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       });
     }
     return true;
-  }, [featureButton, isSelectedDraw, navigation, navigateToSplit, route.params?.mode, savePoint, saveLine, savePolygon, setDrawTool]);
+  }, [openSheet, featureButton, isSelectedDraw, navigation, navigateToSplit, route.params?.mode, savePoint, saveLine, savePolygon, setDrawTool]);
 
   // ダウンロード対象の地図リスト（選択地図 > 全地図 > 従来の単一地図）
   // 可視領域用DEM（疑似地図・Redux tileMaps非登録）は、明示選択時と「すべての地図」時に合成して含める
@@ -1266,7 +1355,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
         await toggleGPS('off');
         // 保存に成功したら軌跡サマリーを表示する
         if (result.isOK && result.layer !== undefined && result.record !== undefined) {
-          bottomSheetRef.current?.snapToIndex(isLandscape ? 2 : 1);
+          openSheet(isLandscape ? 2 : 1);
           navigateToSplit('TrackSummary', {
             layerId: result.layer.id,
             recordId: result.record.id,
@@ -1276,7 +1365,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
         }
       }
     }
-  }, [
+  }, [openSheet, 
     checkUnsavedTrackLog,
     confirmLocationPermission,
     isLandscape,
@@ -1534,8 +1623,8 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     if (bottomSheetCurrentScreen.name !== 'Data' && bottomSheetCurrentScreen.name !== 'DataEdit') {
       navigateToSplit?.('Layers');
     }
-    bottomSheetRef.current?.snapToIndex(2);
-  }, [isEditingRecord, navigation, navigateToSplit, bottomSheetCurrentScreen.name]);
+    openSheet(2);
+  }, [openSheet, isEditingRecord, navigation, navigateToSplit, bottomSheetCurrentScreen.name]);
 
   const gotoMaps = useCallback(async () => {
     if (isEditingRecord) {
@@ -1545,15 +1634,15 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     navigation.setParams({ tileMap: undefined, mode: undefined });
     // 先にナビゲーションを完了させてからBottomSheetを開く（ちらつき防止）
     navigateToSplit?.('Maps');
-    bottomSheetRef.current?.snapToIndex(2);
-  }, [isEditingRecord, navigation, navigateToSplit]);
+    openSheet(2);
+  }, [openSheet, isEditingRecord, navigation, navigateToSplit]);
 
   const gotoSettings = useCallback(async () => {
     navigateToSplit?.('Settings', {
       previous: 'Home',
     });
-    bottomSheetRef.current?.snapToIndex(2);
-  }, [navigateToSplit]);
+    openSheet(2);
+  }, [openSheet, navigateToSplit]);
 
   const pressDisconnectDrive = useCallback(async () => {
     const ret = await ConfirmAsync(t('GoogleDriveProjects.confirm.disconnect'));
@@ -1563,8 +1652,8 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
 
   const gotoDriveProjects = useCallback(async () => {
     navigateToSplit?.('GoogleDriveProjects', { previous: 'Home' });
-    bottomSheetRef.current?.snapToIndex(2);
-  }, [navigateToSplit]);
+    openSheet(2);
+  }, [openSheet, navigateToSplit]);
 
   const gotoHome = useCallback(
     (params?: NavigateToHomeParams) => {
@@ -1768,7 +1857,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
               altitude: nearest.point.altitude,
               speed: nearest.point.speed,
             });
-            bottomSheetRef.current?.snapToIndex(isLandscape ? 2 : 1);
+            openSheet(isLandscape ? 2 : 1);
             navigateToSplit('TrackSummary', {
               recording: true,
               previous: 'Home',
@@ -1799,7 +1888,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
               speed: nearest.point.speed,
             });
             // タップと同時にサマリーを開き、タップ地点を初期フォーカスにする
-            bottomSheetRef.current?.snapToIndex(isLandscape ? 2 : 1);
+            openSheet(isLandscape ? 2 : 1);
             navigateToSplit('TrackSummary', {
               layerId: layer.id,
               recordId: lineFeature.id,
@@ -1819,9 +1908,9 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
 
       // 先にボトムシートを開く
       if (isLandscape) {
-        bottomSheetRef.current?.snapToIndex(2);
+        openSheet(2);
       } else {
-        bottomSheetRef.current?.snapToIndex(1);
+        openSheet(1);
       }
       navigateToSplit?.('DataEdit', {
         previous: 'Data',
@@ -1830,7 +1919,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       });
       return false; // フィーチャーが見つかったのでfalseを返す
     },
-    [
+    [openSheet, 
       isEditingRecord,
       isLandscape,
       navigateToSplit,
@@ -1945,7 +2034,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
             } else {
               setDrawTool('NONE');
               if (layer !== undefined && recordSet !== undefined && recordSet.length > 0) {
-                bottomSheetRef.current?.snapToIndex(2);
+                openSheet(2);
                 navigateToSplit?.('DataEdit', {
                   previous: 'Data',
                   targetData: recordSet[0],
@@ -1963,7 +2052,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
         }
       }
     },
-    [
+    [openSheet, 
       checkSplitLine,
       commitFreehandStroke,
       currentDrawTool,
@@ -2105,10 +2194,10 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
         await AlertAsync(message);
         return;
       }
-      bottomSheetRef.current?.close();
+      closeSheet();
       navigateToSplit?.('Data', { targetLayer: layer });
     }
-  }, [deleteDraw, drawLine, navigateToSplit]);
+  }, [closeSheet, deleteDraw, drawLine, navigateToSplit]);
 
   const handlePanResponderRelease = useCallback(
     async (event: GestureResponderEvent) => {
@@ -2161,7 +2250,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
           return;
         }
 
-        bottomSheetRef.current?.close();
+        closeSheet();
         navigateToSplit?.('Data', { targetLayer: layer });
       } else if (currentDrawTool === 'PLOT_POINT' || currentDrawTool === 'ADD_LOCATION_POINT') {
         handleReleasePlotPoint();
@@ -2185,7 +2274,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
             }
             setDrawTool('NONE');
             if (layer !== undefined && recordSet !== undefined && recordSet.length > 0) {
-              bottomSheetRef.current?.snapToIndex(2);
+              openSheet(2);
               navigateToSplit?.('DataEdit', {
                 previous: 'Data',
                 targetData: recordSet[0],
@@ -2232,7 +2321,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       // 長押し発火フラグをリセット
       longPressFiredRef.current = false;
     },
-    [
+    [closeSheet, openSheet, 
       cancelPlotGrant,
       commitFreehandStroke,
       currentDrawTool,
@@ -2378,33 +2467,33 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     if (route.params?.previous === 'Home') {
       //プロジェクトのホームにジャンプする場合
       changeMapRegion(route.params.jumpTo, true);
-      setTimeout(() => bottomSheetRef.current?.close(), 500);
+      closeSheetLater(500);
     } else if (route.params?.previous === 'Settings') {
       //ecorismapを読み込んだときにプロジェクトのホームにジャンプする場合
       changeMapRegion(route.params.jumpTo, true);
-      setTimeout(() => bottomSheetRef.current?.close(), 500);
+      closeSheetLater(500);
       //toggleTerrain(false);
       if (Platform.OS !== 'web') toggleHeadingUp(false);
     } else if (route.params?.previous === 'Projects') {
-      setTimeout(() => bottomSheetRef.current?.close(), 300);
+      closeSheetLater(300);
     } else if (route.params?.previous === 'AccountSettings') {
-      setTimeout(() => bottomSheetRef.current?.close(), 300);
+      closeSheetLater(300);
     } else if (route.params?.previous === 'ProjectEdit') {
       //プロジェクトを開くときにプロジェクトのホームにジャンプする場合
       changeMapRegion(route.params.jumpTo, true);
-      setTimeout(() => bottomSheetRef.current?.close(), 300);
+      closeSheetLater(300);
     } else if (route.params?.previous === 'Data') {
       //絞り込んだデータの範囲にジャンプする場合
       changeMapRegion(route.params.jumpTo, true);
-      bottomSheetRef.current?.snapToIndex(0);
+      openSheet(0);
     } else if (route.params?.previous === 'DataEdit') {
       if (route.params?.mode === 'jumpTo') {
         //データの範囲にジャンプする場合
         changeMapRegion(route.params.jumpTo, true);
         if (isLandscape) {
-          bottomSheetRef.current?.snapToIndex(0);
+          openSheet(0);
         } else {
-          bottomSheetRef.current?.snapToIndex(0);
+          openSheet(0);
         }
       } else if (route.params?.mode === 'editPosition') {
         if (route.params?.layer === undefined || route.params?.record === undefined) return;
@@ -2415,7 +2504,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
         const jumpTo = route.params.jumpTo;
 
         // UI準備
-        setTimeout(() => bottomSheetRef.current?.close(), 300);
+        closeSheetLater(300);
         selectFeatureButton(featureType);
         setInfoToolActive(false);
 
@@ -2439,17 +2528,17 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     } else if (route.params?.previous === 'Maps') {
       if (route.params?.tileMap || route.params?.mode === 'download') {
         //ダウンロード画面を開いた場合
-        setTimeout(() => bottomSheetRef.current?.close(), 500);
+        closeSheetLater(500);
         toggleTerrain(false);
         if (Platform.OS !== 'web') toggleHeadingUp(false);
       } else if (route.params?.jumpTo) {
         //PDFの範囲にジャンプする場合
-        setTimeout(() => bottomSheetRef.current?.close(), 300);
+        closeSheetLater(300);
         toggleTerrain(false);
         if (Platform.OS !== 'web') toggleHeadingUp(false);
         changeMapRegion(route.params.jumpTo, true);
       } else {
-        bottomSheetRef.current?.snapToIndex(2);
+        openSheet(2);
       }
     }
     //プロジェクトのホームにジャンプする時にjumpToをリセットしないと更新されないので必要
@@ -2528,10 +2617,6 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       uploadLocation(currentLocation);
     }
   }, [currentLocation, isLocationStale, uploadLocation]);
-
-  useEffect(() => {
-    return bottomSheetRef.current?.close();
-  }, []);
 
   useEffect(() => {
     //編集中にアプリを落とした場合に再起動時に編集を破棄する
@@ -3008,6 +3093,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       onSplitRouteChange: setCurrentSplitRoute,
       bottomSheetRef,
       onCloseBottomSheet,
+      onSheetIndexChange,
       updatePmtilesURL,
     }),
     [
@@ -3023,6 +3109,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       setIsLoading,
       bottomSheetRef,
       onCloseBottomSheet,
+      onSheetIndexChange,
       updatePmtilesURL,
     ]
   );

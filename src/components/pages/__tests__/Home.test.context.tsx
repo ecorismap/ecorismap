@@ -266,6 +266,7 @@ export const mockAppStateContextValue: AppStateContextType = {
   onSplitRouteChange: jest.fn(),
   bottomSheetRef: createRef<BottomSheetMethods>(),
   onCloseBottomSheet: jest.fn().mockResolvedValue(undefined),
+  onSheetIndexChange: jest.fn(),
   updatePmtilesURL: jest.fn().mockResolvedValue(undefined),
 };
 
