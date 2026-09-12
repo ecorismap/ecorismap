@@ -1727,7 +1727,7 @@ describe('useDrawTool', () => {
       });
     };
 
-    it('ペンで複数ストロークを描きためられる（スタイル付き・確定バー維持）', () => {
+    it('ペンは1オブジェクトだけ描ける（2回目のなぞりは修正になる）', () => {
       const { result } = renderDrawTool();
       startHandwritingLine(result);
 
@@ -1736,17 +1736,33 @@ describe('useDrawTool', () => {
         [10, 0],
         [20, 0],
       ]);
+      expect(result.current.drawLine.current).toHaveLength(1);
+
+      //2回目は新しいストロークにならず、描いたオブジェクトのなぞり修正になる（長押し不要）
+      (modifyLineWithSource as jest.Mock).mockReturnValue({
+        xy: [
+          [0, 0],
+          [30, 0],
+        ],
+        latlon: [
+          [0, 0],
+          [30, 0],
+        ],
+        junctions: [],
+      });
       drawPenStroke(result, [
-        [0, 10],
-        [10, 10],
-      ]);
-      drawPenStroke(result, [
-        [0, 20],
-        [10, 20],
+        [10, 0],
+        [20, 5],
+        [30, 0],
       ]);
 
-      expect(result.current.drawLine.current).toHaveLength(3);
+      expect(result.current.drawLine.current).toHaveLength(1);
       const line = result.current.drawLine.current[0];
+      expect(line.xy).toEqual([
+        [0, 0],
+        [30, 0],
+      ]);
+      //修正のハイライトは合成後に解除される
       expect(line.properties).toEqual(['HANDWRITING']);
       expect(line.style).toMatchObject({
         strokeColor: 'rgba(255,0,0,0.7)',
@@ -1759,7 +1775,7 @@ describe('useDrawTool', () => {
       expect(result.current.isEditingDraw).toBe(true);
     });
 
-    it('saveLineで全ストロークが隠しフィールド付きで一括保存される', () => {
+    it('saveLineでストロークが隠しフィールド付きで保存される', () => {
       mockGetEditableLayerAndRecordSetWithCheck.mockReturnValue({
         isOK: true,
         message: '',
@@ -1773,10 +1789,6 @@ describe('useDrawTool', () => {
         [0, 0],
         [10, 0],
       ]);
-      drawPenStroke(result, [
-        [0, 10],
-        [10, 10],
-      ]);
 
       let saveResult;
       act(() => {
@@ -1784,7 +1796,7 @@ describe('useDrawTool', () => {
       });
 
       expect(saveResult!.isOK).toBe(true);
-      expect(mockAddRecord).toHaveBeenCalledTimes(2);
+      expect(mockAddRecord).toHaveBeenCalledTimes(1);
       const saved = mockAddRecord.mock.calls.map((c) => c[1] as RecordType);
       expect(saved[0].field._strokeColor).toBe('rgba(255,0,0,0.7)');
       expect(saved[0].field._strokeWidth).toBe(5);
@@ -1874,7 +1886,7 @@ describe('useDrawTool', () => {
       expect(result.current.drawLine.current).toHaveLength(0);
     });
 
-    it('undoで1ストロークずつ戻り、残りがあれば確定バーが維持される', () => {
+    it('なぞり修正はundoで戻り、もう一度undoでストロークごと消える', () => {
       const { result } = renderDrawTool();
       startHandwritingLine(result);
 
@@ -1882,29 +1894,36 @@ describe('useDrawTool', () => {
         [0, 0],
         [10, 0],
       ]);
+      (modifyLineWithSource as jest.Mock).mockReturnValue({
+        xy: [
+          [0, 0],
+          [30, 0],
+        ],
+        latlon: [
+          [0, 0],
+          [30, 0],
+        ],
+        junctions: [],
+      });
       drawPenStroke(result, [
-        [0, 10],
-        [10, 10],
+        [5, 0],
+        [20, 5],
+        [30, 0],
       ]);
+      expect(result.current.drawLine.current).toHaveLength(1);
 
+      //修正前の形に戻る（オブジェクトは残る）
       act(() => {
         result.current.undoDraw();
       });
       expect(result.current.drawLine.current).toHaveLength(1);
-      //残りのストロークがあるため編集状態（確定バー）は維持される
+      expect(result.current.drawLine.current[0].latlon).toEqual([
+        [0, 0],
+        [10, 0],
+      ]);
       expect(result.current.isEditingObject).toBe(true);
 
-      //redoでストロークがスタイルごと復元される
-      act(() => {
-        result.current.redoDraw();
-      });
-      expect(result.current.drawLine.current).toHaveLength(2);
-      expect(result.current.drawLine.current[1].style?.strokeColor).toBe('rgba(255,0,0,0.7)');
-
       //最後まで戻すと状態ごとリセットされる
-      act(() => {
-        result.current.undoDraw();
-      });
       act(() => {
         result.current.undoDraw();
       });
@@ -1967,8 +1986,7 @@ describe('useDrawTool', () => {
       expect((saved.coords as unknown[]).length).toBeGreaterThanOrEqual(4);
     });
 
-    it('LINEでも長押しでセッション内ストロークを修正できる', () => {
-      jest.useFakeTimers();
+    it('LINEはなぞるだけでセッション内ストロークを修正できる（長押し不要）', () => {
       const { result } = renderDrawTool();
       act(() => {
         result.current.setFeatureButton('LINE');
@@ -1976,14 +1994,12 @@ describe('useDrawTool', () => {
       act(() => {
         result.current.setDrawTool('HANDWRITING_LINE');
       });
-      (checkDistanceFromLine as jest.Mock).mockReturnValue({ isNear: false, distance: 9999 });
       drawPenStroke(result, [
         [0, 0],
         [10, 0],
         [10, 10],
       ]);
 
-      (checkDistanceFromLine as jest.Mock).mockReturnValue({ isNear: true, distance: 1 });
       (modifyLineWithSource as jest.Mock).mockReturnValue({
         xy: [
           [0, 0],
@@ -1998,11 +2014,8 @@ describe('useDrawTool', () => {
       act(() => {
         result.current.handleGrantHandwriting([5, 0], penStyle);
       });
-      act(() => {
-        jest.advanceTimersByTime(600);
-      });
+      //待たずにその場で修正モードへ入る（オブジェクトは増えない）
       expect(result.current.drawLine.current).toHaveLength(1);
-      expect(result.current.drawLine.current[0].properties).toEqual(['HANDWRITING', 'MODIFYING']);
       act(() => {
         result.current.handleMoveHandwriting([15, 5], 0);
       });
@@ -2014,7 +2027,6 @@ describe('useDrawTool', () => {
         [20, 0],
       ]);
       expect(result.current.drawLine.current[0].properties).toEqual(['HANDWRITING']);
-      jest.useRealTimers();
     });
 
     describe('手書きポリゴン（フリー）のなぞり修正', () => {

@@ -68,9 +68,6 @@ const PINCH_DISCARD_DISTANCE_PX = 10;
 //手書きペンの矢印整形パラメータ（マップメモのペンと同値）
 const PEN_SIMPLIFY_TOLERANCE_PX = 1.0;
 const MIN_POINTS_FOR_REFINE = 5;
-//手書きポリゴンの長押し→なぞり修正（マップメモの引き直しと同値）
-const HANDWRITING_LONG_PRESS_MS = 500;
-const HANDWRITING_LONG_PRESS_MOVE_PX = 20;
 //編集選択時にこの頂点数以上のオブジェクトは手書き（フリーハンド）由来とみなし、手書きモードで編集する
 const HANDWRITING_SELECT_MIN_POINTS = 15;
 
@@ -268,9 +265,6 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
   const handwritingBrushStartXY = useRef<Position>([0, 0]);
   //タッチ中の手書きストロークが存在するか（release/pinch処理の対象判定）
   const activeHandwritingStroke = useRef(false);
-  //手書きポリゴンの長押し→なぞり修正用タイマー
-  const handwritingLongPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const handwritingLongPressStartXY = useRef<Position | null>(null);
 
   const offset = useRef([0, 0]);
 
@@ -291,7 +285,6 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
   const featuresTransformBaseAngle = useRef(0);
 
   const {
-    dataUser,
     pointDataSet,
     lineDataSet,
     polygonDataSet,
@@ -408,11 +401,6 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
   );
 
   const resetDrawTools = useCallback(() => {
-    if (handwritingLongPressTimer.current) {
-      clearTimeout(handwritingLongPressTimer.current);
-      handwritingLongPressTimer.current = null;
-    }
-    handwritingLongPressStartXY.current = null;
     drawLine.current = [];
     editingLineXY.current = [];
     isEditingDraw.current = false;
@@ -1401,8 +1389,8 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     [selectLine]
   );
 
-  //なげなわ範囲でフィーチャーを選択する。ポイントは複数選択（一括移動・回転モード）に対応。
-  //ライン・ポリゴンは範囲内の最初の1件のみ選択する
+  //なげなわ範囲でフィーチャーを選択する。囲んだものは全て選択し、まとめて移動・回転できる
+  //（1オブジェクトずつノードを編集したい場合はタップ選択を使う）
   const trySelectFeaturesByArea = useCallback(() => {
     const { isOK, layer, recordSet } = getEditableLayerAndRecordSetWithCheck(featureButton);
     if (!isOK || layer === undefined || recordSet === undefined) return false;
@@ -1453,7 +1441,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
   /**
    * 編集選択で選択済みのオブジェクトを手書きセッションのストロークに変換する。
    * EDIT装飾（頂点マーカー・青線）をやめて自身のスタイルで表示し、
-   * 手書きと同じ操作（ポリゴンの長押し→なぞり修正、ストローク追加）で編集できるようにする
+   * 手書きと同じ操作（なぞって修正）で編集できるようにする
    */
   const convertSelectionToHandwriting = useCallback(
     (penStyle: HandwritingPenStyleType) => {
@@ -1847,49 +1835,6 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     [getEditableLayerAndRecordSetWithCheck, mapRegion, mapSize, mapViewRef]
   );
 
-  const clearHandwritingLongPress = useCallback(() => {
-    if (handwritingLongPressTimer.current) {
-      clearTimeout(handwritingLongPressTimer.current);
-      handwritingLongPressTimer.current = null;
-    }
-    handwritingLongPressStartXY.current = null;
-  }, []);
-
-  /**
-   * 長押しで押下点付近のセッション内ペンストロークを修正モードにする（LINE/POLYGON共通）。
-   * 以降のなぞりはeditingLineXYに積まれ、releaseでeditFreehandObjectにより合成される。
-   * スタンプ・ブラシは対象外
-   */
-  const startHandwritingModify = useCallback((pXY: Position) => {
-    //押下点付近のセッションストロークを探す（末尾=描きかけの新規ストロークは除外）
-    let targetIndex = -1;
-    for (let i = drawLine.current.length - 2; i >= 0; i--) {
-      const line = drawLine.current[i];
-      if (line.style === undefined || line.style.stamp !== '' || isBrushTool(line.style.strokeStyle)) continue;
-      if (line.xy.length < 2) continue;
-      if (checkDistanceFromLine(pXY, line.xy).isNear) {
-        targetIndex = i;
-        break;
-      }
-    }
-    //近くに無ければ何もしない（通常の描画を継続する）
-    if (targetIndex === -1) return;
-    //描きかけの新規ストロークを破棄（undoのNEWも取り除く）してから修正モードへ
-    if (activeHandwritingStroke.current && drawLine.current.length > targetIndex + 1) {
-      drawLine.current = drawLine.current.slice(0, -1);
-      const lastUndo = undoLine.current[undoLine.current.length - 1];
-      if (lastUndo !== undefined && lastUndo.action === 'NEW') undoLine.current.pop();
-    }
-    activeHandwritingStroke.current = false;
-    editingObjectIndex.current = targetIndex;
-    //修正対象が確定したことがひと目で分かるよう、対象をハイライト表示にする
-    drawLine.current[targetIndex].properties = ['HANDWRITING', 'MODIFYING'];
-    isEditingObject.current = true;
-    strokeFilter.current.reset();
-    editingLineXY.current = [pXY];
-    setRedraw(ulid());
-  }, []);
-
   const handleGrantHandwriting = useCallback(
     (pXY: Position, penStyle: HandwritingPenStyleType) => {
       handwritingPenStyle.current = penStyle;
@@ -1898,16 +1843,20 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
       if (subTool === 'PEN') {
         strokeFilter.current.reset();
         lastTouchXY.current = pXY;
-        //ポリゴンのフリーは1オブジェクトのみ。既に描いていれば、なぞるだけで修正モードに入る（長押し不要）
-        if (featureButton === 'POLYGON') {
-          const targetIndex = drawLine.current.findIndex((line) => line.properties.includes('HANDWRITING'));
-          if (targetIndex !== -1) {
-            editingObjectIndex.current = targetIndex;
-            isEditingObject.current = true;
-            editingLineXY.current = [pXY];
-            setRedraw(ulid());
-            return;
-          }
+        //手書きはライン・ポリゴンとも1オブジェクトだけを扱う。既に描いていれば新しく描き始めず、
+        //なぞるだけでそのオブジェクトの修正モードに入る（長押しは不要）。
+        //スタンプ・ブラシは線に付随する記号なので修正対象から外す
+        const targetIndex = drawLine.current.findIndex(
+          (line) =>
+            line.properties.includes('HANDWRITING') &&
+            (line.style === undefined || (line.style.stamp === '' && !isBrushTool(line.style.strokeStyle)))
+        );
+        if (targetIndex !== -1) {
+          editingObjectIndex.current = targetIndex;
+          isEditingObject.current = true;
+          editingLineXY.current = [pXY];
+          setRedraw(ulid());
+          return;
         }
         editStartNewFreehandObject(pXY);
         //手書きストロークにはEDIT装飾（青線・頂点マーカー）を付けない。
@@ -1922,14 +1871,6 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
           zoom: mapRegion.zoom,
         };
         activeHandwritingStroke.current = true;
-        //長押しでセッション内ストロークの修正（なぞり直し）モードに入る（ラインのみ。ペンのみ）
-        if (featureButton === 'LINE' && drawLine.current.length > 1) {
-          handwritingLongPressStartXY.current = pXY;
-          handwritingLongPressTimer.current = setTimeout(() => {
-            handwritingLongPressTimer.current = null;
-            startHandwritingModify(pXY);
-          }, HANDWRITING_LONG_PRESS_MS);
-        }
       } else if (isStampTool(subTool)) {
         const target = findHandwritingSnapTarget(pXY);
         let point = pXY;
@@ -1996,7 +1937,6 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
       handwritingSubTool,
       findHandwritingSnapTarget,
       editStartNewFreehandObject,
-      startHandwritingModify,
       pushUndo,
       mapRegion,
       mapSize,
@@ -2006,14 +1946,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
 
   const handleMoveHandwriting = useCallback(
     (pXY: Position, timestampMs: number) => {
-      //長押し判定中に閾値を超えて動いたら長押しをキャンセル
-      if (handwritingLongPressTimer.current !== null && handwritingLongPressStartXY.current !== null) {
-        const start = handwritingLongPressStartXY.current;
-        if (Math.hypot(pXY[0] - start[0], pXY[1] - start[1]) > HANDWRITING_LONG_PRESS_MOVE_PX) {
-          clearHandwritingLongPress();
-        }
-      }
-      //修正モード（長押しで開始）はなぞりストロークを積む
+      //修正モード（なぞりで開始）はなぞりストロークを積む
       if (editingObjectIndex.current !== -1) {
         lastTouchXY.current = pXY;
         drawFreehandEditingLine(pXY, timestampMs);
@@ -2050,7 +1983,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
       }
       setRedraw(ulid());
     },
-    [featureButton, handwritingSubTool, clearHandwritingLongPress, drawFreehandEditingLine, drawFreehandNewLine, mapRegion, mapSize, mapViewRef]
+    [featureButton, handwritingSubTool, drawFreehandEditingLine, drawFreehandNewLine, mapRegion, mapSize, mapViewRef]
   );
 
   /**
@@ -2125,9 +2058,8 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
   );
 
   const handleReleaseHandwriting = useCallback(() => {
-    clearHandwritingLongPress();
     if (editingObjectIndex.current !== -1) {
-      //長押し→なぞり修正を合成して確定する（ワンショット。styleは保持される）
+      //なぞり修正を合成して確定する（ワンショット。styleは保持される）
       const index = editingObjectIndex.current;
       editFreehandObject();
       //editFreehandObjectはオブジェクトを差し替えるため、合成後にハイライトを解除する
@@ -2139,13 +2071,12 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     }
     finalizeHandwritingStroke(true);
     setRedraw(ulid());
-  }, [clearHandwritingLongPress, editFreehandObject, finalizeHandwritingStroke]);
+  }, [editFreehandObject, finalizeHandwritingStroke]);
 
   /**
    * ピンチ開始がタッチ直後の場合に、手書きの描きかけストロークを破棄する
    */
   const cancelHandwritingStroke = useCallback(() => {
-    clearHandwritingLongPress();
     if (editingObjectIndex.current !== -1) {
       //修正のなぞりかけは破棄して通常モードへ戻る（ハイライトも解除）
       const target = drawLine.current[editingObjectIndex.current];
@@ -2163,13 +2094,12 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     if (lastUndo !== undefined && lastUndo.action === 'NEW') undoLine.current.pop();
     isEditingObject.current = drawLine.current.length > 0;
     setRedraw(ulid());
-  }, [clearHandwritingLongPress]);
+  }, []);
 
   /**
    * ピンチ開始時に手書きの描きかけストロークをその場で確定する（実質描かれていなければ破棄）
    */
   const commitHandwritingStroke = useCallback(() => {
-    clearHandwritingLongPress();
     if (editingObjectIndex.current !== -1) {
       //修正のなぞりかけは破棄して通常モードへ戻る（ピンチ操作を優先する。ハイライトも解除）
       const target = drawLine.current[editingObjectIndex.current];
@@ -2200,7 +2130,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
       //スタンプ・ブラシの途中は破棄する
       cancelHandwritingStroke();
     }
-  }, [featureButton, handwritingSubTool, cancelHandwritingStroke, clearHandwritingLongPress, finalizeHandwritingStroke]);
+  }, [featureButton, handwritingSubTool, cancelHandwritingStroke, finalizeHandwritingStroke]);
 
   const checkSplitLine = useCallback((pXY: Position) => {
     const index = editingObjectIndex.current;

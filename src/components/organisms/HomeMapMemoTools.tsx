@@ -1,82 +1,66 @@
-import React, { useContext, useState } from 'react';
+import React, { useContext } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { COLOR, MAPMEMOTOOL, STAMP, BRUSH, ERASER } from '../../constants/AppConstants';
+import { COLOR, ERASER, MAPMEMOTOOL, PEN_STYLE, PEN_WIDTH } from '../../constants/AppConstants';
 
 import { Button } from '../atoms';
 import { MapMemoContext } from '../../contexts/MapMemo';
-import { DrawingToolsContext } from '../../contexts/DrawingTools';
-import { HomeEditControlButtons } from './HomeEditControlButtons';
-import { HomeEditingLayerButton } from './HomeEditingLayerButton';
-import {
-  DeleteToolButton,
-  MoveToolButton,
-  PencilLockButton,
-  RedoToolButton,
-  SelectToolButton,
-  UndoToolButton,
-} from './HomeCommonToolButtons';
+import { PencilLockButton, RedoToolButton, UndoToolButton } from './HomeCommonToolButtons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { t } from '../../i18n/config';
-import { isBrushTool, isEraserTool, isMapMemoDrawTool, isStampTool } from '../../utils/General';
-import { MapMemoToolGroupType } from '../../types';
+import { isEraserTool, isPenTool } from '../../utils/General';
+import { ArrowStyleType, PenWidthType } from '../../types';
 
+//矢印は押すたびに なし→終端→両側 と一巡する
+const ARROW_STYLES: { style: ArrowStyleType; icon: string; labelKey: string }[] = [
+  { style: 'NONE', icon: PEN_STYLE.NONE, labelKey: 'Home.penPicker.none' },
+  { style: 'ARROW_END', icon: PEN_STYLE.ARROW_END, labelKey: 'Home.penPicker.end' },
+  { style: 'ARROW_BOTH', icon: PEN_STYLE.ARROW_BOTH, labelKey: 'Home.penPicker.bothSides' },
+];
+//太さは押すたびに細→中→太→極太と一巡する
+const PEN_WIDTHS: PenWidthType[] = ['PEN_THIN', 'PEN_MEDIUM', 'PEN_THICK', 'PEN_EXTRA_THICK'];
+const PEN_WIDTH_LABEL_KEYS: { [key in PenWidthType]: string } = {
+  PEN_THIN: 'Home.penPicker.thin',
+  PEN_MEDIUM: 'Home.penPicker.medium',
+  PEN_THICK: 'Home.penPicker.thick',
+  PEN_EXTRA_THICK: 'Home.penPicker.extraThick',
+};
+
+/**
+ * メモのツールバー。書き込みに必要なペン・消しゴム・直線/曲線・矢印・太さ・色だけを並べる。
+ * スタンプ・ブラシ・矢印・編集選択は飛翔図（LINEタブの手書き）側の機能なのでここには出さない。
+ * 色以外はモーダルを出さず、ボタンを押すたびに切り替わる（今の状態はアイコンとラベルで示す）。
+ * 消しゴムはなぞった部分だけを消す1種類だけ
+ */
 export const HomeMapMemoTools = React.memo(() => {
-  const { currentMapMemoTool, pressMapMemoToolButton, openMapMemoSettingsTab, setVisibleMapMemoColor } =
-    useContext(MapMemoContext);
-  const { currentDrawTool, isSelectedDraw } = useContext(DrawingToolsContext);
-
-  //編集選択（なげなわ）による選択操作中か。選択中は選択系のボタンを追加表示する
-  const isSelectionMode = currentDrawTool === 'SELECT' || isSelectedDraw;
+  const {
+    currentMapMemoTool,
+    currentPenWidth,
+    isStraightStyle,
+    setIsStraightStyle,
+    arrowStyle,
+    setArrowStyle,
+    setPenWidth,
+    selectMapMemoTool,
+    setVisibleMapMemoColor,
+  } = useContext(MapMemoContext);
 
   const insets = useSafeAreaInsets();
 
-  //歯車ボタンで開くタブ。選択中ツールのグループ、未選択ならペン
-  const currentGroup: MapMemoToolGroupType = isStampTool(currentMapMemoTool)
-    ? 'STAMP'
-    : isBrushTool(currentMapMemoTool)
-    ? 'BRUSH'
-    : isEraserTool(currentMapMemoTool)
-    ? 'ERASER'
-    : 'PEN';
+  const isPenActive = isPenTool(currentMapMemoTool);
+  const isEraserActive = isEraserTool(currentMapMemoTool);
 
-  //ツール選択パレット（横展開）の開閉
-  const [isToolPaletteOpen, setToolPaletteOpen] = useState(false);
-  const isToolActive = isMapMemoDrawTool(currentMapMemoTool);
-
-  //集約ボタンに表示する現在グループのアイコンとラベル
-  const groupIcon =
-    currentGroup === 'PEN'
-      ? MAPMEMOTOOL.PEN
-      : currentGroup === 'STAMP'
-      ? // @ts-ignore
-        STAMP[currentMapMemoTool] || STAMP.STAMP
-      : currentGroup === 'BRUSH'
-      ? // @ts-ignore
-        BRUSH[currentMapMemoTool] || BRUSH.BRUSH
-      : // @ts-ignore
-        ERASER[currentMapMemoTool] || ERASER.ERASER;
-  const groupLabel =
-    currentGroup === 'PEN'
-      ? t('Home.label.pen')
-      : currentGroup === 'STAMP'
-      ? t('Home.label.stamp')
-      : currentGroup === 'BRUSH'
-      ? t('Home.label.brush')
-      : t('Home.label.eraser');
-
-  //集約ボタン: ツール有効中は解除のみ、無効中はパレットを開く
-  const pressGroupButton = () => {
-    if (isToolActive) {
-      pressMapMemoToolButton(currentGroup);
-    } else {
-      setToolPaletteOpen(true);
-    }
+  const arrowIndex = Math.max(
+    ARROW_STYLES.findIndex((a) => a.style === arrowStyle),
+    0
+  );
+  const arrow = ARROW_STYLES[arrowIndex];
+  const pressArrowStyle = () => {
+    setArrowStyle(ARROW_STYLES[(arrowIndex + 1) % ARROW_STYLES.length].style);
   };
 
-  //パレットからグループを選択: 閉じてから選択（前回ツールの再選択 or 初回は設定を開く）
-  const selectToolGroup = (group: MapMemoToolGroupType) => {
-    setToolPaletteOpen(false);
-    pressMapMemoToolButton(group);
+  const pressPenWidth = () => {
+    const index = PEN_WIDTHS.indexOf(currentPenWidth);
+    setPenWidth(PEN_WIDTHS[(index + 1) % PEN_WIDTHS.length]);
   };
 
   const styles = StyleSheet.create({
@@ -93,111 +77,73 @@ export const HomeMapMemoTools = React.memo(() => {
       top: insets.top + 340,
       // zIndex: 101,
     },
-
-    toolButton: {
-      marginRight: 5,
-      width: 40,
-    },
-    toolRow: {
-      alignSelf: 'flex-start',
-      flexDirection: 'row',
-      marginTop: 2,
-    },
   });
 
   return (
-    <>
-      {/* 編集選択の確定・キャンセルボタン */}
-      <HomeEditControlButtons />
-
-      {/* 編集レイヤ名の表示・切替チップ */}
-      <HomeEditingLayerButton />
-      <View style={styles.buttonContainer}>
-        {/* ペン・スタンプ・ブラシ・消しゴムは1ボタンに集約。
-            ツール有効中に押すと解除のみ、無効中に押すと横に展開して選ぶ */}
-        <View style={styles.toolRow}>
-          {!isToolPaletteOpen ? (
-            <View style={styles.toolButton}>
-              <Button
-                // @ts-ignore
-                name={groupIcon}
-                backgroundColor={isToolActive ? COLOR.ALFARED : COLOR.ALFABLUE}
-                borderRadius={10}
-                onPress={pressGroupButton}
-                labelText={groupLabel}
-                labelFontSize={currentGroup === 'STAMP' ? 9 : undefined}
-              />
-            </View>
-          ) : (
-            <>
-              <View style={styles.toolButton}>
-                <Button
-                  name={MAPMEMOTOOL.PEN}
-                  backgroundColor={COLOR.ALFABLUE}
-                  borderRadius={10}
-                  onPress={() => selectToolGroup('PEN')}
-                  labelText={t('Home.label.pen')}
-                />
-              </View>
-              <View style={styles.toolButton}>
-                <Button
-                  name={STAMP.STAMP}
-                  backgroundColor={COLOR.ALFABLUE}
-                  borderRadius={10}
-                  onPress={() => selectToolGroup('STAMP')}
-                  labelText={t('Home.label.stamp')}
-                  labelFontSize={9}
-                />
-              </View>
-              <View style={styles.toolButton}>
-                <Button
-                  name={BRUSH.BRUSH}
-                  backgroundColor={COLOR.ALFABLUE}
-                  borderRadius={10}
-                  onPress={() => selectToolGroup('BRUSH')}
-                  labelText={t('Home.label.brush')}
-                />
-              </View>
-              <View style={styles.toolButton}>
-                <Button
-                  name={ERASER.ERASER}
-                  backgroundColor={COLOR.ALFABLUE}
-                  borderRadius={10}
-                  onPress={() => selectToolGroup('ERASER')}
-                  labelText={t('Home.label.eraser')}
-                />
-              </View>
-            </>
-          )}
-        </View>
-        <View style={styles.button}>
-          <Button
-            name="cog"
-            backgroundColor={COLOR.ALFABLUE}
-            borderRadius={10}
-            onPress={() => openMapMemoSettingsTab(currentGroup)}
-            labelText={t('Home.label.memoSetting')}
-            labelFontSize={9}
-          />
-        </View>
-        <View style={styles.button}>
-          <Button
-            name={MAPMEMOTOOL.COLOR}
-            backgroundColor={COLOR.ALFABLUE}
-            borderRadius={10}
-            onPress={() => setVisibleMapMemoColor(true)}
-            labelText={t('Home.label.color')}
-          />
-        </View>
-
-        <PencilLockButton />
-        <SelectToolButton />
-        {isSelectionMode && <MoveToolButton />}
-        {isSelectedDraw && <DeleteToolButton />}
-        {/* undo/redoは統一ハンドラ（選択操作中は作図編集、通常時はメモ書き込みの履歴）で必要なときだけ表示 */}
-        <UndoToolButton />
-        <RedoToolButton />
+    <View style={styles.buttonContainer}>
+      <View style={styles.button}>
+        <Button
+          name={MAPMEMOTOOL.PEN}
+          backgroundColor={isPenActive ? COLOR.ALFARED : COLOR.ALFABLUE}
+          borderRadius={10}
+          onPress={() => selectMapMemoTool(isPenActive ? undefined : 'PEN')}
+          labelText={t('Home.label.pen')}
+        />
       </View>
-    </>
+      <View style={styles.button}>
+        <Button
+          name={ERASER.ERASER}
+          backgroundColor={isEraserActive ? COLOR.ALFARED : COLOR.ALFABLUE}
+          borderRadius={10}
+          //消しゴムはなぞった部分だけを消す1種類だけ
+          onPress={() => selectMapMemoTool(isEraserActive ? undefined : 'PEN_ERASER_PARTIAL')}
+          labelText={t('Home.label.eraser')}
+        />
+      </View>
+      <View style={styles.button}>
+        <Button
+          //現在の太さをアイコンとラベルで示し、タップで細→中→太→極太と切り替える
+          name={PEN_WIDTH[currentPenWidth]}
+          backgroundColor={COLOR.ALFABLUE}
+          borderRadius={10}
+          onPress={pressPenWidth}
+          labelText={t(PEN_WIDTH_LABEL_KEYS[currentPenWidth])}
+        />
+      </View>
+      <View style={styles.button}>
+        <Button
+          //現在の描き方をアイコンとラベルで示し、タップで直線⇔曲線を切り替える
+          name={isStraightStyle ? PEN_STYLE.STRAIGHT : PEN_STYLE.FREEHAND}
+          backgroundColor={COLOR.ALFABLUE}
+          borderRadius={10}
+          onPress={() => setIsStraightStyle(!isStraightStyle)}
+          labelText={isStraightStyle ? t('Home.penPicker.straight') : t('Home.penPicker.curve')}
+        />
+      </View>
+      <View style={styles.button}>
+        <Button
+          //現在の矢印をアイコンとラベルで示し、タップで なし→終端→両側 と切り替える
+          name={arrow.icon}
+          backgroundColor={COLOR.ALFABLUE}
+          borderRadius={10}
+          onPress={pressArrowStyle}
+          labelText={t(arrow.labelKey)}
+        />
+      </View>
+      <View style={styles.button}>
+        <Button
+          name={MAPMEMOTOOL.COLOR}
+          backgroundColor={COLOR.ALFABLUE}
+          borderRadius={10}
+          onPress={() => setVisibleMapMemoColor(true)}
+          labelText={t('Home.label.color')}
+        />
+      </View>
+
+      <PencilLockButton />
+      {/* undo/redoは書き込みの履歴。必要なときだけ表示される */}
+      <UndoToolButton />
+      <RedoToolButton />
+    </View>
   );
 });

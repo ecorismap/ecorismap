@@ -252,33 +252,31 @@ describe('useMapMemo', () => {
     expect(result.current.mapMemoEditingLine.current).toEqual([]);
   });
 
-  it('changeColorTypeToIndividualが正しく動作すること', () => {
+  it('メモレイヤは色分け・ラベル・属性が既定へ揃えられ、共有範囲(PUBLIC)は残ること', () => {
     const mockMapViewRef = {} as any;
-    const { result } = renderHook(() => useMapMemo(mockMapViewRef), { wrapper });
-
-    // ユーザーが設定済みの色分けフィールドとラベルを用意する
     const layer = store.getState().layers[0];
     act(() => {
       store.dispatch(
         updateLayerAction({
           ...layer,
-          colorStyle: { ...layer.colorStyle, colorType: 'CATEGORIZED', fieldName: '区分' },
+          permission: 'PUBLIC',
           label: '種名',
+          field: [{ id: 'f1', name: 'cmt', format: 'STRING' }],
+          colorStyle: { ...layer.colorStyle, colorType: 'CATEGORIZED', fieldName: '区分' },
         })
       );
     });
 
-    act(() => {
-      result.current.changeColorTypeToIndividual();
-    });
+    renderHook(() => useMapMemo(mockMapViewRef), { wrapper });
 
-    // Redux storeの状態が更新されることを確認
-    const updatedLayers = store.getState().layers;
-    expect(updatedLayers[0].colorStyle.colorType).toBe('INDIVIDUAL');
-    // 描画の邪魔になるラベルは非表示にするが、元の設定は退避して失わない
-    expect(updatedLayers[0].label).toBe('');
-    expect(updatedLayers[0].colorStyle.savedFieldName).toBe('区分');
-    expect(updatedLayers[0].colorStyle.savedLabel).toBe('種名');
+    //アプリが管理する固定レイヤなので、ユーザーが変えても既定へ戻す
+    const updatedLayer = store.getState().layers[0];
+    expect(updatedLayer.colorStyle.colorType).toBe('INDIVIDUAL');
+    expect(updatedLayer.colorStyle.customFieldValue).toBe('_strokeColor');
+    //共有範囲は自分だけ(PRIVATE)／共有(PUBLIC)の2択なので、選んだ値は残す
+    expect(updatedLayer.permission).toBe('PUBLIC');
+    expect(updatedLayer.label).toBe('');
+    expect(updatedLayer.field).toEqual([]);
   });
 
   it('setMapMemoToolがローカルステートを更新すること', () => {

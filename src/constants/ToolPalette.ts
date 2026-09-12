@@ -1,5 +1,5 @@
-import { BRUSH, ERASER, LINETOOL, POLYGONTOOL, STAMP } from './AppConstants';
-import { FeatureButtonType, ToolPaletteItemType } from '../types';
+import { BRUSH, ERASER, LINETOOL, STAMP } from './AppConstants';
+import { FeatureButtonType, FeatureType, LayerType, ToolPaletteItemType, ToolPaletteType } from '../types';
 
 /**
  * 編集レイヤの用途ごとのツールパレット。
@@ -32,57 +32,55 @@ const hisyouLineItems: ToolPaletteItemType[] = [
   { id: 'HISYOU_ERASER', label: '消しゴム', icon: ERASER.ERASER, subTool: 'PEN', eraser: 'PEN_ERASER' },
 ];
 
-//植生図は面で描く。ポリゴンの手書きはペン固定なので、持ち替えるのは区分（＝色）になる。
-//色を保存・表示するにはレイヤの色分けを「個別」にしておく必要がある
-const vegetationPolygonItems: ToolPaletteItemType[] = [
-  {
-    id: 'VEGETATION_GRASS',
-    label: '草地',
-    icon: POLYGONTOOL.HANDWRITING_POLYGON,
-    subTool: 'PEN',
-    penWidth: 'PEN_THIN',
-    color: { hue: 90, sat: 0.6, val: 0.8, alpha: 0.7 },
-  },
-  {
-    id: 'VEGETATION_FOREST',
-    label: '樹林',
-    icon: POLYGONTOOL.HANDWRITING_POLYGON,
-    subTool: 'PEN',
-    penWidth: 'PEN_THIN',
-    color: { hue: 130, sat: 0.7, val: 0.5, alpha: 0.7 },
-  },
-  {
-    id: 'VEGETATION_BARE',
-    label: '裸地',
-    icon: POLYGONTOOL.HANDWRITING_POLYGON,
-    subTool: 'PEN',
-    penWidth: 'PEN_THIN',
-    color: { hue: 30, sat: 0.6, val: 0.6, alpha: 0.7 },
-  },
-  {
-    id: 'VEGETATION_WATER',
-    label: '水域',
-    icon: POLYGONTOOL.HANDWRITING_POLYGON,
-    subTool: 'PEN',
-    penWidth: 'PEN_THIN',
-    color: { hue: 210, sat: 0.7, val: 0.8, alpha: 0.7 },
-  },
-];
+/**
+ * 区分（カテゴリ）を選ぶパレット。植生図のように区分が多く、調査ごとに中身が変わるものは
+ * コードに直書きせず、色分けに使うフィールドの選択肢から作る。
+ * ボタンは「次に描くオブジェクトの区分」を決めるだけで、描き方（手書き／プロット）は従来のツールで選ぶ
+ */
+const getCategoryPalette = (layer: LayerType): ToolPaletteItemType[] | undefined => {
+  if (layer.colorStyle.colorType !== 'CATEGORIZED') return undefined;
+  const field = layer.field.find((f) => f.name === layer.colorStyle.fieldName);
+  if (field?.list === undefined || field.list.length === 0) return undefined;
+  return field.list
+    .filter((item) => !item.isOther && item.value !== '')
+    .map((item) => ({
+      id: item.value,
+      label: item.value,
+      //区分は色で見分けるので、アイコンは色を置くだけの丸にする
+      icon: 'checkbox-blank-circle',
+      fieldValue: item.value,
+      colorHex: layer.colorStyle.colorList.find((c) => c.value === item.value)?.color,
+    }));
+};
 
 /**
- * 編集レイヤ名とタブからパレットを決める。該当しなければundefinedを返し、従来のツールボタンを使う。
- * @param layerName 編集中のレイヤ名
+ * レイヤの用途とタブからパレットを決める。該当しなければundefinedを返し、従来のツールボタンを使う。
+ * @param layer 編集中のレイヤ（用途・色分け・フィールドから組み立てる）
  * @param featureType 現在のタブ（LINE/POLYGONのみパレットを持つ）
- * @param hisyouEnabled 飛翔図ツールの機能フラグ（組織アカウント限定）
+ * @param hisyouEnabled 飛翔図ツールの機能フラグ
  */
 export const getToolPalette = (
-  layerName: string | undefined,
+  layer: LayerType | undefined,
   featureType: FeatureButtonType,
   hisyouEnabled: boolean
 ): ToolPaletteItemType[] | undefined => {
-  if (layerName === undefined) return undefined;
-  //飛翔図は線（1本＝1飛翔）、植生図は面（1面＝1区分）で描く
-  if (featureType === 'LINE' && hisyouEnabled && /飛翔|hisyou/i.test(layerName)) return hisyouLineItems;
-  if (featureType === 'POLYGON' && /植生|vegetation/i.test(layerName)) return vegetationPolygonItems;
+  if (layer === undefined) return undefined;
+  //飛翔図は道具（ペン・ブラシ・スタンプ）を持ち替える。植生図は区分を持ち替える
+  if (layer.toolPalette === 'HISYOU' && featureType === 'LINE' && hisyouEnabled) return hisyouLineItems;
+  if (layer.toolPalette === 'VEGETATION' && featureType === 'POLYGON') return getCategoryPalette(layer);
   return undefined;
+};
+
+/**
+ * そのレイヤの用途がツールパレットを持つ（＝ストロークごとに色を変える）か。
+ * 色分けの「個別（_strokeColor）」はこの用途のためにある
+ */
+export const hasToolPalette = (
+  toolPalette: ToolPaletteType | undefined,
+  featureType: FeatureType,
+  hisyouEnabled: boolean
+): boolean => {
+  if (toolPalette === 'HISYOU') return featureType === 'LINE' && hisyouEnabled;
+  if (toolPalette === 'VEGETATION') return featureType === 'POLYGON';
+  return false;
 };

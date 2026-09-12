@@ -211,6 +211,37 @@ describe('useLayers', () => {
     jest.resetAllMocks();
   });
 
+  test('ポイントの色分け「個別」は単色へ戻す（色を書き込む経路が無く全て黒になるため）', () => {
+    const brokenLayer: LayerType = {
+      ...initialLayers[0],
+      id: 'L9',
+      type: 'POINT',
+      label: '',
+      colorStyle: {
+        ...initialLayers[0].colorStyle,
+        colorType: 'INDIVIDUAL',
+        fieldName: '__CUSTOM',
+        customFieldValue: '_strokeColor',
+        savedFieldName: 'name',
+        savedCustomFieldValue: '',
+        savedLabel: 'name',
+      },
+    };
+    const layersWithBroken = [...initialLayers, brokenLayer];
+    mockSelector = jest.fn().mockReturnValue(layersWithBroken);
+    currentState = layersWithBroken;
+
+    renderHook(() => useLayers());
+
+    //退避してあった色分けフィールドとラベルも復元する
+    const updated = mockDispatch.mock.calls[0][0].payload as LayerType;
+    expect(updated.id).toBe('L9');
+    expect(updated.colorStyle.colorType).toBe('SINGLE');
+    expect(updated.colorStyle.fieldName).toBe('name');
+    expect(updated.label).toBe('name');
+    expect(updated.colorStyle.savedFieldName).toBeUndefined();
+  });
+
   // 既存のテストを新しい layers データに合わせて調整 (例)
   test('編集ボタンを押すとアクティブの場合、非アクティブになる', () => {
     const { result } = renderHook(() => useLayers());

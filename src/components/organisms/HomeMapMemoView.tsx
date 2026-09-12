@@ -36,8 +36,9 @@ export const MapMemoView = React.memo(() => {
     () => (currentMapMemoTool.includes('ERASER') ? 'white' : isBrushTool(currentMapMemoTool) ? 'yellow' : penColor),
     [currentMapMemoTool, penColor]
   );
+  //消しゴムの太さはペンの太さに連動させる（消える幅と見た目を一致させる）
   const strokeWidth = useMemo(
-    () => (currentMapMemoTool.includes('ERASER') ? 10 : isBrushTool(currentMapMemoTool) ? 5 : penWidth),
+    () => (isBrushTool(currentMapMemoTool) ? 5 : penWidth),
     [currentMapMemoTool, penWidth]
   );
 

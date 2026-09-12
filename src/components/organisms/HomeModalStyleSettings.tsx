@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, StyleSheet, Modal } from 'react-native';
-import ColorPicker, { Panel2, BrightnessSlider, Swatches, OpacitySlider, colorKit } from 'reanimated-color-picker';
+import ColorPicker, { Panel1, HueSlider, Swatches, OpacitySlider, colorKit } from 'reanimated-color-picker';
 import { COLOR, PEN_STYLE, PEN_WIDTH } from '../../constants/AppConstants';
 import { t } from '../../i18n/config';
 import { ArrowStyleType, PenWidthType } from '../../types';
@@ -28,6 +28,8 @@ interface Props {
   visible: boolean;
   //矢印タブを表示するか（LINEのみ）
   showArrow: boolean;
+  //太さタブを表示するか（植生図は区分＝色だけを持ち替えるので太さは使わない）
+  showWidth: boolean;
   initialPenWidth: PenWidthType;
   initialArrowStyle: ArrowStyleType;
   //色ピッカーの初期色。単一オブジェクト選択中はそのオブジェクトの色（プロパティパネル方式）
@@ -50,6 +52,7 @@ export const HomeModalStyleSettings = React.memo((props: Props) => {
   const {
     visible,
     showArrow,
+    showWidth,
     initialPenWidth,
     initialArrowStyle,
     initialColor,
@@ -59,7 +62,7 @@ export const HomeModalStyleSettings = React.memo((props: Props) => {
     close,
   } = props;
 
-  const [tab, setTab] = useState<StyleTabType>('WIDTH');
+  const [tab, setTab] = useState<StyleTabType>('COLOR');
   const [penWidth, setPenWidth] = useState<PenWidthType>('PEN_MEDIUM');
   const [arrowStyle, setArrowStyle] = useState<ArrowStyleType>('NONE');
   const [hue, setHue] = useState(0);
@@ -79,13 +82,13 @@ export const HomeModalStyleSettings = React.memo((props: Props) => {
 
   useEffect(() => {
     if (visible) {
-      setTab('WIDTH');
+      setTab(showWidth ? 'WIDTH' : 'COLOR');
       setPenWidth(initialPenWidth);
       setArrowStyle(initialArrowStyle);
       applyHexToHsv(initialColor);
       setColorTouched(false);
     }
-  }, [visible, initialPenWidth, initialArrowStyle, initialColor, applyHexToHsv]);
+  }, [visible, showWidth, initialPenWidth, initialArrowStyle, initialColor, applyHexToHsv]);
 
   const onPickColor = useCallback(
     ({ hex }: { hex: string }) => {
@@ -97,7 +100,7 @@ export const HomeModalStyleSettings = React.memo((props: Props) => {
 
   const handleOK = () => {
     //操作した項目だけ反映する（触っていない項目でグローバル設定を上書きしない）
-    if (penWidth !== initialPenWidth) selectPenWidth(penWidth);
+    if (showWidth && penWidth !== initialPenWidth) selectPenWidth(penWidth);
     if (showArrow && arrowStyle !== initialArrowStyle) selectArrowStyle(arrowStyle);
     if (colorTouched) selectColor(hue, sat, val, alpha);
     close();
@@ -118,7 +121,7 @@ export const HomeModalStyleSettings = React.memo((props: Props) => {
   );
 
   const tabs: { key: StyleTabType; label: string }[] = [
-    { key: 'WIDTH', label: t('common.strokeWidth') },
+    ...(showWidth ? [{ key: 'WIDTH' as StyleTabType, label: t('common.strokeWidth') }] : []),
     ...(showArrow ? [{ key: 'ARROW' as StyleTabType, label: t('common.arrow') }] : []),
     { key: 'COLOR', label: t('common.color') },
   ];
@@ -127,6 +130,8 @@ export const HomeModalStyleSettings = React.memo((props: Props) => {
     <Modal animationType="none" transparent={true} visible={visible}>
       <Pressable style={styles.overlay} onPress={close} disablePressedAnimation>
         <Pressable style={styles.card} onPress={() => {}} disablePressedAnimation>
+          {/* 色だけのときはタブを出さず、そのまま色設定にする */}
+          {tabs.length > 1 && (
           <View style={styles.segmentContainer}>
             {tabs.map(({ key, label }) => (
               <Pressable
@@ -139,6 +144,7 @@ export const HomeModalStyleSettings = React.memo((props: Props) => {
               </Pressable>
             ))}
           </View>
+          )}
           <View style={styles.contentArea}>
             {tab === 'WIDTH' && (
               <View style={styles.tabContent}>
@@ -146,6 +152,7 @@ export const HomeModalStyleSettings = React.memo((props: Props) => {
                   {optionButton('PEN_THIN', PEN_WIDTH.PEN_THIN, penWidth === 'PEN_THIN', () => setPenWidth('PEN_THIN'), t('Home.penPicker.thin'))}
                   {optionButton('PEN_MEDIUM', PEN_WIDTH.PEN_MEDIUM, penWidth === 'PEN_MEDIUM', () => setPenWidth('PEN_MEDIUM'), t('Home.penPicker.medium'))}
                   {optionButton('PEN_THICK', PEN_WIDTH.PEN_THICK, penWidth === 'PEN_THICK', () => setPenWidth('PEN_THICK'), t('Home.penPicker.thick'))}
+            {optionButton('PEN_EXTRA_THICK', PEN_WIDTH.PEN_EXTRA_THICK, penWidth === 'PEN_EXTRA_THICK', () => setPenWidth('PEN_EXTRA_THICK'), t('Home.penPicker.extraThick'))}
                 </View>
               </View>
             )}
@@ -169,9 +176,11 @@ export const HomeModalStyleSettings = React.memo((props: Props) => {
                   onCompleteJS={onPickColor}
                   style={styles.colorPicker}
                 >
-                  <View style={styles.panelBrightnessContainer}>
-                    <Panel2 style={[styles.panel, styles.shadow]} />
-                    <BrightnessSlider style={[styles.brightnessSlider, styles.shadow]} vertical reverse />
+                  {/* パネルは彩度×明るさ。右のバーは色相（虹）。明るさのバーだと一番下で
+                      どの色を選んでも真っ黒になって分かりにくいため（メモの色選択と同じ構成） */}
+                  <View style={styles.panelHueContainer}>
+                    <Panel1 style={[styles.panel, styles.shadow]} />
+                    <HueSlider style={[styles.hueSlider, styles.shadow]} vertical reverse />
                   </View>
                   <OpacitySlider style={styles.opacitySlider} />
                   <Swatches style={styles.swatches} swatchStyle={styles.swatchStyle} colors={customSwatches} />
@@ -194,7 +203,7 @@ export const HomeModalStyleSettings = React.memo((props: Props) => {
 });
 
 const styles = StyleSheet.create({
-  brightnessSlider: {
+  hueSlider: {
     height: '100%',
   },
   card: {
@@ -251,7 +260,7 @@ const styles = StyleSheet.create({
     height: 150,
     marginEnd: 20,
   },
-  panelBrightnessContainer: {
+  panelHueContainer: {
     alignItems: 'center',
     flexDirection: 'row',
     flexWrap: 'nowrap',

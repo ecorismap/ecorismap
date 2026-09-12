@@ -47,16 +47,13 @@ import { MapRef, ViewState } from 'react-map-gl/maplibre';
 import { useProject } from '../hooks/useProject';
 import {
   getExt,
-  isBrushTool,
   isEraserTool,
   isHandwritingTool,
   isLineTool,
   isMapMemoDrawTool,
-  isPenTool,
   isPlotTool,
   isPointTool,
   isPolygonTool,
-  isStampTool,
 } from '../utils/General';
 import { getEventTimestamp } from '../utils/OneEuroFilter';
 import { t } from '../i18n/config';
@@ -126,7 +123,8 @@ import { HomeModalMapMemoSettings } from '../components/organisms/HomeModalMapMe
 import { HomeModalInfoPicker } from '../components/organisms/HomeModalInfoPicker';
 import { HomeModalLayerSelect } from '../components/organisms/HomeModalLayerSelect';
 import { useEditableLayerSelection } from '../hooks/useEditableLayerSelection';
-import { TEMPLATE_LAYER } from '../modules/layers';
+import { TEMPLATE_LAYER, updateLayerAction } from '../modules/layers';
+import { updateRecordsAction } from '../modules/dataSet';
 import { ulid } from 'ulid';
 import { Position } from 'geojson';
 import { useMaps } from '../hooks/useMaps';
@@ -410,7 +408,6 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     penWidth,
     mapMemoEditingLine,
     mapMemoEditingLineLatLon,
-    isIndividualColorRequired,
     isPencilModeActive,
     isUndoable,
     isRedoable,
@@ -434,7 +431,6 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     pressRedoMapMemo,
     clearMapMemoHistory,
     pauseMapMemoDrawing,
-    changeColorTypeToIndividual,
     setPencilModeActive,
     setSnapWithLine,
     setIsStraightStyle,
@@ -934,6 +930,137 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
    */
   const checkEditableMapMemo = useCallback(async () => ensureEditableLayer('MEMO'), [ensureEditableLayer]);
 
+  //編集レイヤ（ツールパレットの組み立てに使う）
+  const editingLayer = useMemo(() => {
+    switch (featureButton) {
+      case 'LINE':
+        return activeLineLayer;
+      case 'POLYGON':
+        return activePolygonLayer;
+      default:
+        return undefined;
+    }
+  }, [activeLineLayer, activePolygonLayer, featureButton]);
+
+  //区分を選ぶパレット（植生図）で「次に描く区分」を決める。色分けに使うフィールドの既定値を
+  //書き換えるので、手書きでもプロットでも新しく作るレコードにその区分が入る
+  //区分を新しく足す。選択肢と色分けの両方へ入れて、そのまま次に描く区分にする
+  const addCategoryValue = useCallback(
+    (value: string, color: string) => {
+      if (editingLayer === undefined) return;
+      const fieldName = editingLayer.colorStyle.fieldName;
+      const field = editingLayer.field.find((f) => f.name === fieldName);
+      if (field === undefined) return;
+      if ((field.list ?? []).some((item) => item.value === value)) return;
+      dispatch(
+        updateLayerAction({
+          ...editingLayer,
+          colorStyle: {
+            ...editingLayer.colorStyle,
+            colorList: [...editingLayer.colorStyle.colorList, { value, color }],
+          },
+          field: editingLayer.field.map((f) =>
+            f.name === fieldName
+              ? {
+                  ...f,
+                  list: [...(f.list ?? []), { value, isOther: false, customFieldValue: '' }],
+                  defaultValue: value,
+                }
+              : f
+          ),
+        })
+      );
+    },
+    [dispatch, editingLayer]
+  );
+
+  //区分の名前・色を変える。名前を変えた場合は、その区分で保存済みのレコードの値も置き換える
+  //（置き換えないと色分けから外れて透明になり、集計もばらける）
+  const updateCategoryValue = useCallback(
+    (oldValue: string, newValue: string, color: string) => {
+      if (editingLayer === undefined || newValue === '') return;
+      const fieldName = editingLayer.colorStyle.fieldName;
+      dispatch(
+        updateLayerAction({
+          ...editingLayer,
+          colorStyle: {
+            ...editingLayer.colorStyle,
+            colorList: editingLayer.colorStyle.colorList.map((c) =>
+              c.value === oldValue ? { value: newValue, color } : c
+            ),
+          },
+          field: editingLayer.field.map((f) =>
+            f.name === fieldName
+              ? {
+                  ...f,
+                  list: (f.list ?? []).map((item) =>
+                    item.value === oldValue ? { ...item, value: newValue } : item
+                  ),
+                  defaultValue: f.defaultValue === oldValue ? newValue : f.defaultValue,
+                }
+              : f
+          ),
+        })
+      );
+      if (newValue === oldValue) return;
+      fullDataSet
+        .filter((d) => d.layerId === editingLayer.id)
+        .forEach((d) => {
+          const targets = d.data.filter((record) => record.field[fieldName] === oldValue);
+          if (targets.length === 0) return;
+          dispatch(
+            updateRecordsAction({
+              layerId: d.layerId,
+              userId: d.userId,
+              data: targets.map((record) => ({ ...record, field: { ...record.field, [fieldName]: newValue } })),
+            })
+          );
+        });
+    },
+    [dispatch, editingLayer, fullDataSet]
+  );
+
+  //区分を選択肢から消す。保存済みのレコードの値はそのまま残す（消すとデータが失われるため）
+  const deleteCategoryValue = useCallback(
+    (value: string) => {
+      if (editingLayer === undefined) return;
+      const fieldName = editingLayer.colorStyle.fieldName;
+      dispatch(
+        updateLayerAction({
+          ...editingLayer,
+          colorStyle: {
+            ...editingLayer.colorStyle,
+            colorList: editingLayer.colorStyle.colorList.filter((c) => c.value !== value),
+          },
+          field: editingLayer.field.map((f) =>
+            f.name === fieldName
+              ? {
+                  ...f,
+                  list: (f.list ?? []).filter((item) => item.value !== value),
+                  defaultValue: f.defaultValue === value ? undefined : f.defaultValue,
+                }
+              : f
+          ),
+        })
+      );
+    },
+    [dispatch, editingLayer]
+  );
+
+  const selectCategoryValue = useCallback(
+    (value: string) => {
+      if (editingLayer === undefined) return;
+      const fieldName = editingLayer.colorStyle.fieldName;
+      dispatch(
+        updateLayerAction({
+          ...editingLayer,
+          field: editingLayer.field.map((f) => (f.name === fieldName ? { ...f, defaultValue: value } : f)),
+        })
+      );
+    },
+    [dispatch, editingLayer]
+  );
+
   //ツールバーのチップに表示する編集レイヤ名
   const editingLayerName = useMemo(() => {
     switch (featureButton) {
@@ -972,12 +1099,6 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
         //どのツールもマップメモの内容を書き換えるため、ブラシ・スタンプ・消しゴム含め全てで編集可否を確認する
         //（プロジェクト実行中のロック等も選択時に検出する）
         if (!(await checkEditableMapMemo())) return;
-        //レイヤの色分け設定を書き換えることになるので、実際に描くペンのときだけ事前に確認する
-        if (isPenTool(value) && isIndividualColorRequired) {
-          const ret = await ConfirmAsync(t('Home.confirm.individualColor'));
-          if (!ret) return;
-          changeColorTypeToIndividual();
-        }
         //編集選択の選択状態が残っていれば破棄する
         resetDrawTools();
         setDrawTool('NONE');
@@ -985,9 +1106,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       }
     },
     [
-      changeColorTypeToIndividual,
       checkEditableMapMemo,
-      isIndividualColorRequired,
       resetDrawTools,
       setDrawTool,
       setInfoToolActive,
@@ -1014,31 +1133,6 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
   );
 
   /************** select button ************/
-
-  //MEMOモード内で各ツールの設定を一度開いたかどうか。モード入場ごとにリセットし、
-  //初回タップでは設定タブを開いて確認してもらう
-  const mapMemoToolVisited = useRef<{ [key in MapMemoToolGroupType]?: boolean }>({});
-  //各グループで最後に使った種別（トグルON時に復元する）
-  const mapMemoLastTool = useRef<{ [key in MapMemoToolGroupType]?: MapMemoToolType }>({ PEN: 'PEN' });
-
-  useEffect(() => {
-    if (isStampTool(currentMapMemoTool)) mapMemoLastTool.current.STAMP = currentMapMemoTool;
-    else if (isBrushTool(currentMapMemoTool)) mapMemoLastTool.current.BRUSH = currentMapMemoTool;
-    else if (isEraserTool(currentMapMemoTool)) mapMemoLastTool.current.ERASER = currentMapMemoTool;
-  }, [currentMapMemoTool]);
-
-  /**
-   * マップメモ設定モーダルを指定タブで開く（タブバーからの切替にも使う）
-   */
-  const openMapMemoSettingsTab = useCallback(
-    async (tab: MapMemoToolGroupType) => {
-      //設定を選ばせてからOKで断られると無駄なので、モーダルを開く前に編集可否を確認する
-      if (!(await checkEditableMapMemo())) return;
-      setMapMemoSettingsTab(tab);
-      setVisibleMapMemoSettings(true);
-    },
-    [checkEditableMapMemo, setMapMemoSettingsTab, setVisibleMapMemoSettings]
-  );
 
   const closeMapMemoSettings = useCallback(() => {
     setVisibleMapMemoSettings(false);
@@ -1171,7 +1265,15 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     const color = typeof field._strokeColor === 'string' && field._strokeColor !== '' ? field._strokeColor : undefined;
     const width = typeof field._strokeWidth === 'number' ? field._strokeWidth : undefined;
     const widthType: PenWidthType | undefined =
-      width === undefined ? undefined : width <= 3 ? 'PEN_THIN' : width <= 7 ? 'PEN_MEDIUM' : 'PEN_THICK';
+      width === undefined
+        ? undefined
+        : width <= 3
+        ? 'PEN_THIN'
+        : width <= 7
+        ? 'PEN_MEDIUM'
+        : width <= 14
+        ? 'PEN_THICK'
+        : 'PEN_EXTRA_THICK';
     //_strokeStyleはブラシ種別も入るため、矢印値のときだけ初期表示に使う
     const objArrowStyle: ArrowStyleType | undefined =
       field._strokeStyle === 'NONE' || field._strokeStyle === 'ARROW_END' || field._strokeStyle === 'ARROW_BOTH'
@@ -1181,36 +1283,6 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
   })();
   const colorPickerColor = selectedSingleObjectStyle?.color ?? penColor;
 
-  /**
-   * マップメモのツールボタン押下。
-   * 選択中なら解除、未選択ならMEMOモード入場後の初回は設定タブを開き、
-   * 2回目以降は前回の種別で即選択するトグル動作
-   */
-  const pressMapMemoToolButton = useCallback(
-    (group: MapMemoToolGroupType) => {
-      const isActive =
-        group === 'PEN'
-          ? isPenTool(currentMapMemoTool)
-          : group === 'STAMP'
-          ? isStampTool(currentMapMemoTool)
-          : group === 'BRUSH'
-          ? isBrushTool(currentMapMemoTool)
-          : isEraserTool(currentMapMemoTool);
-      if (isActive) {
-        selectMapMemoTool(undefined);
-        return;
-      }
-      const lastTool = group === 'PEN' ? 'PEN' : mapMemoLastTool.current[group];
-      if (!mapMemoToolVisited.current[group] || lastTool === undefined) {
-        mapMemoToolVisited.current[group] = true;
-        openMapMemoSettingsTab(group);
-        return;
-      }
-      selectMapMemoTool(lastTool);
-    },
-    [currentMapMemoTool, openMapMemoSettingsTab, selectMapMemoTool]
-  );
-
   const selectFeatureButton = useCallback(
     (value: FeatureButtonType) => {
       setDrawTool('NONE');
@@ -1219,8 +1291,6 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       setFeatureButton(value);
       resetDrawTools();
       clearMapMemoHistory();
-      //MEMOモードに入るたびに「初回タップで設定を開く」をリセットする
-      if (value === 'MEMO') mapMemoToolVisited.current = {};
       if (Platform.OS !== 'web') toggleHeadingUp(false);
     },
     [setDrawTool, setMapMemoTool, toggleTerrain, setFeatureButton, resetDrawTools, clearMapMemoHistory, toggleHeadingUp]
@@ -1322,7 +1392,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
           }
 
           //編集選択で選択済み・追加（プロット）で作成中のオブジェクトがあれば、手書きセッションの
-          //ストロークに変換して手書きと同じ編集挙動（頂点マーカーなし・長押し修正）にする
+          //ストロークに変換して手書きと同じ編集挙動（頂点マーカーなし・なぞって修正）にする
           if (isHandwritingTool(value) && (isSelectedDraw || isEditingDraw || isEditingObject)) {
             convertSelectionToHandwriting(handwritingPenStyleParam);
           }
@@ -1460,8 +1530,15 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     if (route.params?.mode === 'editPosition') {
       navigation.setParams({ mode: undefined });
     }
-    // 編集選択の場合はボトムシートを開かない
-    if (!isSelectedDraw && layer !== undefined && recordSet !== undefined && recordSet.length > 0) {
+    // 編集選択の場合はボトムシートを開かない。
+    // 飛翔図・植生図は続けて何本・何面も描くので、確定のたびにデータ編集が開くと作業が途切れる
+    if (
+      !isSelectedDraw &&
+      layer !== undefined &&
+      layer.toolPalette === undefined &&
+      recordSet !== undefined &&
+      recordSet.length > 0
+    ) {
       openSheet(2);
       navigateToSplit?.('DataEdit', {
         previous: 'Data',
@@ -2247,7 +2324,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
         }
       }
     },
-    [openSheet, 
+    [
       checkSplitLine,
       commitHandwritingStroke,
       currentDrawTool,
@@ -2445,7 +2522,13 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
               return;
             }
             setDrawTool('NONE');
-            if (layer !== undefined && recordSet !== undefined && recordSet.length > 0) {
+            //飛翔図・植生図は続けて描くのでデータ編集は開かない
+            if (
+              layer !== undefined &&
+              layer.toolPalette === undefined &&
+              recordSet !== undefined &&
+              recordSet.length > 0
+            ) {
               openSheet(2);
               navigateToSplit?.('DataEdit', {
                 previous: 'Data',
@@ -2984,6 +3067,11 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
 
       // Editing layer chip
       editingLayerName,
+      editingLayer,
+      selectCategoryValue,
+      addCategoryValue,
+      updateCategoryValue,
+      deleteCategoryValue,
       pressEditingLayerButton,
 
       //個別色レイヤ（色・太さボタンの常時表示と通常作図への反映）
@@ -3041,6 +3129,11 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       finishEditObject,
       resetDrawTools,
       editingLayerName,
+      editingLayer,
+      selectCategoryValue,
+      addCategoryValue,
+      updateCategoryValue,
+      deleteCategoryValue,
       pressEditingLayerButton,
       isIndividualStyleLayer,
       selectedSingleObjectStyle?.widthType,
@@ -3215,11 +3308,11 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       mapMemoLines,
       arrowStyle,
       setArrowStyle: setArrowStyleMarked,
+      isStraightStyle,
+      setIsStraightStyle,
       selectMapMemoTool,
       setPenWidth: setPenWidthMarked,
       setVisibleMapMemoColor,
-      pressMapMemoToolButton,
-      openMapMemoSettingsTab,
       selectPenColor: selectPenColorMarked,
       pressUndoMapMemo,
       pressRedoMapMemo,
@@ -3238,11 +3331,11 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       mapMemoLines,
       arrowStyle,
       setArrowStyleMarked,
+      isStraightStyle,
+      setIsStraightStyle,
       selectMapMemoTool,
       setPenWidthMarked,
       setVisibleMapMemoColor,
-      pressMapMemoToolButton,
-      openMapMemoSettingsTab,
       selectPenColorMarked,
       pressUndoMapMemo,
       pressRedoMapMemo,
@@ -3338,7 +3431,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
                           <HomeModalUpdateInfo />
                           <HomeModalMapMemoSettings
                             visible={visibleMapMemoSettings}
-                            mode={currentDrawTool === 'HANDWRITING_LINE' ? 'DRAW_LINE' : 'MEMO'}
+                            mode={featureButton === 'MEMO' ? 'MEMO' : 'DRAW_LINE'}
                             handwritingSubTool={handwritingSubTool}
                             selectHandwritingSubTool={setHandwritingSubTool}
                             tab={mapMemoSettingsTab}

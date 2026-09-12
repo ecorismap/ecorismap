@@ -16,6 +16,7 @@ import {
   updateRecordCoords,
   isLatLonEmpty,
   resolveAddLocation,
+  getDefaultField,
 } from '../Data';
 
 describe('sortData', () => {
@@ -894,5 +895,64 @@ describe('resolveAddLocation', () => {
     expect(
       resolveAddLocation({ layerType: 'POLYGON', isLocationEnabled: true, gpsState: 'follow', currentLocation })
     ).toEqual({ location: undefined, needsGpsWarning: false });
+  });
+});
+
+describe('getDefaultField リスト・ラジオの既定値', () => {
+  const makeLayer = (format: 'LIST' | 'RADIO'): LayerType =>
+    ({
+      id: 'L1',
+      name: '植生図',
+      type: 'POLYGON',
+      permission: 'PRIVATE',
+      colorStyle: {
+        colorType: 'CATEGORIZED',
+        transparency: false,
+        color: 'rgba(0,0,0,1)',
+        fieldName: '区分',
+        customFieldValue: '',
+        colorRamp: 'RANDOM',
+        colorList: [],
+        lineWidth: 1.5,
+      },
+      label: '',
+      visible: true,
+      active: true,
+      field: [
+        {
+          id: 'f1',
+          name: '区分',
+          format,
+          list: [
+            { value: '草地', isOther: false, customFieldValue: '' },
+            { value: '樹林', isOther: false, customFieldValue: '' },
+          ],
+        },
+      ],
+    } as unknown as LayerType);
+
+  it('既定値が無ければ先頭の選択肢が入る', () => {
+    expect(getDefaultField(makeLayer('LIST'), [], 'id1')['区分']).toBe('草地');
+    expect(getDefaultField(makeLayer('RADIO'), [], 'id1')['区分']).toBe('草地');
+  });
+
+  it('選択肢がまだ無いフィールドでも落ちずに空になる', () => {
+    const layer = makeLayer('LIST');
+    layer.field[0].list = [];
+    expect(getDefaultField(layer, [], 'id1')['区分']).toBe('');
+
+    const radioLayer = makeLayer('RADIO');
+    radioLayer.field[0].list = [];
+    expect(getDefaultField(radioLayer, [], 'id1')['区分']).toBe('');
+  });
+
+  it('既定値があればそれが入る（区分パレットで選んだ区分）', () => {
+    const layer = makeLayer('LIST');
+    layer.field[0].defaultValue = '樹林';
+    expect(getDefaultField(layer, [], 'id1')['区分']).toBe('樹林');
+
+    const radioLayer = makeLayer('RADIO');
+    radioLayer.field[0].defaultValue = '樹林';
+    expect(getDefaultField(radioLayer, [], 'id1')['区分']).toBe('樹林');
   });
 });

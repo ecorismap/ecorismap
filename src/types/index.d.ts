@@ -248,6 +248,8 @@ export interface LayerType {
   dictionaryKey?: string;
   sortedOrder?: SortedOrderType;
   sortedName?: string;
+  //レイヤの用途。ツールパレットと色分け「個別」の可否をこれで決める（未設定＝通常のレイヤ）
+  toolPalette?: ToolPaletteType;
 }
 export type CheckListItem = { id: number; checked: boolean };
 export type LatLonDMSKey = 'latitude' | 'longitude';
@@ -319,6 +321,9 @@ export type MapPresetType = {
 export type LayerPresetType = {
   presetId: string;
   presetName: string;
+  //全ユーザーに開放するプリセット（未指定は組織アカウント限定）。
+  //辞書などの限定データを含まない汎用プリセットに付ける
+  isPublic?: boolean;
   // 同梱データ（PRESET_LAYER_DATAのキー）。指定するとレイヤ保存時にデータも投入される
   dataKey?: string;
   // dictionaryはSTRING_DICTIONARYフィールドの辞書語彙。適用時に新フィールドIDで辞書DBへ登録される
@@ -569,11 +574,19 @@ export type DrawLineStyleType = {
 export type HandwritingSubToolType = 'PEN' | StampType | BrushType;
 
 //ツールパレットの1ボタン。「道具＋設定」を1つにまとめ、タップだけで持ち替えられるようにする
+//レイヤの用途。飛翔図＝ライン、植生図＝ポリゴンで使う
+export type ToolPaletteType = 'HISYOU' | 'VEGETATION';
+
 export type ToolPaletteItemType = {
   id: string;
   label: string;
   icon: string;
-  subTool: HandwritingSubToolType;
+  //道具を持ち替えるパレット（飛翔図）で使う。区分を選ぶパレット（植生図）では持たない
+  subTool?: HandwritingSubToolType;
+  //区分を選ぶパレット（植生図）。押すと次に描くオブジェクトのこの区分が入る
+  fieldValue?: string;
+  //区分ごとの色（色分け設定のcolorListから引く）
+  colorHex?: string;
   penWidth?: PenWidthType;
   arrowStyle?: ArrowStyleType;
   //区分ごとに色を変える用途（植生図など）。指定するとアイコンをこの色で表示する

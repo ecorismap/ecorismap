@@ -6,6 +6,9 @@ import { ulid } from 'ulid';
 
 //地図メモの保存先。編集レイヤに引きずられて他用途のレイヤにメモが混ざらないよう、専用レイヤに固定する
 export const MEMO_LAYER_ID = 'memo';
+export const TRACK_LAYER_ID = 'track';
+//アプリが管理する固定レイヤ。名前・属性・削除はユーザーに変更させない
+export const isFixedLayer = (layerId: string) => layerId === TRACK_LAYER_ID || layerId === MEMO_LAYER_ID;
 
 export const TEMPLATE_LAYER: LayerType = {
   id: '',
@@ -103,7 +106,8 @@ export const layersInitialState: LayerType[] = [
   },
   {
     //メモはストロークごとに色・太さを持つため、色分けは最初から個別（_strokeColor）にしておく。
-    //ラベルは走り書きの邪魔になるので出さない
+    //ラベルは走り書きの邪魔になるので出さない。
+    //走り書きに属性は要らないので、フィールドは持たない（見た目のスタイルは隠しフィールドに入る）
     id: MEMO_LAYER_ID,
     name: t('common.memo'),
     type: 'LINE',
@@ -121,14 +125,10 @@ export const layersInitialState: LayerType[] = [
     label: '',
     visible: true,
     active: false,
-    field: [
-      { id: ulid(), name: 'name', format: 'SERIAL' },
-      { id: ulid(), name: 'time', format: 'DATETIME' },
-      { id: ulid(), name: 'cmt', format: 'STRING' },
-    ],
+    field: [],
   },
   {
-    id: 'track',
+    id: TRACK_LAYER_ID,
     name: t('common.track'),
     type: 'LINE',
     permission: 'PRIVATE',

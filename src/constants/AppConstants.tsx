@@ -245,6 +245,7 @@ export const DRAWTOOL = {
 } as const;
 
 export const PEN_WIDTH = {
+  PEN_EXTRA_THICK: 'checkbox-blank-circle',
   PEN_THICK: 'circle',
   PEN_MEDIUM: 'circle-medium',
   PEN_THIN: 'circle-small',

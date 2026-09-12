@@ -7,27 +7,46 @@ import { getUserColor, hex2rgba } from './Color';
 import dayjs from '../i18n/dayjs';
 
 /**
- * 編集したcolorStyleをレイヤに反映する。
- * マップメモのペン使用時にINDIVIDUALへ切り替えた際、ラベル設定はcolorStyleへ退避してある。
- * カラータイプが戻された時点でラベルを復元する（色分けフィールドの復元はuseFeatureStyle側で行う）。
+ * レイヤの色分けを「個別（ストロークごとの_strokeColor）」へ切り替える。
+ * 元の色分けフィールドとラベルはcolorStyleへ退避し、戻したときに復元できるようにする。
+ * ストロークごとにラベルが出ると描画の邪魔になるのでラベルは非表示にする
  */
-//レイヤの色分け設定をINDIVIDUAL（ストローク個別色）へ切り替える。
-//元の設定はsaved*へ退避し、カラータイプを戻したときに復元できるようにする。
-//ストロークごとにラベルが出ると描画の邪魔になるのでラベルも非表示にする
 export const toIndividualColorLayer = (layer: LayerType): LayerType => ({
   ...layer,
+  label: '',
   colorStyle: {
     ...layer.colorStyle,
     colorType: 'INDIVIDUAL' as const,
     fieldName: '__CUSTOM',
     customFieldValue: '_strokeColor',
-    savedFieldName: layer.colorStyle.fieldName,
-    savedCustomFieldValue: layer.colorStyle.customFieldValue,
-    savedLabel: layer.label,
+    savedFieldName: layer.colorStyle.savedFieldName ?? layer.colorStyle.fieldName,
+    savedCustomFieldValue: layer.colorStyle.savedCustomFieldValue ?? layer.colorStyle.customFieldValue,
+    savedLabel: layer.colorStyle.savedLabel ?? layer.label,
   },
-  label: '',
 });
 
+/**
+ * 色分け「個別」から元の設定へ戻す。退避してある色分けフィールドとラベルを復元し、単色にする
+ */
+export const restoreColorStyleFromIndividual = (layer: LayerType): LayerType => {
+  const { savedFieldName, savedCustomFieldValue, savedLabel, ...rest } = layer.colorStyle;
+  return {
+    ...layer,
+    label: savedLabel ?? layer.label,
+    colorStyle: {
+      ...rest,
+      colorType: 'SINGLE' as const,
+      fieldName: savedFieldName ?? rest.fieldName,
+      customFieldValue: savedCustomFieldValue ?? rest.customFieldValue,
+    },
+  };
+};
+
+/**
+ * 編集したcolorStyleをレイヤに反映する。
+ * 「個別」にした際に退避したラベルは、カラータイプが戻された時点で復元する
+ * （色分けフィールドの復元はuseFeatureStyle側で行う）。
+ */
 export const applyColorStyle = (layer: LayerType, colorStyle: ColorStyle): LayerType => {
   if (colorStyle.savedLabel === undefined || colorStyle.colorType === 'INDIVIDUAL') {
     return { ...layer, colorStyle };

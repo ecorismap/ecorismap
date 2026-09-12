@@ -16,6 +16,7 @@ import {
   selectPointFeaturesByArea,
   selectLineFeaturesByArea,
   selectPolygonFeaturesByArea,
+  selectPolygonFeatureByLatLon,
 } from '../Coords';
 import { LocationType, PointRecordType, LineRecordType, PolygonRecordType } from '../../types';
 
@@ -678,5 +679,38 @@ describe('closeFreehandPolygonSeam', () => {
     const closed = closeFreehandPolygonSeam(xy as any, latlon as any, toLatLon as any);
     expect(closed.xy).toEqual([...xy, xy[0]]);
     expect(closed.latlon).toEqual([...latlon, latlon[0]]);
+  });
+});
+
+describe('selectPolygonFeatureByLatLon', () => {
+  const square = {
+    id: 'p1',
+    userId: 'u1',
+    displayName: 't',
+    visible: true,
+    redraw: false,
+    coords: [
+      { latitude: 0, longitude: 0 },
+      { latitude: 0, longitude: 10 },
+      { latitude: 10, longitude: 10 },
+      { latitude: 10, longitude: 0 },
+      { latitude: 0, longitude: 0 },
+    ],
+    field: {},
+  } as unknown as PolygonRecordType;
+
+  it('面の内側をタップしても選択できる', () => {
+    //タップ位置のバッファは枠線に届かない（中心をタップした状況）
+    const selected = selectPolygonFeatureByLatLon([square], [5, 5], 0.1);
+    expect(selected?.id).toBe('p1');
+  });
+
+  it('枠線のすぐ外側のタップでも選択できる（バッファはkm単位）', () => {
+    const selected = selectPolygonFeatureByLatLon([square], [10.0005, 5], 0.1);
+    expect(selected?.id).toBe('p1');
+  });
+
+  it('面から離れた場所のタップでは選択しない', () => {
+    expect(selectPolygonFeatureByLatLon([square], [20, 20], 0.1)).toBeUndefined();
   });
 });

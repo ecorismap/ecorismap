@@ -2,7 +2,7 @@ import React, { useCallback } from 'react';
 import { ulid } from 'ulid';
 import { LayerType } from '../types';
 import Layers from '../components/pages/Layers';
-import { TEMPLATE_LAYER } from '../modules/layers';
+import { TEMPLATE_LAYER, MEMO_LAYER_ID } from '../modules/layers';
 import { useLayers } from '../hooks/useLayers';
 import { AlertAsync } from '../components/molecules/AlertAsync';
 import { useTutrial } from '../hooks/useTutrial';
@@ -118,6 +118,8 @@ export default function LayerContainer() {
 
   const gotoColorStyle = useCallback(
     (layer: LayerType) => {
+      //メモは色分けを「個別（_strokeColor）」で固定する固定レイヤなのでスタイル画面を開かない
+      if (layer.id === MEMO_LAYER_ID) return;
       navigate('LayerEditFeatureStyle', {
         targetLayer: { ...layer },
         isEdited: false,

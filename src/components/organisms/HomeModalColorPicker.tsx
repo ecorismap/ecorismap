@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { View, Text, StyleSheet, Modal } from 'react-native';
 import { Pressable } from '../atoms/Pressable';
 import { COLOR } from '../../constants/AppConstants';
-import ColorPicker, { Panel2, BrightnessSlider, Swatches, OpacitySlider, colorKit } from 'reanimated-color-picker';
+import ColorPicker, { Panel1, HueSlider, Swatches, OpacitySlider, colorKit } from 'reanimated-color-picker';
 import { t } from '../../i18n/config';
 
 const customSwatches = [
@@ -98,9 +98,11 @@ export const HomeModalColorPicker = React.memo((props: Props) => {
               onCompleteJS={onSelectColor}
               style={{ width: '75%', justifyContent: 'center' }}
             >
+              {/* パネルは彩度×明るさ。右のバーは色相（虹）にして、バーの位置で真っ黒になるのを避ける
+                  （明るさは選んだ色そのものがパネルに出るので分かりやすい。Web版のピッカーとも揃う） */}
               <View style={styles.panelBrightnessContainer}>
-                <Panel2 style={[{ flex: 1, marginEnd: 20, height: 150 }, styles.shadow]} />
-                <BrightnessSlider style={[{ height: '100%' }, styles.shadow]} vertical reverse />
+                <Panel1 style={[{ flex: 1, marginEnd: 20, height: 150 }, styles.shadow]} />
+                <HueSlider style={[{ height: '100%' }, styles.shadow]} vertical reverse />
               </View>
               {withAlpha && <OpacitySlider style={{ marginTop: 0, marginBottom: 20 }} />}
               <Swatches

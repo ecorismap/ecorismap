@@ -251,7 +251,11 @@
     "ok": "OK",
     "confirm": {
       "cancelEdit": "Would you like to discard the changes and return?"
-    }
+    },
+    "purpose": "Purpose",
+    "hisyouMap": "Flight map",
+    "vegetationMap": "Vegetation map",
+    "category": "Category"
   },
   "firebase": {
     "message": {
@@ -866,7 +870,8 @@
       "discardViewshed": "Clear all displayed viewsheds?",
       "activateLayer": "Set \"{{name}}\" as the editing layer?",
       "showLayerAndEdit": "The editing layer \"{{name}}\" is hidden. Show it and continue?",
-      "createNewLayerForType": "There are no editable {{type}} layers. Create a new layer?"
+      "createNewLayerForType": "There are no editable {{type}} layers. Create a new layer?",
+      "deleteCategory": "Delete this category from the list?\n(Records already saved with it remain unchanged)"
     },
     "navigation": {
       "download": "download",
@@ -910,6 +915,7 @@
       "thin": "Thin",
       "medium": "Medium",
       "thick": "Thick",
+      "extraThick": "Extra thick",
       "curve": "Curve",
       "straight": "Straight",
       "none": "None",

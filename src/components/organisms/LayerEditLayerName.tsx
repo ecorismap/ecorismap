@@ -9,17 +9,24 @@ import { LayerEditContext } from '../../contexts/LayerEdit';
 import { useFeatureFlags } from '../../hooks/useFeatureFlags';
 import { t } from '../../i18n/config';
 import { TextInput } from '../atoms';
+import { isFixedLayer } from '../../modules/layers';
 
 export const LayerName = () => {
   const { layer, isNewLayer, onChangeLayerName, submitLayerName, onChangeLayerPreset } = useContext(LayerEditContext);
   const { layerPresets } = useFeatureFlags();
-  // trackレイヤは軌跡記録の固定レイヤのため名前は変更不可（権限とスタイルのみ変更可）
-  const editable = layer.id !== 'track';
-  const showPresetSelector = isNewLayer && layerPresets;
+  // 軌跡・メモはアプリが管理する固定レイヤのため名前は変更不可
+  const editable = !isFixedLayer(layer.id);
+  //組織アカウント限定のプリセットと、全ユーザーに開放したプリセットを出し分ける
   const presetItems = useMemo(
-    () => LAYER_PRESETS.map((p, index) => ({ key: index, label: p.presetName, value: p.presetId })),
-    []
+    () =>
+      LAYER_PRESETS.filter((p) => layerPresets || p.isPublic).map((p, index) => ({
+        key: index,
+        label: p.presetName,
+        value: p.presetId,
+      })),
+    [layerPresets]
   );
+  const showPresetSelector = isNewLayer && presetItems.length > 0;
 
   return (
     <View style={styles.tr}>

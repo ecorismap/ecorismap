@@ -11,6 +11,8 @@ import { updateLayerAction } from '../modules/layers';
 import { t } from '../i18n/config';
 import { selectDataSetForLayer } from '../modules/selectors';
 import { applyColorStyle } from '../utils/Layer';
+import { hasToolPalette } from '../constants/ToolPalette';
+import { useFeatureFlags } from './useFeatureFlags';
 
 export type UseFeatureStyleReturnType = {
   isEdited: boolean;
@@ -44,6 +46,7 @@ export type UseFeatureStyleReturnType = {
 };
 
 export const useFeatureStyle = (layer_: LayerType, isEdited_: boolean): UseFeatureStyleReturnType => {
+  const { hisyouTool } = useFeatureFlags();
   const dispatch = useDispatch();
   // メモ化されたセレクターを使用
   const layerDataSet = useSelector((state: RootState) => selectDataSetForLayer(state, layer_.id));
@@ -87,10 +90,19 @@ export const useFeatureStyle = (layer_: LayerType, isEdited_: boolean): UseFeatu
   // USERはプロジェクトのdisplayNameで色分けするため、プロジェクト外では機能しない。
   // ただし設定済みのレイヤでピッカーの選択値が消えないよう、選択中は残す
   const colorTypes = useMemo(() => {
-    const types = Object.keys(COLORTYPE) as ColorTypesType[];
-    if (projectId !== undefined || colorStyle.colorType === 'USER') return types;
-    return types.filter((type) => type !== 'USER');
-  }, [colorStyle.colorType, projectId]);
+    let types = Object.keys(COLORTYPE) as ColorTypesType[];
+    if (projectId === undefined && colorStyle.colorType !== 'USER') {
+      types = types.filter((type) => type !== 'USER');
+    }
+    //個別（_strokeColor）はストロークごとに色を変える飛翔図・植生図のための設定。
+    //それ以外のレイヤでは色を書き込む経路が無く、選んでも全てフォールバックの色になるだけなので出さない。
+    //ただし設定済みのレイヤでピッカーの選択値が消えないよう、選択中は残す（切り替えれば消える）
+    const isPaletteLayer = hasToolPalette(layer_.toolPalette, layer_.type, hisyouTool);
+    if (!isPaletteLayer && colorStyle.colorType !== 'INDIVIDUAL') {
+      types = types.filter((type) => type !== 'INDIVIDUAL');
+    }
+    return types;
+  }, [colorStyle.colorType, hisyouTool, layer_.toolPalette, layer_.type, projectId]);
   const colorTypeLabels = useMemo(() => colorTypes.map((type) => COLORTYPE[type]), [colorTypes]);
   const layerType = useMemo(() => layer_.type, [layer_.type]);
   useEffect(() => {
@@ -244,26 +256,28 @@ export const useFeatureStyle = (layer_: LayerType, isEdited_: boolean): UseFeatu
         );
         valueList = valueListArray.reduce((a, b) => a.flatMap((x) => b.map((y) => `${x}|${y}`)));
       } else {
-        valueList = Array.from(
-          new Set(
-            allUserData
-              .map((data) => data !== undefined && data.field[colorStyle.fieldName])
-              .filter((v): v is string | number => typeof v === 'string' || typeof v === 'number')
-          )
-        );
+        //選択肢を持つフィールド（リスト・ラジオ）は、データがまだ無くても候補を取り込めるよう
+        //選択肢そのものを先に並べる。そのあとに実データの値を足す（区分表から色を割り当てるため）
+        const field = targetLayer.field.find((f) => f.name === colorStyle.fieldName);
+        const listValues = (field?.list ?? []).filter((item) => !item.isOther && item.value !== '').map((item) => item.value);
+        const dataValues = allUserData
+          .map((data) => data !== undefined && data.field[colorStyle.fieldName])
+          .filter((v): v is string | number => typeof v === 'string' || typeof v === 'number');
+        valueList = Array.from(new Set([...listValues, ...dataValues]));
       }
     } else if (colorStyle.colorType === 'USER') {
       valueList = displayNames;
     }
-    const colorList = valueList.map(() => getRandomColor());
     const newColorStyle = cloneDeep(colorStyle);
-    newColorStyle.colorList = [];
-    valueList.forEach((value, index) => {
-      newColorStyle.colorList.push({ value, color: colorList[index] });
-    });
+    //既に色を決めてある値はその色を残す（区分を足しただけで全部の色が変わると困る）
+    const previousColors = new Map(colorStyle.colorList.map(({ value, color }) => [value, color]));
+    newColorStyle.colorList = valueList.map((value) => ({
+      value,
+      color: previousColors.get(value) ?? getRandomColor(),
+    }));
     setColorStyle(newColorStyle);
     setIsEdited(true);
-  }, [allUserData, colorStyle, displayNames]);
+  }, [allUserData, colorStyle, displayNames, targetLayer.field]);
 
   const selectColor = useCallback(
     (hue: number, sat: number, val: number, alpha: number) => {

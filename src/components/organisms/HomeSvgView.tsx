@@ -56,10 +56,10 @@ const renderVertexMarkers = (
 };
 
 export const SvgView = React.memo(() => {
-  const { currentDrawTool, isEditingObject, isAreaSelected, isIndividualStyleLayer } = useContext(DrawingToolsContext);
+  const { currentDrawTool, isEditingObject, isAreaSelected } = useContext(DrawingToolsContext);
   const { drawLine, editingLine, selectLine, featuresTransformAngle } = useContext(SVGDrawingContext);
-  //手書きペンの描画中ストローク（release前でstyle未確定）を現在のペン設定で表示するために参照する
-  const { penColor, penWidth } = useContext(MapMemoContext);
+  //スタンプは描画中（style未確定）でも現在のペン色で表示する
+  const { penColor } = useContext(MapMemoContext);
 
   // New Architecture（Fabric）のiOSでは、同じSvgインスタンス内の子要素をRef駆動（drawLine.current）で
   // 更新しても再描画されないため、内容が変わる境界でSvgを再マウントして反映させる。
@@ -95,12 +95,12 @@ export const SvgView = React.memo(() => {
         {drawLine.current.map((line: any, idx: number) => {
           const { xy, properties } = line;
 
-          //手書きペンのストロークは描いたスタイル（色・太さ・矢印・スタンプ・塗り）でプレビューする
+          //手書きの未確定ストロークは従来の編集表示（青＋水色の線）で描く。
+          //スタンプだけは記号の形が分からないと困るのでペンの色で表示する
           if (properties.includes('HANDWRITING')) {
             const style = line.style;
-            //release前（style未確定）の描画中ストロークは現在のペン設定で表示する
+            //release前（style未確定）のスタンプは現在のペン設定で表示する
             const strokeColor = style?.strokeColor ?? penColor;
-            const strokeWidth = style?.strokeWidth ?? penWidth;
             if (style !== undefined && style.stamp !== '') {
               return (
                 <G key={ulid()}>
@@ -112,29 +112,22 @@ export const SvgView = React.memo(() => {
                 </G>
               );
             }
-            //ポリゴンは塗りに加えて、外枠を従来の編集スタイルと同じ縁取り線で描いて境界を見やすくする。
-            //塗りは色を個別設定できるレイヤのときだけストロークの色で、そうでなければ従来の編集色
-            //（半透明の青）にする。長押しで修正対象が確定したストロークはオレンジの縁取りに変える
+            //編集中のポリゴンは従来どおり半透明の青で塗り、青＋水色の線で描く
             if (currentDrawTool === 'HANDWRITING_POLYGON') {
-              const isModifying = properties.includes('MODIFYING');
               return (
                 <G key={ulid()}>
+                  <Path d={pointsToSvg(xy)} stroke="none" fill={COLOR.ALFABLUE2} />
                   <Path
                     d={pointsToSvg(xy)}
-                    stroke="none"
-                    fill={isIndividualStyleLayer ? strokeColor : COLOR.ALFABLUE2}
-                  />
-                  <Path
-                    d={pointsToSvg(xy)}
-                    stroke={isModifying ? 'darkorange' : 'blue'}
-                    strokeWidth={isModifying ? 5 : 4}
+                    stroke="blue"
+                    strokeWidth="4"
                     strokeLinecap="round"
                     strokeLinejoin="round"
                     fill="none"
                   />
                   <Path
                     d={pointsToSvg(xy)}
-                    stroke={isModifying ? 'yellow' : 'lightblue'}
+                    stroke="lightblue"
                     strokeWidth="2"
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -146,32 +139,29 @@ export const SvgView = React.memo(() => {
             //ブラシは確定（一括保存）後に記号として描画されるため、セッション中はなぞった線で示す
             const isBrushStroke = style !== undefined && isBrushTool(style.strokeStyle);
             const arrowStyle = (style?.strokeStyle || 'NONE') as ArrowStyleType;
-            //編集セッション中のストロークは新規・編集選択を問わず選択色（一括変形と同じ黄色）の
-            //半透明ハローで「編集中（未確定）」と分かるようにする（ポリゴンの縁取りと同じ考え方）。
-            //長押しで修正対象が確定したストロークはオレンジに変える
-            const isModifyingLine = properties.includes('MODIFYING');
+            //編集中（未確定）のストロークは新規・編集選択を問わず、従来の編集表示と同じ
+            //青＋水色の線で描く（確定すると本来の色・太さで地図に描かれる）
             return (
               <G key={ulid()}>
                 <Path
                   d={pointsToSvg(xy)}
-                  stroke={isModifyingLine ? 'darkorange' : '#F7C114'}
-                  strokeOpacity={isModifyingLine ? 1 : 0.7}
-                  strokeWidth={(isBrushStroke ? 2 : strokeWidth) + 10}
+                  stroke="blue"
+                  strokeWidth="4"
                   strokeLinecap="round"
                   strokeLinejoin="round"
                   fill="none"
                 />
                 <Path
                   d={pointsToSvg(xy)}
-                  stroke={strokeColor}
-                  strokeWidth={isBrushStroke ? 2 : strokeWidth}
+                  stroke="lightblue"
+                  strokeWidth="2"
                   strokeDasharray={isBrushStroke ? '4,4' : 'none'}
                   strokeLinecap="round"
                   strokeLinejoin="round"
                   fill="none"
                 />
                 {!isBrushStroke && (arrowStyle === 'ARROW_END' || arrowStyle === 'ARROW_BOTH') && (
-                  <ArrowHeads points={xy} strokeColor={strokeColor} strokeWidth={strokeWidth} arrowStyle={arrowStyle} />
+                  <ArrowHeads points={xy} strokeColor="lightblue" strokeWidth={2} arrowStyle={arrowStyle} />
                 )}
               </G>
             );

@@ -1,8 +1,9 @@
-import { useCallback, useMemo } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { LayerType } from '../types';
 import { RootState, AppDispatch } from '../store';
 import { cloneDeep } from 'lodash';
+import { restoreColorStyleFromIndividual } from '../utils/Layer';
 
 import { updateLayerAction, setLayersAction } from '../modules/layers';
 
@@ -24,6 +25,14 @@ export const useLayers = (): UseLayersReturnType => {
   const dispatch = useDispatch<AppDispatch>();
 
   const layers = useSelector((state: RootState) => state.layers);
+
+  //ポイントの色分け「個別」は色を書き込む経路が無く、全ての点が黒くなるだけなので単色へ戻す。
+  //（選択肢からは外したが、過去に設定されたレイヤが残っているため）
+  useEffect(() => {
+    const brokenLayers = layers.filter((layer) => layer.type === 'POINT' && layer.colorStyle.colorType === 'INDIVIDUAL');
+    if (brokenLayers.length === 0) return;
+    brokenLayers.forEach((layer) => dispatch(updateLayerAction(restoreColorStyleFromIndividual(layer))));
+  }, [layers, dispatch]);
 
   // フィルタ条件は必要に応じて拡張可能。ここでは全件返す。
   const filterdLayers = useMemo(

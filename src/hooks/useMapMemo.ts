@@ -37,7 +37,6 @@ import {
   updateRecordsAction,
 } from '../modules/dataSet';
 import { hsv2rgbaString } from '../utils/Color';
-import { toIndividualColorLayer } from '../utils/Layer';
 import { useRecord } from './useRecord';
 import { addLayerAction, layersInitialState, MEMO_LAYER_ID, updateLayerAction } from '../modules/layers';
 import { STAMP } from '../constants/AppConstants';
@@ -59,7 +58,6 @@ export type UseMapMemoReturnType = {
   mapMemoEditingLineLatLon: RefObject<Position[]>;
   editableMapMemo: boolean;
   activeMemoLayer: LayerType | undefined;
-  isIndividualColorRequired: boolean;
   isPencilModeActive: boolean;
   isUndoable: boolean;
   isRedoable: boolean;
@@ -83,7 +81,6 @@ export type UseMapMemoReturnType = {
   handleLongPressMapMemo: (event: GestureResponderEvent) => void;
   pressUndoMapMemo: () => void;
   pressRedoMapMemo: () => void;
-  changeColorTypeToIndividual: () => boolean;
   clearMapMemoEditingLine: () => void;
   pauseMapMemoDrawing: (discardGrantStroke?: boolean) => void;
   setPencilModeActive: Dispatch<SetStateAction<boolean>>;
@@ -210,11 +207,34 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
   //その場の書き込みが記録用のレイヤに混ざってしまう
   const activeMemoLayer = useMemo(() => layers.find((layer) => layer.id === MEMO_LAYER_ID), [layers]);
 
-  //専用レイヤを持たない既存ユーザーのために、無ければ作る（今あるメモはそのレイヤに残したままにする）
+  //メモはアプリが管理する固定レイヤ。無ければ作り、あっても色分け・共有範囲・ラベル・属性は既定へ揃える。
+  //（色分けを個別以外に変えられるとツールバーで選んだ色・太さが効かなくなるため）
   useEffect(() => {
-    if (layers.some((layer) => layer.id === MEMO_LAYER_ID)) return;
     const template = layersInitialState.find((layer) => layer.id === MEMO_LAYER_ID);
-    if (template !== undefined) dispatch(addLayerAction(template));
+    if (template === undefined) return;
+    const memoLayer = layers.find((layer) => layer.id === MEMO_LAYER_ID);
+    if (memoLayer === undefined) {
+      dispatch(addLayerAction(template));
+      return;
+    }
+    //共有範囲は「自分だけ(PRIVATE)／共有(PUBLIC)」をユーザーが選べるのでそのまま活かす
+    const isPermissionAllowed = memoLayer.permission === 'PRIVATE' || memoLayer.permission === 'PUBLIC';
+    const isNormalized =
+      isPermissionAllowed &&
+      memoLayer.label === template.label &&
+      memoLayer.field.length === 0 &&
+      memoLayer.colorStyle.colorType === template.colorStyle.colorType &&
+      memoLayer.colorStyle.customFieldValue === template.colorStyle.customFieldValue;
+    if (isNormalized) return;
+    dispatch(
+      updateLayerAction({
+        ...memoLayer,
+        permission: isPermissionAllowed ? memoLayer.permission : template.permission,
+        label: template.label,
+        field: [],
+        colorStyle: { ...template.colorStyle },
+      })
+    );
   }, [layers, dispatch]);
 
   const activeMemoRecordSet = useMemo(
@@ -229,12 +249,6 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
 
   const editableMapMemo = useMemo(() => activeMemoLayer !== undefined, [activeMemoLayer]);
 
-  //ペンで描くにはレコードごとの色・太さ（INDIVIDUAL）が必要。切り替えが要るかどうか
-  const isIndividualColorRequired = useMemo(
-    () => activeMemoLayer !== undefined && activeMemoLayer.colorStyle.colorType !== 'INDIVIDUAL',
-    [activeMemoLayer]
-  );
-
   const penWidth = useMemo(() => {
     switch (currentPenWidth) {
       case 'PEN_THIN':
@@ -243,6 +257,8 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
         return 5;
       case 'PEN_THICK':
         return 10;
+      case 'PEN_EXTRA_THICK':
+        return 20;
       default:
         return 1;
     }
@@ -368,15 +384,13 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
       const newRecords = newMapMemoLines
         .map((line) => {
           const lineLatLon = latlonArrayToLatLonObjects(line.latlon);
-          const newRecord = generateRecord('LINE', activeMemoLayer!, memoLines, lineLatLon, {
-            groupId: line.groupId,
-          }) as LineRecordType;
+          const newRecord = generateRecord('LINE', activeMemoLayer!, memoLines, lineLatLon) as LineRecordType;
 
+          //メモはペンだけなので、スタンプ・ブラシ用の_stamp/_groupは書き込まない
+          //（古いデータが持っている分は読み取り側で従来どおり扱う）
           newRecord.field._strokeWidth = line.strokeWidth;
           newRecord.field._strokeColor = line.strokeColor;
           newRecord.field._strokeStyle = line.strokeStyle ?? '';
-          newRecord.field._stamp = line.stamp ?? '';
-          newRecord.field._group = line.groupId ?? '';
           newRecord.field._zoom = line.zoom ?? 0;
 
           newHistoryItems.push({ operation: 'add', data: [{ idx: -1, line: newRecord }] });
@@ -976,8 +990,8 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
    */
   const handlePenEraserPartialRelease = useCallback(() => {
     const eraserLineLatLonArray = [...mapMemoEditingLineLatLon.current];
-    //消しゴムの表示幅(10px)相当を度に変換してバッファ半径にする
-    const radiusDeg = calcDegreeRadius(10, mapRegion, mapSize);
+    //消しゴムの表示幅（＝ペンの太さ）相当を度に変換してバッファ半径にする
+    const radiusDeg = calcDegreeRadius(penWidth, mapRegion, mapSize);
 
     const removed: { idx: number; line: LineRecordType }[] = [];
     const updated: { idx: number; line: LineRecordType; updatedLine: LineRecordType }[] = [];
@@ -1067,6 +1081,7 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
     mapRegion,
     mapSize,
     memoLines,
+    penWidth,
   ]);
 
   /**
@@ -1293,14 +1308,6 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
   /**
    * Changes the active layer's color type to individual
    */
-  const changeColorTypeToIndividual = useCallback(() => {
-    if (activeMemoLayer === undefined || activeMemoLayer.colorStyle.colorType === 'INDIVIDUAL') return false;
-
-    //描いた色と太さをそのまま表示するにはINDIVIDUALが必要（退避・復元の詳細はtoIndividualColorLayer参照）
-    dispatch(updateLayerAction(toIndividualColorLayer(activeMemoLayer)));
-    return true;
-  }, [activeMemoLayer, dispatch]);
-
   // Clean up timers on unmount
   useEffect(() => {
     return () => {
@@ -1328,7 +1335,6 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
     mapMemoEditingLineLatLon,
     editableMapMemo,
     activeMemoLayer,
-    isIndividualColorRequired,
     isPencilModeActive,
     isUndoable,
     isRedoable,
@@ -1352,7 +1358,6 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
     pressUndoMapMemo,
     pressRedoMapMemo,
     clearMapMemoHistory,
-    changeColorTypeToIndividual,
     clearMapMemoEditingLine,
     pauseMapMemoDrawing,
     setPencilModeActive,

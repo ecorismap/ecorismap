@@ -189,7 +189,11 @@
     "ok": "OK",
     "confirm": {
       "cancelEdit": "変更を破棄して戻りますか？"
-    }
+    },
+    "purpose": "用途",
+    "hisyouMap": "飛翔図",
+    "vegetationMap": "植生図",
+    "category": "区分"
   },
   "Home": {
     "confirm": {
@@ -216,7 +220,8 @@
       "discardViewshed": "表示中の可視領域をすべて消去しますか？",
       "activateLayer": "「{{name}}」を編集レイヤにしますか？",
       "showLayerAndEdit": "編集レイヤ「{{name}}」が非表示です。表示して続けますか？",
-      "createNewLayerForType": "編集できる{{type}}レイヤがありません。新規レイヤを作成しますか？"
+      "createNewLayerForType": "編集できる{{type}}レイヤがありません。新規レイヤを作成しますか？",
+      "deleteCategory": "この区分を選択肢から削除しますか？\n（この区分で保存済みのデータはそのまま残ります）"
     },
     "alert": {
       "gps": "GPSをオンにしてください",
@@ -280,6 +285,7 @@
       "thin": "細",
       "medium": "中",
       "thick": "太",
+      "extraThick": "極太",
       "curve": "曲線",
       "straight": "直線",
       "none": "なし",

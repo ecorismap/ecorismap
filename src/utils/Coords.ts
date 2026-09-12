@@ -821,7 +821,10 @@ export const selectPolygonFeatureByLatLon = (
         if (!feature.visible) return undefined;
         const featurePolygon = turf.multiPolygon([[feature.coords.map((c) => [c.longitude, c.latitude])]]);
         if (bufferPolygon === undefined) return undefined;
-        const intersects = booleanIntersects(featurePolygon, bufferPolygon);
+        //自前のbooleanIntersectsは境界の交差しか判定しないため、面の内側をタップしたときは
+        //拾えない。タップ位置の内外判定を先に見る（枠線付近は従来どおり交差で拾う）
+        const tapInsideFeature = turf.booleanPointInPolygon(turf.point(pointCoords), featurePolygon);
+        const intersects = tapInsideFeature || booleanIntersects(featurePolygon, bufferPolygon);
         if (intersects) return feature;
       })
       .filter((d): d is PolygonRecordType => d !== undefined);

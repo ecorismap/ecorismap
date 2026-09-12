@@ -263,7 +263,11 @@ export const getDefaultFieldValue = (field: FieldType, dataSet: RecordType[], op
       return { [field.name]: `${t('common.ndash')}` };
     case 'LIST': {
       let value;
-      const defaultValue = field.list![0].isOther ? '' : field.list![0].value;
+      //既定値があればそれを使う（区分パレットで選んだ区分がここに入る）。無ければ先頭の選択肢。
+      //選択肢がまだ無いフィールド（用途を選んで作った直後など）は空にする
+      const firstItem = field.list?.[0];
+      const listTop = firstItem === undefined || firstItem.isOther ? '' : firstItem.value;
+      const defaultValue = field.defaultValue !== undefined ? String(field.defaultValue) : listTop;
       if (options?.groupId) {
         value = field.useLastValue ? getGroupLastValue(dataSet, field.name, options.groupId) : defaultValue;
       } else {
@@ -272,7 +276,10 @@ export const getDefaultFieldValue = (field: FieldType, dataSet: RecordType[], op
       return { [field.name]: value ?? '' };
     }
     case 'RADIO':
-      return { [field.name]: field.list![0].value };
+      return {
+        [field.name]:
+          field.defaultValue !== undefined ? String(field.defaultValue) : (field.list?.[0]?.value ?? ''),
+      };
     case 'CHECK':
       return { [field.name]: '' };
     case 'DATETIME':

@@ -79,7 +79,9 @@ export const HomeModalMapMemoSettings = React.memo((props: Props) => {
   const { hisyouTool } = useFeatureFlags();
 
   //手書きペン用（DRAW_LINE）も消しゴムタブを含めて全タブを表示する
-  const visibleTabs = ALL_TABS;
+  //メモはペン・消しゴム・太さ・色をそれぞれのボタンから開くのでタブは出さない。
+  //スタンプ・ブラシは飛翔図（LINEタブの手書き）専用
+  const visibleTabs = mode === 'MEMO' ? [] : ALL_TABS;
 
   //各タブのローカル編集state（OKで確定）
   const [penWidth, setPenWidth] = useState<PenWidthType>('PEN_MEDIUM');
@@ -171,21 +173,17 @@ export const HomeModalMapMemoSettings = React.memo((props: Props) => {
             {optionButton('PEN_THIN', PEN_WIDTH.PEN_THIN, penWidth === 'PEN_THIN', () => setPenWidth('PEN_THIN'), t('Home.penPicker.thin'))}
             {optionButton('PEN_MEDIUM', PEN_WIDTH.PEN_MEDIUM, penWidth === 'PEN_MEDIUM', () => setPenWidth('PEN_MEDIUM'), t('Home.penPicker.medium'))}
             {optionButton('PEN_THICK', PEN_WIDTH.PEN_THICK, penWidth === 'PEN_THICK', () => setPenWidth('PEN_THICK'), t('Home.penPicker.thick'))}
+            {optionButton('PEN_EXTRA_THICK', PEN_WIDTH.PEN_EXTRA_THICK, penWidth === 'PEN_EXTRA_THICK', () => setPenWidth('PEN_EXTRA_THICK'), t('Home.penPicker.extraThick'))}
           </View>
         </>
       )}
-      <Text style={styles.sectionLabel}>{t('common.straight_curve')}</Text>
-      <View style={styles.optionRow}>
-        {optionButton('FREEHAND', PEN_STYLE.FREEHAND, !straightStyle, () => setStraightStyle(false), t('Home.penPicker.curve'))}
-        {optionButton('STRAIGHT', PEN_STYLE.STRAIGHT, straightStyle, () => setStraightStyle(true), t('Home.penPicker.straight'))}
-      </View>
-      {mode === 'MEMO' && (
+      {/* メモの直線/曲線はツールバーのボタンで切り替える */}
+      {mode !== 'MEMO' && (
         <>
-          <Text style={styles.sectionLabel}>{t('common.arrow')}</Text>
+          <Text style={styles.sectionLabel}>{t('common.straight_curve')}</Text>
           <View style={styles.optionRow}>
-            {optionButton('NONE', PEN_STYLE.NONE, arrowStyle_ === 'NONE', () => setArrowStyle('NONE'), t('Home.penPicker.none'))}
-            {optionButton('ARROW_END', PEN_STYLE.ARROW_END, arrowStyle_ === 'ARROW_END', () => setArrowStyle('ARROW_END'), t('Home.penPicker.end'))}
-            {optionButton('ARROW_BOTH', PEN_STYLE.ARROW_BOTH, arrowStyle_ === 'ARROW_BOTH', () => setArrowStyle('ARROW_BOTH'), t('Home.penPicker.bothSides'))}
+            {optionButton('FREEHAND', PEN_STYLE.FREEHAND, !straightStyle, () => setStraightStyle(false), t('Home.penPicker.curve'))}
+            {optionButton('STRAIGHT', PEN_STYLE.STRAIGHT, straightStyle, () => setStraightStyle(true), t('Home.penPicker.straight'))}
           </View>
         </>
       )}
@@ -279,8 +277,9 @@ export const HomeModalMapMemoSettings = React.memo((props: Props) => {
     <View style={styles.tabContent}>
       {eraserRow('PEN_ERASER')}
       {eraserRow('PEN_ERASER_PARTIAL')}
-      {eraserRow('BRUSH_ERASER')}
-      {eraserRow('STAMP_ERASER')}
+      {/* ブラシ・スタンプの消しゴムは飛翔図（手書き）専用 */}
+      {mode !== 'MEMO' && eraserRow('BRUSH_ERASER')}
+      {mode !== 'MEMO' && eraserRow('STAMP_ERASER')}
     </View>
   );
 
@@ -288,6 +287,7 @@ export const HomeModalMapMemoSettings = React.memo((props: Props) => {
     <Modal animationType="none" transparent={true} visible={visible}>
       <Pressable style={styles.overlay} onPress={close} disablePressedAnimation>
         <Pressable style={styles.card} onPress={() => {}} disablePressedAnimation>
+          {visibleTabs.length > 0 && (
           <View style={styles.segmentContainer}>
             {visibleTabs.map(({ key, labelKey }) => (
               <Pressable
@@ -300,6 +300,7 @@ export const HomeModalMapMemoSettings = React.memo((props: Props) => {
               </Pressable>
             ))}
           </View>
+          )}
           <View style={styles.contentArea}>
             <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
               {tab === 'PEN' && renderPenTab()}

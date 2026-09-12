@@ -91,6 +91,16 @@ export interface DrawingToolsContextType {
 
   // Editing layer chip (toolbar)
   editingLayerName: string | undefined;
+  //編集レイヤ。用途・色分け・フィールドからツールパレットを組み立てる
+  editingLayer: LayerType | undefined;
+  //区分を選ぶパレット（植生図）で、次に描くオブジェクトの区分を決める
+  selectCategoryValue: (value: string) => void;
+  //区分を新しく足す（現地で区分が増えたときに、レイヤ設定へ戻らず追加できるようにする）
+  addCategoryValue: (value: string, color: string) => void;
+  //区分の名前・色を変える。名前を変えたときは、その区分で保存済みのレコードも追従させる
+  updateCategoryValue: (oldValue: string, newValue: string, color: string) => void;
+  //区分を選択肢から消す（保存済みのレコードの値は残す）
+  deleteCategoryValue: (value: string) => void;
   pressEditingLayerButton: () => Promise<void>;
 
   //アクティブレイヤの色分けが「個別（_strokeColor参照）」か。trueなら色・太さボタンを常時表示する

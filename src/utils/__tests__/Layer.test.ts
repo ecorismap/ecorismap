@@ -1,6 +1,6 @@
 import { COLOR } from '../../constants/AppConstants';
 import { LayerType } from '../../types';
-import { getColor, getColorRule, changeLayerId, applyColorStyle, getLineWidth, getLineWidthAtZoom } from '../Layer';
+import { getColor, getColorRule, changeLayerId, applyColorStyle, getLineWidth, getLineWidthAtZoom, toIndividualColorLayer, restoreColorStyleFromIndividual } from '../Layer';
 import { getUserColor } from '../Color';
 
 describe('getColor', () => {
@@ -224,6 +224,46 @@ describe('applyColorStyle', () => {
       savedCustomFieldValue: undefined,
     });
     expect(restored.label).toBe('種名');
+    expect(restored.colorStyle.savedLabel).toBeUndefined();
+  });
+});
+
+describe('toIndividualColorLayer / restoreColorStyleFromIndividual', () => {
+  const surveyLayer: LayerType = {
+    id: '1',
+    name: '飛翔図',
+    type: 'LINE',
+    permission: 'PRIVATE',
+    colorStyle: {
+      colorType: 'CATEGORIZED',
+      color: COLOR.RED,
+      fieldName: '区分',
+      colorRamp: 'RANDOM',
+      customFieldValue: '',
+      colorList: [],
+      transparency: 1,
+    },
+    label: '種名',
+    visible: true,
+    active: true,
+    field: [],
+  };
+
+  it('個別へ切り替えると元の色分けとラベルが退避され、ラベルは非表示になる', () => {
+    const individual = toIndividualColorLayer(surveyLayer);
+    expect(individual.colorStyle.colorType).toBe('INDIVIDUAL');
+    expect(individual.colorStyle.customFieldValue).toBe('_strokeColor');
+    expect(individual.label).toBe('');
+    expect(individual.colorStyle.savedFieldName).toBe('区分');
+    expect(individual.colorStyle.savedLabel).toBe('種名');
+  });
+
+  it('個別から戻すと退避した色分けとラベルが復元され、退避データは消える', () => {
+    const restored = restoreColorStyleFromIndividual(toIndividualColorLayer(surveyLayer));
+    expect(restored.colorStyle.colorType).toBe('SINGLE');
+    expect(restored.colorStyle.fieldName).toBe('区分');
+    expect(restored.label).toBe('種名');
+    expect(restored.colorStyle.savedFieldName).toBeUndefined();
     expect(restored.colorStyle.savedLabel).toBeUndefined();
   });
 });

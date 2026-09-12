@@ -7,10 +7,12 @@ import { Picker, PointView, LineView, PolygonView } from '../atoms';
 import { t } from '../../i18n/config';
 import { LayerEditContext } from '../../contexts/LayerEdit';
 import { FeatureType } from '../../types';
+import { MEMO_LAYER_ID } from '../../modules/layers';
 
 export const LayerStyle = () => {
   const { layer, isNewLayer, onChangeFeatureType, gotoLayerEditFeatureStyle } = useContext(LayerEditContext);
-  const editable = true;
+  //メモは色分けを「個別（_strokeColor）」で固定する。変えるとツールバーの色・太さが効かなくなる
+  const editable = layer.id !== MEMO_LAYER_ID;
   const featureValueList = useMemo(() => Object.keys(FEATURETYPE), []);
   const featureValueLabels = useMemo(() => Object.values(FEATURETYPE), []);
   return (

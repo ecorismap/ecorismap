@@ -46,7 +46,7 @@ export const HomeDrawTools = React.memo(() => {
     handwritingSubTool,
     setHandwritingSubTool,
     openHandwritingSettingsTab,
-    editingLayerName,
+    editingLayer,
   } = useContext(DrawingToolsContext);
   const {
     currentPenWidth,
@@ -82,8 +82,8 @@ export const HomeDrawTools = React.memo(() => {
   //編集レイヤの用途に応じたツールパレット。定義があれば手書きのボタン群をこれに差し替える
   const { hisyouTool } = useFeatureFlags();
   const toolPaletteItems = useMemo(
-    () => getToolPalette(editingLayerName, featureButton, hisyouTool),
-    [editingLayerName, featureButton, hisyouTool]
+    () => getToolPalette(editingLayer, featureButton, hisyouTool),
+    [editingLayer, featureButton, hisyouTool]
   );
 
   //スタンプ・ブラシ・設定をまとめたボタン（個別スタイルのライン編集中のみ表示。タップで横に展開）
@@ -231,6 +231,8 @@ export const HomeDrawTools = React.memo(() => {
       <HomeModalStyleSettings
         visible={visibleStyleSettings}
         showArrow={featureButton === 'LINE'}
+        //植生図は区分（＝色）だけを持ち替えるので太さは出さず、スタイルボタンはそのまま色設定になる
+        showWidth={editingLayer?.toolPalette !== 'VEGETATION'}
         initialPenWidth={selectedObjectWidthType ?? currentPenWidth}
         initialArrowStyle={selectedObjectArrowStyle ?? arrowStyle}
         initialColor={colorPickerColor}
@@ -456,7 +458,8 @@ export const HomeDrawTools = React.memo(() => {
               currentDrawTool={currentDrawTool}
               selectDrawTool={selectDrawTool}
               setPolygonTool={setPolygonTool}
-              hideHandwriting={toolPaletteItems !== undefined}
+              //区分パレット（植生図）は描き方を変えないので、手書き・プロットのボタンは残す
+              hideHandwriting={false}
             />
           )}
           {featureButton === 'POLYGON' && toolPaletteItems !== undefined && (
