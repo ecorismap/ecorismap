@@ -10,6 +10,8 @@ export interface SVGDrawingContextType {
   drawLine: React.RefObject<DrawLineType[]>;
   editingLine: React.RefObject<Position[]>;
   selectLine: React.RefObject<Position[]>;
+  //なげなわ選択の変形フレームの累積回転角（rad）
+  featuresTransformAngle: React.RefObject<number>;
 
   // MapMemo SVG data
   //スタンプ・ブラシのプレビュー（スクリーン座標）

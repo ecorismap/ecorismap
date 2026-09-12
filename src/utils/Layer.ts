@@ -7,9 +7,45 @@ import { getUserColor, hex2rgba } from './Color';
 import dayjs from '../i18n/dayjs';
 
 /**
+ * レイヤの色分けを「個別（ストロークごとの_strokeColor）」へ切り替える。
+ * 元の色分けフィールドとラベルはcolorStyleへ退避し、戻したときに復元できるようにする。
+ * ストロークごとにラベルが出ると描画の邪魔になるのでラベルは非表示にする
+ */
+export const toIndividualColorLayer = (layer: LayerType): LayerType => ({
+  ...layer,
+  label: '',
+  colorStyle: {
+    ...layer.colorStyle,
+    colorType: 'INDIVIDUAL' as const,
+    fieldName: '__CUSTOM',
+    customFieldValue: '_strokeColor',
+    savedFieldName: layer.colorStyle.savedFieldName ?? layer.colorStyle.fieldName,
+    savedCustomFieldValue: layer.colorStyle.savedCustomFieldValue ?? layer.colorStyle.customFieldValue,
+    savedLabel: layer.colorStyle.savedLabel ?? layer.label,
+  },
+});
+
+/**
+ * 色分け「個別」から元の設定へ戻す。退避してある色分けフィールドとラベルを復元し、単色にする
+ */
+export const restoreColorStyleFromIndividual = (layer: LayerType): LayerType => {
+  const { savedFieldName, savedCustomFieldValue, savedLabel, ...rest } = layer.colorStyle;
+  return {
+    ...layer,
+    label: savedLabel ?? layer.label,
+    colorStyle: {
+      ...rest,
+      colorType: 'SINGLE' as const,
+      fieldName: savedFieldName ?? rest.fieldName,
+      customFieldValue: savedCustomFieldValue ?? rest.customFieldValue,
+    },
+  };
+};
+
+/**
  * 編集したcolorStyleをレイヤに反映する。
- * マップメモのペン使用時にINDIVIDUALへ切り替えた際、ラベル設定はcolorStyleへ退避してある。
- * カラータイプが戻された時点でラベルを復元する（色分けフィールドの復元はuseFeatureStyle側で行う）。
+ * 「個別」にした際に退避したラベルは、カラータイプが戻された時点で復元する
+ * （色分けフィールドの復元はuseFeatureStyle側で行う）。
  */
 export const applyColorStyle = (layer: LayerType, colorStyle: ColorStyle): LayerType => {
   if (colorStyle.savedLabel === undefined || colorStyle.colorType === 'INDIVIDUAL') {
@@ -21,12 +57,14 @@ export const applyColorStyle = (layer: LayerType, colorStyle: ColorStyle): Layer
 
 /**
  * 線の太さを決める。
- * _strokeWidthはマップメモが描画時に記録する太さで、レコード自身の値なのでレイヤ一律の太さより優先する。
- * 色と違い「凡例による意味づけ」と競合しないため、colorTypeには依存させない。
+ * ストロークごとの太さ（_strokeWidth）は色分けが「個別」のレイヤでのみ使う。
+ * それ以外のスタイルではレイヤ一律の太さ（デフォルト）に従う。
  */
 export const getLineWidth = (layer: LayerType, feature: RecordType): number => {
   //エクスポート済みGeoJSONの再インポートでは_strokeWidthが空文字のことがあるため、数値のみ採用する
-  if (typeof feature.field._strokeWidth === 'number') return feature.field._strokeWidth;
+  if (layer.colorStyle.colorType === 'INDIVIDUAL' && typeof feature.field._strokeWidth === 'number') {
+    return feature.field._strokeWidth;
+  }
   return layer.colorStyle.lineWidth ?? 1.5;
 };
 
@@ -39,6 +77,8 @@ export const getLineWidth = (layer: LayerType, feature: RecordType): number => {
  */
 export const getLineWidthAtZoom = (layer: LayerType, feature: RecordType, zoom: number): number => {
   const width = getLineWidth(layer, feature);
+  //レイヤ一律の太さ（個別以外）はズーム連動させない
+  if (layer.colorStyle.colorType !== 'INDIVIDUAL') return width;
   const drawnZoom = feature.field._zoom;
   if (typeof drawnZoom !== 'number' || drawnZoom <= 0) return width;
   if (zoom >= drawnZoom) return width;

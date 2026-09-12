@@ -14361,5 +14361,353 @@
         }
       ]
     }
+  },
+  {
+    "presetId": "preset-layer-vegetation-map",
+    "presetName": "植生図",
+    "isPublic": true,
+    "layer": {
+      "name": "植生図",
+      "type": "POLYGON",
+      "permission": "PUBLIC",
+      "toolPalette": "VEGETATION",
+      "colorStyle": {
+        "colorType": "CATEGORIZED",
+        "transparency": false,
+        "color": "rgba(102,187,106,0.5)",
+        "fieldName": "区分",
+        "customFieldValue": "",
+        "colorRamp": "RANDOM",
+        "colorList": [
+          {
+            "value": "常緑広葉樹林",
+            "color": "rgba(27,94,32,0.5)"
+          },
+          {
+            "value": "落葉広葉樹林",
+            "color": "rgba(102,187,106,0.5)"
+          },
+          {
+            "value": "常緑針葉樹林",
+            "color": "rgba(0,77,64,0.5)"
+          },
+          {
+            "value": "落葉針葉樹林",
+            "color": "rgba(129,199,132,0.5)"
+          },
+          {
+            "value": "植林地",
+            "color": "rgba(56,142,60,0.5)"
+          },
+          {
+            "value": "竹林",
+            "color": "rgba(174,213,129,0.5)"
+          },
+          {
+            "value": "低木林",
+            "color": "rgba(139,195,74,0.5)"
+          },
+          {
+            "value": "ササ・草原",
+            "color": "rgba(205,220,57,0.5)"
+          },
+          {
+            "value": "湿性草地",
+            "color": "rgba(0,150,136,0.5)"
+          },
+          {
+            "value": "耕作地",
+            "color": "rgba(255,213,79,0.5)"
+          },
+          {
+            "value": "水田",
+            "color": "rgba(255,241,118,0.5)"
+          },
+          {
+            "value": "裸地",
+            "color": "rgba(161,136,127,0.5)"
+          },
+          {
+            "value": "市街地",
+            "color": "rgba(158,158,158,0.5)"
+          },
+          {
+            "value": "水域",
+            "color": "rgba(66,165,245,0.5)"
+          }
+        ],
+        "lineWidth": 1.5
+      },
+      "label": "",
+      "visible": true,
+      "active": false,
+      "field": [
+        {
+          "name": "区分",
+          "format": "LIST",
+          "list": [
+            {
+              "value": "常緑広葉樹林",
+              "isOther": false,
+              "customFieldValue": ""
+            },
+            {
+              "value": "落葉広葉樹林",
+              "isOther": false,
+              "customFieldValue": ""
+            },
+            {
+              "value": "常緑針葉樹林",
+              "isOther": false,
+              "customFieldValue": ""
+            },
+            {
+              "value": "落葉針葉樹林",
+              "isOther": false,
+              "customFieldValue": ""
+            },
+            {
+              "value": "植林地",
+              "isOther": false,
+              "customFieldValue": ""
+            },
+            {
+              "value": "竹林",
+              "isOther": false,
+              "customFieldValue": ""
+            },
+            {
+              "value": "低木林",
+              "isOther": false,
+              "customFieldValue": ""
+            },
+            {
+              "value": "ササ・草原",
+              "isOther": false,
+              "customFieldValue": ""
+            },
+            {
+              "value": "湿性草地",
+              "isOther": false,
+              "customFieldValue": ""
+            },
+            {
+              "value": "耕作地",
+              "isOther": false,
+              "customFieldValue": ""
+            },
+            {
+              "value": "水田",
+              "isOther": false,
+              "customFieldValue": ""
+            },
+            {
+              "value": "裸地",
+              "isOther": false,
+              "customFieldValue": ""
+            },
+            {
+              "value": "市街地",
+              "isOther": false,
+              "customFieldValue": ""
+            },
+            {
+              "value": "水域",
+              "isOther": false,
+              "customFieldValue": ""
+            }
+          ]
+        },
+        {
+          "name": "メモ",
+          "format": "STRING"
+        }
+      ]
+    }
+  },
+  {
+    "presetId": "preset-layer-hisyou-map",
+    "presetName": "飛翔図",
+    "isPublic": true,
+    "layer": {
+      "name": "飛翔図",
+      "type": "LINE",
+      "permission": "PUBLIC",
+      "toolPalette": "HISYOU",
+      "colorStyle": {
+        "colorType": "CATEGORIZED",
+        "transparency": 0.2,
+        "color": "rgba(183,28,28,1)",
+        "fieldName": "種名",
+        "customFieldValue": "",
+        "colorRamp": "RANDOM",
+        "colorList": [
+          {
+            "value": "クマタカ",
+            "color": "rgba(183,28,28,1)"
+          },
+          {
+            "value": "イヌワシ",
+            "color": "rgba(74,20,140,1)"
+          },
+          {
+            "value": "オオタカ",
+            "color": "rgba(13,71,161,1)"
+          },
+          {
+            "value": "ハイタカ",
+            "color": "rgba(2,119,189,1)"
+          },
+          {
+            "value": "サシバ",
+            "color": "rgba(230,81,0,1)"
+          },
+          {
+            "value": "ハチクマ",
+            "color": "rgba(245,127,23,1)"
+          },
+          {
+            "value": "ノスリ",
+            "color": "rgba(62,39,35,1)"
+          },
+          {
+            "value": "ミサゴ",
+            "color": "rgba(0,105,92,1)"
+          },
+          {
+            "value": "チョウゲンボウ",
+            "color": "rgba(136,14,79,1)"
+          },
+          {
+            "value": "トビ",
+            "color": "rgba(69,90,100,1)"
+          },
+          {
+            "value": "不明",
+            "color": "rgba(97,97,97,1)"
+          }
+        ],
+        "lineWidth": 1.5
+      },
+      "label": "",
+      "visible": true,
+      "active": false,
+      "field": [
+        {
+          "name": "種名",
+          "format": "LIST",
+          "list": [
+            {
+              "value": "クマタカ",
+              "isOther": false,
+              "customFieldValue": ""
+            },
+            {
+              "value": "イヌワシ",
+              "isOther": false,
+              "customFieldValue": ""
+            },
+            {
+              "value": "オオタカ",
+              "isOther": false,
+              "customFieldValue": ""
+            },
+            {
+              "value": "ハイタカ",
+              "isOther": false,
+              "customFieldValue": ""
+            },
+            {
+              "value": "サシバ",
+              "isOther": false,
+              "customFieldValue": ""
+            },
+            {
+              "value": "ハチクマ",
+              "isOther": false,
+              "customFieldValue": ""
+            },
+            {
+              "value": "ノスリ",
+              "isOther": false,
+              "customFieldValue": ""
+            },
+            {
+              "value": "ミサゴ",
+              "isOther": false,
+              "customFieldValue": ""
+            },
+            {
+              "value": "チョウゲンボウ",
+              "isOther": false,
+              "customFieldValue": ""
+            },
+            {
+              "value": "トビ",
+              "isOther": false,
+              "customFieldValue": ""
+            },
+            {
+              "value": "不明",
+              "isOther": false,
+              "customFieldValue": ""
+            }
+          ],
+          "defaultValue": ""
+        },
+        {
+          "name": "雌雄",
+          "format": "LIST",
+          "list": [
+            {
+              "value": "♂",
+              "isOther": false,
+              "customFieldValue": ""
+            },
+            {
+              "value": "♀",
+              "isOther": false,
+              "customFieldValue": ""
+            },
+            {
+              "value": "不明",
+              "isOther": false,
+              "customFieldValue": ""
+            }
+          ],
+          "defaultValue": ""
+        },
+        {
+          "name": "成幼",
+          "format": "LIST",
+          "list": [
+            {
+              "value": "成鳥",
+              "isOther": false,
+              "customFieldValue": ""
+            },
+            {
+              "value": "幼鳥",
+              "isOther": false,
+              "customFieldValue": ""
+            },
+            {
+              "value": "不明",
+              "isOther": false,
+              "customFieldValue": ""
+            }
+          ],
+          "defaultValue": ""
+        },
+        {
+          "name": "確認時刻",
+          "format": "TIMESTRING"
+        },
+        {
+          "name": "メモ",
+          "format": "STRING"
+        }
+      ]
+    }
   }
 ]

@@ -248,6 +248,8 @@ export interface LayerType {
   dictionaryKey?: string;
   sortedOrder?: SortedOrderType;
   sortedName?: string;
+  //レイヤの用途。ツールパレットと色分け「個別」の可否をこれで決める（未設定＝通常のレイヤ）
+  toolPalette?: ToolPaletteType;
 }
 export type CheckListItem = { id: number; checked: boolean };
 export type LatLonDMSKey = 'latitude' | 'longitude';
@@ -319,6 +321,9 @@ export type MapPresetType = {
 export type LayerPresetType = {
   presetId: string;
   presetName: string;
+  //全ユーザーに開放するプリセット（未指定は組織アカウント限定）。
+  //辞書などの限定データを含まない汎用プリセットに付ける
+  isPublic?: boolean;
   // 同梱データ（PRESET_LAYER_DATAのキー）。指定するとレイヤ保存時にデータも投入される
   dataKey?: string;
   // dictionaryはSTRING_DICTIONARYフィールドの辞書語彙。適用時に新フィールドIDで辞書DBへ登録される
@@ -334,7 +339,7 @@ export interface TileRegionType {
     { latitude: number; longitude: number },
     { latitude: number; longitude: number },
     { latitude: number; longitude: number },
-    { latitude: number; longitude: number }
+    { latitude: number; longitude: number },
   ];
   centroid: {
     latitude: number;
@@ -551,8 +556,69 @@ export type DrawLineType = {
   xy: Position[];
   latlon: Position[];
   properties: string[];
+  style?: DrawLineStyleType;
 };
-export type UndoLineType = { index: number; latlon: Position[]; latlonList?: Position[][]; action: UndoActionType };
+
+//手書きペン（HANDWRITING_LINE/HANDWRITING_POLYGON）のストローク個別スタイル。
+//保存時に_strokeColor等の隠しフィールドへ書き込まれ、マップメモのレコードと互換になる
+export type DrawLineStyleType = {
+  strokeColor: string;
+  strokeWidth: number;
+  strokeStyle: string; //矢印スタイル(ArrowStyleType) or ブラシ種別 or ''
+  stamp: string; //スタンプ種別 or ''
+  zoom: number;
+  groupId?: string; //スナップ先。セッション内ストロークのid or 保存済みレコードのid
+};
+
+//手書きペンのサブツール（LINEタブのみSTAMP/BRUSHを許可）
+//ERASERは行動記号（ブラシ・スタンプ）だけを消す道具。線そのものは消さない
+export type HandwritingSubToolType = 'PEN' | 'ERASER' | StampType | BrushType;
+
+//ツールパレットの1ボタン。「道具＋設定」を1つにまとめ、タップだけで持ち替えられるようにする
+//レイヤの用途。飛翔図＝ライン、植生図＝ポリゴンで使う
+export type ToolPaletteType = 'HISYOU' | 'VEGETATION';
+
+export type ToolPaletteItemType = {
+  id: string;
+  label: string;
+  //ツールバーのボタンに出す短い名前（幅40pxに収まらない長い名前のとき）。一覧ではlabelを使う
+  shortLabel?: string;
+  icon: string;
+  //道具を持ち替えるボタン（飛翔図のペン・ブラシ・スタンプ）で使う
+  subTool?: HandwritingSubToolType;
+  //属性を選ぶボタン。押すとこのフィールドの値を選び、次に描くオブジェクトへ入る
+  //（植生図の区分、飛翔図の種名・雌雄・成幼）
+  fieldName?: string;
+  fieldValue?: string;
+  //値ごとの色（色分け設定のcolorListから引く）
+  colorHex?: string;
+  //道具をまとめたボタン（行動範囲＝ブラシ、行動位置＝スタンプ）。押すと中から選ぶ
+  options?: ToolPaletteItemType[];
+  penWidth?: PenWidthType;
+  arrowStyle?: ArrowStyleType;
+  //区分ごとに色を変える用途（植生図など）。指定するとアイコンをこの色で表示する
+  color?: { hue: number; sat: number; val: number; alpha: number };
+  //消しゴムはマップメモのツールとして動くため、種別をここで指定する（subToolは無視される）
+  eraser?: MapMemoToolType;
+};
+
+//手書きペンの描画スタイル（containerがマップメモの設定値から組み立てて渡す）
+export type HandwritingPenStyleType = {
+  strokeColor: string;
+  strokeWidth: number;
+  arrowStyle: ArrowStyleType;
+  isStraightStyle: boolean;
+  snapWithLine: boolean;
+};
+export type UndoLineType = {
+  index: number;
+  latlon: Position[];
+  latlonList?: Position[][];
+  action: UndoActionType;
+  //消した行動記号を戻すための控え（DELETE_SYMBOL用）。セッション中のものと保存済みのものがある
+  deletedLine?: DrawLineType;
+  deletedRecord?: { layerId: string; userId: string | undefined; record: RecordType };
+};
 
 export type PointToolType = keyof typeof POINTTOOL;
 export type LineToolType = keyof typeof LINETOOL;
@@ -567,7 +633,7 @@ export type MapMemoToolGroupType = 'PEN' | 'STAMP' | 'BRUSH' | 'ERASER';
 export type PenWidthType = keyof typeof PEN_WIDTH;
 export type StampType = keyof typeof STAMP;
 export type BrushType = keyof typeof BRUSH;
-export type UndoActionType = 'NEW' | 'EDIT' | 'EDIT_MULTI' | 'FINISH' | 'SELECT' | 'DELETE';
+export type UndoActionType = 'NEW' | 'EDIT' | 'EDIT_MULTI' | 'FINISH' | 'SELECT' | 'DELETE' | 'DELETE_SYMBOL';
 
 export type HomeButtonType = keyof typeof HOME_BTN;
 export type LayersButtonType = keyof typeof LAYERS_BTN;
@@ -585,10 +651,10 @@ export type FeatureType = keyof typeof FEATURETYPE;
 export type ReturnFeatureRecordType<T> = T extends 'POINT'
   ? { editingLayer: LayerType | undefined; editingRecordSet: PointRecordType[] }
   : T extends 'LINE'
-  ? { editingLayer: LayerType | undefined; editingRecordSet: LineRecordType[] }
-  : T extends 'POLYGON'
-  ? { editingLayer: LayerType | undefined; editingRecordSet: PolygonRecordType[] }
-  : { editingLayer: undefined; editingRecordSet: undefined };
+    ? { editingLayer: LayerType | undefined; editingRecordSet: LineRecordType[] }
+    : T extends 'POLYGON'
+      ? { editingLayer: LayerType | undefined; editingRecordSet: PolygonRecordType[] }
+      : { editingLayer: undefined; editingRecordSet: undefined };
 
 export type GeoJsonFeatureType =
   | 'POINT'

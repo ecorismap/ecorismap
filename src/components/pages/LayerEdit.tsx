@@ -5,6 +5,7 @@ import { LayerStyle } from '../organisms/LayerEditLayerStyle';
 import { LayerEditFieldTable } from '../organisms/LayerEditFieldTable';
 import { LayerEditButton } from '../organisms/LayerEditButton';
 import { LayerEditRadio } from '../organisms/LayerEditRadio';
+import { LayerEditToolPalette } from '../organisms/LayerEditToolPalette';
 import { LayerEditContext } from '../../contexts/LayerEdit';
 import { usePermission } from '../../hooks/usePermission';
 import { ScrollView } from 'react-native-gesture-handler';
@@ -38,6 +39,7 @@ export default function LayerEditScreen() {
       />
       <LayerName />
       <LayerStyle />
+      <LayerEditToolPalette />
       {!isClosedProject && layer.type !== 'LAYERGROUP' && <LayerEditRadio />}
       {layer.type !== 'LAYERGROUP' ? (
         <ScrollView horizontal={true} contentContainerStyle={{ flexGrow: 1 }}>

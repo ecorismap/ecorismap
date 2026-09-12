@@ -387,7 +387,7 @@ export const modifyLineWithSource = (
     };
   }
   //最初も最後も元のラインに近い場合
-  if (endIsNearWithFirst && currentDrawTool === 'FREEHAND_POLYGON') {
+  if (endIsNearWithFirst && currentDrawTool === 'HANDWRITING_POLYGON') {
     //修正ラインの最後がオリジナルラインの最初にスナップ。閉じる。
     return {
       xy: [...firstXY, startPosition, ...modified.slice(1, -1), original.xy[0]],
@@ -421,7 +421,7 @@ export const modifyLineWithSource = (
   }
   if (startIndex > endIndex) {
     //終点が始点より前に戻る。ぐるっと円を書いた場合。
-    if (currentDrawTool === 'FREEHAND_POLYGON') {
+    if (currentDrawTool === 'HANDWRITING_POLYGON') {
       //ポリゴンの場合はポリゴンにする
       return {
         xy: [endPosition, ...original.xy.slice(endIndex + 1, startIndex + 1), startPosition, ...modified.slice(1)],
@@ -586,6 +586,40 @@ export const getPointsTransformFrame = (points: Position[]) => {
   const center: Position = [(minX + maxX) / 2, (minY + maxY) / 2];
   const handle: Position = [center[0], minY - POINTS_TRANSFORM_HANDLE_OFFSET_PX];
   return { minX, maxX, minY, maxY, center, handle };
+};
+
+/**
+ * 回転角つきの変形フレーム。現在の頂点群を-angleで逆回転して軸並行ボックスを求め、
+ * 四隅・ハンドルを+angleで回転して返す。ボックスがオブジェクトと一緒に形を保ったまま回転する
+ */
+export const getRotatedPointsTransformFrame = (points: Position[], angle: number) => {
+  const cx = points.reduce((sum, p) => sum + p[0], 0) / points.length;
+  const cy = points.reduce((sum, p) => sum + p[1], 0) / points.length;
+  const rotate = (theta: number) => {
+    const cos = Math.cos(theta);
+    const sin = Math.sin(theta);
+    return ([x, y]: Position): Position => {
+      const vx = x - cx;
+      const vy = y - cy;
+      return [cx + vx * cos - vy * sin, cy + vx * sin + vy * cos];
+    };
+  };
+  const derotated = angle === 0 ? points : points.map(rotate(-angle));
+  const f = getPointsTransformFrame(derotated);
+  const cornersAA: Position[] = [
+    [f.minX, f.minY],
+    [f.maxX, f.minY],
+    [f.maxX, f.maxY],
+    [f.minX, f.maxY],
+  ];
+  const rot = rotate(angle);
+  return {
+    corners: angle === 0 ? cornersAA : cornersAA.map(rot),
+    center: angle === 0 ? f.center : rot(f.center),
+    //ハンドルとその根本（枠上辺の中点）
+    topMid: angle === 0 ? ([f.center[0], f.minY] as Position) : rot([f.center[0], f.minY]),
+    handle: angle === 0 ? f.handle : rot(f.handle),
+  };
 };
 
 //なげなわ選択の軌跡を閉じたリングにする（指を離した位置は始点に戻っていないのが普通のため）
@@ -787,7 +821,10 @@ export const selectPolygonFeatureByLatLon = (
         if (!feature.visible) return undefined;
         const featurePolygon = turf.multiPolygon([[feature.coords.map((c) => [c.longitude, c.latitude])]]);
         if (bufferPolygon === undefined) return undefined;
-        const intersects = booleanIntersects(featurePolygon, bufferPolygon);
+        //自前のbooleanIntersectsは境界の交差しか判定しないため、面の内側をタップしたときは
+        //拾えない。タップ位置の内外判定を先に見る（枠線付近は従来どおり交差で拾う）
+        const tapInsideFeature = turf.booleanPointInPolygon(turf.point(pointCoords), featurePolygon);
+        const intersects = tapInsideFeature || booleanIntersects(featurePolygon, bufferPolygon);
         if (intersects) return feature;
       })
       .filter((d): d is PolygonRecordType => d !== undefined);
@@ -796,6 +833,35 @@ export const selectPolygonFeatureByLatLon = (
     return features[0];
   } catch (e) {
     console.log(e);
+    return undefined;
+  }
+};
+
+/**
+ * 線を修正したときに、その線にぶら下がる記号（ブラシ・スタンプ）の位置を新しい線へ移す。
+ * 元の線上での「始点からの距離の割合」を保ったまま、新しい線の同じ割合の位置へ置く。
+ * これをしないと、線だけ動いて記号が元の場所に取り残される
+ */
+export const reprojectCoordsOnModifiedLine = (
+  coords: Position[],
+  oldLine: Position[],
+  newLine: Position[]
+): Position[] | undefined => {
+  if (coords.length === 0 || oldLine.length < 2 || newLine.length < 2) return undefined;
+  try {
+    const oldLineString = turf.lineString(oldLine);
+    const newLineString = turf.lineString(newLine);
+    const oldLength = turf.length(oldLineString, { units: 'kilometers' });
+    const newLength = turf.length(newLineString, { units: 'kilometers' });
+    if (oldLength === 0 || newLength === 0) return undefined;
+    return coords.map((coord) => {
+      const snapped = turf.nearestPointOnLine(oldLineString, turf.point(coord));
+      const location = snapped.properties.location ?? 0;
+      const moved = turf.along(newLineString, (location / oldLength) * newLength, { units: 'kilometers' });
+      return moved.geometry.coordinates;
+    });
+  } catch (e) {
+    console.log('reproject error', e);
     return undefined;
   }
 };
@@ -1028,6 +1094,22 @@ export const getSnappedLine = (start: Position, end: Position, line: Position[])
   // snappedLine[snappedLine.length - 1] = end;
 
   return snappedLine;
+};
+
+/**
+ * 矢印スタイルのペンストローク（スクリーン座標）を整形する。
+ * ハネ切り・ベジエ平滑化・間引きで矢印の向きを綺麗にする（マップメモのペンと手書きペンで共用）
+ */
+export const refineArrowStroke = (lineXY: Position[], simplifyTolerancePx: number): Position[] => {
+  let xy = lineXY;
+  if (xy.length > 8) {
+    //ハネ切りは矢印の向きを守るための処理
+    xy = xy.slice(2, -2);
+    xy = trimHane(xy, 50); // 角度閾値は50°くらいから調整
+  }
+  xy = smoothingByBezier(xy);
+  xy = simplifyWithTolerance(xy, simplifyTolerancePx);
+  return xy;
 };
 
 export const calcArrowAngle = (xy: Position[]) => {

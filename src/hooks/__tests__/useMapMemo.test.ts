@@ -74,6 +74,7 @@ jest.mock('../../utils/Coords', () => ({
   //スクリーン座標⇔緯度経度の決定的な相互変換（1px = 0.00001度）
   smoothingByBezier: jest.fn((line: any) => line),
   trimHane: jest.fn((line: any) => line),
+  refineArrowStroke: jest.fn((line: any) => line),
   simplifyWithTolerance: jest.fn((line: any) => line),
   xyToLatLon: jest.fn((xy: any) => [135 + xy[0] * 0.00001, 35 - xy[1] * 0.00001]),
   latLonToXY: jest.fn((latlon: any) => [(latlon[0] - 135) / 0.00001, (35 - latlon[1]) / 0.00001]),
@@ -119,7 +120,7 @@ jest.mock('../../utils/Color', () => ({
 const createTestStore = () => {
   const mockLayers = [
     {
-      id: 'memo1',
+      id: 'memo',
       name: 'メモレイヤー',
       type: 'LINE' as const,
       active: true,
@@ -162,7 +163,7 @@ const createTestStore = () => {
 
   const mockDataSet = [
     {
-      layerId: 'memo1',
+      layerId: 'memo',
       userId: 'user1',
       data: [mockLineRecord],
     },
@@ -251,33 +252,31 @@ describe('useMapMemo', () => {
     expect(result.current.mapMemoEditingLine.current).toEqual([]);
   });
 
-  it('changeColorTypeToIndividualが正しく動作すること', () => {
+  it('メモレイヤは色分け・ラベル・属性が既定へ揃えられ、共有範囲(PUBLIC)は残ること', () => {
     const mockMapViewRef = {} as any;
-    const { result } = renderHook(() => useMapMemo(mockMapViewRef), { wrapper });
-
-    // ユーザーが設定済みの色分けフィールドとラベルを用意する
     const layer = store.getState().layers[0];
     act(() => {
       store.dispatch(
         updateLayerAction({
           ...layer,
-          colorStyle: { ...layer.colorStyle, colorType: 'CATEGORIZED', fieldName: '区分' },
+          permission: 'PUBLIC',
           label: '種名',
+          field: [{ id: 'f1', name: 'cmt', format: 'STRING' }],
+          colorStyle: { ...layer.colorStyle, colorType: 'CATEGORIZED', fieldName: '区分' },
         })
       );
     });
 
-    act(() => {
-      result.current.changeColorTypeToIndividual();
-    });
+    renderHook(() => useMapMemo(mockMapViewRef), { wrapper });
 
-    // Redux storeの状態が更新されることを確認
-    const updatedLayers = store.getState().layers;
-    expect(updatedLayers[0].colorStyle.colorType).toBe('INDIVIDUAL');
-    // 描画の邪魔になるラベルは非表示にするが、元の設定は退避して失わない
-    expect(updatedLayers[0].label).toBe('');
-    expect(updatedLayers[0].colorStyle.savedFieldName).toBe('区分');
-    expect(updatedLayers[0].colorStyle.savedLabel).toBe('種名');
+    //アプリが管理する固定レイヤなので、ユーザーが変えても既定へ戻す
+    const updatedLayer = store.getState().layers[0];
+    expect(updatedLayer.colorStyle.colorType).toBe('INDIVIDUAL');
+    expect(updatedLayer.colorStyle.customFieldValue).toBe('_strokeColor');
+    //共有範囲は自分だけ(PRIVATE)／共有(PUBLIC)の2択なので、選んだ値は残す
+    expect(updatedLayer.permission).toBe('PUBLIC');
+    expect(updatedLayer.label).toBe('');
+    expect(updatedLayer.field).toEqual([]);
   });
 
   it('setMapMemoToolがローカルステートを更新すること', () => {
@@ -1035,7 +1034,7 @@ describe('useMapMemo', () => {
     //activeMemoRecordSetはuserId: undefinedで検索されるため、それに合わせたレコードセットを用意する
     store.dispatch({
       type: 'dataSet/addRecordsAction',
-      payload: { layerId: 'memo1', userId: undefined, data: [makeParentRecord()] },
+      payload: { layerId: 'memo', userId: undefined, data: [makeParentRecord()] },
     });
 
     const mockMapViewRef = { current: {} } as any;
@@ -1109,7 +1108,7 @@ describe('useMapMemo', () => {
     };
     store.dispatch({
       type: 'dataSet/addRecordsAction',
-      payload: { layerId: 'memo1', userId: undefined, data: [makeParentRecord(), childRecord] },
+      payload: { layerId: 'memo', userId: undefined, data: [makeParentRecord(), childRecord] },
     });
 
     const mockMapViewRef = { current: {} } as any;
@@ -1146,7 +1145,7 @@ describe('useMapMemo', () => {
 
     store.dispatch({
       type: 'dataSet/addRecordsAction',
-      payload: { layerId: 'memo1', userId: undefined, data: [makeParentRecord()] },
+      payload: { layerId: 'memo', userId: undefined, data: [makeParentRecord()] },
     });
 
     const mockMapViewRef = { current: {} } as any;
@@ -1456,5 +1455,5 @@ describe('useMapMemo', () => {
   });
 
   const getMemoData = () =>
-    store.getState().dataSet.find((d: any) => d.layerId === 'memo1' && d.userId === undefined)?.data ?? [];
+    store.getState().dataSet.find((d: any) => d.layerId === 'memo' && d.userId === undefined)?.data ?? [];
 });

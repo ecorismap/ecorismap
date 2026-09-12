@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ColorStyle, FeatureType, FieldType, FormatType, LayerType, PermissionType } from '../types';
+import { ColorStyle, FeatureType, FieldType, FormatType, LayerType, PermissionType, ToolPaletteType } from '../types';
 import { COLOR, PHOTO_FOLDER } from '../constants/AppConstants';
 import { getUserColor } from '../utils/Color';
 
 import { cloneDeep } from 'lodash';
 import { ulid } from 'ulid';
+import { t } from '../i18n/config';
+import { HISYOU_FIELDS } from '../constants/ToolPalette';
 import { shallowEqual, useDispatch, useSelector } from 'react-redux';
 import { RootState } from '../store';
 import { formattedInputs } from '../utils/Format';
@@ -17,7 +19,7 @@ import { changeFieldValue, getBlankFieldValue } from '../utils/Data';
 import { LAYER_PRESETS, PRESET_LAYER_DATA } from '../constants/Presets';
 import { createLayerFromPreset, PresetDictionary } from '../utils/Preset';
 import { geoJson2Data } from '../utils/Geometry';
-import { applyColorStyle } from '../utils/Layer';
+import { applyColorStyle, restoreColorStyleFromIndividual } from '../utils/Layer';
 import type { FeatureCollection } from 'geojson';
 import { importPresetDictionaries } from '../utils/PresetDictionary';
 import sanitize from 'sanitize-filename';
@@ -34,6 +36,7 @@ export type UseLayerEditReturnType = {
   changeLayerName: (val: string) => void;
   submitLayerName: () => void;
   changeFeatureType: (itemValue: FeatureType) => void;
+  changeToolPalette: (value: ToolPaletteType | undefined) => void;
   changePermission: (val: PermissionType) => void;
   changeFieldOrder: (index: number, direction: 'up' | 'down') => void;
   changeFieldName: (index: number, val: string) => void;
@@ -266,6 +269,59 @@ export const useLayerEdit = (
     [targetLayer]
   );
 
+  //レイヤの用途（飛翔図・植生図）。ツールパレットと色分けをこれで決める。
+  //飛翔図・植生図はストロークごと（＝1本ごと・1面ごと）に色を変えるので色分けは「個別」が前提。
+  //用途に合わせて自動で切り替え、用途を外したら元の色分けへ戻す
+  const changeToolPalette = useCallback(
+    (value: ToolPaletteType | undefined) => {
+      if (targetLayer.toolPalette === value) return;
+      const m = cloneDeep(targetLayer);
+      m.toolPalette = value;
+      if (value === 'HISYOU') {
+        //飛翔図は1本＝1個体の連続追跡。種名・雌雄・成幼を描く前に選ぶので、無ければ作る。
+        //色は種名で決める（個体ごとではなく種ごとに見分ける）
+        HISYOU_FIELDS.forEach(({ name, values }) => {
+          if (m.field.some((f) => f.name === name)) return;
+          m.field.push({
+            id: ulid(),
+            name,
+            format: 'LIST',
+            //描く前に選ぶ運用なので、既定は未選択にする（勝手に先頭の値が入らないように）
+            defaultValue: '',
+            list: values.map((value) => ({ value, isOther: false, customFieldValue: '' })),
+          });
+        });
+        m.colorStyle = {
+          ...m.colorStyle,
+          colorType: 'CATEGORIZED',
+          fieldName: HISYOU_FIELDS[0].name,
+          customFieldValue: '',
+        };
+        setTargetLayer(m);
+      } else if (value === 'VEGETATION') {
+        //植生図は区分（属性）で色を決める。区分のフィールドが無ければ選択肢つきで作り、
+        //色分けをその区分のカテゴリ分けにする。面は塗って見るので枠線のみ表示も外す
+        const categoryName = t('common.category');
+        const hasCategory = m.field.some((f) => f.name === categoryName);
+        if (!hasCategory) {
+          m.field.push({ id: ulid(), name: categoryName, format: 'LIST', list: [] });
+        }
+        m.colorStyle = {
+          ...m.colorStyle,
+          colorType: 'CATEGORIZED',
+          fieldName: categoryName,
+          customFieldValue: '',
+          transparency: false,
+        };
+        setTargetLayer(m);
+      } else {
+        setTargetLayer(m.colorStyle.colorType === 'INDIVIDUAL' ? restoreColorStyleFromIndividual(m) : m);
+      }
+      setIsEdited(true);
+    },
+    [targetLayer]
+  );
+
   const changePermission = useCallback(
     (val: PermissionType) => {
       if (!canChangePermission) return;
@@ -425,6 +481,7 @@ export const useLayerEdit = (
     changeLayerName,
     submitLayerName,
     changeFeatureType,
+    changeToolPalette,
     changePermission,
     changeFieldOrder,
     changeFieldName,

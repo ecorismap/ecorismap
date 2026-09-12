@@ -71,8 +71,10 @@ export const getLabelStyle = (layer_: LayerType, userId: string, displayName: st
 export const getDataStyleLine = (layer_: LayerType, userId: string, displayName: string, editingLineId?: string) => {
   const colorExpression = getColorExpression(layer_, displayName, editingLineId);
 
-  //レコードが太さを持つならレイヤ一律の太さより優先する。数値以外（未設定・空文字）はレイヤ既定値
-  const fixedWidth = ['number', ['get', '_strokeWidth'], layer_.colorStyle.lineWidth ?? 1.5];
+  //ストロークごとの太さ（_strokeWidth）は色分けが「個別」のレイヤでのみ使う。数値以外（未設定・空文字）はレイヤ既定値
+  const layerWidth = layer_.colorStyle.lineWidth ?? 1.5;
+  const fixedWidth =
+    layer_.colorStyle.colorType === 'INDIVIDUAL' ? ['number', ['get', '_strokeWidth'], layerWidth] : layerWidth;
   //マップメモ(_zoom持ち)は描画時よりズームアウトした場合のみ2^(zoom - _zoom)倍で地理的に縮小し、
   //ズームアウトで線が地図を覆い尽くすのを防ぐ（ズームイン側は画面上の太さを維持）。
   //['zoom']はトップレベルのinterpolateでしか使えないため、整数ズームごとのストップ出力側で
@@ -87,7 +89,9 @@ export const getDataStyleLine = (layer_: LayerType, userId: string, displayName:
       fixedWidth,
     ]);
   }
-  const lineWidth = ['interpolate', ['exponential', 2], ['zoom'], ...stops];
+  //個別以外はレイヤ一律の太さ（ズーム連動もしない）
+  const lineWidth =
+    layer_.colorStyle.colorType === 'INDIVIDUAL' ? ['interpolate', ['exponential', 2], ['zoom'], ...stops] : layerWidth;
 
   return {
     id: `${layer_.id}_${userId}`,
@@ -131,8 +135,11 @@ export const getDataStylePolygonOutline = (layer_: LayerType, userId: string, di
     type: 'line',
     paint: {
       'line-color': colorExpression,
-      //レコードが太さを持つならレイヤ一律の太さより優先する。数値以外（未設定・空文字）はレイヤ既定値
-      'line-width': ['number', ['get', '_strokeWidth'], layer_.colorStyle.lineWidth ?? 1.5],
+      //ストロークごとの太さ（_strokeWidth）は色分けが「個別」のレイヤでのみ使う
+      'line-width':
+        layer_.colorStyle.colorType === 'INDIVIDUAL'
+          ? ['number', ['get', '_strokeWidth'], layer_.colorStyle.lineWidth ?? 1.5]
+          : layer_.colorStyle.lineWidth ?? 1.5,
     },
     layout: {
       visibility: 'visible',

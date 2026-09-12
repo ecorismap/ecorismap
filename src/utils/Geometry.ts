@@ -631,7 +631,7 @@ export const generateCSV = (dataSet: RecordType[], field: LayerType['field'], ty
 
 const generateDescription = (record: RecordType, field: FieldType[]) => {
   const userInfo = record.displayName ? `User: ${record.displayName}\n` : '';
-  
+
   const fieldInfo = field
     .map(({ name }) => {
       const fieldValue = record.field[name];
@@ -642,7 +642,7 @@ const generateDescription = (record: RecordType, field: FieldType[]) => {
       }
     })
     .join('\n');
-    
+
   return userInfo + fieldInfo;
 };
 
@@ -656,10 +656,10 @@ const rgbaToKmlColor = (rgba: string, transparency: boolean): string => {
   const a = transparency
     ? '00'
     : match[4]
-    ? Math.round(parseFloat(match[4]) * 255)
-        .toString(16)
-        .padStart(2, '0')
-    : 'ff';
+      ? Math.round(parseFloat(match[4]) * 255)
+          .toString(16)
+          .padStart(2, '0')
+      : 'ff';
 
   return `${a}${b}${g}${r}`;
 };
@@ -962,12 +962,12 @@ export const generateGPX = (data: RecordType[], type: FeatureType) => {
   // Generate description with all fields except name, time, cmt
   const generateGPXDescription = (record: RecordType) => {
     const descriptions: string[] = [];
-    
+
     // Add user info first if available
     if (record.displayName) {
       descriptions.push(`User: ${record.displayName}`);
     }
-    
+
     // Add all other fields except name, time, cmt
     Object.entries(record.field).forEach(([fieldName, fieldValue]) => {
       if (fieldName !== 'name' && fieldName !== 'time' && fieldName !== 'cmt') {
@@ -978,7 +978,7 @@ export const generateGPX = (data: RecordType[], type: FeatureType) => {
         }
       }
     });
-    
+
     return descriptions.join('\n');
   };
 
@@ -1054,11 +1054,7 @@ export const isPhotoField = (value: any): value is PhotoType[] => {
   return false;
 };
 
-const generateProperties = (
-  record: RecordType,
-  field: LayerType['field'],
-  permission?: LayerType['permission']
-) => {
+const generateProperties = (record: RecordType, field: LayerType['field'], permission?: LayerType['permission']) => {
   const properties = field
     .map(({ name }) => {
       const fieldValue = record.field[name];
@@ -1165,6 +1161,20 @@ export const generateGeoJson = (
     case 'POLYGON':
       features = data.map((record) => {
         const properties = generateProperties(record, field, permission);
+        //手書きの面も色分け「個別」で描けるよう、ラインと同じくストロークのスタイルを属性に載せる
+        const mapMemoProperties = isMapMemoLayer
+          ? {
+              _visible: record.visible,
+              _id: record.id,
+              _group: record.field._group ?? '',
+              _strokeWidth: record.field._strokeWidth ?? '',
+              _strokeColor: record.field._strokeColor ?? '',
+              _strokeStyle: record.field._strokeStyle ?? '',
+              _stamp: record.field._stamp ?? '',
+              _zoom: record.field._zoom ?? '',
+              _qgisColor: record.field._strokeColor ? rgbaString2qgis(record.field._strokeColor as string) : '',
+            }
+          : { _visible: record.visible, _id: record.id };
         let geometry;
         if (isLocationTypeArray(record.coords)) {
           const coordinates = record.coords.map((coords) => [coords.longitude, coords.latitude]);
@@ -1181,7 +1191,7 @@ export const generateGeoJson = (
 
         const feature = {
           type: 'Feature',
-          properties: { ...properties, _visible: record.visible, _id: record.id },
+          properties: { ...properties, ...mapMemoProperties },
           geometry: geometry,
         };
         return feature;

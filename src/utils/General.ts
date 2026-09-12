@@ -15,10 +15,6 @@ export function isPlotTool(tool: string) {
   return ['PLOT_POINT', 'PLOT_LINE', 'PLOT_POLYGON', 'ADD_LOCATION_POINT'].includes(tool);
 }
 
-export function isFreehandTool(tool: string) {
-  return ['FREEHAND_LINE', 'FREEHAND_POLYGON'].includes(tool);
-}
-
 export function isPointTool(tool: string): tool is PointToolType {
   return Object.keys(POINTTOOL).includes(tool);
 }
@@ -118,6 +114,10 @@ export function isEraserTool(tool: string) {
   return Object.keys(ERASER).includes(tool);
 }
 
+export function isHandwritingTool(tool: string) {
+  return tool === 'HANDWRITING_LINE' || tool === 'HANDWRITING_POLYGON';
+}
+
 export function isMapMemoDrawTool(tool: string) {
   return isPenTool(tool) || isBrushTool(tool) || isStampTool(tool) || isEraserTool(tool);
 }
@@ -177,4 +177,11 @@ export function runAsync<T>(fn: () => T): Promise<T> {
       }
     }, 0);
   });
+}
+
+/**
+ * SVG・XMLのテキストや属性に安全に埋め込めるようエスケープする。
+ */
+export function escapeXml(value: string): string {
+  return value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }

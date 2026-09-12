@@ -6,14 +6,20 @@ import { COLOR, PERMISSIONDESCRIPTION, PERMISSIONTYPE } from '../../constants/Ap
 import { CheckBox } from '../molecules/CheckBox';
 import { LayerEditContext } from '../../contexts/LayerEdit';
 import { t } from '../../i18n/config';
+import { MEMO_LAYER_ID, TRACK_LAYER_ID } from '../../modules/layers';
 
 export const LayerEditRadio = () => {
   const { layer, changePermission, canChangePermission } = useContext(LayerEditContext);
-  // trackレイヤはメンバー各自が書き込むためCOMMON（管理者専用データ）は選べない
-  const isTrackLayer = layer.id === 'track';
+  // trackとメモはメンバー各自が書き込むためCOMMON（管理者専用データ）は選べない。
+  // メモはさらにTEMPLATE（管理者が配る雛形）も対象外で、自分だけ（PRIVATE）か共有（PUBLIC）の2択
+  const isTrackLayer = layer.id === TRACK_LAYER_ID;
+  const isMemoLayer = layer.id === MEMO_LAYER_ID;
   const permissionList = useMemo(
-    () => (Object.keys(PERMISSIONTYPE) as PermissionType[]).filter((v) => !isTrackLayer || v !== 'COMMON'),
-    [isTrackLayer]
+    () =>
+      isMemoLayer
+        ? (['PRIVATE', 'PUBLIC'] as PermissionType[])
+        : (Object.keys(PERMISSIONTYPE) as PermissionType[]).filter((v) => !isTrackLayer || v !== 'COMMON'),
+    [isMemoLayer, isTrackLayer]
   );
   const permissionLabels = useMemo(() => permissionList.map((v) => PERMISSIONTYPE[v]), [permissionList]);
   //ラベルの長さで幅を決めて、選択肢どうしの間隔が均等に見えるようにする。

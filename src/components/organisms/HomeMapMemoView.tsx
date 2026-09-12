@@ -16,13 +16,7 @@ import { useWindow } from '../../hooks/useWindow';
 const STROKE_CAP = Platform.OS === 'ios' ? 'butt' : 'round';
 
 export const MapMemoView = React.memo(() => {
-  const {
-    penColor,
-    penWidth,
-    currentMapMemoTool,
-    mapMemoLines,
-    arrowStyle,
-  } = useContext(MapMemoContext);
+  const { penColor, penWidth, currentMapMemoTool, mapMemoLines, arrowStyle } = useContext(MapMemoContext);
   const { mapMemoEditingLine, mapMemoEditingLineLatLon, mapViewRef } = useContext(SVGDrawingContext);
   const { mapRegion, mapSize } = useWindow();
 
@@ -42,8 +36,9 @@ export const MapMemoView = React.memo(() => {
     () => (currentMapMemoTool.includes('ERASER') ? 'white' : isBrushTool(currentMapMemoTool) ? 'yellow' : penColor),
     [currentMapMemoTool, penColor]
   );
+  //消しゴムの太さはペンの太さに連動させる（消える幅と見た目を一致させる）
   const strokeWidth = useMemo(
-    () => (currentMapMemoTool.includes('ERASER') ? 10 : isBrushTool(currentMapMemoTool) ? 5 : penWidth),
+    () => (isBrushTool(currentMapMemoTool) ? 5 : penWidth),
     [currentMapMemoTool, penWidth]
   );
 
@@ -120,7 +115,8 @@ const ARROW_DIRECTION_MIN_DISTANCE_PX = 10;
 
 //作図中・保存待ちの線に付ける矢印プレビュー。保存後に表示されるLineArrow(マーカー)と同じ形状・サイズを
 //スクリーン座標のSVGで描き、指を離して保存されるまでの間も矢印が途切れず見えるようにする
-const ArrowHeads = React.memo(
+//手書きペン（HomeSvgView）でも矢印・スタンプのプレビューを共用するためexportする
+export const ArrowHeads = React.memo(
   ({
     points,
     strokeColor,
@@ -166,9 +162,7 @@ const ArrowHeads = React.memo(
           d={d}
           fill={strokeColor}
           stroke="white"
-          transform={`translate(${p3[0] - size / 2},${p3[1] - size / 2}) rotate(${angleEnd}, ${size / 2}, ${
-            size / 2
-          })`}
+          transform={`translate(${p3[0] - size / 2},${p3[1] - size / 2}) rotate(${angleEnd}, ${size / 2}, ${size / 2})`}
         />
         {arrowStyle === 'ARROW_BOTH' && (
           <Path
@@ -185,7 +179,7 @@ const ArrowHeads = React.memo(
   }
 );
 
-const RenderStamp = React.memo(
+export const RenderStamp = React.memo(
   ({
     stampPos,
     currentMapMemoTool,
@@ -242,6 +236,36 @@ const RenderStamp = React.memo(
             </Text>
           </G>
         );
+      //交尾（★）と声のみ（Vo）。保存後の記号（HomeMapMemoStamp）と同じ形にする
+      case 'KOUBI':
+        return (
+          <Text
+            x={stampPos.x}
+            y={stampPos.y + 5}
+            fontSize="18"
+            fontWeight="bold"
+            fill={strokeColor}
+            textAnchor="middle"
+          >
+            ★
+          </Text>
+        );
+      case 'VOICE':
+        return (
+          <G key={ulid()}>
+            <Circle cx={stampPos.x} cy={stampPos.y} r="8" stroke={strokeColor} strokeWidth="1" fill="#ffffffaa" />
+            <Text
+              x={stampPos.x}
+              y={stampPos.y + 5}
+              fontSize="11"
+              fontWeight="bold"
+              fill={strokeColor}
+              textAnchor="middle"
+            >
+              Vo
+            </Text>
+          </G>
+        );
       case 'SQUARE':
         return (
           <Rect
@@ -266,6 +290,23 @@ const RenderStamp = React.memo(
             strokeWidth="0"
             fill={strokeColor}
           />
+        );
+      //数字・英字・文字はレコードのラベルを描くが、確定前はレコードが無くて値が決まらない。
+      //置いた位置が分かるよう仮の記号を出し、確定でラベルに置き換わる
+      case 'NUMBERS':
+      case 'ALPHABETS':
+      case 'TEXT':
+        return (
+          <Text
+            x={stampPos.x}
+            y={stampPos.y + 5}
+            fontSize="16"
+            fontWeight="bold"
+            fill={strokeColor}
+            textAnchor="middle"
+          >
+            #
+          </Text>
         );
       default:
         return null;

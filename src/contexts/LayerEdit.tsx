@@ -1,5 +1,5 @@
 import { createContext } from 'react';
-import { FeatureType, FormatType, LayerType } from '../types';
+import { FeatureType, FormatType, LayerType, ToolPaletteType } from '../types';
 
 interface LayerEditContextType {
   layer: LayerType;
@@ -9,6 +9,7 @@ interface LayerEditContextType {
   onChangeLayerName: (val: string) => void;
   submitLayerName: () => void;
   onChangeFeatureType: (itemValue: FeatureType) => void;
+  onChangeToolPalette: (value: ToolPaletteType | undefined) => void;
   onChangeFieldOrder: (index: number, direction: 'up' | 'down') => void;
   onChangeFieldName: (index: number, val: string) => void;
   onChangeOption: (index: number, val: boolean) => void;

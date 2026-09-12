@@ -4,6 +4,12 @@ import { t } from '../i18n/config';
 import { LayerType } from '../types';
 import { ulid } from 'ulid';
 
+//地図メモの保存先。編集レイヤに引きずられて他用途のレイヤにメモが混ざらないよう、専用レイヤに固定する
+export const MEMO_LAYER_ID = 'memo';
+export const TRACK_LAYER_ID = 'track';
+//アプリが管理する固定レイヤ。名前・属性・削除はユーザーに変更させない
+export const isFixedLayer = (layerId: string) => layerId === TRACK_LAYER_ID || layerId === MEMO_LAYER_ID;
+
 export const TEMPLATE_LAYER: LayerType = {
   id: '',
   name: '',
@@ -99,7 +105,30 @@ export const layersInitialState: LayerType[] = [
     ],
   },
   {
-    id: 'track',
+    //メモはストロークごとに色・太さを持つため、色分けは最初から個別（_strokeColor）にしておく。
+    //ラベルは走り書きの邪魔になるので出さない。
+    //走り書きに属性は要らないので、フィールドは持たない（見た目のスタイルは隠しフィールドに入る）
+    id: MEMO_LAYER_ID,
+    name: t('common.memo'),
+    type: 'LINE',
+    permission: 'PRIVATE',
+    colorStyle: {
+      colorType: 'INDIVIDUAL',
+      transparency: 0.2,
+      color: COLOR.RED,
+      fieldName: '__CUSTOM',
+      customFieldValue: '_strokeColor',
+      colorRamp: 'RANDOM',
+      colorList: [],
+      lineWidth: 1.5,
+    },
+    label: '',
+    visible: true,
+    active: false,
+    field: [],
+  },
+  {
+    id: TRACK_LAYER_ID,
     name: t('common.track'),
     type: 'LINE',
     permission: 'PRIVATE',

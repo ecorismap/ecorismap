@@ -13,10 +13,11 @@ export type UseFeatureFlagsReturnType = {
  * ログイン状態はredux-persistで保持されるので、一度ログインすればオフラインでも有効。
  *
  * 地図プリセットは全ユーザーに開放済み（2026-08。プリセットは全て出典表記済みの公開可能データ）。
+ * 飛翔図ツールも全ユーザーに開放済み（2026-09）。
  * 限定に戻す場合はこのフック1箇所の変更で対応できる。
  */
 export const useFeatureFlags = (): UseFeatureFlagsReturnType => {
   const uid = useSelector((state: RootState) => state.user.uid);
   const isOrgMember = uid !== undefined;
-  return { hisyouTool: isOrgMember, mapPresets: true, layerPresets: isOrgMember } as const;
+  return { hisyouTool: true, mapPresets: true, layerPresets: isOrgMember } as const;
 };

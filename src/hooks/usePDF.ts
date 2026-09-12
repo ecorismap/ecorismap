@@ -21,6 +21,7 @@ import { generateLabel, getColor } from '../utils/Layer';
 import { isPhotoField } from '../utils/Geometry';
 import { Platform } from 'react-native';
 import {
+  escapeXml,
   isBrushTool,
   isLocationType,
   isLocationTypeArray,
@@ -349,13 +350,13 @@ export const usePDF = (): UseEcorisMapFileReturnType => {
 
     const scaleBar = `
       <svg height="80px" style="position: absolute; left: ${pageMargin.pixel}px; top: ${
-      pageMargin.pixel + pageSize.heightPixel - 80
-    }px;z-index:2">
+        pageMargin.pixel + pageSize.heightPixel - 80
+      }px;z-index:2">
        <g>
           <!-- スケール比率のテキスト -->
           <text x="${50 + width / 2}" y="25" font-family="Arial" font-size="20" text-anchor="middle">1:${
-      pageScale.text
-    }</text>
+            pageScale.text
+          }</text>
           <!-- スケールバーのライン -->
           <line x1="50" y1="50" x2="${50 + width}" y2="50" stroke="black" stroke-width="2" />
           <!-- 左端のキャップ -->
@@ -398,8 +399,8 @@ export const usePDF = (): UseEcorisMapFileReturnType => {
     const captionContents = `
       <div
       style="position: absolute; left: ${pageMargin.pixel}; top: ${
-      pageMargin.pixel + pageSize.heightPixel - 20
-    }; z-index: 2;  width: ${pageSize.widthPixel}px; display: flex; align-items: center; justify-content: flex-end;">
+        pageMargin.pixel + pageSize.heightPixel - 20
+      }; z-index: 2;  width: ${pageSize.widthPixel}px; display: flex; align-items: center; justify-content: flex-end;">
       <span style="margin:0 10px;font-family: Arial; font-size: 12px; color: black;">${captions}</span>
       </div>`;
     return captionContents;
@@ -409,8 +410,8 @@ export const usePDF = (): UseEcorisMapFileReturnType => {
     const commentContents = `
       <div
       style="position: absolute; left: ${pageMargin.pixel}; top: ${
-      pageMargin.pixel + pageSize.heightPixel + 3
-    }; z-index: 2;  width: ${pageSize.widthPixel}px; display: flex; align-items: center; justify-content: flex-end;">
+        pageMargin.pixel + pageSize.heightPixel + 3
+      }; z-index: 2;  width: ${pageSize.widthPixel}px; display: flex; align-items: center; justify-content: flex-end;">
       <span style="margin:0 10px;font-family: Arial; font-size: 9px; color: black;">${t('hooks.pdf.comment')}</span>
       </div>`;
     return commentContents;
@@ -426,7 +427,8 @@ export const usePDF = (): UseEcorisMapFileReturnType => {
       topY: number,
       width: number,
       height: number,
-      color: string
+      color: string,
+      label: string
     ) => {
       if (!isLocationTypeArray(feature.coords)) return '';
       // 緯度経度からピクセル座標に変換
@@ -435,20 +437,14 @@ export const usePDF = (): UseEcorisMapFileReturnType => {
       const stamp = feature.field._stamp as string;
       let svg = '';
       switch (stamp) {
+        //数字・英字・文字はレイヤのラベル設定の値を描く（地図表示と揃える）
         case 'NUMBERS':
-          svg = `<text x="${pixels[0].pixelX}" y="${pixels[0].pixelY}" font-family="Arial" font-size="${
-            16 / tileScale
-          }" fill="${color}" text-anchor="middle">1</text>`;
-          break;
         case 'ALPHABETS':
-          svg = `<text x="${pixels[0].pixelX}" y="${pixels[0].pixelY}" font-family="Arial" font-size="${
-            16 / tileScale
-          }" fill="${color}" text-anchor="middle">A</text>`;
-          break;
         case 'TEXT':
+          if (label === '') break;
           svg = `<text x="${pixels[0].pixelX}" y="${pixels[0].pixelY}" font-family="Arial" font-size="${
-            12 / tileScale
-          }" fill="${color}" text-anchor="middle">クマタカ</text>`;
+            (stamp === 'TEXT' ? 12 : 16) / tileScale
+          }" fill="${color}" text-anchor="middle">${escapeXml(label)}</text>`;
           break;
         case 'SQUARE':
           svg = `<rect x="${pixels[0].pixelX - 6 / tileScale}" y="${pixels[0].pixelY - 6 / tileScale}" width="${
@@ -481,24 +477,24 @@ export const usePDF = (): UseEcorisMapFileReturnType => {
             pixels[0].pixelY + 5 / tileScale
           }" stroke="${color}" stroke-width="${2 / tileScale}" />
                 <line x1="${pixels[0].pixelX + 5 / tileScale}" y1="${pixels[0].pixelY - 5 / tileScale}" x2="${
-            pixels[0].pixelX - 5 / tileScale
-          }" y2="${pixels[0].pixelY + 5 / tileScale}" stroke="${color}" stroke-width="${2 / tileScale}" />`;
+                  pixels[0].pixelX - 5 / tileScale
+                }" y2="${pixels[0].pixelY + 5 / tileScale}" stroke="${color}" stroke-width="${2 / tileScale}" />`;
           break;
         case 'HOVERING':
           svg = `<circle cx="${pixels[0].pixelX}" cy="${pixels[0].pixelY}" r="${
             7 / tileScale
           }" stroke="${color}" stroke-width="${1 / tileScale}" fill="#ffffffaa" />
                 <text x="${pixels[0].pixelX}" y="${pixels[0].pixelY + 4 / tileScale}" font-family="Arial" font-size="${
-            12 / tileScale
-          }" fill="${color}" text-anchor="middle">H</text>`;
+                  12 / tileScale
+                }" fill="${color}" text-anchor="middle">H</text>`;
           break;
         case 'VOICE':
           svg = `<circle cx="${pixels[0].pixelX}" cy="${pixels[0].pixelY}" r="${
             7 / tileScale
           }" stroke="${color}" stroke-width="${1 / tileScale}" fill="#ffffffaa" />
                 <text x="${pixels[0].pixelX}" y="${pixels[0].pixelY + 4 / tileScale}" font-family="Arial" font-size="${
-            12 / tileScale
-          }" fill="${color}" text-anchor="middle">Vo</text>`;
+                  12 / tileScale
+                }" fill="${color}" text-anchor="middle">Vo</text>`;
           break;
         case 'KOUBI':
           svg = `<text x="${pixels[0].pixelX}" y="${pixels[0].pixelY + 4 / tileScale}" font-family="Arial" font-size="${
@@ -574,10 +570,10 @@ export const usePDF = (): UseEcorisMapFileReturnType => {
               point.pixelX
             }, ${point.pixelY})" />
               <circle cx="${point.pixelX + 5 / tileScale}" cy="${point.pixelY}" r="${
-              2 / tileScale
-            }" stroke="${color}" stroke-width="${1.5 / tileScale}" fill="none" transform="rotate(${angle}, ${
-              point.pixelX
-            }, ${point.pixelY})" />`;
+                2 / tileScale
+              }" stroke="${color}" stroke-width="${1.5 / tileScale}" fill="none" transform="rotate(${angle}, ${
+                point.pixelX
+              }, ${point.pixelY})" />`;
             break;
           case 'KOUGEKI':
             svg += `<polygon points="${point.pixelX},${point.pixelY - 6 / tileScale} ${point.pixelX + 10 / tileScale},${
@@ -626,16 +622,16 @@ export const usePDF = (): UseEcorisMapFileReturnType => {
             }" fill="none" transform="rotate(${angle},
               ${point.pixelX}, ${point.pixelY})" />
               <path d="M${point.pixelX - 5 / tileScale},${point.pixelY + 2 / tileScale} L${point.pixelX},${
-              point.pixelY - 3 / tileScale
-            } L${point.pixelX + 5 / tileScale},${point.pixelY + 2 / tileScale}" stroke="${color}" stroke-width="${
-              1.5 / tileScale
-            }" fill="none" transform="rotate(${angle},
+                point.pixelY - 3 / tileScale
+              } L${point.pixelX + 5 / tileScale},${point.pixelY + 2 / tileScale}" stroke="${color}" stroke-width="${
+                1.5 / tileScale
+              }" fill="none" transform="rotate(${angle},
               ${point.pixelX}, ${point.pixelY})" />
               <path d="M${point.pixelX - 5 / tileScale},${point.pixelY + 7 / tileScale} L${point.pixelX},${
-              point.pixelY + 2 / tileScale
-            } L${point.pixelX + 5 / tileScale},${point.pixelY + 7 / tileScale}" stroke="${color}" stroke-width="${
-              1.5 / tileScale
-            }" fill="none" transform="rotate(${angle},
+                point.pixelY + 2 / tileScale
+              } L${point.pixelX + 5 / tileScale},${point.pixelY + 7 / tileScale}" stroke="${color}" stroke-width="${
+                1.5 / tileScale
+              }" fill="none" transform="rotate(${angle},
               ${point.pixelX}, ${point.pixelY})" />`;
             break;
           case 'TANJI':
@@ -691,8 +687,8 @@ export const usePDF = (): UseEcorisMapFileReturnType => {
         4 / tileScale
       }" style="fill:${color}; stroke:white; stroke-width:${0.2 / tileScale};"></circle>
             <text x="${pixelX + 8}" y="${pixelY + 8}" fill="${color}" font-size="${
-        12 / tileScale
-      }" font-family="Arial" text-anchor="start" stroke="white" stroke-width="0.2" paint-order="stroke">${label}</text>`;
+              12 / tileScale
+            }" font-family="Arial" text-anchor="start" stroke="white" stroke-width="0.2" paint-order="stroke">${label}</text>`;
     },
     [convertCoordsToPixels]
   );
@@ -805,7 +801,8 @@ export const usePDF = (): UseEcorisMapFileReturnType => {
     ) => {
       const lineColor = getColor(layer, feature);
       if (isStampTool(feature.field._stamp as string)) {
-        return generateStampSvg(feature, tileScale, leftX, rightX, bottomY, topY, width, height, lineColor);
+        const label = generateLabel(layer, feature) ?? '';
+        return generateStampSvg(feature, tileScale, leftX, rightX, bottomY, topY, width, height, lineColor, label);
       } else if (isBrushTool(feature.field._strokeStyle as string)) {
         return generateBrushSvg(feature, tileScale, leftX, rightX, bottomY, topY, width, height, lineColor);
       } else {
@@ -849,12 +846,12 @@ export const usePDF = (): UseEcorisMapFileReturnType => {
         transparency ? 'rgba(0,0,0,0)' : polygonColor
       }" stroke="${strokeColor}" stroke-width="${strokeWidth / tileScale}" />
             <text x="${pixels[pixels.length - 1].pixelX + 5}" y="${
-        pixels[pixels.length - 1].pixelY + 5
-      }" fill="${strokeColor}" font-size="${
-        12 / tileScale
-      }" font-family="Arial" text-anchor="start" stroke="white" stroke-width="${
-        0.2 / tileScale
-      }" paint-order="stroke">${label}</text>`;
+              pixels[pixels.length - 1].pixelY + 5
+            }" fill="${strokeColor}" font-size="${
+              12 / tileScale
+            }" font-family="Arial" text-anchor="start" stroke="white" stroke-width="${
+              0.2 / tileScale
+            }" paint-order="stroke">${label}</text>`;
     },
     [convertCoordsToPixels]
   );

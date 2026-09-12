@@ -8,11 +8,12 @@ import { FieldType, FormatType } from '../../types';
 import { Button, Picker } from '../atoms';
 import { FlatList } from 'react-native-gesture-handler';
 import { CheckBox } from '../molecules/CheckBox';
+import { isFixedLayer } from '../../modules/layers';
 
 export const LayerEditFieldTitle = () => {
   const { layer, pressAddField } = useContext(LayerEditContext);
-  // trackレイヤのフィールド構成は固定（name/time/cmt。軌跡の保存処理が依存するため変更不可）
-  const editable = layer.id !== 'track';
+  // 軌跡（name/time/cmt。保存処理が依存する）とメモ（属性を持たない）は構成が固定
+  const editable = !isFixedLayer(layer.id);
   return (
     <View style={styles.tr3}>
       <View style={[styles.td3, { flex: 2, width: 50 }]}>
@@ -57,8 +58,8 @@ export const LayerEditFieldTable = () => {
     pressDeleteField,
     gotoLayerEditFieldItem,
   } = useContext(LayerEditContext);
-  // trackレイヤのフィールド構成は固定（name/time/cmt。軌跡の保存処理が依存するため変更不可）
-  const editable = layer.id !== 'track';
+  // 軌跡（name/time/cmt。保存処理が依存する）とメモ（属性を持たない）は構成が固定
+  const editable = !isFixedLayer(layer.id);
   const formatTypeValues = useMemo(() => Object.keys(DATAFORMAT), []);
   const formatTypeLabels = useMemo(() => Object.values(DATAFORMAT), []);
 

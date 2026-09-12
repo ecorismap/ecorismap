@@ -1,6 +1,6 @@
 import { COLOR } from '../../constants/AppConstants';
 import { LayerType } from '../../types';
-import { getColor, getColorRule, changeLayerId, applyColorStyle, getLineWidth, getLineWidthAtZoom } from '../Layer';
+import { getColor, getColorRule, changeLayerId, applyColorStyle, getLineWidth, getLineWidthAtZoom, toIndividualColorLayer, restoreColorStyleFromIndividual } from '../Layer';
 import { getUserColor } from '../Color';
 
 describe('getColor', () => {
@@ -101,8 +101,17 @@ describe('getLineWidth', () => {
   };
   const record = (field: any) => ({ id: '0', visible: true, redraw: false, coords: undefined, field } as any);
 
-  it('レコードが太さを持つ場合はカラータイプに関係なくそれを使う', () => {
-    expect(getLineWidth(layer, record({ _strokeWidth: 10 }))).toBe(10);
+  const individualLayer = {
+    ...layer,
+    colorStyle: { ...layer.colorStyle, colorType: 'INDIVIDUAL', fieldName: '__CUSTOM', customFieldValue: '_strokeColor' },
+  } as LayerType;
+
+  it('色分けが個別のレイヤではレコードの太さを使う', () => {
+    expect(getLineWidth(individualLayer, record({ _strokeWidth: 10 }))).toBe(10);
+  });
+
+  it('色分けが個別以外のレイヤではレコードが太さを持っていてもレイヤの太さ（デフォルト）を使う', () => {
+    expect(getLineWidth(layer, record({ _strokeWidth: 10 }))).toBe(3);
   });
 
   it('レコードが太さを持たない場合はレイヤの太さを使う', () => {
@@ -110,7 +119,7 @@ describe('getLineWidth', () => {
   });
 
   it('数値でない_strokeWidth（再インポートの空文字など）は無視してレイヤの太さを使う', () => {
-    expect(getLineWidth(layer, record({ _strokeWidth: '' }))).toBe(3);
+    expect(getLineWidth(individualLayer, record({ _strokeWidth: '' }))).toBe(3);
   });
 
   it('どちらも無い場合は既定値になる', () => {
@@ -126,11 +135,11 @@ describe('getLineWidthAtZoom', () => {
     type: 'LINE',
     permission: 'PRIVATE',
     colorStyle: {
-      colorType: 'CATEGORIZED',
+      colorType: 'INDIVIDUAL',
       color: COLOR.RED,
-      fieldName: '区分',
+      fieldName: '__CUSTOM',
       colorRamp: 'RANDOM',
-      customFieldValue: '',
+      customFieldValue: '_strokeColor',
       colorList: [],
       transparency: 1,
       lineWidth: 3,
@@ -141,6 +150,11 @@ describe('getLineWidthAtZoom', () => {
     field: [],
   };
   const record = (field: any) => ({ id: '0', visible: true, redraw: false, coords: undefined, field } as any);
+
+  it('色分けが個別以外のレイヤはズーム連動せずレイヤの太さのまま', () => {
+    const categorized = { ...layer, colorStyle: { ...layer.colorStyle, colorType: 'CATEGORIZED' } } as LayerType;
+    expect(getLineWidthAtZoom(categorized, record({ _strokeWidth: 10, _zoom: 15 }), 12)).toBe(3);
+  });
 
   it('描画時ズームと同じなら固定幅', () => {
     expect(getLineWidthAtZoom(layer, record({ _strokeWidth: 10, _zoom: 15 }), 15)).toBe(10);
@@ -210,6 +224,46 @@ describe('applyColorStyle', () => {
       savedCustomFieldValue: undefined,
     });
     expect(restored.label).toBe('種名');
+    expect(restored.colorStyle.savedLabel).toBeUndefined();
+  });
+});
+
+describe('toIndividualColorLayer / restoreColorStyleFromIndividual', () => {
+  const surveyLayer: LayerType = {
+    id: '1',
+    name: '飛翔図',
+    type: 'LINE',
+    permission: 'PRIVATE',
+    colorStyle: {
+      colorType: 'CATEGORIZED',
+      color: COLOR.RED,
+      fieldName: '区分',
+      colorRamp: 'RANDOM',
+      customFieldValue: '',
+      colorList: [],
+      transparency: 1,
+    },
+    label: '種名',
+    visible: true,
+    active: true,
+    field: [],
+  };
+
+  it('個別へ切り替えると元の色分けとラベルが退避され、ラベルは非表示になる', () => {
+    const individual = toIndividualColorLayer(surveyLayer);
+    expect(individual.colorStyle.colorType).toBe('INDIVIDUAL');
+    expect(individual.colorStyle.customFieldValue).toBe('_strokeColor');
+    expect(individual.label).toBe('');
+    expect(individual.colorStyle.savedFieldName).toBe('区分');
+    expect(individual.colorStyle.savedLabel).toBe('種名');
+  });
+
+  it('個別から戻すと退避した色分けとラベルが復元され、退避データは消える', () => {
+    const restored = restoreColorStyleFromIndividual(toIndividualColorLayer(surveyLayer));
+    expect(restored.colorStyle.colorType).toBe('SINGLE');
+    expect(restored.colorStyle.fieldName).toBe('区分');
+    expect(restored.label).toBe('種名');
+    expect(restored.colorStyle.savedFieldName).toBeUndefined();
     expect(restored.colorStyle.savedLabel).toBeUndefined();
   });
 });

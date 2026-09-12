@@ -78,6 +78,14 @@ export const mockDrawingToolsContextValue: DrawingToolsContextType = {
   setLineTool: jest.fn() as React.Dispatch<React.SetStateAction<any>>,
   setPolygonTool: jest.fn() as React.Dispatch<React.SetStateAction<any>>,
 
+  //個別色レイヤ
+  isIndividualStyleLayer: false,
+  switchSelectionToSplit: jest.fn(() => true),
+  //手書きペンのサブツールと設定モーダル
+  handwritingSubTool: 'PEN',
+  setHandwritingSubTool: jest.fn() as React.Dispatch<React.SetStateAction<any>>,
+  openHandwritingSettingsTab: jest.fn(),
+
   // Drawing actions
   onDragEndPoint: jest.fn().mockResolvedValue(undefined),
   pressUndoDraw: jest.fn().mockResolvedValue(undefined),
@@ -93,6 +101,11 @@ export const mockDrawingToolsContextValue: DrawingToolsContextType = {
   finishEditObject: jest.fn(() => false),
   resetDrawTools: jest.fn(),
   editingLayerName: undefined,
+  editingLayer: undefined,
+  selectFieldValues: jest.fn(),
+  addFieldValue: jest.fn(),
+  updateFieldValue: jest.fn(),
+  deleteFieldValue: jest.fn(),
   pressEditingLayerButton: jest.fn().mockResolvedValue(undefined),
 
   // Backward compatibility
@@ -172,6 +185,7 @@ export const mockSVGDrawingContextValue: SVGDrawingContextType = {
   drawLine: { current: [] },
   editingLine: { current: [] },
   selectLine: { current: [] },
+  featuresTransformAngle: { current: 0 },
 
   // MapMemo SVG data
   mapMemoEditingLine: [],
@@ -216,17 +230,19 @@ export const mockMapMemoContextValue: MapMemoContextType = {
   visibleMapMemoColor: false,
   currentPenWidth: 'PEN_THIN',
   penColor: '#000000',
+  colorPickerColor: '#000000',
   penWidth: 1,
   isPencilModeActive: false,
   isUndoable: false,
   isRedoable: false,
   arrowStyle: 'NONE',
+  isStraightStyle: false,
+  setIsStraightStyle: jest.fn(),
+  setArrowStyle: jest.fn(),
   mapMemoLines: [],
   selectMapMemoTool: jest.fn(),
   setPenWidth: jest.fn(),
   setVisibleMapMemoColor: jest.fn(),
-  pressMapMemoToolButton: jest.fn(),
-  openMapMemoSettingsTab: jest.fn(),
   selectPenColor: jest.fn(),
   pressUndoMapMemo: jest.fn(),
   pressRedoMapMemo: jest.fn(),

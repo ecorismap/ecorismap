@@ -1,6 +1,7 @@
 import React, { useCallback } from 'react';
 import LayerEdit from '../components/pages/LayerEdit';
 import { AlertAsync, ConfirmAsync } from '../components/molecules/AlertAsync';
+import { MEMO_LAYER_ID } from '../modules/layers';
 import { useLayerEdit } from '../hooks/useLayerEdit';
 import { useBottomSheetNavigation, useBottomSheetRoute } from '../contexts/BottomSheetNavigationContext';
 import { FieldType } from '../types';
@@ -28,6 +29,7 @@ export default function LayerEditContainer() {
     changeLayerName,
     submitLayerName,
     changeFeatureType,
+    changeToolPalette,
     changePermission,
     changeFieldOrder,
     changeFieldName,
@@ -89,6 +91,8 @@ export default function LayerEditContainer() {
   }, [generateExportGeoData, targetLayer]);
 
   const gotoLayerEditFeatureStyle = useCallback(() => {
+    //メモは色分けを「個別（_strokeColor）」で固定する固定レイヤなのでスタイル画面を開かない
+    if (targetLayer.id === MEMO_LAYER_ID) return;
     navigate('LayerEditFeatureStyle', {
       targetLayer: { ...targetLayer },
       isEdited: isEdited,
@@ -124,6 +128,7 @@ export default function LayerEditContainer() {
       onChangeLayerName: changeLayerName,
       submitLayerName,
       onChangeFeatureType: changeFeatureType,
+      onChangeToolPalette: changeToolPalette,
       onChangeFieldOrder: changeFieldOrder,
       onChangeFieldName: changeFieldName,
       canChangePermission,
@@ -145,6 +150,7 @@ export default function LayerEditContainer() {
       addField,
       applyLayerPreset,
       changeFeatureType,
+      changeToolPalette,
       changeFieldFormat,
       changeFieldName,
       changeFieldOrder,

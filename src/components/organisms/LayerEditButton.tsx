@@ -2,14 +2,15 @@ import React, { useContext } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { COLOR, LAYEREDIT_BTN } from '../../constants/AppConstants';
 import { LayerEditContext } from '../../contexts/LayerEdit';
+import { isFixedLayer } from '../../modules/layers';
 
 import { Button } from '../atoms';
 import { t } from '../../i18n/config';
 
 export const LayerEditButton = () => {
   const { layer, isEdited, pressDeleteLayer, pressExportLayer } = useContext(LayerEditContext);
-  // trackレイヤは軌跡記録の固定レイヤのため削除不可（エクスポートは可）
-  const editable = layer.id !== 'track';
+  // 軌跡・メモはアプリが管理する固定レイヤのため削除不可（エクスポートは可）
+  const editable = !isFixedLayer(layer.id);
   return (
     <View style={styles.buttonContainer}>
       <Button

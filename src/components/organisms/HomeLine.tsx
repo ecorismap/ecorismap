@@ -63,6 +63,7 @@ export const Line = React.memo(
                 lineColor={lineColor}
                 selected={selected}
                 zoom={zoom}
+                label={label}
               />
             );
           } else if (isBrushTool(feature.field._strokeStyle as string)) {

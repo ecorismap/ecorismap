@@ -3,7 +3,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Pressable } from '../atoms/Pressable';
 import { COLOR } from '../../constants/AppConstants';
-import { isFreehandTool, isPlotTool } from '../../utils/General';
+import { isPlotTool, isHandwritingTool } from '../../utils/General';
 import { DrawingToolsContext } from '../../contexts/DrawingTools';
 import { ProjectContext } from '../../contexts/Project';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -47,7 +47,7 @@ export const HomeEditControlButtons = React.memo(() => {
     },
   });
 
-  if (!isEditingObject || !(isPlotTool(currentDrawTool) || isFreehandTool(currentDrawTool))) return null;
+  if (!isEditingObject || !(isPlotTool(currentDrawTool) || isHandwritingTool(currentDrawTool))) return null;
 
   return (
     <View style={styles.editControlContainer}>

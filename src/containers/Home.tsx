@@ -27,12 +27,14 @@ import {
   TileMapType,
   LocationStateType,
   LocationType,
+  ArrowStyleType,
+  PenWidthType,
 } from '../types';
 import Home from '../components/pages/Home';
 import { Alert } from '../components/atoms/Alert';
 import { AlertAsync, ConfirmAsync } from '../components/molecules/AlertAsync';
 import { shallowEqual, useSelector, useDispatch } from 'react-redux';
-import { RootState } from '../store';
+import { RootState, AppDispatch } from '../store';
 import { useTiles } from '../hooks/useTiles';
 import { useRecord } from '../hooks/useRecord';
 import { Props_Home } from '../routes';
@@ -45,16 +47,13 @@ import { MapRef, ViewState } from 'react-map-gl/maplibre';
 import { useProject } from '../hooks/useProject';
 import {
   getExt,
-  isBrushTool,
   isEraserTool,
-  isFreehandTool,
+  isHandwritingTool,
   isLineTool,
   isMapMemoDrawTool,
-  isPenTool,
   isPlotTool,
   isPointTool,
   isPolygonTool,
-  isStampTool,
 } from '../utils/General';
 import { getEventTimestamp } from '../utils/OneEuroFilter';
 import { t } from '../i18n/config';
@@ -102,6 +101,7 @@ import {
   latLonToXY,
 } from '../utils/Coords';
 import { generateLabel } from '../utils/Layer';
+import { hex2rgba, hsv2rgbaString } from '../utils/Color';
 import { getAllTrackPoints } from '../utils/Location';
 import { TRACK_PHOTO_TAP_RADIUS_PX, clusterTrackPhotos, spiderOffsets } from '../utils/trackPhoto';
 import BottomSheet from '@gorhom/bottom-sheet';
@@ -123,7 +123,8 @@ import { HomeModalMapMemoSettings } from '../components/organisms/HomeModalMapMe
 import { HomeModalInfoPicker } from '../components/organisms/HomeModalInfoPicker';
 import { HomeModalLayerSelect } from '../components/organisms/HomeModalLayerSelect';
 import { useEditableLayerSelection } from '../hooks/useEditableLayerSelection';
-import { TEMPLATE_LAYER } from '../modules/layers';
+import { TEMPLATE_LAYER, updateLayerAction } from '../modules/layers';
+import { updateRecordsAction } from '../modules/dataSet';
 import { ulid } from 'ulid';
 import { Position } from 'geojson';
 import { useMaps } from '../hooks/useMaps';
@@ -239,12 +240,11 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
   const longPressTimerRef = useRef<NodeJS.Timeout | null>(null);
   // 長押しポップアップが表示されたタッチでは、リリース時のフィーチャー選択を抑止する
   const longPressFiredRef = useRef(false);
-  const freehandFinishedRef = useRef(false);
   // iOS Google MapsでonPanDragが発火しないため、PanResponder側でGPS追従解除を行う用のref
   const gpsStateRef = useRef<LocationStateType>('off');
   const toggleGPSRef = useRef<((state: LocationStateType) => Promise<void>) | null>(null);
 
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
   // 二点間距離測定の状態（長押しポップアップから開始、タップでB点設定）
   const { isMeasuring, setMeasureB, endMeasure } = useContext(MeasureContext);
   // 軌跡上の写真マーカー（タップ判定はMarkerのonPressではなくここの画面タップヒットテストで行う）
@@ -369,6 +369,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     setCurrentInfoTool,
     setIsPinch,
     isAreaSelected,
+    featuresTransformAngle,
     handleGrantSelect,
     handleMoveSelect,
     handleReleaseSelect,
@@ -376,11 +377,17 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     handleMovePlot,
     handleReleasePlotPoint,
     handleReleasePlotLinePolygon,
-    handleGrantFreehand,
-    handleMoveFreehand,
-    handleReleaseFreehand,
-    commitFreehandStroke,
-    cancelFreehandStroke,
+    handwritingSubTool,
+    setHandwritingSubTool,
+    handleGrantHandwriting,
+    convertSelectionToHandwriting,
+    switchSelectionToSplit,
+    convertSessionToPlot,
+    applySelectionStylePreview,
+    handleMoveHandwriting,
+    handleReleaseHandwriting,
+    commitHandwritingStroke,
+    cancelHandwritingStroke,
     cancelPlotGrant,
     handleGrantSplitLine,
     getPXY,
@@ -391,6 +398,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
   } = useDrawTool(mapViewRef.current);
 
   const {
+    activeMemoLayer,
     visibleMapMemoColor,
     visibleMapMemoSettings,
     mapMemoSettingsTab,
@@ -400,7 +408,6 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     penWidth,
     mapMemoEditingLine,
     mapMemoEditingLineLatLon,
-    isIndividualColorRequired,
     isPencilModeActive,
     isUndoable,
     isRedoable,
@@ -424,7 +431,6 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     pressRedoMapMemo,
     clearMapMemoHistory,
     pauseMapMemoDrawing,
-    changeColorTypeToIndividual,
     setPencilModeActive,
     setSnapWithLine,
     setIsStraightStyle,
@@ -924,20 +930,181 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
    */
   const checkEditableMapMemo = useCallback(async () => ensureEditableLayer('MEMO'), [ensureEditableLayer]);
 
+  //編集レイヤ（ツールパレットの組み立てに使う）
+  const editingLayer = useMemo(() => {
+    switch (featureButton) {
+      case 'LINE':
+        return activeLineLayer;
+      case 'POLYGON':
+        return activePolygonLayer;
+      default:
+        return undefined;
+    }
+  }, [activeLineLayer, activePolygonLayer, featureButton]);
+
+  //区分を選ぶパレット（植生図）で「次に描く区分」を決める。色分けに使うフィールドの既定値を
+  //書き換えるので、手書きでもプロットでも新しく作るレコードにその区分が入る
+  //選択肢を新しく足す。色分けに使うフィールドなら色も一緒に入れて、そのまま次に描く値にする
+  const addFieldValue = useCallback(
+    (fieldName: string, value: string, color: string) => {
+      if (editingLayer === undefined) return;
+      const field = editingLayer.field.find((f) => f.name === fieldName);
+      if (field === undefined) return;
+      if ((field.list ?? []).some((item) => item.value === value)) return;
+      dispatch(
+        updateLayerAction({
+          ...editingLayer,
+          colorStyle:
+            fieldName === editingLayer.colorStyle.fieldName
+              ? { ...editingLayer.colorStyle, colorList: [...editingLayer.colorStyle.colorList, { value, color }] }
+              : editingLayer.colorStyle,
+          field: editingLayer.field.map((f) =>
+            f.name === fieldName
+              ? {
+                  ...f,
+                  list: [...(f.list ?? []), { value, isOther: false, customFieldValue: '' }],
+                  defaultValue: value,
+                }
+              : f
+          ),
+        })
+      );
+    },
+    [dispatch, editingLayer]
+  );
+
+  //区分の名前・色を変える。名前を変えた場合は、その区分で保存済みのレコードの値も置き換える
+  //（置き換えないと色分けから外れて透明になり、集計もばらける）
+  const updateFieldValue = useCallback(
+    (fieldName: string, oldValue: string, newValue: string, color: string) => {
+      if (editingLayer === undefined || newValue === '') return;
+      dispatch(
+        updateLayerAction({
+          ...editingLayer,
+          colorStyle:
+            fieldName === editingLayer.colorStyle.fieldName
+              ? {
+                  ...editingLayer.colorStyle,
+                  colorList: editingLayer.colorStyle.colorList.map((c) =>
+                    c.value === oldValue ? { value: newValue, color } : c
+                  ),
+                }
+              : editingLayer.colorStyle,
+          field: editingLayer.field.map((f) =>
+            f.name === fieldName
+              ? {
+                  ...f,
+                  list: (f.list ?? []).map((item) =>
+                    item.value === oldValue ? { ...item, value: newValue } : item
+                  ),
+                  defaultValue: f.defaultValue === oldValue ? newValue : f.defaultValue,
+                }
+              : f
+          ),
+        })
+      );
+      if (newValue === oldValue) return;
+      fullDataSet
+        .filter((d) => d.layerId === editingLayer.id)
+        .forEach((d) => {
+          const targets = d.data.filter((record) => record.field[fieldName] === oldValue);
+          if (targets.length === 0) return;
+          dispatch(
+            updateRecordsAction({
+              layerId: d.layerId,
+              userId: d.userId,
+              data: targets.map((record) => ({ ...record, field: { ...record.field, [fieldName]: newValue } })),
+            })
+          );
+        });
+    },
+    [dispatch, editingLayer, fullDataSet]
+  );
+
+  //区分を選択肢から消す。保存済みのレコードの値はそのまま残す（消すとデータが失われるため）
+  const deleteFieldValue = useCallback(
+    (fieldName: string, value: string) => {
+      if (editingLayer === undefined) return;
+      dispatch(
+        updateLayerAction({
+          ...editingLayer,
+          colorStyle:
+            fieldName === editingLayer.colorStyle.fieldName
+              ? {
+                  ...editingLayer.colorStyle,
+                  colorList: editingLayer.colorStyle.colorList.filter((c) => c.value !== value),
+                }
+              : editingLayer.colorStyle,
+          field: editingLayer.field.map((f) =>
+            f.name === fieldName
+              ? {
+                  ...f,
+                  list: (f.list ?? []).filter((item) => item.value !== value),
+                  defaultValue: f.defaultValue === value ? undefined : f.defaultValue,
+                }
+              : f
+          ),
+        })
+      );
+    },
+    [dispatch, editingLayer]
+  );
+
+  //属性を未選択へ戻す（確定後に次の個体を選び直すため）
+  const clearPaletteFieldValues = useCallback(
+    (layerId: string) => {
+      dispatch((thunkDispatch: AppDispatch, getState: () => RootState) => {
+        const layer = getState().layers.find((l) => l.id === layerId);
+        if (layer === undefined) return;
+        if (!layer.field.some((f) => f.list !== undefined && (f.defaultValue ?? '') !== '')) return;
+        thunkDispatch(
+          updateLayerAction({
+            ...layer,
+            field: layer.field.map((f) => (f.list !== undefined ? { ...f, defaultValue: '' } : f)),
+          })
+        );
+      });
+    },
+    [dispatch]
+  );
+
+  const selectFieldValues = useCallback(
+    (values: { [fieldName: string]: string }) => {
+      const layerId = editingLayer?.id;
+      if (layerId === undefined) return;
+      //選択肢の追加直後など、closureのレイヤが古いことがあるので最新のレイヤへ反映する
+      dispatch((thunkDispatch: AppDispatch, getState: () => RootState) => {
+        const layer = getState().layers.find((l) => l.id === layerId);
+        if (layer === undefined) return;
+        thunkDispatch(
+          updateLayerAction({
+            ...layer,
+            field: layer.field.map((f) =>
+              values[f.name] !== undefined ? { ...f, defaultValue: values[f.name] } : f
+            ),
+          })
+        );
+      });
+    },
+    [dispatch, editingLayer?.id]
+  );
+
   //ツールバーのチップに表示する編集レイヤ名
   const editingLayerName = useMemo(() => {
     switch (featureButton) {
       case 'POINT':
         return activePointLayer?.name;
       case 'LINE':
-      case 'MEMO':
         return activeLineLayer?.name;
+      //メモは専用レイヤに固定なので、切り替え先のない保存先として名前だけ出す
+      case 'MEMO':
+        return activeMemoLayer?.name;
       case 'POLYGON':
         return activePolygonLayer?.name;
       default:
         return undefined;
     }
-  }, [activeLineLayer?.name, activePointLayer?.name, activePolygonLayer?.name, featureButton]);
+  }, [activeLineLayer?.name, activeMemoLayer?.name, activePointLayer?.name, activePolygonLayer?.name, featureButton]);
 
   //チップタップで編集レイヤを切り替える。作図中は破棄確認をしてから
   const pressEditingLayerButton = useCallback(async () => {
@@ -960,12 +1127,6 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
         //どのツールもマップメモの内容を書き換えるため、ブラシ・スタンプ・消しゴム含め全てで編集可否を確認する
         //（プロジェクト実行中のロック等も選択時に検出する）
         if (!(await checkEditableMapMemo())) return;
-        //レイヤの色分け設定を書き換えることになるので、実際に描くペンのときだけ事前に確認する
-        if (isPenTool(value) && isIndividualColorRequired) {
-          const ret = await ConfirmAsync(t('Home.confirm.individualColor'));
-          if (!ret) return;
-          changeColorTypeToIndividual();
-        }
         //編集選択の選択状態が残っていれば破棄する
         resetDrawTools();
         setDrawTool('NONE');
@@ -973,9 +1134,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       }
     },
     [
-      changeColorTypeToIndividual,
       checkEditableMapMemo,
-      isIndividualColorRequired,
       resetDrawTools,
       setDrawTool,
       setInfoToolActive,
@@ -1003,64 +1162,154 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
 
   /************** select button ************/
 
-  //MEMOモード内で各ツールの設定を一度開いたかどうか。モード入場ごとにリセットし、
-  //初回タップでは設定タブを開いて確認してもらう
-  const mapMemoToolVisited = useRef<{ [key in MapMemoToolGroupType]?: boolean }>({});
-  //各グループで最後に使った種別（トグルON時に復元する）
-  const mapMemoLastTool = useRef<{ [key in MapMemoToolGroupType]?: MapMemoToolType }>({ PEN: 'PEN' });
-
-  useEffect(() => {
-    if (isStampTool(currentMapMemoTool)) mapMemoLastTool.current.STAMP = currentMapMemoTool;
-    else if (isBrushTool(currentMapMemoTool)) mapMemoLastTool.current.BRUSH = currentMapMemoTool;
-    else if (isEraserTool(currentMapMemoTool)) mapMemoLastTool.current.ERASER = currentMapMemoTool;
-  }, [currentMapMemoTool]);
-
-  /**
-   * マップメモ設定モーダルを指定タブで開く（タブバーからの切替にも使う）
-   */
-  const openMapMemoSettingsTab = useCallback(
-    async (tab: MapMemoToolGroupType) => {
-      //設定を選ばせてからOKで断られると無駄なので、モーダルを開く前に編集可否を確認する
-      if (!(await checkEditableMapMemo())) return;
-      setMapMemoSettingsTab(tab);
-      setVisibleMapMemoSettings(true);
-    },
-    [checkEditableMapMemo, setMapMemoSettingsTab, setVisibleMapMemoSettings]
-  );
-
   const closeMapMemoSettings = useCallback(() => {
     setVisibleMapMemoSettings(false);
   }, [setVisibleMapMemoSettings]);
 
   /**
-   * マップメモのツールボタン押下。
-   * 選択中なら解除、未選択ならMEMOモード入場後の初回は設定タブを開き、
-   * 2回目以降は前回の種別で即選択するトグル動作
+   * 手書きペン用に設定モーダルを開く。編集可否はツール選択時に確認済みのためそのまま開く
    */
-  const pressMapMemoToolButton = useCallback(
-    (group: MapMemoToolGroupType) => {
-      const isActive =
-        group === 'PEN'
-          ? isPenTool(currentMapMemoTool)
-          : group === 'STAMP'
-          ? isStampTool(currentMapMemoTool)
-          : group === 'BRUSH'
-          ? isBrushTool(currentMapMemoTool)
-          : isEraserTool(currentMapMemoTool);
-      if (isActive) {
-        selectMapMemoTool(undefined);
-        return;
-      }
-      const lastTool = group === 'PEN' ? 'PEN' : mapMemoLastTool.current[group];
-      if (!mapMemoToolVisited.current[group] || lastTool === undefined) {
-        mapMemoToolVisited.current[group] = true;
-        openMapMemoSettingsTab(group);
-        return;
-      }
-      selectMapMemoTool(lastTool);
+  const openHandwritingSettingsTab = useCallback(
+    (tab: MapMemoToolGroupType) => {
+      setMapMemoSettingsTab(tab);
+      setVisibleMapMemoSettings(true);
     },
-    [currentMapMemoTool, openMapMemoSettingsTab, selectMapMemoTool]
+    [setMapMemoSettingsTab, setVisibleMapMemoSettings]
   );
+
+  //アクティブレイヤの色分けが「個別（_strokeColor参照）」か。
+  //trueなら色・太さボタンを常時表示し、通常の作図（プロット・フリーハンド）にも現在の色・太さを反映する
+  const isIndividualStyleLayer = useMemo(() => {
+    const layer =
+      featureButton === 'LINE' ? activeLineLayer : featureButton === 'POLYGON' ? activePolygonLayer : undefined;
+    return (
+      layer !== undefined &&
+      layer.colorStyle.colorType === 'INDIVIDUAL' &&
+      layer.colorStyle.fieldName === '__CUSTOM' &&
+      layer.colorStyle.customFieldValue === '_strokeColor'
+    );
+  }, [activeLineLayer, activePolygonLayer, featureButton]);
+
+  //個別色レイヤへの通常作図で新規レコードに反映する現在の色・太さ（saveLine/savePolygonに渡す）
+  const currentDrawStyle = useMemo(
+    () => ({
+      strokeColor: penColor,
+      strokeWidth: penWidth,
+      //LINEでは矢印設定も通常作図（プロット）の新規レコードへ反映する
+      strokeStyle: featureButton === 'LINE' ? arrowStyle : 'NONE',
+      stamp: '',
+      zoom: mapRegion.zoom,
+    }),
+    [penColor, penWidth, arrowStyle, featureButton, mapRegion.zoom]
+  );
+
+  //手書きペンの描画スタイル。レイヤの色分けが個別なら現在のペン設定、
+  //そうでなければレイヤのスタイルに従う（単一色はその色、それ以外は無彩色でプレビューし、保存時に色・太さは書かない）
+  const handwritingPenStyleParam = useMemo(() => {
+    if (isIndividualStyleLayer) {
+      return { strokeColor: penColor, strokeWidth: penWidth, arrowStyle, isStraightStyle, snapWithLine };
+    }
+    const layer = featureButton === 'POLYGON' ? activePolygonLayer : activeLineLayer;
+    const strokeColor =
+      layer !== undefined && layer.colorStyle.colorType === 'SINGLE'
+        ? hex2rgba(layer.colorStyle.color) ?? 'rgba(0,0,0,0.7)'
+        : 'rgba(0,0,0,0.7)';
+    return {
+      strokeColor,
+      strokeWidth: layer?.colorStyle.lineWidth ?? 1.5,
+      arrowStyle,
+      isStraightStyle,
+      snapWithLine,
+    };
+  }, [
+    isIndividualStyleLayer,
+    penColor,
+    penWidth,
+    arrowStyle,
+    isStraightStyle,
+    snapWithLine,
+    featureButton,
+    activeLineLayer,
+    activePolygonLayer,
+  ]);
+
+  //編集選択（タップ選択・なげなわ）中に色・太さ・矢印を変更したか（項目別）。
+  //操作した項目だけを確定時に選択オブジェクトへ反映する（プロパティパネル方式）。
+  //形だけの変形や、太さだけ変えたときに色まで塗り替わらないようにするためのフラグ
+  const selectionStyleChanged = useRef({ color: false, width: false, arrow: false });
+  const prevSelectionStyle = useRef({ penColor, penWidth, arrowStyle });
+  useEffect(() => {
+    if (isSelectedDraw || isAreaSelected) {
+      if (prevSelectionStyle.current.penColor !== penColor) selectionStyleChanged.current.color = true;
+      if (prevSelectionStyle.current.penWidth !== penWidth) selectionStyleChanged.current.width = true;
+      if (prevSelectionStyle.current.arrowStyle !== arrowStyle) selectionStyleChanged.current.arrow = true;
+    } else {
+      selectionStyleChanged.current = { color: false, width: false, arrow: false };
+    }
+    prevSelectionStyle.current = { penColor, penWidth, arrowStyle };
+  }, [penColor, penWidth, arrowStyle, isSelectedDraw, isAreaSelected]);
+
+  //スタイル設定モーダルからの変更を直接マークするラッパー。
+  //選択オブジェクトの値からグローバル設定と同じ値へ変更した場合、stateが変わらず
+  //上のeffectの差分検知では拾えないため（例: 連続して複数のオブジェクトに同じ矢印を設定）。
+  //マークと同時に画面上の選択オブジェクトへ即時反映する（キャンセルで元に戻る）
+  //新規手書きの描画済みストロークにもプレビューを効かせる（編集選択に限らずセッション中は反映）
+  const canPreviewSelectionStyle = isSelectedDraw || isEditingDraw || isEditingObject;
+  const setPenWidthMarked = useCallback(
+    (width: PenWidthType) => {
+      if (isSelectedDraw) selectionStyleChanged.current.width = true;
+      if (canPreviewSelectionStyle) {
+        //useMapMemoのpenWidth導出と同じ対応（細=2/中=5/太=10）
+        applySelectionStylePreview({ strokeWidth: width === 'PEN_THIN' ? 2 : width === 'PEN_MEDIUM' ? 5 : 10 });
+      }
+      setPenWidth(width);
+    },
+    [applySelectionStylePreview, canPreviewSelectionStyle, isSelectedDraw, setPenWidth]
+  );
+  const setArrowStyleMarked = useCallback(
+    (style: ArrowStyleType) => {
+      if (isSelectedDraw) selectionStyleChanged.current.arrow = true;
+      if (canPreviewSelectionStyle) applySelectionStylePreview({ strokeStyle: style });
+      setArrowStyle(style);
+    },
+    [applySelectionStylePreview, canPreviewSelectionStyle, isSelectedDraw, setArrowStyle]
+  );
+  const selectPenColorMarked = useCallback(
+    (hue: number, sat: number, val: number, alpha: number) => {
+      if (isSelectedDraw) selectionStyleChanged.current.color = true;
+      if (canPreviewSelectionStyle) applySelectionStylePreview({ strokeColor: hsv2rgbaString(hue, sat, val, alpha) });
+      selectPenColor(hue, sat, val, alpha);
+    },
+    [applySelectionStylePreview, canPreviewSelectionStyle, isSelectedDraw, selectPenColor]
+  );
+
+  //単一オブジェクト選択中はそのオブジェクトの色・太さを設定UIの初期値にする（プロパティパネル方式）。
+  //選択しただけではペンのグローバル設定は変えない（設定UIを開いたときだけ初期値として現れる）
+  const selectedSingleObjectStyle = (() => {
+    if (!isSelectedDraw) return undefined;
+    const selected = drawLine.current.filter((line) => line.record !== undefined);
+    if (selected.length !== 1) return undefined;
+    const field = selected[0].record!.field;
+    const color = typeof field._strokeColor === 'string' && field._strokeColor !== '' ? field._strokeColor : undefined;
+    const width = typeof field._strokeWidth === 'number' ? field._strokeWidth : undefined;
+    const widthType: PenWidthType | undefined =
+      width === undefined
+        ? undefined
+        : width <= 3
+        ? 'PEN_THIN'
+        : width <= 7
+        ? 'PEN_MEDIUM'
+        : width <= 14
+        ? 'PEN_THICK'
+        : 'PEN_EXTRA_THICK';
+    //_strokeStyleはブラシ種別も入るため、矢印値のときだけ初期表示に使う
+    const objArrowStyle: ArrowStyleType | undefined =
+      field._strokeStyle === 'NONE' || field._strokeStyle === 'ARROW_END' || field._strokeStyle === 'ARROW_BOTH'
+        ? field._strokeStyle
+        : undefined;
+    return { color, widthType, arrowStyle: objArrowStyle };
+  })();
+  const colorPickerColor = selectedSingleObjectStyle?.color ?? penColor;
 
   const selectFeatureButton = useCallback(
     (value: FeatureButtonType) => {
@@ -1070,8 +1319,6 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       setFeatureButton(value);
       resetDrawTools();
       clearMapMemoHistory();
-      //MEMOモードに入るたびに「初回タップで設定を開く」をリセットする
-      if (value === 'MEMO') mapMemoToolVisited.current = {};
       if (Platform.OS !== 'web') toggleHeadingUp(false);
     },
     [setDrawTool, setMapMemoTool, toggleTerrain, setFeatureButton, resetDrawTools, clearMapMemoHistory, toggleHeadingUp]
@@ -1148,9 +1395,11 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
             const ret = await ConfirmAsync(t('Home.confirm.discard'));
             if (!ret) return;
           }
-          //ドローツールをオフ
+          //ドローツールをオフ（編集のキャンセルもここを通る）
           resetDrawTools();
           setDrawTool('NONE');
+          //飛翔図は1本＝1個体なので、やめたときも属性を未選択へ戻して選び直してもらう
+          if (editingLayer?.toolPalette === 'HISYOU') clearPaletteFieldValues(editingLayer.id);
           if (route.params?.mode === 'editPosition') finishEditPosition(true);
         } else {
           //ドローツールをオン
@@ -1172,6 +1421,18 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
             //await runTutrial(`POLYGONTOOL_${value}`);
           }
 
+          //編集選択で選択済み・追加（プロット）で作成中のオブジェクトがあれば、手書きセッションの
+          //ストロークに変換して手書きと同じ編集挙動（頂点マーカーなし・なぞって修正）にする
+          if (isHandwritingTool(value) && (isSelectedDraw || isEditingDraw || isEditingObject)) {
+            convertSelectionToHandwriting(handwritingPenStyleParam);
+          }
+          //逆に手書きセッションのストロークがあれば、プロット編集（ノード編集）へ変換する
+          if ((value === 'PLOT_LINE' || value === 'PLOT_POLYGON') && (isSelectedDraw || isEditingDraw || isEditingObject)) {
+            convertSessionToPlot(featureButton);
+          }
+
+          //LINEタブの消しゴム（メモツール）が残っていれば解除する（相互排他）
+          setMapMemoTool('NONE');
           setDrawTool(value);
         }
       } else if (value === 'SELECT') {
@@ -1186,8 +1447,9 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
           } else if (featureButton === 'MEMO') {
             //マップメモの編集選択。描画ツールは解除する
             if (!(await checkEditableMapMemo())) return;
-            setMapMemoTool('NONE');
           }
+          //消しゴム等のメモツールが残っていれば解除する（相互排他）
+          setMapMemoTool('NONE');
           setDrawTool(value);
           //await runTutrial('SELECTIONTOOL');
         }
@@ -1216,12 +1478,18 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     [
       checkEditableLayerForDraw,
       checkEditableMapMemo,
+      clearPaletteFieldValues,
+      editingLayer?.id,
+      editingLayer?.toolPalette,
+      convertSelectionToHandwriting,
+      convertSessionToPlot,
       currentDrawTool,
       currentLineTool,
       currentPolygonTool,
       featureButton,
       finishEditPosition,
       handleAddLocationPoint,
+      handwritingPenStyleParam,
       isEditingDraw,
       isEditingObject,
       isSelectedDraw,
@@ -1248,7 +1516,10 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
 
   //undo/redoの統一ハンドラ。メモモードの通常時はメモ書き込み履歴、
   //それ以外（作図モード、メモの編集選択操作中）は作図編集のundoを使う
-  const usesDrawHistory = featureButton !== 'MEMO' || currentDrawTool === 'SELECT' || isSelectedDraw;
+  const usesDrawHistory =
+    (featureButton !== 'MEMO' && !isEraserTool(currentMapMemoTool)) ||
+    currentDrawTool === 'SELECT' ||
+    isSelectedDraw;
   const isUndoAvailable = usesDrawHistory ? isDrawUndoable : isUndoable;
   const isRedoAvailable = usesDrawHistory ? isDrawRedoable : isRedoable;
   const pressUndo = useCallback(async () => {
@@ -1268,14 +1539,18 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
 
   const pressSaveDraw = useCallback(async () => {
     let result;
+    //プロパティパネル方式: 選択中に操作した項目（色・太さ）だけを選択オブジェクトへ反映する。
+    //操作していなければ形だけの変形（スタイル保持）。設定UIを開くと選択オブジェクトの値が初期表示される
+    const applyStyleToSelected = isSelectedDraw ? { ...selectionStyleChanged.current } : undefined;
     if (featureButton === 'POINT') {
       result = savePoint();
     } else if (featureButton === 'LINE' || featureButton === 'MEMO') {
       //マップメモの編集選択もラインレコードとして保存する
-      result = saveLine();
+      result = saveLine(currentDrawStyle, applyStyleToSelected);
     } else if (featureButton === 'POLYGON') {
-      result = savePolygon();
+      result = savePolygon(currentDrawStyle, applyStyleToSelected);
     }
+    selectionStyleChanged.current = { color: false, width: false, arrow: false };
     if (result === undefined) return false;
     const { isOK, message, layer, recordSet } = result;
     if (!isOK) {
@@ -1283,12 +1558,22 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       return false;
     }
     // console.log('🔍 pressSaveDraw - layer:', layer?.name, 'type:', layer?.type, 'id:', layer?.id);
+    //手書きも確定でツールをオフにする（新規バッチ・編集選択とも）。DataEditオープンは下の共通処理
     setDrawTool('NONE');
+    //飛翔図は1本＝1個体なので、確定したら種名・雌雄・成幼を未選択へ戻して選び直してもらう
+    if (layer?.toolPalette === 'HISYOU') clearPaletteFieldValues(layer.id);
     if (route.params?.mode === 'editPosition') {
       navigation.setParams({ mode: undefined });
     }
-    // 編集選択の場合はボトムシートを開かない
-    if (!isSelectedDraw && layer !== undefined && recordSet !== undefined && recordSet.length > 0) {
+    // 編集選択の場合はボトムシートを開かない。
+    // 飛翔図・植生図は続けて何本・何面も描くので、確定のたびにデータ編集が開くと作業が途切れる
+    if (
+      !isSelectedDraw &&
+      layer !== undefined &&
+      layer.toolPalette === undefined &&
+      recordSet !== undefined &&
+      recordSet.length > 0
+    ) {
       openSheet(2);
       navigateToSplit?.('DataEdit', {
         previous: 'Data',
@@ -1297,7 +1582,20 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       });
     }
     return true;
-  }, [openSheet, featureButton, isSelectedDraw, navigation, navigateToSplit, route.params?.mode, savePoint, saveLine, savePolygon, setDrawTool]);
+  }, [
+    clearPaletteFieldValues,
+    currentDrawStyle,
+    openSheet,
+    featureButton,
+    isSelectedDraw,
+    navigation,
+    navigateToSplit,
+    route.params?.mode,
+    savePoint,
+    saveLine,
+    savePolygon,
+    setDrawTool,
+  ]);
 
   // ダウンロード対象の地図リスト（選択地図 > 全地図 > 従来の単一地図）
   // 可視領域用DEM（疑似地図・Redux tileMaps非登録）は、明示選択時と「すべての地図」時に合成して含める
@@ -2045,8 +2343,8 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
 
       //if (route.params?.mode === 'editPosition') hideDrawLine();
       if (isPencilModeActive && isPencilTouch.current === false) {
-        //フリーハンドの描きかけがあれば確定してから地図操作へ
-        commitFreehandStroke();
+        //手書きの描きかけがあれば確定してから地図操作へ
+        commitHandwritingStroke();
         hideDrawLine();
         setIsPinch(true);
       } else if (currentDrawTool === 'MOVE') {
@@ -2063,37 +2361,10 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
         }
       } else if (isPlotTool(currentDrawTool)) {
         handleGrantPlot(pXY);
-      } else if (isFreehandTool(currentDrawTool)) {
-        const finished = handleGrantFreehand(pXY);
-        freehandFinishedRef.current = finished;
-        if (finished) {
-          if (route.params?.mode === 'editPosition') {
-            const result = currentDrawTool === 'FREEHAND_LINE' ? saveLine() : savePolygon();
-            const { isOK, message } = result;
-            if (!isOK) {
-              await AlertAsync(message);
-              return;
-            }
-            finishEditPosition(true);
-          } else {
-            const result = currentDrawTool === 'FREEHAND_LINE' ? saveLine() : savePolygon();
-            const { isOK, message, layer, recordSet } = result;
-            if (!isOK && message !== undefined) {
-              await AlertAsync(message);
-            } else {
-              setDrawTool('NONE');
-              if (layer !== undefined && recordSet !== undefined && recordSet.length > 0) {
-                openSheet(2);
-                navigateToSplit?.('DataEdit', {
-                  previous: 'Data',
-                  targetData: recordSet[0],
-                  targetLayer: layer,
-                });
-              }
-            }
-          }
-        }
-      } else if (featureButton === 'MEMO') {
+      } else if (isHandwritingTool(currentDrawTool)) {
+        handleGrantHandwriting(pXY, handwritingPenStyleParam);
+      } else if (featureButton === 'MEMO' || (featureButton === 'LINE' && isEraserTool(currentMapMemoTool))) {
+        //LINEタブでも手書きの消しゴム（メモの消しゴム）を使えるようにする
         if (isMapMemoDrawTool(currentMapMemoTool) && !isPencilTouch.current && isPencilModeActive) {
           setIsPinch(true);
         } else {
@@ -2101,26 +2372,22 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
         }
       }
     },
-    [openSheet, 
+    [
       checkSplitLine,
-      commitFreehandStroke,
+      commitHandwritingStroke,
       currentDrawTool,
       currentMapMemoTool,
       featureButton,
-      finishEditPosition,
       getPXY,
-      handleGrantFreehand,
+      handleGrantHandwriting,
       handleGrantMapMemo,
       handleGrantPlot,
       handleGrantSelect,
+      handwritingPenStyleParam,
       hideDrawLine,
       isPencilModeActive,
       isPencilTouch,
-      navigateToSplit,
       route.params?.mode,
-      saveLine,
-      savePolygon,
-      setDrawTool,
       setIsPinch,
       mapRegion,
       mapSize,
@@ -2136,12 +2403,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       const pXY = getPXY(event);
 
       // 地図をドラッグしていることを検出
-      if (
-        currentDrawTool === 'NONE' &&
-        currentMapMemoTool === 'NONE' &&
-        !isPlotTool(currentDrawTool) &&
-        !isFreehandTool(currentDrawTool)
-      ) {
+      if (currentDrawTool === 'NONE' && currentMapMemoTool === 'NONE' && !isPlotTool(currentDrawTool)) {
         // ドラッグ開始位置からの移動距離を計算
         if (dragStartPosition.current) {
           const dx = pXY[0] - dragStartPosition.current.x;
@@ -2185,10 +2447,10 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
         //タッチ開始直後の2本目着地はピンチ意図とみなし、1本目のGrantで拾った点を取り消す
         const isPinchIntentFromStart = getEventTimestamp(event) - touchStartTimeRef.current < PINCH_INTENT_DURATION_MS;
         if (isPinchIntentFromStart) {
-          cancelFreehandStroke();
+          cancelHandwritingStroke();
         } else {
-          //フリーハンドの描きかけがあれば確定してから地図操作へ（描きかけの消失防止）
-          commitFreehandStroke();
+          //手書きの描きかけがあれば確定してから地図操作へ（描きかけの消失防止）
+          commitHandwritingStroke();
         }
         //プロットはGrantで追加・移動したノードを取り消す（タップ確定はリリース時のため）
         cancelPlotGrant();
@@ -2210,18 +2472,18 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
         handleMoveSelect(pXY);
       } else if (isPlotTool(currentDrawTool)) {
         handleMovePlot(pXY);
-      } else if (isFreehandTool(currentDrawTool)) {
-        handleMoveFreehand(pXY, getEventTimestamp(event));
+      } else if (isHandwritingTool(currentDrawTool)) {
+        handleMoveHandwriting(pXY, getEventTimestamp(event));
       }
     },
     [
-      cancelFreehandStroke,
+      cancelHandwritingStroke,
       cancelPlotGrant,
-      commitFreehandStroke,
+      commitHandwritingStroke,
       currentDrawTool,
       currentMapMemoTool,
       getPXY,
-      handleMoveFreehand,
+      handleMoveHandwriting,
       handleMoveMapMemo,
       handleMovePlot,
       handleMoveSelect,
@@ -2273,14 +2535,13 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
         //2本指が関与したタッチは地図操作（パン・ズーム）なので描画は確定しない。
         //指が動かないズーム（2本指タップ・その場ピンチ）はMoveの2本指検出を通らないため、ここでも取り消す
         if (!isPinch && wasMultiTouch) {
-          commitFreehandStroke();
+          commitHandwritingStroke();
           cancelPlotGrant();
           pauseMapMemoDrawing();
         }
         showDrawLine();
         if (isPinch) setIsPinch(false);
         isMapDragging.current = false;
-        freehandFinishedRef.current = false;
         longPressFiredRef.current = false;
         return;
       } else if (currentDrawTool === 'MOVE') {
@@ -2294,7 +2555,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
         const finished = handleReleasePlotLinePolygon();
         if (finished) {
           if (route.params?.mode === 'editPosition') {
-            const result = currentDrawTool === 'PLOT_LINE' ? saveLine() : savePolygon();
+            const result = currentDrawTool === 'PLOT_LINE' ? saveLine(currentDrawStyle) : savePolygon(currentDrawStyle);
             const { isOK, message } = result;
             if (!isOK) {
               await AlertAsync(message);
@@ -2302,14 +2563,20 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
             }
             finishEditPosition(true);
           } else {
-            const result = currentDrawTool === 'PLOT_LINE' ? saveLine() : savePolygon();
+            const result = currentDrawTool === 'PLOT_LINE' ? saveLine(currentDrawStyle) : savePolygon(currentDrawStyle);
             const { isOK, message, layer, recordSet } = result;
             if (!isOK) {
               await AlertAsync(message);
               return;
             }
             setDrawTool('NONE');
-            if (layer !== undefined && recordSet !== undefined && recordSet.length > 0) {
+            //飛翔図・植生図は続けて描くのでデータ編集は開かない
+            if (
+              layer !== undefined &&
+              layer.toolPalette === undefined &&
+              recordSet !== undefined &&
+              recordSet.length > 0
+            ) {
               openSheet(2);
               navigateToSplit?.('DataEdit', {
                 previous: 'Data',
@@ -2319,14 +2586,14 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
             }
           }
         }
-      } else if (isFreehandTool(currentDrawTool)) {
-        handleReleaseFreehand();
+      } else if (isHandwritingTool(currentDrawTool)) {
+        handleReleaseHandwriting();
       } else if (currentDrawTool === 'SPLIT_LINE') {
         // 分割ツールの場合はリリース時に何もしない（確認ダイアログはGrantで処理）
         return;
       } else if (currentMapMemoTool !== 'NONE') {
         handleReleaseMapMemo(event);
-      } else if (!isMapDragging.current && !freehandFinishedRef.current && !longPressFiredRef.current) {
+      } else if (!isMapDragging.current && !longPressFiredRef.current) {
         if (isMeasuring) {
           // 測定モード中はタップ位置をB点に設定（再タップで置換）。情報取得ポップアップは抑制する
           const latLonArray = xyArrayToLatLonObjects([pXY], mapRegion, mapSize, mapViewRef.current);
@@ -2352,14 +2619,13 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       }
       // ドラッグ状態をリセット
       isMapDragging.current = false;
-      // フリーハンド完了フラグをリセット
-      freehandFinishedRef.current = false;
       // 長押し発火フラグをリセット
       longPressFiredRef.current = false;
     },
     [openSheet, 
       cancelPlotGrant,
-      commitFreehandStroke,
+      commitHandwritingStroke,
+      currentDrawStyle,
       currentDrawTool,
       currentMapMemoTool,
       finishEditPosition,
@@ -2367,7 +2633,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       getInfoOfMap,
       getPXY,
         pauseMapMemoDrawing,
-      handleReleaseFreehand,
+      handleReleaseHandwriting,
       handleReleaseMapMemo,
       handleReleasePlotLinePolygon,
       handleReleasePlotPoint,
@@ -2392,7 +2658,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
   const handlePanResponderTerminate = useCallback(() => {
     //地図側のネイティブジェスチャー（ピンチズーム等）にタッチが奪われた場合の後始末。
     //Grantで拾った点を取り消し、実質的な描きかけは保全する（リリースは呼ばれない）
-    commitFreehandStroke();
+    commitHandwritingStroke();
     cancelPlotGrant();
     pauseMapMemoDrawing();
     isPencilTouch.current = undefined;
@@ -2403,9 +2669,8 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       longPressTimerRef.current = null;
     }
     isMapDragging.current = false;
-    freehandFinishedRef.current = false;
     longPressFiredRef.current = false;
-  }, [cancelPlotGrant, commitFreehandStroke, isPencilTouch, pauseMapMemoDrawing]);
+  }, [cancelPlotGrant, commitHandwritingStroke, isPencilTouch, pauseMapMemoDrawing]);
 
   const recordMultiTouch = useCallback((event: GestureResponderEvent) => {
     //2本目の指の着地はGrantを再発火しないため、ここで記録する（指が動かないズーム対策）
@@ -2850,7 +3115,23 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
 
       // Editing layer chip
       editingLayerName,
+      editingLayer,
+      selectFieldValues,
+      addFieldValue,
+      updateFieldValue,
+      deleteFieldValue,
       pressEditingLayerButton,
+
+      //個別色レイヤ（色・太さボタンの常時表示と通常作図への反映）
+      isIndividualStyleLayer,
+      //単一オブジェクト選択中の太さ（太さパレットの初期値）
+      selectedObjectWidthType: selectedSingleObjectStyle?.widthType,
+      selectedObjectArrowStyle: selectedSingleObjectStyle?.arrowStyle,
+      switchSelectionToSplit,
+      //手書きペンのサブツールと設定モーダル
+      handwritingSubTool,
+      setHandwritingSubTool,
+      openHandwritingSettingsTab,
 
       // Backward compatibility (to be deprecated gradually)
       isEditingDraw,
@@ -2896,7 +3177,19 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       finishEditObject,
       resetDrawTools,
       editingLayerName,
+      editingLayer,
+      selectFieldValues,
+      addFieldValue,
+      updateFieldValue,
+      deleteFieldValue,
       pressEditingLayerButton,
+      isIndividualStyleLayer,
+      selectedSingleObjectStyle?.widthType,
+      selectedSingleObjectStyle?.arrowStyle,
+      switchSelectionToSplit,
+      handwritingSubTool,
+      setHandwritingSubTool,
+      openHandwritingSettingsTab,
     ]
   );
 
@@ -2996,6 +3289,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
 
   // SVGDrawingContextの値（RefObjectがあるためメモ化しない）
   const svgDrawingContextValue = {
+    featuresTransformAngle,
     // Drawing tools SVG data
     drawLine,
     editingLine: editingLineXY,
@@ -3054,18 +3348,20 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       visibleMapMemoColor,
       currentPenWidth,
       penColor,
+      colorPickerColor,
       penWidth,
       isPencilModeActive,
       isUndoable,
       isRedoable,
       mapMemoLines,
       arrowStyle,
+      setArrowStyle: setArrowStyleMarked,
+      isStraightStyle,
+      setIsStraightStyle,
       selectMapMemoTool,
-      setPenWidth,
+      setPenWidth: setPenWidthMarked,
       setVisibleMapMemoColor,
-      pressMapMemoToolButton,
-      openMapMemoSettingsTab,
-      selectPenColor,
+      selectPenColor: selectPenColorMarked,
       pressUndoMapMemo,
       pressRedoMapMemo,
       togglePencilMode,
@@ -3075,18 +3371,20 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       visibleMapMemoColor,
       currentPenWidth,
       penColor,
+      colorPickerColor,
       penWidth,
       isPencilModeActive,
       isUndoable,
       isRedoable,
       mapMemoLines,
       arrowStyle,
+      setArrowStyleMarked,
+      isStraightStyle,
+      setIsStraightStyle,
       selectMapMemoTool,
-      setPenWidth,
+      setPenWidthMarked,
       setVisibleMapMemoColor,
-      pressMapMemoToolButton,
-      openMapMemoSettingsTab,
-      selectPenColor,
+      selectPenColorMarked,
       pressUndoMapMemo,
       pressRedoMapMemo,
       togglePencilMode,
@@ -3181,6 +3479,9 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
                           <HomeModalUpdateInfo />
                           <HomeModalMapMemoSettings
                             visible={visibleMapMemoSettings}
+                            mode={featureButton === 'MEMO' ? 'MEMO' : 'DRAW_LINE'}
+                            handwritingSubTool={handwritingSubTool}
+                            selectHandwritingSubTool={setHandwritingSubTool}
                             tab={mapMemoSettingsTab}
                             currentMapMemoTool={currentMapMemoTool}
                             currentPenWidth={currentPenWidth}

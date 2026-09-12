@@ -16,6 +16,8 @@ import {
   selectPointFeaturesByArea,
   selectLineFeaturesByArea,
   selectPolygonFeaturesByArea,
+  selectPolygonFeatureByLatLon,
+  reprojectCoordsOnModifiedLine,
 } from '../Coords';
 import { LocationType, PointRecordType, LineRecordType, PolygonRecordType } from '../../types';
 
@@ -378,7 +380,7 @@ describe('modifyLineWithSource', () => {
       [300, 80],
       [800, 50],
     ];
-    const result = modifyLineWithSource(original as any, modified as any, 'FREEHAND_LINE', toLatLon as any);
+    const result = modifyLineWithSource(original as any, modified as any, 'HANDWRITING_LINE', toLatLon as any);
     expect(result.xy.length).toBeGreaterThan(0);
     verify(original, result);
   });
@@ -394,12 +396,12 @@ describe('modifyLineWithSource', () => {
       [1500, 300],
       [2500, 600],
     ];
-    const result = modifyLineWithSource(original as any, modified as any, 'FREEHAND_LINE', toLatLon as any);
+    const result = modifyLineWithSource(original as any, modified as any, 'HANDWRITING_LINE', toLatLon as any);
     expect(result.xy.length).toBeGreaterThan(0);
     verify(original, result);
   });
 
-  it('FREEHAND_POLYGONで一周するストロークでも不変条件を満たす', () => {
+  it('HANDWRITING_POLYGONで一周するストロークでも不変条件を満たす', () => {
     const original = makeOriginal([
       [0, 0],
       [500, 0],
@@ -411,7 +413,7 @@ describe('modifyLineWithSource', () => {
       [500, 800],
       [100, 100],
     ];
-    const result = modifyLineWithSource(original as any, modified as any, 'FREEHAND_POLYGON', toLatLon as any);
+    const result = modifyLineWithSource(original as any, modified as any, 'HANDWRITING_POLYGON', toLatLon as any);
     expect(result.xy.length).toBeGreaterThan(0);
     verify(original, result);
   });
@@ -421,7 +423,7 @@ describe('modifyLineWithSource', () => {
       [0, 0],
       [500, 0],
     ]);
-    const result = modifyLineWithSource(original as any, [[10, 10]] as any, 'FREEHAND_LINE', toLatLon as any);
+    const result = modifyLineWithSource(original as any, [[10, 10]] as any, 'HANDWRITING_LINE', toLatLon as any);
     expect(result.xy).toBe(original.xy);
     expect(result.latlon).toBe(original.latlon);
   });
@@ -678,5 +680,68 @@ describe('closeFreehandPolygonSeam', () => {
     const closed = closeFreehandPolygonSeam(xy as any, latlon as any, toLatLon as any);
     expect(closed.xy).toEqual([...xy, xy[0]]);
     expect(closed.latlon).toEqual([...latlon, latlon[0]]);
+  });
+});
+
+describe('selectPolygonFeatureByLatLon', () => {
+  const square = {
+    id: 'p1',
+    userId: 'u1',
+    displayName: 't',
+    visible: true,
+    redraw: false,
+    coords: [
+      { latitude: 0, longitude: 0 },
+      { latitude: 0, longitude: 10 },
+      { latitude: 10, longitude: 10 },
+      { latitude: 10, longitude: 0 },
+      { latitude: 0, longitude: 0 },
+    ],
+    field: {},
+  } as unknown as PolygonRecordType;
+
+  it('面の内側をタップしても選択できる', () => {
+    //タップ位置のバッファは枠線に届かない（中心をタップした状況）
+    const selected = selectPolygonFeatureByLatLon([square], [5, 5], 0.1);
+    expect(selected?.id).toBe('p1');
+  });
+
+  it('枠線のすぐ外側のタップでも選択できる（バッファはkm単位）', () => {
+    const selected = selectPolygonFeatureByLatLon([square], [10.0005, 5], 0.1);
+    expect(selected?.id).toBe('p1');
+  });
+
+  it('面から離れた場所のタップでは選択しない', () => {
+    expect(selectPolygonFeatureByLatLon([square], [20, 20], 0.1)).toBeUndefined();
+  });
+});
+
+describe('reprojectCoordsOnModifiedLine', () => {
+  //東西にまっすぐな線。修正で2倍の長さに伸ばす
+  const oldLine: [number, number][] = [
+    [0, 0],
+    [10, 0],
+  ];
+  const newLine: [number, number][] = [
+    [0, 0],
+    [20, 0],
+  ];
+
+  it('線上の位置の割合を保ったまま新しい線へ移す', () => {
+    //元の線の中間（5）は、伸びた線でも中間（10）へ移る
+    const moved = reprojectCoordsOnModifiedLine([[5, 0]], oldLine, newLine);
+    expect(moved).toBeDefined();
+    expect(moved![0][0]).toBeCloseTo(10, 1);
+    expect(moved![0][1]).toBeCloseTo(0, 1);
+  });
+
+  it('線から少し離れた記号も、最も近い位置の割合で移す', () => {
+    const moved = reprojectCoordsOnModifiedLine([[2.5, 0.01]], oldLine, newLine);
+    expect(moved![0][0]).toBeCloseTo(5, 1);
+  });
+
+  it('線が短すぎる場合はundefinedを返す（移動しない）', () => {
+    expect(reprojectCoordsOnModifiedLine([[5, 0]], [[0, 0]], newLine)).toBeUndefined();
+    expect(reprojectCoordsOnModifiedLine([], oldLine, newLine)).toBeUndefined();
   });
 });

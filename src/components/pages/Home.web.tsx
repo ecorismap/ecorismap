@@ -116,7 +116,7 @@ export default function HomeScreen() {
   const { downloadMode, tileMaps } = useContext(TileManagementContext);
 
   // MapMemoContext
-  const { currentMapMemoTool, visibleMapMemoColor, penColor, setVisibleMapMemoColor, selectPenColor } =
+  const { currentMapMemoTool, visibleMapMemoColor, colorPickerColor, setVisibleMapMemoColor, selectPenColor } =
     useContext(MapMemoContext);
 
   // DataSelectionContext
@@ -924,7 +924,7 @@ export default function HomeScreen() {
         >
           <Loading visible={isLoading} text={t('common.processing')} />
           <HomeModalColorPicker
-            color={penColor}
+            color={colorPickerColor}
             modalVisible={visibleMapMemoColor}
             withAlpha={true}
             pressSelectColorOK={selectPenColor}
