@@ -17,7 +17,7 @@ import { Provider } from 'react-redux';
 import { configureStore, combineReducers } from '@reduxjs/toolkit';
 import React from 'react';
 import { useRecord } from '../useRecord';
-import dataSetReducer from '../../modules/dataSet';
+import dataSetReducer, { addDataAction } from '../../modules/dataSet';
 import layersReducer, { setLayersAction } from '../../modules/layers';
 import userReducer from '../../modules/user';
 import settingsReducer, { settingsInitialState } from '../../modules/settings';
@@ -492,6 +492,51 @@ describe('useRecord', () => {
       expect(message).toBe('hooks.message.noLayerToEdit');
       expect(layer).toBeUndefined();
       expect(record).toBeUndefined();
+    });
+  });
+
+  //テンプレートのデータは地図に表示されるのに編集選択できない、という不具合の回帰テスト
+  describe('テンプレートデータの編集', () => {
+    const templateRecord: RecordType = {
+      id: 'template-record1',
+      userId: 'template',
+      displayName: 'admin',
+      visible: true,
+      redraw: false,
+      uploaded: true,
+      coords: { latitude: 35.1, longitude: 135.1 },
+      field: { testField: 'templateValue' },
+    };
+
+    beforeEach(() => {
+      store.dispatch(addDataAction([{ layerId: 'layer1', userId: 'template', data: [templateRecord] }]));
+    });
+
+    it('編集対象のレコードに自分のデータとテンプレートの両方が含まれる', () => {
+      const { result } = renderHook(() => useRecord(), { wrapper });
+
+      const { editingLayer, editingRecordSet } = result.current.getEditableLayerAndRecordSet('POINT');
+      expect(editingLayer?.id).toBe('layer1');
+      expect(editingRecordSet.map((d) => d.id)).toEqual(['record1', 'template-record1']);
+    });
+
+    it('テンプレートのレコードを更新すると自分のデータに移りテンプレート側からは消える', () => {
+      const { result } = renderHook(() => useRecord(), { wrapper });
+      const layer = result.current.findLayer('layer1')!;
+
+      act(() => {
+        result.current.updateRecord(layer, { ...templateRecord, coords: { latitude: 36.0, longitude: 136.0 } });
+      });
+
+      const dataSet = store.getState().dataSet;
+      const ownData = dataSet.find((d: any) => d.layerId === 'layer1' && d.userId === 'user1');
+      const updated = ownData?.data.find((d: any) => d.id === 'template-record1');
+      expect(updated?.coords).toEqual({ latitude: 36.0, longitude: 136.0 });
+      expect(updated?.userId).toBe('user1');
+
+      //アップロード済みのレコードは論理削除（サーバー側と突き合わせるため）
+      const templateData = dataSet.find((d: any) => d.layerId === 'layer1' && d.userId === 'template');
+      expect(templateData?.data.find((d: any) => d.id === 'template-record1')?.deleted).toBe(true);
     });
   });
 });

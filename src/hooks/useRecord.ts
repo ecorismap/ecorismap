@@ -19,7 +19,7 @@ import { editSettingsAction } from '../modules/settings';
 import { t } from '../i18n/config';
 import { ulid } from 'ulid';
 import { getDefaultField } from '../utils/Data';
-import { addRecordsAction, updateRecordsAction } from '../modules/dataSet';
+import { addRecordsAction, deleteRecordsAction, updateRecordsAction } from '../modules/dataSet';
 
 import { calcCentroid, calcLineMidPoint } from '../utils/Coords';
 import { usePermission } from './usePermission';
@@ -173,8 +173,25 @@ export const useRecord = (): UseRecordReturnType => {
         editingLayer = currentLayers.find((d) => d.active && d.type === 'POLYGON');
         dataSet = polygonDataSet;
       }
-      const editingData = dataSet.find((d) => d.layerId === editingLayer?.id && d.userId === dataUser.uid);
-      const editingRecordSet = editingData !== undefined ? editingData.data : [];
+      //同じレイヤのデータは、自分・未設定（ログイン前に作成）・テンプレートが別々の集合に
+      //分かれて入っている。表示は全部を描画するのに編集対象を自分の集合だけにすると、
+      //テンプレートのデータが地図に見えているのに編集選択できない。アップロード側
+      //（utils/DataのgetTargetRecordSet）と同じ扱いに揃えて1つにまとめる
+      const editingDataSet = dataSet.filter((d) => d.layerId === editingLayer?.id);
+      const ownRank = (userId: string | undefined) => (userId === dataUser.uid ? 0 : userId === undefined ? 1 : 2);
+      const editingRecordSet: RecordType[] = [];
+      const addedIds = new Set<string>();
+      editingDataSet
+        .filter((d) => d.userId === dataUser.uid || d.userId === undefined || d.userId === 'template')
+        //同じidが複数の集合にある場合は自分のものを優先する
+        .sort((a, b) => ownRank(a.userId) - ownRank(b.userId))
+        .forEach((d) =>
+          d.data.forEach((record) => {
+            if (addedIds.has(record.id)) return;
+            addedIds.add(record.id);
+            editingRecordSet.push(record);
+          })
+        );
 
       return { editingLayer, editingRecordSet };
     },
@@ -277,15 +294,26 @@ export const useRecord = (): UseRecordReturnType => {
 
   const updateRecord = useCallback(
     (layer: LayerType, record: RecordType) => {
+      //テンプレートや未設定ユーザーのデータを編集したら自分のデータとして持ち替える。
+      //元の集合に残すと同じレコードが二重に表示されるため削除する（データ一覧の編集と同じ扱い）
+      if (record.userId !== dataUser.uid) {
+        dispatch(
+          deleteRecordsAction({
+            layerId: layer.id,
+            userId: record.userId,
+            data: [record],
+          })
+        );
+      }
       dispatch(
         updateRecordsAction({
           layerId: layer.id,
           userId: dataUser.uid,
-          data: [record],
+          data: [{ ...record, userId: dataUser.uid, displayName: dataUser.displayName }],
         })
       );
     },
-    [dataUser.uid, dispatch]
+    [dataUser.displayName, dataUser.uid, dispatch]
   );
 
   const addTrackRecord = useCallback(
