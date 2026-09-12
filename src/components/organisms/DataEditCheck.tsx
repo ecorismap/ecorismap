@@ -9,7 +9,8 @@ import { ScrollView } from 'react-native-gesture-handler';
 
 interface Props {
   name: string;
-  value: string;
+  //列を後から追加したレコードなどでは値が未設定（undefined）になりうる
+  value: string | undefined;
   checkItems: { value: string; isOther: boolean }[];
   onValueChange: (value: string) => void;
 }
@@ -24,7 +25,7 @@ export const DataEditCheck = (props: Props) => {
   const checkItemValues = useMemo(() => checkItems.filter((v) => !v.isOther).map((v) => v.value), [checkItems]);
 
   useEffect(() => {
-    const checkedValue = value.split(',');
+    const checkedValue = (value ?? '').split(',');
     const newCheckedList = checkItemValues.map((v) => checkedValue.includes(v));
     setCheckedList(newCheckedList);
     if (otherItem !== undefined) {

@@ -1,6 +1,5 @@
-import React, { useState, useCallback } from 'react';
-// eslint-disable-next-line react-native/split-platform-components
-import { Linking, Platform, PlatformIOSStatic } from 'react-native';
+import React, { useState, useCallback, useEffect } from 'react';
+import { Keyboard, Linking, Platform } from 'react-native';
 import { LayerType, PhotoType, RecordType } from '../types';
 import DataEdit from '../components/pages/DataEdit';
 import { AlertAsync, ConfirmAsync } from '../components/molecules/AlertAsync';
@@ -64,36 +63,10 @@ export default function DataEditContainer() {
   //console.log('####', targetLayer);
   //console.log('$$$$', targetRecord);
 
-  const pressSaveData = useCallback(async () => {
-    const checkResult = checkRecordEditable(targetLayer);
+  //キーボードを閉じてから保存する場合の待機フラグ
+  const [isSavePending, setIsSavePending] = useState(false);
 
-    if (!checkResult.isOK) {
-      if (checkResult.message === t('hooks.message.noEditMode')) {
-        // 編集モードでない場合、確認ダイアログを表示
-        const confirmResult = await ConfirmAsync(t('hooks.confirmEditModeMessage'));
-        if (!confirmResult) return;
-        // 編集モードにする
-        changeActiveLayer(targetLayer);
-      } else {
-        // その他の編集不可理由（プロジェクトロックなど）
-        Alert.alert('', checkResult.message);
-        return;
-      }
-    }
-
-    if (Platform.OS === 'ios') {
-      const platformIOS = Platform as PlatformIOSStatic;
-      if (!platformIOS.isPad) {
-        //iPadの場合はペン入力の確定を指でおこなうとkeybordShownがtrueになるため、ここでチェックしない。
-        //iPadはキーボード閉じないと保存できないので、問題はないはず。iPhoneも？
-        if (keyboardShown) {
-          //TABLEを入力途中で保存を押した場合、isEditingRecordがfalseになったあとに、changeFieldが走って再びTrueになる。
-          //そのため入力を確定してキーボードを閉じるまで保存できないようにする。
-          Alert.alert('', t('DataEdit.alert.confirmInput'));
-          return;
-        }
-      }
-    }
+  const finalizeSave = useCallback(() => {
     const checkInputResult = checkFieldInput(targetLayer, targetRecord);
     if (!checkInputResult.isOK) {
       Alert.alert('', checkInputResult.message);
@@ -131,10 +104,7 @@ export default function DataEditContainer() {
       });
     }
   }, [
-    changeActiveLayer,
-    checkRecordEditable,
     isDecimal,
-    keyboardShown,
     latlon,
     navigate,
     params?.mainData,
@@ -145,6 +115,51 @@ export default function DataEditContainer() {
     targetRecord,
     unselectRecord,
   ]);
+
+  const pressSaveData = useCallback(async () => {
+    const checkResult = checkRecordEditable(targetLayer);
+
+    if (!checkResult.isOK) {
+      if (checkResult.message === t('hooks.message.noEditMode')) {
+        // 編集モードでない場合、確認ダイアログを表示
+        const confirmResult = await ConfirmAsync(t('hooks.confirmEditModeMessage'));
+        if (!confirmResult) return;
+        // 編集モードにする
+        changeActiveLayer(targetLayer);
+      } else {
+        // その他の編集不可理由（プロジェクトロックなど）
+        Alert.alert('', checkResult.message);
+        return;
+      }
+    }
+
+    if (Platform.OS === 'ios' && keyboardShown) {
+      //保存ボタンはヘッダーにあるためタップしてもTextInputはフォーカスを失わない。
+      //キーボードを閉じてonBlur（値の整形やTABLE等の確定）を走らせてから保存する。
+      //iPadはペン入力の確定でもkeyboardShownがtrueになるが、その場合もフォールバックで保存される。
+      Keyboard.dismiss();
+      setIsSavePending(true);
+      return;
+    }
+
+    finalizeSave();
+  }, [changeActiveLayer, checkRecordEditable, finalizeSave, keyboardShown, targetLayer]);
+
+  useEffect(() => {
+    if (!isSavePending) return;
+    if (!keyboardShown) {
+      //キーボードが閉じたらonBlurの反映後の値で保存する
+      setIsSavePending(false);
+      finalizeSave();
+      return;
+    }
+    //keyboardDidHideが来ない場合（外付けキーボード、iPadのペン入力など）でも保存できるようにする
+    const timer = setTimeout(() => {
+      setIsSavePending(false);
+      finalizeSave();
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [finalizeSave, isSavePending, keyboardShown]);
 
   const pressCopyData = useCallback(async () => {
     const ret = await ConfirmAsync(t('DataEdit.confirm.copyData'));

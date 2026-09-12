@@ -9,6 +9,9 @@ import {
   narrowFilterCandidates,
   sortData,
   getInitialFieldValue,
+  changeFieldValue,
+  getBlankFieldValue,
+  getFieldDisplayValue,
   mergeLayerData,
   updateRecordCoords,
   isLatLonEmpty,
@@ -228,6 +231,60 @@ describe('sortData with _user_ column', () => {
       ],
       idx: [1, 0],
     });
+  });
+});
+
+describe('changeFieldValue', () => {
+  it('辞書・動的辞書への変更で既存の値が消えない', () => {
+    expect(changeFieldValue('ノスリ', 'STRING', 'STRING_DYNAMIC')).toBe('ノスリ');
+    expect(changeFieldValue('ノスリ', 'STRING_DICTIONARY', 'STRING_DYNAMIC')).toBe('ノスリ');
+    expect(changeFieldValue('ノスリ', 'STRING_DYNAMIC', 'STRING_DICTIONARY')).toBe('ノスリ');
+    expect(changeFieldValue('ノスリ', 'STRING_DYNAMIC', 'STRING')).toBe('ノスリ');
+    expect(changeFieldValue('ノスリ', 'LIST', 'STRING_DYNAMIC')).toBe('ノスリ');
+    //数値も文字列として残す
+    expect(changeFieldValue(3, 'INTEGER', 'STRING_DYNAMIC')).toBe('3');
+  });
+
+  it('選択肢系（チェック・リスト・ラジオ）への変更でも値が消えない', () => {
+    expect(changeFieldValue('確認済み', 'STRING', 'CHECK')).toBe('確認済み');
+    expect(changeFieldValue('確認済み', 'CHECK', 'STRING')).toBe('確認済み');
+    expect(changeFieldValue('高', 'STRING', 'RADIO')).toBe('高');
+    expect(changeFieldValue('高', 'STRING_DICTIONARY', 'LIST')).toBe('高');
+    //候補に無い値でも消さずに残す（編集画面は「その他」扱い、または未選択で表示する）
+    expect(changeFieldValue('候補外', 'STRING', 'CHECK')).toBe('候補外');
+  });
+
+  it('文字列にできない形式の変更は初期値に戻す', () => {
+    expect(changeFieldValue([], 'PHOTO', 'STRING_DYNAMIC')).toStrictEqual('');
+    expect(changeFieldValue('あ', 'STRING', 'PHOTO')).toStrictEqual([]);
+  });
+});
+
+describe('getBlankFieldValue', () => {
+  it('後から追加した列は未入力の値になる', () => {
+    expect(getBlankFieldValue('STRING')).toStrictEqual('');
+    expect(getBlankFieldValue('SERIAL')).toStrictEqual('');
+    expect(getBlankFieldValue('INTEGER')).toStrictEqual('');
+    expect(getBlankFieldValue('DATETIME')).toStrictEqual('');
+    expect(getBlankFieldValue('PHOTO')).toStrictEqual([]);
+  });
+});
+
+describe('getFieldDisplayValue', () => {
+  it('未入力は空欄で表示する', () => {
+    expect(getFieldDisplayValue(undefined, 'STRING')).toBe('');
+    //列を後から追加した既存レコード（DATETIMEは空文字、SERIALは0）
+    expect(getFieldDisplayValue('', 'DATETIME')).toBe('');
+    expect(getFieldDisplayValue('invalid', 'DATETIME')).toBe('');
+    expect(getFieldDisplayValue(0, 'SERIAL')).toBe('');
+  });
+
+  it('値があるものはそのまま表示する', () => {
+    expect(getFieldDisplayValue('2026-09-10T15:09:00+09:00', 'DATETIME')).not.toBe('');
+    expect(getFieldDisplayValue(1, 'SERIAL')).toBe('1');
+    expect(getFieldDisplayValue(0, 'INTEGER')).toBe('0');
+    expect(getFieldDisplayValue('ノスリ', 'STRING')).toBe('ノスリ');
+    expect(getFieldDisplayValue([], 'PHOTO')).toBe('0 pic');
   });
 });
 

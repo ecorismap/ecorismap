@@ -56,9 +56,10 @@ export default function MapScreen() {
       <View style={styles.tableContainer}>
         {Platform.OS === 'web' ? (
           <ScrollView horizontal={true} contentContainerStyle={{ flexGrow: 1 }}>
-            <ScrollView style={{ flex: 1 }}>
+            {/* 縦スクロールはMapTable側が持つ。Webはヘッダー行を固定するためにテーブル内のScrollViewが必要 */}
+            <View style={{ flex: 1 }}>
               <MapTable />
-            </ScrollView>
+            </View>
           </ScrollView>
         ) : (
           <ScrollView horizontal={true} contentContainerStyle={{ flexGrow: 1 }}>

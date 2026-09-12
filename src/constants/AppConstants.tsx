@@ -144,6 +144,13 @@ export const PERMISSIONTYPE = {
   COMMON: t('constants.permission.common'),
 } as const;
 
+//共有範囲を選んだときに出す説明。共通データが編集できないことはここで伝える
+export const PERMISSIONDESCRIPTION = {
+  PRIVATE: t('constants.permissionDescription.private'),
+  PUBLIC: t('constants.permissionDescription.public'),
+  COMMON: t('constants.permissionDescription.common'),
+} as const;
+
 export const EXPORTTYPE = {
   CSV: 'csv',
   GeoJSON: 'geojson',

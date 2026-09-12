@@ -215,7 +215,7 @@ export default function HomeScreen() {
   const isEditingMap = useSelector((state: RootState) => state.settings.isEditingMap);
 
   // AppStateContext
-  const { isOffline, restored, attribution, isLoading, gotoMaps, gotoHome, bottomSheetRef, onCloseBottomSheet } =
+  const { isOffline, restored, attribution, isLoading, gotoMaps, gotoHome, bottomSheetRef, onCloseBottomSheet, onSheetIndexChange } =
     useContext(AppStateContext);
 
   // BottomSheetNavigationContext
@@ -374,6 +374,9 @@ export default function HomeScreen() {
   const snapPoints = useMemo(() => ['10%', '50%', '100%'], []);
   const animatedIndex = useSharedValue(0);
 
+  //シートの中身に与えられる最大の高さ。Reanimatedのスタイルが当たる前の既定値にも使う
+  const fullSheetHeight = windowHeight - 20 - insets.top - insets.bottom;
+
   const animatedStyle = useAnimatedStyle(() => {
     return {
       height: interpolate(
@@ -413,25 +416,26 @@ export default function HomeScreen() {
             alignSelf: 'center',
           }}
         />
-        {!isEditingRecord && !isEditingLayer && !isEditingMap && (
-          <Pressable
-            style={{
-              position: 'absolute',
-              right: 0,
-              top: 0,
-              width: 70,
-              height: 40,
-              justifyContent: 'center',
-              alignItems: 'center',
-            }}
-            onPress={() => onCloseBottomSheet(currentRouteName)}
-          >
-            <Text style={{ fontSize: 40, color: COLOR.GRAY3, lineHeight: 40 }}>×</Text>
-          </Pressable>
-        )}
+        {/* 編集中だけ隠すと、保存した瞬間に指の位置へこのボタンが現れてそのまま押されてしまう
+            （シートが勝手に閉じる原因になっていた）。常に表示し、編集中の誤操作は
+            onCloseBottomSheetの確認ダイアログで防ぐ */}
+        <Pressable
+          style={{
+            position: 'absolute',
+            right: 0,
+            top: 0,
+            width: 70,
+            height: 40,
+            justifyContent: 'center',
+            alignItems: 'center',
+          }}
+          onPress={() => onCloseBottomSheet(currentRouteName)}
+        >
+          <Text style={{ fontSize: 40, color: COLOR.GRAY3, lineHeight: 40 }}>×</Text>
+        </Pressable>
       </View>
     );
-  }, [isEditingRecord, isEditingLayer, isEditingMap, onCloseBottomSheet, currentRouteName]);
+  }, [onCloseBottomSheet, currentRouteName]);
 
   // ダウンロードモード用ヘッダー
   const renderDownloadHeader = () => (
@@ -803,11 +807,17 @@ export default function HomeScreen() {
         ref={setBottomSheetRefs}
         index={-1}
         snapPoints={snapPoints}
+        //下スワイプはシートが閉じたあとにonCloseが来るため、確認ダイアログで「いいえ」を
+        //選んでも中身が一度アンマウントされて編集内容が失われる。編集中は禁止し、
+        //閉じる操作は確認が先に出る×ボタンに任せる
         enablePanDownToClose={!isEditingRecord && !isEditingLayer && !isEditingMap}
         animateOnMount={false}
         animatedIndex={animatedIndex}
         onClose={() => onCloseBottomSheet(currentRouteName)}
-        onChange={(index) => setIsBottomSheetOpen(index >= 0)}
+        onChange={(index) => {
+          onSheetIndexChange(index);
+          setIsBottomSheetOpen(index >= 0);
+        }}
         handleComponent={customHandle}
         enableDynamicSizing={false}
         animationConfigs={{ duration: 0 }}
@@ -821,7 +831,11 @@ export default function HomeScreen() {
         ]}
       >
         <BottomSheetView style={{ flex: 1 }}>
-          <Animated.View style={animatedStyle}>
+          {/* Reanimatedのスタイルは後からUIスレッドで当たるため、内容の切り替えでこのViewが
+              作り直された瞬間は高さが未指定になり、中身の自然な高さ（長い一覧なら数千px）で
+              レイアウトが確定してしまう。そうなるとシートの位置計算が壊れて画面から消える。
+              静的な高さを先に与えておき、アニメーションはその上から上書きさせる */}
+          <Animated.View style={[{ height: fullSheetHeight, overflow: 'hidden' }, animatedStyle]}>
             <BottomSheetContent />
           </Animated.View>
         </BottomSheetView>

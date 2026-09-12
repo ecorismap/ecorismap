@@ -1,5 +1,5 @@
 import React, { useContext, useMemo } from 'react';
-import { View, StyleSheet, Platform, Text, ActivityIndicator, Switch } from 'react-native';
+import { View, StyleSheet, Text, ActivityIndicator, Switch } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 import { DataTable } from '../organisms/DataTable';
@@ -176,15 +176,10 @@ export default function DataScreen() {
       )}
       <View style={styles.tableContainer}>
         <ScrollView horizontal={true} contentContainerStyle={{ flexGrow: 1 }}>
-          {Platform.OS === 'web' ? (
-            <ScrollView style={{ flex: 1 }}>
-              <DataTable />
-            </ScrollView>
-          ) : (
-            <View style={{ flex: 1 }}>
-              <DataTable />
-            </View>
-          )}
+          {/* 縦スクロールはDataTable側が持つ。Webはヘッダー行を固定するためにDataTable内のScrollViewが必要 */}
+          <View style={{ flex: 1 }}>
+            <DataTable />
+          </View>
         </ScrollView>
       </View>
       <DataButton />

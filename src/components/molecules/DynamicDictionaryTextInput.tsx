@@ -34,11 +34,20 @@ export const DynamicDictionaryTextInput = React.memo((props: DynamicDictionaryTe
   } = useDynamicDictionaryInput(fieldKey, initialValue);
 
   const handleSelectItem = (item: string) => {
+    //候補リストを閉じて入力欄を確定値にする。clearOnSelectはその後に空へ戻す（順序を逆にすると空にならない）
+    handleInternalSelect(item);
     if (clearOnSelect) {
       setQueryString('');
     }
-    handleInternalSelect(item);
     handleSelect(item);
+  };
+
+  //Enterでの確定。Webではreact-native-webがIME変換中のEnterを除外してくれるので、
+  //ここに来るのは変換確定後のEnterだけ。blurOnSubmit=falseでフォーカスを保ち連続入力できるようにする
+  const handleSubmitEditing = () => {
+    const text = queryString.trim();
+    if (text === '') return;
+    handleSelectItem(text);
   };
 
   const handleShowSuggestions = () => {
@@ -71,6 +80,9 @@ export const DynamicDictionaryTextInput = React.memo((props: DynamicDictionaryTe
               onBlur(queryString);
             }
           }}
+          onSubmitEditing={handleSubmitEditing}
+          blurOnSubmit={false}
+          returnKeyType="done"
           editable={editable}
         />
         <View style={{ marginLeft: 10 }}>

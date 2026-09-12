@@ -9,7 +9,7 @@ interface LayerEditContextType {
   onChangeLayerName: (val: string) => void;
   submitLayerName: () => void;
   onChangeFeatureType: (itemValue: FeatureType) => void;
-  onChangeFieldOrder: (index: number) => void;
+  onChangeFieldOrder: (index: number, direction: 'up' | 'down') => void;
   onChangeFieldName: (index: number, val: string) => void;
   onChangeOption: (index: number, val: boolean) => void;
   submitFieldName: (index: number) => void;

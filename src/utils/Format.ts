@@ -71,6 +71,11 @@ export const formattedInputs = (
       break;
     }
     case 'SERIAL': {
+      //列を後から追加した既存レコードなど、未入力は許可する（INTEGER/DECIMALと同じ扱い）
+      if (value === '') {
+        result = value;
+        break;
+      }
       const pattern = /^\d+$/g;
       const regMatch = value.toString().match(pattern);
       if (regMatch === null) {

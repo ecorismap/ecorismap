@@ -126,7 +126,8 @@ export const csv2Data = (
       //layer.fieldとdataの配列からfieldを作成
       const fields = layer.field
         .map((field, idx) => {
-          return { [field.name]: data[idx + offset] };
+          //CSVの列数がレイヤのフィールド数より少ない場合にundefinedが入るのを防ぐ
+          return { [field.name]: data[idx + offset] ?? '' };
         })
         .reduce((obj, userObj) => Object.assign(obj, userObj), {});
       let coords;
