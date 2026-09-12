@@ -31,9 +31,14 @@
       "string_dynamic": "文字列-動的辞書"
     },
     "permission": {
-      "private": "プライベート",
-      "public": "パブリック",
-      "common": "共通"
+      "private": "自分のみ",
+      "public": "メンバーと共有",
+      "common": "共通データ"
+    },
+    "permissionDescription": {
+      "private": "自分が記録したデータを自分だけが見られます",
+      "public": "自分が記録したデータをメンバー全員が見られます",
+      "common": "全員に共通で表示されるデータで、調査中は編集できません"
     },
     "featuretype": {
       "point": "ポイント",
@@ -80,7 +85,7 @@
     "colorLamp": "カラーランプ",
     "longitude": "経度",
     "latitude": "緯度",
-    "permission": "権限",
+    "permission": "共有範囲",
     "value": "値",
     "addOther": "「その他」を追加",
     "layerName": "レイヤ名",
@@ -203,7 +208,7 @@
       "download": "更新されたデータを取得しますか？",
       "upload": "データを送信しますか？",
       "track_start": "軌跡の記録を開始しますか？",
-      "downloadAllUserData": "管理者として他のメンバーのプライベートデータもダウンロードしますか？",
+      "downloadAllUserData": "管理者として他のメンバーの非公開データもダウンロードしますか？",
       "addLocationPoint": "現在地にポイントを追加しますか？",
       "discardEditPosition": "位置の変更を破棄しますか？",
       "downloadTiles": "約{{tileCount}}枚（概算{{size}}MB）の地図タイルをダウンロードします。よろしいですか？",
@@ -546,7 +551,7 @@
       "gotoBack": "変更を破棄しますか？",
       "reshareKey": "このメンバーへプロジェクトの暗号化キーを再共有しますか？メンバーが暗号化キーをリセットしてデータを復号できなくなった場合に実行してください。",
       "singleAdmin": "管理者がオーナー1人だけです。オーナーが暗号化キーをリセットした場合に備えて、管理者をもう1人指定することをお勧めします。このまま保存しますか？",
-      "downloadAllUserData": "管理者として他のメンバーのプライベートデータも取得してプロジェクトを開きますか？"
+      "downloadAllUserData": "管理者として他のメンバーの非公開データも取得してプロジェクトを開きますか？"
     },
     "label": {
       "open": "開く",

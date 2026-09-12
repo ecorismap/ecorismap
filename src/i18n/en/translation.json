@@ -31,9 +31,14 @@
       "string_dynamic": "String-dynamic dictionary"
     },
     "permission": {
-      "private": "Private",
-      "public": "Public",
-      "common": "Common"
+      "private": "Private only",
+      "public": "Shared with members",
+      "common": "Project common"
+    },
+    "permissionDescription": {
+      "private": "Only you can see the data you record",
+      "public": "All members can see the data you record",
+      "common": "Data shown to everyone in common, not editable while a project is running"
     },
     "featuretype": {
       "point": "Point",
@@ -147,7 +152,7 @@
     "colorLamp": "color lamp",
     "longitude": "longitude",
     "latitude": "latitude",
-    "permission": "permission",
+    "permission": "Sharing",
     "value": "value",
     "addOther": "Added \"Other\"",
     "layerName": "layer name",
