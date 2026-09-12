@@ -843,14 +843,15 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
           dispatch(
             deleteRecordsAction({
               layerId: layerId,
-              userId: dataUser.uid,
+              //テンプレートなど自分以外の集合にあるレコードは、その集合から消さないと残ってしまう
+              userId: line.record.userId,
               data: [line.record],
             })
           );
         }
       });
     },
-    [dataUser.uid, dispatch, drawLine]
+    [dispatch, drawLine]
   );
 
   const savePoint = useCallback(() => {
