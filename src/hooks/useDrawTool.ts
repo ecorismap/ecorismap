@@ -1343,7 +1343,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
       setDrawTool('NONE');
     }
     setRedraw(ulid());
-  }, [currentDrawTool, mapRegion, mapSize, mapViewRef, resetDrawTools]);
+  }, [currentDrawTool, dispatch, mapRegion, mapSize, mapViewRef, resetDrawTools]);
 
   /**
    * undoDrawで取り消した操作をやり直す。
