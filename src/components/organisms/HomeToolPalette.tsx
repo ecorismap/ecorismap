@@ -11,6 +11,8 @@ import { ConfirmAsync } from '../molecules/AlertAsync';
 import { t } from '../../i18n/config';
 import { FeatureButtonType, ToolPaletteItemType } from '../../types';
 import { HomeModalCategoryPicker } from './HomeModalCategoryPicker';
+import { HomeModalSubToolPicker } from './HomeModalSubToolPicker';
+import { getFieldOptions } from '../../constants/ToolPalette';
 
 interface Props {
   items: ToolPaletteItemType[];
@@ -36,10 +38,10 @@ export const HomeToolPalette = React.memo(({ items, featureType }: Props) => {
     handwritingSubTool,
     setHandwritingSubTool,
     editingLayer,
-    selectCategoryValue,
-    addCategoryValue,
-    updateCategoryValue,
-    deleteCategoryValue,
+    selectFieldValues,
+    addFieldValue,
+    updateFieldValue,
+    deleteFieldValue,
   } = useContext(DrawingToolsContext);
   const {
     currentPenWidth,
@@ -63,30 +65,74 @@ export const HomeToolPalette = React.memo(({ items, featureType }: Props) => {
       ? undefined
       : hsv2rgbaString(item.color.hue, item.color.sat, item.color.val, item.color.alpha));
 
-  //区分を選ぶパレットか（植生図）。現在の区分はフィールドの既定値で持つ
-  const isCategoryPalette = items.some((item) => item.fieldValue !== undefined);
-  const currentCategoryValue = editingLayer?.field.find(
-    (f) => f.name === editingLayer.colorStyle.fieldName
-  )?.defaultValue;
-  const [isCategoryPickerOpen, setCategoryPickerOpen] = useState(false);
+  //属性ボタンで開く選択肢（種名・雌雄・成幼はタブで切り替える／区分は1つ）と、
+  //道具ボタンで開く選択肢（行動範囲・行動位置）
+  const [pickerFields, setPickerFields] = useState<string[] | undefined>(undefined);
+  //属性が未選択のまま道具を選んだとき、属性を選び終えてから実行する道具
+  const [pendingItem, setPendingItem] = useState<ToolPaletteItemType | undefined>(undefined);
+  const [pickerOptions, setPickerOptions] = useState<ToolPaletteItemType[] | undefined>(undefined);
+
+  //そのフィールドで今選んでいる値（＝次に描くオブジェクトへ入る値）
+  const fieldValueOf = (fieldName: string) => {
+    const value = editingLayer?.field.find((f) => f.name === fieldName)?.defaultValue;
+    return typeof value === 'string' ? value : undefined;
+  };
+  const isColorField = (fieldName: string) => editingLayer?.colorStyle.fieldName === fieldName;
 
   //パレットのボタンは設定込みで1つの道具を表す。指定した設定が現在値と一致したときだけ有効表示にする
+  //属性をまとめたボタンか（中身がフィールドの選択ボタン）
+  const fieldNamesOf = (item: ToolPaletteItemType) => {
+    if (item.fieldName !== undefined) return [item.fieldName];
+    const names = (item.options ?? []).flatMap((option) => (option.fieldName === undefined ? [] : [option.fieldName]));
+    return names.length > 0 ? names : undefined;
+  };
+
+  //パレットが持つ属性の一覧と、色を決める属性が未選択か（未選択なら描く前に選んでもらう）
+  const paletteFieldNames = items.flatMap((item) => fieldNamesOf(item) ?? []);
+  const colorFieldName = paletteFieldNames.find((name) => isColorField(name));
+  const needsAttributes = colorFieldName !== undefined && (fieldValueOf(colorFieldName) ?? '') === '';
+
   const isItemActive = (item: ToolPaletteItemType) => {
-    if (item.fieldValue !== undefined) return currentCategoryValue === item.fieldValue;
+    //属性ボタンは道具ではないので有効・無効の色分けはしない
+    if (fieldNamesOf(item) !== undefined) return false;
+    if (item.options !== undefined) {
+      return handwritingActive && item.options.some((option) => option.subTool === handwritingSubTool);
+    }
     if (item.eraser !== undefined) return currentMapMemoTool === item.eraser;
     if (!handwritingActive) return false;
     if (!isPolygon && handwritingSubTool !== item.subTool) return false;
-    if (item.penWidth !== undefined && currentPenWidth !== item.penWidth) return false;
-    if (item.arrowStyle !== undefined && arrowStyle !== item.arrowStyle) return false;
+    //ペンは「描いている道具」が一致していれば有効表示にする。太さ・矢印は後から変えられる設定で、
+    //一致を求めると編集選択で入ったときに有効に見えない
+    if (item.subTool !== 'PEN') {
+      if (item.penWidth !== undefined && currentPenWidth !== item.penWidth) return false;
+      if (item.arrowStyle !== undefined && arrowStyle !== item.arrowStyle) return false;
+    }
     const color = itemColor(item);
     if (color !== undefined && penColor !== color) return false;
     return true;
   };
 
-  const pressItem = async (item: ToolPaletteItemType) => {
-    if (item.fieldValue !== undefined) {
-      //区分は描き方を変えないので、選び直すだけ（同じものを押しても解除しない）
-      selectCategoryValue(item.fieldValue);
+  //行動範囲・行動位置は飛翔線に付ける記号なので、線を描いている（編集している）間だけ使える
+  const isOptionGroupDisabled = (item: ToolPaletteItemType) =>
+    item.options !== undefined && fieldNamesOf(item) === undefined && !isEditingDraw && !isEditingObject;
+
+  const pressItem = async (item: ToolPaletteItemType, skipAttributeCheck = false) => {
+    if (isOptionGroupDisabled(item)) return;
+    const fieldNames = fieldNamesOf(item);
+    //属性が未選択のまま描き始めないよう、先に選んでもらう（選び終えたらこの道具を有効にする）
+    if (!skipAttributeCheck && fieldNames === undefined && item.eraser === undefined && needsAttributes) {
+      setPendingItem(item);
+      setPickerFields(paletteFieldNames);
+      return;
+    }
+    if (fieldNames !== undefined) {
+      //属性は描き方を変えない。選択肢から選び直すだけ
+      setPickerFields(fieldNames);
+      return;
+    }
+    if (item.options !== undefined) {
+      //行動範囲・行動位置はまとめたボタン。中の道具を選んでから持ち替える
+      setPickerOptions(item.options);
       return;
     }
     if (isItemActive(item)) {
@@ -131,54 +177,97 @@ export const HomeToolPalette = React.memo(({ items, featureType }: Props) => {
     },
   });
 
-  //区分は数十になることがありツールバーに並べきれないので、現在の区分のボタン1つにまとめ、
-  //持ち替えるときだけ一覧を開く
-  if (isCategoryPalette) {
-    const selectedItem = items.find((item) => item.fieldValue === currentCategoryValue);
-    return (
-      <>
-        <View style={styles.button}>
-          <Button
-            name="checkbox-blank-circle"
-            color={selectedItem?.colorHex ?? COLOR.WHITE}
-            backgroundColor={COLOR.ALFABLUE}
-            borderRadius={10}
-            onPress={() => setCategoryPickerOpen(true)}
-            labelText={selectedItem?.label ?? t('common.category')}
-            labelFontSize={9}
-          />
-        </View>
-        <HomeModalCategoryPicker
-          visible={isCategoryPickerOpen}
-          items={items}
-          selectedValue={typeof currentCategoryValue === 'string' ? currentCategoryValue : undefined}
-          select={selectCategoryValue}
-          add={addCategoryValue}
-          update={updateCategoryValue}
-          remove={deleteCategoryValue}
-          close={() => setCategoryPickerOpen(false)}
-        />
-      </>
-    );
-  }
+  //属性ボタンは今選んでいる値を表示する。まとめたボタンは代表（先頭＝色を決める属性）を出す
+  const fieldButtonProps = (fieldNames: string[], item: ToolPaletteItemType) => {
+    const fieldName = fieldNames[0];
+    const value = fieldValueOf(fieldName);
+    const options = editingLayer === undefined ? [] : getFieldOptions(editingLayer, fieldName);
+    const selected = options.find((option) => option.fieldValue === value);
+    return {
+      icon: isColorField(fieldName) ? 'checkbox-blank-circle' : 'form-select',
+      color: selected?.colorHex ?? COLOR.WHITE,
+      label: selected?.label ?? item.label,
+    };
+  };
+
+  //道具をまとめたボタンは、今選んでいる道具のアイコンを出す
+  const optionButtonProps = (item: ToolPaletteItemType) => {
+    const selected = item.options?.find((option) => option.subTool === handwritingSubTool);
+    const active = handwritingActive && selected !== undefined;
+    //ボタンは幅40pxなので、長い名前は短縮名を使う（一覧では正式名を出す）
+    return {
+      icon: active ? selected!.icon : item.icon,
+      label: active ? (selected!.shortLabel ?? selected!.label) : item.label,
+    };
+  };
 
   return (
     <>
-      {items.map((item) => (
-        <View key={item.id} style={styles.button}>
-          <Button
-            // @ts-ignore アイコン名はパレット定義が持つ
-            name={item.icon}
-            //区分ごとに色を変えるパレットは、どの色で描くのかをアイコンの色で示す
-            color={itemColor(item) ?? COLOR.WHITE}
-            backgroundColor={isItemActive(item) ? COLOR.ALFARED : COLOR.ALFABLUE}
-            borderRadius={10}
-            onPress={() => pressItem(item)}
-            labelText={item.label}
-            labelFontSize={9}
-          />
-        </View>
-      ))}
+      {items.map((item) => {
+        const fieldNames = fieldNamesOf(item);
+        const buttonProps: { icon: string; color: string; label: string } =
+          fieldNames !== undefined
+            ? fieldButtonProps(fieldNames, item)
+            : item.options !== undefined
+            ? { ...optionButtonProps(item), color: COLOR.WHITE }
+            : { icon: item.icon, color: itemColor(item) ?? COLOR.WHITE, label: item.label };
+        return (
+          <View key={item.id} style={styles.button}>
+            <Button
+              // @ts-ignore アイコン名はパレット定義が持つ
+              name={buttonProps.icon}
+              //値ごとに色を変えるパレットは、どの色で描くのかをアイコンの色で示す
+              color={buttonProps.color}
+              disabled={isOptionGroupDisabled(item)}
+              backgroundColor={
+                isOptionGroupDisabled(item)
+                  ? COLOR.ALFAGRAY
+                  : isItemActive(item)
+                  ? COLOR.ALFARED
+                  : COLOR.ALFABLUE
+              }
+              borderRadius={10}
+              onPress={() => pressItem(item)}
+              labelText={buttonProps.label}
+              labelFontSize={9}
+            />
+          </View>
+        );
+      })}
+
+      {/* 属性の選択肢。複数あればタブで切り替える。色分けに使うフィールドは色も決められる */}
+      <HomeModalCategoryPicker
+        visible={pickerFields !== undefined}
+        fields={pickerFields ?? []}
+        optionsOf={(fieldName: string) => (editingLayer === undefined ? [] : getFieldOptions(editingLayer, fieldName))}
+        isColorField={isColorField}
+        select={(values: { [fieldName: string]: string }) => {
+          selectFieldValues(values);
+          //属性が未選択のまま押した道具があれば、選び終えたところで有効にする
+          const next = pendingItem;
+          setPendingItem(undefined);
+          if (next !== undefined) pressItem(next, true);
+        }}
+        add={addFieldValue}
+        update={updateFieldValue}
+        remove={deleteFieldValue}
+        close={() => {
+          setPendingItem(undefined);
+          setPickerFields(undefined);
+        }}
+      />
+
+      {/* 行動範囲・行動位置の道具。選ぶとその道具に持ち替える */}
+      <HomeModalSubToolPicker
+        visible={pickerOptions !== undefined}
+        items={pickerOptions ?? []}
+        selectedSubTool={handwritingActive ? handwritingSubTool : undefined}
+        select={(option: ToolPaletteItemType) => {
+          setPickerOptions(undefined);
+          pressItem(option);
+        }}
+        close={() => setPickerOptions(undefined)}
+      />
     </>
   );
 });

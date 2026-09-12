@@ -236,6 +236,36 @@ export const RenderStamp = React.memo(
             </Text>
           </G>
         );
+      //交尾（★）と声のみ（Vo）。保存後の記号（HomeMapMemoStamp）と同じ形にする
+      case 'KOUBI':
+        return (
+          <Text
+            x={stampPos.x}
+            y={stampPos.y + 5}
+            fontSize="18"
+            fontWeight="bold"
+            fill={strokeColor}
+            textAnchor="middle"
+          >
+            ★
+          </Text>
+        );
+      case 'VOICE':
+        return (
+          <G key={ulid()}>
+            <Circle cx={stampPos.x} cy={stampPos.y} r="8" stroke={strokeColor} strokeWidth="1" fill="#ffffffaa" />
+            <Text
+              x={stampPos.x}
+              y={stampPos.y + 5}
+              fontSize="11"
+              fontWeight="bold"
+              fill={strokeColor}
+              textAnchor="middle"
+            >
+              Vo
+            </Text>
+          </G>
+        );
       case 'SQUARE':
         return (
           <Rect

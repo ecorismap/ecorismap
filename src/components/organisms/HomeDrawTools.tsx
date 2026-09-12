@@ -296,7 +296,8 @@ export const HomeDrawTools = React.memo(() => {
               />
             </View>
           )}
-          {featureButton === 'LINE' && (
+          {/* 飛翔図は1本＝1飛翔を手書きでなぞるので、プロットでの追加は出さない */}
+          {featureButton === 'LINE' && editingLayer?.toolPalette !== 'HISYOU' && (
             <HomeLineToolButton
               disabled={false}
               currentDrawTool={currentDrawTool}

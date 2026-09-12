@@ -34,7 +34,7 @@ import Home from '../components/pages/Home';
 import { Alert } from '../components/atoms/Alert';
 import { AlertAsync, ConfirmAsync } from '../components/molecules/AlertAsync';
 import { shallowEqual, useSelector, useDispatch } from 'react-redux';
-import { RootState } from '../store';
+import { RootState, AppDispatch } from '../store';
 import { useTiles } from '../hooks/useTiles';
 import { useRecord } from '../hooks/useRecord';
 import { Props_Home } from '../routes';
@@ -244,7 +244,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
   const gpsStateRef = useRef<LocationStateType>('off');
   const toggleGPSRef = useRef<((state: LocationStateType) => Promise<void>) | null>(null);
 
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
   // 二点間距離測定の状態（長押しポップアップから開始、タップでB点設定）
   const { isMeasuring, setMeasureB, endMeasure } = useContext(MeasureContext);
   // 軌跡上の写真マーカー（タップ判定はMarkerのonPressではなくここの画面タップヒットテストで行う）
@@ -944,21 +944,20 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
 
   //区分を選ぶパレット（植生図）で「次に描く区分」を決める。色分けに使うフィールドの既定値を
   //書き換えるので、手書きでもプロットでも新しく作るレコードにその区分が入る
-  //区分を新しく足す。選択肢と色分けの両方へ入れて、そのまま次に描く区分にする
-  const addCategoryValue = useCallback(
-    (value: string, color: string) => {
+  //選択肢を新しく足す。色分けに使うフィールドなら色も一緒に入れて、そのまま次に描く値にする
+  const addFieldValue = useCallback(
+    (fieldName: string, value: string, color: string) => {
       if (editingLayer === undefined) return;
-      const fieldName = editingLayer.colorStyle.fieldName;
       const field = editingLayer.field.find((f) => f.name === fieldName);
       if (field === undefined) return;
       if ((field.list ?? []).some((item) => item.value === value)) return;
       dispatch(
         updateLayerAction({
           ...editingLayer,
-          colorStyle: {
-            ...editingLayer.colorStyle,
-            colorList: [...editingLayer.colorStyle.colorList, { value, color }],
-          },
+          colorStyle:
+            fieldName === editingLayer.colorStyle.fieldName
+              ? { ...editingLayer.colorStyle, colorList: [...editingLayer.colorStyle.colorList, { value, color }] }
+              : editingLayer.colorStyle,
           field: editingLayer.field.map((f) =>
             f.name === fieldName
               ? {
@@ -976,19 +975,21 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
 
   //区分の名前・色を変える。名前を変えた場合は、その区分で保存済みのレコードの値も置き換える
   //（置き換えないと色分けから外れて透明になり、集計もばらける）
-  const updateCategoryValue = useCallback(
-    (oldValue: string, newValue: string, color: string) => {
+  const updateFieldValue = useCallback(
+    (fieldName: string, oldValue: string, newValue: string, color: string) => {
       if (editingLayer === undefined || newValue === '') return;
-      const fieldName = editingLayer.colorStyle.fieldName;
       dispatch(
         updateLayerAction({
           ...editingLayer,
-          colorStyle: {
-            ...editingLayer.colorStyle,
-            colorList: editingLayer.colorStyle.colorList.map((c) =>
-              c.value === oldValue ? { value: newValue, color } : c
-            ),
-          },
+          colorStyle:
+            fieldName === editingLayer.colorStyle.fieldName
+              ? {
+                  ...editingLayer.colorStyle,
+                  colorList: editingLayer.colorStyle.colorList.map((c) =>
+                    c.value === oldValue ? { value: newValue, color } : c
+                  ),
+                }
+              : editingLayer.colorStyle,
           field: editingLayer.field.map((f) =>
             f.name === fieldName
               ? {
@@ -1021,17 +1022,19 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
   );
 
   //区分を選択肢から消す。保存済みのレコードの値はそのまま残す（消すとデータが失われるため）
-  const deleteCategoryValue = useCallback(
-    (value: string) => {
+  const deleteFieldValue = useCallback(
+    (fieldName: string, value: string) => {
       if (editingLayer === undefined) return;
-      const fieldName = editingLayer.colorStyle.fieldName;
       dispatch(
         updateLayerAction({
           ...editingLayer,
-          colorStyle: {
-            ...editingLayer.colorStyle,
-            colorList: editingLayer.colorStyle.colorList.filter((c) => c.value !== value),
-          },
+          colorStyle:
+            fieldName === editingLayer.colorStyle.fieldName
+              ? {
+                  ...editingLayer.colorStyle,
+                  colorList: editingLayer.colorStyle.colorList.filter((c) => c.value !== value),
+                }
+              : editingLayer.colorStyle,
           field: editingLayer.field.map((f) =>
             f.name === fieldName
               ? {
@@ -1047,18 +1050,43 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     [dispatch, editingLayer]
   );
 
-  const selectCategoryValue = useCallback(
-    (value: string) => {
-      if (editingLayer === undefined) return;
-      const fieldName = editingLayer.colorStyle.fieldName;
-      dispatch(
-        updateLayerAction({
-          ...editingLayer,
-          field: editingLayer.field.map((f) => (f.name === fieldName ? { ...f, defaultValue: value } : f)),
-        })
-      );
+  //属性を未選択へ戻す（確定後に次の個体を選び直すため）
+  const clearPaletteFieldValues = useCallback(
+    (layerId: string) => {
+      dispatch((thunkDispatch: AppDispatch, getState: () => RootState) => {
+        const layer = getState().layers.find((l) => l.id === layerId);
+        if (layer === undefined) return;
+        if (!layer.field.some((f) => f.list !== undefined && (f.defaultValue ?? '') !== '')) return;
+        thunkDispatch(
+          updateLayerAction({
+            ...layer,
+            field: layer.field.map((f) => (f.list !== undefined ? { ...f, defaultValue: '' } : f)),
+          })
+        );
+      });
     },
-    [dispatch, editingLayer]
+    [dispatch]
+  );
+
+  const selectFieldValues = useCallback(
+    (values: { [fieldName: string]: string }) => {
+      const layerId = editingLayer?.id;
+      if (layerId === undefined) return;
+      //選択肢の追加直後など、closureのレイヤが古いことがあるので最新のレイヤへ反映する
+      dispatch((thunkDispatch: AppDispatch, getState: () => RootState) => {
+        const layer = getState().layers.find((l) => l.id === layerId);
+        if (layer === undefined) return;
+        thunkDispatch(
+          updateLayerAction({
+            ...layer,
+            field: layer.field.map((f) =>
+              values[f.name] !== undefined ? { ...f, defaultValue: values[f.name] } : f
+            ),
+          })
+        );
+      });
+    },
+    [dispatch, editingLayer?.id]
   );
 
   //ツールバーのチップに表示する編集レイヤ名
@@ -1367,9 +1395,11 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
             const ret = await ConfirmAsync(t('Home.confirm.discard'));
             if (!ret) return;
           }
-          //ドローツールをオフ
+          //ドローツールをオフ（編集のキャンセルもここを通る）
           resetDrawTools();
           setDrawTool('NONE');
+          //飛翔図は1本＝1個体なので、やめたときも属性を未選択へ戻して選び直してもらう
+          if (editingLayer?.toolPalette === 'HISYOU') clearPaletteFieldValues(editingLayer.id);
           if (route.params?.mode === 'editPosition') finishEditPosition(true);
         } else {
           //ドローツールをオン
@@ -1448,6 +1478,9 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     [
       checkEditableLayerForDraw,
       checkEditableMapMemo,
+      clearPaletteFieldValues,
+      editingLayer?.id,
+      editingLayer?.toolPalette,
       convertSelectionToHandwriting,
       convertSessionToPlot,
       currentDrawTool,
@@ -1527,6 +1560,8 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     // console.log('🔍 pressSaveDraw - layer:', layer?.name, 'type:', layer?.type, 'id:', layer?.id);
     //手書きも確定でツールをオフにする（新規バッチ・編集選択とも）。DataEditオープンは下の共通処理
     setDrawTool('NONE');
+    //飛翔図は1本＝1個体なので、確定したら種名・雌雄・成幼を未選択へ戻して選び直してもらう
+    if (layer?.toolPalette === 'HISYOU') clearPaletteFieldValues(layer.id);
     if (route.params?.mode === 'editPosition') {
       navigation.setParams({ mode: undefined });
     }
@@ -1547,7 +1582,20 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       });
     }
     return true;
-  }, [currentDrawStyle, openSheet, featureButton, isSelectedDraw, navigation, navigateToSplit, route.params?.mode, savePoint, saveLine, savePolygon, setDrawTool]);
+  }, [
+    clearPaletteFieldValues,
+    currentDrawStyle,
+    openSheet,
+    featureButton,
+    isSelectedDraw,
+    navigation,
+    navigateToSplit,
+    route.params?.mode,
+    savePoint,
+    saveLine,
+    savePolygon,
+    setDrawTool,
+  ]);
 
   // ダウンロード対象の地図リスト（選択地図 > 全地図 > 従来の単一地図）
   // 可視領域用DEM（疑似地図・Redux tileMaps非登録）は、明示選択時と「すべての地図」時に合成して含める
@@ -3068,10 +3116,10 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       // Editing layer chip
       editingLayerName,
       editingLayer,
-      selectCategoryValue,
-      addCategoryValue,
-      updateCategoryValue,
-      deleteCategoryValue,
+      selectFieldValues,
+      addFieldValue,
+      updateFieldValue,
+      deleteFieldValue,
       pressEditingLayerButton,
 
       //個別色レイヤ（色・太さボタンの常時表示と通常作図への反映）
@@ -3130,10 +3178,10 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       resetDrawTools,
       editingLayerName,
       editingLayer,
-      selectCategoryValue,
-      addCategoryValue,
-      updateCategoryValue,
-      deleteCategoryValue,
+      selectFieldValues,
+      addFieldValue,
+      updateFieldValue,
+      deleteFieldValue,
       pressEditingLayerButton,
       isIndividualStyleLayer,
       selectedSingleObjectStyle?.widthType,

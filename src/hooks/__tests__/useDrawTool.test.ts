@@ -145,7 +145,7 @@ import { configureStore, combineReducers } from '@reduxjs/toolkit';
 import React from 'react';
 import { GestureResponderEvent } from 'react-native';
 import { useDrawTool } from '../useDrawTool';
-import dataSetReducer from '../../modules/dataSet';
+import dataSetReducer, { addDataAction } from '../../modules/dataSet';
 import layersReducer from '../../modules/layers';
 import userReducer from '../../modules/user';
 import settingsReducer from '../../modules/settings';
@@ -246,7 +246,7 @@ const createWrapper = (store: ReturnType<typeof createTestStore>) => {
 
 const renderDrawTool = () => {
   const store = createTestStore();
-  return renderHook(() => useDrawTool(null), { wrapper: createWrapper(store) });
+  return { ...renderHook(() => useDrawTool(null), { wrapper: createWrapper(store) }), store };
 };
 
 const createTouchEvent = (x: number, y: number) =>
@@ -811,6 +811,49 @@ describe('useDrawTool', () => {
       expect(res?.layer).toBe(mockLineLayer);
       expect(result.current.drawLine.current).toEqual([]);
       expect(result.current.currentDrawTool).toBe('NONE');
+    });
+
+    it('_groupでぶら下がる行動記号（ブラシ・スタンプ）も一緒に消える', () => {
+      const child = {
+        ...mockLineRecord,
+        id: 'child1',
+        field: { _group: mockLineRecord.id, _stamp: 'TOMARI' },
+      };
+      const other = { ...mockLineRecord, id: 'other1', field: { _group: 'another-line' } };
+      mockLineDataSet.push({ layerId: mockLineLayer.id, userId: 'user1', data: [child, other] });
+
+      const { result, store } = renderDrawTool();
+      act(() => {
+        store.dispatch(
+          addDataAction([
+            { layerId: mockLineLayer.id, userId: 'user1', data: [mockLineRecord, child, other] as RecordType[] },
+          ])
+        );
+      });
+      result.current.drawLine.current = [
+        {
+          id: mockLineRecord.id,
+          layerId: mockLineLayer.id,
+          record: mockLineRecord,
+          xy: [
+            [10, 10],
+            [20, 20],
+          ],
+          latlon: [
+            [10, 10],
+            [20, 20],
+          ],
+          properties: ['EDIT'],
+        },
+      ];
+
+      act(() => {
+        result.current.deleteDraw();
+      });
+
+      //親のレコードと、その_groupを持つ記号だけが消える
+      const remaining = store.getState().dataSet.find((d) => d.layerId === mockLineLayer.id)?.data ?? [];
+      expect(remaining.map((d) => d.id)).toEqual(['other1']);
     });
   });
 

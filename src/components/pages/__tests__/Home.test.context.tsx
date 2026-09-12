@@ -102,10 +102,10 @@ export const mockDrawingToolsContextValue: DrawingToolsContextType = {
   resetDrawTools: jest.fn(),
   editingLayerName: undefined,
   editingLayer: undefined,
-  selectCategoryValue: jest.fn(),
-  addCategoryValue: jest.fn(),
-  updateCategoryValue: jest.fn(),
-  deleteCategoryValue: jest.fn(),
+  selectFieldValues: jest.fn(),
+  addFieldValue: jest.fn(),
+  updateFieldValue: jest.fn(),
+  deleteFieldValue: jest.fn(),
   pressEditingLayerButton: jest.fn().mockResolvedValue(undefined),
 
   // Backward compatibility

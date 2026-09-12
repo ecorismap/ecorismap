@@ -11,12 +11,15 @@ import { hsv2rgbaString } from '../../utils/Color';
 
 interface Props {
   visible: boolean;
-  items: ToolPaletteItemType[];
-  selectedValue: string | undefined;
-  select: (value: string) => void;
-  add: (value: string, color: string) => void;
-  update: (oldValue: string, newValue: string, color: string) => void;
-  remove: (value: string) => void;
+  //切り替えるフィールド（種名・雌雄・成幼／区分）。2つ以上ならタブで分ける
+  fields: string[];
+  optionsOf: (fieldName: string) => ToolPaletteItemType[];
+  //色分けに使うフィールドか（そのときだけ色も決められる）
+  isColorField: (fieldName: string) => boolean;
+  select: (values: { [fieldName: string]: string }) => void;
+  add: (fieldName: string, value: string, color: string) => void;
+  update: (fieldName: string, oldValue: string, newValue: string, color: string) => void;
+  remove: (fieldName: string, value: string) => void;
   close: () => void;
 }
 
@@ -39,7 +42,16 @@ const NEW_CATEGORY_COLORS = [
  * ツールバーには現在の区分のボタンだけを置き、持ち替えるときだけこの一覧を開く
  */
 export const HomeModalCategoryPicker = React.memo((props: Props) => {
-  const { visible, items, selectedValue, select, add, update, remove, close } = props;
+  const { visible, fields, optionsOf, isColorField, select, add, update, remove, close } = props;
+  //種名→雌雄→成幼と順に選ぶ。今どれを選んでいるか
+  const [step, setStep] = useState(0);
+  //開くたびに未選択から選び直す。選んだ値はモーダルの中だけで持ち、最後まで選び終えたときに
+  //まとめて反映する。Cancel（背景タップ含む）なら何も変えない
+  const [pending, setPending] = useState<{ [fieldName: string]: string }>({});
+  const field = fields[Math.min(step, fields.length - 1)] ?? '';
+  const items = field === '' ? [] : optionsOf(field);
+  const selectedValue = field === '' ? undefined : pending[field];
+  const withColor = field !== '' && isColorField(field);
   //現地で区分が増える・言い換えることがあるので、レイヤ設定へ戻らずここで足す・直せるようにする。
   //editingValueがundefinedなら新規追加、値が入っていればその区分の編集
   const [isEditing, setIsEditing] = useState(false);
@@ -49,11 +61,15 @@ export const HomeModalCategoryPicker = React.memo((props: Props) => {
 
   useEffect(() => {
     if (!visible) return;
+    setStep(0);
+    setPending({});
     setIsEditing(false);
     setEditingValue(undefined);
     setNewValue('');
     setNewColor(NEW_CATEGORY_COLORS[0]);
-  }, [visible]);
+    //fieldsは開くたびに作られる配列なので、中身で比較する
+    //eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visible, fields.join(',')]);
 
   const startAdd = () => {
     setEditingValue(undefined);
@@ -73,7 +89,7 @@ export const HomeModalCategoryPicker = React.memo((props: Props) => {
     if (editingValue === undefined) return;
     const ret = await ConfirmAsync(t('Home.confirm.deleteCategory'));
     if (!ret) return;
-    remove(editingValue);
+    remove(field, editingValue);
     close();
   };
 
@@ -90,8 +106,16 @@ export const HomeModalCategoryPicker = React.memo((props: Props) => {
 
   const pressApply = () => {
     if (!canApply) return;
-    if (editingValue === undefined) add(trimmedValue, newColor);
-    else update(editingValue, trimmedValue, newColor);
+    if (editingValue === undefined) add(field, trimmedValue, newColor);
+    else update(field, editingValue, trimmedValue, newColor);
+    setIsEditing(false);
+    const next = { ...pending, [field]: trimmedValue };
+    setPending(next);
+    if (step < fields.length - 1) {
+      setStep(step + 1);
+      return;
+    }
+    select(next);
     close();
   };
 
@@ -99,9 +123,32 @@ export const HomeModalCategoryPicker = React.memo((props: Props) => {
     <Modal animationType="none" transparent={true} visible={visible}>
       <Pressable style={styles.overlay} onPress={close} disablePressedAnimation>
         <Pressable style={styles.card} onPress={() => {}} disablePressedAnimation>
-          <Text style={styles.title}>{t('common.category')}</Text>
+          {/* タブは残しつつ、値を選ぶと次の属性へ自動で切り替わる（種名→雌雄→成幼） */}
+          {fields.length > 1 ? (
+            <View style={styles.segmentContainer}>
+              {fields.map((name, index) => (
+                <Pressable
+                  key={name}
+                  style={[styles.segment, field === name && styles.segmentActive]}
+                  onPress={() => {
+                    setIsEditing(false);
+                    setStep(index);
+                  }}
+                  disablePressedAnimation
+                >
+                  <Text style={[styles.segmentLabel, field === name && styles.segmentLabelActive]}>{name}</Text>
+                </Pressable>
+              ))}
+            </View>
+          ) : (
+            <Text style={styles.title}>{field}</Text>
+          )}
           {!isEditing && (
-          <ScrollView contentContainerStyle={styles.list} showsVerticalScrollIndicator={false}>
+          <ScrollView
+            style={styles.listArea}
+            contentContainerStyle={styles.list}
+            showsVerticalScrollIndicator={false}
+          >
             {items.map((item) => {
               const selected = item.fieldValue === selectedValue;
               return (
@@ -109,20 +156,30 @@ export const HomeModalCategoryPicker = React.memo((props: Props) => {
                   key={item.id}
                   style={[styles.row, selected && styles.rowSelected]}
                   onPress={() => {
-                    if (item.fieldValue !== undefined) select(item.fieldValue);
+                    if (item.fieldValue === undefined) return;
+                    const next = { ...pending, [field]: item.fieldValue };
+                    setPending(next);
+                    //次の属性があれば続けて選ぶ（種名→雌雄→成幼）。選び終えたらまとめて反映する
+                    if (step < fields.length - 1) {
+                      setStep(step + 1);
+                      return;
+                    }
+                    select(next);
                     close();
                   }}
-                  //長押しで名前・色を直す
-                  onLongPress={() => startEdit(item)}
+                  //長押しで名前・色を直す（色分けに使う属性だけ）
+                  onLongPress={() => withColor && startEdit(item)}
                   disablePressedAnimation
                 >
-                  <View style={[styles.swatch, { backgroundColor: item.colorHex ?? COLOR.GRAY2 }]} />
+                  {withColor && <View style={[styles.swatch, { backgroundColor: item.colorHex ?? COLOR.GRAY2 }]} />}
                   <Text style={[styles.rowText, selected && styles.rowTextSelected]} numberOfLines={1}>
                     {item.label}
                   </Text>
-                  <Pressable style={styles.editButton} onPress={() => startEdit(item)} disablePressedAnimation>
-                    <MaterialCommunityIcons name="pencil" size={16} color={COLOR.GRAY3} />
-                  </Pressable>
+                  {withColor && (
+                    <Pressable style={styles.editButton} onPress={() => startEdit(item)} disablePressedAnimation>
+                      <MaterialCommunityIcons name="pencil" size={16} color={COLOR.GRAY3} />
+                    </Pressable>
+                  )}
                 </Pressable>
               );
             })}
@@ -131,7 +188,7 @@ export const HomeModalCategoryPicker = React.memo((props: Props) => {
           {isEditing ? (
             <View style={styles.addArea}>
               <View style={styles.inputRow}>
-                <View style={[styles.swatch, { backgroundColor: newColor }]} />
+                {withColor && <View style={[styles.swatch, { backgroundColor: newColor }]} />}
                 <TextInput
                   style={styles.input}
                   value={newValue}
@@ -142,6 +199,7 @@ export const HomeModalCategoryPicker = React.memo((props: Props) => {
                 />
               </View>
               {/* 色は見本から選ぶか、ピッカーで自由に決める（メモ・スタイル設定と同じ構成） */}
+              {withColor && (
               <ColorPicker
                 value={newColor}
                 sliderThickness={18}
@@ -157,11 +215,14 @@ export const HomeModalCategoryPicker = React.memo((props: Props) => {
                 <OpacitySlider style={styles.opacitySlider} />
                 <Swatches style={styles.swatches} swatchStyle={styles.colorChip} colors={NEW_CATEGORY_COLORS} />
               </ColorPicker>
+              )}
             </View>
           ) : (
-            <Pressable style={styles.addButton} onPress={startAdd} disablePressedAnimation>
-              <Text style={styles.addButtonText}>{`＋ ${t('common.add')}`}</Text>
-            </Pressable>
+            withColor && (
+              <Pressable style={styles.addButton} onPress={startAdd} disablePressedAnimation>
+                <Text style={styles.addButtonText}>{`＋ ${t('common.add')}`}</Text>
+              </Pressable>
+            )
           )}
           <View style={styles.footerRow}>
             <Pressable style={styles.secondaryButton} onPress={close}>
@@ -233,6 +294,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'flex-start',
+    padding: 4,
+  },
+  //タブバーと内容の区切りが分かるよう、選択肢の領域に薄く色を敷く
+  listArea: {
+    backgroundColor: COLOR.GRAY0,
+    borderRadius: 10,
   },
   overlay: {
     alignItems: 'center',
@@ -251,8 +318,9 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     width: 150,
   },
+  //選択中の見た目はタブと揃える（青地に白文字）。どれを選んでいるか一目で分かる
   rowSelected: {
-    backgroundColor: COLOR.ALFABLUE2,
+    backgroundColor: COLOR.BLUE,
     borderColor: COLOR.BLUE,
   },
   rowText: {
@@ -261,6 +329,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   rowTextSelected: {
+    color: COLOR.WHITE,
     fontWeight: 'bold',
   },
   colorChip: {
@@ -337,6 +406,30 @@ const styles = StyleSheet.create({
   editButton: {
     paddingHorizontal: 4,
     paddingVertical: 2,
+  },
+  segment: {
+    alignItems: 'center',
+    borderRadius: 8,
+    flex: 1,
+    paddingVertical: 8,
+  },
+  segmentActive: {
+    backgroundColor: COLOR.BLUE,
+  },
+  segmentContainer: {
+    backgroundColor: COLOR.GRAY0,
+    borderRadius: 10,
+    flexDirection: 'row',
+    marginBottom: 10,
+    padding: 3,
+  },
+  segmentLabel: {
+    color: COLOR.GRAY4,
+    fontSize: 13,
+  },
+  segmentLabelActive: {
+    color: COLOR.WHITE,
+    fontWeight: 'bold',
   },
   secondaryButton: {
     alignItems: 'center',

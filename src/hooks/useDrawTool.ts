@@ -55,6 +55,7 @@ import {
 } from '../utils/Coords';
 import { useWindow } from './useWindow';
 import { deleteRecordsAction } from '../modules/dataSet';
+import { updateLayerAction } from '../modules/layers';
 import { MapRef } from 'react-map-gl/maplibre';
 import { editSettingsAction } from '../modules/settings';
 import { useRecord } from './useRecord';
@@ -836,8 +837,10 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
 
   const deleteDrawRecord = useCallback(
     (layerId: string) => {
+      const deletedIds: string[] = [];
       drawLine.current.forEach((line) => {
         if (line.record !== undefined) {
+          deletedIds.push(line.record.id);
           dispatch(
             deleteRecordsAction({
               layerId: layerId,
@@ -848,8 +851,21 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
           );
         }
       });
+      if (deletedIds.length === 0) return;
+      //行動記号（ブラシ・スタンプ）は_groupで親の線にぶら下がるので一緒に消す。
+      //残すと親のない記号が地図に残り、消す手段も無くなる
+      lineDataSet
+        .filter((d) => d.layerId === layerId)
+        .forEach((d) => {
+          const children = d.data.filter((record) => {
+            const group = record.field._group;
+            return typeof group === 'string' && group !== '' && deletedIds.includes(group);
+          });
+          if (children.length === 0) return;
+          dispatch(deleteRecordsAction({ layerId, userId: d.userId, data: children }));
+        });
     },
-    [dispatch, drawLine]
+    [dispatch, drawLine, lineDataSet]
   );
 
   const savePoint = useCallback(() => {
@@ -1521,6 +1537,31 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     return selected.length === 1 && selected[0].xy.length >= HANDWRITING_SELECT_MIN_POINTS;
   }, []);
 
+  /**
+   * 選んだオブジェクトの属性を、パレットのボタン（＝次に描くときの既定値）へ写す。
+   * 飛翔線を選んで行動記号を足すときに、その線と同じ種名・雌雄・成幼が入るようにする
+   */
+  const syncPaletteDefaultsFromRecord = useCallback(
+    (layer: LayerType, record: RecordType) => {
+      if (layer.toolPalette === undefined) return;
+      const listFields = layer.field.filter((f) => f.list !== undefined);
+      if (listFields.length === 0) return;
+      const valueOf = (name: string) => {
+        const value = record.field[name];
+        return typeof value === 'string' ? value : '';
+      };
+      const changed = listFields.some((f) => valueOf(f.name) !== String(f.defaultValue ?? ''));
+      if (!changed) return;
+      dispatch(
+        updateLayerAction({
+          ...layer,
+          field: layer.field.map((f) => (f.list !== undefined ? { ...f, defaultValue: valueOf(f.name) } : f)),
+        })
+      );
+    },
+    [dispatch]
+  );
+
   const handleReleaseSelect = useCallback(
     (pXY: Position) => {
       //なげなわ（ドラッグ）なら範囲選択、タップなら位置選択
@@ -1529,16 +1570,23 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
       selectLine.current = [];
       if (isSelected) {
         isEditingDraw.current = true;
+        const { layer } = getEditableLayerAndRecordSetWithCheck(featureButton);
+        //選んだオブジェクトの属性をパレットへ写す（1件だけ選んだとき）
+        const selected = drawLine.current.filter((line) => line.record !== undefined);
+        if (selected.length === 1 && layer !== undefined) syncPaletteDefaultsFromRecord(layer, selected[0].record!);
         setRedraw(ulid());
         //タップ選択はオブジェクト個別の編集、なげなわ（ドラッグ）は移動・回転モードにする。
         //個別編集では手書き由来（頂点が多い）のオブジェクトを手書きモードで編集する
         //（MEMOタブは手書きツールが無いため対象外）
-        const editsIndividually = !isLasso && isHandwrittenSelection();
+        //飛翔図は選んだ線をそのまま描き足せるよう、タップ選択なら常に飛翔（手書き）にする
+        const editsIndividually = !isLasso && (isHandwrittenSelection() || layer?.toolPalette === 'HISYOU');
         if (featureButton === 'POINT') {
           setDrawTool('PLOT_POINT');
         } else if (featureButton === 'LINE') {
           if (editsIndividually) {
             convertSelectionToHandwriting(handwritingPenStyle.current);
+            //道具はペンに戻す（前にスタンプ・ブラシを使っていると、選んだ直後に記号が付いてしまう）
+            setHandwritingSubTool('PEN');
             setLineTool('HANDWRITING_LINE');
             setDrawTool('HANDWRITING_LINE');
           } else {
@@ -1563,8 +1611,10 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     [
       convertSelectionToHandwriting,
       featureButton,
+      getEditableLayerAndRecordSetWithCheck,
       isHandwrittenSelection,
       selectLine,
+      syncPaletteDefaultsFromRecord,
       trySelectFeaturesByArea,
       trySelectObjectAtPosition,
     ]
@@ -1812,27 +1862,17 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
 
   const findHandwritingSnapTarget = useCallback(
     (pXY: Position) => {
-      //セッション内の未保存ペンストロークを優先してスナップする（後に描いたものを優先）
+      //編集中の線にだけ行動記号を付けられるようにする。保存済みの線に付けたいときは
+      //編集選択でその線を選んでから（選ぶとセッションのストロークになる）
       for (let i = drawLine.current.length - 1; i >= 0; i--) {
         const line = drawLine.current[i];
         if (line.style === undefined || line.style.stamp !== '' || isBrushTool(line.style.strokeStyle)) continue;
         if (line.xy.length < 2) continue;
         if (checkDistanceFromLine(pXY, line.xy).isNear) return { coordsXY: line.xy, targetId: line.id };
       }
-      //保存済みのライン（アクティブレイヤの自分のレコード）にもスナップできる
-      const { isOK, recordSet } = getEditableLayerAndRecordSetWithCheck('LINE');
-      if (isOK && recordSet !== undefined) {
-        for (const record of recordSet) {
-          if (record.visible === false || record.coords === undefined || !Array.isArray(record.coords)) continue;
-          if (record.field._stamp !== undefined && record.field._stamp !== '') continue;
-          if (isBrushTool(String(record.field._strokeStyle ?? ''))) continue;
-          const lineXY = latLonObjectsToXYArray(record.coords, mapRegion, mapSize, mapViewRef);
-          if (checkDistanceFromLine(pXY, lineXY).isNear) return { coordsXY: lineXY, targetId: record.id };
-        }
-      }
       return undefined;
     },
-    [getEditableLayerAndRecordSetWithCheck, mapRegion, mapSize, mapViewRef]
+    []
   );
 
   const handleGrantHandwriting = useCallback(
@@ -1980,6 +2020,13 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
         if (target === undefined) return;
         const end = getSnappedPositionWithLine(pXY, target.coordsXY, { isXY: true }).position;
         drawLine.current[index].xy = getSnappedLine(handwritingBrushStartXY.current, end, target.coordsXY);
+        //なぞっている最中も記号で見せるため、緯度経度もその都度更新する（表示は緯度経度を使う）
+        drawLine.current[index].latlon = xyArrayToLatLonArray(
+          drawLine.current[index].xy,
+          mapRegion,
+          mapSize,
+          mapViewRef
+        );
       }
       setRedraw(ulid());
     },

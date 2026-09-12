@@ -14524,5 +14524,190 @@
         }
       ]
     }
+  },
+  {
+    "presetId": "preset-layer-hisyou-map",
+    "presetName": "飛翔図",
+    "isPublic": true,
+    "layer": {
+      "name": "飛翔図",
+      "type": "LINE",
+      "permission": "PUBLIC",
+      "toolPalette": "HISYOU",
+      "colorStyle": {
+        "colorType": "CATEGORIZED",
+        "transparency": 0.2,
+        "color": "rgba(183,28,28,1)",
+        "fieldName": "種名",
+        "customFieldValue": "",
+        "colorRamp": "RANDOM",
+        "colorList": [
+          {
+            "value": "クマタカ",
+            "color": "rgba(183,28,28,1)"
+          },
+          {
+            "value": "イヌワシ",
+            "color": "rgba(74,20,140,1)"
+          },
+          {
+            "value": "オオタカ",
+            "color": "rgba(13,71,161,1)"
+          },
+          {
+            "value": "ハイタカ",
+            "color": "rgba(2,119,189,1)"
+          },
+          {
+            "value": "サシバ",
+            "color": "rgba(230,81,0,1)"
+          },
+          {
+            "value": "ハチクマ",
+            "color": "rgba(245,127,23,1)"
+          },
+          {
+            "value": "ノスリ",
+            "color": "rgba(62,39,35,1)"
+          },
+          {
+            "value": "ミサゴ",
+            "color": "rgba(0,105,92,1)"
+          },
+          {
+            "value": "チョウゲンボウ",
+            "color": "rgba(136,14,79,1)"
+          },
+          {
+            "value": "トビ",
+            "color": "rgba(69,90,100,1)"
+          },
+          {
+            "value": "不明",
+            "color": "rgba(97,97,97,1)"
+          }
+        ],
+        "lineWidth": 1.5
+      },
+      "label": "",
+      "visible": true,
+      "active": false,
+      "field": [
+        {
+          "name": "種名",
+          "format": "LIST",
+          "list": [
+            {
+              "value": "クマタカ",
+              "isOther": false,
+              "customFieldValue": ""
+            },
+            {
+              "value": "イヌワシ",
+              "isOther": false,
+              "customFieldValue": ""
+            },
+            {
+              "value": "オオタカ",
+              "isOther": false,
+              "customFieldValue": ""
+            },
+            {
+              "value": "ハイタカ",
+              "isOther": false,
+              "customFieldValue": ""
+            },
+            {
+              "value": "サシバ",
+              "isOther": false,
+              "customFieldValue": ""
+            },
+            {
+              "value": "ハチクマ",
+              "isOther": false,
+              "customFieldValue": ""
+            },
+            {
+              "value": "ノスリ",
+              "isOther": false,
+              "customFieldValue": ""
+            },
+            {
+              "value": "ミサゴ",
+              "isOther": false,
+              "customFieldValue": ""
+            },
+            {
+              "value": "チョウゲンボウ",
+              "isOther": false,
+              "customFieldValue": ""
+            },
+            {
+              "value": "トビ",
+              "isOther": false,
+              "customFieldValue": ""
+            },
+            {
+              "value": "不明",
+              "isOther": false,
+              "customFieldValue": ""
+            }
+          ],
+          "defaultValue": ""
+        },
+        {
+          "name": "雌雄",
+          "format": "LIST",
+          "list": [
+            {
+              "value": "♂",
+              "isOther": false,
+              "customFieldValue": ""
+            },
+            {
+              "value": "♀",
+              "isOther": false,
+              "customFieldValue": ""
+            },
+            {
+              "value": "不明",
+              "isOther": false,
+              "customFieldValue": ""
+            }
+          ],
+          "defaultValue": ""
+        },
+        {
+          "name": "成幼",
+          "format": "LIST",
+          "list": [
+            {
+              "value": "成鳥",
+              "isOther": false,
+              "customFieldValue": ""
+            },
+            {
+              "value": "幼鳥",
+              "isOther": false,
+              "customFieldValue": ""
+            },
+            {
+              "value": "不明",
+              "isOther": false,
+              "customFieldValue": ""
+            }
+          ],
+          "defaultValue": ""
+        },
+        {
+          "name": "確認時刻",
+          "format": "TIMESTRING"
+        },
+        {
+          "name": "メモ",
+          "format": "STRING"
+        }
+      ]
+    }
   }
 ]

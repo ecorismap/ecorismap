@@ -1,8 +1,11 @@
-import React, { useContext } from 'react';
+import React, { useContext, useMemo } from 'react';
 import { Platform, View } from 'react-native';
 
 import Svg, { G, Path, Circle, Line, Polygon } from 'react-native-svg';
-import { pointsToSvg, getRotatedPointsTransformFrame } from '../../utils/Coords';
+import { interpolateLineString, latLonToXY, pointsToSvg, getRotatedPointsTransformFrame } from '../../utils/Coords';
+import { BrushSymbol } from './HomeBrushSymbol';
+import { hasStampSymbol, StampSymbol } from './HomeStampSymbol';
+import { useWindow } from '../../hooks/useWindow';
 import { ulid } from 'ulid';
 import { COLOR } from '../../constants/AppConstants';
 import { isBrushTool, isHandwritingTool, isPlotTool, isPolygonTool } from '../../utils/General';
@@ -11,6 +14,7 @@ import { MapMemoContext } from '../../contexts/MapMemo';
 import { SVGDrawingContext } from '../../contexts/SVGDrawing';
 import { ArrowHeads, RenderStamp } from './HomeMapMemoView';
 import { ArrowStyleType, MapMemoToolType } from '../../types';
+import { Position } from 'geojson';
 
 // 頂点マーカーは markerStart/markerMid/markerEnd（ネイティブMarker定義）を使わず、
 // 各頂点に図形を直接描画する。理由:
@@ -56,8 +60,45 @@ const renderVertexMarkers = (
 };
 
 export const SvgView = React.memo(() => {
-  const { currentDrawTool, isEditingObject, isAreaSelected } = useContext(DrawingToolsContext);
-  const { drawLine, editingLine, selectLine, featuresTransformAngle } = useContext(SVGDrawingContext);
+  const { currentDrawTool, isEditingObject, isAreaSelected, editingLayer } = useContext(DrawingToolsContext);
+
+  //飛翔図は描いている最中も保存後と同じ色で見せる（どの種で描いているかが分かるように）。
+  //色は選んでいる属性（種名）から色分け設定を引く。未選択なら従来の編集表示（青）にする
+  const paletteStrokeColor = useMemo(() => {
+    if (editingLayer?.toolPalette !== 'HISYOU') return undefined;
+    if (editingLayer.colorStyle.colorType !== 'CATEGORIZED') return undefined;
+    const value = editingLayer.field.find((f) => f.name === editingLayer.colorStyle.fieldName)?.defaultValue;
+    if (typeof value !== 'string' || value === '') return undefined;
+    return editingLayer.colorStyle.colorList.find((c) => c.value === value)?.color;
+  }, [editingLayer]);
+  const paletteStrokeWidth = editingLayer?.colorStyle.lineWidth ?? 1.5;
+
+  const { mapRegion, mapSize } = useWindow();
+  //ブラシ（行動範囲）は確定後に記号として地図へ描かれる。確定前も同じ間隔・角度で記号を出して
+  //どんな記号が付くのか分かるようにする（間隔・角度の計算は保存後の描画と同じ）
+  //描画時よりズームアウトしたら記号を縮小する（保存後の描画と同じ計算。整数ズームで比較する）
+  const symbolScale = (drawnZoom: number | undefined) => {
+    const zoom = Math.floor(mapRegion.zoom);
+    return typeof drawnZoom === 'number' && drawnZoom > 0 && zoom < drawnZoom ? 2 ** (zoom - drawnZoom) : 1;
+  };
+
+  const brushSymbolPoints = (latlon: Position[], drawnZoom: number | undefined) => {
+    if (latlon.length < 2) return [];
+    try {
+      //間隔も描画時ズーム基準にする（保存後と同じ計算）
+      const zoom = Math.floor(mapRegion.zoom);
+      const scale = symbolScale(drawnZoom);
+      const intervalZoom = scale < 1 && typeof drawnZoom === 'number' ? drawnZoom : zoom;
+      return interpolateLineString(latlon, 1 / 2 ** (intervalZoom - 10)).map((point) => ({
+        xy: latLonToXY(point.coordinates as Position, mapRegion, mapSize, mapViewRef),
+        angle: point.angle,
+        scale,
+      }));
+    } catch (e) {
+      return [];
+    }
+  };
+  const { drawLine, editingLine, selectLine, featuresTransformAngle, mapViewRef } = useContext(SVGDrawingContext);
   //スタンプは描画中（style未確定）でも現在のペン色で表示する
   const { penColor } = useContext(MapMemoContext);
 
@@ -99,9 +140,22 @@ export const SvgView = React.memo(() => {
           //スタンプだけは記号の形が分からないと困るのでペンの色で表示する
           if (properties.includes('HANDWRITING')) {
             const style = line.style;
-            //release前（style未確定）のスタンプは現在のペン設定で表示する
-            const strokeColor = style?.strokeColor ?? penColor;
+            //release前（style未確定）のスタンプは現在のペン設定で表示する。
+            //飛翔図は保存後と同じ色（種名の色）で描き、線と行動記号の見た目を揃える
+            const strokeColor = paletteStrokeColor ?? style?.strokeColor ?? penColor;
             if (style !== undefined && style.stamp !== '') {
+              //記号は保存後と同じ図形・大きさで出す（数字・英字・文字はラベルが要るので従来の仮表示）
+              if (hasStampSymbol(style.stamp) && xy.length > 0) {
+                const scale = symbolScale(style.zoom);
+                return (
+                  <G
+                    key={ulid()}
+                    transform={`translate(${xy[0][0]},${xy[0][1]}) scale(${scale}) translate(-10,-10)`}
+                  >
+                    <StampSymbol stamp={style.stamp} lineColor={strokeColor} />
+                  </G>
+                );
+              }
               return (
                 <G key={ulid()}>
                   <RenderStamp
@@ -139,29 +193,60 @@ export const SvgView = React.memo(() => {
             //ブラシは確定（一括保存）後に記号として描画されるため、セッション中はなぞった線で示す
             const isBrushStroke = style !== undefined && isBrushTool(style.strokeStyle);
             const arrowStyle = (style?.strokeStyle || 'NONE') as ArrowStyleType;
-            //編集中（未確定）のストロークは新規・編集選択を問わず、従来の編集表示と同じ
-            //青＋水色の線で描く（確定すると本来の色・太さで地図に描かれる）
+            //編集中（未確定）のストロークは従来の編集表示と同じ青＋水色の線で描く。
+            //飛翔図だけは保存後と同じ色・太さで描く（種の見分けが付かないと描き分けられないため）
+            const previewColor = paletteStrokeColor ?? 'lightblue';
+            const previewWidth = paletteStrokeColor === undefined ? 2 : paletteStrokeWidth;
+            //なぞり終えたブラシは記号で表示する（なぞっている最中は緯度経度がまだ無いので線で示す）
+            const brushPoints = isBrushStroke ? brushSymbolPoints(line.latlon, style?.zoom) : [];
+            if (brushPoints.length > 0) {
+              return (
+                <G key={ulid()}>
+                  {brushPoints.map((point, i) => (
+                    <G
+                      key={`${idx}-${i}`}
+                      transform={`translate(${point.xy[0]},${point.xy[1]}) rotate(${point.angle}) scale(${point.scale}) translate(-10,-10)`}
+                    >
+                      <BrushSymbol strokeStyle={String(style?.strokeStyle ?? '')} lineColor={previewColor} />
+                    </G>
+                  ))}
+                </G>
+              );
+            }
             return (
               <G key={ulid()}>
+                {paletteStrokeColor === undefined ? (
+                  <Path
+                    d={pointsToSvg(xy)}
+                    stroke="blue"
+                    strokeWidth="4"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    fill="none"
+                  />
+                ) : (
+                  //本来の色で描くと未確定か分からないので、青のハローを敷いて編集中を示す
+                  <Path
+                    d={pointsToSvg(xy)}
+                    stroke="blue"
+                    strokeOpacity={0.2}
+                    strokeWidth={previewWidth + 4}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    fill="none"
+                  />
+                )}
                 <Path
                   d={pointsToSvg(xy)}
-                  stroke="blue"
-                  strokeWidth="4"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  fill="none"
-                />
-                <Path
-                  d={pointsToSvg(xy)}
-                  stroke="lightblue"
-                  strokeWidth="2"
+                  stroke={previewColor}
+                  strokeWidth={previewWidth}
                   strokeDasharray={isBrushStroke ? '4,4' : 'none'}
                   strokeLinecap="round"
                   strokeLinejoin="round"
                   fill="none"
                 />
                 {!isBrushStroke && (arrowStyle === 'ARROW_END' || arrowStyle === 'ARROW_BOTH') && (
-                  <ArrowHeads points={xy} strokeColor="lightblue" strokeWidth={2} arrowStyle={arrowStyle} />
+                  <ArrowHeads points={xy} strokeColor={previewColor} strokeWidth={previewWidth} arrowStyle={arrowStyle} />
                 )}
               </G>
             );

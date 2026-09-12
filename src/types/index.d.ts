@@ -580,13 +580,19 @@ export type ToolPaletteType = 'HISYOU' | 'VEGETATION';
 export type ToolPaletteItemType = {
   id: string;
   label: string;
+  //ツールバーのボタンに出す短い名前（幅40pxに収まらない長い名前のとき）。一覧ではlabelを使う
+  shortLabel?: string;
   icon: string;
-  //道具を持ち替えるパレット（飛翔図）で使う。区分を選ぶパレット（植生図）では持たない
+  //道具を持ち替えるボタン（飛翔図のペン・ブラシ・スタンプ）で使う
   subTool?: HandwritingSubToolType;
-  //区分を選ぶパレット（植生図）。押すと次に描くオブジェクトのこの区分が入る
+  //属性を選ぶボタン。押すとこのフィールドの値を選び、次に描くオブジェクトへ入る
+  //（植生図の区分、飛翔図の種名・雌雄・成幼）
+  fieldName?: string;
   fieldValue?: string;
-  //区分ごとの色（色分け設定のcolorListから引く）
+  //値ごとの色（色分け設定のcolorListから引く）
   colorHex?: string;
+  //道具をまとめたボタン（行動範囲＝ブラシ、行動位置＝スタンプ）。押すと中から選ぶ
+  options?: ToolPaletteItemType[];
   penWidth?: PenWidthType;
   arrowStyle?: ArrowStyleType;
   //区分ごとに色を変える用途（植生図など）。指定するとアイコンをこの色で表示する

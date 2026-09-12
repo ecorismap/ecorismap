@@ -2,9 +2,10 @@ import React, { useMemo } from 'react';
 import { Platform, View } from 'react-native';
 import { Marker } from 'react-native-maps';
 import { PointRecordType } from '../../types';
-import Svg, { Circle, Line, Polygon, Rect, Text } from 'react-native-svg';
+import Svg, { Text } from 'react-native-svg';
 import { MARKER_BAND, markerZIndex } from '../../utils/markerZIndex';
 import { getMapMemoSymbolScaleAtZoom } from '../../utils/Layer';
+import { hasStampSymbol, StampSymbol } from './HomeStampSymbol';
 
 interface Props {
   feature: PointRecordType;
@@ -68,7 +69,9 @@ export const HomeMapMemoStamp = React.memo((props: Props) => {
         </Marker>
       );
     }
-    case 'TOMARI':
+    default: {
+      //記号は保存後とプレビューで同じ図形を使う（HomeStampSymbol）
+      if (!hasStampSymbol(stamp)) return null;
       return (
         <Marker
           tracksViewChanges={false}
@@ -81,151 +84,11 @@ export const HomeMapMemoStamp = React.memo((props: Props) => {
         >
           <View style={{ width: size, height: size }}>
             <Svg height={size} width={size} viewBox="0 0 20 20">
-              {/* {selected && (
-                <Rect x="0" y="0" width="20" height="20" stroke={COLOR.ORANGE} strokeWidth="4" fill="none" />
-              )} */}
-              <Circle cx="10" cy="10" r="4" stroke={'#ffffffaa'} strokeWidth="1" fill={lineColor} />
+              <StampSymbol stamp={stamp} lineColor={lineColor} />
             </Svg>
           </View>
         </Marker>
       );
-    case 'KARI':
-      return (
-        <Marker
-          tracksViewChanges={false}
-          key={markerKey}
-          coordinate={feature.coords}
-          opacity={1}
-          anchor={{ x: 0.5, y: 0.5 }}
-          style={{ zIndex: -1, alignItems: 'center' }}
-          zIndex={zIndex}
-        >
-          <View style={{ width: size, height: size }}>
-            <Svg height={size} width={size} viewBox="0 0 20 20">
-              <Circle cx="10" cy="10" r="7" stroke={lineColor} strokeWidth="1" fill="#ffffffaa" />
-              <Line x1="5" y1="5" x2="15" y2="15" stroke={lineColor} strokeWidth="1.5" />
-              <Line x1="15" y1="5" x2="5" y2="15" stroke={lineColor} strokeWidth="1.5" />
-            </Svg>
-          </View>
-        </Marker>
-      );
-    case 'HOVERING':
-      return (
-        <Marker
-          tracksViewChanges={false}
-          key={markerKey}
-          coordinate={feature.coords}
-          opacity={1}
-          anchor={{ x: 0.5, y: 0.5 }}
-          style={{ zIndex: -1, alignItems: 'center' }}
-          zIndex={zIndex}
-        >
-          <View style={{ width: size, height: size }}>
-            <Svg height={size} width={size} viewBox="0 0 20 20">
-              <Circle cx="10" cy="10" r="7" stroke={lineColor} strokeWidth="1" fill="#ffffffaa" />
-              <Text x="10" y="14" fontSize="12" fontWeight="bold" fill={lineColor} textAnchor="middle">
-                H
-              </Text>
-            </Svg>
-          </View>
-        </Marker>
-      );
-    case 'VOICE':
-      return (
-        <Marker
-          tracksViewChanges={false}
-          key={markerKey}
-          coordinate={feature.coords}
-          opacity={1}
-          anchor={{ x: 0.5, y: 0.5 }}
-          style={{ zIndex: -1, alignItems: 'center' }}
-          zIndex={zIndex}
-        >
-          <View style={{ width: size, height: size }}>
-            <Svg height={size} width={size} viewBox="0 0 20 20">
-              <Circle cx="10" cy="10" r="8" stroke={lineColor} strokeWidth="1" fill="#ffffffaa" />
-              <Text x="10" y="15" fontSize="11" fontWeight="bold" fill={lineColor} textAnchor="middle">
-                Vo
-              </Text>
-            </Svg>
-          </View>
-        </Marker>
-      );
-    case 'KOUBI':
-      return (
-        <Marker
-          tracksViewChanges={false}
-          key={markerKey}
-          coordinate={feature.coords}
-          opacity={1}
-          anchor={{ x: 0.5, y: 0.5 }}
-          style={{ zIndex: -1, alignItems: 'center' }}
-          zIndex={zIndex}
-        >
-          <View style={{ width: size, height: size }}>
-            <Svg height={size} width={size} viewBox="0 0 20 20">
-              <Text x="9" y="14" fontSize="18" fontWeight="bold" fill={lineColor} textAnchor="middle">
-                ★
-              </Text>
-            </Svg>
-          </View>
-        </Marker>
-      );
-    case 'SQUARE':
-      return (
-        <Marker
-          tracksViewChanges={false}
-          key={markerKey}
-          coordinate={feature.coords}
-          opacity={1}
-          anchor={{ x: 0.5, y: 0.5 }}
-          style={{ zIndex: -1, alignItems: 'center' }}
-          zIndex={zIndex}
-        >
-          <View style={{ width: size, height: size }}>
-            <Svg height={size} width={size} viewBox="0 0 20 20">
-              <Rect x="4" y="4" width="12" height="12" stroke={lineColor} strokeWidth="2" fill={lineColor} />
-            </Svg>
-          </View>
-        </Marker>
-      );
-    case 'CIRCLE':
-      return (
-        <Marker
-          tracksViewChanges={false}
-          key={markerKey}
-          coordinate={feature.coords}
-          opacity={1}
-          anchor={{ x: 0.5, y: 0.5 }}
-          style={{ zIndex: -1, alignItems: 'center' }}
-          zIndex={zIndex}
-        >
-          <View style={{ width: size, height: size }}>
-            <Svg height={size} width={size} viewBox="0 0 20 20">
-              <Circle cx="10" cy="10" r="6" stroke={lineColor} strokeWidth="3" fill={lineColor} />
-            </Svg>
-          </View>
-        </Marker>
-      );
-    case 'TRIANGLE':
-      return (
-        <Marker
-          tracksViewChanges={false}
-          key={markerKey}
-          coordinate={feature.coords}
-          opacity={1}
-          anchor={{ x: 0.5, y: 0.5 }}
-          style={{ zIndex: -1, alignItems: 'center' }}
-          zIndex={zIndex}
-        >
-          <View style={{ width: size, height: size }}>
-            <Svg height={size} width={size} viewBox="0 0 20 20">
-              <Polygon points="10,3.68 2,18 18,18" stroke={lineColor} strokeWidth="0" fill={lineColor} />
-            </Svg>
-          </View>
-        </Marker>
-      );
-    default:
-      return null;
+    }
   }
 });
