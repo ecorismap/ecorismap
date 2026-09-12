@@ -17,6 +17,7 @@ import {
   selectLineFeaturesByArea,
   selectPolygonFeaturesByArea,
   selectPolygonFeatureByLatLon,
+  reprojectCoordsOnModifiedLine,
 } from '../Coords';
 import { LocationType, PointRecordType, LineRecordType, PolygonRecordType } from '../../types';
 
@@ -712,5 +713,35 @@ describe('selectPolygonFeatureByLatLon', () => {
 
   it('面から離れた場所のタップでは選択しない', () => {
     expect(selectPolygonFeatureByLatLon([square], [20, 20], 0.1)).toBeUndefined();
+  });
+});
+
+describe('reprojectCoordsOnModifiedLine', () => {
+  //東西にまっすぐな線。修正で2倍の長さに伸ばす
+  const oldLine: [number, number][] = [
+    [0, 0],
+    [10, 0],
+  ];
+  const newLine: [number, number][] = [
+    [0, 0],
+    [20, 0],
+  ];
+
+  it('線上の位置の割合を保ったまま新しい線へ移す', () => {
+    //元の線の中間（5）は、伸びた線でも中間（10）へ移る
+    const moved = reprojectCoordsOnModifiedLine([[5, 0]], oldLine, newLine);
+    expect(moved).toBeDefined();
+    expect(moved![0][0]).toBeCloseTo(10, 1);
+    expect(moved![0][1]).toBeCloseTo(0, 1);
+  });
+
+  it('線から少し離れた記号も、最も近い位置の割合で移す', () => {
+    const moved = reprojectCoordsOnModifiedLine([[2.5, 0.01]], oldLine, newLine);
+    expect(moved![0][0]).toBeCloseTo(5, 1);
+  });
+
+  it('線が短すぎる場合はundefinedを返す（移動しない）', () => {
+    expect(reprojectCoordsOnModifiedLine([[5, 0]], [[0, 0]], newLine)).toBeUndefined();
+    expect(reprojectCoordsOnModifiedLine([], oldLine, newLine)).toBeUndefined();
   });
 });

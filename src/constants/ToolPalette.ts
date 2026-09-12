@@ -55,13 +55,14 @@ const getHisyouPalette = (layer: LayerType): ToolPaletteItemType[] => {
   const fieldOptions = HISYOU_FIELD_NAMES.flatMap((name) => {
     const field = layer.field.find((f) => f.name === name);
     if (field?.list === undefined) return [];
-    return [{ id: `HISYOU_FIELD_${name}`, label: name, icon: 'form-select', fieldName: name }];
+    return [{ id: `HISYOU_FIELD_${name}`, label: name, icon: 'bird', fieldName: name }];
   });
-  //種名・雌雄・成幼はボタン1つにまとめ、モーダルのタブで切り替える
+  //種名・雌雄・成幼はボタン1つにまとめ、モーダルのタブで切り替える。
+  //未選択のときは何を押すボタンか分かるよう「種名選択」と出す（選ぶと種名がラベルになる）
   const fieldItems =
     fieldOptions.length === 0
       ? []
-      : [{ id: 'HISYOU_FIELDS', label: fieldOptions[0].label, icon: 'form-select', options: fieldOptions }];
+      : [{ id: 'HISYOU_FIELDS', label: '種名選択', icon: 'bird', options: fieldOptions }];
 
   return [
     {
@@ -73,9 +74,10 @@ const getHisyouPalette = (layer: LayerType): ToolPaletteItemType[] => {
       arrowStyle: 'ARROW_END',
     },
     ...fieldItems,
-    { id: 'HISYOU_BRUSH', label: '行動範囲', icon: BRUSH.BRUSH, options: hisyouBrushOptions },
-    { id: 'HISYOU_STAMP', label: '行動位置', icon: STAMP.STAMP, options: hisyouStampOptions },
-    //消しゴムは出さない。1本＝1飛翔なので、消すときは編集選択で選んで削除する
+    { id: 'HISYOU_BRUSH', label: '行動範囲', icon: 'ray-start-end', options: hisyouBrushOptions },
+    { id: 'HISYOU_STAMP', label: '行動位置', icon: 'circle-medium', options: hisyouStampOptions },
+    //行動記号だけを消す。飛翔線そのものは消さない（線を消すときは編集選択から削除する）
+    { id: 'HISYOU_ERASER', label: '行動削除', icon: 'circle-off-outline', subTool: 'ERASER' },
   ];
 };
 

@@ -837,6 +837,35 @@ export const selectPolygonFeatureByLatLon = (
   }
 };
 
+/**
+ * 線を修正したときに、その線にぶら下がる記号（ブラシ・スタンプ）の位置を新しい線へ移す。
+ * 元の線上での「始点からの距離の割合」を保ったまま、新しい線の同じ割合の位置へ置く。
+ * これをしないと、線だけ動いて記号が元の場所に取り残される
+ */
+export const reprojectCoordsOnModifiedLine = (
+  coords: Position[],
+  oldLine: Position[],
+  newLine: Position[]
+): Position[] | undefined => {
+  if (coords.length === 0 || oldLine.length < 2 || newLine.length < 2) return undefined;
+  try {
+    const oldLineString = turf.lineString(oldLine);
+    const newLineString = turf.lineString(newLine);
+    const oldLength = turf.length(oldLineString, { units: 'kilometers' });
+    const newLength = turf.length(newLineString, { units: 'kilometers' });
+    if (oldLength === 0 || newLength === 0) return undefined;
+    return coords.map((coord) => {
+      const snapped = turf.nearestPointOnLine(oldLineString, turf.point(coord));
+      const location = snapped.properties.location ?? 0;
+      const moved = turf.along(newLineString, (location / oldLength) * newLength, { units: 'kilometers' });
+      return moved.geometry.coordinates;
+    });
+  } catch (e) {
+    console.log('reproject error', e);
+    return undefined;
+  }
+};
+
 export const booleanNearEqual = (p1: Position, p2: Position) => {
   return Math.abs(p2[0] - p1[0]) <= 0.001 && Math.abs(p2[1] - p1[1]) <= 0.001;
 };

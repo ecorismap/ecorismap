@@ -42,6 +42,9 @@ jest.mock('../../utils/Coords', () => ({
       xy.length > 2 && xy[0][0] === xy[xy.length - 1][0] && xy[0][1] === xy[xy.length - 1][1]
   ),
   isNearWithPlot: jest.fn(() => false),
+  booleanNearEqual: jest.fn((p1: [number, number], p2: [number, number]) => p1[0] === p2[0] && p1[1] === p2[1]),
+  //記号の付け替えは実装側の分岐だけ確認できればよいので、ここでは移動しない
+  reprojectCoordsOnModifiedLine: jest.fn(() => undefined),
   modifyLineWithSource: jest.fn(() => ({ xy: [], latlon: [], junctions: [] })),
   smoothJunctions: jest.fn((xy: unknown[], latlon: unknown[]) => ({ xy, latlon })),
   closeFreehandPolygonSeam: jest.fn((xy: [number, number][], latlon: [number, number][]) => ({

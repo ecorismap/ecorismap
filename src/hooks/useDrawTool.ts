@@ -22,6 +22,7 @@ import {
   PolygonToolType,
   RecordType,
   UndoLineType,
+  LocationType,
 } from '../types';
 import {
   latLonObjectsToLatLonArray,
@@ -52,9 +53,10 @@ import {
   refineArrowStroke,
   getRotatedPointsTransformFrame,
   POINTS_TRANSFORM_HANDLE_RADIUS_PX,
+  reprojectCoordsOnModifiedLine,
 } from '../utils/Coords';
 import { useWindow } from './useWindow';
-import { deleteRecordsAction } from '../modules/dataSet';
+import { deleteRecordsAction, updateRecordsAction } from '../modules/dataSet';
 import { updateLayerAction } from '../modules/layers';
 import { MapRef } from 'react-map-gl/maplibre';
 import { editSettingsAction } from '../modules/settings';
@@ -71,6 +73,8 @@ const PEN_SIMPLIFY_TOLERANCE_PX = 1.0;
 const MIN_POINTS_FOR_REFINE = 5;
 //編集選択時にこの頂点数以上のオブジェクトは手書き（フリーハンド）由来とみなし、手書きモードで編集する
 const HANDWRITING_SELECT_MIN_POINTS = 15;
+//行動記号の消しゴムが反応する距離（スタンプは点なので画面上の距離で判定する）
+const SYMBOL_HIT_RADIUS_PX = 20;
 
 //色分けが「個別（_strokeColor参照）」のレイヤか。
 //このレイヤでは手書き以外（プロット・フリーハンド）で作る新規レコードにも現在の色・太さを書き込む
@@ -902,6 +906,39 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     return { isOK: true, message: '', layer: layer, recordSet: savedRecordSet };
   }, [addRecord, findLayer, generateRecord, getEditableLayerAndRecordSetWithCheck, resetDrawTools, updateRecord]);
 
+  /**
+   * 線を修正したときに、その線に_groupでぶら下がる記号（ブラシ・スタンプ）を新しい線へ移す。
+   * 元の線上での位置の割合を保つので、旋回や とまり が線から離れて取り残されない
+   */
+  const reprojectGroupChildren = useCallback(
+    (layer: LayerType, oldRecord: RecordType, newCoords: LocationType[]) => {
+      if (!Array.isArray(oldRecord.coords) || oldRecord.coords.length < 2 || newCoords.length < 2) return;
+      const oldLine = latLonObjectsToLatLonArray(oldRecord.coords);
+      const newLine = latLonObjectsToLatLonArray(newCoords);
+      //形が変わっていないときだけ何もしない。booleanNearEqualは許容0.001度（約100m）と大きく、
+      //小さな修正を「変わっていない」と見なして記号が取り残されるため、ここでは厳密に比べる
+      const isSameLine =
+        oldLine.length === newLine.length &&
+        oldLine.every((p, i) => p[0] === newLine[i][0] && p[1] === newLine[i][1]);
+      if (isSameLine) return;
+      lineDataSet
+        .filter((d) => d.layerId === layer.id)
+        .forEach((d) => {
+          const children = d.data.filter((record) => record.field._group === oldRecord.id);
+          if (children.length === 0) return;
+          const moved = children.flatMap((record) => {
+            if (!Array.isArray(record.coords) || record.coords.length === 0) return [];
+            const latlon = reprojectCoordsOnModifiedLine(latLonObjectsToLatLonArray(record.coords), oldLine, newLine);
+            if (latlon === undefined) return [];
+            const coords = latlonArrayToLatLonObjects(latlon);
+            return [{ ...record, coords, centroid: calcLineMidPoint(coords) }];
+          });
+          if (moved.length > 0) dispatch(updateRecordsAction({ layerId: layer.id, userId: d.userId, data: moved }));
+        });
+    },
+    [dispatch, lineDataSet]
+  );
+
   const saveLine = useCallback((defaultStyle?: DrawLineStyleType, applyStyleToSelected?: { color: boolean; width: boolean; arrow?: boolean }) => {
     //削除したものを取り除く
     drawLine.current = drawLine.current.filter((line) => line.xy.length !== 0);
@@ -954,6 +991,8 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
             updatedRecord.field._strokeStyle = defaultStyle.strokeStyle;
           }
         }
+        //線の形を変えたら、ぶら下がる記号（ブラシ・スタンプ）も新しい線へ移す
+        reprojectGroupChildren(recordLayer, line.record, coords);
         //recordが存在する場合は更新。存在しない場合は新規追加。splitLineに対応するため
         const targetRecord = findRecord(recordLayer.id, line.record.userId, line.record.id, 'LINE');
         if (targetRecord !== undefined) {
@@ -995,6 +1034,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     findRecord,
     generateRecord,
     getEditableLayerAndRecordSetWithCheck,
+    reprojectGroupChildren,
     resetDrawTools,
     updateRecord,
   ]);
@@ -1225,14 +1265,28 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
         ...redoLine.current,
         { index: -1, latlon: [], latlonList: drawLine.current.map((line) => line.latlon), action: 'EDIT_MULTI' },
       ];
-    } else if (undo.action !== 'SELECT') {
+    } else if (undo.action !== 'SELECT' && undo.action !== 'DELETE_SYMBOL') {
       redoLine.current = [
         ...redoLine.current,
         { index: undo.index, latlon: drawLine.current[undo.index].latlon, action: undo.action },
       ];
     }
 
-    if (undo.action === 'NEW') {
+    if (undo.action === 'DELETE_SYMBOL') {
+      //消した行動記号を戻す（セッション中のものは元の位置へ、保存済みのものはレコードを復元する）
+      if (undo.deletedLine !== undefined) {
+        drawLine.current = [
+          ...drawLine.current.slice(0, undo.index),
+          undo.deletedLine,
+          ...drawLine.current.slice(undo.index),
+        ];
+      } else if (undo.deletedRecord !== undefined) {
+        const { layerId, userId, record } = undo.deletedRecord;
+        dispatch(updateRecordsAction({ layerId, userId, data: [record] }));
+      }
+      setRedraw(ulid());
+      return;
+    } else if (undo.action === 'NEW') {
       //追加の場合
       drawLine.current.pop();
       //手書きセッションは残りのストロークがあれば編集状態（確定バー）を維持する
@@ -1875,8 +1929,60 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     []
   );
 
+  //行動記号（ブラシ・スタンプ）だけを消す。編集中の線にぶら下がるものが対象で、線は消さない
+  const eraseHandwritingSymbol = useCallback(
+    (pXY: Position) => {
+      const isHit = (xy: Position[], isStamp: boolean) => {
+        if (xy.length === 0) return false;
+        if (isStamp) return Math.hypot(xy[0][0] - pXY[0], xy[0][1] - pXY[1]) <= SYMBOL_HIT_RADIUS_PX;
+        return xy.length >= 2 && checkDistanceFromLine(pXY, xy).isNear;
+      };
+      //セッション中の記号（未確定）を先に消す
+      for (let i = drawLine.current.length - 1; i >= 0; i--) {
+        const style = drawLine.current[i].style;
+        if (style === undefined) continue;
+        const isStamp = style.stamp !== '';
+        if (!isStamp && !isBrushTool(style.strokeStyle)) continue;
+        if (!isHit(drawLine.current[i].xy, isStamp)) continue;
+        //戻せるように控えておく
+        pushUndo({ index: i, latlon: [], action: 'DELETE_SYMBOL', deletedLine: drawLine.current[i] });
+        drawLine.current = drawLine.current.filter((_, index) => index !== i);
+        setRedraw(ulid());
+        return;
+      }
+      //保存済みの記号は、編集中の線にぶら下がるものだけ消す
+      const parentIds = drawLine.current.flatMap((line) => (line.record === undefined ? [] : [line.record.id]));
+      if (parentIds.length === 0) return;
+      const { layer } = getEditableLayerAndRecordSetWithCheck('LINE');
+      if (layer === undefined) return;
+      for (const data of lineDataSet.filter((d) => d.layerId === layer.id)) {
+        for (const record of data.data) {
+          const group = record.field._group;
+          if (typeof group !== 'string' || !parentIds.includes(group)) continue;
+          if (!Array.isArray(record.coords) || record.coords.length === 0) continue;
+          const isStamp = record.field._stamp !== undefined && record.field._stamp !== '';
+          const xy = latLonObjectsToXYArray(record.coords, mapRegion, mapSize, mapViewRef);
+          if (!isHit(xy, isStamp)) continue;
+          pushUndo({
+            index: -1,
+            latlon: [],
+            action: 'DELETE_SYMBOL',
+            deletedRecord: { layerId: layer.id, userId: data.userId, record },
+          });
+          dispatch(deleteRecordsAction({ layerId: layer.id, userId: data.userId, data: [record] }));
+          return;
+        }
+      }
+    },
+    [dispatch, getEditableLayerAndRecordSetWithCheck, lineDataSet, mapRegion, mapSize, mapViewRef, pushUndo]
+  );
+
   const handleGrantHandwriting = useCallback(
     (pXY: Position, penStyle: HandwritingPenStyleType) => {
+      if (handwritingSubTool === 'ERASER') {
+        eraseHandwritingSymbol(pXY);
+        return;
+      }
       handwritingPenStyle.current = penStyle;
       activeHandwritingStroke.current = false;
       const subTool = featureButton === 'POLYGON' ? 'PEN' : handwritingSubTool;
@@ -1975,6 +2081,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     [
       featureButton,
       handwritingSubTool,
+      eraseHandwritingSymbol,
       findHandwritingSnapTarget,
       editStartNewFreehandObject,
       pushUndo,

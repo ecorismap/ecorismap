@@ -571,7 +571,8 @@ export type DrawLineStyleType = {
 };
 
 //手書きペンのサブツール（LINEタブのみSTAMP/BRUSHを許可）
-export type HandwritingSubToolType = 'PEN' | StampType | BrushType;
+//ERASERは行動記号（ブラシ・スタンプ）だけを消す道具。線そのものは消さない
+export type HandwritingSubToolType = 'PEN' | 'ERASER' | StampType | BrushType;
 
 //ツールパレットの1ボタン。「道具＋設定」を1つにまとめ、タップだけで持ち替えられるようにする
 //レイヤの用途。飛翔図＝ライン、植生図＝ポリゴンで使う
@@ -609,7 +610,15 @@ export type HandwritingPenStyleType = {
   isStraightStyle: boolean;
   snapWithLine: boolean;
 };
-export type UndoLineType = { index: number; latlon: Position[]; latlonList?: Position[][]; action: UndoActionType };
+export type UndoLineType = {
+  index: number;
+  latlon: Position[];
+  latlonList?: Position[][];
+  action: UndoActionType;
+  //消した行動記号を戻すための控え（DELETE_SYMBOL用）。セッション中のものと保存済みのものがある
+  deletedLine?: DrawLineType;
+  deletedRecord?: { layerId: string; userId: string | undefined; record: RecordType };
+};
 
 export type PointToolType = keyof typeof POINTTOOL;
 export type LineToolType = keyof typeof LINETOOL;
@@ -624,7 +633,7 @@ export type MapMemoToolGroupType = 'PEN' | 'STAMP' | 'BRUSH' | 'ERASER';
 export type PenWidthType = keyof typeof PEN_WIDTH;
 export type StampType = keyof typeof STAMP;
 export type BrushType = keyof typeof BRUSH;
-export type UndoActionType = 'NEW' | 'EDIT' | 'EDIT_MULTI' | 'FINISH' | 'SELECT' | 'DELETE';
+export type UndoActionType = 'NEW' | 'EDIT' | 'EDIT_MULTI' | 'FINISH' | 'SELECT' | 'DELETE' | 'DELETE_SYMBOL';
 
 export type HomeButtonType = keyof typeof HOME_BTN;
 export type LayersButtonType = keyof typeof LAYERS_BTN;

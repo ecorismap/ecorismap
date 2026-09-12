@@ -114,13 +114,22 @@ export const HomeToolPalette = React.memo(({ items, featureType }: Props) => {
 
   //行動範囲・行動位置は飛翔線に付ける記号なので、線を描いている（編集している）間だけ使える
   const isOptionGroupDisabled = (item: ToolPaletteItemType) =>
-    item.options !== undefined && fieldNamesOf(item) === undefined && !isEditingDraw && !isEditingObject;
+    (item.options !== undefined || item.subTool === 'ERASER') &&
+    fieldNamesOf(item) === undefined &&
+    !isEditingDraw &&
+    !isEditingObject;
 
   const pressItem = async (item: ToolPaletteItemType, skipAttributeCheck = false) => {
     if (isOptionGroupDisabled(item)) return;
     const fieldNames = fieldNamesOf(item);
     //属性が未選択のまま描き始めないよう、先に選んでもらう（選び終えたらこの道具を有効にする）
-    if (!skipAttributeCheck && fieldNames === undefined && item.eraser === undefined && needsAttributes) {
+    if (
+      !skipAttributeCheck &&
+      fieldNames === undefined &&
+      item.eraser === undefined &&
+      item.subTool !== 'ERASER' &&
+      needsAttributes
+    ) {
       setPendingItem(item);
       setPickerFields(paletteFieldNames);
       return;
@@ -184,7 +193,8 @@ export const HomeToolPalette = React.memo(({ items, featureType }: Props) => {
     const options = editingLayer === undefined ? [] : getFieldOptions(editingLayer, fieldName);
     const selected = options.find((option) => option.fieldValue === value);
     return {
-      icon: isColorField(fieldName) ? 'checkbox-blank-circle' : 'form-select',
+      //アイコンはパレット定義のものを使い、色分けに使う属性は選んだ値の色で塗る
+      icon: item.icon,
       color: selected?.colorHex ?? COLOR.WHITE,
       label: selected?.label ?? item.label,
     };
