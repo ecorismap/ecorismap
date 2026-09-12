@@ -629,7 +629,12 @@ export const selectLineFeaturesByArea = (lineFeatures: LineRecordType[], areaLin
           return undefined;
         }
 
-        const intersects = booleanIntersects(featureLine, areaPolygon);
+        //自前のbooleanIntersectsは境界の交差しか判定しないため、
+        //なげなわに完全に内包される場合は頂点の内外判定で拾う
+        const anyVertexInside = feature.coords.some((c) =>
+          turf.booleanPointInPolygon(turf.point([c.longitude, c.latitude]), areaPolygon)
+        );
+        const intersects = anyVertexInside || booleanIntersects(featureLine, areaPolygon);
         if (intersects) return feature;
       })
       .filter((d): d is LineRecordType => d !== undefined);
@@ -646,8 +651,14 @@ export const selectPolygonFeaturesByArea = (polygonFeatures: PolygonRecordType[]
       .map((feature) => {
         if (!feature.coords) return undefined;
         if (!feature.visible) return undefined;
-        const featurePolygon = turf.multiPolygon([[feature.coords.map((c) => [c.longitude, c.latitude])]]);
-        const intersects = booleanIntersects(featurePolygon, areaPolygon);
+        const featureRing = feature.coords.map((c) => [c.longitude, c.latitude]);
+        const featurePolygon = turf.multiPolygon([[featureRing]]);
+        //自前のbooleanIntersectsは境界の交差しか判定しない。
+        //なげなわがポリゴンを内包する場合（頂点の内外判定）と、
+        //なげなわがポリゴンの内側に完全に入る場合（なげなわ始点の内外判定）も拾う
+        const anyVertexInside = featureRing.some((c) => turf.booleanPointInPolygon(turf.point(c), areaPolygon));
+        const lassoInsideFeature = turf.booleanPointInPolygon(turf.point(areaLineCoords[0]), featurePolygon);
+        const intersects = anyVertexInside || lassoInsideFeature || booleanIntersects(featurePolygon, areaPolygon);
         if (intersects) return feature;
       })
       .filter((d): d is PolygonRecordType => d !== undefined);

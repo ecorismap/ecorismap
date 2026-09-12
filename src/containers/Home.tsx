@@ -121,6 +121,10 @@ import { calcViewshedPreview } from '../utils/viewshedPreview';
 import dayjs from 'dayjs';
 import { HomeModalMapMemoSettings } from '../components/organisms/HomeModalMapMemoSettings';
 import { HomeModalInfoPicker } from '../components/organisms/HomeModalInfoPicker';
+import { HomeModalLayerSelect } from '../components/organisms/HomeModalLayerSelect';
+import { useEditableLayerSelection } from '../hooks/useEditableLayerSelection';
+import { TEMPLATE_LAYER } from '../modules/layers';
+import { ulid } from 'ulid';
 import { Position } from 'geojson';
 import { useMaps } from '../hooks/useMaps';
 import { useRepository } from '../hooks/useRepository';
@@ -317,7 +321,9 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     selectRecord,
     unselectRecord,
     checkRecordEditable,
-    getEditableLayerAndRecordSetWithCheck,
+    activePointLayer,
+    activeLineLayer,
+    activePolygonLayer,
     calculateStorageSize,
     setIsEditingRecord,
   } = useRecord();
@@ -362,7 +368,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     setVisibleInfoPicker,
     setCurrentInfoTool,
     setIsPinch,
-    handleReleaseDeletePoint,
+    isAreaSelected,
     handleGrantSelect,
     handleMoveSelect,
     handleReleaseSelect,
@@ -394,8 +400,6 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     penWidth,
     mapMemoEditingLine,
     mapMemoEditingLineLatLon,
-    editableMapMemo,
-    activeMemoLayer,
     isIndividualColorRequired,
     isPencilModeActive,
     isUndoable,
@@ -887,42 +891,65 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     setViewshedSnapPoint(null);
   }, []);
 
+  //編集レイヤ選択ダイアログの「新規レイヤを作成」からLayerEditへ遷移する
+  const onRequestCreateLayer = useCallback(
+    (featureType: 'POINT' | 'LINE' | 'POLYGON') => {
+      openSheet(2);
+      navigateToSplit('LayerEdit', {
+        previous: 'Layers',
+        targetLayer: { ...TEMPLATE_LAYER, id: ulid(), type: featureType },
+        isEdited: true,
+      });
+    },
+    [navigateToSplit, openSheet]
+  );
+
+  //編集レイヤの確認・切替（描画ツール選択時のチェックとツールバーのチップから使う）
+  const { layerSelectProps, ensureEditableLayer, openLayerSwitcher } = useEditableLayerSelection({
+    onRequestCreateLayer,
+  });
+
   /**
    * 作図ツール選択時の編集可否チェック。
-   * レイヤの存在に加えプロジェクト実行中のロックと非表示も確認し、
-   * 保存時まで気づけない「このレイヤは編集できません」を防ぐ
+   * 編集レイヤがなければ選択ダイアログで選ばせてactive化し、非表示なら表示確認をしてそのまま続行できる
    */
   const checkEditableLayerForDraw = useCallback(
-    async (type: 'POINT' | 'LINE' | 'POLYGON') => {
-      const { isOK, message, layer } = getEditableLayerAndRecordSetWithCheck(type);
-      if (!isOK || layer === undefined) {
-        await AlertAsync(message !== '' ? message : t('Home.alert.cannotEdit'));
-        return false;
-      }
-      if (!layer.visible) {
-        await AlertAsync(t('Home.alert.hiddenLayerEdit'));
-        return false;
-      }
-      return true;
-    },
-    [getEditableLayerAndRecordSetWithCheck]
+    async (type: 'POINT' | 'LINE' | 'POLYGON') => ensureEditableLayer(type),
+    [ensureEditableLayer]
   );
 
   /**
-   * マップメモの編集可否チェック（設定モーダルを開く前やツール選択時に使う）
+   * マップメモの編集可否チェック（設定モーダルを開く前やツール選択時に使う）。
+   * マップメモはアクティブなラインレイヤに保存されるため、LINEレイヤの選択フローに統合
    */
-  const checkEditableMapMemo = useCallback(async () => {
-    if (!editableMapMemo || activeMemoLayer === undefined) {
-      await AlertAsync(t('Home.alert.cannotEdit'));
-      return false;
+  const checkEditableMapMemo = useCallback(async () => ensureEditableLayer('MEMO'), [ensureEditableLayer]);
+
+  //ツールバーのチップに表示する編集レイヤ名
+  const editingLayerName = useMemo(() => {
+    switch (featureButton) {
+      case 'POINT':
+        return activePointLayer?.name;
+      case 'LINE':
+      case 'MEMO':
+        return activeLineLayer?.name;
+      case 'POLYGON':
+        return activePolygonLayer?.name;
+      default:
+        return undefined;
     }
-    const { isOK, message } = checkRecordEditable(activeMemoLayer);
-    if (!isOK) {
-      await AlertAsync(message);
-      return false;
+  }, [activeLineLayer?.name, activePointLayer?.name, activePolygonLayer?.name, featureButton]);
+
+  //チップタップで編集レイヤを切り替える。作図中は破棄確認をしてから
+  const pressEditingLayerButton = useCallback(async () => {
+    if (featureButton === 'NONE') return;
+    if (isEditingDraw || isEditingObject) {
+      const ret = await ConfirmAsync(t('Home.confirm.discard'));
+      if (!ret) return;
+      resetDrawTools();
+      setDrawTool('NONE');
     }
-    return true;
-  }, [activeMemoLayer, checkRecordEditable, editableMapMemo]);
+    await openLayerSwitcher(featureButton);
+  }, [featureButton, isEditingDraw, isEditingObject, openLayerSwitcher, resetDrawTools, setDrawTool]);
 
   const selectMapMemoTool = useCallback(
     async (value: MapMemoToolType | undefined) => {
@@ -939,6 +966,8 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
           if (!ret) return;
           changeColorTypeToIndividual();
         }
+        //編集選択の選択状態が残っていれば破棄する
+        resetDrawTools();
         setDrawTool('NONE');
         setMapMemoTool(value);
       }
@@ -947,6 +976,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       changeColorTypeToIndividual,
       checkEditableMapMemo,
       isIndividualColorRequired,
+      resetDrawTools,
       setDrawTool,
       setInfoToolActive,
       setMapMemoTool,
@@ -1153,17 +1183,13 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
             if (!(await checkEditableLayerForDraw('LINE'))) return;
           } else if (featureButton === 'POLYGON') {
             if (!(await checkEditableLayerForDraw('POLYGON'))) return;
+          } else if (featureButton === 'MEMO') {
+            //マップメモの編集選択。描画ツールは解除する
+            if (!(await checkEditableMapMemo())) return;
+            setMapMemoTool('NONE');
           }
           setDrawTool(value);
           //await runTutrial('SELECTIONTOOL');
-        }
-      } else if (value === 'DELETE_POINT') {
-        if (currentDrawTool === value) {
-          resetDrawTools();
-          setDrawTool('NONE');
-        } else {
-          if (!(await checkEditableLayerForDraw('POINT'))) return;
-          setDrawTool(value);
         }
       } else {
         if (value === 'MOVE') {
@@ -1189,6 +1215,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     },
     [
       checkEditableLayerForDraw,
+      checkEditableMapMemo,
       currentDrawTool,
       currentLineTool,
       currentPolygonTool,
@@ -1202,6 +1229,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       route.params?.mode,
       setDrawTool,
       setInfoToolActive,
+      setMapMemoTool,
     ]
   );
 
@@ -1218,11 +1246,32 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     redoDraw();
   }, [redoDraw]);
 
+  //undo/redoの統一ハンドラ。メモモードの通常時はメモ書き込み履歴、
+  //それ以外（作図モード、メモの編集選択操作中）は作図編集のundoを使う
+  const usesDrawHistory = featureButton !== 'MEMO' || currentDrawTool === 'SELECT' || isSelectedDraw;
+  const isUndoAvailable = usesDrawHistory ? isDrawUndoable : isUndoable;
+  const isRedoAvailable = usesDrawHistory ? isDrawRedoable : isRedoable;
+  const pressUndo = useCallback(async () => {
+    if (usesDrawHistory) {
+      await pressUndoDraw();
+    } else {
+      pressUndoMapMemo();
+    }
+  }, [pressUndoDraw, pressUndoMapMemo, usesDrawHistory]);
+  const pressRedo = useCallback(() => {
+    if (usesDrawHistory) {
+      pressRedoDraw();
+    } else {
+      pressRedoMapMemo();
+    }
+  }, [pressRedoDraw, pressRedoMapMemo, usesDrawHistory]);
+
   const pressSaveDraw = useCallback(async () => {
     let result;
     if (featureButton === 'POINT') {
       result = savePoint();
-    } else if (featureButton === 'LINE') {
+    } else if (featureButton === 'LINE' || featureButton === 'MEMO') {
+      //マップメモの編集選択もラインレコードとして保存する
       result = saveLine();
     } else if (featureButton === 'POLYGON') {
       result = savePolygon();
@@ -2239,19 +2288,6 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
         return;
       } else if (currentDrawTool === 'SELECT') {
         handleReleaseSelect(pXY);
-      } else if (currentDrawTool === 'DELETE_POINT') {
-        const ret = await ConfirmAsync(t('DataEdit.confirm.deleteData'));
-        if (!ret) return;
-        handleReleaseDeletePoint(pXY);
-
-        const { isOK, message, layer } = deleteDraw();
-        if (!isOK || layer === undefined) {
-          await AlertAsync(message);
-          return;
-        }
-
-        closeSheet();
-        navigateToSplit?.('Data', { targetLayer: layer });
       } else if (currentDrawTool === 'PLOT_POINT' || currentDrawTool === 'ADD_LOCATION_POINT') {
         handleReleasePlotPoint();
       } else if (currentDrawTool === 'PLOT_LINE' || currentDrawTool === 'PLOT_POLYGON') {
@@ -2321,18 +2357,16 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       // 長押し発火フラグをリセット
       longPressFiredRef.current = false;
     },
-    [closeSheet, openSheet, 
+    [openSheet, 
       cancelPlotGrant,
       commitFreehandStroke,
       currentDrawTool,
       currentMapMemoTool,
-      deleteDraw,
       finishEditPosition,
       getInfoOfFeature,
       getInfoOfMap,
       getPXY,
-      handleReleaseDeletePoint,
-      pauseMapMemoDrawing,
+        pauseMapMemoDrawing,
       handleReleaseFreehand,
       handleReleaseMapMemo,
       handleReleasePlotLinePolygon,
@@ -2805,14 +2839,23 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       pressRedoDraw,
       isUndoable: isDrawUndoable,
       isRedoable: isDrawRedoable,
+      pressUndo,
+      pressRedo,
+      isUndoAvailable,
+      isRedoAvailable,
       pressSaveDraw,
       pressDeleteDraw,
       finishEditObject,
       resetDrawTools,
 
+      // Editing layer chip
+      editingLayerName,
+      pressEditingLayerButton,
+
       // Backward compatibility (to be deprecated gradually)
       isEditingDraw,
       isEditingObject,
+      isAreaSelected,
       isSelectedDraw,
       isEditingLine,
       editingLineId,
@@ -2825,6 +2868,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     [
       isEditingDraw,
       isEditingObject,
+      isAreaSelected,
       isSelectedDraw,
       isEditingLine,
       editingLineId,
@@ -2843,10 +2887,16 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       pressRedoDraw,
       isDrawUndoable,
       isDrawRedoable,
+      pressUndo,
+      pressRedo,
+      isUndoAvailable,
+      isRedoAvailable,
       pressSaveDraw,
       pressDeleteDraw,
       finishEditObject,
       resetDrawTools,
+      editingLayerName,
+      pressEditingLayerButton,
     ]
   );
 
@@ -3151,6 +3201,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
                             selectInfoTool={selectInfoTool}
                             setVisibleInfoPicker={setVisibleInfoPicker}
                           />
+                          <HomeModalLayerSelect {...layerSelectProps} />
                           <HomeModalPDFSettings
                             visible={isPDFSettingsVisible}
                             pdfOrientation={pdfOrientation}
