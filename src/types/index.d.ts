@@ -229,6 +229,9 @@ export interface FieldType {
   defaultValue?: string | number;
   useLastValue?: boolean;
   useDictionaryAdd?: boolean;
+  //LIST/RADIOの選択肢を選んだときに、選択肢のcustomFieldValue（コード）を一緒に入れるフィールドのid。
+  //undefined/空文字は連動なし。名前ではなくidで持つので、連動先の名前を変えてもリンクは切れない
+  codeFieldId?: string;
 }
 
 export interface LayerType {
@@ -327,8 +330,9 @@ export type LayerPresetType = {
   // 同梱データ（PRESET_LAYER_DATAのキー）。指定するとレイヤ保存時にデータも投入される
   dataKey?: string;
   // dictionaryはSTRING_DICTIONARYフィールドの辞書語彙。適用時に新フィールドIDで辞書DBへ登録される
+  // codeFieldNameはコードの入れ先をフィールド名で指定する。適用時に新しいフィールドIDへ解決される
   layer: Omit<LayerType, 'id' | 'field' | 'dictionaryFieldId'> & {
-    field: (Omit<FieldType, 'id'> & { dictionary?: string[] })[];
+    field: (Omit<FieldType, 'id' | 'codeFieldId'> & { dictionary?: string[]; codeFieldName?: string })[];
   };
 };
 
@@ -587,13 +591,17 @@ export type ToolPaletteItemType = {
   //道具を持ち替えるボタン（飛翔図のペン・ブラシ・スタンプ）で使う
   subTool?: HandwritingSubToolType;
   //属性を選ぶボタン。押すとこのフィールドの値を選び、次に描くオブジェクトへ入る
-  //（植生図の区分、飛翔図の種名・雌雄・成幼）
+  //（植生図の区分、飛翔図の種名・性別・齢）
   fieldName?: string;
   fieldValue?: string;
+  //選択肢に紐づくコード（「<属性名>コード」のフィールドへ一緒に入る）
+  fieldCode?: string;
   //値ごとの色（色分け設定のcolorListから引く）
   colorHex?: string;
   //道具をまとめたボタン（行動範囲＝ブラシ、行動位置＝スタンプ）。押すと中から選ぶ
   options?: ToolPaletteItemType[];
+  //編集中の線が無くても使える道具。単独のレコードとして保存され、属性は事前選択の値が入る
+  allowWithoutObject?: boolean;
   penWidth?: PenWidthType;
   arrowStyle?: ArrowStyleType;
   //区分ごとに色を変える用途（植生図など）。指定するとアイコンをこの色で表示する

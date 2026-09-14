@@ -15,6 +15,7 @@ import { ulid } from 'ulid';
 import { deleteLocalPhoto, deleteRecordPhotos } from '../utils/Photo';
 import { useBottomSheetNavigation } from '../contexts/BottomSheetNavigationContext';
 import { isLocationType } from '../utils/General';
+import { resolveCodeField, toCodeFieldValue } from '../utils/Layer';
 import { selectNonDeletedDataSet, selectNonDeletedAllUserRecordSet } from '../modules/selectors';
 import { useProject } from './useProject';
 import { addToDynamicDictionary } from './useDynamicDictionaryInput';
@@ -375,12 +376,21 @@ export const useDataEdit = (record: RecordType, layer: LayerType): UseDataEditRe
     (name: string, value: string | number) => {
       //値はstring/numberなので浅コピーで十分。cloneDeepだと写真配列を含むレコードでキー入力ごとに重くなる
       if (targetRecord.field[name] !== value) {
-        const m = { ...targetRecord, field: { ...targetRecord.field, [name]: value } };
+        const field = { ...targetRecord.field, [name]: value };
+        //レイヤ設定で「コードの入れ先」を決めてある選択肢は、コードも一緒に書き換える。
+        //コードの無い選択肢や「その他」は空にする（前のコードが残ると表記と実体が食い違うため）
+        const changedField = targetLayer.field.find((f) => f.name === name);
+        const codeField = changedField === undefined ? undefined : resolveCodeField(targetLayer, changedField);
+        if (changedField !== undefined && codeField !== undefined) {
+          const item = changedField.list?.find((i) => !i.isOther && i.value === value);
+          field[codeField.name] = toCodeFieldValue(item?.customFieldValue, codeField.format);
+        }
+        const m = { ...targetRecord, field };
         setTargetRecord(m);
         setIsEditingRecord(true);
       }
     },
-    [setIsEditingRecord, targetRecord]
+    [setIsEditingRecord, targetLayer, targetRecord]
   );
 
   const submitField = useCallback(

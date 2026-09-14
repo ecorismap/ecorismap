@@ -193,7 +193,9 @@
     "purpose": "用途",
     "hisyouMap": "飛翔図",
     "vegetationMap": "植生図",
-    "category": "区分"
+    "category": "区分",
+    "code": "コード",
+    "codeField": "コードの入れ先"
   },
   "Home": {
     "confirm": {
@@ -222,6 +224,10 @@
       "showLayerAndEdit": "編集レイヤ「{{name}}」が非表示です。表示して続けますか？",
       "createNewLayerForType": "編集できる{{type}}レイヤがありません。新規レイヤを作成しますか？",
       "deleteCategory": "この区分を選択肢から削除しますか？\n（この区分で保存済みのデータはそのまま残ります）"
+    },
+    "message": {
+      "duplicateValue": "同じ名前の選択肢があります",
+      "duplicateCode": "同じコードの選択肢があります"
     },
     "alert": {
       "gps": "GPSをオンにしてください",
@@ -729,6 +735,10 @@
         "inputTableItem": "テーブルのアイテムを設定してください。",
         "inputListTableItem": "リストテーブルのアイテムを設定してください。",
         "duplicateFieldName": "フィールド名が重複しています。",
+        "duplicateListValue": "選択肢が重複しています。",
+        "duplicateListCode": "選択肢のコードが重複しています。",
+        "invalidCodeField": "コードの入れ先が正しくありません。値の設定で選び直してください。",
+        "duplicateCodeField": "同じフィールドを複数のコードの入れ先にはできません。",
         "listItemsWarning": "リストアイテムに「その他」の項目がある場合、空白のアイテムは追加できません。"
       }
     }

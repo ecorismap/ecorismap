@@ -9,12 +9,14 @@ interface Props {
   //列を後から追加したレコードなどでは値が未設定（undefined）になりうる
   value: number | string | undefined;
   type: 'INTEGER' | 'DECIMAL' | 'SERIAL';
+  editable?: boolean;
   onChangeText: (name: string, value: string | number) => void;
   onEndEditing: () => void;
 }
 
 export const DataEditNumber = (props: Props) => {
-  const { name, value: rawValue, type, onChangeText, onEndEditing } = props;
+  const { name, value: rawValue, type, editable, onChangeText, onEndEditing } = props;
+  const isReadOnly = editable === false;
   const value = rawValue ?? '';
   //plus minusボタンで値を変更するときは、textinputと違って数値で返す。
   //textinputはonEndEditingが呼ばれformatedInputで数値に変換されるため。
@@ -32,15 +34,16 @@ export const DataEditNumber = (props: Props) => {
     <View style={styles.tr}>
       <View style={styles.td}>
         <TextInput
-          style={styles.input}
+          style={[styles.input, isReadOnly && styles.readOnlyInput]}
           label={name}
           keyboardType="number-pad"
           value={value.toString()}
           onChangeText={(val: string) => onChangeText(name, val)}
           onEndEditing={onEndEditing}
           onBlur={onEndEditing}
+          editable={editable}
         />
-        {(type === 'INTEGER' || type === 'SERIAL') && (
+        {!isReadOnly && (type === 'INTEGER' || type === 'SERIAL') && (
           <>
             <View style={styles.button}>
               <Button name="plus" onPress={() => plus()} style={{ backgroundColor: COLOR.GRAY3 }} borderRadius={10} />
@@ -71,6 +74,10 @@ const styles = StyleSheet.create({
     height: 40,
     paddingHorizontal: 12,
     paddingLeft: 10,
+  },
+  //読み取り専用（コードの入れ先など）は入力欄に見えないよう背景を外す
+  readOnlyInput: {
+    backgroundColor: COLOR.TRANSPARENT,
   },
   td: {
     alignItems: 'center',

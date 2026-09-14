@@ -1,5 +1,5 @@
 import { BRUSH, LINETOOL, STAMP } from './AppConstants';
-import { FeatureButtonType, FeatureType, LayerType, ToolPaletteItemType, ToolPaletteType } from '../types';
+import { FeatureButtonType, FeatureType, FieldType, LayerType, ToolPaletteItemType, ToolPaletteType } from '../types';
 
 /**
  * 編集レイヤの用途ごとのツールパレット。
@@ -37,32 +37,37 @@ const hisyouStampOptions: ToolPaletteItemType[] = [
 ];
 
 //飛翔図で事前に選ぶ属性。1本＝1個体の連続追跡なので、描く前に決めて線とその行動記号へ入れる。
-//色は種名で決める（色分けのフィールド）
-export const HISYOU_FIELDS: { name: string; values: string[] }[] = [
+//色は種名で決める（色分けのフィールド）。名前と選択肢は猛禽類野帳2に合わせている。
+//aliasesは改名前の名前。旧名で作ったレイヤでもボタンが出るようにする
+export const HISYOU_FIELDS: { name: string; values: string[]; aliases?: string[] }[] = [
   { name: '種名', values: [] },
-  { name: '雌雄', values: ['♂', '♀', '不明'] },
-  { name: '成幼', values: ['成鳥', '幼鳥', '不明'] },
+  { name: '性別', values: ['不明', '雄', '雌'], aliases: ['雌雄'] },
+  { name: '齢', values: ['不明', '成鳥', '若鳥', '幼鳥'], aliases: ['成幼'] },
 ];
-const HISYOU_FIELD_NAMES = HISYOU_FIELDS.map((f) => f.name);
+
+//飛翔図の属性フィールドを名前で引く。フィールド名はユーザーが変えられるので、旧名も見る
+export const findHisyouField = (
+  fields: FieldType[],
+  item: { name: string; aliases?: string[] }
+): FieldType | undefined => fields.find((f) => f.name === item.name || (item.aliases ?? []).includes(f.name));
 
 /**
  * 飛翔図（猛禽類調査）のパレット。
  * 飛翔線を引きながら、行動範囲（ブラシ）と行動位置（スタンプ）へ持ち替える。
- * 種名・雌雄・成幼は描く前に選び、線にも行動記号にも同じ値が入る
+ * 種名・性別・齢は描く前に選び、線にも行動記号にも同じ値が入る
  */
 const getHisyouPalette = (layer: LayerType): ToolPaletteItemType[] => {
   //選択肢がまだ空でもボタンは出す（選択肢はモーダルからその場で足せる）
-  const fieldOptions = HISYOU_FIELD_NAMES.flatMap((name) => {
-    const field = layer.field.find((f) => f.name === name);
+  const fieldOptions = HISYOU_FIELDS.flatMap((item) => {
+    const field = findHisyouField(layer.field, item);
     if (field?.list === undefined) return [];
-    return [{ id: `HISYOU_FIELD_${name}`, label: name, icon: 'bird', fieldName: name }];
+    //ラベルは実際のフィールド名にする（旧名のレイヤは旧名のまま出す）
+    return [{ id: `HISYOU_FIELD_${field.name}`, label: field.name, icon: 'bird', fieldName: field.name }];
   });
-  //種名・雌雄・成幼はボタン1つにまとめ、モーダルのタブで切り替える。
+  //種名・性別・齢はボタン1つにまとめ、モーダルのタブで切り替える。
   //未選択のときは何を押すボタンか分かるよう「種名選択」と出す（選ぶと種名がラベルになる）
   const fieldItems =
-    fieldOptions.length === 0
-      ? []
-      : [{ id: 'HISYOU_FIELDS', label: '種名選択', icon: 'bird', options: fieldOptions }];
+    fieldOptions.length === 0 ? [] : [{ id: 'HISYOU_FIELDS', label: '種名選択', icon: 'bird', options: fieldOptions }];
 
   return [
     {
@@ -74,8 +79,17 @@ const getHisyouPalette = (layer: LayerType): ToolPaletteItemType[] => {
       arrowStyle: 'ARROW_END',
     },
     ...fieldItems,
+    //行動範囲は線に沿ってなぞるので、編集中の線が要る
     { id: 'HISYOU_BRUSH', label: '行動範囲', icon: 'ray-start-end', options: hisyouBrushOptions },
-    { id: 'HISYOU_STAMP', label: '行動位置', icon: 'circle-medium', options: hisyouStampOptions },
+    //とまりや声のみは飛翔を追えていなくても記録したいことがあるので、線が無くても置ける。
+    //編集中の線があれば従来どおりその線に紐づき、無ければ事前選択の属性を持つ単独のレコードになる
+    {
+      id: 'HISYOU_STAMP',
+      label: '行動位置',
+      icon: 'circle-medium',
+      options: hisyouStampOptions,
+      allowWithoutObject: true,
+    },
     //行動記号だけを消す。飛翔線そのものは消さない（線を消すときは編集選択から削除する）
     { id: 'HISYOU_ERASER', label: '行動削除', icon: 'circle-off-outline', subTool: 'ERASER' },
   ];
@@ -97,6 +111,8 @@ export const getFieldOptions = (layer: LayerType, fieldName: string): ToolPalett
       icon: 'checkbox-blank-circle',
       fieldName,
       fieldValue: item.value,
+      //選択肢のコード。レイヤ設定で「コードの入れ先」を決めてあれば、選ぶだけでそのフィールドへ入る
+      fieldCode: item.customFieldValue,
       colorHex:
         fieldName === layer.colorStyle.fieldName
           ? layer.colorStyle.colorList.find((c) => c.value === item.value)?.color

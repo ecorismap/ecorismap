@@ -350,3 +350,82 @@ describe('useDataEdit', () => {
     });
   });
 });
+describe('changeFieldのコード連動', () => {
+  const codeLayer = (codeFormat: 'STRING' | 'INTEGER', listFormat: 'LIST' | 'RADIO' = 'LIST'): LayerType =>
+    ({
+      id: 'layer1',
+      name: 'Test Layer',
+      type: 'POINT',
+      permission: 'PRIVATE',
+      field: [
+        {
+          id: 'field1',
+          name: '区分',
+          format: listFormat,
+          codeFieldId: 'field2',
+          list: [
+            { value: '草地', isOther: false, customFieldValue: '1' },
+            { value: '樹林', isOther: false, customFieldValue: '' },
+            { value: 'その他', isOther: true, customFieldValue: '' },
+          ],
+        },
+        { id: 'field2', name: '区分コード', format: codeFormat },
+      ],
+      active: true,
+    } as LayerType);
+
+  const recordOf = (): RecordType => ({
+    id: 'record1',
+    userId: 'user1',
+    displayName: 'Test User',
+    visible: true,
+    redraw: false,
+    coords: { latitude: 35, longitude: 139 },
+    field: { 区分: '', 区分コード: '' },
+    updatedAt: Date.now(),
+  });
+
+  const renderWithLayer = (layer: LayerType) => {
+    const record = recordOf();
+    const store = createTestStore([record]);
+    const wrapper = ({ children }: { children: React.ReactNode }) => <Provider store={store}>{children}</Provider>;
+    return renderHook(() => useDataEdit(record, layer), { wrapper });
+  };
+
+  it('選択肢を選ぶとコードの入れ先にも入る', () => {
+    const { result } = renderWithLayer(codeLayer('STRING'));
+    act(() => result.current.changeField('区分', '草地'));
+    expect(result.current.targetRecord.field.区分).toBe('草地');
+    expect(result.current.targetRecord.field.区分コード).toBe('1');
+  });
+
+  it('コードの無い選択肢・その他は空にする（前のコードを残さない）', () => {
+    const { result } = renderWithLayer(codeLayer('STRING'));
+    act(() => result.current.changeField('区分', '草地'));
+    act(() => result.current.changeField('区分', '樹林'));
+    expect(result.current.targetRecord.field.区分コード).toBe('');
+    act(() => result.current.changeField('区分', '草地'));
+    act(() => result.current.changeField('区分', 'その他'));
+    expect(result.current.targetRecord.field.区分コード).toBe('');
+  });
+
+  it('RADIOでも連動する', () => {
+    const { result } = renderWithLayer(codeLayer('STRING', 'RADIO'));
+    act(() => result.current.changeField('区分', '草地'));
+    expect(result.current.targetRecord.field.区分コード).toBe('1');
+  });
+
+  it('入れ先が数値型なら数値で入る', () => {
+    const { result } = renderWithLayer(codeLayer('INTEGER'));
+    act(() => result.current.changeField('区分', '草地'));
+    expect(result.current.targetRecord.field.区分コード).toBe(1);
+  });
+
+  it('連動先が未設定なら他のフィールドは触らない', () => {
+    const layer = codeLayer('STRING');
+    const noCode = { ...layer, field: layer.field.map((f) => ({ ...f, codeFieldId: undefined })) } as LayerType;
+    const { result } = renderWithLayer(noCode);
+    act(() => result.current.changeField('区分', '草地'));
+    expect(result.current.targetRecord.field.区分コード).toBe('');
+  });
+});

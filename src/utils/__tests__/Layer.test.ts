@@ -1,6 +1,6 @@
 import { COLOR } from '../../constants/AppConstants';
 import { LayerType } from '../../types';
-import { getColor, getColorRule, changeLayerId, applyColorStyle, getLineWidth, getLineWidthAtZoom, toIndividualColorLayer, restoreColorStyleFromIndividual } from '../Layer';
+import { getColor, getColorRule, changeLayerId, applyColorStyle, getLineWidth, getLineWidthAtZoom, toIndividualColorLayer, restoreColorStyleFromIndividual, resolveCodeField, toCodeFieldValue, checkLayerInputs } from '../Layer';
 import { getUserColor } from '../Color';
 
 describe('getColor', () => {
@@ -420,5 +420,312 @@ describe('getColor/getColorRule USERフォールバック', () => {
   it('getColorRuleも同じ規則でフォールバックする', () => {
     expect(getColorRule(baseLayer, 'newcomer')).toBe(getUserColor('newcomer'));
     expect(getColorRule(baseLayer, 'user1')).toBe('rgba(0, 255, 0, 1)');
+  });
+});
+
+
+describe('resolveCodeField / toCodeFieldValue', () => {
+  const layerOf = (field: LayerType['field']): LayerType => ({
+    id: '1',
+    name: '植生図',
+    type: 'POLYGON',
+    permission: 'PRIVATE',
+    colorStyle: {
+      colorType: 'CATEGORIZED',
+      color: COLOR.RED,
+      fieldName: '区分',
+      colorRamp: 'RANDOM',
+      colorList: [],
+      customFieldValue: '',
+      transparency: false,
+    },
+    label: '',
+    visible: true,
+    active: true,
+    field,
+  });
+
+  it('コードの入れ先を指していれば、そのフィールドを返す', () => {
+    const layer = layerOf([
+      { id: 'f1', name: '区分', format: 'LIST', list: [], codeFieldId: 'f2' },
+      { id: 'f2', name: '区分コード', format: 'STRING' },
+    ]);
+    expect(resolveCodeField(layer, layer.field[0])?.id).toBe('f2');
+  });
+
+  it('未設定・空文字は連動なし', () => {
+    const layer = layerOf([
+      { id: 'f1', name: '区分', format: 'LIST', list: [] },
+      { id: 'f2', name: '区分コード', format: 'STRING', codeFieldId: '' },
+    ]);
+    expect(resolveCodeField(layer, layer.field[0])).toBeUndefined();
+    expect(resolveCodeField(layer, layer.field[1])).toBeUndefined();
+  });
+
+  it('LIST/RADIO以外は連動しない', () => {
+    const layer = layerOf([
+      { id: 'f1', name: '区分', format: 'STRING', codeFieldId: 'f2' },
+      { id: 'f2', name: '区分コード', format: 'STRING' },
+    ]);
+    expect(resolveCodeField(layer, layer.field[0])).toBeUndefined();
+  });
+
+  it('入れ先が不適格な形式なら連動しない', () => {
+    const layer = layerOf([
+      { id: 'f1', name: '区分', format: 'RADIO', list: [], codeFieldId: 'f2' },
+      { id: 'f2', name: '写真', format: 'PHOTO' },
+    ]);
+    expect(resolveCodeField(layer, layer.field[0])).toBeUndefined();
+  });
+
+  it('自分自身や存在しないidは連動しない', () => {
+    const layer = layerOf([
+      { id: 'f1', name: '区分', format: 'LIST', list: [], codeFieldId: 'f1' },
+      { id: 'f2', name: '種名', format: 'LIST', list: [], codeFieldId: 'missing' },
+    ]);
+    expect(resolveCodeField(layer, layer.field[0])).toBeUndefined();
+    expect(resolveCodeField(layer, layer.field[1])).toBeUndefined();
+  });
+
+  it('コードは入れ先の形式に合わせる', () => {
+    expect(toCodeFieldValue('12', 'STRING')).toBe('12');
+    expect(toCodeFieldValue('12', 'INTEGER')).toBe(12);
+    expect(toCodeFieldValue('1.5', 'DECIMAL')).toBe(1.5);
+    //コードの無い選択肢・その他は空値
+    expect(toCodeFieldValue(undefined, 'STRING')).toBe('');
+    expect(toCodeFieldValue('', 'INTEGER')).toBe(0);
+    expect(toCodeFieldValue('abc', 'DECIMAL')).toBe(0);
+  });
+});
+
+describe('checkLayerInputs コードの入れ先', () => {
+  const layerOf = (field: LayerType['field']): LayerType => ({
+    id: '1',
+    name: '植生図',
+    type: 'POLYGON',
+    permission: 'PRIVATE',
+    colorStyle: {
+      colorType: 'SINGLE',
+      color: COLOR.RED,
+      fieldName: '区分',
+      colorRamp: 'RANDOM',
+      colorList: [],
+      customFieldValue: '',
+      transparency: false,
+    },
+    label: '',
+    visible: true,
+    active: true,
+    field,
+  });
+
+  it('正しい設定は保存できる', () => {
+    const layer = layerOf([
+      { id: 'f1', name: '区分', format: 'LIST', list: [], codeFieldId: 'f2' },
+      { id: 'f2', name: '区分コード', format: 'STRING' },
+    ]);
+    expect(checkLayerInputs(layer).isOK).toBe(true);
+  });
+
+  it('存在しないidを指していたら止める', () => {
+    const layer = layerOf([
+      { id: 'f1', name: '区分', format: 'LIST', list: [], codeFieldId: 'missing' },
+      { id: 'f2', name: '区分コード', format: 'STRING' },
+    ]);
+    expect(checkLayerInputs(layer).isOK).toBe(false);
+  });
+
+  it('入れ先が不適格な形式なら止める', () => {
+    const layer = layerOf([
+      { id: 'f1', name: '区分', format: 'LIST', list: [], codeFieldId: 'f2' },
+      { id: 'f2', name: '写真', format: 'PHOTO' },
+    ]);
+    expect(checkLayerInputs(layer).isOK).toBe(false);
+  });
+
+  it('同じ入れ先を複数のフィールドが指したら止める（後勝ちで壊れるため）', () => {
+    const layer = layerOf([
+      { id: 'f1', name: '区分', format: 'LIST', list: [], codeFieldId: 'f3' },
+      { id: 'f2', name: '種名', format: 'LIST', list: [], codeFieldId: 'f3' },
+      { id: 'f3', name: 'コード', format: 'STRING' },
+    ]);
+    expect(checkLayerInputs(layer).isOK).toBe(false);
+  });
+});
+
+describe('changeLayerId codeFieldId', () => {
+  const baseLayer: LayerType = {
+    id: '1',
+    name: '植生図',
+    type: 'POLYGON',
+    permission: 'PRIVATE',
+    colorStyle: {
+      colorType: 'SINGLE',
+      color: COLOR.RED,
+      fieldName: '区分',
+      colorRamp: 'RANDOM',
+      colorList: [],
+      customFieldValue: '',
+      transparency: false,
+    },
+    label: '',
+    visible: true,
+    active: true,
+    field: [],
+  };
+
+  it('新しいフィールドIDへ付け替える（インポートや複製で連動が切れない）', () => {
+    const layer: LayerType = {
+      ...baseLayer,
+      field: [
+        { id: 'f1', name: '区分', format: 'LIST', list: [], codeFieldId: 'f2' },
+        { id: 'f2', name: '区分コード', format: 'STRING' },
+      ],
+    };
+    const { layer: newLayer } = changeLayerId(layer);
+    expect(newLayer.field[0].id).not.toBe('f1');
+    expect(newLayer.field[0].codeFieldId).toBe(newLayer.field[1].id);
+  });
+
+  it('連動していないフィールドはundefinedのまま', () => {
+    const layer: LayerType = {
+      ...baseLayer,
+      field: [{ id: 'f1', name: '区分', format: 'LIST', list: [] }],
+    };
+    const { layer: newLayer } = changeLayerId(layer);
+    expect(newLayer.field[0].codeFieldId).toBeUndefined();
+  });
+});
+
+
+describe('checkLayerInputs 選択肢・コードの重複', () => {
+  const layerOf = (field: LayerType['field']): LayerType => ({
+    id: '1',
+    name: '植生図',
+    type: 'POLYGON',
+    permission: 'PRIVATE',
+    colorStyle: {
+      colorType: 'SINGLE',
+      color: COLOR.RED,
+      fieldName: '区分',
+      colorRamp: 'RANDOM',
+      colorList: [],
+      customFieldValue: '',
+      transparency: false,
+    },
+    label: '',
+    visible: true,
+    active: true,
+    field,
+  });
+
+  const listField = (list: { value: string; isOther: boolean; customFieldValue: string }[], format: 'LIST' | 'RADIO' | 'CHECK' = 'LIST') =>
+    layerOf([{ id: 'f1', name: '区分', format, list }]);
+
+  it('選択肢が重複していたら止める', () => {
+    const layer = listField([
+      { value: '草地', isOther: false, customFieldValue: '1' },
+      { value: '草地', isOther: false, customFieldValue: '2' },
+    ]);
+    expect(checkLayerInputs(layer).isOK).toBe(false);
+  });
+
+  it('コードが重複していたら止める', () => {
+    const layer = listField([
+      { value: '草地', isOther: false, customFieldValue: '1' },
+      { value: '樹林', isOther: false, customFieldValue: '1' },
+    ]);
+    expect(checkLayerInputs(layer).isOK).toBe(false);
+  });
+
+  it('コードが空の選択肢は重複扱いしない', () => {
+    const layer = listField([
+      { value: '草地', isOther: false, customFieldValue: '' },
+      { value: '樹林', isOther: false, customFieldValue: '' },
+    ]);
+    expect(checkLayerInputs(layer).isOK).toBe(true);
+  });
+
+  it('空欄の選択肢は入力途中なので重複扱いしない', () => {
+    const layer = listField([
+      { value: '', isOther: false, customFieldValue: '' },
+      { value: '', isOther: false, customFieldValue: '' },
+    ]);
+    expect(checkLayerInputs(layer).isOK).toBe(true);
+  });
+
+  it('RADIOも同じ規則で見る', () => {
+    const layer = listField(
+      [
+        { value: '草地', isOther: false, customFieldValue: '1' },
+        { value: '樹林', isOther: false, customFieldValue: '1' },
+      ],
+      'RADIO'
+    );
+    expect(checkLayerInputs(layer).isOK).toBe(false);
+  });
+
+  it('CHECKは値の重複だけ見る（コードは持たない）', () => {
+    const dupCode = listField(
+      [
+        { value: '草地', isOther: false, customFieldValue: '1' },
+        { value: '樹林', isOther: false, customFieldValue: '1' },
+      ],
+      'CHECK'
+    );
+    expect(checkLayerInputs(dupCode).isOK).toBe(true);
+    const dupValue = listField(
+      [
+        { value: '草地', isOther: false, customFieldValue: '1' },
+        { value: '草地', isOther: false, customFieldValue: '2' },
+      ],
+      'CHECK'
+    );
+    expect(checkLayerInputs(dupValue).isOK).toBe(false);
+  });
+
+  it('参照型（REFERENCE）のlistは対象外', () => {
+    const layer = layerOf([
+      {
+        id: 'f1',
+        name: '参照',
+        format: 'REFERENCE',
+        list: [
+          { value: 'L2', isOther: false, customFieldValue: '' },
+          { value: 'name', isOther: false, customFieldValue: '' },
+          { value: 'name', isOther: false, customFieldValue: '' },
+        ],
+      },
+    ]);
+    expect(checkLayerInputs(layer).isOK).toBe(true);
+  });
+});
+
+
+describe('複数選択（CHECK）はコード連動の対象外', () => {
+  it('CHECKにcodeFieldIdが残っていても連動しない（コードが1つに定まらないため）', () => {
+    const layer: LayerType = {
+      id: '1',
+      name: '調査',
+      type: 'POINT',
+      permission: 'PRIVATE',
+      colorStyle: {
+        colorType: 'SINGLE',
+        color: COLOR.RED,
+        fieldName: '',
+        colorRamp: 'RANDOM',
+        colorList: [],
+        customFieldValue: '',
+        transparency: 1,
+      },
+      label: '',
+      visible: true,
+      active: true,
+      field: [
+        { id: 'f1', name: '出現種', format: 'CHECK', codeFieldId: 'f2', list: [] },
+        { id: 'f2', name: '種コード', format: 'STRING' },
+      ],
+    };
+    expect(resolveCodeField(layer, layer.field[0])).toBeUndefined();
   });
 });

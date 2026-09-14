@@ -1,21 +1,17 @@
 import React, { useContext } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Pressable } from '../atoms/Pressable';
 import { COLOR } from '../../constants/AppConstants';
 import { DrawingToolsContext } from '../../contexts/DrawingTools';
-import { ProjectContext } from '../../contexts/Project';
 import { useWindow } from '../../hooks/useWindow';
 import { t } from '../../i18n/config';
+import { useHomeTopLayout } from '../../hooks/useHomeTopLayout';
 
 //プロジェクトラベルの下に表示する編集レイヤ名のラベル兼ボタン。タップでその場で切替できる
 export const HomeEditingLayerButton = React.memo(() => {
   const { editingLayerName, pressEditingLayerButton } = useContext(DrawingToolsContext);
-  const { projectName } = useContext(ProjectContext);
-  const insets = useSafeAreaInsets();
-  //プロジェクトラベル非表示時はその位置（top+10）まで詰める
-  const hasProjectLabel = projectName !== undefined;
+  const { editingLayerTop } = useHomeTopLayout();
   const { windowWidth } = useWindow();
   const noLayer = editingLayerName === undefined;
 
@@ -33,14 +29,14 @@ export const HomeEditingLayerButton = React.memo(() => {
       shadowOpacity: 0.3,
       shadowRadius: 2,
     },
-    //プロジェクトラベル（top+10、高さ約35）の下。ラベル非表示時はラベル位置まで上げる
+    //プロジェクトラベル・プロジェクトボタンの下。出ていない要素の分は詰まる
     container: {
       alignItems: 'center',
       alignSelf: 'center',
       flexDirection: 'row',
       justifyContent: 'center',
       position: 'absolute',
-      top: insets.top + (hasProjectLabel ? 45 : 10),
+      top: editingLayerTop,
     },
     text: {
       color: COLOR.WHITE,

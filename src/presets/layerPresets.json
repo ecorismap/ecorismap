@@ -14365,7 +14365,6 @@
   {
     "presetId": "preset-layer-vegetation-map",
     "presetName": "植生図",
-    "isPublic": true,
     "layer": {
       "name": "植生図",
       "type": "POLYGON",
@@ -14438,85 +14437,94 @@
         ],
         "lineWidth": 1.5
       },
-      "label": "",
+      "label": "区分コード",
       "visible": true,
       "active": false,
       "field": [
         {
+          "name": "No",
+          "format": "SERIAL"
+        },
+        {
           "name": "区分",
           "format": "LIST",
+          "codeFieldName": "区分コード",
           "list": [
             {
               "value": "常緑広葉樹林",
               "isOther": false,
-              "customFieldValue": ""
+              "customFieldValue": "1"
             },
             {
               "value": "落葉広葉樹林",
               "isOther": false,
-              "customFieldValue": ""
+              "customFieldValue": "2"
             },
             {
               "value": "常緑針葉樹林",
               "isOther": false,
-              "customFieldValue": ""
+              "customFieldValue": "3"
             },
             {
               "value": "落葉針葉樹林",
               "isOther": false,
-              "customFieldValue": ""
+              "customFieldValue": "4"
             },
             {
               "value": "植林地",
               "isOther": false,
-              "customFieldValue": ""
+              "customFieldValue": "5"
             },
             {
               "value": "竹林",
               "isOther": false,
-              "customFieldValue": ""
+              "customFieldValue": "6"
             },
             {
               "value": "低木林",
               "isOther": false,
-              "customFieldValue": ""
+              "customFieldValue": "7"
             },
             {
               "value": "ササ・草原",
               "isOther": false,
-              "customFieldValue": ""
+              "customFieldValue": "8"
             },
             {
               "value": "湿性草地",
               "isOther": false,
-              "customFieldValue": ""
+              "customFieldValue": "9"
             },
             {
               "value": "耕作地",
               "isOther": false,
-              "customFieldValue": ""
+              "customFieldValue": "10"
             },
             {
               "value": "水田",
               "isOther": false,
-              "customFieldValue": ""
+              "customFieldValue": "11"
             },
             {
               "value": "裸地",
               "isOther": false,
-              "customFieldValue": ""
+              "customFieldValue": "12"
             },
             {
               "value": "市街地",
               "isOther": false,
-              "customFieldValue": ""
+              "customFieldValue": "13"
             },
             {
               "value": "水域",
               "isOther": false,
-              "customFieldValue": ""
+              "customFieldValue": "14"
             }
           ]
+        },
+        {
+          "name": "区分コード",
+          "format": "STRING"
         },
         {
           "name": "メモ",
@@ -14528,7 +14536,6 @@
   {
     "presetId": "preset-layer-hisyou-map",
     "presetName": "飛翔図",
-    "isPublic": true,
     "layer": {
       "name": "飛翔図",
       "type": "LINE",
@@ -14589,10 +14596,23 @@
         ],
         "lineWidth": 1.5
       },
-      "label": "",
+      "label": "観察No.",
       "visible": true,
       "active": false,
       "field": [
+        {
+          "name": "調査日",
+          "format": "DATESTRING"
+        },
+        {
+          "name": "調査地点",
+          "format": "STRING",
+          "useLastValue": true
+        },
+        {
+          "name": "観察No.",
+          "format": "SERIAL"
+        },
         {
           "name": "種名",
           "format": "LIST",
@@ -14653,36 +14673,38 @@
               "customFieldValue": ""
             }
           ],
-          "defaultValue": ""
+          "defaultValue": "",
+          "useLastValue": false
         },
         {
-          "name": "雌雄",
+          "name": "確認時刻",
+          "format": "TIMERANGE",
+          "useLastValue": false
+        },
+        {
+          "name": "高度1(内)",
+          "format": "NUMBERRANGE"
+        },
+        {
+          "name": "高度2(外)",
+          "format": "NUMBERRANGE"
+        },
+        {
+          "name": "齢",
           "format": "LIST",
           "list": [
-            {
-              "value": "♂",
-              "isOther": false,
-              "customFieldValue": ""
-            },
-            {
-              "value": "♀",
-              "isOther": false,
-              "customFieldValue": ""
-            },
             {
               "value": "不明",
               "isOther": false,
               "customFieldValue": ""
-            }
-          ],
-          "defaultValue": ""
-        },
-        {
-          "name": "成幼",
-          "format": "LIST",
-          "list": [
+            },
             {
               "value": "成鳥",
+              "isOther": false,
+              "customFieldValue": ""
+            },
+            {
+              "value": "若鳥",
               "isOther": false,
               "customFieldValue": ""
             },
@@ -14690,21 +14712,294 @@
               "value": "幼鳥",
               "isOther": false,
               "customFieldValue": ""
+            }
+          ],
+          "useLastValue": false,
+          "defaultValue": ""
+        },
+        {
+          "name": "性別",
+          "format": "LIST",
+          "list": [
+            {
+              "value": "不明",
+              "isOther": false,
+              "customFieldValue": ""
+            },
+            {
+              "value": "雄",
+              "isOther": false,
+              "customFieldValue": ""
+            },
+            {
+              "value": "雌",
+              "isOther": false,
+              "customFieldValue": ""
+            }
+          ],
+          "useLastValue": false,
+          "defaultValue": ""
+        },
+        {
+          "name": "繁殖行動1",
+          "format": "CHECK",
+          "list": [
+            {
+              "value": "連れ立ち",
+              "isOther": false,
+              "customFieldValue": ""
+            },
+            {
+              "value": "波状",
+              "isOther": false,
+              "customFieldValue": ""
+            },
+            {
+              "value": "羽打ち",
+              "isOther": false,
+              "customFieldValue": ""
+            },
+            {
+              "value": "V字",
+              "isOther": false,
+              "customFieldValue": ""
+            },
+            {
+              "value": "尾上げV字",
+              "isOther": false,
+              "customFieldValue": ""
+            },
+            {
+              "value": "つっかかり(求愛)",
+              "isOther": false,
+              "customFieldValue": ""
+            },
+            {
+              "value": "その他...",
+              "isOther": true,
+              "customFieldValue": ""
+            }
+          ],
+          "useLastValue": false
+        },
+        {
+          "name": "繁殖行動2",
+          "format": "CHECK",
+          "list": [
+            {
+              "value": "交尾",
+              "isOther": false,
+              "customFieldValue": ""
+            },
+            {
+              "value": "疑似交尾",
+              "isOther": false,
+              "customFieldValue": ""
+            },
+            {
+              "value": "巣材運び",
+              "isOther": false,
+              "customFieldValue": ""
+            },
+            {
+              "value": "造巣",
+              "isOther": false,
+              "customFieldValue": ""
+            },
+            {
+              "value": "抱卵",
+              "isOther": false,
+              "customFieldValue": ""
+            },
+            {
+              "value": "抱雛",
+              "isOther": false,
+              "customFieldValue": ""
+            },
+            {
+              "value": "餌運び",
+              "isOther": false,
+              "customFieldValue": ""
+            },
+            {
+              "value": "給餌",
+              "isOther": false,
+              "customFieldValue": ""
+            }
+          ],
+          "useLastValue": false
+        },
+        {
+          "name": "繁殖行動3",
+          "format": "CHECK",
+          "list": [
+            {
+              "value": "排斥(攻撃)",
+              "isOther": false,
+              "customFieldValue": ""
+            },
+            {
+              "value": "排斥(追尾)",
+              "isOther": false,
+              "customFieldValue": ""
+            }
+          ],
+          "useLastValue": false
+        },
+        {
+          "name": "繁殖行動4",
+          "format": "CHECK",
+          "list": [
+            {
+              "value": "誇示とまり",
+              "isOther": false,
+              "customFieldValue": ""
+            },
+            {
+              "value": "監視とまり",
+              "isOther": false,
+              "customFieldValue": ""
+            },
+            {
+              "value": "並びとまり",
+              "isOther": false,
+              "customFieldValue": ""
+            }
+          ],
+          "useLastValue": false
+        },
+        {
+          "name": "繁殖行動5",
+          "format": "CHECK",
+          "list": [
+            {
+              "value": "鳴き交わし",
+              "isOther": false,
+              "customFieldValue": ""
+            },
+            {
+              "value": "警戒声",
+              "isOther": false,
+              "customFieldValue": ""
+            },
+            {
+              "value": "餌乞い",
+              "isOther": false,
+              "customFieldValue": ""
+            },
+            {
+              "value": "抱卵斑有り",
+              "isOther": false,
+              "customFieldValue": ""
+            },
+            {
+              "value": "その他...",
+              "isOther": true,
+              "customFieldValue": ""
+            }
+          ],
+          "useLastValue": false
+        },
+        {
+          "name": "採餌行動",
+          "format": "CHECK",
+          "list": [
+            {
+              "value": "探餌飛翔",
+              "isOther": false,
+              "customFieldValue": ""
+            },
+            {
+              "value": "とまり探餌",
+              "isOther": false,
+              "customFieldValue": ""
+            },
+            {
+              "value": "狩り(推測、成否不明も含む)",
+              "isOther": false,
+              "customFieldValue": ""
+            }
+          ],
+          "useLastValue": false
+        },
+        {
+          "name": "その他",
+          "format": "CHECK",
+          "list": [
+            {
+              "value": "とまり(休息)",
+              "isOther": false,
+              "customFieldValue": ""
+            },
+            {
+              "value": "とまり(詳細不明)",
+              "isOther": false,
+              "customFieldValue": ""
+            },
+            {
+              "value": "とまり(その他)",
+              "isOther": false,
+              "customFieldValue": ""
+            },
+            {
+              "value": "渡り",
+              "isOther": false,
+              "customFieldValue": ""
+            },
+            {
+              "value": "その他...",
+              "isOther": true,
+              "customFieldValue": ""
+            }
+          ],
+          "useLastValue": false
+        },
+        {
+          "name": "確認状況",
+          "format": "STRING_MULTI"
+        },
+        {
+          "name": "個体名",
+          "format": "STRING"
+        },
+        {
+          "name": "個体情報",
+          "format": "CHECK",
+          "list": [
+            {
+              "value": "欠けあり",
+              "isOther": false,
+              "customFieldValue": ""
+            },
+            {
+              "value": "欠けなし",
+              "isOther": false,
+              "customFieldValue": ""
+            },
+            {
+              "value": "目立つ欠なし",
+              "isOther": false,
+              "customFieldValue": ""
             },
             {
               "value": "不明",
               "isOther": false,
               "customFieldValue": ""
+            },
+            {
+              "value": "その他...",
+              "isOther": true,
+              "customFieldValue": ""
             }
           ],
-          "defaultValue": ""
+          "useLastValue": false
         },
         {
-          "name": "確認時刻",
-          "format": "TIMESTRING"
+          "name": "同時出現個体",
+          "format": "STRING"
         },
         {
-          "name": "メモ",
+          "name": "写真No",
           "format": "STRING"
         }
       ]

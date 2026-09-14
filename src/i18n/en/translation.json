@@ -255,7 +255,9 @@
     "purpose": "Purpose",
     "hisyouMap": "Flight map",
     "vegetationMap": "Vegetation map",
-    "category": "Category"
+    "category": "Category",
+    "code": "Code",
+    "codeField": "Code field"
   },
   "firebase": {
     "message": {
@@ -873,6 +875,10 @@
       "createNewLayerForType": "There are no editable {{type}} layers. Create a new layer?",
       "deleteCategory": "Delete this category from the list?\n(Records already saved with it remain unchanged)"
     },
+    "message": {
+      "duplicateValue": "This name is already used",
+      "duplicateCode": "This code is already used"
+    },
     "navigation": {
       "download": "download",
       "exportPDF": "PDF output"
@@ -1052,6 +1058,10 @@
         "inputTableItem": "Please set the items in the table.",
         "inputListTableItem": "Set the items in the list table.",
         "duplicateFieldName": "Duplicate field name.",
+        "duplicateListValue": "Duplicate list items.",
+        "duplicateListCode": "Duplicate codes in the list items.",
+        "invalidCodeField": "The code field is invalid. Please select it again in the value settings.",
+        "duplicateCodeField": "The same field cannot be the code field of multiple fields.",
         "listItemsWarning": "If the list item has an \"Other\" item, you cannot add a blank item."
       }
     }

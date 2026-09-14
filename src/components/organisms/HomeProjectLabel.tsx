@@ -1,9 +1,9 @@
 import React from 'react';
 import { Text } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Pressable } from '../atoms/Pressable';
 
 import { COLOR } from '../../constants/AppConstants';
+import { useHomeTopLayout } from '../../hooks/useHomeTopLayout';
 
 interface Props {
   onPress: () => void;
@@ -12,13 +12,13 @@ interface Props {
 
 const HomeProjectLabel = React.memo(function HomeProjectLabel(props: Props) {
   const { name, onPress } = props;
-  const insets = useSafeAreaInsets();
+  const { projectLabelTop } = useHomeTopLayout();
   return (
     <Pressable
       style={{
         alignSelf: 'center',
         position: 'absolute',
-        top: insets.top + 10,
+        top: projectLabelTop,
         padding: 5,
         backgroundColor: COLOR.ALFAWHITE,
         borderRadius: 5,

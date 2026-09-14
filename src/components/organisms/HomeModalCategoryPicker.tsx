@@ -11,14 +11,16 @@ import { hsv2rgbaString } from '../../utils/Color';
 
 interface Props {
   visible: boolean;
-  //切り替えるフィールド（種名・雌雄・成幼／区分）。2つ以上ならタブで分ける
+  //切り替えるフィールド（種名・性別・齢／区分）。2つ以上ならタブで分ける
   fields: string[];
   optionsOf: (fieldName: string) => ToolPaletteItemType[];
   //色分けに使うフィールドか（そのときだけ色も決められる）
   isColorField: (fieldName: string) => boolean;
   select: (values: { [fieldName: string]: string }) => void;
-  add: (fieldName: string, value: string, color: string) => void;
-  update: (fieldName: string, oldValue: string, newValue: string, color: string) => void;
+  add: (fieldName: string, value: string, color: string, code: string) => void;
+  update: (fieldName: string, oldValue: string, newValue: string, color: string, code: string) => void;
+  //レイヤ設定で「コードの入れ先」を決めてあるか（決めてあればコードも入力してもらう）
+  withCode: (fieldName: string) => boolean;
   remove: (fieldName: string, value: string) => void;
   close: () => void;
 }
@@ -42,8 +44,8 @@ const NEW_CATEGORY_COLORS = [
  * ツールバーには現在の区分のボタンだけを置き、持ち替えるときだけこの一覧を開く
  */
 export const HomeModalCategoryPicker = React.memo((props: Props) => {
-  const { visible, fields, optionsOf, isColorField, select, add, update, remove, close } = props;
-  //種名→雌雄→成幼と順に選ぶ。今どれを選んでいるか
+  const { visible, fields, optionsOf, isColorField, withCode, select, add, update, remove, close } = props;
+  //種名→性別→齢と順に選ぶ。今どれを選んでいるか
   const [step, setStep] = useState(0);
   //開くたびに未選択から選び直す。選んだ値はモーダルの中だけで持ち、最後まで選び終えたときに
   //まとめて反映する。Cancel（背景タップ含む）なら何も変えない
@@ -57,6 +59,7 @@ export const HomeModalCategoryPicker = React.memo((props: Props) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editingValue, setEditingValue] = useState<string | undefined>(undefined);
   const [newValue, setNewValue] = useState('');
+  const [newCode, setNewCode] = useState('');
   const [newColor, setNewColor] = useState(NEW_CATEGORY_COLORS[0]);
 
   useEffect(() => {
@@ -66,6 +69,7 @@ export const HomeModalCategoryPicker = React.memo((props: Props) => {
     setIsEditing(false);
     setEditingValue(undefined);
     setNewValue('');
+    setNewCode('');
     setNewColor(NEW_CATEGORY_COLORS[0]);
     //fieldsは開くたびに作られる配列なので、中身で比較する
     //eslint-disable-next-line react-hooks/exhaustive-deps
@@ -74,6 +78,7 @@ export const HomeModalCategoryPicker = React.memo((props: Props) => {
   const startAdd = () => {
     setEditingValue(undefined);
     setNewValue('');
+    setNewCode('');
     setNewColor(NEW_CATEGORY_COLORS[0]);
     setIsEditing(true);
   };
@@ -81,6 +86,7 @@ export const HomeModalCategoryPicker = React.memo((props: Props) => {
   const startEdit = (item: ToolPaletteItemType) => {
     setEditingValue(item.fieldValue);
     setNewValue(item.label);
+    setNewCode(item.fieldCode ?? '');
     setNewColor(item.colorHex ?? NEW_CATEGORY_COLORS[0]);
     setIsEditing(true);
   };
@@ -100,14 +106,26 @@ export const HomeModalCategoryPicker = React.memo((props: Props) => {
   };
 
   const trimmedValue = newValue.trim();
-  //同じ名前の区分は作れない（自分自身の名前はそのままでよい）
-  const canApply =
-    trimmedValue !== '' && !items.some((item) => item.fieldValue === trimmedValue && item.fieldValue !== editingValue);
+  const trimmedCode = newCode.trim();
+  //編集中の区分は自分自身とは重複しない
+  const others = items.filter((item) => item.fieldValue !== editingValue);
+  //同じ名前の区分は作れない
+  const isDuplicatedValue = others.some((item) => item.fieldValue === trimmedValue);
+  //コードは図面の表記に使うので、重複すると区別がつかない。空欄は許す（コードを付けない区分もある）
+  const isDuplicatedCode = trimmedCode !== '' && others.some((item) => (item.fieldCode ?? '') === trimmedCode);
+  const canApply = trimmedValue !== '' && !isDuplicatedValue && !isDuplicatedCode;
+  //押せない理由が分からないと直しようがないので、重複しているときは理由を出す
+  const applyError = isDuplicatedValue
+    ? t('Home.message.duplicateValue')
+    : isDuplicatedCode
+    ? t('Home.message.duplicateCode')
+    : '';
 
   const pressApply = () => {
     if (!canApply) return;
-    if (editingValue === undefined) add(field, trimmedValue, newColor);
-    else update(field, editingValue, trimmedValue, newColor);
+    const code = trimmedCode;
+    if (editingValue === undefined) add(field, trimmedValue, newColor, code);
+    else update(field, editingValue, trimmedValue, newColor, code);
     setIsEditing(false);
     const next = { ...pending, [field]: trimmedValue };
     setPending(next);
@@ -123,7 +141,7 @@ export const HomeModalCategoryPicker = React.memo((props: Props) => {
     <Modal animationType="none" transparent={true} visible={visible}>
       <Pressable style={styles.overlay} onPress={close} disablePressedAnimation>
         <Pressable style={styles.card} onPress={() => {}} disablePressedAnimation>
-          {/* タブは残しつつ、値を選ぶと次の属性へ自動で切り替わる（種名→雌雄→成幼） */}
+          {/* タブは残しつつ、値を選ぶと次の属性へ自動で切り替わる（種名→性別→齢） */}
           {fields.length > 1 ? (
             <View style={styles.segmentContainer}>
               {fields.map((name, index) => (
@@ -159,7 +177,7 @@ export const HomeModalCategoryPicker = React.memo((props: Props) => {
                     if (item.fieldValue === undefined) return;
                     const next = { ...pending, [field]: item.fieldValue };
                     setPending(next);
-                    //次の属性があれば続けて選ぶ（種名→雌雄→成幼）。選び終えたらまとめて反映する
+                    //次の属性があれば続けて選ぶ（種名→性別→齢）。選び終えたらまとめて反映する
                     if (step < fields.length - 1) {
                       setStep(step + 1);
                       return;
@@ -173,7 +191,7 @@ export const HomeModalCategoryPicker = React.memo((props: Props) => {
                 >
                   {withColor && <View style={[styles.swatch, { backgroundColor: item.colorHex ?? COLOR.GRAY2 }]} />}
                   <Text style={[styles.rowText, selected && styles.rowTextSelected]} numberOfLines={1}>
-                    {item.label}
+                    {item.fieldCode ? `${item.fieldCode} ${item.label}` : item.label}
                   </Text>
                   {withColor && (
                     <Pressable style={styles.editButton} onPress={() => startEdit(item)} disablePressedAnimation>
@@ -193,11 +211,22 @@ export const HomeModalCategoryPicker = React.memo((props: Props) => {
                   style={styles.input}
                   value={newValue}
                   onChangeText={setNewValue}
-                  placeholder={t('common.category')}
+                  placeholder={field}
                   placeholderTextColor={COLOR.GRAY2}
                   autoFocus
                 />
+                {/* コードの入れ先を決めてある属性は、選ぶだけでコードも入るよう一緒に登録する */}
+                {withCode(field) && (
+                  <TextInput
+                    style={styles.codeInput}
+                    value={newCode}
+                    onChangeText={setNewCode}
+                    placeholder={t('common.code')}
+                    placeholderTextColor={COLOR.GRAY2}
+                  />
+                )}
               </View>
+              {applyError !== '' && <Text style={styles.errorText}>{applyError}</Text>}
               {/* 色は見本から選ぶか、ピッカーで自由に決める（メモ・スタイル設定と同じ構成） */}
               {withColor && (
               <ColorPicker
@@ -284,6 +313,12 @@ const styles = StyleSheet.create({
     shadowRadius: 3.84,
     width: '90%',
   },
+  errorText: {
+    color: COLOR.DARKRED,
+    fontSize: 11,
+    marginTop: 4,
+    paddingHorizontal: 4,
+  },
   footerRow: {
     alignItems: 'center',
     flexDirection: 'row',
@@ -343,6 +378,15 @@ const styles = StyleSheet.create({
   },
   hueSlider: {
     height: '100%',
+  },
+  codeInput: {
+    borderBottomColor: COLOR.GRAY2,
+    borderBottomWidth: 1,
+    color: COLOR.BLACK,
+    fontSize: 16,
+    marginLeft: 8,
+    paddingVertical: 6,
+    width: 60,
   },
   input: {
     borderBottomColor: COLOR.GRAY2,

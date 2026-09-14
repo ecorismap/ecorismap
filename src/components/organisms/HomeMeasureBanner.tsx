@@ -1,17 +1,17 @@
 import React, { useContext, useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Pressable } from '../atoms/Pressable';
 import { COLOR } from '../../constants/AppConstants';
 import { MeasureContext } from '../../contexts/Measure';
 import { haversineKm, formatDistanceKm } from '../../utils/Location';
 import { t } from '../../i18n/config';
+import { useHomeTopLayout } from '../../hooks/useHomeTopLayout';
 
 // 測定モード中のインジケータ兼終了UI（native/web共通）
 export const HomeMeasureBanner = React.memo(() => {
   const { isMeasuring, measureA, measureB, endMeasure } = useContext(MeasureContext);
-  const insets = useSafeAreaInsets();
+  const { measureBannerTop } = useHomeTopLayout();
 
   const text = useMemo(() => {
     if (!measureA) return '';
@@ -23,7 +23,7 @@ export const HomeMeasureBanner = React.memo(() => {
   if (!isMeasuring) return null;
 
   return (
-    <View style={[styles.container, { top: insets.top + 10 }]} pointerEvents="box-none">
+    <View style={[styles.container, { top: measureBannerTop }]} pointerEvents="box-none">
       <View style={styles.banner}>
         <MaterialCommunityIcons name="ruler" size={18} color={COLOR.WHITE} />
         <Text style={styles.text}>{text}</Text>

@@ -42,6 +42,7 @@ export type BottomSheetScreenParams = {
     fieldIndex?: number;
     itemValues?: { value: string; isOther: boolean; customFieldValue: string }[];
     useLastValue?: boolean;
+    codeFieldId?: string;
   };
   LayerEditFeatureStyle: {
     targetLayer: LayerType;
@@ -193,7 +194,11 @@ export function BottomSheetNavigationProvider({
 
   // BottomSheet制御関数
   // bottomSheetRef は useRef で作成されているため、値は変わらない
+  // 開く指示を出した時点でフラグも立てる。ライブラリは「行き先が現在と同じ」と判断すると
+  // onChangeを出さないため、onChange任せだと開いているのにフラグがfalseのまま残り、
+  // BottomSheetContentがローディング表示から戻らなくなる
   const openBottomSheet = useCallback((snapIndex = 2) => {
+    setIsBottomSheetOpen(true);
     bottomSheetRef.current?.snapToIndex(snapIndex);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -204,6 +209,7 @@ export function BottomSheetNavigationProvider({
   }, []);
 
   const snapToIndex = useCallback((index: number) => {
+    if (index >= 0) setIsBottomSheetOpen(true);
     bottomSheetRef.current?.snapToIndex(index);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

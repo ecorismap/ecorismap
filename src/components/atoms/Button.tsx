@@ -131,7 +131,9 @@ const Button = React.memo((props: Props) => {
   };
 
   return (
-    <View style={{ alignItems: 'center', zIndex: 10000 }}>
+    // zIndexはツールチップを他の要素より前に出すためのもの。常に持たせると、
+    // リストのスティッキーヘッダーより手前にボタンが描かれて重なって見える
+    <View style={{ alignItems: 'center', zIndex: showTooltip ? 10000 : undefined }}>
       {showTooltip && tooltipText && (
         <View style={[styles.tooltip, tooltipPosition]}>
           <Text style={styles.tooltipText}>{tooltipText}</Text>

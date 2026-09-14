@@ -51,7 +51,7 @@ export const DataEditListTable = (props: Props_DataEditListTable) => {
         <View style={[styles.td3, { minWidth: 40, justifyContent: 'flex-end' }]}>
           <Button
             style={{
-              backgroundColor: COLOR.GRAY3,
+              backgroundColor: COLOR.BLUE,
               padding: 0,
             }}
             name="plus"

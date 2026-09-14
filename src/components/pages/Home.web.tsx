@@ -1093,6 +1093,8 @@ export default function HomeScreen() {
         index={-1}
         snapPoints={snapPoints}
         enablePanDownToClose={!isEditingRecord && !isEditingLayer && !isEditingMap}
+        //native側と同じ理由（スクロールロック固着の迂回）。ハンドル操作は従来どおり
+        enableContentPanningGesture={false}
         animatedIndex={animatedIndex}
         animateOnMount={true}
         onClose={() => onCloseBottomSheet(currentRouteName)}

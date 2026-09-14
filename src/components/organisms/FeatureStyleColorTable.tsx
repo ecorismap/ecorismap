@@ -75,7 +75,7 @@ const ColorListButtons = () => {
   return (
     <View style={styles.button}>
       <Button backgroundColor={COLOR.GRAY2} name="autorenew" onPress={pressReloadValue} />
-      <Button backgroundColor={COLOR.GRAY2} name="plus" onPress={pressAddValue} />
+      <Button backgroundColor={COLOR.BLUE} name="plus" onPress={pressAddValue} />
     </View>
   );
 };

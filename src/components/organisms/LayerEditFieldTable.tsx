@@ -19,7 +19,8 @@ export const LayerEditFieldTitle = () => {
       <View style={[styles.td3, { flex: 2, width: 50 }]}>
         <Button
           style={{
-            backgroundColor: COLOR.GRAY3,
+            //無効なのは構成が固定のレイヤ（軌跡・メモ）のときだけ。保存ボタンと同じく淡い青で示す
+            backgroundColor: editable ? COLOR.BLUE : COLOR.LIGHTBLUE,
             padding: 0,
           }}
           name="plus"
@@ -249,11 +250,14 @@ const styles = StyleSheet.create({
     height: 65,
   },
 
+  //スティッキーヘッダー。スクロールしてきた行より前に描かれるようにする
   tr3: {
     backgroundColor: COLOR.GRAY1,
     borderBottomWidth: 1,
     borderColor: COLOR.GRAY1,
+    elevation: 1,
     flexDirection: 'row',
     height: 50,
+    zIndex: 1,
   },
 });

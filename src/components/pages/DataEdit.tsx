@@ -1,4 +1,4 @@
-import React, { useContext } from 'react';
+import React, { useContext, useMemo } from 'react';
 import { View, StyleSheet, KeyboardAvoidingView } from 'react-native';
 
 import { DataEditButtons } from '../organisms/DataEditButtons';
@@ -21,13 +21,14 @@ import { t } from '../../i18n/config';
 import { DataEditContext } from '../../contexts/DataEdit';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../store';
-import { ScrollView } from 'react-native-gesture-handler';
+import { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { Button } from '../atoms';
 import { COLOR, DATAEDIT_BTN } from '../../constants/AppConstants';
 import { DataEditDictionary } from '../organisms/DataEditDictionary';
 import { DataEditDynamicDictionary } from '../organisms/DataEditDynamicDictionary';
 import { DataEditUserName } from '../organisms/DataEditUserName';
 import { BottomSheetHeader } from '../molecules/BottomSheetHeader';
+import { resolveCodeField } from '../../utils/Layer';
 
 export default function DataEditScreen() {
   // console.log('render DataEdit');
@@ -54,13 +55,22 @@ export default function DataEditScreen() {
 
   const layers = useSelector((state: RootState) => state.layers);
 
-  const centerComponent = maxRecordNumber > 0 ? (
-    <DataEditRecordSelector
-      recordNumber={recordNumber}
-      maxRecordNumber={maxRecordNumber}
-      onChangeRecord={onChangeRecord}
-    />
-  ) : undefined;
+  //コードの入れ先は選択肢から自動で入る項目なので、手入力させない。
+  //直接書き換えられると区分と表記が食い違い、しかも区分を変えた時点で黙って上書きされる
+  const codeFieldIds = useMemo(
+    () =>
+      new Set(layer.field.map((f) => resolveCodeField(layer, f)?.id).filter((id): id is string => id !== undefined)),
+    [layer]
+  );
+
+  const centerComponent =
+    maxRecordNumber > 0 ? (
+      <DataEditRecordSelector
+        recordNumber={recordNumber}
+        maxRecordNumber={maxRecordNumber}
+        onChangeRecord={onChangeRecord}
+      />
+    ) : undefined;
 
   const rightComponent = (
     <Button
@@ -82,8 +92,15 @@ export default function DataEditScreen() {
         rightComponent={rightComponent}
       />
       <View style={styles.contentContainer}>
-        {/* キーボード表示中でも辞書候補などのタップが1回で反応するようにhandledを指定 */}
-        <ScrollView keyboardShouldPersistTaps="handled">
+        {/* ボトムシート内のスクロールはBottomSheetScrollViewを使う。素のScrollViewだと
+            シートのドラッグにジェスチャーを奪われ、「引っ張ると見えるが離すと戻る」になる。
+            flex:1が無いと中身の高さのままレイアウトされてスクロール範囲が出ない。
+            キーボード表示中でも辞書候補などのタップが1回で反応するようhandledを指定 */}
+        <BottomSheetScrollView
+          style={styles.scroll}
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+        >
           {projectId && data.displayName && layer.permission !== 'COMMON' && (
             <DataEditUserName value={data.displayName} />
           )}
@@ -103,6 +120,7 @@ export default function DataEditScreen() {
                     key={index}
                     name={name}
                     value={data.field[name] as string | number | undefined}
+                    editable={!codeFieldIds.has(id)}
                     onChangeText={(value) => changeField(name, value)}
                     onEndEditing={() => submitField(name, format)}
                   />
@@ -114,6 +132,7 @@ export default function DataEditScreen() {
                     name={name}
                     multiline={true}
                     value={data.field[name] as string | number | undefined}
+                    editable={!codeFieldIds.has(id)}
                     onChangeText={(value) => changeField(name, value)}
                     onEndEditing={() => submitField(name, format)}
                   />
@@ -235,6 +254,7 @@ export default function DataEditScreen() {
                     name={name}
                     type={format}
                     value={data.field[name] as number}
+                    editable={!codeFieldIds.has(id)}
                     onChangeText={changeField}
                     onEndEditing={() => submitField(name, format)}
                   />
@@ -246,6 +266,7 @@ export default function DataEditScreen() {
                     name={name}
                     type={format}
                     value={data.field[name] as number}
+                    editable={!codeFieldIds.has(id)}
                     onChangeText={changeField}
                     onEndEditing={() => submitField(name, format)}
                   />
@@ -323,7 +344,7 @@ export default function DataEditScreen() {
               />
             </>
           )}
-        </ScrollView>
+        </BottomSheetScrollView>
       </View>
       <DataEditButtons />
     </KeyboardAvoidingView>
@@ -336,5 +357,12 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     flex: 1,
+  },
+  scroll: {
+    flex: 1,
+  },
+  //最後の項目が下端に貼り付かないよう、少し余白を残す
+  scrollContent: {
+    paddingBottom: 20,
   },
 });

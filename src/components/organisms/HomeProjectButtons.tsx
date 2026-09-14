@@ -1,10 +1,10 @@
 import React, { useContext } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLOR } from '../../constants/AppConstants';
 import { ProjectContext } from '../../contexts/Project';
 import { Button } from '../atoms';
 import { t } from '../../i18n/config';
+import { useHomeTopLayout } from '../../hooks/useHomeTopLayout';
 
 export const HomeProjectButtons = React.memo(() => {
   //console.log('render HomeButtons');
@@ -19,14 +19,14 @@ export const HomeProjectButtons = React.memo(() => {
     pressSaveProjectSetting,
     pressDiscardProjectSetting,
   } = useContext(ProjectContext);
-  const insets = useSafeAreaInsets();
+  const { projectButtonsTop } = useHomeTopLayout();
 
   const styles = StyleSheet.create({
     buttonContainer: {
       alignSelf: 'center',
       flexDirection: 'row',
       position: 'absolute',
-      top: insets.top + 60,
+      top: projectButtonsTop,
       zIndex: 100,
     },
   });
