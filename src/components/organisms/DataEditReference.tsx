@@ -92,7 +92,7 @@ export const DataEditReference = (props: Props) => {
           {(refLayer.type === 'NONE' || refLayer.type === 'POINT') && (
             <Button
               style={{
-                backgroundColor: COLOR.GRAY3,
+                backgroundColor: COLOR.BLUE,
                 padding: 0,
               }}
               size={20}

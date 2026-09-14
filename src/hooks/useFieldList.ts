@@ -8,6 +8,7 @@ import { Platform } from 'react-native';
 import { decodeUri } from '../utils/File.web';
 import * as FileSystem from 'expo-file-system/legacy';
 import { getDatabase, isValidTableName } from '../utils/SQLite';
+import { isCodeTargetFormat } from '../utils/Layer';
 import { ulid } from 'ulid';
 
 export type UseFieldListReturnType = {
@@ -24,8 +25,13 @@ export type UseFieldListReturnType = {
   customFieldReference: string;
   customFieldPrimary: string;
   useLastValue: boolean;
+  codeFieldId: string;
+  codeFieldIds: string[];
+  codeFieldNames: string[];
   dictionaryData: string[];
   changeUseLastValue: (value: boolean) => void;
+  changeCodeFieldId: (value: string) => void;
+  changeCodeValue: (index: number, value: string) => void;
   changeCustomFieldReference: (value: string) => void;
   changeCustomFieldPrimary: (value: string) => void;
   changeValue: (index: number, value: string) => void;
@@ -56,6 +62,7 @@ export const useFieldList = (
   const [customFieldReference, setCustomFieldReference] = useState('');
   const [customFieldPrimary, setCustomFieldPrimary] = useState('');
   const [useLastValue, setUseLastValue] = useState(false);
+  const [codeFieldId, setCodeFieldId] = useState('');
   const [redraw, setRedraw] = useState(ulid());
   const [isLoading, setIsLoading] = useState(false);
 
@@ -82,6 +89,18 @@ export const useFieldList = (
     [targetLayer.field]
   );
   const primaryFieldValues = useMemo(() => [...primaryFieldNames.slice(0, -1), '__CUSTOM'], [primaryFieldNames]);
+
+  //コードの入れ先にできるフィールド（自分以外・名前あり・文字/数値）。先頭は「（なし）＝連動しない」
+  const codeFieldCandidates = useMemo(
+    () =>
+      targetLayer.field.filter((f, i) => i !== fieldIndex && f.name !== '' && isCodeTargetFormat(f.format)),
+    [fieldIndex, targetLayer.field]
+  );
+  const codeFieldIds = useMemo(() => ['', ...codeFieldCandidates.map((f) => f.id)], [codeFieldCandidates]);
+  const codeFieldNames = useMemo(
+    () => [t('common.none'), ...codeFieldCandidates.map((f) => f.name)],
+    [codeFieldCandidates]
+  );
 
   const [dictionaryData, setDictionaryData] = useState<string[]>([]);
 
@@ -153,6 +172,13 @@ export const useFieldList = (
     ) {
       setUseLastValue(targetLayer.field[fieldIndex].useLastValue ?? false);
     }
+
+    //連動先が消えた・形式が変わった場合は「（なし）」に戻す（選択肢に無い値をPickerへ渡さない）
+    const savedCodeFieldId = targetLayer.field[fieldIndex].codeFieldId ?? '';
+    const isValid = targetLayer.field.some(
+      (f, i) => f.id === savedCodeFieldId && i !== fieldIndex && f.name !== '' && isCodeTargetFormat(f.format)
+    );
+    setCodeFieldId(isValid ? savedCodeFieldId : '');
   }, [fieldIndex, format, targetLayer]);
 
   const changeUseLastValue = useCallback(
@@ -162,6 +188,22 @@ export const useFieldList = (
     },
     [setUseLastValue]
   );
+  const changeCodeFieldId = useCallback((value: string) => {
+    setCodeFieldId(value);
+    setIsEdited(true);
+  }, []);
+
+  //選択肢ごとのコード。連動先のフィールドへ入れる値になる
+  const changeCodeValue = useCallback(
+    (index: number, value: string) => {
+      const newItemValues = cloneDeep(itemValues);
+      newItemValues[index] = { ...itemValues[index], customFieldValue: value };
+      setItemValues(newItemValues);
+      setIsEdited(true);
+    },
+    [itemValues]
+  );
+
   const changeValue = useCallback(
     (index: number, value: string) => {
       if (format === 'REFERENCE') {
@@ -177,7 +219,8 @@ export const useFieldList = (
       } else {
         const newItemValues = cloneDeep(itemValues);
         if (!itemValues[index].isOther) {
-          newItemValues[index] = { value, isOther: false, customFieldValue: '' };
+          //customFieldValue（コード）は消さない。選択肢の文字を直すたびにコードが消えてしまうため
+          newItemValues[index] = { ...itemValues[index], value };
         }
         setItemValues(newItemValues);
       }
@@ -289,8 +332,13 @@ export const useFieldList = (
     customFieldReference,
     customFieldPrimary,
     useLastValue,
+    codeFieldId,
+    codeFieldIds,
+    codeFieldNames,
     dictionaryData,
     changeUseLastValue,
+    changeCodeFieldId,
+    changeCodeValue,
     changeCustomFieldReference,
     changeCustomFieldPrimary,
     changeValue,

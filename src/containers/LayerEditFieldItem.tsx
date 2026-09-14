@@ -26,8 +26,13 @@ export default function LayerEditFieldItemContainer() {
     customFieldReference,
     customFieldPrimary,
     useLastValue,
+    codeFieldId,
+    codeFieldIds,
+    codeFieldNames,
     dictionaryData,
     changeUseLastValue,
+    changeCodeFieldId,
+    changeCodeValue,
     changeCustomFieldReference,
     changeCustomFieldPrimary,
     changeValue,
@@ -43,9 +48,10 @@ export default function LayerEditFieldItemContainer() {
       fieldIndex: params!.fieldIndex,
       itemValues: itemValues,
       useLastValue: useLastValue,
+      codeFieldId: codeFieldId,
       targetLayer: params!.targetLayer,
     });
-  }, [isEdited, itemValues, navigate, params, useLastValue]);
+  }, [codeFieldId, isEdited, itemValues, navigate, params, useLastValue]);
 
   const pressImportDictionary = useCallback(async () => {
     const file = await DocumentPicker.getDocumentAsync({});
@@ -77,7 +83,12 @@ export default function LayerEditFieldItemContainer() {
         customFieldReference,
         customFieldPrimary,
         useLastValue,
+        codeFieldId,
+        codeFieldIds,
+        codeFieldNames,
         changeUseLastValue,
+        changeCodeFieldId,
+        changeCodeValue,
         changeCustomFieldReference,
         changeCustomFieldPrimary,
         changeValue,

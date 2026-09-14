@@ -16,10 +16,10 @@ describe('useFeatureFlags', () => {
     expect(flags.layerPresets).toBe(true);
   });
 
-  it('未ログイン（Drive接続のみ含む）でも地図プリセットと飛翔図は有効、レイヤプリセットは無効', () => {
+  it('未ログイン（Drive接続のみ含む）でも地図プリセットは有効、飛翔図とレイヤプリセットは無効', () => {
     mockUseSelector.mockImplementation((selector) => selector({ user: { uid: undefined } }));
     const flags = useFeatureFlags();
-    expect(flags.hisyouTool).toBe(true);
+    expect(flags.hisyouTool).toBe(false);
     expect(flags.mapPresets).toBe(true);
     expect(flags.layerPresets).toBe(false);
   });

@@ -10,6 +10,7 @@ import { CheckBox } from '../molecules/CheckBox';
 import { Loading } from '../molecules/Loading';
 import { DataEditTimeRange } from '../organisms/DataEditTimeRange';
 import { BottomSheetHeader } from '../molecules/BottomSheetHeader';
+import { hasCodeLink } from '../../utils/Layer';
 
 export default function LayerEditFieldItemScreen() {
   const {
@@ -27,8 +28,13 @@ export default function LayerEditFieldItemScreen() {
     customFieldReference,
     customFieldPrimary,
     useLastValue,
+    codeFieldId,
+    codeFieldIds,
+    codeFieldNames,
     pressImportDictionary,
     changeUseLastValue,
+    changeCodeFieldId,
+    changeCodeValue,
     changeCustomFieldReference,
     changeCustomFieldPrimary,
     changeValue,
@@ -74,11 +80,7 @@ export default function LayerEditFieldItemScreen() {
   } else if (itemFormat === 'REFERENCE') {
     return (
       <View style={styles.container}>
-        <BottomSheetHeader
-          title={t('LayerEditFieldItem.navigation.title')}
-          showBackButton
-          onBack={gotoBack}
-        />
+        <BottomSheetHeader title={t('LayerEditFieldItem.navigation.title')} showBackButton onBack={gotoBack} />
         <View style={styles.tr3}>
           <View style={[styles.td3, { flex: 1 }]}>
             <Text style={[styles.title, { textAlign: 'center' }]}>{'reference layer'}</Text>
@@ -154,13 +156,13 @@ export default function LayerEditFieldItemScreen() {
       </View>
     );
   } else {
+    //連動先が未設定でも、既に入れてあるコードは見えるようにする（設定を消しただけで値が消えたように見せない）
+    const withCode =
+      hasCodeLink(itemFormat) && (codeFieldId !== '' || itemValues.some((v) => (v.customFieldValue ?? '') !== ''));
+
     return (
       <View style={styles.container}>
-        <BottomSheetHeader
-          title={t('LayerEditFieldItem.navigation.title')}
-          showBackButton
-          onBack={gotoBack}
-        />
+        <BottomSheetHeader title={t('LayerEditFieldItem.navigation.title')} showBackButton onBack={gotoBack} />
         {(itemFormat === 'STRING' ||
           itemFormat === 'INTEGER' ||
           itemFormat === 'LIST' ||
@@ -177,59 +179,99 @@ export default function LayerEditFieldItemScreen() {
             />
           </View>
         )}
+        {hasCodeLink(itemFormat) && (
+          <View style={styles.tr}>
+            <View style={[styles.td, { flex: 1 }]}>
+              <Picker
+                label={t('common.codeField')}
+                selectedValue={codeFieldId}
+                onValueChange={(itemValue) => changeCodeFieldId(itemValue as string)}
+                itemLabelArray={codeFieldNames}
+                itemValueArray={codeFieldIds}
+                maxIndex={codeFieldIds.length - 1}
+              />
+            </View>
+          </View>
+        )}
         {(!useLastValue || itemFormat === 'LIST') && (
           <>
-            <View style={styles.tr3}>
-              <View style={[styles.td3, { flex: 4 }]}>
-                <Text style={[styles.title, { textAlign: 'center' }]}>{`${t('common.value')}`}</Text>
-              </View>
-              <View style={styles.td3} />
-              <View style={styles.td3} />
-            </View>
-            <ScrollView>
-              {itemValues?.map((item, index: number) =>
-                itemFormat === 'TIMERANGE' ? (
-                  <DataEditTimeRange
-                    key={index}
-                    name={'time'}
-                    mode={'time'}
-                    value={itemValues[0] ? itemValues[0].value.toString() : ''}
-                    onValueChange={(value) => changeValue(0, value)}
-                  />
-                ) : (
-                  <View key={index} style={styles.tr}>
-                    <View style={[styles.td, { flex: 4 }]}>
-                      <TextInput
-                        style={styles.input}
-                        value={item.value.toString()}
-                        editable={editable && !item.isOther}
-                        onChangeText={(value: string) => changeValue(index, value)}
-                      />
-                    </View>
-                    <View style={styles.td}>
-                      <Button
-                        style={{
-                          backgroundColor: COLOR.DARKRED,
-                          padding: 0,
-                        }}
-                        name="minus"
-                        disabled={!editable}
-                        onPress={() => pressDeleteValue(index)}
-                      />
-                    </View>
-                    <View style={styles.td}>
-                      <Button
-                        name="chevron-double-up"
-                        onPress={() => pressListOrder(index)}
-                        color={COLOR.GRAY2}
-                        style={{ backgroundColor: COLOR.MAIN }}
-                      />
-                    </View>
+            {/* 幅が足りないと値・コードが省略されるので、レイヤ設定のフィールド表と同じく横スクロールにする */}
+            {/* 縦スクロールを内側に入れるので、外枠の高さをflexで確定させておく */}
+            <ScrollView horizontal={true} style={styles.hScroll} contentContainerStyle={{ flexGrow: 1 }}>
+              <View style={styles.table}>
+                <View style={styles.tr3}>
+                  <View style={[styles.td3, withCode ? styles.valueCell : styles.wideValueCell]}>
+                    <Text style={[styles.title, { textAlign: 'center' }]}>{`${t('common.value')}`}</Text>
                   </View>
-                )
-              )}
-              <ListButtons />
+                  {withCode && (
+                    <View style={[styles.td3, styles.valueCell]}>
+                      <Text style={[styles.title, { textAlign: 'center' }]}>{`${t('common.code')}`}</Text>
+                    </View>
+                  )}
+                  <View style={[styles.td3, styles.buttonCell]} />
+                  <View style={[styles.td3, styles.buttonCell]} />
+                </View>
+                {/* flex:1が無いと中身の高さのままレイアウトされ、選択肢が多いときにスクロールできなくなる */}
+                <ScrollView style={styles.vScroll}>
+                  {itemValues?.map((item, index: number) =>
+                    itemFormat === 'TIMERANGE' ? (
+                      <DataEditTimeRange
+                        key={index}
+                        name={'time'}
+                        mode={'time'}
+                        value={itemValues[0] ? itemValues[0].value.toString() : ''}
+                        onValueChange={(value) => changeValue(0, value)}
+                      />
+                    ) : (
+                      <View key={index} style={styles.tr}>
+                        <View style={[styles.td, withCode ? styles.valueCell : styles.wideValueCell]}>
+                          <TextInput
+                            style={styles.input}
+                            value={item.value.toString()}
+                            editable={editable && !item.isOther}
+                            onChangeText={(value: string) => changeValue(index, value)}
+                          />
+                        </View>
+                        {withCode && (
+                          <View style={[styles.td, styles.valueCell]}>
+                            {/* 「その他」は自由入力なので対応するコードが決められない */}
+                            {!item.isOther && (
+                              <TextInput
+                                style={styles.input}
+                                value={(item.customFieldValue ?? '').toString()}
+                                editable={editable}
+                                onChangeText={(value: string) => changeCodeValue(index, value)}
+                              />
+                            )}
+                          </View>
+                        )}
+                        <View style={[styles.td, styles.buttonCell]}>
+                          <Button
+                            style={{
+                              backgroundColor: COLOR.DARKRED,
+                              padding: 0,
+                            }}
+                            name="minus"
+                            disabled={!editable}
+                            onPress={() => pressDeleteValue(index)}
+                          />
+                        </View>
+                        <View style={[styles.td, styles.buttonCell]}>
+                          <Button
+                            name="chevron-double-up"
+                            onPress={() => pressListOrder(index)}
+                            color={COLOR.GRAY2}
+                            style={{ backgroundColor: COLOR.MAIN }}
+                          />
+                        </View>
+                      </View>
+                    )
+                  )}
+                </ScrollView>
+              </View>
             </ScrollView>
+            {/* 追加ボタンは横スクロールの外に置き、列を動かしても位置が変わらないようにする */}
+            <ListButtons />
           </>
         )}
       </View>
@@ -254,7 +296,7 @@ const ListButtons = () => {
   return editable ? (
     <View style={styles.button}>
       <Button
-        backgroundColor={COLOR.GRAY2}
+        backgroundColor={COLOR.BLUE}
         name="plus"
         disabled={!editable}
         onPress={() => pressAddValue(false)}
@@ -285,6 +327,30 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     margin: 10,
+  },
+  //widthは幅が足りないときの最小幅（横スクロールになる）。flexは広い画面で伸ばすため
+  buttonCell: {
+    flex: 2,
+    width: 50,
+  },
+  //コードは値と同じ幅にする
+  valueCell: {
+    flex: 6,
+    width: 150,
+  },
+  wideValueCell: {
+    flex: 8,
+    width: 200,
+  },
+  hScroll: {
+    flex: 1,
+  },
+  table: {
+    flex: 1,
+    flexDirection: 'column',
+  },
+  vScroll: {
+    flex: 1,
   },
   checkbox: {
     //backgroundColor: COLOR.BLUE,

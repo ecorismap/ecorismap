@@ -45,7 +45,8 @@ export default function LayerEditContainer() {
     params?.fieldIndex,
     params?.itemValues,
     params?.colorStyle,
-    params?.useLastValue
+    params?.useLastValue,
+    params?.codeFieldId
   );
   const { isRunningProject } = usePermission();
   const { generateExportGeoData } = useGeoFile();

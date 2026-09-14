@@ -1593,7 +1593,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
 
   /**
    * 選んだオブジェクトの属性を、パレットのボタン（＝次に描くときの既定値）へ写す。
-   * 飛翔線を選んで行動記号を足すときに、その線と同じ種名・雌雄・成幼が入るようにする
+   * 飛翔線を選んで行動記号を足すときに、その線と同じ種名・性別・齢が入るようにする
    */
   const syncPaletteDefaultsFromRecord = useCallback(
     (layer: LayerType, record: RecordType) => {

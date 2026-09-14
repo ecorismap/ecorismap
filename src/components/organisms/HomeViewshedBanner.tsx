@@ -1,19 +1,17 @@
 import React, { useCallback, useContext } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Pressable } from '../atoms/Pressable';
 import { COLOR } from '../../constants/AppConstants';
-import { MeasureContext } from '../../contexts/Measure';
 import { ViewshedContext } from '../../contexts/Viewshed';
 import { ConfirmAsync } from '../molecules/AlertAsync';
 import { t } from '../../i18n/config';
+import { useHomeTopLayout } from '../../hooks/useHomeTopLayout';
 
 // 可視領域の表示中インジケータ兼消去UI（native/web共通）
 export const HomeViewshedBanner = React.memo(() => {
   const { viewshedResults, hasViewshedPreview, clearViewshedResults } = useContext(ViewshedContext);
-  const { isMeasuring } = useContext(MeasureContext);
-  const insets = useSafeAreaInsets();
+  const { viewshedBannerTop } = useHomeTopLayout();
 
   const pressClear = useCallback(async () => {
     const ret = await ConfirmAsync(t('Home.confirm.discardViewshed'));
@@ -23,11 +21,7 @@ export const HomeViewshedBanner = React.memo(() => {
   if (!hasViewshedPreview) return null;
 
   return (
-    <View
-      // 測定バナーと同時表示のときは重ならないよう下にずらす
-      style={[styles.container, { top: insets.top + (isMeasuring ? 54 : 10) }]}
-      pointerEvents="box-none"
-    >
+    <View style={[styles.container, { top: viewshedBannerTop }]} pointerEvents="box-none">
       <View style={styles.banner}>
         <MaterialCommunityIcons name="eye-outline" size={18} color={COLOR.WHITE} />
         <Text style={styles.text}>{t('Home.viewshed.previewCount', { count: viewshedResults.length })}</Text>

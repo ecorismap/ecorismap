@@ -18,7 +18,8 @@ export const DataEditString = (props: Props) => {
 
   const styles = StyleSheet.create({
     input: {
-      backgroundColor: COLOR.GRAY0,
+      //読み取り専用（コードの入れ先など）は入力欄に見えないよう背景を外す
+      backgroundColor: editable === false ? COLOR.TRANSPARENT : COLOR.GRAY0,
       borderRadius: 5,
       flex: 2,
       fontSize: 16,

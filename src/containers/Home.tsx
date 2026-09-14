@@ -100,7 +100,7 @@ import {
   findNearestTrackPoint,
   latLonToXY,
 } from '../utils/Coords';
-import { generateLabel } from '../utils/Layer';
+import { generateLabel, resolveCodeField, toCodeFieldValue } from '../utils/Layer';
 import { hex2rgba, hsv2rgbaString } from '../utils/Color';
 import { getAllTrackPoints } from '../utils/Location';
 import { TRACK_PHOTO_TAP_RADIUS_PX, clusterTrackPhotos, spiderOffsets } from '../utils/trackPhoto';
@@ -154,6 +154,14 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
   //二度出さないために使う（シートが開いたら解除する）
   const isClosingBySelfRef = useRef(false);
 
+  // BottomSheetNavigationContext からナビゲーション関数を取得
+  const {
+    navigate: bottomSheetNavigate,
+    currentScreen: bottomSheetCurrentScreen,
+    isBottomSheetOpen,
+    setIsBottomSheetOpen,
+  } = useBottomSheetNavigation();
+
   const cancelPendingSheetClose = useCallback(() => {
     if (sheetCloseTimerRef.current !== null) {
       clearTimeout(sheetCloseTimerRef.current);
@@ -183,6 +191,9 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
   const openSheet = useCallback(
     (index: number) => {
       cancelPendingSheetClose();
+      //開く指示を出した時点でフラグを立てる。ライブラリが「すでにその位置」と判断して
+      //onChangeを出さない場合でも、中身がローディング表示のまま残らないようにする
+      setIsBottomSheetOpen(true);
       const sheet = bottomSheetRef.current;
       if (sheet === null) {
         //シートが作り直されている最中はrefが空になる。そのまま捨てると「タップしても
@@ -213,7 +224,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
         if (lastSheetIndexRef.current < 0) bottomSheetRef.current?.expand();
       }, 150);
     },
-    [cancelPendingSheetClose]
+    [cancelPendingSheetClose, setIsBottomSheetOpen]
   );
 
   //実際に位置が変わったことを記録する（pages/Home.tsxのonChangeから呼ばれる）
@@ -270,13 +281,6 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
   // SplitScreen のルート名を追跡
   const [currentSplitRoute, setCurrentSplitRoute] = useState<string>('Layers');
   const routeName = currentSplitRoute;
-
-  // BottomSheetNavigationContext からナビゲーション関数を取得
-  const {
-    navigate: bottomSheetNavigate,
-    currentScreen: bottomSheetCurrentScreen,
-    isBottomSheetOpen,
-  } = useBottomSheetNavigation();
 
   // ボトムシートが開いた後にselectRecordを実行するためのペンディング状態
   const pendingSelectRecord = useRef<{ layerId: string; feature: RecordType } | null>(null);
@@ -946,7 +950,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
   //書き換えるので、手書きでもプロットでも新しく作るレコードにその区分が入る
   //選択肢を新しく足す。色分けに使うフィールドなら色も一緒に入れて、そのまま次に描く値にする
   const addFieldValue = useCallback(
-    (fieldName: string, value: string, color: string) => {
+    (fieldName: string, value: string, color: string, code: string) => {
       if (editingLayer === undefined) return;
       const field = editingLayer.field.find((f) => f.name === fieldName);
       if (field === undefined) return;
@@ -962,7 +966,8 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
             f.name === fieldName
               ? {
                   ...f,
-                  list: [...(f.list ?? []), { value, isOther: false, customFieldValue: '' }],
+                  //customFieldValueは選択肢のコード（「<属性名>コード」へ一緒に入る）
+                  list: [...(f.list ?? []), { value, isOther: false, customFieldValue: code }],
                   defaultValue: value,
                 }
               : f
@@ -976,7 +981,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
   //区分の名前・色を変える。名前を変えた場合は、その区分で保存済みのレコードの値も置き換える
   //（置き換えないと色分けから外れて透明になり、集計もばらける）
   const updateFieldValue = useCallback(
-    (fieldName: string, oldValue: string, newValue: string, color: string) => {
+    (fieldName: string, oldValue: string, newValue: string, color: string, code: string) => {
       if (editingLayer === undefined || newValue === '') return;
       dispatch(
         updateLayerAction({
@@ -995,7 +1000,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
               ? {
                   ...f,
                   list: (f.list ?? []).map((item) =>
-                    item.value === oldValue ? { ...item, value: newValue } : item
+                    item.value === oldValue ? { ...item, value: newValue, customFieldValue: code } : item
                   ),
                   defaultValue: f.defaultValue === oldValue ? newValue : f.defaultValue,
                 }
@@ -1056,11 +1061,16 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       dispatch((thunkDispatch: AppDispatch, getState: () => RootState) => {
         const layer = getState().layers.find((l) => l.id === layerId);
         if (layer === undefined) return;
-        if (!layer.field.some((f) => f.list !== undefined && (f.defaultValue ?? '') !== '')) return;
+        //選択肢と一緒に入るコードも戻す（区分なしなのに前のコードが残ったまま描かれるのを防ぐ）
+        const codeFieldIds = layer.field
+          .map((f) => resolveCodeField(layer, f)?.id)
+          .filter((id): id is string => id !== undefined);
+        const shouldClear = (f: LayerType['field'][0]) => f.list !== undefined || codeFieldIds.includes(f.id);
+        if (!layer.field.some((f) => shouldClear(f) && (f.defaultValue ?? '') !== '')) return;
         thunkDispatch(
           updateLayerAction({
             ...layer,
-            field: layer.field.map((f) => (f.list !== undefined ? { ...f, defaultValue: '' } : f)),
+            field: layer.field.map((f) => (shouldClear(f) ? { ...f, defaultValue: '' } : f)),
           })
         );
       });
@@ -1076,12 +1086,25 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       dispatch((thunkDispatch: AppDispatch, getState: () => RootState) => {
         const layer = getState().layers.find((l) => l.id === layerId);
         if (layer === undefined) return;
+        //レイヤ設定で「コードの入れ先」を決めてあるフィールドは、選択肢のコードを一緒に入れる。
+        //植生図で区分を選ぶだけで区分コードが入る
+        const codeValues: { [fieldId: string]: string | number } = {};
+        Object.entries(values).forEach(([name, value]) => {
+          const field = layer.field.find((f) => f.name === name);
+          if (field === undefined) return;
+          const codeField = resolveCodeField(layer, field);
+          if (codeField === undefined) return;
+          const item = field.list?.find((i) => i.value === value);
+          codeValues[codeField.id] = toCodeFieldValue(item?.customFieldValue, codeField.format);
+        });
         thunkDispatch(
           updateLayerAction({
             ...layer,
-            field: layer.field.map((f) =>
-              values[f.name] !== undefined ? { ...f, defaultValue: values[f.name] } : f
-            ),
+            field: layer.field.map((f) => {
+              if (values[f.name] !== undefined) return { ...f, defaultValue: values[f.name] };
+              if (codeValues[f.id] !== undefined) return { ...f, defaultValue: codeValues[f.id] };
+              return f;
+            }),
           })
         );
       });
@@ -1560,7 +1583,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     // console.log('🔍 pressSaveDraw - layer:', layer?.name, 'type:', layer?.type, 'id:', layer?.id);
     //手書きも確定でツールをオフにする（新規バッチ・編集選択とも）。DataEditオープンは下の共通処理
     setDrawTool('NONE');
-    //飛翔図は1本＝1個体なので、確定したら種名・雌雄・成幼を未選択へ戻して選び直してもらう
+    //飛翔図は1本＝1個体なので、確定したら種名・性別・齢を未選択へ戻して選び直してもらう
     if (layer?.toolPalette === 'HISYOU') clearPaletteFieldValues(layer.id);
     if (route.params?.mode === 'editPosition') {
       navigation.setParams({ mode: undefined });

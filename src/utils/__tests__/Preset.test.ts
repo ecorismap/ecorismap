@@ -200,3 +200,64 @@ describe('プリセット定数', () => {
     });
   });
 });
+
+describe('createLayerFromPreset コードの入れ先', () => {
+  const codePreset: LayerPresetType = {
+    presetId: 'code-preset',
+    presetName: 'コード',
+    layer: {
+      name: '植生図',
+      type: 'POLYGON',
+      permission: 'PRIVATE',
+      colorStyle: {
+        colorType: 'CATEGORIZED',
+        transparency: false,
+        color: '#ff0000',
+        fieldName: '区分',
+        customFieldValue: '',
+        colorRamp: 'RANDOM',
+        colorList: [],
+      },
+      label: '',
+      visible: true,
+      active: true,
+      field: [
+        { name: '区分', format: 'LIST', codeFieldName: '区分コード', list: [] },
+        { name: '区分コード', format: 'STRING' },
+      ],
+    },
+  };
+
+  it('codeFieldNameが新しいフィールドIDへ解決される', () => {
+    const { layer } = createLayerFromPreset(codePreset, 'LAYER_ID');
+    expect(layer.field[0].codeFieldId).toBe(layer.field[1].id);
+    //名前指定はレイヤに残さない
+    expect((layer.field[0] as { codeFieldName?: string }).codeFieldName).toBeUndefined();
+  });
+
+  it('名前が合わなければ連動なしにする', () => {
+    const broken: LayerPresetType = {
+      ...codePreset,
+      layer: {
+        ...codePreset.layer,
+        field: [
+          { name: '区分', format: 'LIST', codeFieldName: '存在しない', list: [] },
+          { name: '区分コード', format: 'STRING' },
+        ],
+      },
+    };
+    const { layer } = createLayerFromPreset(broken, 'LAYER_ID');
+    expect(layer.field[0].codeFieldId).toBeUndefined();
+  });
+});
+
+describe('植生図プリセット', () => {
+  it('区分を選ぶと区分コードが入るよう結ばれている', () => {
+    const preset = LAYER_PRESETS.find((p) => p.presetId === 'preset-layer-vegetation-map');
+    expect(preset).toBeDefined();
+    const { layer } = createLayerFromPreset(preset!, 'LAYER_ID');
+    const category = layer.field.find((f) => f.name === '区分');
+    const code = layer.field.find((f) => f.name === '区分コード');
+    expect(category?.codeFieldId).toBe(code?.id);
+  });
+});

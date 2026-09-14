@@ -6,7 +6,7 @@ import { getUserColor } from '../utils/Color';
 import { cloneDeep } from 'lodash';
 import { ulid } from 'ulid';
 import { t } from '../i18n/config';
-import { HISYOU_FIELDS } from '../constants/ToolPalette';
+import { findHisyouField, HISYOU_FIELDS } from '../constants/ToolPalette';
 import { shallowEqual, useDispatch, useSelector } from 'react-redux';
 import { RootState } from '../store';
 import { formattedInputs } from '../utils/Format';
@@ -19,7 +19,7 @@ import { changeFieldValue, getBlankFieldValue } from '../utils/Data';
 import { LAYER_PRESETS, PRESET_LAYER_DATA } from '../constants/Presets';
 import { createLayerFromPreset, PresetDictionary } from '../utils/Preset';
 import { geoJson2Data } from '../utils/Geometry';
-import { applyColorStyle, restoreColorStyleFromIndividual } from '../utils/Layer';
+import { applyColorStyle, hasCodeLink, isCodeTargetFormat, restoreColorStyleFromIndividual } from '../utils/Layer';
 import type { FeatureCollection } from 'geojson';
 import { importPresetDictionaries } from '../utils/PresetDictionary';
 import sanitize from 'sanitize-filename';
@@ -54,7 +54,8 @@ export const useLayerEdit = (
   fieldIndex: number | undefined,
   itemValues: { value: string; isOther: boolean; customFieldValue: string }[] | undefined,
   colorStyle: ColorStyle | undefined,
-  useLastValue: boolean | undefined
+  useLastValue: boolean | undefined,
+  codeFieldId: string | undefined
 ): UseLayerEditReturnType => {
   const dispatch = useDispatch();
   const projectId = useSelector((state: RootState) => state.settings.projectId, shallowEqual);
@@ -135,12 +136,15 @@ export const useLayerEdit = (
         newTargetLayer.field[fieldIndex].list = itemValues;
       }
       newTargetLayer.field[fieldIndex].useLastValue = useLastValue;
+      //コードの入れ先。LIST/RADIO以外では持たない
+      newTargetLayer.field[fieldIndex].codeFieldId =
+        hasCodeLink(targetFormat) && codeFieldId !== undefined && codeFieldId !== '' ? codeFieldId : undefined;
       setIsEdited(true);
       setTargetLayer(newTargetLayer);
     }
     //targetLayerはループするので入れてはいけない
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isStyleEdited, itemValues, fieldIndex]);
+  }, [isStyleEdited, itemValues, fieldIndex, codeFieldId]);
 
   const updateDataOfTheLayer = useCallback(
     (initialFields: FieldType[], addedFields: FieldType[], changeFields: FieldType[], deletedFields: FieldType[]) => {
@@ -278,10 +282,12 @@ export const useLayerEdit = (
       const m = cloneDeep(targetLayer);
       m.toolPalette = value;
       if (value === 'HISYOU') {
-        //飛翔図は1本＝1個体の連続追跡。種名・雌雄・成幼を描く前に選ぶので、無ければ作る。
+        //飛翔図は1本＝1個体の連続追跡。種名・性別・齢を描く前に選ぶので、無ければ作る。
         //色は種名で決める（個体ごとではなく種ごとに見分ける）
-        HISYOU_FIELDS.forEach(({ name, values }) => {
-          if (m.field.some((f) => f.name === name)) return;
+        HISYOU_FIELDS.forEach((item) => {
+          const { name, values } = item;
+          //旧名（雌雄・成幼）のフィールドがあればそれを使う。二重に作らない
+          if (findHisyouField(m.field, item) !== undefined) return;
           m.field.push({
             id: ulid(),
             name,
@@ -294,7 +300,7 @@ export const useLayerEdit = (
         m.colorStyle = {
           ...m.colorStyle,
           colorType: 'CATEGORIZED',
-          fieldName: HISYOU_FIELDS[0].name,
+          fieldName: findHisyouField(m.field, HISYOU_FIELDS[0])?.name ?? HISYOU_FIELDS[0].name,
           customFieldValue: '',
         };
         setTargetLayer(m);
@@ -302,9 +308,20 @@ export const useLayerEdit = (
         //植生図は区分（属性）で色を決める。区分のフィールドが無ければ選択肢つきで作り、
         //色分けをその区分のカテゴリ分けにする。面は塗って見るので枠線のみ表示も外す
         const categoryName = t('common.category');
-        const hasCategory = m.field.some((f) => f.name === categoryName);
-        if (!hasCategory) {
-          m.field.push({ id: ulid(), name: categoryName, format: 'LIST', list: [] });
+        let categoryField = m.field.find((f) => f.name === categoryName);
+        if (categoryField === undefined) {
+          categoryField = { id: ulid(), name: categoryName, format: 'LIST', list: [] };
+          m.field.push(categoryField);
+        }
+        //区分コードは図面の表記に使うので、区分を選ぶだけで入るようコードの入れ先として結ぶ
+        const codeName = `${categoryName}${t('common.code')}`;
+        let codeField = m.field.find((f) => f.name === codeName);
+        if (codeField === undefined) {
+          codeField = { id: ulid(), name: codeName, format: 'STRING' };
+          m.field.push(codeField);
+        }
+        if (categoryField.codeFieldId === undefined && isCodeTargetFormat(codeField.format)) {
+          categoryField.codeFieldId = codeField.id;
         }
         m.colorStyle = {
           ...m.colorStyle,
@@ -402,6 +419,16 @@ export const useLayerEdit = (
             m.dictionaryFieldId = undefined;
           }
         }
+        //選択肢から選ぶ形式でなくなったら、コードの入れ先の設定は無効
+        if (!hasCodeLink(itemValue)) {
+          m.field[index].codeFieldId = undefined;
+        }
+        //コードの入れ先にできない形式になったら、指している側の設定を解除する
+        if (!isCodeTargetFormat(itemValue)) {
+          m.field.forEach((f) => {
+            if (f.codeFieldId === m.field[index].id) f.codeFieldId = undefined;
+          });
+        }
         m.field[index].format = itemValue;
         setTargetLayer(m);
         setIsEdited(true);
@@ -442,6 +469,11 @@ export const useLayerEdit = (
       if (m.dictionaryFieldId === m.field[id]?.id) {
         m.dictionaryFieldId = undefined;
       }
+      //コードの入れ先として指されていた場合は、指していた側の設定も解除する
+      const deletedFieldId = m.field[id]?.id;
+      m.field.forEach((f) => {
+        if (f.codeFieldId === deletedFieldId) f.codeFieldId = undefined;
+      });
       m.field.splice(id, 1);
 
       setTargetLayer(m);

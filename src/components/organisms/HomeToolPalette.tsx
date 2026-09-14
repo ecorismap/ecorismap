@@ -13,6 +13,7 @@ import { FeatureButtonType, ToolPaletteItemType } from '../../types';
 import { HomeModalCategoryPicker } from './HomeModalCategoryPicker';
 import { HomeModalSubToolPicker } from './HomeModalSubToolPicker';
 import { getFieldOptions } from '../../constants/ToolPalette';
+import { resolveCodeField } from '../../utils/Layer';
 
 interface Props {
   items: ToolPaletteItemType[];
@@ -65,7 +66,7 @@ export const HomeToolPalette = React.memo(({ items, featureType }: Props) => {
       ? undefined
       : hsv2rgbaString(item.color.hue, item.color.sat, item.color.val, item.color.alpha));
 
-  //属性ボタンで開く選択肢（種名・雌雄・成幼はタブで切り替える／区分は1つ）と、
+  //属性ボタンで開く選択肢（種名・性別・齢はタブで切り替える／区分は1つ）と、
   //道具ボタンで開く選択肢（行動範囲・行動位置）
   const [pickerFields, setPickerFields] = useState<string[] | undefined>(undefined);
   //属性が未選択のまま道具を選んだとき、属性を選び終えてから実行する道具
@@ -251,6 +252,11 @@ export const HomeToolPalette = React.memo(({ items, featureType }: Props) => {
         fields={pickerFields ?? []}
         optionsOf={(fieldName: string) => (editingLayer === undefined ? [] : getFieldOptions(editingLayer, fieldName))}
         isColorField={isColorField}
+        withCode={(fieldName: string) => {
+          if (editingLayer === undefined) return false;
+          const field = editingLayer.field.find((f) => f.name === fieldName);
+          return field !== undefined && resolveCodeField(editingLayer, field) !== undefined;
+        }}
         select={(values: { [fieldName: string]: string }) => {
           selectFieldValues(values);
           //属性が未選択のまま押した道具があれば、選び終えたところで有効にする

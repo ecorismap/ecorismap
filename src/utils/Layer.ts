@@ -1,7 +1,7 @@
 import { cloneDeep } from 'lodash';
 import { COLOR } from '../constants/AppConstants';
 import { t } from '../i18n/config';
-import { RecordType, LayerType, ColorStyle } from '../types';
+import { RecordType, LayerType, ColorStyle, FieldType, FormatType } from '../types';
 import { ulid } from 'ulid';
 import { getUserColor, hex2rgba } from './Color';
 import dayjs from '../i18n/dayjs';
@@ -190,6 +190,48 @@ export const getPhotoFields = (layer: LayerType) => {
   return layer.field.filter((f) => f.format === 'PHOTO');
 };
 
+/**
+ * コードの入れ先にできる形式。コードは数字でも文字列でもありうるので、数値型も許す
+ */
+export const isCodeTargetFormat = (format: FormatType) =>
+  format === 'STRING' || format === 'STRING_MULTI' || format === 'INTEGER' || format === 'DECIMAL';
+
+/**
+ * コードの入れ先を決められる形式か。CHECKは複数選択でコードが1つに定まらないので含めない
+ */
+export const hasCodeLink = (format: FormatType) => format === 'LIST' || format === 'RADIO';
+
+/**
+ * 選択肢フィールドに紐づく「コードの入れ先」フィールドを返す。
+ * 種名と種コード、区分と区分コードのように、選んだ文字列とは別に符号を残したいときに使う。
+ * 連動先が消えた・形式が変わった場合はundefinedを返して黙って無効にする（保存時にcheckLayerInputsで気づける）
+ */
+export const resolveCodeField = (layer: LayerType, field: FieldType): FieldType | undefined => {
+  if (!hasCodeLink(field.format)) return undefined;
+  if (field.codeFieldId === undefined || field.codeFieldId === '') return undefined;
+  if (field.codeFieldId === field.id) return undefined;
+  const codeField = layer.field.find((f) => f.id === field.codeFieldId);
+  if (codeField === undefined || !isCodeTargetFormat(codeField.format)) return undefined;
+  return codeField;
+};
+
+/**
+ * 選択肢のコード（customFieldValue）を、入れ先の形式に合わせた値にする。
+ * コードが無い選択肢・「その他」は空値にする（前のコードが残ると表記と実体が食い違うため）
+ */
+export const toCodeFieldValue = (code: string | undefined, format: FormatType): string | number => {
+  const value = code ?? '';
+  if (format === 'INTEGER') {
+    const num = parseInt(value, 10);
+    return isNaN(num) ? 0 : num;
+  }
+  if (format === 'DECIMAL') {
+    const num = parseFloat(value);
+    return isNaN(num) ? 0 : num;
+  }
+  return value;
+};
+
 export const checkLayerInputs = (layer: LayerType) => {
   if (layer.name === '') {
     return { isOK: false, message: t('utils.Layer.message.inputLayerName') };
@@ -227,6 +269,42 @@ export const checkLayerInputs = (layer: LayerType) => {
   if (layer.field.find((f) => f.format === 'LISTTABLE' && f.list === undefined)) {
     return { isOK: false, message: t('utils.Layer.message.inputListTableItem') };
   }
+  //選択肢とコードの重複チェック。同じ名前・同じコードが並ぶと、どれを選んだのか区別できない。
+  //空欄は入力途中のこともあるので対象外（「その他」と空欄の組み合わせは上で弾いている）
+  for (const f of layer.field) {
+    if (f.list === undefined) continue;
+    if (f.format !== 'LIST' && f.format !== 'RADIO' && f.format !== 'CHECK') continue;
+    const values = f.list.filter((l) => !l.isOther && l.value !== '').map((l) => l.value);
+    if (new Set(values).size !== values.length) {
+      return { isOK: false, message: `${t('utils.Layer.message.duplicateListValue')}: ${f.name}` };
+    }
+    //コードを持てるのは選択肢から1つ選ぶ形式だけ
+    if (!hasCodeLink(f.format)) continue;
+    const codes = f.list.filter((l) => !l.isOther && (l.customFieldValue ?? '') !== '').map((l) => l.customFieldValue);
+    if (new Set(codes).size !== codes.length) {
+      return { isOK: false, message: `${t('utils.Layer.message.duplicateListCode')}: ${f.name}` };
+    }
+  }
+
+  //コードの入れ先の検証。壊れたまま保存すると、描いてもコードが入らない理由が分からなくなる
+  const codeTargetIds: string[] = [];
+  for (const f of layer.field) {
+    if (f.codeFieldId === undefined || f.codeFieldId === '') continue;
+    const codeField = layer.field.find((c) => c.id === f.codeFieldId);
+    if (
+      !hasCodeLink(f.format) ||
+      f.codeFieldId === f.id ||
+      codeField === undefined ||
+      !isCodeTargetFormat(codeField.format)
+    ) {
+      return { isOK: false, message: t('utils.Layer.message.invalidCodeField') };
+    }
+    if (codeTargetIds.includes(f.codeFieldId)) {
+      return { isOK: false, message: t('utils.Layer.message.duplicateCodeField') };
+    }
+    codeTargetIds.push(f.codeFieldId);
+  }
+
   //重複チェック
   const duplicateCleanedField = Array.from(new Set(layer.field.map(({ name }) => name)));
   if (layer.field.length !== duplicateCleanedField.length) {
@@ -287,6 +365,9 @@ export function changeLayerId(layer: LayerType) {
   const oldDictionaryFieldId = newLayer.dictionaryFieldId;
   newLayer.dictionaryFieldId = undefined;
 
+  //コードの入れ先は他のフィールドのidを指すので、採番が全部終わってから付け替える
+  const oldCodeFieldIds = newLayer.field.map((f) => f.codeFieldId);
+
   const fieldIdMap: { [key: string]: string } = {};
   newLayer.field.forEach((f) => {
     const newId = ulid();
@@ -302,6 +383,11 @@ export function changeLayerId(layer: LayerType) {
     if (f.format !== 'STRING_DICTIONARY' && f.format !== 'STRING_DYNAMIC' && f.useDictionaryAdd) {
       f.useDictionaryAdd = false;
     }
+  });
+
+  newLayer.field.forEach((f, i) => {
+    const oldCodeFieldId = oldCodeFieldIds[i];
+    f.codeFieldId = oldCodeFieldId === undefined ? undefined : fieldIdMap[oldCodeFieldId];
   });
 
   // useDictionaryAddがtrueの辞書型・動的辞書型フィールドがある場合、そのIDをdictionaryFieldIdに設定

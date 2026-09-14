@@ -1085,6 +1085,54 @@ describe('useMapMemo', () => {
     expect(afterRedo[0].coords.length).toBe(2);
   });
 
+  it('_stamp/_groupを持たないメモ（新しい書き込み）も部分消去できること', () => {
+    const Coords = require('../../utils/Coords');
+    // 消しゴム軌跡と交差して中央が消え、2区間が残るケースをモック
+    Coords.erasePartialLine.mockReturnValue({
+      erased: true,
+      remainingSegments: [
+        [
+          [135.0, 35.0],
+          [135.0005, 35.0005],
+        ],
+        [
+          [135.0015, 35.0015],
+          [135.002, 35.002],
+        ],
+      ],
+    });
+    Coords.latlonArrayToLatLonObjects.mockImplementation((arr: any) =>
+      arr.map(([lon, lat]: [number, number]) => ({ latitude: lat, longitude: lon }))
+    );
+
+    //activeMemoRecordSetはuserId: undefinedで検索されるため、それに合わせたレコードセットを用意する
+    store.dispatch({
+      type: 'dataSet/addRecordsAction',
+      payload: { layerId: 'memo', userId: undefined, data: [makeParentRecordWithoutSymbolFields()] },
+    });
+
+    const mockMapViewRef = { current: {} } as any;
+    const { result } = renderHook(() => useMapMemo(mockMapViewRef), { wrapper });
+
+    act(() => {
+      result.current.setMapMemoTool('PEN_ERASER_PARTIAL');
+    });
+
+    const grantEvent = {
+      nativeEvent: { locationX: 100, locationY: 100, pageX: 100, pageY: 100, touches: [{}] },
+      persist: jest.fn(),
+    } as any;
+    act(() => {
+      result.current.handleGrantMapMemo(grantEvent);
+    });
+    act(() => {
+      result.current.handleReleaseMapMemo(grantEvent);
+    });
+
+    //スタンプ用のフィールドが無くてもペンのストロークとして消去対象になる
+    expect(getMemoData().length).toBe(2);
+  });
+
   it('部分消去で全区間が消えると_groupの子レコードも巻き込み削除されること', () => {
     const Coords = require('../../utils/Coords');
     Coords.erasePartialLine.mockReturnValue({ erased: true, remainingSegments: [] });
@@ -1433,6 +1481,13 @@ describe('useMapMemo', () => {
   });
 
   //部分消去テスト用のヘルパー
+  //新しいメモは_stamp/_groupを書き込まない。未設定でもペンのストロークとして扱えること
+  const makeParentRecordWithoutSymbolFields = () => {
+    const record = makeParentRecord();
+    const { _stamp, _group, ...field } = record.field as { [key: string]: unknown };
+    return { ...record, field };
+  };
+
   const makeParentRecord = () => ({
     id: 'test-line-id',
     userId: 'user1',

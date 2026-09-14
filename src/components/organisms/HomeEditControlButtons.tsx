@@ -5,18 +5,14 @@ import { Pressable } from '../atoms/Pressable';
 import { COLOR } from '../../constants/AppConstants';
 import { isPlotTool, isHandwritingTool } from '../../utils/General';
 import { DrawingToolsContext } from '../../contexts/DrawingTools';
-import { ProjectContext } from '../../contexts/Project';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { t } from '../../i18n/config';
+import { useHomeTopLayout } from '../../hooks/useHomeTopLayout';
 
 //画面上部中央の確定・キャンセルバー。作図（点・線・面）とマップメモの編集選択で共通
 export const HomeEditControlButtons = React.memo(() => {
   const { currentDrawTool, isEditingObject, pressSaveDraw, finishEditObject, selectDrawTool } =
     useContext(DrawingToolsContext);
-  const { projectName } = useContext(ProjectContext);
-  const insets = useSafeAreaInsets();
-  //プロジェクトラベル非表示時は編集レイヤボタンごと上に詰まるため、それに合わせる
-  const hasProjectLabel = projectName !== undefined;
+  const { editControlTop } = useHomeTopLayout();
 
   const styles = StyleSheet.create({
     //アイコン上・文字下の縦並び（Buttonアトムはアイコン下に極小ラベルを重ねる設計のため文字が重なる）
@@ -42,8 +38,8 @@ export const HomeEditControlButtons = React.memo(() => {
       paddingHorizontal: 20,
       position: 'absolute',
       right: 0,
-      //編集レイヤボタン（高さ32）のすぐ下に配置
-      top: insets.top + (hasProjectLabel ? 85 : 50),
+      //編集レイヤチップのすぐ下に配置
+      top: editControlTop,
     },
   });
 

@@ -46,7 +46,7 @@ export const DataEditTable = (props: Props_DataEditTable) => {
         <View style={[styles.td3, { minWidth: 40, justifyContent: 'flex-end' }]}>
           <Button
             style={{
-              backgroundColor: COLOR.GRAY3,
+              backgroundColor: COLOR.BLUE,
               padding: 0,
             }}
             size={20}

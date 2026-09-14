@@ -122,6 +122,11 @@ const RESUME_DISTANCE_PX = 50;
 //ピンチ開始時にGrant以降の移動距離がこの値未満なら描画意図なしとみなして破棄する
 const PINCH_DISCARD_DISTANCE_PX = 10;
 //保存後も地図レイヤの描画が完了するまでSVGプレビューを残す時間(ms)。
+//ペンで描いたストロークか（スタンプ・ブラシではないか）。メモは_stamp/_groupを書かなくなったので、
+//未設定＝ペンとして扱う（'' との比較だけだと新しいメモが対象外になる）
+const isPenStrokeRecord = (record: LineRecordType) =>
+  (record.field._stamp ?? '') === '' && !isBrushTool(String(record.field._strokeStyle ?? ''));
+
 //ネイティブのオーバーレイ追加は非同期のため、即時に消すと一瞬線が消えて点滅して見える
 const LAYER_HANDOFF_DURATION_MS = 150;
 //矢印スタイルの整形時の間引き許容誤差(px)
@@ -332,12 +337,7 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
   const findSnappedLine = useCallback(
     (pXY: Position) => {
       for (const line of memoLines) {
-        if (
-          line.visible === false ||
-          line.coords === undefined ||
-          line.field._stamp !== '' ||
-          isBrushTool(line.field._strokeStyle as string)
-        ) {
+        if (line.visible === false || line.coords === undefined || !isPenStrokeRecord(line)) {
           continue;
         }
 
@@ -1000,7 +1000,7 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
     memoLines.forEach((line, idx) => {
       if (line.coords === undefined) return;
       //対象はペンストロークのみ。スタンプ・ブラシは専用の消しゴムを使う
-      if (line.field._stamp !== '' || isBrushTool(line.field._strokeStyle as string)) return;
+      if (!isPenStrokeRecord(line)) return;
 
       const lineArray = latLonObjectsToLatLonArray(line.coords);
       if (lineArray.length < 2) return;

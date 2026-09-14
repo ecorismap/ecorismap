@@ -1,4 +1,4 @@
-import React, { useContext } from 'react';
+import React, { useContext, useMemo } from 'react';
 import { View, StyleSheet, KeyboardAvoidingView } from 'react-native';
 
 import { DataEditButtons } from '../organisms/DataEditButtons';
@@ -28,6 +28,7 @@ import { DataEditDictionary } from '../organisms/DataEditDictionary';
 import { DataEditDynamicDictionary } from '../organisms/DataEditDynamicDictionary';
 import { DataEditUserName } from '../organisms/DataEditUserName';
 import { BottomSheetHeader } from '../molecules/BottomSheetHeader';
+import { resolveCodeField } from '../../utils/Layer';
 
 export default function DataEditScreen() {
   // console.log('render DataEdit');
@@ -54,13 +55,22 @@ export default function DataEditScreen() {
 
   const layers = useSelector((state: RootState) => state.layers);
 
-  const centerComponent = maxRecordNumber > 0 ? (
-    <DataEditRecordSelector
-      recordNumber={recordNumber}
-      maxRecordNumber={maxRecordNumber}
-      onChangeRecord={onChangeRecord}
-    />
-  ) : undefined;
+  //コードの入れ先は選択肢から自動で入る項目なので、手入力させない。
+  //直接書き換えられると区分と表記が食い違い、しかも区分を変えた時点で黙って上書きされる
+  const codeFieldIds = useMemo(
+    () =>
+      new Set(layer.field.map((f) => resolveCodeField(layer, f)?.id).filter((id): id is string => id !== undefined)),
+    [layer]
+  );
+
+  const centerComponent =
+    maxRecordNumber > 0 ? (
+      <DataEditRecordSelector
+        recordNumber={recordNumber}
+        maxRecordNumber={maxRecordNumber}
+        onChangeRecord={onChangeRecord}
+      />
+    ) : undefined;
 
   const rightComponent = (
     <Button
@@ -82,8 +92,14 @@ export default function DataEditScreen() {
         rightComponent={rightComponent}
       />
       <View style={styles.contentContainer}>
-        {/* キーボード表示中でも辞書候補などのタップが1回で反応するようにhandledを指定 */}
-        <ScrollView keyboardShouldPersistTaps="handled">
+        {/* flex:1で高さを親に合わせる。付けないとScrollView自体が中身の高さになり、
+            はみ出した分はシートに切られたまま「引っ張っても戻る」だけでスクロールできない。
+            キーボード表示中でも辞書候補などのタップが1回で反応するようhandledを指定 */}
+        <ScrollView
+          style={styles.scroll}
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+        >
           {projectId && data.displayName && layer.permission !== 'COMMON' && (
             <DataEditUserName value={data.displayName} />
           )}
@@ -103,6 +119,7 @@ export default function DataEditScreen() {
                     key={index}
                     name={name}
                     value={data.field[name] as string | number | undefined}
+                    editable={!codeFieldIds.has(id)}
                     onChangeText={(value) => changeField(name, value)}
                     onEndEditing={() => submitField(name, format)}
                   />
@@ -114,6 +131,7 @@ export default function DataEditScreen() {
                     name={name}
                     multiline={true}
                     value={data.field[name] as string | number | undefined}
+                    editable={!codeFieldIds.has(id)}
                     onChangeText={(value) => changeField(name, value)}
                     onEndEditing={() => submitField(name, format)}
                   />
@@ -235,6 +253,7 @@ export default function DataEditScreen() {
                     name={name}
                     type={format}
                     value={data.field[name] as number}
+                    editable={!codeFieldIds.has(id)}
                     onChangeText={changeField}
                     onEndEditing={() => submitField(name, format)}
                   />
@@ -246,6 +265,7 @@ export default function DataEditScreen() {
                     name={name}
                     type={format}
                     value={data.field[name] as number}
+                    editable={!codeFieldIds.has(id)}
                     onChangeText={changeField}
                     onEndEditing={() => submitField(name, format)}
                   />
@@ -336,5 +356,12 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     flex: 1,
+  },
+  scroll: {
+    flex: 1,
+  },
+  //最後の項目が下端に貼り付かないよう、少し余白を残す
+  scrollContent: {
+    paddingBottom: 20,
   },
 });
