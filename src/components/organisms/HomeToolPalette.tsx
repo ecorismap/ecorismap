@@ -38,6 +38,8 @@ export const HomeToolPalette = React.memo(({ items, featureType }: Props) => {
     setPolygonTool,
     handwritingSubTool,
     setHandwritingSubTool,
+    symbolDetailField,
+    selectSymbolDetail,
     editingLayer,
     selectFieldValues,
     addFieldValue,
@@ -274,6 +276,28 @@ export const HomeToolPalette = React.memo(({ items, featureType }: Props) => {
           setPendingItem(undefined);
           setPickerFields(undefined);
         }}
+      />
+
+      {/* 記号を置いた直後に選ぶ詳細（とまり詳細・誇示詳細など）。
+          記号だけでは中身が分からないので、その場で1タップ入れてもらう。
+          選ばずに閉じれば詳細なしのまま保存される */}
+      <HomeModalCategoryPicker
+        visible={symbolDetailField !== undefined}
+        fields={symbolDetailField === undefined ? [] : [symbolDetailField]}
+        optionsOf={(fieldName: string) => (editingLayer === undefined ? [] : getFieldOptions(editingLayer, fieldName))}
+        isColorField={isColorField}
+        withCode={(fieldName: string) => {
+          if (editingLayer === undefined) return false;
+          const field = editingLayer.field.find((f) => f.name === fieldName);
+          return field !== undefined && resolveCodeField(editingLayer, field) !== undefined;
+        }}
+        select={(values: { [fieldName: string]: string }) =>
+          selectSymbolDetail(symbolDetailField === undefined ? undefined : values[symbolDetailField])
+        }
+        add={addFieldValue}
+        update={updateFieldValue}
+        remove={deleteFieldValue}
+        close={() => selectSymbolDetail(undefined)}
       />
 
       {/* 行動範囲・行動位置の道具。選ぶとその道具に持ち替える */}

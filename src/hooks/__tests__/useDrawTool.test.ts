@@ -166,6 +166,9 @@ import {
   xyArrayToLatLonArray,
 } from '../../utils/Coords';
 import { LayerType, LineRecordType, PointRecordType, RecordType } from '../../types';
+import { LAYER_PRESETS } from '../../constants/Presets';
+import { createLayerFromPreset } from '../../utils/Preset';
+import { getDefaultField } from '../../utils/Data';
 
 const mockLineLayer = {
   id: 'layer1',
@@ -1912,6 +1915,331 @@ describe('useDrawTool', () => {
       //generateRecordにgroupIdオプションが渡り、属性継承が効く
       const childCall = mockGenerateRecord.mock.calls[1];
       expect(childCall[4]).toEqual({ groupId: saved[0].id });
+    });
+
+    describe('飛翔図の行動と詳細', () => {
+      //記号は増やせないので、属性の方を記号と同じ粒度にしてある（行動は記号と1対1）
+      const hisyouLayer = {
+        ...mockLineLayer,
+        toolPalette: 'HISYOU',
+        field: [
+          {
+            id: 'f1',
+            name: 'とまり',
+            format: 'CHECK',
+            list: [
+              { value: '誇示', isOther: false, customFieldValue: '' },
+              { value: '監視', isOther: false, customFieldValue: '' },
+              { value: '不明', isOther: false, customFieldValue: '' },
+            ],
+          },
+          {
+            id: 'f2',
+            name: '旋回',
+            format: 'CHECK',
+            list: [{ value: 'あり', isOther: false, customFieldValue: '' }],
+          },
+        ],
+      } as unknown as LayerType;
+
+      const placeStamp = (result: any) => {
+        act(() => {
+          result.current.setHandwritingSubTool('TOMARI');
+        });
+        act(() => {
+          result.current.handleGrantHandwriting([5, 0], penStyle);
+        });
+        act(() => {
+          result.current.handleReleaseHandwriting();
+        });
+      };
+
+      beforeEach(() => {
+        mockGetEditableLayerAndRecordSetWithCheck.mockReturnValue({
+          isOK: true,
+          message: '',
+          layer: hisyouLayer,
+          recordSet: [],
+        });
+        //スタンプ（1点ライン）を保存できるよう実実装と同じ判定にする
+        (isValidLine as jest.Mock).mockImplementation((xy: unknown[]) => xy.length >= 1);
+        (checkDistanceFromLine as jest.Mock).mockReturnValue({ isNear: true, distance: 1 });
+      });
+
+      it('記号を置いた直後に中身を選ぶと、その行動のフィールドに入る', () => {
+        const { result } = renderDrawTool();
+        startHandwritingLine(result);
+        placeStamp(result);
+        //中身が分かれる行動なので選んでもらう
+        expect(result.current.symbolDetailField).toBe('とまり');
+
+        act(() => {
+          result.current.selectSymbolDetail('監視');
+        });
+        expect(result.current.symbolDetailField).toBeUndefined();
+
+        act(() => {
+          result.current.saveLine();
+        });
+        const saved = mockAddRecord.mock.calls.map((c) => c[1] as RecordType);
+        expect(saved[0].field._stamp).toBe('TOMARI');
+        expect(saved[0].field['とまり']).toBe('監視');
+      });
+
+      it('中身を選ばずに閉じても、記号を置いたことは「不明」で残る', () => {
+        const { result } = renderDrawTool();
+        startHandwritingLine(result);
+        placeStamp(result);
+        act(() => {
+          result.current.selectSymbolDetail(undefined);
+        });
+
+        act(() => {
+          result.current.saveLine();
+        });
+        const saved = mockAddRecord.mock.calls.map((c) => c[1] as RecordType);
+        expect(saved[0].field['とまり']).toBe('不明');
+      });
+
+      it('行動のフィールドが無いレイヤでは何も聞かず、何も書かない', () => {
+        mockGetEditableLayerAndRecordSetWithCheck.mockReturnValue({
+          isOK: true,
+          message: '',
+          layer: { ...hisyouLayer, field: [hisyouLayer.field[1]] },
+          recordSet: [],
+        });
+        const { result } = renderDrawTool();
+        startHandwritingLine(result);
+        placeStamp(result);
+        expect(result.current.symbolDetailField).toBeUndefined();
+
+        act(() => {
+          result.current.saveLine();
+        });
+        const saved = mockAddRecord.mock.calls.map((c) => c[1] as RecordType);
+        expect(saved[0].field['とまり']).toBeUndefined();
+      });
+
+      it('飛翔線（ペン）には行動を書かない', () => {
+        const { result } = renderDrawTool();
+        startHandwritingLine(result);
+        drawPenStroke(result, [
+          [0, 0],
+          [10, 0],
+        ]);
+        act(() => {
+          result.current.saveLine();
+        });
+        const saved = mockAddRecord.mock.calls.map((c) => c[1] as RecordType);
+        expect(saved[0].field['とまり']).toBeUndefined();
+      });
+    });
+
+    it('実プリセットの飛翔図レイヤで、線に紐づく記号に行動と詳細が入る', () => {
+      const preset = LAYER_PRESETS.find((p) => p.presetId === 'preset-layer-hisyou-map')!;
+      const { layer: hisyouPresetLayer } = createLayerFromPreset(preset, 'layer1');
+      mockGetEditableLayerAndRecordSetWithCheck.mockReturnValue({
+        isOK: true,
+        message: '',
+        layer: hisyouPresetLayer,
+        recordSet: [],
+      });
+      //レコードは実装と同じく既定値から作る
+      let recordCount = 0;
+      mockGenerateRecord.mockImplementation(
+        (_featureType: string, layer: LayerType, recordSet: RecordType[], coords: unknown, options?: any) => {
+          const id = `record-${++recordCount}`;
+          return {
+            id,
+            userId: 'user1',
+            displayName: 'tester',
+            visible: true,
+            redraw: false,
+            coords,
+            field: getDefaultField(layer, recordSet, id, options),
+          };
+        }
+      );
+      (isValidLine as jest.Mock).mockImplementation((xy: unknown[]) => xy.length >= 1);
+
+      const { result } = renderDrawTool();
+      startHandwritingLine(result);
+      //飛翔線を描く
+      drawPenStroke(result, [
+        [0, 0],
+        [10, 0],
+      ]);
+      //その線にとまりを置く
+      (checkDistanceFromLine as jest.Mock).mockReturnValue({ isNear: true, distance: 1 });
+      act(() => {
+        result.current.setHandwritingSubTool('TOMARI');
+      });
+      act(() => {
+        result.current.handleGrantHandwriting([5, 0], penStyle);
+      });
+      act(() => {
+        result.current.handleReleaseHandwriting();
+      });
+      expect(result.current.symbolDetailField).toBe('とまり');
+      act(() => {
+        result.current.selectSymbolDetail('監視');
+      });
+      act(() => {
+        result.current.saveLine();
+      });
+
+      const saved = mockAddRecord.mock.calls.map((c) => c[1] as RecordType);
+      const stamp = saved.find((r) => r.field._stamp === 'TOMARI');
+      expect(stamp).toBeDefined();
+      expect(stamp!.field['とまり']).toBe('監視');
+      //属性を見るのは親の飛翔線レコードなので、そちらにもチェックが入る
+      const parentUpdate = mockUpdateRecord.mock.calls.map((c) => c[1] as RecordType).find((r) => r.id === stamp!.field._group);
+      expect(parentUpdate).toBeDefined();
+      expect(parentUpdate!.field['とまり']).toBe('監視');
+    });
+
+    it('同じ線に複数の記号を置くと、親のそれぞれの行動にチェックが入る', () => {
+      const preset = LAYER_PRESETS.find((p) => p.presetId === 'preset-layer-hisyou-map')!;
+      const { layer: hisyouPresetLayer } = createLayerFromPreset(preset, 'layer1');
+      mockGetEditableLayerAndRecordSetWithCheck.mockReturnValue({
+        isOK: true,
+        message: '',
+        layer: hisyouPresetLayer,
+        recordSet: [],
+      });
+      let recordCount = 0;
+      mockGenerateRecord.mockImplementation(
+        (_featureType: string, layer: LayerType, recordSet: RecordType[], coords: unknown, options?: any) => {
+          const id = `record-${++recordCount}`;
+          return {
+            id,
+            userId: 'user1',
+            displayName: 'tester',
+            visible: true,
+            redraw: false,
+            coords,
+            field: getDefaultField(layer, recordSet, id, options),
+          };
+        }
+      );
+      (isValidLine as jest.Mock).mockImplementation((xy: unknown[]) => xy.length >= 1);
+
+      const { result } = renderDrawTool();
+      startHandwritingLine(result);
+      drawPenStroke(result, [
+        [0, 0],
+        [10, 0],
+      ]);
+      (checkDistanceFromLine as jest.Mock).mockReturnValue({ isNear: true, distance: 1 });
+      //とまり（中身は選ばず閉じる）と探餌（ブラシ）を同じ線に付ける
+      act(() => {
+        result.current.setHandwritingSubTool('TOMARI');
+      });
+      act(() => {
+        result.current.handleGrantHandwriting([5, 0], penStyle);
+      });
+      act(() => {
+        result.current.handleReleaseHandwriting();
+      });
+      act(() => {
+        result.current.selectSymbolDetail(undefined);
+      });
+      act(() => {
+        result.current.setHandwritingSubTool('TANJI');
+      });
+      act(() => {
+        result.current.handleGrantHandwriting([2, 0], penStyle);
+      });
+      act(() => {
+        result.current.handleMoveHandwriting([8, 0], 0);
+      });
+      act(() => {
+        result.current.handleReleaseHandwriting();
+      });
+      //旋回は記号を見れば分かるので属性を持たない。中身も聞かない
+      act(() => {
+        result.current.setHandwritingSubTool('SENKAI');
+      });
+      act(() => {
+        result.current.handleGrantHandwriting([3, 0], penStyle);
+      });
+      act(() => {
+        result.current.handleMoveHandwriting([7, 0], 0);
+      });
+      act(() => {
+        result.current.handleReleaseHandwriting();
+      });
+      expect(result.current.symbolDetailField).toBeUndefined();
+      act(() => {
+        result.current.saveLine();
+      });
+
+      //親は記号ごとに更新され、最後の更新で両方の行動が入っている
+      const parentUpdates = mockUpdateRecord.mock.calls.map((c) => c[1] as RecordType).filter((r) => r.id === 'record-1');
+      expect(parentUpdates.length).toBeGreaterThan(0);
+      const last = parentUpdates[parentUpdates.length - 1];
+      //とまりは中身を選ばなかったので「不明」、探餌は中身が分かれないので「あり」
+      expect(last.field['とまり']).toBe('不明');
+      expect(last.field['探餌']).toBe('あり');
+      //旋回は属性そのものが無い
+      expect(last.field['旋回']).toBeUndefined();
+    });
+
+    it('同じ行動を同じ線に何度も置いても、チェックは重複しない', () => {
+      const preset = LAYER_PRESETS.find((p) => p.presetId === 'preset-layer-hisyou-map')!;
+      const { layer: hisyouPresetLayer } = createLayerFromPreset(preset, 'layer1');
+      mockGetEditableLayerAndRecordSetWithCheck.mockReturnValue({
+        isOK: true,
+        message: '',
+        layer: hisyouPresetLayer,
+        recordSet: [],
+      });
+      let recordCount = 0;
+      mockGenerateRecord.mockImplementation(
+        (_featureType: string, layer: LayerType, recordSet: RecordType[], coords: unknown, options?: any) => {
+          const id = `record-${++recordCount}`;
+          return {
+            id,
+            userId: 'user1',
+            displayName: 'tester',
+            visible: true,
+            redraw: false,
+            coords,
+            field: getDefaultField(layer, recordSet, id, options),
+          };
+        }
+      );
+      (isValidLine as jest.Mock).mockImplementation((xy: unknown[]) => xy.length >= 1);
+
+      const { result } = renderDrawTool();
+      startHandwritingLine(result);
+      drawPenStroke(result, [
+        [0, 0],
+        [10, 0],
+      ]);
+      (checkDistanceFromLine as jest.Mock).mockReturnValue({ isNear: true, distance: 1 });
+      //とまりを2つ、どちらも「監視」で置く
+      [4, 6].forEach((x) => {
+        act(() => {
+          result.current.setHandwritingSubTool('TOMARI');
+        });
+        act(() => {
+          result.current.handleGrantHandwriting([x, 0], penStyle);
+        });
+        act(() => {
+          result.current.handleReleaseHandwriting();
+        });
+        act(() => {
+          result.current.selectSymbolDetail('監視');
+        });
+      });
+      act(() => {
+        result.current.saveLine();
+      });
+
+      const parentUpdates = mockUpdateRecord.mock.calls.map((c) => c[1] as RecordType).filter((r) => r.id === 'record-1');
+      const last = parentUpdates[parentUpdates.length - 1];
+      expect(last.field['とまり']).toBe('監視');
     });
 
     it('ブラシはスナップできないと描けない', () => {

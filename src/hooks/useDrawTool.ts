@@ -62,6 +62,7 @@ import { MapRef } from 'react-map-gl/maplibre';
 import { editSettingsAction } from '../modules/settings';
 import { useRecord } from './useRecord';
 import { isBrushTool, isHandwritingTool, isPlotTool, isPointTool, isStampTool } from '../utils/General';
+import { getHisyouBehavior } from '../constants/HisyouBehavior';
 import { PositionFilter } from '../utils/OneEuroFilter';
 import { Position } from 'geojson';
 import { RootState } from '../store';
@@ -103,6 +104,39 @@ const applyHandwritingStyleField = (
   record.field._strokeStyle = style.strokeStyle;
   record.field._stamp = style.stamp;
   record.field._group = groupId ?? '';
+};
+
+//記号に対応する行動の値（とまり＝監視 など）をレコードへ入れる。
+//行動はフィールドごとに分かれているので、ここで入れるのはそのフィールドの値だけ
+const applyBehaviorField = (record: RecordType, layer: LayerType, line: DrawLineType) => {
+  Object.entries(line.fieldValues ?? {}).forEach(([name, value]) => {
+    if (layer.field.some((f) => f.name === name)) record.field[name] = value;
+  });
+};
+
+//CHECK形式の値（カンマ区切り）へ値を1つ足す。既に入っていれば変更なし（undefined）
+const appendCheckValue = (current: unknown, value: string): string | undefined => {
+  const values = typeof current === 'string' && current !== '' ? current.split(',') : [];
+  if (values.includes(value)) return undefined;
+  return [...values, value].join(',');
+};
+
+//記号の行動を親の飛翔線レコードへ集約する。1本＝1観察の記録なので属性を見るのは親レコード。
+//線に付けた記号のぶんだけ、その行動のフィールドにチェックが増えていく。
+//変更が無ければundefinedを返す（レコード更新を発行しない）
+const mergeBehaviorToParent = (parent: RecordType, layer: LayerType, line: DrawLineType): RecordType | undefined => {
+  const updatedField: RecordType['field'] = { ...parent.field };
+  let changed = false;
+  Object.entries(line.fieldValues ?? {}).forEach(([name, value]) => {
+    if (!layer.field.some((f) => f.name === name)) return;
+    const appended = appendCheckValue(updatedField[name], value);
+    if (appended !== undefined) {
+      updatedField[name] = appended;
+      changed = true;
+    }
+  });
+  if (!changed) return undefined;
+  return { ...parent, field: updatedField };
 };
 
 export type UseDrawToolReturnType = {
@@ -191,6 +225,9 @@ export type UseDrawToolReturnType = {
   handleGrantPlot: (pXY: Position) => void;
   handwritingSubTool: HandwritingSubToolType;
   setHandwritingSubTool: Dispatch<SetStateAction<HandwritingSubToolType>>;
+  //飛翔図で記号を置いた直後に選んでもらう詳細のフィールド名（選ぶものが無ければundefined）
+  symbolDetailField: string | undefined;
+  selectSymbolDetail: (value: string | undefined) => void;
   handleGrantHandwriting: (pXY: Position, penStyle: HandwritingPenStyleType) => void;
   convertSelectionToHandwriting: (penStyle: HandwritingPenStyleType) => void;
   switchSelectionToSplit: () => boolean;
@@ -259,6 +296,10 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
   const [isInfoToolActive, setInfoToolActive] = useState(false);
   //手書きペン（HANDWRITING_LINE/HANDWRITING_POLYGON）のセッション状態
   const [handwritingSubTool, setHandwritingSubTool] = useState<HandwritingSubToolType>('PEN');
+  //飛翔図で記号を置いた直後に詳細を選んでもらう対象（どのストロークのどのフィールドか）
+  const [pendingSymbolDetail, setPendingSymbolDetail] = useState<{ lineId: string; fieldName: string } | undefined>(
+    undefined
+  );
   const handwritingPenStyle = useRef<HandwritingPenStyleType>({
     strokeColor: 'rgba(0,0,0,0.7)',
     strokeWidth: 2,
@@ -964,6 +1005,8 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     ];
     //セッション内ストロークid→保存レコードid（子の_group解決用）
     const sessionIdMap = new Map<string, string>();
+    //保存済みの親へ行動を集約したときの控え（同じ親に複数の記号を付けても集約が消えないように）
+    const updatedParents = new Map<string, RecordType>();
 
     for (const line of orderedLines) {
       if (line.record !== undefined && line.layerId !== undefined) {
@@ -1020,7 +1063,22 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
         const withIndividualStyle = isIndividualStrokeLayer(layer);
         const style = line.style ?? (withIndividualStyle ? defaultStyle : undefined);
         if (style !== undefined) applyHandwritingStyleField(record, style, groupId, withIndividualStyle);
+        applyBehaviorField(record, layer, line);
         addRecord(layer, record);
+        //線に付けた記号なら、親の飛翔線レコードにも行動・詳細を集約する（属性を見るのは親のため）
+        if (groupId !== undefined) {
+          const parentIndex = savedRecordSet.findIndex((r) => r.id === groupId);
+          const parent =
+            parentIndex !== -1
+              ? savedRecordSet[parentIndex]
+              : updatedParents.get(groupId) ?? recordSet.find((r) => r.id === groupId);
+          const updatedParent = parent === undefined ? undefined : mergeBehaviorToParent(parent, layer, line);
+          if (updatedParent !== undefined) {
+            updateRecord(layer, updatedParent);
+            if (parentIndex !== -1) savedRecordSet[parentIndex] = updatedParent;
+            else updatedParents.set(groupId, updatedParent);
+          }
+        }
         sessionIdMap.set(line.id, record.id);
         savedRecordSet.push(record);
       }
@@ -2222,8 +2280,36 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
       }
       //スタンプは1点で座標・スタイルともGrant/Moveで確定済み
       if (drawLine.current.length > 0) isEditingDraw.current = true;
+      //飛翔図は行動ごとに属性のフィールドが分かれているので、置いた記号の行動へ印を付ける。
+      //中身が分かれる行動（どのとまりか等）は記号だけでは決まらないので、続けて選んでもらう
+      const behavior = getHisyouBehavior(subTool);
+      if (behavior !== undefined) {
+        const { layer } = getEditableLayerAndRecordSetWithCheck(featureButton === 'POLYGON' ? 'POLYGON' : 'LINE');
+        const field = layer?.field.find((f) => f.name === behavior.fieldName && f.list !== undefined);
+        if (field !== undefined) {
+          //選ばずに閉じても記号を置いたことは残るよう、先に既定値（不明・あり）を入れておく
+          line.fieldValues = { ...(line.fieldValues ?? {}), [field.name]: behavior.defaultValue };
+          if (behavior.hasDetail) setPendingSymbolDetail({ lineId: line.id, fieldName: field.name });
+        }
+      }
     },
-    [featureButton, handwritingSubTool, mapRegion, mapSize, mapViewRef]
+    [featureButton, getEditableLayerAndRecordSetWithCheck, handwritingSubTool, mapRegion, mapSize, mapViewRef]
+  );
+
+  /**
+   * 記号を置いた直後に選んだ詳細を、そのストロークに紐づける（保存時にレコードへ入る）。
+   * 選ばずに閉じたときはundefinedで呼ぶ（詳細なしのまま保存される）
+   */
+  const selectSymbolDetail = useCallback(
+    (value: string | undefined) => {
+      const pending = pendingSymbolDetail;
+      setPendingSymbolDetail(undefined);
+      if (pending === undefined || value === undefined || value === '') return;
+      const line = drawLine.current.find((l) => l.id === pending.lineId);
+      if (line === undefined) return;
+      line.fieldValues = { ...(line.fieldValues ?? {}), [pending.fieldName]: value };
+    },
+    [pendingSymbolDetail]
   );
 
   const handleReleaseHandwriting = useCallback(() => {
@@ -2437,6 +2523,8 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     featuresTransformAngle,
     handwritingSubTool,
     setHandwritingSubTool,
+    symbolDetailField: pendingSymbolDetail?.fieldName,
+    selectSymbolDetail,
     handleGrantHandwriting,
     convertSelectionToHandwriting,
     switchSelectionToSplit,

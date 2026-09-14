@@ -561,6 +561,8 @@ export type DrawLineType = {
   latlon: Position[];
   properties: string[];
   style?: DrawLineStyleType;
+  //このストロークにだけ入れる属性（飛翔図で記号を置いた直後に選ぶ詳細）。保存時にレコードへ入る
+  fieldValues?: { [fieldName: string]: string };
 };
 
 //手書きペン（HANDWRITING_LINE/HANDWRITING_POLYGON）のストローク個別スタイル。

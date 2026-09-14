@@ -19,8 +19,8 @@ const hisyouBrushOptions: ToolPaletteItemType[] = [
   { id: 'SENKAI', label: '旋回', icon: BRUSH.SENKAI, subTool: 'SENKAI' },
   { id: 'SENJYOU', label: '旋上', icon: BRUSH.SENJYOU, subTool: 'SENJYOU' },
   { id: 'KYUKOKA', label: '急降下', icon: BRUSH.KYUKOKA, subTool: 'KYUKOKA' },
-  { id: 'DISPLAY1', label: '誇示1', icon: BRUSH.DISPLAY1, subTool: 'DISPLAY1' },
-  { id: 'DISPLAY2', label: '誇示2', icon: BRUSH.DISPLAY2, subTool: 'DISPLAY2' },
+  { id: 'DISPLAY1', label: '誇示単発', icon: BRUSH.DISPLAY1, subTool: 'DISPLAY1' },
+  { id: 'DISPLAY2', label: '誇示連続', icon: BRUSH.DISPLAY2, subTool: 'DISPLAY2' },
   { id: 'KOUGEKI', label: '排斥', icon: BRUSH.KOUGEKI, subTool: 'KOUGEKI' },
   { id: 'TANJI', label: '探餌', icon: BRUSH.TANJI, subTool: 'TANJI' },
   { id: 'ESA', label: '餌運搬', icon: BRUSH.ESA, subTool: 'ESA' },
@@ -37,12 +37,13 @@ const hisyouStampOptions: ToolPaletteItemType[] = [
 ];
 
 //飛翔図で事前に選ぶ属性。1本＝1個体の連続追跡なので、描く前に決めて線とその行動記号へ入れる。
-//色は種名で決める（色分けのフィールド）。名前と選択肢は猛禽類野帳2に合わせている。
+//色は種名で決める（色分けのフィールド）。名前と選択肢は猛禽類野帳に合わせている。
 //aliasesは改名前の名前。旧名で作ったレイヤでもボタンが出るようにする
 export const HISYOU_FIELDS: { name: string; values: string[]; aliases?: string[] }[] = [
   { name: '種名', values: [] },
-  { name: '性別', values: ['不明', '雄', '雌'], aliases: ['雌雄'] },
-  { name: '齢', values: ['不明', '成鳥', '若鳥', '幼鳥'], aliases: ['成幼'] },
+  //並びは選ぶ頻度の高い順。「不明」は選び間違えないよう最後に置く
+  { name: '性別', values: ['雄', '雌', '不明'], aliases: ['雌雄'] },
+  { name: '齢', values: ['成鳥', '若鳥', '幼鳥', '不明'], aliases: ['成幼'] },
 ];
 
 //飛翔図の属性フィールドを名前で引く。フィールド名はユーザーが変えられるので、旧名も見る
