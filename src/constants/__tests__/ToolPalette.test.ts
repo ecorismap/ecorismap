@@ -56,7 +56,7 @@ describe('getToolPalette', () => {
     expect(options[0].colorHex).toBe('rgba(1,1,1,1)');
   });
 
-  it('飛翔図は飛翔・属性・行動範囲・行動位置のボタンを返す', () => {
+  it('飛翔図は種名・飛翔・行動位置・行動範囲の順にボタンを返す', () => {
     const layer = {
       ...baseLayer,
       type: 'LINE' as const,
@@ -79,6 +79,14 @@ describe('getToolPalette', () => {
     };
     const items = getToolPalette(layer, 'LINE', true);
 
+    //記録の手順どおりの並び（種名を選ぶ→飛翔線を描く→行動を足す）
+    expect(items?.map((i) => i.id)).toEqual([
+      'HISYOU_FIELDS',
+      'HISYOU_PEN',
+      'HISYOU_STAMP',
+      'HISYOU_BRUSH',
+      'HISYOU_ERASER',
+    ]);
     //属性は1つのボタンにまとめ、モーダルのタブで切り替える（齢はフィールドが無いので出ない）
     const fieldButton = items?.find((i) => i.id === 'HISYOU_FIELDS');
     expect(fieldButton?.options?.map((o) => o.fieldName)).toEqual(['種名', '性別']);

@@ -69,7 +69,9 @@ const getHisyouPalette = (layer: LayerType): ToolPaletteItemType[] => {
   const fieldItems =
     fieldOptions.length === 0 ? [] : [{ id: 'HISYOU_FIELDS', label: '種名選択', icon: 'bird', options: fieldOptions }];
 
+  //並びは記録の手順どおり。まず種名などを選び、飛翔線を描き、その線に行動を足していく
   return [
+    ...fieldItems,
     {
       id: 'HISYOU_PEN',
       label: '飛翔',
@@ -78,9 +80,6 @@ const getHisyouPalette = (layer: LayerType): ToolPaletteItemType[] => {
       penWidth: 'PEN_MEDIUM',
       arrowStyle: 'ARROW_END',
     },
-    ...fieldItems,
-    //行動範囲は線に沿ってなぞるので、編集中の線が要る
-    { id: 'HISYOU_BRUSH', label: '行動範囲', icon: 'ray-start-end', options: hisyouBrushOptions },
     //とまりや声のみは飛翔を追えていなくても記録したいことがあるので、線が無くても置ける。
     //編集中の線があれば従来どおりその線に紐づき、無ければ事前選択の属性を持つ単独のレコードになる
     {
@@ -90,6 +89,8 @@ const getHisyouPalette = (layer: LayerType): ToolPaletteItemType[] => {
       options: hisyouStampOptions,
       allowWithoutObject: true,
     },
+    //行動範囲は線に沿ってなぞるので、編集中の線が要る
+    { id: 'HISYOU_BRUSH', label: '行動範囲', icon: 'ray-start-end', options: hisyouBrushOptions },
     //行動記号だけを消す。飛翔線そのものは消さない（線を消すときは編集選択から削除する）
     { id: 'HISYOU_ERASER', label: '行動削除', icon: 'circle-off-outline', subTool: 'ERASER' },
   ];
