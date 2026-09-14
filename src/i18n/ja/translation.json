@@ -888,6 +888,7 @@
       "FailRegistEncryptPassword": "暗号化キーの登録に失敗しました。",
       "migrateEncryptKey": "暗号化キーの保護方式を更新しました。",
       "migrateEncryptKeyRequired": "利用を続けるには、暗号化キーの更新が必要です。",
+      "restoreEncryptKeyRequired": "ログインするためには、暗号化キーの復元が必要です。",
       "restoreEncryptKeySuccess": "暗号化キーを復元しました。",
       "restoreEncryptKeySuccessOpenProject": "暗号化キーを復元しました。プロジェクトを開き直してください。"
     },

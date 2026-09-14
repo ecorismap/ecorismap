@@ -117,15 +117,22 @@ export default function AccountContainers({ navigation, route }: Props_Account) 
   }, [navigation, route.params?.previous]);
 
   const pressClose = useCallback(async () => {
+    //ログイン直後の暗号化キー復元も中断=ログアウト。キー無しのままだとログインできたように
+    //見えて（アカウントアイコンが変わる）実際は何も復号できない。
+    //復帰セッション（Projectsから誘導）は既にログイン済みが正しい状態なので対象外
+    const isLoginFlowRestore = accountFormState === 'restoreEncryptKey' && route.params?.previous !== 'Projects';
     if (
       accountFormState === 'registEncryptPassword' ||
       accountFormState === 'backupEncryptPassword' ||
-      accountFormState === 'migrateEncryptPassword'
+      accountFormState === 'migrateEncryptPassword' ||
+      isLoginFlowRestore
     ) {
-      // 暗号化キーの登録・更新はスキップ不可（中断=ログアウト）
+      // 暗号化キーの登録・更新・復元はスキップ不可（中断=ログアウト）
       await AlertAsync(
         accountFormState === 'migrateEncryptPassword'
           ? t('Account.alert.migrateEncryptKeyRequired')
+          : isLoginFlowRestore
+          ? t('Account.alert.restoreEncryptKeyRequired')
           : t('Account.alert.registEncryptKey')
       );
       await logout();
@@ -139,7 +146,15 @@ export default function AccountContainers({ navigation, route }: Props_Account) 
       return;
     }
     navigateToPrevious();
-  }, [accountFormState, logout, navigateToPrevious, navigation, setAccountFormState, setAccountMessage]);
+  }, [
+    accountFormState,
+    logout,
+    navigateToPrevious,
+    navigation,
+    route.params?.previous,
+    setAccountFormState,
+    setAccountMessage,
+  ]);
 
   const pressUpdateUserProfile = useCallback(
     async (displayName: string, photoURL: string) => {
