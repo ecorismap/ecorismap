@@ -115,6 +115,9 @@ export interface DrawingToolsContextType {
   //手書きペンのサブツール（ペン/スタンプ/ブラシ）と設定モーダルの起動
   handwritingSubTool: HandwritingSubToolType;
   setHandwritingSubTool: React.Dispatch<React.SetStateAction<HandwritingSubToolType>>;
+  //飛翔図で記号を置いた直後に選ぶ詳細（とまり詳細など）のフィールド名。選ぶものが無ければundefined
+  symbolDetailField: string | undefined;
+  selectSymbolDetail: (value: string | undefined) => void;
   openHandwritingSettingsTab: (tab: MapMemoToolGroupType) => void;
 
   // Backward compatibility (to be deprecated gradually)

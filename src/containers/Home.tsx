@@ -383,6 +383,8 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     handleReleasePlotLinePolygon,
     handwritingSubTool,
     setHandwritingSubTool,
+    symbolDetailField,
+    selectSymbolDetail,
     handleGrantHandwriting,
     convertSelectionToHandwriting,
     switchSelectionToSplit,
@@ -3154,6 +3156,8 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       //手書きペンのサブツールと設定モーダル
       handwritingSubTool,
       setHandwritingSubTool,
+      symbolDetailField,
+      selectSymbolDetail,
       openHandwritingSettingsTab,
 
       // Backward compatibility (to be deprecated gradually)
@@ -3212,6 +3216,8 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       switchSelectionToSplit,
       handwritingSubTool,
       setHandwritingSubTool,
+      symbolDetailField,
+      selectSymbolDetail,
       openHandwritingSettingsTab,
     ]
   );

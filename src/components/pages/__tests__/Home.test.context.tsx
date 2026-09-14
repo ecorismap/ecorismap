@@ -103,6 +103,8 @@ export const mockDrawingToolsContextValue: DrawingToolsContextType = {
   editingLayerName: undefined,
   editingLayer: undefined,
   selectFieldValues: jest.fn(),
+  symbolDetailField: undefined,
+  selectSymbolDetail: jest.fn(),
   addFieldValue: jest.fn(),
   updateFieldValue: jest.fn(),
   deleteFieldValue: jest.fn(),

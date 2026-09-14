@@ -450,6 +450,7 @@
       "FailRegistEncryptPassword": "Failed to register the encryption key.",
       "migrateEncryptKey": "The encryption key protection has been updated.",
       "migrateEncryptKeyRequired": "You need to update the encryption key to continue.",
+      "restoreEncryptKeyRequired": "To log in, you need to restore your encryption key.",
       "restoreEncryptKeySuccess": "The encryption key has been restored.",
       "restoreEncryptKeySuccessOpenProject": "The encryption key has been restored. Please open the project again."
     },

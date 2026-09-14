@@ -233,8 +233,8 @@ export const HomeModalMapMemoSettings = React.memo((props: Props) => {
             {optionButton('KYUKOKA', BRUSH.KYUKOKA, brushSel === 'KYUKOKA', () => setBrushSel('KYUKOKA'), '急降下')}
           </View>
           <View style={styles.optionRow}>
-            {optionButton('DISPLAY1', BRUSH.DISPLAY1, brushSel === 'DISPLAY1', () => setBrushSel('DISPLAY1'), '誇示1')}
-            {optionButton('DISPLAY2', BRUSH.DISPLAY2, brushSel === 'DISPLAY2', () => setBrushSel('DISPLAY2'), '誇示2')}
+            {optionButton('DISPLAY1', BRUSH.DISPLAY1, brushSel === 'DISPLAY1', () => setBrushSel('DISPLAY1'), '誇示単発')}
+            {optionButton('DISPLAY2', BRUSH.DISPLAY2, brushSel === 'DISPLAY2', () => setBrushSel('DISPLAY2'), '誇示連続')}
             {optionButton('KOUGEKI', BRUSH.KOUGEKI, brushSel === 'KOUGEKI', () => setBrushSel('KOUGEKI'), '排斥')}
           </View>
           <View style={styles.optionRow}>

@@ -386,11 +386,17 @@ export const useEcorisMapFile = (): UseEcorisMapFileReturnType => {
     dispatch(setLayersAction(layersInitialState));
     dispatch(setDataSetAction(dataSetInitialState));
     dispatch(setTileMapsAction(tileMapsInitialState));
-    dispatch(setSettingsAction({ 
-      ...settingsInitialState, 
-      tutrials: settings.tutrials,
-      agreedTermsVersion: settings.agreedTermsVersion 
-    }));
+    dispatch(
+      setSettingsAction({
+        ...settingsInitialState,
+        tutrials: settings.tutrials,
+        agreedTermsVersion: settings.agreedTermsVersion,
+        //地図の表示位置は戻さない。ファイルを開くときと違いクリアでは地図を動かさないので、
+        //状態だけ初期位置にすると表示とずれ、描いたものが初期位置（緯度35/経度135）に保存される
+        //（ネイティブは画面座標→緯度経度の変換にmapRegionを使うため）
+        mapRegion: settings.mapRegion,
+      })
+    );
     // 動的辞書をクリア
     clearAllDynamicDictionaries();
     clearAllVisibilitySnapshots();
@@ -401,7 +407,7 @@ export const useEcorisMapFile = (): UseEcorisMapFileReturnType => {
     // }
 
     return { isOK: true, message: '' };
-  }, [dispatch, settings?.tutrials, settings?.agreedTermsVersion]);
+  }, [dispatch, settings?.tutrials, settings?.agreedTermsVersion, settings?.mapRegion]);
 
   return {
     isLoading,
