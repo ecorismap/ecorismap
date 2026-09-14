@@ -89,6 +89,14 @@ describe('getToolPalette', () => {
     expect(items?.some((i) => i.eraser !== undefined)).toBe(false);
   });
 
+  it('行動位置は編集中の線が無くても使える（行動範囲・行動削除は線が要る）', () => {
+    const layer = { ...baseLayer, type: 'LINE' as const, toolPalette: 'HISYOU' as const };
+    const items = getToolPalette(layer, 'LINE', true);
+    expect(items?.find((i) => i.id === 'HISYOU_STAMP')?.allowWithoutObject).toBe(true);
+    expect(items?.find((i) => i.id === 'HISYOU_BRUSH')?.allowWithoutObject).toBeUndefined();
+    expect(items?.find((i) => i.id === 'HISYOU_ERASER')?.allowWithoutObject).toBeUndefined();
+  });
+
   it('改名前の「雌雄」「成幼」で作ったレイヤでもボタンが出る', () => {
     const layer = {
       ...baseLayer,

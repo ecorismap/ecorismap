@@ -2028,6 +2028,21 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
         } else {
           handwritingSnapTarget.current = undefined;
         }
+        //飛翔線に紐づかない行動位置は、1つで1件の観察記録になる（属性も事前選択の値がそのまま入る）。
+        //まとめて置くと1件に見えないので増やさず、確定するまではポイントの編集と同じくタップした位置へ動かす
+        const standaloneIndex =
+          groupId === undefined
+            ? drawLine.current.findIndex((line) => (line.style?.stamp ?? '') !== '' && line.style?.groupId === undefined)
+            : -1;
+        if (standaloneIndex !== -1) {
+          pushUndo({ index: standaloneIndex, latlon: drawLine.current[standaloneIndex].latlon, action: 'EDIT' });
+          drawLine.current[standaloneIndex].xy = [point];
+          drawLine.current[standaloneIndex].latlon = [xyToLatLon(point, mapRegion, mapSize, mapViewRef)];
+          isEditingObject.current = true;
+          activeHandwritingStroke.current = true;
+          setRedraw(ulid());
+          return;
+        }
         drawLine.current.push({
           id: ulid(),
           layerId: undefined,

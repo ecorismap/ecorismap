@@ -600,6 +600,8 @@ export type ToolPaletteItemType = {
   colorHex?: string;
   //道具をまとめたボタン（行動範囲＝ブラシ、行動位置＝スタンプ）。押すと中から選ぶ
   options?: ToolPaletteItemType[];
+  //編集中の線が無くても使える道具。単独のレコードとして保存され、属性は事前選択の値が入る
+  allowWithoutObject?: boolean;
   penWidth?: PenWidthType;
   arrowStyle?: ArrowStyleType;
   //区分ごとに色を変える用途（植生図など）。指定するとアイコンをこの色で表示する

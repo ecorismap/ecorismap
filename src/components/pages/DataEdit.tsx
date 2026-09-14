@@ -21,7 +21,7 @@ import { t } from '../../i18n/config';
 import { DataEditContext } from '../../contexts/DataEdit';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../store';
-import { ScrollView } from 'react-native-gesture-handler';
+import { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { Button } from '../atoms';
 import { COLOR, DATAEDIT_BTN } from '../../constants/AppConstants';
 import { DataEditDictionary } from '../organisms/DataEditDictionary';
@@ -92,10 +92,11 @@ export default function DataEditScreen() {
         rightComponent={rightComponent}
       />
       <View style={styles.contentContainer}>
-        {/* flex:1で高さを親に合わせる。付けないとScrollView自体が中身の高さになり、
-            はみ出した分はシートに切られたまま「引っ張っても戻る」だけでスクロールできない。
+        {/* ボトムシート内のスクロールはBottomSheetScrollViewを使う。素のScrollViewだと
+            シートのドラッグにジェスチャーを奪われ、「引っ張ると見えるが離すと戻る」になる。
+            flex:1が無いと中身の高さのままレイアウトされてスクロール範囲が出ない。
             キーボード表示中でも辞書候補などのタップが1回で反応するようhandledを指定 */}
-        <ScrollView
+        <BottomSheetScrollView
           style={styles.scroll}
           contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
@@ -343,7 +344,7 @@ export default function DataEditScreen() {
               />
             </>
           )}
-        </ScrollView>
+        </BottomSheetScrollView>
       </View>
       <DataEditButtons />
     </KeyboardAvoidingView>

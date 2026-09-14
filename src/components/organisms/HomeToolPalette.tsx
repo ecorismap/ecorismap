@@ -114,9 +114,12 @@ export const HomeToolPalette = React.memo(({ items, featureType }: Props) => {
   };
 
   //行動範囲・行動位置は飛翔線に付ける記号なので、線を描いている（編集している）間だけ使える
+  //まとめた道具（行動範囲・行動位置）と行動削除は、編集中の線にしか使えないので普段は無効。
+  //allowWithoutObjectが付いたものは線が無くても使える（単独のレコードになる）
   const isOptionGroupDisabled = (item: ToolPaletteItemType) =>
     (item.options !== undefined || item.subTool === 'ERASER') &&
     fieldNamesOf(item) === undefined &&
+    item.allowWithoutObject !== true &&
     !isEditingDraw &&
     !isEditingObject;
 

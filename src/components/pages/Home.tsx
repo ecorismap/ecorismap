@@ -62,7 +62,7 @@ import { HomePopup } from '../organisms/HomePopup';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
-import Animated, { useAnimatedStyle, useSharedValue, interpolate, ReduceMotion } from 'react-native-reanimated';
+import { useAnimatedStyle, useSharedValue, interpolate, ReduceMotion } from 'react-native-reanimated';
 import { PDFArea } from '../organisms/HomePDFArea';
 import { HomePDFButtons } from '../organisms/HomePDFButtons';
 import { HomeModalColorPicker } from '../organisms/HomeModalColorPicker';
@@ -374,22 +374,19 @@ export default function HomeScreen() {
   const snapPoints = useMemo(() => ['10%', '50%', '100%'], []);
   const animatedIndex = useSharedValue(0);
 
-  //シートの中身に与えられる最大の高さ。Reanimatedのスタイルが当たる前の既定値にも使う
+  //シートの中身に与えられる最大の高さ
   const fullSheetHeight = windowHeight - 20 - insets.top - insets.bottom;
 
-  const animatedStyle = useAnimatedStyle(() => {
-    return {
-      height: interpolate(
-        animatedIndex.value,
-        [0, 1, 2],
-        [
-          (windowHeight - 20 - insets.top - insets.bottom) / 10,
-          (windowHeight - 20 - insets.top - insets.bottom) / 2,
-          windowHeight - 20 - insets.top - insets.bottom,
-        ]
-      ),
-    };
-  });
+  //シート位置ごとの中身の高さ。Reanimated 4ではuseAnimatedStyleのheightが子のレイアウト制約に
+  //ならず（親は縮んでも子はflex:1が効かず中身の高さのまま）、シート内のScrollViewが
+  //frame=contentになってスクロールできなくなる。そのためUIスレッドのアニメーションではなく、
+  //onChange（スナップ確定）でReactの通常スタイルとして高さを与える。
+  //アニメーションはduration:0（瞬間スナップ）なので、追従の遅れは見えない
+  const snapContentHeights = useMemo(
+    () => [fullSheetHeight / 10, fullSheetHeight / 2, fullSheetHeight],
+    [fullSheetHeight]
+  );
+  const [sheetContentHeight, setSheetContentHeight] = useState(fullSheetHeight);
 
   const customHandlePadding = useAnimatedStyle(() => {
     return {
@@ -811,12 +808,22 @@ export default function HomeScreen() {
         //選んでも中身が一度アンマウントされて編集内容が失われる。編集中は禁止し、
         //閉じる操作は確認が先に出る×ボタンに任せる
         enablePanDownToClose={!isEditingRecord && !isEditingLayer && !isEditingMap}
+        //中身のドラッグでシートを動かさない（高さ変更・閉じるはハンドルで行う）。
+        //ライブラリは「シートが最上段に一致したときだけ中身のスクロールを解除」する作りだが、
+        //その判定が位置の完全一致（useScrollableのSHEET_STATE.EXTENDED）で、duration:0の
+        //瞬間スナップや指のドラッグ後にはズレて解除されず、スクロール不能のまま固着する。
+        //falseにするとBottomSheetScrollViewは常時アンロックになり、この問題を迂回できる
+        enableContentPanningGesture={false}
         animateOnMount={false}
         animatedIndex={animatedIndex}
         onClose={() => onCloseBottomSheet(currentRouteName)}
         onChange={(index) => {
           onSheetIndexChange(index);
           setIsBottomSheetOpen(index >= 0);
+          //中身の高さをスナップ位置に合わせる（閉じたときは直前の高さのまま。見えないので問題ない）
+          if (index >= 0 && snapContentHeights[index] !== undefined) {
+            setSheetContentHeight(snapContentHeights[index]);
+          }
         }}
         handleComponent={customHandle}
         enableDynamicSizing={false}
@@ -831,13 +838,11 @@ export default function HomeScreen() {
         ]}
       >
         <BottomSheetView style={{ flex: 1 }}>
-          {/* Reanimatedのスタイルは後からUIスレッドで当たるため、内容の切り替えでこのViewが
-              作り直された瞬間は高さが未指定になり、中身の自然な高さ（長い一覧なら数千px）で
-              レイアウトが確定してしまう。そうなるとシートの位置計算が壊れて画面から消える。
-              静的な高さを先に与えておき、アニメーションはその上から上書きさせる */}
-          <Animated.View style={[{ height: fullSheetHeight, overflow: 'hidden' }, animatedStyle]}>
+          {/* 高さは必ず数値で与える（未指定だと中身の自然な高さ＝数千pxでレイアウトが確定し、
+              シートの位置計算が壊れる）。値はonChangeでスナップ位置に追従する */}
+          <View style={{ height: sheetContentHeight, overflow: 'hidden' }}>
             <BottomSheetContent />
-          </Animated.View>
+          </View>
         </BottomSheetView>
       </BottomSheet>
     </GestureHandlerRootView>

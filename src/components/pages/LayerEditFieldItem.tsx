@@ -6,6 +6,7 @@ import { Pressable } from '../atoms/Pressable';
 import { t } from '../../i18n/config';
 import { LayerEditFieldItemContext } from '../../contexts/LayerEditFieldItem';
 import { FlatList, ScrollView } from 'react-native-gesture-handler';
+import { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { CheckBox } from '../molecules/CheckBox';
 import { Loading } from '../molecules/Loading';
 import { DataEditTimeRange } from '../organisms/DataEditTimeRange';
@@ -211,8 +212,10 @@ export default function LayerEditFieldItemScreen() {
                   <View style={[styles.td3, styles.buttonCell]} />
                   <View style={[styles.td3, styles.buttonCell]} />
                 </View>
-                {/* flex:1が無いと中身の高さのままレイアウトされ、選択肢が多いときにスクロールできなくなる */}
-                <ScrollView style={styles.vScroll}>
+                {/* 縦スクロールはBottomSheetScrollView。素のScrollViewだとシートのドラッグに
+                    ジェスチャーを奪われ、一度奪われるとスクロールできなくなる。
+                    flex:1が無いと中身の高さのままレイアウトされ、スクロール範囲も出ない */}
+                <BottomSheetScrollView style={styles.vScroll}>
                   {itemValues?.map((item, index: number) =>
                     itemFormat === 'TIMERANGE' ? (
                       <DataEditTimeRange
@@ -267,7 +270,7 @@ export default function LayerEditFieldItemScreen() {
                       </View>
                     )
                   )}
-                </ScrollView>
+                </BottomSheetScrollView>
               </View>
             </ScrollView>
             {/* 追加ボタンは横スクロールの外に置き、列を動かしても位置が変わらないようにする */}
