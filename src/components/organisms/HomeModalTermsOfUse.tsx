@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { View, Modal, Text, StyleSheet, Linking, Platform } from 'react-native';
 import { Pressable } from '../atoms/Pressable';
-import { COLOR, CURRENT_TERMS_VERSION } from '../../constants/AppConstants';
+import { COLOR, CURRENT_TERMS_VERSION, VERSION } from '../../constants/AppConstants';
 import { t } from '../../i18n/config';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '../../store';
@@ -20,8 +20,14 @@ export const HomeModalTermsOfUse = React.memo(() => {
   const shown = useModalYieldingToDialog(isTermsOfUseOpen);
 
   const termsOfUseOK = useCallback(() => {
-    dispatch(editSettingsAction({ agreedTermsVersion: CURRENT_TERMS_VERSION }));
-  }, [dispatch]);
+    if (agreedTermsVersion === '') {
+      //初回起動の同意時は現在のバージョンを既読として記録する（更新情報モーダルは次の更新から表示）。
+      //規約改訂の再同意ではlastSeenVersionを触らない（直後に出るべき更新情報を消さないため）
+      dispatch(editSettingsAction({ agreedTermsVersion: CURRENT_TERMS_VERSION, lastSeenVersion: VERSION }));
+    } else {
+      dispatch(editSettingsAction({ agreedTermsVersion: CURRENT_TERMS_VERSION }));
+    }
+  }, [agreedTermsVersion, dispatch]);
 
   const termsOfUseCancel = useCallback(() => {
     setShowCancelNotice(true);
