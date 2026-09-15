@@ -1,4 +1,4 @@
-import React, { useContext, useState } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { COLOR } from '../../constants/AppConstants';
@@ -45,6 +45,8 @@ export const HomeToolPalette = React.memo(({ items, featureType }: Props) => {
     addFieldValue,
     updateFieldValue,
     deleteFieldValue,
+    pendingPaletteDrawTool,
+    setPendingPaletteDrawTool,
   } = useContext(DrawingToolsContext);
   const {
     currentPenWidth,
@@ -94,6 +96,18 @@ export const HomeToolPalette = React.memo(({ items, featureType }: Props) => {
   const paletteFieldNames = items.flatMap((item) => fieldNamesOf(item) ?? []);
   const colorFieldName = paletteFieldNames.find((name) => isColorField(name));
   const needsAttributes = colorFieldName !== undefined && (fieldValueOf(colorFieldName) ?? '') === '';
+
+  //区分未選択のままツール（追加・手書き）を押したとき、先に選択モーダルを開く。
+  //選び終えたら保留中のツールを有効にする（selectDrawTool側で保留をセットする）
+  useEffect(() => {
+    if (pendingPaletteDrawTool === undefined) return;
+    if (paletteFieldNames.length === 0) {
+      setPendingPaletteDrawTool(undefined);
+      return;
+    }
+    setPickerFields((prev) => prev ?? paletteFieldNames);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingPaletteDrawTool]);
 
   const isItemActive = (item: ToolPaletteItemType) => {
     //属性ボタンは道具ではないので有効・無効の色分けはしない
@@ -200,11 +214,12 @@ export const HomeToolPalette = React.memo(({ items, featureType }: Props) => {
     const selected = options.find((option) => option.fieldValue === value);
     return {
       //アイコンはパレット定義のものを使い、色分けに使う属性は選んだ値の色で塗る。
-      //半透明の区分色がボタンの青と紛れないよう、白い台座に載せて凡例と同じ見え方にする
+      //半透明の区分色がボタンの青と紛れないよう、白い台座に載せて凡例と同じ見え方にする。
+      //未選択（白アイコン）のまま台座に載せると白に白で見えなくなるので、色があるときだけ
       icon: item.icon,
       color: selected?.colorHex ?? COLOR.WHITE,
       label: selected?.label ?? item.label,
-      iconBackgroundColor: COLOR.WHITE,
+      iconBackgroundColor: selected?.colorHex === undefined ? undefined : COLOR.WHITE,
     };
   };
 
@@ -274,12 +289,19 @@ export const HomeToolPalette = React.memo(({ items, featureType }: Props) => {
           const next = pendingItem;
           setPendingItem(undefined);
           if (next !== undefined) pressItem(next, true);
+          //ツールボタン（追加・手書き）から来た場合も、選び終えたところでそのツールを有効にする
+          const nextTool = pendingPaletteDrawTool;
+          if (nextTool !== undefined) {
+            setPendingPaletteDrawTool(undefined);
+            selectDrawTool(nextTool);
+          }
         }}
         add={addFieldValue}
         update={updateFieldValue}
         remove={deleteFieldValue}
         close={() => {
           setPendingItem(undefined);
+          setPendingPaletteDrawTool(undefined);
           setPickerFields(undefined);
         }}
       />
