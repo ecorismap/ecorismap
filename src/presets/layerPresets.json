@@ -14507,7 +14507,7 @@
         "colorType": "CATEGORIZED",
         "transparency": false,
         "color": "rgba(102,187,106,0.5)",
-        "fieldName": "区分",
+        "fieldName": "植生区分",
         "customFieldValue": "",
         "colorRamp": "RANDOM",
         "colorList": [
@@ -14575,11 +14575,7 @@
       "active": false,
       "field": [
         {
-          "name": "No",
-          "format": "SERIAL"
-        },
-        {
-          "name": "区分",
+          "name": "植生区分",
           "format": "LIST",
           "codeFieldName": "区分コード",
           "list": [
@@ -14654,6 +14650,10 @@
               "customFieldValue": "14"
             }
           ]
+        },
+        {
+          "name": "No",
+          "format": "SERIAL"
         },
         {
           "name": "区分コード",

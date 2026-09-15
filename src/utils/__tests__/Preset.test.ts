@@ -252,11 +252,11 @@ describe('createLayerFromPreset コードの入れ先', () => {
 });
 
 describe('植生図プリセット', () => {
-  it('区分を選ぶと区分コードが入るよう結ばれている', () => {
+  it('植生区分を選ぶと区分コードが入るよう結ばれている', () => {
     const preset = LAYER_PRESETS.find((p) => p.presetId === 'preset-layer-vegetation-map');
     expect(preset).toBeDefined();
     const { layer } = createLayerFromPreset(preset!, 'LAYER_ID');
-    const category = layer.field.find((f) => f.name === '区分');
+    const category = layer.field.find((f) => f.name === '植生区分');
     const code = layer.field.find((f) => f.name === '区分コード');
     expect(category?.codeFieldId).toBe(code?.id);
   });
