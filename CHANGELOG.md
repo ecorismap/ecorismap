@@ -1,16 +1,23 @@
 # Change Log
 
-## [0.5.6]　- 2026-08-01
+## [0.6.0]　- Unreleased
 
 - Added personal project management using Google Drive
 - Added unified login with two methods: Google account link and organization account
 - Removed the feature purchase and license restrictions
 - Added member addition by project admins with a new encryption key scheme, including key recovery paths
-- Added automatic backup before data deletion and a restore feature
+- Added migration of existing projects to the new encryption key scheme (bulk migration, and automatic migration when opening a project)
+- Changed the encryption key protection to EcorisMap's own infrastructure: public keys are kept in a Firestore ledger and the key backup is protected by a PIN with server-side rate limiting (Cloud KMS), removing the dependency on the Virgil service. Existing users are migrated automatically at sign-in and keep their current PIN
+- Improved the encryption PIN to require 6 digits when newly set or changed
+- Added automatic guidance to key restore when signing in on a device without a local key, with a consistency check between local keys and the ledger
+- Added a "re-share required" badge in project member settings for members who have reset their encryption key
+- Improved sign-out to delete the local encryption keys
+- Added automatic backup before data deletion and a restore feature, with individual and bulk deletion of backups
 - Changed backup file extension to standard .zip (deprecated the .ecorismap extension)
+- Changed data upload to a generation-based scheme, removing the 5 MB per-user limit, with guidance to delete old tracks when data grows too large
 - Added a one-tap location on/off toggle when adding data from the dictionary in the data list. The toggle is off by default, turns itself off again once a record is saved with a location, and opens that record's edit screen so the remaining fields can be filled in. A warning is shown if the toggle is on but GPS is off. A lock button keeps the toggle on for continuous recording
 - Improved the data list to shade the rows of records that have no location, so records with a location stand out
-- Added a filter to the data list, with an optional target field and a button to show only the filtered records on the map
+- Added a filter to the data list: an entry button, an optional target column, filtering by blank values, candidate selection, a User column for shared projects, and a button to show only the filtered records on the map
 - Added elevation and coordinates (with tap-to-copy) to the long-press and POI popups
 - Added straight-line distance from the current location to the long-pressed point in the map popup when GPS is on
 - Added hillshade with omnidirectional shading (SVF) and red relief map styles, unified across iOS, Android, and Web
@@ -20,8 +27,24 @@
 - Added a global GEBCO seafloor relief preset that reproduces shiwaku's gebco-2025-grid-tile-on-maplibre demo. On web it uses the same MapLibre layer stack as the demo (color-relief, hillshade, maplibre-contour depth contours with numeric labels, and island/undersea feature names from MSIL); on iOS/Android it renders a close raster approximation of the relief and contour lines, with place names and contour labels shown as crisp upright markers
 - Added support for GSJ elev2 elevation sources (512px WebP tiles, e.g. Cabinet Office Nankai Trough bathymetry up to z11) in the relief:// protocol via manual URL entry
 - Added pause and resume for map tile downloads
-- Added project archiving, with sorting by owner and archive status in the project list
-- Added migration of existing projects to the new encryption key scheme (bulk migration, and automatic migration when opening a project)
+- Added a viewshed tool that shows the visible area from a chosen point as a temporary overlay, with elevation data attribution and offline DEM tile download
+- Added a distance measurement tool between two points
+- Added a track summary screen with statistics and an elevation graph, also available live while recording
+- Added automatic photo display along tracks: photos taken during recording appear on the track, overlapping photos are grouped and expand on tap, and a full-screen viewer supports swiping between photos
+- Added a pass-time popup when tapping a track (iOS, Android, and Web)
+- Added more track export formats: GPX with photo waypoints, photo-point CSV/GeoJSON, KMZ for Google Earth including the track, and SVG export of the summary statistics and graph
+- Added track layer sharing: the sharing scope can be changed in layer settings, and per-user coloring switches automatically when sharing is turned on or off
+- Added a freehand pen tool to the LINE and POLYGON tabs, unifying handwriting and plotted drawing, with a style modal and two-way conversion between handwritten and plotted shapes
+- Added lasso selection with bulk move, rotate, and delete for points, lines, polygons, and map memos
+- Added Redo to the drawing tools, with Undo/Redo buttons indicating when they are unavailable
+- Added a partial eraser tool for map memos
+- Added an option to link map memo stroke width to the zoom level
+- Added an editing-layer button at the top of the map screen that shows the current target layer, switches layers, and asks for a layer when none is selected
+- Added purpose-specific tool palettes for the editing layer (vegetation classification palette, flight-record palette)
+- Added flight-record drawing with preselected attributes and behavior symbols: symbols follow line edits, behaviors can be deleted individually, and behavior symbols are linked to the record's attribute fields
+- Added linking of choice values and codes as a layer setting
+- Added a language switch to the settings screen
+- Added project archiving, with sorting by owner and archive status in the project list (the ordering is kept after navigating away)
 - Improved track recording reliability and battery consumption during long recordings
 - Improved GPS on/off responsiveness, follow mode, and notification behavior
 - Improved GPS settings to open inside the bottom sheet
@@ -33,8 +56,21 @@
 - Improved dictionary voice input (updated to Expo 56 / React Native 0.85)
 - Improved hillshade to fall back to coarser zoom levels where elevation tiles are unavailable
 - Improved export file names to include the layer name
-- Improved the encryption PIN to require 6 digits when newly set or changed
-- Improved the compass button: the bearing line now toggles with a long press, and map rotation responds faster
+- Improved drawing precision: coordinates are now the source of truth and only edited vertices are updated, so repeated editing no longer degrades shapes
+- Improved freehand drawing to convert to coordinates continuously, so the map can be panned and zoomed while drawing
+- Improved map memo pen drawing: latitude/longitude based (strokes survive pinch and zoom), stroke stabilization, and smoothing with simplification on save
+- Improved map memo tools into a single button with tab-integrated settings (first tap opens settings, later taps toggle the tool)
+- Improved freehand editing to smooth connection points and polygon closures automatically based on the stroke angle
+- Improved number, letter, and text stamps to draw the record's label
+- Improved the vegetation preset: the classification field is now first with a dedicated palette, and the reselect flow was streamlined
+- Improved confirmation dialogs with a redesigned custom modal style
+- Improved the compass button into a compass-rose design that also rotates in north-up mode, with the bearing line toggled by a long press and faster map rotation
+- Improved map tiles to fall back to cached tiles when the connection is poor
+- Improved the map download limit from a fixed zoom level to an estimated tile count
+- Improved the Web 3D terrain elevation tiles (moved to Mapterhorn)
+- Improved layer settings: "Permission" is renamed to "Sharing scope" with explanations, and fields are reordered with up/down buttons
+- Improved the saving flow to return to the previous screen after saving, with a unified save destination selection
+- Improved import validation (SQLite table names, GeoJSON coordinates)
 - Fixed lines and polygons being hidden under tile maps on Android
 - Fixed the current location showing a stale cached position on iOS
 - Fixed data loss when uploading from multiple devices with the same account
@@ -51,6 +87,33 @@
 - Fixed the current location marker appearing very small on Android
 - Fixed the update date in the project list not refreshing after saving project settings
 - Fixed the bearing line jittering in compass mode and not appearing on iOS
+- Fixed group data failing to decrypt because of an internal identity mix-up
+- Fixed canceling the encryption key restore at sign-in leaving the screen looking signed in
+- Fixed the key restore dialog showing "6 digits" for users with a 4-digit PIN
+- Fixed location sharing not uploading at the intended 60-second interval
+- Fixed users without a registered color appearing transparent in per-user coloring
+- Fixed markers at identical coordinates flickering and per-frame marker redraws causing high CPU and battery drain on iOS
+- Fixed a crash when tapping a track containing Live Photos on iOS, and Live Photo previews in the photo viewer
+- Fixed map memos overwriting the layer's color and label settings
+- Fixed PDF output when relief:// maps are shown and at high zoom levels
+- Fixed PMTiles with encoded URLs not displaying on iOS
+- Fixed the scale bar length when the map is rotated
+- Fixed export on Android saving to Download even when canceled
+- Fixed CSV import leaving values unset when columns are missing
+- Fixed values disappearing when changing a field format to check, list, or radio
+- Fixed a crash when clicking records with unset values
+- Fixed columns added later showing "Invalid Date" or 0
+- Fixed dynamic dictionary input not being confirmed with Enter on Web
+- Fixed dialogs not appearing during or right after modals on iOS
+- Fixed saving while the keyboard is open on iOS and bottom-sheet closing issues
+- Fixed dictionary candidate selection needing a double tap while the keyboard is open
+- Fixed serial numbering breaking when dragging rows while sorted
+- Fixed objects drawn right after clearing data being saved at their initial position
+- Fixed template data not being selectable for editing on the map
+- Fixed two-finger touches adding stray points while drawing
+- Fixed polygons with individual colors rendering black on Web
+- Fixed the GPX export timezone and element order
+- Fixed a GPS permission alert appearing on every tab return on Web
 - Added usage analytics (Firebase Analytics)
 - Other minor bug fixes
 
@@ -58,16 +121,45 @@
 - ログイン機能を単一ビルドに統合し、Google 連携と組織アカウントの 2 系統ログインに対応
 - 機能購入とライセンス制限を廃止
 - 管理者によるメンバー追加を新しい暗号鍵方式で追加（鍵喪失時の復旧経路も追加）
-- データ破棄直前の自動バックアップと復元機能を追加
+- 既存プロジェクトを新しい暗号鍵方式へ移行する機能を追加（一括移行と、プロジェクトを開いたときの自動移行）
+- 暗号鍵の保護方式を自前基盤へ移行（公開鍵は Firestore の台帳で管理、鍵バックアップは PIN ＋サーバー側レート制限（Cloud KMS）で保護）。Virgil サービスへの依存を解消。既存ユーザーはログイン時に自動移行され、これまでの PIN を継続利用可能
+- 暗号化 PIN を新規設定・変更時に 6 桁必須に強化
+- ローカル鍵がない端末でのログイン時に鍵復元へ自動誘導し、残存鍵は台帳との整合チェックを実施
+- 鍵をリセットしたメンバーにプロジェクト設定で「要再共有」バッジを表示
+- ログアウト時にローカルの暗号化キーを削除するように改善
+- データ破棄直前の自動バックアップと復元機能を追加（バックアップの個別・一括削除にも対応）
 - 保存ファイルの拡張子を標準的な zip に統一（ecorismap 拡張子を廃止）
+- データアップロードを世代方式に変更し 5MB 上限を撤廃（サイズ超過時は古い軌跡の削除を案内）
 - データ一覧に辞書からのデータ追加時の位置あり/なしワンタッチ切替トグルを追加
+- データ一覧で位置なしレコードの行を薄色表示し、位置ありレコードを見分けやすく改善
+- データ一覧に絞り込み機能を追加（入口ボタン・対象列選択・空白フィルタ・候補選択・共有プロジェクトの User 列・絞り込んだレコードのみ地図表示）
 - 長押し・POI ポップアップに標高と緯度経度（タップでコピー）を表示するように追加
 - GPS が ON のとき、地図長押しのポップアップに現在地からの直線距離を表示するように追加
 - 陰影起伏図を全方位対応（SVF）に刷新し、赤色立体地図などの表現を追加（iOS / Android / Web で同じ方式に統一）
 - 地図・レイヤ編集にプリセット選択機能を追加（立体図のプリセットを含む）
+- 標高タイルから全方位陰影付きカラー段彩と等深線を描く relief:// 地図プロトコルを追加（iOS / Android / Web 共通）
+- 陰影起伏図プリセットの標高源を産総研の陸海統合 DEM に変更し、海底地形も陰影表示（海域のデータは z8 まで有効）
+- GEBCO の全球海底地形図プリセットを追加（カラー段彩・陰影・数値ラベル付き等深線・海底地形名を表示）
+- relief:// で GSJ elev2 形式の標高タイル（512px WebP、内閣府南海トラフ海底地形など）に対応
 - 地図タイルダウンロードの中断・再開機能を追加
-- プロジェクトのアーカイブ機能を追加（一覧のオーナー・アーカイブ列で並べ替え可能）
-- 既存プロジェクトを新しい暗号鍵方式へ移行する機能を追加（一括移行と、プロジェクトを開いたときの自動移行）
+- 可視領域（ビューシェッド）作成機能を追加（一時表示・標高データ出典表示・DEM タイルのオフラインダウンロード対応）
+- 二点間の距離測定機能を追加
+- 軌跡サマリー画面（統計と標高グラフ）を追加。記録中もライブ表示可能
+- 軌跡上に撮影した写真を自動表示（重なる写真はグループ化しタップで展開、拡大表示は左右スワイプで切替）
+- 軌跡タップで通過時刻をポップアップ表示（iOS / Android / Web）
+- 軌跡エクスポートを拡充（写真ウェイポイント付き GPX、写真ポイントの CSV / GeoJSON、Google Earth 用 KMZ、統計・グラフの SVG 出力）
+- 軌跡レイヤの共有設定を追加（レイヤ設定で共有範囲を変更可能、共有 ON/OFF でユーザー別色分けを自動切替）
+- LINE / POLYGON タブに手書きペンツールを追加（手書きとプロット作図を統合、スタイル設定と手書き⇔プロットの相互変換に対応）
+- なげなわ選択による一括移動・回転・削除を追加（ポイント・ライン・ポリゴン・マップメモ）
+- 作図ツールに Redo を追加（Undo / Redo ボタンは使用不可時にグレー表示）
+- マップメモに部分消去ツールを追加
+- マップメモの線太さをズーム連動にするオプションを追加
+- 編集レイヤボタンを画面上部に追加（現在の編集対象の表示・切替、未選択時はレイヤ選択ダイアログを表示）
+- 編集レイヤの用途に応じたツールパレットを追加（植生区分パレット・飛翔図パレット）
+- 飛翔図を事前選択の属性と行動記号で描く方式に刷新（記号は線の修正に追従、行動の個別削除、行動記号と属性の連動）
+- 選択肢の値とコードの連動をレイヤ設定に追加
+- 設定画面からの言語切り替えを追加
+- プロジェクトのアーカイブ機能を追加（一覧のオーナー・アーカイブ列で並べ替え可能、並び順は画面遷移後も維持）
 - GPS 軌跡記録の不具合と長時間記録時の電池消費を改善（react-native-background-geolocation v5 へ更新）
 - GPS の ON/OFF 応答性・追従モード・通知まわりを改善
 - GPS 設定をボトムシート内で開くように改善
@@ -79,8 +171,21 @@
 - 辞書の音声入力を刷新（Expo 56 / React Native 0.85 へ移行）
 - 標高タイルが無いズームでは粗いズームの標高から陰影を描くように改善
 - エクスポートのファイル名にレイヤ名を含めるように改善
-- 暗号化 PIN を新規設定・変更時に 6 桁必須に強化
-- コンパスボタンを改善（方角線の切り替えを長押しに変更し、地図回転の反応を高速化）
+- 作図編集の座標精度劣化を解消（緯度経度を真とし変更した頂点のみ更新）
+- フリーハンド作図を逐次緯度経度化し、描画中も地図の移動・ズームが可能に
+- マップメモのペン描画を緯度経度ベースに変更（ピンチ・ズームをまたいで描画継続）。手ぶれ補正と保存時の平滑化・間引きを追加
+- マップメモのツールボタンを 1 つに集約し、設定をタブ統合（初回タップで設定・以降はトグル）
+- フリーハンド修正の接続部とポリゴンの閉じ目を、なぞり方の角度で自動的に平滑化
+- 数字・英字・文字スタンプがレコードのラベルを描くように改善
+- 植生図プリセットを改善（植生区分フィールドを先頭に移動し専用パレットを追加、選び直しフローを整理）
+- 確認ダイアログをカスタムデザインのモーダルに刷新
+- コンパスボタンを方位盤デザインに刷新（ノースアップ時も回転、方角線の切り替えは長押し、地図回転の反応を高速化）
+- 電波不良時に地図タイルをキャッシュから代替表示するように改善
+- 地図ダウンロードの可否判定をズーム固定から推定タイル数に変更
+- Web 版 3D 地形の標高タイルを Mapterhorn へ移行
+- レイヤ設定を改善（「権限」を「共有範囲」に改称し説明を追加、フィールドの並べ替えを上下ボタンに変更）
+- データ保存後に元の画面へ戻るように変更し、保存先の選択を一本化
+- インポート時の検証を強化（SQLite テーブル名・GeoJSON 座標値）
 - Android でライン・ポリゴンがタイル地図の下に隠れる不具合を修正
 - iOS で現在地がキャッシュされた古い位置になる不具合を修正
 - 同一アカウント・複数端末でのアップロードでデータが消失する不具合を修正
@@ -97,6 +202,33 @@
 - Android で現在地マーカーが極端に小さく表示される不具合を修正
 - プロジェクト設定の保存後に一覧の更新日時が反映されない不具合を修正
 - コンパスモードで方角線が揺れる不具合と、iOS で方角線が表示されない不具合を修正
+- グループ暗号の照会名義の誤りで復号に失敗する不具合を修正
+- ログイン時の暗号化キー復元をキャンセルするとログイン済みに見える不具合を修正
+- 4 桁 PIN ユーザーの鍵復元時に「6 桁」と表示される不具合を修正
+- 現在地共有のアップロードが 60 秒間隔で行われない不具合を修正
+- ユーザー別色分けで色未登録のユーザーが透明になり見えない不具合を修正
+- iOS で同一座標のマーカーが点滅する不具合と、毎フレーム再描画による CPU・電池消費を修正
+- iOS で Live Photo を含む軌跡のタップでクラッシュする不具合と、拡大表示のプレビューを修正
+- マップメモがレイヤの色分け・ラベル設定を上書きする不具合を修正
+- relief:// 地図の表示中や高ズームで PDF に地図が出ない不具合を修正
+- iOS でエンコード済み URL の PMTiles が表示されない不具合を修正
+- 地図回転時にスケールバーの長さが狂う不具合を修正
+- Android のエクスポートでキャンセルしても Download へ保存される不具合を修正
+- CSV インポートで列が足りないと値が未設定になる不具合を修正
+- チェック・リスト・ラジオへの形式変更で値が消える不具合を修正
+- 値が未設定のレコードのクリックでクラッシュする不具合を修正
+- 後から追加した列が Invalid Date や 0 で表示される不具合を修正
+- Web 版で動的辞書の入力が Enter で確定されない不具合を修正
+- iOS でモーダル表示中・直後のダイアログが表示されない不具合を修正
+- iOS でキーボード表示中に保存できない不具合とボトムシートの閉じ方を修正
+- キーボード表示中に辞書候補の選択がダブルタップになる不具合を修正
+- 列ソート中のドラッグで連番採番が壊れる不具合を修正
+- データクリア直後に描いたオブジェクトが初期位置に保存される不具合を修正
+- テンプレートのデータが地図で編集選択できない不具合を修正
+- 描画中の 2 本指タッチで点が追加される不具合を修正
+- 色分けが個別のポリゴンが Web で黒く表示される不具合を修正
+- GPX エクスポートの時刻のタイムゾーンずれと要素順を修正
+- Web 版でタブ切替から復帰するたび GPS 権限アラートが出る不具合を修正
 - アクセス解析（Firebase Analytics）を導入
 - その他細かなバグ修正
 
@@ -349,7 +481,7 @@
 ## [0.1.9] - 2022-11-13
 
 - App Release.
-  [0.5.6]: https://github.com/ecorismap/ecorismap/compare/b0753cddf1b8db8d05f540a32a621f37eff9c741...HEAD
+  [0.6.0]: https://github.com/ecorismap/ecorismap/compare/b0753cddf1b8db8d05f540a32a621f37eff9c741...HEAD
   [0.5.5]: https://github.com/ecorismap/ecorismap/compare/030e239c0bc4f548926c3eba796cc67d48e96a95...b0753cddf1b8db8d05f540a32a621f37eff9c741
   [0.5.4]: https://github.com/ecorismap/ecorismap/compare/a400ef19c0a56fff902837d4d8f5da31d1dde4a4...030e239c0bc4f548926c3eba796cc67d48e96a95
   [0.5.3]: https://github.com/ecorismap/ecorismap/compare/57c4b971f94c6eff41fd857d81ee7fa48af2709b...a400ef19c0a56fff902837d4d8f5da31d1dde4a4
