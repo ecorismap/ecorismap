@@ -199,10 +199,12 @@ export const HomeToolPalette = React.memo(({ items, featureType }: Props) => {
     const options = editingLayer === undefined ? [] : getFieldOptions(editingLayer, fieldName);
     const selected = options.find((option) => option.fieldValue === value);
     return {
-      //アイコンはパレット定義のものを使い、色分けに使う属性は選んだ値の色で塗る
+      //アイコンはパレット定義のものを使い、色分けに使う属性は選んだ値の色で塗る。
+      //半透明の区分色がボタンの青と紛れないよう、白い台座に載せて凡例と同じ見え方にする
       icon: item.icon,
       color: selected?.colorHex ?? COLOR.WHITE,
       label: selected?.label ?? item.label,
+      iconBackgroundColor: COLOR.WHITE,
     };
   };
 
@@ -221,12 +223,14 @@ export const HomeToolPalette = React.memo(({ items, featureType }: Props) => {
     <>
       {items.map((item) => {
         const fieldNames = fieldNamesOf(item);
-        const buttonProps: { icon: string; color: string; label: string } =
+        const buttonProps: { icon: string; color: string; label: string; iconBackgroundColor?: string } =
           fieldNames !== undefined
             ? fieldButtonProps(fieldNames, item)
             : item.options !== undefined
             ? { ...optionButtonProps(item), color: COLOR.WHITE }
             : { icon: item.icon, color: itemColor(item) ?? COLOR.WHITE, label: item.label };
+        //長い区分名でもボタン幅（40px）に収まるよう文字サイズを縮める。それでも溢れる分は末尾を省略
+        const labelFontSize = Math.min(9, Math.max(6, 38 / buttonProps.label.length));
         return (
           <View key={item.id} style={styles.button}>
             <Button
@@ -234,6 +238,7 @@ export const HomeToolPalette = React.memo(({ items, featureType }: Props) => {
               name={buttonProps.icon}
               //値ごとに色を変えるパレットは、どの色で描くのかをアイコンの色で示す
               color={buttonProps.color}
+              iconBackgroundColor={buttonProps.iconBackgroundColor}
               disabled={isOptionGroupDisabled(item)}
               backgroundColor={
                 isOptionGroupDisabled(item)
@@ -245,7 +250,8 @@ export const HomeToolPalette = React.memo(({ items, featureType }: Props) => {
               borderRadius={10}
               onPress={() => pressItem(item)}
               labelText={buttonProps.label}
-              labelFontSize={9}
+              labelFontSize={labelFontSize}
+              labelNumberOfLines={1}
             />
           </View>
         );
