@@ -200,11 +200,12 @@ export const HomeToolPalette = React.memo(({ items, featureType }: Props) => {
     const selected = options.find((option) => option.fieldValue === value);
     return {
       //アイコンはパレット定義のものを使い、色分けに使う属性は選んだ値の色で塗る。
-      //半透明の区分色がボタンの青と紛れないよう、白い台座に載せて凡例と同じ見え方にする
+      //半透明の区分色がボタンの青と紛れないよう、白い台座に載せて凡例と同じ見え方にする。
+      //未選択（白アイコン）のまま台座に載せると白に白で見えなくなるので、色があるときだけ
       icon: item.icon,
       color: selected?.colorHex ?? COLOR.WHITE,
       label: selected?.label ?? item.label,
-      iconBackgroundColor: COLOR.WHITE,
+      iconBackgroundColor: selected?.colorHex === undefined ? undefined : COLOR.WHITE,
     };
   };
 
