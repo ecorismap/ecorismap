@@ -308,28 +308,6 @@
           "useLastValue": false
         },
         {
-          "name": "餌運搬",
-          "format": "CHECK",
-          "list": [
-            {
-              "value": "餌運び",
-              "isOther": false,
-              "customFieldValue": ""
-            },
-            {
-              "value": "給餌",
-              "isOther": false,
-              "customFieldValue": ""
-            },
-            {
-              "value": "不明",
-              "isOther": false,
-              "customFieldValue": ""
-            }
-          ],
-          "useLastValue": false
-        },
-        {
           "name": "とまり",
           "format": "CHECK",
           "list": [
@@ -458,11 +436,21 @@
           "useLastValue": false
         },
         {
-          "name": "探餌",
+          "name": "餌運搬",
           "format": "CHECK",
           "list": [
             {
-              "value": "あり",
+              "value": "餌運び",
+              "isOther": false,
+              "customFieldValue": ""
+            },
+            {
+              "value": "給餌",
+              "isOther": false,
+              "customFieldValue": ""
+            },
+            {
+              "value": "不明",
               "isOther": false,
               "customFieldValue": ""
             }
@@ -470,11 +458,16 @@
           "useLastValue": false
         },
         {
-          "name": "狩り",
+          "name": "採餌行動",
           "format": "CHECK",
           "list": [
             {
-              "value": "あり",
+              "value": "探餌",
+              "isOther": false,
+              "customFieldValue": ""
+            },
+            {
+              "value": "狩り",
               "isOther": false,
               "customFieldValue": ""
             }
