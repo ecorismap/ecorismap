@@ -71,6 +71,12 @@
         "licenseUrl": "https://github.com/mui/mui-x/raw/master/LICENSE",
         "parents": "ecorismap"
     },
+    "@noble/hashes": {
+        "licenses": "MIT",
+        "repository": "https://github.com/paulmillr/noble-hashes",
+        "licenseUrl": "https://github.com/paulmillr/noble-hashes/raw/master/LICENSE",
+        "parents": "ecorismap"
+    },
     "@react-native-async-storage/async-storage": {
         "licenses": "MIT",
         "repository": "https://github.com/react-native-async-storage/async-storage",
@@ -99,6 +105,12 @@
         "licenses": "MIT",
         "repository": "https://github.com/callstack/react-native-slider",
         "licenseUrl": "https://github.com/callstack/react-native-slider",
+        "parents": "ecorismap"
+    },
+    "@react-native-firebase/analytics": {
+        "licenses": "Apache-2.0",
+        "repository": "https://github.com/invertase/react-native-firebase/tree/main/packages/analytics",
+        "licenseUrl": "https://github.com/invertase/react-native-firebase/tree/main/packages/analytics/raw/master/LICENSE",
         "parents": "ecorismap"
     },
     "@react-native-firebase/app-check": {
@@ -446,6 +458,12 @@
         "licenses": "MIT",
         "repository": "https://github.com/lodash/lodash",
         "licenseUrl": "https://github.com/lodash/lodash/raw/master/LICENSE",
+        "parents": "ecorismap"
+    },
+    "maplibre-contour": {
+        "licenses": "BSD-3-Clause",
+        "repository": "https://github.com/onthegomap/maplibre-contour",
+        "licenseUrl": "https://github.com/onthegomap/maplibre-contour/raw/master/LICENSE",
         "parents": "ecorismap"
     },
     "maplibre-gl": {
