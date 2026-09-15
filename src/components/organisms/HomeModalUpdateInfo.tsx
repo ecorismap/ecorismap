@@ -12,9 +12,10 @@ export const HomeModalUpdateInfo = React.memo(() => {
   const dispatch = useDispatch();
   const lastSeenVersion = useSelector((state: RootState) => state.settings.lastSeenVersion);
   const agreedTermsVersion = useSelector((state: RootState) => state.settings.agreedTermsVersion);
-  //規約モーダルと兄弟Modalで同時表示になるのを避けるため、規約合意後に表示する
+  //規約モーダルと兄弟Modalで同時表示になるのを避けるため、規約合意後に表示する。
+  //初回起動時は規約同意と同時にlastSeenVersionが記録されるため表示されない
   const isUpdateInfoOpen = useMemo(
-    () => lastSeenVersion !== VERSION && lastSeenVersion !== '' && agreedTermsVersion === CURRENT_TERMS_VERSION,
+    () => lastSeenVersion !== VERSION && agreedTermsVersion === CURRENT_TERMS_VERSION,
     [agreedTermsVersion, lastSeenVersion]
   );
   //起動時の確認ダイアログが出ている間は引っ込める
