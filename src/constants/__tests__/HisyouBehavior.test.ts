@@ -38,12 +38,14 @@ describe('HISYOU_BEHAVIORS', () => {
     });
   });
 
-  it('中身が分かれない行動は「あり」だけ（選ぶものが無いので聞かない）', () => {
-    HISYOU_BEHAVIORS.filter((b) => b.hasDetail !== true).forEach((b) => {
-      expect(b.defaultValue).toBe('あり');
-      expect(valuesOf(b.fieldName)).toEqual(['あり']);
-    });
-    expect(HISYOU_BEHAVIORS.filter((b) => b.hasDetail !== true).map((b) => b.fieldName)).toEqual(['探餌', '狩り']);
+  it('採餌行動（探餌・狩り）は値が記号で決まるので選択は聞かない', () => {
+    const noDetail = HISYOU_BEHAVIORS.filter((b) => b.hasDetail !== true);
+    expect(noDetail.map((b) => [b.fieldName, b.defaultValue])).toEqual([
+      ['採餌行動', '探餌'],
+      ['採餌行動', '狩り'],
+    ]);
+    //既定値がそのまま入るので、選択肢と一致していなければならない
+    expect(valuesOf('採餌行動')).toEqual(['探餌', '狩り']);
   });
 
   it('中身が分かれる行動は選択肢が2つ以上あり、既定値は「不明」', () => {
@@ -57,7 +59,8 @@ describe('HISYOU_BEHAVIORS', () => {
 describe('getHisyouBehavior', () => {
   it('記号のキーから行動のフィールドを引く', () => {
     expect(getHisyouBehavior('TOMARI')).toMatchObject({ fieldName: 'とまり', defaultValue: '不明', hasDetail: true });
-    expect(getHisyouBehavior('KARI')).toMatchObject({ fieldName: '狩り', defaultValue: 'あり' });
+    expect(getHisyouBehavior('KARI')).toMatchObject({ fieldName: '採餌行動', defaultValue: '狩り' });
+    expect(getHisyouBehavior('TANJI')).toMatchObject({ fieldName: '採餌行動', defaultValue: '探餌' });
     //飛翔の様子は属性を持たない（記号だけで分かるので聞かない）
     expect(getHisyouBehavior('SENKAI')).toBeUndefined();
     expect(getHisyouBehavior('HOVERING')).toBeUndefined();
@@ -97,18 +100,17 @@ describe('飛翔図プリセットの属性の並び', () => {
       '高度2(外)',
     ]);
     //行動は記録の頻度・まとまりで並べる（対応表の並びと揃える）
-    const behaviorFieldNames = HISYOU_BEHAVIORS.map((b) => b.fieldName);
+    const behaviorFieldNames = HISYOU_BEHAVIORS.map((b) => b.fieldName).filter((n, i, a) => a.indexOf(n) === i);
     expect(behaviorFieldNames).toEqual([
       '誇示単発',
       '誇示連続',
       '排斥',
-      '餌運搬',
       'とまり',
       '交尾',
       '声',
       '巣材運搬',
-      '探餌',
-      '狩り',
+      '餌運搬',
+      '採餌行動',
     ]);
     expect(names.slice(9, 9 + behaviorFieldNames.length)).toEqual(behaviorFieldNames);
     //行動のあとは記号にできない観察事項

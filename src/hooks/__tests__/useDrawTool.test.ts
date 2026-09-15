@@ -2178,9 +2178,9 @@ describe('useDrawTool', () => {
       const parentUpdates = mockUpdateRecord.mock.calls.map((c) => c[1] as RecordType).filter((r) => r.id === 'record-1');
       expect(parentUpdates.length).toBeGreaterThan(0);
       const last = parentUpdates[parentUpdates.length - 1];
-      //とまりは中身を選ばなかったので「不明」、探餌は中身が分かれないので「あり」
+      //とまりは中身を選ばなかったので「不明」、探餌は記号で値が決まる（採餌行動へ入る）
       expect(last.field['とまり']).toBe('不明');
-      expect(last.field['探餌']).toBe('あり');
+      expect(last.field['採餌行動']).toBe('探餌');
       //旋回は属性そのものが無い
       expect(last.field['旋回']).toBeUndefined();
     });

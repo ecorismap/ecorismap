@@ -26,13 +26,14 @@ export const HISYOU_BEHAVIORS: HisyouBehaviorType[] = [
   { symbol: 'DISPLAY1', fieldName: '誇示単発', defaultValue: '不明', hasDetail: true },
   { symbol: 'DISPLAY2', fieldName: '誇示連続', defaultValue: '不明', hasDetail: true },
   { symbol: 'KOUGEKI', fieldName: '排斥', defaultValue: '不明', hasDetail: true },
-  { symbol: 'ESA', fieldName: '餌運搬', defaultValue: '不明', hasDetail: true },
   { symbol: 'TOMARI', fieldName: 'とまり', defaultValue: '不明', hasDetail: true },
   { symbol: 'KOUBI', fieldName: '交尾', defaultValue: '不明', hasDetail: true },
   { symbol: 'VOICE', fieldName: '声', defaultValue: '不明', hasDetail: true },
   { symbol: 'SUZAI', fieldName: '巣材運搬', defaultValue: '不明', hasDetail: true },
-  { symbol: 'TANJI', fieldName: '探餌', defaultValue: 'あり' },
-  { symbol: 'KARI', fieldName: '狩り', defaultValue: 'あり' },
+  { symbol: 'ESA', fieldName: '餌運搬', defaultValue: '不明', hasDetail: true },
+  //探餌と狩りはどちらも採餌なので1つのフィールドにまとめる。値は記号で決まるので選択は不要
+  { symbol: 'TANJI', fieldName: '採餌行動', defaultValue: '探餌' },
+  { symbol: 'KARI', fieldName: '採餌行動', defaultValue: '狩り' },
   //ホバリング・旋回・旋上・急降下は飛翔の様子そのもので、記号を見れば分かるため属性は持たない
 ];
 
