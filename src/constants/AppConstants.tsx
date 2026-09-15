@@ -2,7 +2,7 @@ import * as FileSystem from 'expo-file-system/legacy';
 import { t } from '../i18n/config';
 
 export const AppID = 'jp.co.ecoris.ecorismap';
-export const VERSION = 'Version 0.5.6';
+export const VERSION = 'Version 0.6.0';
 export const FUNC_ENCRYPTION = true;
 // 新規プロジェクトをエンベロープ暗号(DEK・管理者によるメンバー追加可)で作成するか。
 // false の間も DEK プロジェクトの「読み込み(復号)」は可能。安全なロールアウトのため、
