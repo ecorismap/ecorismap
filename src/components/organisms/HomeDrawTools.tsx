@@ -453,6 +453,10 @@ export const HomeDrawTools = React.memo(() => {
               />
             </View>
           )}
+          {/* 区分パレット（植生図）は「次に描く区分」を決めるものなので、追加・手書きボタンより上に置く */}
+          {featureButton === 'POLYGON' && toolPaletteItems !== undefined && (
+            <HomeToolPalette items={toolPaletteItems} featureType={featureButton} />
+          )}
           {featureButton === 'POLYGON' && (
             <HomePolygonToolButton
               disabled={false}
@@ -462,9 +466,6 @@ export const HomeDrawTools = React.memo(() => {
               //区分パレット（植生図）は描き方を変えないので、手書き・プロットのボタンは残す
               hideHandwriting={false}
             />
-          )}
-          {featureButton === 'POLYGON' && toolPaletteItems !== undefined && (
-            <HomeToolPalette items={toolPaletteItems} featureType={featureButton} />
           )}
 
           {/* スタイルボタン（太さ・矢印・色選択を集約）。レイヤの色分けが個別のときのみ表示し、

@@ -24,7 +24,9 @@ interface Props {
   labelText?: string;
   labelTextColor?: string;
   labelFontSize?: number;
+  labelNumberOfLines?: number;
   labelOnTop?: boolean; // 追加: trueの場合、ラベルをボタンの上に表示
+  iconBackgroundColor?: string; // アイコンを台座（縁取り付きの丸）に載せる。色チップがボタン背景と紛れないようにする
 }
 
 const Button = React.memo((props: Props) => {
@@ -45,7 +47,9 @@ const Button = React.memo((props: Props) => {
     labelText,
     labelTextColor,
     labelFontSize,
+    labelNumberOfLines,
     labelOnTop,
+    iconBackgroundColor,
   } = props;
 
   const [showTooltip, setShowTooltip] = useState(false);
@@ -85,6 +89,8 @@ const Button = React.memo((props: Props) => {
       fontSize: labelFontSize || 10,
       fontWeight: 'bold',
       position: 'absolute',
+      textAlign: 'center',
+      width: '100%',
     },
     // ボタン上に表示するラベル用のスタイル（絶対配置を解除）
     labelOnTopStyle: {
@@ -92,6 +98,16 @@ const Button = React.memo((props: Props) => {
       fontSize: labelFontSize || 10,
       fontWeight: 'bold',
       marginBottom: 2,
+    },
+    iconBackdrop: {
+      alignItems: 'center',
+      backgroundColor: iconBackgroundColor,
+      borderColor: COLOR.GRAY2,
+      borderRadius: (size + 2) / 2,
+      borderWidth: 1,
+      height: size + 2,
+      justifyContent: 'center',
+      width: size + 2,
     },
     tooltip: {
       backgroundColor: COLOR.BLACK,
@@ -116,16 +132,16 @@ const Button = React.memo((props: Props) => {
   }, []);
 
   const renderIcon = () => {
-    if (isCustomIcon(name)) {
-      return (
-        <View style={{ bottom: labelText ? 6 : 0 }}>
-          <CustomIcon name={name} size={size} color={color} />
-        </View>
-      );
-    }
+    //台座に載せるときは、台座＋余白がラベルと重ならないよう中身を少し小さくして1px上げる
+    const iconSize = iconBackgroundColor ? size - 4 : size;
+    const icon = isCustomIcon(name) ? (
+      <CustomIcon name={name} size={iconSize} color={color} />
+    ) : (
+      <MaterialCommunityIcons name={name} size={iconSize} color={color || COLOR.WHITE} selectable={undefined} />
+    );
     return (
-      <View style={{ bottom: labelText ? 6 : 0 }}>
-        <MaterialCommunityIcons name={name} size={size} color={color || COLOR.WHITE} selectable={undefined} />
+      <View style={{ bottom: labelText ? (iconBackgroundColor ? 7 : 6) : 0 }}>
+        {iconBackgroundColor ? <View style={styles.iconBackdrop}>{icon}</View> : icon}
       </View>
     );
   };
@@ -150,7 +166,11 @@ const Button = React.memo((props: Props) => {
       >
         {labelText && labelOnTop && <Text style={styles.labelOnTopStyle}>{labelText}</Text>}
         {renderIcon()}
-        {labelText && !labelOnTop && <Text style={styles.label}>{labelText}</Text>}
+        {labelText && !labelOnTop && (
+          <Text style={styles.label} numberOfLines={labelNumberOfLines}>
+            {labelText}
+          </Text>
+        )}
       </Pressable>
     </View>
   );
