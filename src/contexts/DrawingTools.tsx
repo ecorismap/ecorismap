@@ -102,6 +102,9 @@ export interface DrawingToolsContextType {
   updateFieldValue: (fieldName: string, oldValue: string, newValue: string, color: string, code: string) => void;
   //選択肢を消す（保存済みのレコードの値は残す）
   deleteFieldValue: (fieldName: string, value: string) => void;
+  //区分未選択のままツールを押したときの保留ツール。パレットが選択モーダルを開き、選び終えたら有効にする
+  pendingPaletteDrawTool: DrawToolType | undefined;
+  setPendingPaletteDrawTool: (value: DrawToolType | undefined) => void;
   pressEditingLayerButton: () => Promise<void>;
 
   //アクティブレイヤの色分けが「個別（_strokeColor参照）」か。trueなら色・太さボタンを常時表示する

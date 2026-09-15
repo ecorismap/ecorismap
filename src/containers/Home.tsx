@@ -1057,6 +1057,22 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     [dispatch, editingLayer]
   );
 
+  //植生図で区分未選択のままツールを押したとき、先に選択モーダルで選んでもらうための保留ツール
+  const [pendingPaletteDrawTool, setPendingPaletteDrawTool] = useState<DrawToolType | undefined>(undefined);
+
+  //色分けに使う区分が未選択か。選択直後はclosureのレイヤが古いことがあるので最新の状態で判定する
+  const isPaletteColorValueEmpty = useCallback(
+    (layerId: string): boolean =>
+      dispatch((_thunkDispatch: AppDispatch, getState: () => RootState) => {
+        const layer = getState().layers.find((l) => l.id === layerId);
+        if (layer === undefined || layer.colorStyle.colorType !== 'CATEGORIZED') return false;
+        const field = layer.field.find((f) => f.name === layer.colorStyle.fieldName);
+        if (field === undefined) return false;
+        return typeof field.defaultValue !== 'string' || field.defaultValue === '';
+      }),
+    [dispatch]
+  );
+
   //属性を未選択へ戻す（確定後に次の個体を選び直すため）
   const clearPaletteFieldValues = useCallback(
     (layerId: string) => {
@@ -1079,6 +1095,18 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     },
     [dispatch]
   );
+
+  //植生図の区分は、タブ（ポイント/ライン/ポリゴン/メモ）や編集レイヤを切り替えたら未選択へ戻す。
+  //ツールボタン（追加⇔手書き等）の持ち替えではリセットしない（同じ区分を続けて描く）
+  const prevEditingLayerRef = useRef<{ id: string; toolPalette?: LayerType['toolPalette'] } | undefined>(undefined);
+  useEffect(() => {
+    const prev = prevEditingLayerRef.current;
+    if (prev !== undefined && prev.id !== editingLayer?.id && prev.toolPalette === 'VEGETATION') {
+      clearPaletteFieldValues(prev.id);
+    }
+    prevEditingLayerRef.current =
+      editingLayer === undefined ? undefined : { id: editingLayer.id, toolPalette: editingLayer.toolPalette };
+  }, [editingLayer, clearPaletteFieldValues]);
 
   const selectFieldValues = useCallback(
     (values: { [fieldName: string]: string }) => {
@@ -1443,6 +1471,18 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
             //await runTutrial(`LINETOOL_${value}`);
           } else if (isPolygonTool(value)) {
             if (!(await checkEditableLayerForDraw('POLYGON'))) return;
+            //植生図は区分未選択のまま描き始めないよう、先に選択モーダルを開く（選んだらこのツールを有効にする）。
+            //編集選択からの持ち替えは既存オブジェクトの続きなので開かない
+            if (
+              editingLayer?.toolPalette === 'VEGETATION' &&
+              !isSelectedDraw &&
+              !isEditingDraw &&
+              !isEditingObject &&
+              isPaletteColorValueEmpty(editingLayer.id)
+            ) {
+              setPendingPaletteDrawTool(value);
+              return;
+            }
             //await runTutrial(`POLYGONTOOL_${value}`);
           }
 
@@ -1504,6 +1544,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       checkEditableLayerForDraw,
       checkEditableMapMemo,
       clearPaletteFieldValues,
+      isPaletteColorValueEmpty,
       editingLayer?.id,
       editingLayer?.toolPalette,
       convertSelectionToHandwriting,
@@ -3145,6 +3186,8 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       addFieldValue,
       updateFieldValue,
       deleteFieldValue,
+      pendingPaletteDrawTool,
+      setPendingPaletteDrawTool,
       pressEditingLayerButton,
 
       //個別色レイヤ（色・太さボタンの常時表示と通常作図への反映）
@@ -3209,6 +3252,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       addFieldValue,
       updateFieldValue,
       deleteFieldValue,
+      pendingPaletteDrawTool,
       pressEditingLayerButton,
       isIndividualStyleLayer,
       selectedSingleObjectStyle?.widthType,
