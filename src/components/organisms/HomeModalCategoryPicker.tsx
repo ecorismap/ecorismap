@@ -1,5 +1,15 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, Modal, ScrollView, TextInput } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  Modal,
+  ScrollView,
+  TextInput,
+  Keyboard,
+  KeyboardAvoidingView,
+  Platform,
+} from 'react-native';
 import { COLOR } from '../../constants/AppConstants';
 import { Pressable } from '../atoms/Pressable';
 import ColorPicker, { Panel1, HueSlider, OpacitySlider, Swatches, colorKit } from 'reanimated-color-picker';
@@ -61,6 +71,19 @@ export const HomeModalCategoryPicker = React.memo((props: Props) => {
   const [newValue, setNewValue] = useState('');
   const [newCode, setNewCode] = useState('');
   const [newColor, setNewColor] = useState(NEW_CATEGORY_COLORS[0]);
+  //キーボード表示中は色ピッカーを畳む。狭い画面ではキーボードと色ピッカーが同時に入らず、
+  //フォームがカードから溢れてOK/Cancelがずれるため（名前を入れ終えて閉じると色選択が現れる）
+  const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
+  useEffect(() => {
+    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+    const show = Keyboard.addListener(showEvent, () => setIsKeyboardVisible(true));
+    const hide = Keyboard.addListener(hideEvent, () => setIsKeyboardVisible(false));
+    return () => {
+      show.remove();
+      hide.remove();
+    };
+  }, []);
 
   useEffect(() => {
     if (!visible) return;
@@ -139,6 +162,8 @@ export const HomeModalCategoryPicker = React.memo((props: Props) => {
 
   return (
     <Modal animationType="none" transparent={true} visible={visible}>
+      {/* iOSはキーボードがモーダルに重なるため、paddingで中央寄せの範囲をキーボード上に縮める */}
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.avoidingView}>
       <Pressable style={styles.overlay} onPress={close} disablePressedAnimation>
         <Pressable style={styles.card} onPress={() => {}} disablePressedAnimation>
           {/* タブは残しつつ、値を選ぶと次の属性へ自動で切り替わる（種名→性別→齢） */}
@@ -228,8 +253,9 @@ export const HomeModalCategoryPicker = React.memo((props: Props) => {
                 )}
               </View>
               {applyError !== '' && <Text style={styles.errorText}>{applyError}</Text>}
-              {/* 色は見本から選ぶか、ピッカーで自由に決める（メモ・スタイル設定と同じ構成） */}
-              {withColor && (
+              {/* 色は見本から選ぶか、ピッカーで自由に決める（メモ・スタイル設定と同じ構成）。
+                  キーボード表示中は畳む（狭い画面で同時に入らずOK/Cancelが押せなくなるため） */}
+              {withColor && !isKeyboardVisible && (
               <ColorPicker
                 value={newColor}
                 sliderThickness={18}
@@ -275,11 +301,15 @@ export const HomeModalCategoryPicker = React.memo((props: Props) => {
           </View>
         </Pressable>
       </Pressable>
+      </KeyboardAvoidingView>
     </Modal>
   );
 });
 
 const styles = StyleSheet.create({
+  avoidingView: {
+    flex: 1,
+  },
   addArea: {
     borderColor: COLOR.GRAY1,
     borderRadius: 10,
