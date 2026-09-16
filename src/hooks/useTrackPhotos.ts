@@ -3,17 +3,9 @@ import { Platform } from 'react-native';
 import { LocationType, TrackPhotoType } from '../types';
 import { createThumbnail } from '../utils/Photo';
 import { TRACK_PHOTO_TIME_MARGIN_MS, interpolateTrackPositionAtTime } from '../utils/trackPhoto';
-import {
-  clearImportedTrackPhotos,
-  importTrackPhotosFromPicker,
-  loadImportedTrackPhotos,
-} from '../utils/trackPhotoImport';
 
-// 軌跡の記録時間帯に撮影時刻が入る写真を照合し、軌跡上に表示する写真を返す（スーパー地形方式）。
-// iOS: 端末の写真ライブラリを都度走査する（アプリ内へコピーしない）。
-// Android: Playの写真と動画の権限ポリシーによりライブラリ走査（READ_MEDIA_IMAGES）が使えないため、
-//   フォトピッカーで取り込んだ写真のプール（trackPhotoImport）を同じ時刻照合で表示する。
-// Webは写真ライブラリがないため常に空。
+// 端末の写真ライブラリを軌跡の記録時間帯で照合し、軌跡上に表示する写真を返す（スーパー地形方式）。
+// 写真はアプリ内にコピーせず、ライブラリから都度読み出す。Webは写真ライブラリがないため常に空。
 
 // ライブラリスキャンの上限（1回のクエリはページング200件ずつ）
 const QUERY_PAGE_SIZE = 200;
@@ -64,19 +56,11 @@ export type UseTrackPhotosReturnType = {
   trackPhotos: TrackPhotoType[];
   isLimitedAccess: boolean;
   presentLimitedPicker: () => Promise<void>;
-  //Android: フォトピッカーで写真をプールへ取り込む（それ以外のOSではundefinedを返すだけ）
-  importPhotos: () => Promise<{ imported: number; skipped: number } | undefined>;
-  //Android: 取り込んだ写真をすべて削除する
-  clearImportedPhotos: () => Promise<void>;
-  //Android: 取り込み系UIを出すかどうか
-  canImportPhotos: boolean;
 };
 
 export const useTrackPhotos = (coords: LocationType[] | undefined, enabled: boolean): UseTrackPhotosReturnType => {
   const [trackPhotos, setTrackPhotos] = useState<TrackPhotoType[]>([]);
   const [isLimitedAccess, setIsLimitedAccess] = useState(false);
-  //Androidの取り込みプールが変わったら再照合するためのバージョン
-  const [importVersion, setImportVersion] = useState(0);
   // 再照合（記録中のライブ更新）でのちらつき防止に現在の表示内容を参照するためのref
   const trackPhotosRef = useRef<TrackPhotoType[]>([]);
   const applyTrackPhotos = useCallback((photos: TrackPhotoType[]) => {
@@ -85,20 +69,9 @@ export const useTrackPhotos = (coords: LocationType[] | undefined, enabled: bool
   }, []);
 
   const presentLimitedPicker = useCallback(async () => {
-    if (Platform.OS !== 'ios') return;
+    if (Platform.OS === 'web') return;
     const MediaLibrary = requireMediaLibrary();
     await MediaLibrary.presentPermissionsPickerAsync(['photo']);
-  }, []);
-
-  const importPhotos = useCallback(async () => {
-    const result = await importTrackPhotosFromPicker();
-    if (result !== undefined && result.imported > 0) setImportVersion((v) => v + 1);
-    return result;
-  }, []);
-
-  const clearImportedPhotos = useCallback(async () => {
-    await clearImportedTrackPhotos();
-    setImportVersion((v) => v + 1);
   }, []);
 
   useEffect(() => {
@@ -115,57 +88,6 @@ export const useTrackPhotos = (coords: LocationType[] | undefined, enabled: bool
     const trackEnd = timestamps[timestamps.length - 1];
 
     let isCancelled = false;
-
-    if (Platform.OS === 'android') {
-      //取り込みプールから時刻照合する。ライブラリ走査（権限）は使わない
-      (async () => {
-        const pool = await loadImportedTrackPhotos();
-        if (isCancelled) return;
-        const inRange = pool.filter(
-          (photo) =>
-            photo.timestamp >= trackStart - TRACK_PHOTO_TIME_MARGIN_MS &&
-            photo.timestamp <= trackEnd + TRACK_PHOTO_TIME_MARGIN_MS
-        );
-        const results: TrackPhotoType[] = [];
-        for (const photo of inRange) {
-          if (isCancelled) return;
-          const position = interpolateTrackPositionAtTime(coords, photo.timestamp);
-          if (position === null) continue;
-          const cacheKey = `${photo.id}:${photo.timestamp}`;
-          let info = photoInfoCache.get(cacheKey);
-          if (info === undefined) {
-            let thumbnail: string | null = null;
-            try {
-              thumbnail = await createThumbnail(photo.uri);
-            } catch {
-              thumbnail = null;
-            }
-            info = { thumbnail, localUri: photo.uri };
-            cacheSet(cacheKey, info);
-          }
-          if (isCancelled) return;
-          results.push({
-            assetId: photo.id,
-            timestamp: photo.timestamp,
-            latitude: position.latitude,
-            longitude: position.longitude,
-            thumbnail: info.thumbnail,
-            uri: photo.uri,
-            localUri: photo.uri,
-            width: photo.width,
-            height: photo.height,
-            filename: photo.filename,
-          });
-        }
-        if (isCancelled) return;
-        const signature = (list: TrackPhotoType[]) =>
-          list.map((p) => `${p.assetId}:${p.latitude}:${p.longitude}:${p.thumbnail !== null ? 1 : 0}`).join('|');
-        if (signature(results) !== signature(trackPhotosRef.current)) applyTrackPhotos(results);
-      })();
-      return () => {
-        isCancelled = true;
-      };
-    }
 
     (async () => {
       const MediaLibrary = requireMediaLibrary();
@@ -242,16 +164,9 @@ export const useTrackPhotos = (coords: LocationType[] | undefined, enabled: bool
     return () => {
       isCancelled = true;
     };
-  }, [coords, enabled, applyTrackPhotos, importVersion]);
+  }, [coords, enabled, applyTrackPhotos]);
 
-  return {
-    trackPhotos,
-    isLimitedAccess,
-    presentLimitedPicker,
-    importPhotos,
-    clearImportedPhotos,
-    canImportPhotos: Platform.OS === 'android',
-  };
+  return { trackPhotos, isLimitedAccess, presentLimitedPicker };
 };
 
 // mediaSubtypesはiOSのみ返る（Androidはundefined）

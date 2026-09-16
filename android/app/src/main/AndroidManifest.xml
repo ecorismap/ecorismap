@@ -7,12 +7,7 @@
   <!-- These require runtime permissions on M -->
   <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
   <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
-  <!-- Playの「写真と動画の権限」ポリシーにより広範なメディア権限は使用不可。
-       写真の取得はシステムのフォトピッカー（権限不要）で行うため、
-       ライブラリ（expo-media-library等）が注入する分も含めて除去する -->
-  <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" tools:node="remove"/>
-  <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" tools:node="remove"/>
-  <uses-permission android:name="android.permission.READ_MEDIA_VISUAL_USER_SELECTED" tools:node="remove"/>
+  <uses-permission android:name="android.permission.READ_MEDIA_IMAGES"/>
   <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
   <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
   <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" tools:node="remove"/>
