@@ -71,9 +71,20 @@ export const saveToStorage = async (fileUri: string, fileName: string, folder: s
     // is native-only anyway); the module factory then never runs in the web bundle.
 
     const MediaLibrary = require('expo-media-library');
-    const res = await MediaLibrary.requestPermissionsAsync();
-    if (res.status === 'granted') {
-      await MediaLibrary.createAssetAsync(newUri);
+    if (Platform.OS === 'android') {
+      // PlayのポリシーによりREAD_MEDIA_IMAGESをマニフェストから削除したため権限リクエストはしない。
+      // Android 10以降のギャラリー保存（MediaStoreへの追加）は権限不要なので直接試し、
+      // 失敗してもアプリ内の保存は済んでいるため無視する
+      try {
+        await MediaLibrary.createAssetAsync(newUri);
+      } catch {
+        // ギャラリーへのコピー失敗は無視
+      }
+    } else {
+      const res = await MediaLibrary.requestPermissionsAsync();
+      if (res.status === 'granted') {
+        await MediaLibrary.createAssetAsync(newUri);
+      }
     }
   }
 
@@ -97,8 +108,11 @@ export const deleteRecordPhotos = (layer: LayerType, record: RecordType) => {
 
 export const pickImage = async (photoFolder: string) => {
   try {
-    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (permission.status !== 'granted') return;
+    // Androidはシステムのフォトピッカーが使われるため権限不要（マニフェストからも削除済み）
+    if (Platform.OS === 'ios') {
+      const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (permission.status !== 'granted') return;
+    }
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: false,
@@ -136,9 +150,12 @@ export const pickImage = async (photoFolder: string) => {
 
 export const takePhoto = async (photoFolder: string) => {
   try {
-    let res = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (res.status !== 'granted') return;
-    res = await ImagePicker.requestCameraPermissionsAsync();
+    // Androidはギャラリー保存に権限が不要（saveToStorage側で直接試す）ためカメラ権限のみ
+    if (Platform.OS === 'ios') {
+      const mediaRes = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (mediaRes.status !== 'granted') return;
+    }
+    const res = await ImagePicker.requestCameraPermissionsAsync();
     if (res.status !== 'granted') return;
     const result = await ImagePicker.launchCameraAsync({
       allowsEditing: false,
