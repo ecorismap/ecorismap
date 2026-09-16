@@ -1,15 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  Modal,
-  ScrollView,
-  TextInput,
-  Keyboard,
-  KeyboardAvoidingView,
-  Platform,
-} from 'react-native';
+import { View, Text, StyleSheet, Modal, ScrollView, TextInput, useWindowDimensions } from 'react-native';
 import { COLOR } from '../../constants/AppConstants';
 import { Pressable } from '../atoms/Pressable';
 import ColorPicker, { Panel1, HueSlider, OpacitySlider, Swatches, colorKit } from 'reanimated-color-picker';
@@ -71,19 +61,10 @@ export const HomeModalCategoryPicker = React.memo((props: Props) => {
   const [newValue, setNewValue] = useState('');
   const [newCode, setNewCode] = useState('');
   const [newColor, setNewColor] = useState(NEW_CATEGORY_COLORS[0]);
-  //キーボード表示中は色ピッカーを畳む。狭い画面ではキーボードと色ピッカーが同時に入らず、
-  //フォームがカードから溢れてOK/Cancelがずれるため（名前を入れ終えて閉じると色選択が現れる）
-  const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
-  useEffect(() => {
-    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
-    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
-    const show = Keyboard.addListener(showEvent, () => setIsKeyboardVisible(true));
-    const hide = Keyboard.addListener(hideEvent, () => setIsKeyboardVisible(false));
-    return () => {
-      show.remove();
-      hide.remove();
-    };
-  }, []);
+  //キーボードが出てもモーダルを動かさないよう、レイアウトの基準高さを画面の高さに固定する。
+  //Androidはキーボード表示でモーダルのウィンドウが縮み、中央寄せの基準が変わって
+  //カードとOK/Cancelが飛び跳ねるため（キーボードに隠れた部分は閉じれば同じ位置のまま押せる）
+  const { height: windowHeight } = useWindowDimensions();
 
   useEffect(() => {
     if (!visible) return;
@@ -162,8 +143,9 @@ export const HomeModalCategoryPicker = React.memo((props: Props) => {
 
   return (
     <Modal animationType="none" transparent={true} visible={visible}>
-      {/* iOSはキーボードがモーダルに重なるため、paddingで中央寄せの範囲をキーボード上に縮める */}
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.avoidingView}>
+      {/* 高さを画面高さに固定した土台。キーボードでウィンドウが縮んでもレイアウトが変わらず、
+          カードとボタンの位置が一切動かない */}
+      <View style={[styles.stableArea, { height: windowHeight }]}>
       <Pressable style={styles.overlay} onPress={close} disablePressedAnimation>
         <Pressable style={styles.card} onPress={() => {}} disablePressedAnimation>
           {/* タブは残しつつ、値を選ぶと次の属性へ自動で切り替わる（種名→性別→齢） */}
@@ -253,9 +235,8 @@ export const HomeModalCategoryPicker = React.memo((props: Props) => {
                 )}
               </View>
               {applyError !== '' && <Text style={styles.errorText}>{applyError}</Text>}
-              {/* 色は見本から選ぶか、ピッカーで自由に決める（メモ・スタイル設定と同じ構成）。
-                  キーボード表示中は畳む（狭い画面で同時に入らずOK/Cancelが押せなくなるため） */}
-              {withColor && !isKeyboardVisible && (
+              {/* 色は見本から選ぶか、ピッカーで自由に決める（メモ・スタイル設定と同じ構成） */}
+              {withColor && (
               <ColorPicker
                 value={newColor}
                 sliderThickness={18}
@@ -301,14 +282,17 @@ export const HomeModalCategoryPicker = React.memo((props: Props) => {
           </View>
         </Pressable>
       </Pressable>
-      </KeyboardAvoidingView>
+      </View>
     </Modal>
   );
 });
 
 const styles = StyleSheet.create({
-  avoidingView: {
-    flex: 1,
+  stableArea: {
+    left: 0,
+    position: 'absolute',
+    right: 0,
+    top: 0,
   },
   addArea: {
     borderColor: COLOR.GRAY1,
