@@ -26,7 +26,7 @@ import { convertPhotoForExport, deletePhotoFile } from '../utils/Photo';
 import { MAX_BACKUP_LABEL_LENGTH, truncateForFileName } from '../utils/General';
 import { resolveTrackPhotoFileUri, useTrackPhotos } from '../hooks/useTrackPhotos';
 import { editSettingsAction } from '../modules/settings';
-import { AlertAsync } from '../components/molecules/AlertAsync';
+import { AlertAsync, ConfirmAsync } from '../components/molecules/AlertAsync';
 import { t } from '../i18n/config';
 import { Platform } from 'react-native';
 import dayjs from '../i18n/dayjs';
@@ -131,10 +131,25 @@ export default function TrackSummaryContainers() {
       return () => clearTimeout(timer);
     }
   }, [isRecordingTarget, recordingCoords]);
-  const { trackPhotos, isLimitedAccess, presentLimitedPicker } = useTrackPhotos(
-    isRecordingTarget ? photoCoords : record?.coords,
-    isTrackPhotoVisible
-  );
+  const { trackPhotos, isLimitedAccess, presentLimitedPicker, importPhotos, clearImportedPhotos, canImportPhotos } =
+    useTrackPhotos(isRecordingTarget ? photoCoords : record?.coords, isTrackPhotoVisible);
+
+  // Android: フォトピッカーで写真を取り込む。時刻情報が無い写真は照合できないため件数を知らせる
+  const pressImportPhotos = useCallback(async () => {
+    const result = await importPhotos();
+    if (result === undefined) return;
+    if (result.skipped > 0) {
+      await AlertAsync(t('TrackSummary.alert.importedWithSkipped', { imported: result.imported, skipped: result.skipped }));
+    } else if (result.imported === 0) {
+      await AlertAsync(t('TrackSummary.alert.importedNone'));
+    }
+  }, [importPhotos]);
+
+  const pressClearImportedPhotos = useCallback(async () => {
+    const ret = await ConfirmAsync(t('TrackSummary.confirm.clearImportedPhotos'));
+    if (!ret) return;
+    await clearImportedPhotos();
+  }, [clearImportedPhotos]);
   const { setTrackPhotos, setSelectedPhoto } = useContext(TrackPhotoContext);
   useEffect(() => {
     setTrackPhotos(trackPhotos);
@@ -318,6 +333,9 @@ export default function TrackSummaryContainers() {
         trackPhotoCount: trackPhotos.length,
         isLimitedAccess,
         presentLimitedPicker,
+        canImportPhotos,
+        pressImportPhotos,
+        pressClearImportedPhotos,
       }}
     >
       <TrackSummary />
