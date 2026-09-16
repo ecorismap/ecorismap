@@ -60,7 +60,7 @@ android {
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode Integer.parseInt(System.getenv("VERSION_CODE") ?: "2744")
-        versionName '0.6.0'
+        versionName '0.6.1'
 
         // RN 0.85: MainApplication reads this to set DefaultNewArchitectureEntryPoint.releaseLevel.
         buildConfigField "String", "REACT_NATIVE_RELEASE_LEVEL", "\"${findProperty('reactNativeReleaseLevel') ?: 'stable'}\""
