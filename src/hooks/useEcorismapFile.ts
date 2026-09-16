@@ -382,7 +382,7 @@ export const useEcorisMapFile = (): UseEcorisMapFileReturnType => {
 
   const clearEcorisMap = useCallback(async () => {
     await deleteDatabase();
-    //レイヤ、データ、地図情報、設定をリセット。設定のtutrialと利用規約同意状態は現在の状況を引き継ぐ
+    //レイヤ、データ、地図情報、設定をリセット。設定のtutrial・利用規約同意状態・更新情報の既読は現在の状況を引き継ぐ
     dispatch(setLayersAction(layersInitialState));
     dispatch(setDataSetAction(dataSetInitialState));
     dispatch(setTileMapsAction(tileMapsInitialState));
@@ -391,6 +391,8 @@ export const useEcorisMapFile = (): UseEcorisMapFileReturnType => {
         ...settingsInitialState,
         tutrials: settings.tutrials,
         agreedTermsVersion: settings.agreedTermsVersion,
+        //リセットすると次回起動で更新情報モーダルが再表示されてしまうため引き継ぐ
+        lastSeenVersion: settings.lastSeenVersion,
         //地図の表示位置は戻さない。ファイルを開くときと違いクリアでは地図を動かさないので、
         //状態だけ初期位置にすると表示とずれ、描いたものが初期位置（緯度35/経度135）に保存される
         //（ネイティブは画面座標→緯度経度の変換にmapRegionを使うため）
@@ -407,7 +409,7 @@ export const useEcorisMapFile = (): UseEcorisMapFileReturnType => {
     // }
 
     return { isOK: true, message: '' };
-  }, [dispatch, settings?.tutrials, settings?.agreedTermsVersion, settings?.mapRegion]);
+  }, [dispatch, settings?.tutrials, settings?.agreedTermsVersion, settings?.lastSeenVersion, settings?.mapRegion]);
 
   return {
     isLoading,
