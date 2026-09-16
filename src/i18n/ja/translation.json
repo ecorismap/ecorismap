@@ -1208,16 +1208,6 @@
     "noAltitudeData": "標高データがありません",
     "notFound": "軌跡データが見つかりません",
     "limitedAccess": "一部の写真のみアクセスが許可されています",
-    "selectMorePhotos": "写真を追加選択",
-    "importHint": "撮影した写真を取り込むと軌跡上に表示されます",
-    "importPhotos": "写真を取り込む",
-    "clearImportedPhotos": "取り込み解除",
-    "alert": {
-      "importedWithSkipped": "{{imported}}枚を取り込みました（撮影日時が取得できず{{skipped}}枚をスキップ）",
-      "importedNone": "取り込める写真がありませんでした（撮影日時のある写真を選んでください）"
-    },
-    "confirm": {
-      "clearImportedPhotos": "取り込んだ写真をすべて削除しますか？（端末の元の写真は消えません）"
-    }
+    "selectMorePhotos": "写真を追加選択"
   }
 }

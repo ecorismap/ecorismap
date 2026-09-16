@@ -1208,16 +1208,6 @@
     "noAltitudeData": "No altitude data",
     "notFound": "Track data not found",
     "limitedAccess": "Access is limited to selected photos",
-    "selectMorePhotos": "Select more photos",
-    "importHint": "Import photos to show them along the track",
-    "importPhotos": "Import photos",
-    "clearImportedPhotos": "Remove imported",
-    "alert": {
-      "importedWithSkipped": "Imported {{imported}} photos ({{skipped}} skipped: no capture time)",
-      "importedNone": "No photos could be imported (choose photos that have a capture time)"
-    },
-    "confirm": {
-      "clearImportedPhotos": "Remove all imported photos? (Original photos on your device are not deleted)"
-    }
+    "selectMorePhotos": "Select more photos"
   }
 }

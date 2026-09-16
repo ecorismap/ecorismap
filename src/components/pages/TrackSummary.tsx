@@ -40,9 +40,6 @@ export default function TrackSummary() {
     trackPhotoCount,
     isLimitedAccess,
     presentLimitedPicker,
-    canImportPhotos,
-    pressImportPhotos,
-    pressClearImportedPhotos,
   } = useContext(TrackSummaryContext);
 
   const timeRangeText = useMemo(() => {
@@ -167,21 +164,6 @@ export default function TrackSummary() {
                 <TouchableOpacity onPress={presentLimitedPicker}>
                   <Text style={styles.limitedLink}>{t('TrackSummary.selectMorePhotos')}</Text>
                 </TouchableOpacity>
-              </View>
-            )}
-            {/* Android: ライブラリ走査の権限が使えないため、フォトピッカーで取り込んだ写真を照合する */}
-            {canImportPhotos && isTrackPhotoVisible && (
-              <View style={styles.limitedRow}>
-                <MaterialCommunityIcons name="image-plus" size={16} color={COLOR.GRAY3} />
-                {trackPhotoCount === 0 && <Text style={styles.limitedText}>{t('TrackSummary.importHint')}</Text>}
-                <TouchableOpacity onPress={pressImportPhotos}>
-                  <Text style={styles.limitedLink}>{t('TrackSummary.importPhotos')}</Text>
-                </TouchableOpacity>
-                {trackPhotoCount > 0 && (
-                  <TouchableOpacity onPress={pressClearImportedPhotos}>
-                    <Text style={styles.limitedLink}>{t('TrackSummary.clearImportedPhotos')}</Text>
-                  </TouchableOpacity>
-                )}
               </View>
             )}
             {timeRangeText !== null && (

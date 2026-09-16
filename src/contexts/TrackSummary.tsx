@@ -18,10 +18,6 @@ interface TrackSummaryContextType {
   trackPhotoCount: number;
   isLimitedAccess: boolean;
   presentLimitedPicker: () => Promise<void>;
-  // Android: フォトピッカーで写真を取り込む（ライブラリ走査権限が使えないための代替）
-  canImportPhotos: boolean;
-  pressImportPhotos: () => Promise<void>;
-  pressClearImportedPhotos: () => Promise<void>;
 }
 
 export const TrackSummaryContext = createContext({} as TrackSummaryContextType);
