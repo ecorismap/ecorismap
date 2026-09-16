@@ -165,7 +165,8 @@ export const HomeModalCategoryPicker = React.memo((props: Props) => {
           <ScrollView
             style={styles.listArea}
             contentContainerStyle={styles.list}
-            showsVerticalScrollIndicator={false}
+            //小画面ではスクロールが必要になるため、続きがあることが分かるよう表示する
+            showsVerticalScrollIndicator={true}
           >
             {items.map((item) => {
               const selected = item.fieldValue === selectedValue;
@@ -303,6 +304,8 @@ const styles = StyleSheet.create({
     backgroundColor: COLOR.WHITE,
     borderRadius: 20,
     elevation: 5,
+    //小画面（iPhone SE等）でもCancel/OKのフッターが画面内に残るように制限。溢れる分はリストがスクロール
+    maxHeight: '85%',
     maxWidth: 360,
     paddingBottom: 12,
     paddingHorizontal: 16,
@@ -328,13 +331,16 @@ const styles = StyleSheet.create({
   list: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    justifyContent: 'flex-start',
+    justifyContent: 'space-between',
     padding: 4,
   },
   //タブバーと内容の区切りが分かるよう、選択肢の領域に薄く色を敷く
   listArea: {
     backgroundColor: COLOR.GRAY0,
     borderRadius: 10,
+    //カードのmaxHeight内に収まるよう縮み、溢れた分はスクロールで見せる
+    flexGrow: 0,
+    flexShrink: 1,
   },
   overlay: {
     alignItems: 'center',
@@ -348,10 +354,11 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     borderWidth: 1,
     flexDirection: 'row',
-    margin: 3,
+    marginVertical: 3,
     paddingHorizontal: 8,
     paddingVertical: 8,
-    width: 150,
+    //固定幅だと狭い画面（iPhone SE等）で2列が入らず1列になるため割合指定にする
+    width: '48%',
   },
   //選択中の見た目はタブと揃える（青地に白文字）。どれを選んでいるか一目で分かる
   rowSelected: {
