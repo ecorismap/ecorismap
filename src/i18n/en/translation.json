@@ -753,6 +753,7 @@
       "inputValidPassword": "Please enter the password correctly",
       "inputValidNewPin": "PIN must be 6 digits. Repeated or sequential digits are not allowed",
       "invalidAccount": "Contains an invalid account. \nPlease add after the member signs up.",
+      "confirmPendingMembers": "Some members do not have an account (not signed up yet, or deleted). Save them as pending?\nPending members will be activated when you save the project again after they sign up.",
       "invalidCoordinate": "There is an invalid input in latitude and longitude.",
       "invalidDataFormat": "The data format is incorrect.",
       "invalidEmail": "Invalid email address.",
