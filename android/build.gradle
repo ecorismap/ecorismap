@@ -35,6 +35,18 @@ allprojects {
     repositories {
         maven { url("${rootProject.projectDir}/../node_modules/react-native-background-geolocation/android/libs") }
         maven { url("${rootProject.projectDir}/../node_modules/react-native-background-fetch/android/libs") }
+        // NDK r28cでリビルドした16KBページ対応のVirgilネイティブライブラリ (maven-virgil/README.md参照)
+        maven { url("${rootProject.projectDir}/maven-virgil") }
+    }
+    configurations.all {
+        resolutionStrategy.dependencySubstitution {
+            substitute(module('com.virgilsecurity.crypto:foundation-android'))
+                .using(module('com.virgilsecurity.crypto:foundation-android:0.13.1-16kb'))
+                .because('16KB page size support (rebuilt with NDK r28c)')
+            substitute(module('com.virgilsecurity.crypto:pythia-android'))
+                .using(module('com.virgilsecurity.crypto:pythia-android:0.13.1-16kb'))
+                .because('16KB page size support (rebuilt with NDK r28c)')
+        }
     }
 }
 
