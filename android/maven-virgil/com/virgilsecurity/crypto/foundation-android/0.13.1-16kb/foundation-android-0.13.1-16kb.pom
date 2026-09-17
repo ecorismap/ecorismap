@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd" xmlns="http://maven.apache.org/POM/4.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>com.virgilsecurity.crypto</groupId>
+  <artifactId>foundation-android</artifactId>
+  <version>0.13.1-16kb</version>
+  <packaging>aar</packaging>
+  <name>Virgil Security Crypto Foundation</name>
+  <description>This library contains basic cryptographic algorithms and can be used as building blocks for complex solutions.</description>
+  <url>https://www.virgilsecurity.com/</url>
+  <licenses>
+    <license>
+      <name>Virgil Security, Inc. license</name>
+      <url>https://github.com/VirgilSecurity/virgil-crypto-c/blob/master/LICENSE</url>
+    </license>
+  </licenses>
+  <developers>
+    <developer>
+      <id>andrii-iakovenko</id>
+      <name>Andrii Iakovenko</name>
+      <email>iakovenko.andrii@gmail.com</email>
+      <organizationUrl>https://www.virgilsecurity.com/</organizationUrl>
+    </developer>
+  </developers>
+  <scm>
+    <connection>scm:git:git@github.com:VirgilSecurity/virgil-crypto-c.git</connection>
+    <developerConnection>scm:git:git@github.com:VirgilSecurity/virgil-crypto-c.git</developerConnection>
+    <url>https://github.com/VirgilSecurity/virgil-crypto-c</url>
+  </scm>
+  <dependencies>
+    <dependency>
+      <groupId>com.virgilsecurity.crypto</groupId>
+      <artifactId>common-android</artifactId>
+      <version>0.13.1</version>
+      <scope>compile</scope>
+    </dependency>
+  </dependencies>
+</project>
