@@ -154,7 +154,18 @@ export const distributeProjectDEK = async (
     const encryptedAt = Timestamp.now();
     const batch = writeBatch(firestore);
     for (const uid of memberUids) {
-      const encDek = await wrapDEKForMember(dek.privateKey, uid);
+      let encDek: string;
+      try {
+        encDek = await wrapDEKForMember(dek.privateKey, uid);
+      } catch (e: any) {
+        // 退会済み（Virgilカード失効・台帳削除済み）のメンバーは公開鍵が無くラップ不能。
+        // 元々復号できないアカウントなのでスキップする（失敗扱いにすると移行全体が止まる）。
+        if (e?.name === 'UsersNotFoundError') {
+          console.warn('[distributeProjectDEK] 公開鍵が無いメンバーをスキップ:', uid);
+          continue;
+        }
+        throw e;
+      }
       const keyFS: ProjectKeyFS = { encDek, wrapperUid, encryptedAt };
       batch.set(doc(firestore, 'projects', projectId, 'keys', uid), keyFS);
     }

@@ -328,9 +328,14 @@ export default function ProjectEditContainer({ navigation, route }: Props_Projec
         const ret = await ConfirmAsync(t('ProjectEdit.confirm.singleAdmin'));
         if (!ret) return;
       }
-      setIsLoading(true);
+      // checkedProject内で確認ダイアログを出すことがあるため、ローディング開始は結果確定後にする
       const checkedProjectResult = await checkedProject();
-      if (!checkedProjectResult.isOK || !checkedProjectResult.project) throw new Error(checkedProjectResult.message);
+      if (!checkedProjectResult.isOK || !checkedProjectResult.project) {
+        // message空文字はユーザーによるキャンセル（エラー表示しない）
+        if (checkedProjectResult.message !== '') await AlertAsync(checkedProjectResult.message);
+        return;
+      }
+      setIsLoading(true);
 
       if (isNew) {
         await saveNewProject(checkedProjectResult.project);

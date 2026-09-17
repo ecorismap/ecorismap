@@ -9,6 +9,7 @@ import { checkDuplicateMember, checkEmails } from '../utils/Project';
 import { hasRegisterdUser } from '../lib/virgilsecurity/e3kit';
 import { t } from '../i18n/config';
 import { isLoggedIn } from '../utils/Account';
+import { ConfirmAsync } from '../components/molecules/AlertAsync';
 
 export type UseProjectEditReturnType = {
   user: UserType;
@@ -110,6 +111,38 @@ export const useProjectEdit = (initialProject: ProjectType, isNew: boolean): Use
     [targetProject]
   );
 
+  // 保留（未登録）メンバーの登録状況を画面表示時に再チェックする。
+  // 登録が確認できたメンバーはHOLD（オレンジ）表示に変え、保存ボタンを有効化して
+  // 「保存すれば有効になる」ことを管理者に示す（実際の鍵配布・有効化は保存時）。
+  useEffect(() => {
+    if (isNew) return;
+    const pendingEmails = initialProject.members.filter((m) => !m.uid).map((m) => m.email);
+    if (pendingEmails.length === 0) return;
+    let cancelled = false;
+    (async () => {
+      const uids = await getUidsByEmails(pendingEmails);
+      if (cancelled || uids === undefined) return;
+      const resolved = new Map<string, string>();
+      pendingEmails.forEach((email, idx) => {
+        const uid = uids[idx];
+        if (uid) resolved.set(email, uid);
+      });
+      if (resolved.size === 0) return;
+      setTargetProject((prev) => ({
+        ...prev,
+        members: prev.members.map((m) =>
+          !m.uid && resolved.has(m.email)
+            ? { ...m, uid: resolved.get(m.email)!, verified: 'HOLD' as VerifiedType }
+            : m
+        ),
+      }));
+      setIsEdited(true);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [isNew, initialProject]);
+
   const checkRegisterdUser = useCallback(async (uids: (string | null)[]) => {
     const registerd = await Promise.all(uids.map(async (uid) => hasRegisterdUser(uid)));
     const hasInvalidAccount = !registerd.every((v) => v === true);
@@ -145,13 +178,27 @@ export const useProjectEdit = (initialProject: ProjectType, isNew: boolean): Use
     const { registerd, hasInvalidAccount } = await checkRegisterdUser(uids);
     const updatedProject = updateProjectMembers(uids, registerd);
     if (hasInvalidAccount) {
-      //
+      // アカウントが未登録（サインアップ前）または退会済みのメンバーは「保留」（NO_ACCOUNT・赤バッジ）の
+      // まま保存できるようにする。membersUid には含まれないためアクセス権は付与されず、
+      // 登録後に再度保存するとuidが解決されて有効化される。オーナーが無効な場合のみ中断。
+      const invalidMembers = updatedProject.members.filter((m) => m.verified === 'NO_ACCOUNT');
+      const hasInvalidOwner = invalidMembers.some((m) => m.role === 'OWNER');
+      if (hasInvalidOwner) {
+        setTargetProject(updatedProject);
+        return {
+          isOK: false,
+          message: t('hooks.message.invalidAccount'),
+          project: updatedProject,
+        };
+      }
+      const emailList = invalidMembers.map((m) => m.email).join('\n');
+      const shouldContinue = await ConfirmAsync(`${t('hooks.message.confirmPendingMembers')}\n${emailList}`);
       setTargetProject(updatedProject);
-      return {
-        isOK: false,
-        message: t('hooks.message.invalidAccount'),
-        project: updatedProject,
-      };
+      if (!shouldContinue) {
+        // ユーザーによるキャンセル。エラー表示はしない（message空文字が目印）
+        return { isOK: false, message: '', project: updatedProject };
+      }
+      return { isOK: true, message: '', project: updatedProject };
     }
     return {
       isOK: true,
