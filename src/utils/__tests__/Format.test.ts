@@ -20,20 +20,25 @@ describe('Format', () => {
   });
 
   describe('formattedInputs', () => {
-    it('formats pin correctly (existing pin: 4 or 6 digits)', () => {
+    it('formats pin correctly (existing pin: 4 or 6+ digits)', () => {
       expect(formattedInputs('1234', 'pin', false)).toEqual({ isOK: true, result: '1234' });
       expect(formattedInputs('123456', 'pin', false)).toEqual({ isOK: true, result: '123456' });
+      expect(formattedInputs('1357924680', 'pin', false)).toEqual({ isOK: true, result: '1357924680' });
       expect(formattedInputs('12345', 'pin', false)).toEqual({ isOK: false, result: '12345' });
       expect(formattedInputs('12a4', 'pin', false)).toEqual({ isOK: false, result: '12a4' });
-      expect(formattedInputs('1234567', 'pin', false)).toEqual({ isOK: false, result: '1234567' });
     });
 
-    it('formats pin6 correctly (new pin: 6 digits, weak pins rejected)', () => {
+    it('formats pin6 correctly (new pin: 6+ digits, weak pins rejected)', () => {
       expect(formattedInputs('135792', 'pin6', false)).toEqual({ isOK: true, result: '135792' });
+      expect(formattedInputs('1357924680', 'pin6', false)).toEqual({ isOK: true, result: '1357924680' });
       expect(formattedInputs('1234', 'pin6', false)).toEqual({ isOK: false, result: '1234' });
+      expect(formattedInputs('12345', 'pin6', false)).toEqual({ isOK: false, result: '12345' });
       expect(formattedInputs('111111', 'pin6', false)).toEqual({ isOK: false, result: '111111' });
+      expect(formattedInputs('1111111', 'pin6', false)).toEqual({ isOK: false, result: '1111111' });
       expect(formattedInputs('123456', 'pin6', false)).toEqual({ isOK: false, result: '123456' });
+      expect(formattedInputs('1234567890', 'pin6', false)).toEqual({ isOK: false, result: '1234567890' });
       expect(formattedInputs('654321', 'pin6', false)).toEqual({ isOK: false, result: '654321' });
+      expect(formattedInputs('12345a', 'pin6', false)).toEqual({ isOK: false, result: '12345a' });
     });
 
     it('formats email correctly', () => {
