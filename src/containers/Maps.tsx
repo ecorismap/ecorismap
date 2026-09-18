@@ -2,6 +2,8 @@ import React, { useCallback, useState } from 'react';
 import { AlertAsync, ConfirmAsync } from '../components/molecules/AlertAsync';
 import Maps from '../components/pages/Maps';
 import { MapsContext } from '../contexts/Maps';
+import { TextInputDialog } from '../components/molecules/TextInputDialog';
+import { ulid } from 'ulid';
 import { useMaps } from '../hooks/useMaps';
 import { useTutrial } from '../hooks/useTutrial';
 import { t } from '../i18n/config';
@@ -46,8 +48,10 @@ export default function MapContainer() {
     updateMapOrder,
     onDragBegin,
     exportSingleMap,
+    saveMap,
   } = useMaps();
   const [isLoading, setIsLoading] = useState(false);
+  const [groupNameDialogVisible, setGroupNameDialogVisible] = useState(false);
   const { runTutrial } = useTutrial();
 
   const pressToggleOnline = useCallback(async () => {
@@ -147,6 +151,38 @@ export default function MapContainer() {
     },
     [navigate]
   );
+
+  const pressAddMapGroup = useCallback(() => {
+    setGroupNameDialogVisible(true);
+  }, []);
+
+  const submitMapGroupName = useCallback(
+    (name: string) => {
+      setGroupNameDialogVisible(false);
+      const newGroup: TileMapType = {
+        id: ulid(),
+        name,
+        url: '',
+        attribution: '',
+        maptype: 'none',
+        visible: true,
+        transparency: 0,
+        overzoomThreshold: 18,
+        highResolutionEnabled: false,
+        minimumZ: 0,
+        maximumZ: 22,
+        flipY: false,
+        isGroup: true,
+        expanded: true,
+      };
+      saveMap(newGroup);
+    },
+    [saveMap]
+  );
+
+  const cancelMapGroupName = useCallback(() => {
+    setGroupNameDialogVisible(false);
+  }, []);
 
   const pressImportMaps = useCallback(async () => {
     const file = await DocumentPicker.getDocumentAsync({
@@ -293,6 +329,7 @@ export default function MapContainer() {
         pressDownloadMap,
         pressDeleteMap,
         gotoMapEdit,
+        pressAddMapGroup,
         gotoMapList,
         gotoDownload,
         pressImportMaps,
@@ -307,6 +344,14 @@ export default function MapContainer() {
       }}
     >
       <Maps />
+      <TextInputDialog
+        visible={groupNameDialogVisible}
+        title={t('common.addGroup')}
+        placeholder={t('common.inputGroupName')}
+        presenceKey="map-group-name"
+        onSubmit={submitMapGroupName}
+        onCancel={cancelMapGroupName}
+      />
     </MapsContext.Provider>
   );
 }

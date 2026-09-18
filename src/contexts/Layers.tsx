@@ -14,6 +14,7 @@ interface LayersContextType {
   gotoColorStyle: (layer: LayerType) => void;
   gotoData: (layer: LayerType) => void;
   gotoLayerEditForAdd: () => void;
+  pressAddLayerGroup: () => void;
   pressImportLayerAndData: () => Promise<void>;
   updateLayersOrder: (data: LayerType[], from: number, to: number) => void;
   onDragBegin: (layer: LayerType) => void;

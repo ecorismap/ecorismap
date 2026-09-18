@@ -349,6 +349,7 @@ export const HOME_BTN = {
 export const MAPS_BTN = {
   MAP_LIST: 'layers-search',
   MAP_ADD: 'plus',
+  MAP_ADD_GROUP: 'folder-plus',
   ONLINE: 'wifi',
   OFFLINE: 'wifi-off',
   EXPORT: 'briefcase-download',
@@ -381,6 +382,7 @@ export const DATA_BTN = {
 export const LAYERS_BTN = {
   IMPORT: 'database-import',
   ADD: 'plus',
+  ADD_GROUP: 'folder-plus',
 } as const;
 
 export const LAYEREDIT_BTN = {

@@ -63,11 +63,6 @@ export const useMapEdit = (targetMap?: TileMapType | null) => {
     setIsEdited(true);
   }, []);
 
-  const changeIsGroup = useCallback((isGroup: boolean) => {
-    setMap((prev) => ({ ...prev, isGroup }));
-    setIsEdited(true);
-  }, []);
-
   const changeAttribution = useCallback((attribution: string) => {
     setMap((prev) => ({ ...prev, attribution }));
     setIsEdited(true);
@@ -132,7 +127,6 @@ export const useMapEdit = (targetMap?: TileMapType | null) => {
     changeMapURL,
     changeStyleURL,
     changeIsVector,
-    changeIsGroup,
     changeAttribution,
     changeTransparency,
     changeMinimumZ,

@@ -405,6 +405,24 @@ describe('useLayers', () => {
     });
   });
 
+  test('addLayerGroup: 新規グループが展開状態で先頭に追加される', () => {
+    const { result } = renderHook(() => useLayers());
+
+    act(() => {
+      result.current.addLayerGroup('新グループ');
+    });
+
+    const thunkFn = mockDispatch.mock.calls[0][0];
+    const payload = executeThunkAndGetPayload(thunkFn);
+    expect(payload.length).toBe(initialLayers.length + 1);
+    const group = payload[0];
+    expect(group.name).toBe('新グループ');
+    expect(group.type).toBe('LAYERGROUP');
+    expect(group.permission).toBe('COMMON');
+    expect(group.expanded).toBe(true);
+    expect(payload.slice(1)).toEqual(initialLayers);
+  });
+
   // changeLayerOrder のテストは updateLayersOrder でカバーされるため、
   // 必要に応じて簡略化または削除しても良いかもしれません。
   // ここでは updateLayersOrder のテストに注力します。

@@ -27,7 +27,6 @@ export default function MapEditScreen() {
     changeMapURL,
     changeStyleURL,
     changeIsVector,
-    changeIsGroup,
     changeAttribution,
     changeTransparency,
     changeOverzoomThreshold,
@@ -59,16 +58,6 @@ export default function MapEditScreen() {
       />
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={true}>
         <View style={styles.content}>
-          <View style={{ width: '101%', alignItems: 'flex-start' }}>
-            <CheckBox
-              style={{ backgroundColor: COLOR.GRAY0, marginVertical: 10 }}
-              label={t('common.addGroup')}
-              labelSize={13}
-              checked={map.isGroup || false}
-              onCheck={changeIsGroup}
-            />
-          </View>
-
           <View style={styles.inputContainer}>
             <Text style={styles.inputLabel}>{t('common.name')}</Text>
             <View style={{ flexDirection: 'row', alignItems: 'center', width: '100%' }}>
@@ -203,14 +192,16 @@ export default function MapEditScreen() {
         </View>
       </ScrollView>
 
-      {!isNewMap && !map.isGroup && (
+      {!isNewMap && (
         <View style={styles.buttonContainer}>
-          <Button
-            name="briefcase-download"
-            onPress={pressExportMap}
-            backgroundColor={COLOR.BLUE}
-            labelText={t('Maps.label.export')}
-          />
+          {!map.isGroup && (
+            <Button
+              name="briefcase-download"
+              onPress={pressExportMap}
+              backgroundColor={COLOR.BLUE}
+              labelText={t('Maps.label.export')}
+            />
+          )}
           <Button
             name="delete"
             onPress={pressDeleteMap}

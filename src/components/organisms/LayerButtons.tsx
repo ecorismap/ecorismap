@@ -6,12 +6,15 @@ import { Button } from '../atoms';
 import { t } from '../../i18n/config';
 
 export const LayerButtons = () => {
-  const { gotoLayerEditForAdd, pressImportLayerAndData } = useContext(LayersContext);
+  const { gotoLayerEditForAdd, pressAddLayerGroup, pressImportLayerAndData } = useContext(LayersContext);
 
   return (
     <View style={styles.buttonContainer}>
       <View style={{ marginHorizontal: 9 }}>
         <Button name={LAYERS_BTN.IMPORT} onPress={pressImportLayerAndData} labelText={t('Layer.label.import')} />
+      </View>
+      <View style={{ marginHorizontal: 9 }}>
+        <Button name={LAYERS_BTN.ADD_GROUP} onPress={pressAddLayerGroup} labelText={t('Layer.label.addGroup')} />
       </View>
       <View style={{ marginHorizontal: 9 }}>
         <Button name={LAYERS_BTN.ADD} onPress={gotoLayerEditForAdd} labelText={t('Layer.label.add')} />
