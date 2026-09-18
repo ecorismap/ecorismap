@@ -2533,16 +2533,22 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
           clearTimeout(longPressTimerRef.current);
           longPressTimerRef.current = null;
         }
-        //プロット編集中（未確定のオブジェクトがある間）は2本指でも地図操作へ切り替えない。
-        //地図側にジェスチャーを渡すと編集中オブジェクトの非表示固着や座標未確定の事故が起きるため、
-        //ズームは確定後か編集開始前に行ってもらう
-        if (isPlotTool(currentDrawTool) && isEditingObject) return;
-        hideDrawLine();
-        //ペンで描画中はストロークを破棄せず中断し、ピンチ後に続きを描けるようにする
+        //ペンで描画中はストロークを破棄せず中断し、後で続きを描けるようにする
         pauseMapMemoDrawing(isPinchIntentFromStart);
+        //描きかけ（未確定の内容）がある間は2本指でも地図操作へ切り替えない。
+        //地図側にジェスチャーを渡すと描きかけの非表示固着や座標未確定の事故が起きるため、
+        //地図を動かしたいときは確定するか地図移動ツールへ持ち替える。
+        //ペンロック中は指のタッチ＝地図操作なので従来どおり切り替える
+        const hasUnfinishedDrawing =
+          (isPlotTool(currentDrawTool) && isEditingObject) ||
+          (isHandwritingTool(currentDrawTool) && (isEditingDraw || isEditingObject)) ||
+          (isMapMemoDrawTool(currentMapMemoTool) && mapMemoEditingLine.current.length > 0);
+        if (!isPencilModeActive && hasUnfinishedDrawing) return;
+        hideDrawLine();
         setIsPinch(true);
       } else if (isMapMemoDrawTool(currentMapMemoTool)) {
-        handleMoveMapMemo(event);
+        //2本指が関与したジェスチャーでは、指を1本離した後の残り指で描かない
+        if (!multiTouchSeenRef.current) handleMoveMapMemo(event);
       } else if (currentDrawTool === 'SELECT') {
         //なげなわ選択の軌跡を伸ばす
         handleMoveSelect(pXY);
@@ -2550,7 +2556,8 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
         //2本指が関与したジェスチャーでは、指を1本離した後の残り指でノードを動かさない
         if (!multiTouchSeenRef.current) handleMovePlot(pXY);
       } else if (isHandwritingTool(currentDrawTool)) {
-        handleMoveHandwriting(pXY, getEventTimestamp(event));
+        //2本指が関与したジェスチャーでは、指を1本離した後の残り指で描かない
+        if (!multiTouchSeenRef.current) handleMoveHandwriting(pXY, getEventTimestamp(event));
       }
     },
     [
@@ -2566,8 +2573,11 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       handleMoveSelect,
       selectLine,
       hideDrawLine,
+      isEditingDraw,
       isEditingObject,
+      isPencilModeActive,
       isPinchRef,
+      mapMemoEditingLine,
       pauseMapMemoDrawing,
       setIsPinch,
     ]
