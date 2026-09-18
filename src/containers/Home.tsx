@@ -2528,14 +2528,18 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
         cancelPlotGrant();
         //なげなわ選択の描きかけは破棄する
         if (currentDrawTool === 'SELECT') selectLine.current = [];
-        hideDrawLine();
-        //ペンで描画中はストロークを破棄せず中断し、ピンチ後に続きを描けるようにする
-        pauseMapMemoDrawing(isPinchIntentFromStart);
         //長押しタイマーが残っているとピンチ中に発火するためクリア
         if (longPressTimerRef.current) {
           clearTimeout(longPressTimerRef.current);
           longPressTimerRef.current = null;
         }
+        //プロット編集中（未確定のオブジェクトがある間）は2本指でも地図操作へ切り替えない。
+        //地図側にジェスチャーを渡すと編集中オブジェクトの非表示固着や座標未確定の事故が起きるため、
+        //ズームは確定後か編集開始前に行ってもらう
+        if (isPlotTool(currentDrawTool) && isEditingObject) return;
+        hideDrawLine();
+        //ペンで描画中はストロークを破棄せず中断し、ピンチ後に続きを描けるようにする
+        pauseMapMemoDrawing(isPinchIntentFromStart);
         setIsPinch(true);
       } else if (isMapMemoDrawTool(currentMapMemoTool)) {
         handleMoveMapMemo(event);
@@ -2543,7 +2547,8 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
         //なげなわ選択の軌跡を伸ばす
         handleMoveSelect(pXY);
       } else if (isPlotTool(currentDrawTool)) {
-        handleMovePlot(pXY);
+        //2本指が関与したジェスチャーでは、指を1本離した後の残り指でノードを動かさない
+        if (!multiTouchSeenRef.current) handleMovePlot(pXY);
       } else if (isHandwritingTool(currentDrawTool)) {
         handleMoveHandwriting(pXY, getEventTimestamp(event));
       }
@@ -2561,6 +2566,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       handleMoveSelect,
       selectLine,
       hideDrawLine,
+      isEditingObject,
       isPinchRef,
       pauseMapMemoDrawing,
       setIsPinch,
