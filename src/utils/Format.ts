@@ -283,8 +283,8 @@ export const formattedInputs = (
       break;
     }
     case 'pin': {
-      //既存PINの入力用。旧4桁と新6桁の両方を受け付ける
-      const pattern = /^([0-9]{4}|[0-9]{6})$/;
+      //既存PINの入力用。旧4桁と新6桁以上の両方を受け付ける
+      const pattern = /^([0-9]{4}|[0-9]{6,4096})$/;
       const regMatch = value.toString().match(pattern);
       if (regMatch == null) {
         isOK = false;
@@ -295,9 +295,9 @@ export const formattedInputs = (
       break;
     }
     case 'pin6': {
-      //新規PIN設定用。6桁必須＋弱いPIN（同一数字・連番）を拒否
+      //新規PIN設定用。6桁以上必須＋弱いPIN（同一数字・連番）を拒否
       const pin = value.toString();
-      if (pin.match(/^[0-9]{6}$/) == null || isWeakPin(pin)) {
+      if (pin.match(/^[0-9]{6,4096}$/) == null || isWeakPin(pin)) {
         isOK = false;
       }
       result = value;
