@@ -257,7 +257,8 @@
     "vegetationMap": "Vegetation map",
     "category": "Category",
     "code": "Code",
-    "codeField": "Code field"
+    "codeField": "Code field",
+    "inputGroupName": "Enter group name"
   },
   "firebase": {
     "message": {
@@ -525,7 +526,8 @@
       "export": "export",
       "offline": "offline",
       "online": "online",
-      "pdf": "PDF"
+      "pdf": "PDF",
+      "addGroup": "group"
     },
     "alert": {
       "cannotDownloadOnWeb": "Cannot be used on the web version",
@@ -1086,7 +1088,8 @@
   "Layer": {
     "label": {
       "import": "import",
-      "add": "add"
+      "add": "add",
+      "addGroup": "group"
     }
   },
   "conflict": {

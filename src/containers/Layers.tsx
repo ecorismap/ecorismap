@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useState } from 'react';
 import { ulid } from 'ulid';
 import { LayerType } from '../types';
 import Layers from '../components/pages/Layers';
@@ -13,6 +13,7 @@ import * as DocumentPicker from 'expo-document-picker';
 import { useGeoFile } from '../hooks/useGeoFile';
 import { getExt } from '../utils/General';
 import { useBottomSheetNavigation } from '../contexts/BottomSheetNavigationContext';
+import { TextInputDialog } from '../components/molecules/TextInputDialog';
 
 export default function LayerContainer() {
   //console.log('render LayerContainer');
@@ -26,6 +27,7 @@ export default function LayerContainer() {
     changeVisible,
     changeCustomLabel,
     changeActiveLayer,
+    addLayerGroup,
     changeLayerOrder,
     updateLayersOrder,
     onDragBegin,
@@ -33,6 +35,7 @@ export default function LayerContainer() {
   const { isRunningProject } = usePermission();
   const { importGeoFile } = useGeoFile();
   const { runTutrial } = useTutrial();
+  const [groupNameDialogVisible, setGroupNameDialogVisible] = useState(false);
 
   const layersRef = React.useRef(layers);
   React.useEffect(() => {
@@ -96,6 +99,26 @@ export default function LayerContainer() {
     });
   }, [isRunningProject, navigate]);
 
+  const pressAddLayerGroup = useCallback(() => {
+    if (isRunningProject) {
+      AlertAsync(t('hooks.message.cannotInRunningProject'));
+      return;
+    }
+    setGroupNameDialogVisible(true);
+  }, [isRunningProject]);
+
+  const submitLayerGroupName = useCallback(
+    (name: string) => {
+      setGroupNameDialogVisible(false);
+      addLayerGroup(name);
+    },
+    [addLayerGroup]
+  );
+
+  const cancelLayerGroupName = useCallback(() => {
+    setGroupNameDialogVisible(false);
+  }, []);
+
   const gotoLayerEdit = useCallback(
     (layer: LayerType) => {
       navigate('LayerEdit', {
@@ -140,6 +163,7 @@ export default function LayerContainer() {
       changeActiveLayer,
       pressLayerOrder,
       gotoLayerEditForAdd,
+      pressAddLayerGroup,
       pressImportLayerAndData,
       gotoData,
       gotoLayerEdit,
@@ -160,6 +184,7 @@ export default function LayerContainer() {
       gotoLayerEditForAdd,
       layers,
       onDragBegin,
+      pressAddLayerGroup,
       pressImportLayerAndData,
       pressLayerOrder,
       updateLayersOrder,
@@ -169,6 +194,14 @@ export default function LayerContainer() {
   return (
     <LayersContext.Provider value={layersContextValue}>
       <Layers />
+      <TextInputDialog
+        visible={groupNameDialogVisible}
+        title={t('common.addGroup')}
+        placeholder={t('common.inputGroupName')}
+        presenceKey="layer-group-name"
+        onSubmit={submitLayerGroupName}
+        onCancel={cancelLayerGroupName}
+      />
     </LayersContext.Provider>
   );
 }

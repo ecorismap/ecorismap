@@ -6,13 +6,14 @@ import { Button } from '../atoms';
 import { t } from '../../i18n/config';
 
 export const MapButtons = React.memo(() => {
-  const { gotoMapEdit, pressImportMaps } = useContext(MapsContext);
+  const { gotoMapEdit, pressAddMapGroup, pressImportMaps } = useContext(MapsContext);
 
   return (
     <View style={styles.buttonContainer}>
       {/* <Button name={MAPS_BTN.MAP_LIST} onPress={gotoMapList} /> */}
 
       <Button name={MAPS_BTN.IMPORT} onPress={pressImportMaps} labelText={t('Maps.label.import')} />
+      <Button name={MAPS_BTN.MAP_ADD_GROUP} onPress={pressAddMapGroup} labelText={t('Maps.label.addGroup')} />
       <Button name={MAPS_BTN.MAP_ADD} onPress={() => gotoMapEdit(null)} labelText={t('Maps.label.add')} />
     </View>
   );

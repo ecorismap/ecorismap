@@ -195,7 +195,8 @@
     "vegetationMap": "植生図",
     "category": "区分",
     "code": "コード",
-    "codeField": "コードの入れ先"
+    "codeField": "コードの入れ先",
+    "inputGroupName": "グループ名を入力"
   },
   "Home": {
     "confirm": {
@@ -635,7 +636,8 @@
       "export": "ｴｸｽﾎﾟｰﾄ",
       "offline": "ｵﾌﾗｲﾝ",
       "online": "ｵﾝﾗｲﾝ",
-      "pdf": "PDF"
+      "pdf": "PDF",
+      "addGroup": "ｸﾞﾙｰﾌﾟ"
     },
     "alert": {
       "cannotDownloadOnWeb": "Web版では使用できません",
@@ -1086,7 +1088,8 @@
   "Layer": {
     "label": {
       "import": "ｲﾝﾎﾟｰﾄ",
-      "add": "追加"
+      "add": "追加",
+      "addGroup": "ｸﾞﾙｰﾌﾟ"
     }
   },
   "conflict": {

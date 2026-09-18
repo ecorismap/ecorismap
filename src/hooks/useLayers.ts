@@ -5,7 +5,8 @@ import { RootState, AppDispatch } from '../store';
 import { cloneDeep } from 'lodash';
 import { restoreColorStyleFromIndividual } from '../utils/Layer';
 
-import { updateLayerAction, setLayersAction } from '../modules/layers';
+import { updateLayerAction, setLayersAction, TEMPLATE_LAYER } from '../modules/layers';
+import { ulid } from 'ulid';
 
 export type UseLayersReturnType = {
   layers: LayerType[];
@@ -16,6 +17,7 @@ export type UseLayersReturnType = {
   changeVisible: (visible: boolean, layer: LayerType) => void;
   changeActiveLayer: (layer: LayerType) => void;
   activateLayer: (layer: LayerType) => void;
+  addLayerGroup: (name: string) => void;
   changeLayerOrder: (index: number, direction: 'up' | 'down') => void;
   updateLayersOrder: (data: LayerType[], from: number, to: number) => void;
   onDragBegin: (layer: LayerType) => void;
@@ -45,6 +47,26 @@ export const useLayers = (): UseLayersReturnType => {
         return parentGroup?.expanded === true;
       }),
     [layers]
+  );
+
+  const addLayerGroup = useCallback(
+    (name: string) => {
+      const newGroup: LayerType = {
+        ...cloneDeep(TEMPLATE_LAYER),
+        id: ulid(),
+        name,
+        type: 'LAYERGROUP',
+        permission: 'COMMON',
+        expanded: true,
+      };
+      dispatch((thunkDispatch, getState) => {
+        // getState()から最新のlayersを取得（stale closure対策）
+        const currentLayers = (getState() as RootState).layers;
+        //作成直後にレイヤをドラッグして入れられるよう先頭に置く
+        thunkDispatch(setLayersAction([newGroup, ...currentLayers]));
+      });
+    },
+    [dispatch]
   );
 
   const changeLabel = useCallback(
@@ -462,6 +484,7 @@ export const useLayers = (): UseLayersReturnType => {
     changeVisible,
     changeActiveLayer,
     activateLayer,
+    addLayerGroup,
     changeLayerOrder,
     updateLayersOrder,
     onDragBegin,

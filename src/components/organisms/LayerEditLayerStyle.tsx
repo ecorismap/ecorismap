@@ -13,8 +13,13 @@ export const LayerStyle = () => {
   const { layer, isNewLayer, onChangeFeatureType, gotoLayerEditFeatureStyle } = useContext(LayerEditContext);
   //メモは色分けを「個別（_strokeColor）」で固定する。変えるとツールバーの色・太さが効かなくなる
   const editable = layer.id !== MEMO_LAYER_ID;
-  const featureValueList = useMemo(() => Object.keys(FEATURETYPE), []);
-  const featureValueLabels = useMemo(() => Object.values(FEATURETYPE), []);
+  //グループはレイヤ一覧の「グループ作成」ボタンから作る。既存グループの表示のためだけに選択肢へ残す
+  const featureTypeEntries = useMemo(
+    () => Object.entries(FEATURETYPE).filter(([key]) => key !== 'LAYERGROUP' || layer.type === 'LAYERGROUP'),
+    [layer.type]
+  );
+  const featureValueList = useMemo(() => featureTypeEntries.map(([key]) => key), [featureTypeEntries]);
+  const featureValueLabels = useMemo(() => featureTypeEntries.map(([, label]) => label), [featureTypeEntries]);
   return (
     <View style={styles.tr}>
       <View style={styles.td}>

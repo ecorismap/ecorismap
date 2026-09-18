@@ -13,6 +13,7 @@ export interface MapsContextType {
   pressDownloadMap: (item: TileMapType) => void;
   pressDeleteMap: (tileMap: TileMapType) => void;
   gotoMapEdit: (editTileMap: TileMapType | null) => void;
+  pressAddMapGroup: () => void;
   gotoMapList: () => void;
   gotoDownload: () => void;
   pressImportMaps: () => Promise<void>;
