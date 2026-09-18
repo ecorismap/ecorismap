@@ -671,6 +671,44 @@ describe('useDrawTool', () => {
       expect(res.message).toBe('hooks.message.invalidPoint');
     });
 
+    it('setIsPinchはstateと同期してisPinchRefを更新する（PanResponderの古いstate対策）', () => {
+      const { result } = renderDrawTool();
+      expect(result.current.isPinchRef.current).toBe(false);
+      act(() => {
+        result.current.setIsPinch(true);
+      });
+      expect(result.current.isPinch).toBe(true);
+      expect(result.current.isPinchRef.current).toBe(true);
+      act(() => {
+        result.current.setIsPinch(false);
+      });
+      expect(result.current.isPinch).toBe(false);
+      expect(result.current.isPinchRef.current).toBe(false);
+    });
+
+    it('showDrawLineのimmediate指定で描きかけが残っていても即時に再表示される', () => {
+      //地図が動かずmapRegionが変わらないケース（iOSのピンチ誤判定後など）は
+      //再計算useEffectが発火しないため、非表示のまま固着しないことを確認する
+      const { result } = renderDrawTool();
+      result.current.drawLine.current = [
+        { id: 'draw1', layerId: undefined, record: undefined, xy: [[10, 10]], latlon: [[10, 10]], properties: ['POINT'] },
+      ];
+      act(() => {
+        result.current.hideDrawLine();
+      });
+      expect(result.current.isDrawLineVisible).toBe(false);
+      //従来のshowDrawLineは描きかけがあると再計算待ちで非表示のまま
+      act(() => {
+        result.current.showDrawLine();
+      });
+      expect(result.current.isDrawLineVisible).toBe(false);
+      //immediate指定なら即時に表示される
+      act(() => {
+        result.current.showDrawLine({ immediate: true });
+      });
+      expect(result.current.isDrawLineVisible).toBe(true);
+    });
+
     it('latlon未確定のプロットはxyから座標を再生成して保存する（位置なしレコード防止）', () => {
       //ピンチ誤判定などでreleaseの処理が飛ぶと、xyだけ入っていてlatlonが空のまま保存に到達する
       const { result } = renderDrawTool();
