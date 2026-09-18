@@ -37,6 +37,8 @@ export type UseProjectsReturnType = {
     message: string;
     needsKeyMigration?: boolean;
     needsKeyRestore?: boolean;
+    needsKeyRegist?: boolean;
+    needsKeyBackup?: boolean;
     restoreMessage?: string;
   }>;
   generateProject: () => ProjectType;
@@ -105,6 +107,15 @@ export const useProjects = (): UseProjectsReturnType => {
                   ? t('hooks.message.inputNewPinRestore')
                   : t('hooks.message.inputEncryptPassword'),
             };
+          }
+          if (initE3kitMessage === 'not-registered') {
+            // 暗号化キー未登録のまま復帰したセッション（PIN登録フォームを表示したまま
+            // アプリ終了した場合等）: 進んでも何も復号できないため登録フォームへ誘導する
+            return { isOK: false, message: '', needsKeyRegist: true };
+          }
+          if (initE3kitMessage === 'not-backup') {
+            // 登録済みだがバックアップ未作成で中断したセッション: ログイン時と同じ誘導
+            return { isOK: false, message: '', needsKeyBackup: true };
           }
           throw new Error(initE3kitMessage || t('hooks.message.failedInitializeEncrypt'));
         }

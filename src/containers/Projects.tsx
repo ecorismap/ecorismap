@@ -69,13 +69,23 @@ export default function ProjectsContainers({ navigation, route }: Props_Projects
 
   const reloadProjects = useCallback(async () => {
     try {
-      const { isOK, message, needsKeyMigration, needsKeyRestore, restoreMessage } = await fetchProjects();
+      const { isOK, message, needsKeyMigration, needsKeyRestore, needsKeyRegist, needsKeyBackup, restoreMessage } =
+        await fetchProjects();
       if (!isOK) {
         if (needsKeyRestore) {
           // 端末に鍵がない復帰セッション: 復元フォームへ（移行済み=移行後のPIN/未移行=旧PIN）
           navigation.navigate('Account', {
             accountFormState: 'restoreEncryptKey',
             message: restoreMessage ?? t('hooks.message.inputEncryptPassword'),
+            previous: 'Projects',
+          });
+          return;
+        }
+        if (needsKeyRegist || needsKeyBackup) {
+          // 暗号化キーの登録を完了せず中断した復帰セッション: 登録フォームへ誘導
+          navigation.navigate('Account', {
+            accountFormState: needsKeyRegist ? 'registEncryptPassword' : 'backupEncryptPassword',
+            message: t('hooks.message.registEncryptPassword'),
             previous: 'Projects',
           });
           return;
