@@ -283,15 +283,21 @@ export default function Account() {
             </View>
           )}
           {accountFormState === 'signupUserAccount' && (
-            <TextInput
-              style={[styles.modalTextInput, { borderColor: message === '' ? COLOR.BLUE : COLOR.RED }]}
-              secureTextEntry={false}
-              autoComplete={'password'}
-              placeholder={t('Account.placeholder.password')}
-              placeholderTextColor={COLOR.GRAY3}
-              value={password}
-              onChangeText={(text) => setPassword(text)}
-            />
+            <View style={styles.passwordContainer}>
+              <TextInput
+                style={[styles.modalTextInput, styles.passwordInput, { borderColor: message === '' ? COLOR.BLUE : COLOR.RED }]}
+                secureTextEntry={!showPassword}
+                autoComplete={'new-password'}
+                textContentType="newPassword"
+                placeholder={t('Account.placeholder.password')}
+                placeholderTextColor={COLOR.GRAY3}
+                value={password}
+                onChangeText={(text) => setPassword(text)}
+              />
+              <Pressable style={styles.eyeIcon} onPress={() => setShowPassword(!showPassword)}>
+                <MaterialCommunityIcons name={showPassword ? 'eye-off' : 'eye'} size={20} color={COLOR.GRAY3} />
+              </Pressable>
+            </View>
           )}
           {accountFormState === 'signupUserAccount' && (
             <Text style={styles.noteText}>{`${t('Account.text.signupOrgNote')}`}</Text>
