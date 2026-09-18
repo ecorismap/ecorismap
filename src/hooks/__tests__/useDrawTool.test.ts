@@ -670,6 +670,31 @@ describe('useDrawTool', () => {
       expect(res.isOK).toBe(false);
       expect(res.message).toBe('hooks.message.invalidPoint');
     });
+
+    it('latlon未確定のプロットはxyから座標を再生成して保存する（位置なしレコード防止）', () => {
+      //ピンチ誤判定などでreleaseの処理が飛ぶと、xyだけ入っていてlatlonが空のまま保存に到達する
+      const { result } = renderDrawTool();
+      mockGetEditableLayerAndRecordSetWithCheck.mockReturnValue({
+        isOK: true,
+        message: '',
+        layer: mockPointLayer,
+        recordSet: [],
+      });
+
+      result.current.drawLine.current = [
+        { id: 'draw1', layerId: undefined, record: undefined, xy: [[10, 10]], latlon: [], properties: ['POINT'] },
+      ];
+
+      let res: ReturnType<typeof result.current.savePoint> | undefined;
+      act(() => {
+        res = result.current.savePoint();
+      });
+
+      expect(res?.isOK).toBe(true);
+      //coordsがundefinedにならず、画面上の位置(xy)から生成した座標が渡ること
+      expect(mockGenerateRecord).toHaveBeenCalledWith('POINT', mockPointLayer, [], { longitude: 10, latitude: 10 });
+      expect(mockAddRecord).toHaveBeenCalledTimes(1);
+    });
   });
 
   describe('位置なしポイントの位置編集', () => {
