@@ -2602,9 +2602,11 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
         //指が動かないズーム（2本指タップ・その場ピンチ）はMoveの2本指検出を通らないため、ここでも取り消す
         if (!isPinch && wasMultiTouch) {
           commitHandwritingStroke();
-          cancelPlotGrant();
           pauseMapMemoDrawing();
         }
+        //isPinchが古い値のままタップのreleaseに入ると、Grantで置いたプロットがlatlon未確定のまま残り
+        //位置なしレコードとして保存されてしまう。ピンチ経路でも必ず取り消す（実ピンチはMoveで取り消し済みのため無害）
+        cancelPlotGrant();
         showDrawLine();
         if (isPinch) setIsPinch(false);
         isMapDragging.current = false;

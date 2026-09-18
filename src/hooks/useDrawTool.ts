@@ -929,6 +929,11 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
 
     const savedRecordSet: RecordType[] = [];
     for (const line of drawLine.current) {
+      //ピンチ誤判定などでrelease処理が飛ぶとlatlonが未確定のまま残り、位置なしレコードができてしまう。
+      //画面に見えている位置(xy)を正として保存直前に再生成する
+      if (line.latlon.length !== line.xy.length) {
+        line.latlon = xyArrayToLatLonArray(line.xy, mapRegion, mapSize, mapViewRef);
+      }
       if (line.record !== undefined && line.layerId !== undefined) {
         const coords = latlonArrayToLatLonObjects(line.latlon)[0];
         const updatedRecord: RecordType = { ...line.record, coords };
@@ -945,7 +950,17 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
 
     resetDrawTools();
     return { isOK: true, message: '', layer: layer, recordSet: savedRecordSet };
-  }, [addRecord, findLayer, generateRecord, getEditableLayerAndRecordSetWithCheck, resetDrawTools, updateRecord]);
+  }, [
+    addRecord,
+    findLayer,
+    generateRecord,
+    getEditableLayerAndRecordSetWithCheck,
+    mapRegion,
+    mapSize,
+    mapViewRef,
+    resetDrawTools,
+    updateRecord,
+  ]);
 
   /**
    * 線を修正したときに、その線に_groupでぶら下がる記号（ブラシ・スタンプ）を新しい線へ移す。
