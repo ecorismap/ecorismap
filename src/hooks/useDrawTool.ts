@@ -160,6 +160,7 @@ export type UseDrawToolReturnType = {
   isPencilTouch: RefObject<boolean | undefined>;
   featuresTransformAngle: RefObject<number>;
   isPinch: boolean;
+  isPinchRef: RefObject<boolean>;
   isTerrainActive: boolean;
   isInfoToolActive: boolean;
   setCurrentInfoTool: (tool: InfoToolType) => void;
@@ -217,10 +218,10 @@ export type UseDrawToolReturnType = {
   resetDrawTools: () => void;
 
   hideDrawLine: () => void;
-  showDrawLine: () => void;
+  showDrawLine: (options?: { immediate?: boolean }) => void;
   toggleTerrain: (activate?: boolean) => void;
   convertPointFeatureToDrawLine: (layerId: string, features: PointRecordType[]) => void;
-  setIsPinch: Dispatch<SetStateAction<boolean>>;
+  setIsPinch: (value: boolean) => void;
   getPXY: (event: GestureResponderEvent) => Position;
   handleGrantPlot: (pXY: Position) => void;
   handwritingSubTool: HandwritingSubToolType;
@@ -292,7 +293,14 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
   const isEditingObject = useRef(false);
   const isSelectedDraw = useRef(false);
   const isPencilTouch = useRef<boolean | undefined>(undefined);
-  const [isPinch, setIsPinch] = useState(false);
+  const [isPinch, setIsPinchState] = useState(false);
+  //PanResponderのコールバックは再レンダー前の古いstateを掴みうるため、判定用に同期的なrefも持つ。
+  //stateは地図のscrollEnabled等の描画用、refはジェスチャー処理の判定用
+  const isPinchRef = useRef(false);
+  const setIsPinch = useCallback((value: boolean) => {
+    isPinchRef.current = value;
+    setIsPinchState(value);
+  }, []);
   const [isInfoToolActive, setInfoToolActive] = useState(false);
   //手書きペン（HANDWRITING_LINE/HANDWRITING_POLYGON）のセッション状態
   const [handwritingSubTool, setHandwritingSubTool] = useState<HandwritingSubToolType>('PEN');
@@ -1297,10 +1305,12 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     setDrawLineVisible(false);
   }, []);
 
-  const showDrawLine = useCallback(() => {
+  const showDrawLine = useCallback((options?: { immediate?: boolean }) => {
     //useEffectでdrawLineを更新してから表示する。この時点ではまだ座標が更新されていないため。
+    //地図側にジェスチャーが渡らずmapRegionが変わらないケースでは再計算のuseEffectが発火せず
+    //非表示のまま固着するため、immediate指定時は即時に表示する（xyは変わっていないので正しい位置）
     refreshDrawLine.current = true;
-    if (drawLine.current.length === 0) setDrawLineVisible(true);
+    if (drawLine.current.length === 0 || options?.immediate) setDrawLineVisible(true);
   }, []);
 
   const deleteDraw = useCallback(() => {
@@ -2504,6 +2514,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     currentInfoTool,
     isPencilTouch,
     isPinch,
+    isPinchRef,
     isTerrainActive,
     isInfoToolActive,
     deleteDraw,

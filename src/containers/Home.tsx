@@ -350,6 +350,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     currentInfoTool,
     isPencilTouch,
     isPinch,
+    isPinchRef,
     isTerrainActive,
     setDrawTool,
     setPointTool,
@@ -731,6 +732,9 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       // 再計算useEffectが走らず描画オーバーレイ（マーカー/ライン）が旧位置に取り残される。
       // Webでは地図移動のたびにshowDrawLine()でrefreshフラグを立て、xyを地図へ追従させる。
       if (Platform.OS === 'web' || !isDrawLineVisible) showDrawLine();
+      //地図ジェスチャーの完了でピンチ状態を解除する（terminate経路はrefだけ先に解除し、stateはここで戻す。
+      //値が変わらなければReactが再レンダーを省くので毎回呼んでよい）
+      setIsPinch(false);
       closeVectorTileInfo();
       setPoiInfo(null);
       setMapLocationInfo(null);
@@ -743,6 +747,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       closeVectorTileInfo,
       isDrawLineVisible,
       showDrawLine,
+      setIsPinch,
       setPoiInfo,
       setMapLocationInfo,
       setTrackFocusPoint,
@@ -2505,7 +2510,8 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
         }
       }
 
-      if (currentDrawTool === 'MOVE' || isPinch) {
+      //isPinchはstateだとPanResponderのコールバックが古い値を掴むため、refで同期的に判定する
+      if (currentDrawTool === 'MOVE' || isPinchRef.current) {
         return;
       }
       if (gesture.numberActiveTouches === 2 || event.nativeEvent.touches.length >= 2) {
@@ -2555,7 +2561,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       handleMoveSelect,
       selectLine,
       hideDrawLine,
-      isPinch,
+      isPinchRef,
       pauseMapMemoDrawing,
       setIsPinch,
     ]
@@ -2597,18 +2603,21 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       const wasMultiTouch = multiTouchSeenRef.current || (event.nativeEvent.changedTouches?.length ?? 0) >= 2;
       multiTouchSeenRef.current = false;
 
-      if (isPinch || wasMultiTouch) {
+      //isPinchはstateだとこのコールバックが古い値を掴み、ピンチ後の解除漏れや誤スキップが起きるためrefで判定する
+      const wasPinch = isPinchRef.current;
+      if (wasPinch || wasMultiTouch) {
         //2本指が関与したタッチは地図操作（パン・ズーム）なので描画は確定しない。
         //指が動かないズーム（2本指タップ・その場ピンチ）はMoveの2本指検出を通らないため、ここでも取り消す
-        if (!isPinch && wasMultiTouch) {
+        if (!wasPinch && wasMultiTouch) {
           commitHandwritingStroke();
           pauseMapMemoDrawing();
         }
-        //isPinchが古い値のままタップのreleaseに入ると、Grantで置いたプロットがlatlon未確定のまま残り
-        //位置なしレコードとして保存されてしまう。ピンチ経路でも必ず取り消す（実ピンチはMoveで取り消し済みのため無害）
+        //Grantで置いたプロットがlatlon未確定のまま残ると位置なしレコードとして保存されてしまうため、
+        //ピンチ経路でも必ず取り消す（実ピンチはMoveで取り消し済みのため無害）
         cancelPlotGrant();
-        showDrawLine();
-        if (isPinch) setIsPinch(false);
+        //releaseに到達した＝地図側はジェスチャーを取っておらず動いていないので、その場で再表示してよい
+        showDrawLine({ immediate: true });
+        if (wasPinch) setIsPinch(false);
         isMapDragging.current = false;
         longPressFiredRef.current = false;
         return;
@@ -2707,7 +2716,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       handleReleasePlotPoint,
       handleReleaseSelect,
       isPencilTouch,
-      isPinch,
+      isPinchRef,
       mapLocationInfo,
       mapRegion,
       mapSize,
@@ -2729,6 +2738,14 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     commitHandwritingStroke();
     cancelPlotGrant();
     pauseMapMemoDrawing();
+    //リリースが呼ばれないため、ここで再表示予約とピンチ解除をしないと
+    //描きかけが非表示のまま固着し、isPinchがtrueに固着して次のタップのreleaseが誤スキップされる
+    //（地図がジェスチャーを取った後はmapRegionが更新されるので、再計算後に表示される）
+    showDrawLine();
+    //refだけ先に解除して次のタップが誤ってピンチ扱いされないようにする。
+    //stateは地図のscrollEnabledを維持するため進行中のピンチが終わるまで残し、
+    //onRegionChangeMapView（ジェスチャー完了）で解除する
+    isPinchRef.current = false;
     isPencilTouch.current = undefined;
     dragStartPosition.current = null;
     multiTouchSeenRef.current = false;
@@ -2738,7 +2755,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     }
     isMapDragging.current = false;
     longPressFiredRef.current = false;
-  }, [cancelPlotGrant, commitHandwritingStroke, isPencilTouch, pauseMapMemoDrawing]);
+  }, [cancelPlotGrant, commitHandwritingStroke, isPencilTouch, isPinchRef, pauseMapMemoDrawing, showDrawLine]);
 
   const recordMultiTouch = useCallback((event: GestureResponderEvent) => {
     //2本目の指の着地はGrantを再発火しないため、ここで記録する（指が動かないズーム対策）
