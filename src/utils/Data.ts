@@ -216,6 +216,15 @@ export const getDataLastValue = (dataSet: RecordType[], fieldName: string) => {
   return value as string | number | undefined;
 };
 
+//連番の最大値。空白（後から列を追加した既存レコード等）や数値にならない値は無視する
+export const getSerialMaxValue = (dataSet: RecordType[], fieldName: string) => {
+  return dataSet.reduce((max, record) => {
+    const value = record.field[fieldName];
+    const parsed = typeof value === 'number' ? value : parseInt(String(value ?? ''), 10);
+    return Number.isFinite(parsed) && parsed > max ? parsed : max;
+  }, 0);
+};
+
 export const getGroupLastValue = (dataSet: RecordType[], groupFieldName: string, groupId: string) => {
   const groupDataSet = dataSet.filter((data) => data.id === groupId);
   if (groupDataSet === undefined) return '';
@@ -237,16 +246,15 @@ export const getDefaultFieldValue = (field: FieldType, dataSet: RecordType[], op
     case 'STRING_MULTI':
       return { [field.name]: field.defaultValue ?? '' };
     case 'SERIAL': {
-      //未入力（空文字やundefined）はparseIntがNaNになるため0として扱う
-      const toSerial = (lastValue: string | number | undefined) => {
-        const parsed = typeof lastValue === 'number' ? lastValue : parseInt(lastValue ?? '0', 10);
-        return (Number.isFinite(parsed) ? parsed : 0) + 1;
-      };
       if (options?.groupId) {
-        return { [field.name]: toSerial(getGroupLastValue(dataSet, field.name, options.groupId)) };
-      } else {
-        return { [field.name]: toSerial(getDataLastValue(dataSet, field.name)) };
+        //グループの子レコードは親レコードの値+1（未入力はNaNになるため0として扱う）
+        const lastValue = getGroupLastValue(dataSet, field.name, options.groupId);
+        const parsed = typeof lastValue === 'number' ? lastValue : parseInt(lastValue ?? '0', 10);
+        return { [field.name]: (Number.isFinite(parsed) ? parsed : 0) + 1 };
       }
+      //末尾のレコード基準だと、連番が空白のレコードが末尾へ移動しただけで採番が1に戻る。
+      //並び順に依存しないよう全レコードの最大値+1で採番する
+      return { [field.name]: getSerialMaxValue(dataSet, field.name) + 1 };
     }
     case 'INTEGER': {
       let value;

@@ -956,3 +956,69 @@ describe('getDefaultField リスト・ラジオの既定値', () => {
     expect(getDefaultField(radioLayer, [], 'id1')['区分']).toBe('樹林');
   });
 });
+
+describe('getDefaultField 連番(SERIAL)の採番', () => {
+  const makeSerialLayer = (): LayerType =>
+    ({
+      id: 'L1',
+      name: 'ポイント',
+      type: 'POINT',
+      permission: 'PRIVATE',
+      colorStyle: {
+        colorType: 'SINGLE',
+        transparency: false,
+        color: 'rgba(0,0,0,1)',
+        fieldName: '',
+        customFieldValue: '',
+        colorRamp: 'RANDOM',
+        colorList: [],
+        lineWidth: 1.5,
+      },
+      label: '',
+      visible: true,
+      active: true,
+      field: [{ id: 'f1', name: '番号', format: 'SERIAL' }],
+    } as unknown as LayerType);
+
+  const makeRecord = (id: string, serial: string | number): RecordType =>
+    ({
+      id,
+      userId: undefined,
+      displayName: null,
+      visible: true,
+      redraw: false,
+      coords: { latitude: 0, longitude: 0 },
+      field: { 番号: serial },
+      updatedAt: 0,
+    } as RecordType);
+
+  it('レコードが無ければ1から始まる', () => {
+    expect(getDefaultField(makeSerialLayer(), [], 'id1')['番号']).toBe(1);
+  });
+
+  it('最大値+1で採番される', () => {
+    const records = [makeRecord('r1', 1), makeRecord('r2', 3), makeRecord('r3', 2)];
+    expect(getDefaultField(makeSerialLayer(), records, 'id1')['番号']).toBe(4);
+  });
+
+  it('連番が空白のレコードが末尾にあっても1に戻らない', () => {
+    //列を後から追加した既存レコード（空白）が、編集による移動で末尾に来た状態
+    const records = [makeRecord('r1', 1), makeRecord('r2', 2), makeRecord('r3', '')];
+    expect(getDefaultField(makeSerialLayer(), records, 'id1')['番号']).toBe(3);
+  });
+
+  it('全レコードの連番が空白なら1から始まる', () => {
+    const records = [makeRecord('r1', ''), makeRecord('r2', '')];
+    expect(getDefaultField(makeSerialLayer(), records, 'id1')['番号']).toBe(1);
+  });
+
+  it('文字列で保存された連番も数値として扱う', () => {
+    const records = [makeRecord('r1', '5'), makeRecord('r2', 2)];
+    expect(getDefaultField(makeSerialLayer(), records, 'id1')['番号']).toBe(6);
+  });
+
+  it('グループ指定時は親レコードの値+1になる', () => {
+    const records = [makeRecord('parent', 10), makeRecord('r2', 99)];
+    expect(getDefaultField(makeSerialLayer(), records, 'id1', { groupId: 'parent' })['番号']).toBe(11);
+  });
+});
