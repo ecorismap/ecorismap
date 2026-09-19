@@ -1255,6 +1255,38 @@ describe('useDrawTool', () => {
       expect(result.current.drawLine.current).toHaveLength(0);
       expect(result.current.isUndoable).toBe(false);
     });
+
+    it('commit/cancelHandwritingStrokeはプロットの編集中オブジェクトを書き換えない', () => {
+      //地図移動中の2本指操作などで無条件に呼ばれるため、プロット編集中のオブジェクトまで
+      //手書き扱いにすると画面から消え、編集対象の紐付けも切れてしまう
+      const { result } = renderDrawTool();
+      act(() => {
+        result.current.setDrawTool('PLOT_POINT');
+      });
+      act(() => {
+        result.current.handleGrantPlot([10, 10]);
+      });
+      act(() => {
+        result.current.handleReleasePlotPoint();
+      });
+      expect(result.current.drawLine.current[0].properties).toContain('EDIT');
+
+      act(() => {
+        result.current.commitHandwritingStroke();
+      });
+      expect(result.current.drawLine.current).toHaveLength(1);
+      expect(result.current.drawLine.current[0].properties).toContain('EDIT');
+      expect(result.current.drawLine.current[0].properties).not.toContain('HANDWRITING');
+      //編集対象の紐付け（インデックス）が維持され、以後の取り消し処理も効くこと
+      expect(result.current.isEditingObject).toBe(true);
+
+      act(() => {
+        result.current.cancelHandwritingStroke();
+      });
+      expect(result.current.drawLine.current).toHaveLength(1);
+      expect(result.current.drawLine.current[0].properties).toContain('EDIT');
+      expect(result.current.drawLine.current[0].properties).not.toContain('HANDWRITING');
+    });
   });
 
   describe('ピンチ意図の取り消し（cancelPlotGrant）', () => {

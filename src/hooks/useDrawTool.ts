@@ -2355,6 +2355,9 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     if (editingObjectIndex.current !== -1) {
       //修正のなぞりかけは破棄して通常モードへ戻る（ハイライトも解除）
       const target = drawLine.current[editingObjectIndex.current];
+      //なぞり修正の対象は手書きストロークのみ。プロット（ポイント・ライン・ポリゴン）の
+      //編集中オブジェクトまで書き換えると手書き扱いになって描画されなくなる
+      if (target !== undefined && !target.properties.includes('HANDWRITING')) return;
       if (target !== undefined) target.properties = ['HANDWRITING'];
       editingLineXY.current = [];
       editingObjectIndex.current = -1;
@@ -2378,6 +2381,10 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     if (editingObjectIndex.current !== -1) {
       //修正のなぞりかけは破棄して通常モードへ戻る（ピンチ操作を優先する。ハイライトも解除）
       const target = drawLine.current[editingObjectIndex.current];
+      //なぞり修正の対象は手書きストロークのみ。プロット（ポイント・ライン・ポリゴン）の編集中
+      //オブジェクトまで書き換えると、編集中に地図を2本指で操作しただけでpropertiesが手書き扱いになり
+      //1点のPathとして何も描かれなくなる（確定ボタンだけ残り、編集対象の紐付けも切れる）
+      if (target !== undefined && !target.properties.includes('HANDWRITING')) return;
       if (target !== undefined) target.properties = ['HANDWRITING'];
       editingLineXY.current = [];
       editingObjectIndex.current = -1;
@@ -2480,10 +2487,10 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
         return { ...line, xy: latLonArrayToXYArray(line.latlon, mapRegion, mapSize, mapViewRef) };
       });
       setDrawLineVisible(true);
-      // Web(maplibre)は地図移動中もisDrawLineVisibleがtrueのままで、setDrawLineVisible(true)が
-      // no-opになり再描画が起きない。再計算したxyを反映するため明示的に再描画を促す。
-      // （モバイルはhide/showのトグルで再マウントされるため不要）
-      if (Platform.OS === 'web') setRedraw(ulid());
+      // 表示中のまま地図が動いた場合はsetDrawLineVisible(true)がno-opになり再描画が起きず、
+      // 再計算したxyが次の別の再レンダーまで反映されない（描きかけが旧位置に取り残される）。
+      // 明示的に再描画を促す
+      setRedraw(ulid());
       // 座標再計算後はフラグをリセット
       refreshDrawLine.current = false;
     }
