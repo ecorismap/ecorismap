@@ -23,6 +23,7 @@ import {
   findDictionaryFileKey,
   MAX_FILENAME_LABEL_LENGTH,
   MAX_BACKUP_LABEL_LENGTH,
+  getMapGesturesEnabled,
 } from '../General';
 import { POINTTOOL, LINETOOL, POLYGONTOOL, BRUSH, STAMP, ERASER } from '../../constants/AppConstants';
 
@@ -392,5 +393,55 @@ describe('findPhotoFileKey / findDictionaryFileKey (zip import compatibility)', 
   it('returns undefined when there is no sqlite for the layer', () => {
     const keysWithoutSqlite = newFormatKeys.filter((k) => !k.endsWith('.sqlite'));
     expect(findDictionaryFileKey(keysWithoutSqlite, layerId)).toBeUndefined();
+  });
+});
+
+describe('getMapGesturesEnabled 地図ジェスチャーの許可判定', () => {
+  const base = {
+    currentMapMemoTool: 'NONE',
+    currentDrawTool: 'NONE',
+    isPencilModeActive: false,
+    isPencilTouch: undefined as boolean | undefined,
+  };
+
+  it('ツール未選択なら許可される', () => {
+    expect(getMapGesturesEnabled(base)).toBe(true);
+  });
+
+  it('地図移動(MOVE)・情報・ポイント移動ツールは許可される', () => {
+    expect(getMapGesturesEnabled({ ...base, currentDrawTool: 'MOVE' })).toBe(true);
+    expect(getMapGesturesEnabled({ ...base, currentDrawTool: 'ALL_INFO' })).toBe(true);
+    expect(getMapGesturesEnabled({ ...base, currentDrawTool: 'MOVE_POINT' })).toBe(true);
+  });
+
+  it('作図系ツールがオンの間は無効', () => {
+    expect(getMapGesturesEnabled({ ...base, currentDrawTool: 'PLOT_POINT' })).toBe(false);
+    expect(getMapGesturesEnabled({ ...base, currentDrawTool: 'PLOT_LINE' })).toBe(false);
+    expect(getMapGesturesEnabled({ ...base, currentDrawTool: 'PLOT_POLYGON' })).toBe(false);
+    expect(getMapGesturesEnabled({ ...base, currentDrawTool: 'HANDWRITING_LINE' })).toBe(false);
+    expect(getMapGesturesEnabled({ ...base, currentDrawTool: 'HANDWRITING_POLYGON' })).toBe(false);
+    expect(getMapGesturesEnabled({ ...base, currentDrawTool: 'SELECT' })).toBe(false);
+    expect(getMapGesturesEnabled({ ...base, currentDrawTool: 'SPLIT_LINE' })).toBe(false);
+  });
+
+  it('マップメモのペン・消しゴムがオンの間は無効', () => {
+    expect(getMapGesturesEnabled({ ...base, currentMapMemoTool: 'PEN' })).toBe(false);
+    expect(getMapGesturesEnabled({ ...base, currentMapMemoTool: 'PEN_ERASER' })).toBe(false);
+  });
+
+  it('ペンロック中は指のタッチだけ地図操作として許可される', () => {
+    //待機時(isPencilTouch=undefined)と指タッチ(false)は許可、Pencilタッチ(true)は不可
+    const pencilMode = { ...base, isPencilModeActive: true };
+    expect(getMapGesturesEnabled({ ...pencilMode, currentMapMemoTool: 'PEN' })).toBe(true);
+    expect(getMapGesturesEnabled({ ...pencilMode, currentMapMemoTool: 'PEN', isPencilTouch: false })).toBe(true);
+    expect(getMapGesturesEnabled({ ...pencilMode, currentMapMemoTool: 'PEN', isPencilTouch: true })).toBe(false);
+    expect(getMapGesturesEnabled({ ...pencilMode, currentDrawTool: 'HANDWRITING_LINE' })).toBe(true);
+    expect(getMapGesturesEnabled({ ...pencilMode, currentDrawTool: 'HANDWRITING_LINE', isPencilTouch: true })).toBe(
+      false
+    );
+  });
+
+  it('ペンロックOFFではメモツール中の指タッチも許可されない', () => {
+    expect(getMapGesturesEnabled({ ...base, currentMapMemoTool: 'PEN', isPencilTouch: false })).toBe(false);
   });
 });

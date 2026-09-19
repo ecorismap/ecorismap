@@ -671,21 +671,6 @@ describe('useDrawTool', () => {
       expect(res.message).toBe('hooks.message.invalidPoint');
     });
 
-    it('setIsPinchはstateと同期してisPinchRefを更新する（PanResponderの古いstate対策）', () => {
-      const { result } = renderDrawTool();
-      expect(result.current.isPinchRef.current).toBe(false);
-      act(() => {
-        result.current.setIsPinch(true);
-      });
-      expect(result.current.isPinch).toBe(true);
-      expect(result.current.isPinchRef.current).toBe(true);
-      act(() => {
-        result.current.setIsPinch(false);
-      });
-      expect(result.current.isPinch).toBe(false);
-      expect(result.current.isPinchRef.current).toBe(false);
-    });
-
     it('showDrawLineのimmediate指定で描きかけが残っていても即時に再表示される', () => {
       //地図が動かずmapRegionが変わらないケース（iOSのピンチ誤判定後など）は
       //再計算useEffectが発火しないため、非表示のまま固着しないことを確認する
@@ -1273,6 +1258,37 @@ describe('useDrawTool', () => {
   });
 
   describe('ピンチ意図の取り消し（cancelPlotGrant）', () => {
+    it('cancelPlotGrant: 位置なしレコードの位置編集中はレコードの紐付けが消えない', () => {
+      //latlonが空でもrecordが紐づく空プロット（位置編集の登録）は削除してはいけない。
+      //削除すると以後のタップが新規レコード追加になってしまう
+      const { result } = renderDrawTool();
+      const noCoordsRecord = { ...mockPointRecord, id: 'no-coords-2', coords: undefined } as unknown as PointRecordType;
+      act(() => {
+        result.current.selectObjectByFeature(mockPointLayer, noCoordsRecord);
+      });
+      act(() => {
+        result.current.setDrawTool('PLOT_POINT');
+      });
+      //2本指の1本目のGrantで位置が動いたと想定
+      act(() => {
+        result.current.handleGrantPlot([30, 40]);
+      });
+      act(() => {
+        result.current.cancelPlotGrant();
+      });
+      //エントリは残り、xyだけ巻き戻り、編集状態が維持される
+      expect(result.current.drawLine.current).toHaveLength(1);
+      expect(result.current.drawLine.current[0].record).toBe(noCoordsRecord);
+      expect(result.current.drawLine.current[0].xy).toHaveLength(0);
+      expect(result.current.isEditingObject).toBe(true);
+      //繰り返し呼ばれても状態が変わらない（2本指中はmoveのたびに呼ばれうる）
+      act(() => {
+        result.current.cancelPlotGrant();
+      });
+      expect(result.current.drawLine.current).toHaveLength(1);
+      expect(result.current.isEditingObject).toBe(true);
+    });
+
     it('cancelPlotGrant: 編集開始前のGrantで作られた新規プロットは取り消される', () => {
       const { result } = renderDrawTool();
       act(() => {

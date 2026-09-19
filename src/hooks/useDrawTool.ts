@@ -159,8 +159,6 @@ export type UseDrawToolReturnType = {
   currentInfoTool: InfoToolType;
   isPencilTouch: RefObject<boolean | undefined>;
   featuresTransformAngle: RefObject<number>;
-  isPinch: boolean;
-  isPinchRef: RefObject<boolean>;
   isTerrainActive: boolean;
   isInfoToolActive: boolean;
   setCurrentInfoTool: (tool: InfoToolType) => void;
@@ -221,7 +219,6 @@ export type UseDrawToolReturnType = {
   showDrawLine: (options?: { immediate?: boolean }) => void;
   toggleTerrain: (activate?: boolean) => void;
   convertPointFeatureToDrawLine: (layerId: string, features: PointRecordType[]) => void;
-  setIsPinch: (value: boolean) => void;
   getPXY: (event: GestureResponderEvent) => Position;
   handleGrantPlot: (pXY: Position) => void;
   handwritingSubTool: HandwritingSubToolType;
@@ -293,14 +290,6 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
   const isEditingObject = useRef(false);
   const isSelectedDraw = useRef(false);
   const isPencilTouch = useRef<boolean | undefined>(undefined);
-  const [isPinch, setIsPinchState] = useState(false);
-  //PanResponderのコールバックは再レンダー前の古いstateを掴みうるため、判定用に同期的なrefも持つ。
-  //stateは地図のscrollEnabled等の描画用、refはジェスチャー処理の判定用
-  const isPinchRef = useRef(false);
-  const setIsPinch = useCallback((value: boolean) => {
-    isPinchRef.current = value;
-    setIsPinchState(value);
-  }, []);
   const [isInfoToolActive, setInfoToolActive] = useState(false);
   //手書きペン（HANDWRITING_LINE/HANDWRITING_POLYGON）のセッション状態
   const [handwritingSubTool, setHandwritingSubTool] = useState<HandwritingSubToolType>('PEN');
@@ -1933,13 +1922,19 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     const index = editingObjectIndex.current;
     if (index < 0 || index >= drawLine.current.length) return;
     const line = drawLine.current[index];
-    if (line.latlon.length === 0) {
+    if (line.latlon.length === 0 && line.record === undefined) {
       //Grantで作成した直後の新規オブジェクトを取り消す（undoのNEWも取り除く）
       drawLine.current = drawLine.current.filter((_, i) => i !== index);
       const lastUndo = undoLine.current[undoLine.current.length - 1];
       if (lastUndo !== undefined && lastUndo.action === 'NEW') undoLine.current.pop();
       isEditingObject.current = false;
       editingObjectIndex.current = -1;
+      editingLineXY.current = [];
+    } else if (line.latlon.length === 0) {
+      //位置なしレコードの位置編集で登録した空プロット（recordが紐づく）は削除しない。
+      //削除するとレコードとの紐付けが失われ、以後のタップが新規レコード追加になってしまう。
+      //Grantで拾ったxyだけを巻き戻し、編集状態は維持する
+      line.xy = [];
       editingLineXY.current = [];
     } else {
       line.xy = latLonArrayToXYArray(line.latlon, mapRegion, mapSize, mapViewRef);
@@ -2513,8 +2508,6 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     visibleInfoPicker,
     currentInfoTool,
     isPencilTouch,
-    isPinch,
-    isPinchRef,
     isTerrainActive,
     isInfoToolActive,
     deleteDraw,
@@ -2537,7 +2530,6 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     setVisibleInfoPicker,
     setCurrentInfoTool,
     convertPointFeatureToDrawLine,
-    setIsPinch,
     getPXY,
     handleGrantPlot,
     handleMovePlot,

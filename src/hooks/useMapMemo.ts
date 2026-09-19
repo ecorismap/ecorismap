@@ -83,6 +83,7 @@ export type UseMapMemoReturnType = {
   pressRedoMapMemo: () => void;
   clearMapMemoEditingLine: () => void;
   pauseMapMemoDrawing: (discardGrantStroke?: boolean) => void;
+  flushPausedPenStroke: () => void;
   setPencilModeActive: Dispatch<SetStateAction<boolean>>;
   setSnapWithLine: Dispatch<SetStateAction<boolean>>;
   setIsStraightStyle: Dispatch<SetStateAction<boolean>>;
@@ -563,6 +564,19 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
       saveMapMemo(newMapMemoLines);
     }, 1000);
   }, [arrowStyle, isStraightStyle, mapMemoLines, mapSize, mapViewRef, penColor, penWidth, saveMapMemo]);
+
+  /**
+   * ツール切替・タブ切替時に、中断中/描きかけのペンストロークを確定して保存する。
+   * 見えないまま残すと、後でペンを再選択したときに無関係な線へ連結されたり、
+   * 捨てたつもりの線が突然保存されたりするため、切替時点で決着させる。
+   * 1点だけの中断はピンチの副産物なので破棄する（Grant側の再開処理と同じ扱い）
+   */
+  const flushPausedPenStroke = useCallback(() => {
+    if (mapMemoEditingLineLatLon.current.length > 1) {
+      finishPenStroke();
+    }
+    clearMapMemoEditingLine();
+  }, [clearMapMemoEditingLine, finishPenStroke]);
 
   /**
    * Handle long press to start line editing
@@ -1360,6 +1374,7 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
     clearMapMemoHistory,
     clearMapMemoEditingLine,
     pauseMapMemoDrawing,
+    flushPausedPenStroke,
     setPencilModeActive,
     setSnapWithLine,
     setIsStraightStyle,

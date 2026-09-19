@@ -54,7 +54,6 @@ import { useSelector } from 'react-redux';
 import { RootState } from '../../store';
 import { MapViewContext } from '../../contexts/MapView';
 import { DrawingToolsContext } from '../../contexts/DrawingTools';
-import { SVGDrawingContext } from '../../contexts/SVGDrawing';
 import { PDFExportContext } from '../../contexts/PDFExport';
 import { LocationTrackingContext } from '../../contexts/LocationTracking';
 import { ProjectContext } from '../../contexts/Project';
@@ -77,7 +76,7 @@ import { HomeMapMemoTools } from '../organisms/HomeMapMemoTools';
 import { HomePopup } from '../organisms/HomePopup';
 import { HomePoiPopup } from '../organisms/HomePoiPopup';
 import { HomeTrackPointPopup } from '../organisms/HomeTrackPointPopup';
-import { isMapMemoDrawTool } from '../../utils/General';
+import { getMapGesturesEnabled } from '../../utils/General';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import BottomSheet from '@gorhom/bottom-sheet';
 import { ReduceMotion, useSharedValue } from 'react-native-reanimated';
@@ -146,9 +145,6 @@ export default function HomeScreen() {
     [bottomSheetRef, navSheetRef]
   );
 
-  // SVGDrawingContext
-  const { mapMemoEditingLine, mapMemoEditingLineLatLon } = useContext(SVGDrawingContext);
-
   // MapViewContext
   const {
     mapViewRef,
@@ -158,7 +154,6 @@ export default function HomeScreen() {
     onDrop,
     panResponder,
     isDrawLineVisible,
-    isPinch,
     isTerrainActive,
     toggleTerrain,
     updateLocationFromWebGeolocate,
@@ -168,6 +163,18 @@ export default function HomeScreen() {
   // DrawingToolsContext
   const { featureButton, currentDrawTool, onDragEndPoint, isEditingLine, editingLineId } =
     useContext(DrawingToolsContext);
+
+  //地図ジェスチャーの許可判定（nativeのscrollEnabledと同じルール）。Webにはペンロックが無い
+  const mapGesturesEnabled = useMemo(
+    () =>
+      getMapGesturesEnabled({
+        currentMapMemoTool,
+        currentDrawTool,
+        isPencilModeActive: false,
+        isPencilTouch: undefined,
+      }),
+    [currentDrawTool, currentMapMemoTool]
+  );
 
   // PDFExportContext
   const {
@@ -723,7 +730,6 @@ export default function HomeScreen() {
   const onMapLoad = useCallback(
     async (evt: any) => {
       const map = evt.target;
-      map.touchPitch.enable();
 
       // 地形データソースの追加
       if (!map.getSource('rasterdem')) {
@@ -956,16 +962,11 @@ export default function HomeScreen() {
                 cursor={currentDrawTool === 'PLOT_POINT' ? 'crosshair' : 'auto'}
                 //interactiveLayerIds={interactiveLayerIds} //ラインだけに限定する場合
                 //onMouseMove={onMouseMove}
-                dragPan={
-                  isPinch ||
-                  (isMapMemoDrawTool(currentMapMemoTool) &&
-                    mapMemoEditingLine.length === 0 &&
-                    mapMemoEditingLineLatLon.length === 0) ||
-                  (currentMapMemoTool === 'NONE' &&
-                    (currentDrawTool === 'NONE' || currentDrawTool === 'MOVE' || currentDrawTool.includes('INFO')))
-                }
-                touchZoomRotate={featureButton === 'NONE'}
-                dragRotate={featureButton === 'NONE'}
+                dragPan={mapGesturesEnabled}
+                touchZoomRotate={mapGesturesEnabled}
+                doubleClickZoom={mapGesturesEnabled}
+                dragRotate={mapGesturesEnabled && featureButton === 'NONE'}
+                touchPitch={isTerrainActive && mapGesturesEnabled}
                 sky={skyStyle}
               >
                 <HomeZoomLevel zoom={zoom} top={20} left={10} />

@@ -41,7 +41,7 @@ import { DEM_VIEWSHED_MAP_ID } from '../../constants/DemSources';
 import { useWindow } from '../../hooks/useWindow';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../store';
-import { isMapMemoDrawTool } from '../../utils/General';
+import { getMapGesturesEnabled } from '../../utils/General';
 import { withTileSignature } from '../../utils/TileSignature';
 import { TileMapType, PaperOrientationType, PaperSizeType, ScaleType } from '../../types';
 import { MapViewContext } from '../../contexts/MapView';
@@ -232,7 +232,7 @@ export default function HomeScreen() {
   );
 
   // SVGDrawingContext
-  const { isPencilTouch, mapMemoEditingLine, mapMemoEditingLineLatLon } = useContext(SVGDrawingContext);
+  const { isPencilTouch } = useContext(SVGDrawingContext);
 
   // MapViewContext
   const {
@@ -252,7 +252,6 @@ export default function HomeScreen() {
     pressCompass,
     pressGPS,
     panResponder,
-    isPinch,
     isDrawLineVisible,
     setPoiInfo,
   } = useContext(MapViewContext);
@@ -291,27 +290,13 @@ export default function HomeScreen() {
 
   const scrollEnabled = useMemo(
     () =>
-      isPinch ||
-      (isMapMemoDrawTool(currentMapMemoTool) &&
-        isPencilModeActive &&
-        !isPencilTouch &&
-        mapMemoEditingLine.length === 0 &&
-        mapMemoEditingLineLatLon.length === 0) ||
-      (currentMapMemoTool === 'NONE' &&
-        (currentDrawTool === 'NONE' ||
-          currentDrawTool === 'MOVE' ||
-          currentDrawTool.includes('INFO') ||
-          currentDrawTool === 'MOVE_POINT' ||
-          (isPencilModeActive && !isPencilTouch))),
-    [
-      currentDrawTool,
-      currentMapMemoTool,
-      isPencilModeActive,
-      isPencilTouch,
-      isPinch,
-      mapMemoEditingLine.length,
-      mapMemoEditingLineLatLon.length,
-    ]
+      getMapGesturesEnabled({
+        currentMapMemoTool,
+        currentDrawTool,
+        isPencilModeActive,
+        isPencilTouch,
+      }),
+    [currentDrawTool, currentMapMemoTool, isPencilModeActive, isPencilTouch]
   );
 
   const styles = StyleSheet.create({
