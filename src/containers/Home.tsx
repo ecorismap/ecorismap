@@ -248,6 +248,9 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
   // このタッチに2本目の指が関与したか。指が動かないズーム系ジェスチャー（2本指タップ・その場ピンチ）は
   // Moveイベントが発火せず2本指検出を通らないため、タッチ開始時にも記録してリリース時に地図操作として扱う
   const multiTouchSeenRef = useRef(false);
+  //2本指検出時の後始末（描きかけの取り消し・中断等）を1ジェスチャー1回に限定するフラグ。
+  //毎フレーム再実行すると冪等でない処理（cancelHandwritingStroke等）が二重適用される
+  const multiTouchHandledRef = useRef(false);
   const longPressTimerRef = useRef<NodeJS.Timeout | null>(null);
   // 長押しポップアップが表示されたタッチでは、リリース時のフィーチャー選択を抑止する
   const longPressFiredRef = useRef(false);
@@ -438,6 +441,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     pressRedoMapMemo,
     clearMapMemoHistory,
     pauseMapMemoDrawing,
+    flushPausedPenStroke,
     setPencilModeActive,
     setSnapWithLine,
     setIsStraightStyle,
@@ -1179,6 +1183,8 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
   const selectMapMemoTool = useCallback(
     async (value: MapMemoToolType | undefined) => {
       setInfoToolActive(false);
+      //中断中/描きかけのペンストロークが見えないまま残らないよう、切替前に確定して保存する
+      flushPausedPenStroke();
       if (value === undefined) {
         setMapMemoTool('NONE');
       } else {
@@ -1193,6 +1199,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     },
     [
       checkEditableMapMemo,
+      flushPausedPenStroke,
       resetDrawTools,
       setDrawTool,
       setInfoToolActive,
@@ -1371,6 +1378,8 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
 
   const selectFeatureButton = useCallback(
     (value: FeatureButtonType) => {
+      //中断中/描きかけのペンストロークが見えないまま残らないよう、タブ切替前に確定して保存する
+      flushPausedPenStroke();
       setDrawTool('NONE');
       setMapMemoTool('NONE');
       toggleTerrain(value === 'NONE');
@@ -1379,7 +1388,16 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       clearMapMemoHistory();
       if (Platform.OS !== 'web') toggleHeadingUp(false);
     },
-    [setDrawTool, setMapMemoTool, toggleTerrain, setFeatureButton, resetDrawTools, clearMapMemoHistory, toggleHeadingUp]
+    [
+      flushPausedPenStroke,
+      setDrawTool,
+      setMapMemoTool,
+      toggleTerrain,
+      setFeatureButton,
+      resetDrawTools,
+      clearMapMemoHistory,
+      toggleHeadingUp,
+    ]
   );
 
   const finishEditPosition = useCallback(
@@ -2366,6 +2384,14 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     async (event: GestureResponderEvent) => {
       //@ts-ignore
       isPencilTouch.current = !!event.nativeEvent.altitudeAngle;
+      //前ジェスチャーの状態が残らないよう、早期returnより前にリセットする
+      multiTouchSeenRef.current = event.nativeEvent.touches.length >= 2;
+      multiTouchHandledRef.current = false;
+      //terminate後にonRegionChangeCompleteが来なかった場合の自己回復。
+      //新しいタッチの時点では地図は静止しているため、ピンチ状態の解除と描きかけの即時再表示が安全にできる
+      //（値が変わらなければReactが再レンダーを省くので毎回呼んでよい）
+      if (!isPinchRef.current) setIsPinch(false);
+      if (!isDrawLineVisible) showDrawLine({ immediate: true });
       if (!event.nativeEvent.touches.length) return;
 
       const pXY = getPXY(event);
@@ -2373,7 +2399,6 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       // ドラッグ開始位置とタッチ開始時刻を記録
       dragStartPosition.current = { x: pXY[0], y: pXY[1] };
       touchStartTimeRef.current = getEventTimestamp(event);
-      multiTouchSeenRef.current = event.nativeEvent.touches.length >= 2;
 
       // 新しいタッチの開始時に長押し発火フラグをリセット
       longPressFiredRef.current = false;
@@ -2385,9 +2410,10 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
 
       // 長押し検出タイマーを開始（800ms）
       // ドローツールが開いていても、特定のツールが選択されていない場合は長押しを有効にする
-      // editPositionモード中は長押しを無効にする
+      // editPositionモード中と2本指タッチでは長押しを無効にする
       if (
         !isMeasuring &&
+        !multiTouchSeenRef.current &&
         (featureButton === 'NONE' || currentDrawTool === 'NONE') &&
         currentMapMemoTool === 'NONE' &&
         featureButton !== 'MEMO' &&
@@ -2436,11 +2462,8 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
         handleGrantHandwriting(pXY, handwritingPenStyleParam);
       } else if (featureButton === 'MEMO' || (featureButton === 'LINE' && isEraserTool(currentMapMemoTool))) {
         //LINEタブでも手書きの消しゴム（メモの消しゴム）を使えるようにする
-        if (isMapMemoDrawTool(currentMapMemoTool) && !isPencilTouch.current && isPencilModeActive) {
-          setIsPinch(true);
-        } else {
-          handleGrantMapMemo(event);
-        }
+        //（ペンロック中の指タッチは上の分岐で地図操作になるため、ここに来るのは描画するタッチのみ）
+        handleGrantMapMemo(event);
       }
     },
     [
@@ -2456,10 +2479,13 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       handleGrantSelect,
       handwritingPenStyleParam,
       hideDrawLine,
+      isDrawLineVisible,
       isPencilModeActive,
       isPencilTouch,
+      isPinchRef,
       route.params?.mode,
       setIsPinch,
+      showDrawLine,
       mapRegion,
       mapSize,
       setMapLocationInfo,
@@ -2515,7 +2541,17 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
         return;
       }
       if (gesture.numberActiveTouches === 2 || event.nativeEvent.touches.length >= 2) {
+        //パームリジェクション: ペンロック中にPencilで描画している最中の指・手のひらは完全に無視する。
+        //multiTouchSeenRefを戻すことで、指が離れた後もPencilの描画を続けられる
+        if (isPencilModeActive && isPencilTouch.current === true) {
+          multiTouchSeenRef.current = false;
+          return;
+        }
         multiTouchSeenRef.current = true;
+        //後始末は1ジェスチャー1回だけ。毎フレーム再実行すると冪等でない処理
+        //（cancelHandwritingStroke等）が二重適用され、無関係な描きかけが消える
+        if (multiTouchHandledRef.current) return;
+        multiTouchHandledRef.current = true;
         //タッチ開始直後の2本目着地はピンチ意図とみなし、1本目のGrantで拾った点を取り消す
         const isPinchIntentFromStart = getEventTimestamp(event) - touchStartTimeRef.current < PINCH_INTENT_DURATION_MS;
         if (isPinchIntentFromStart) {
@@ -2535,23 +2571,26 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
         }
         //ペンで描画中はストロークを破棄せず中断し、後で続きを描けるようにする
         pauseMapMemoDrawing(isPinchIntentFromStart);
-        //描きかけ（未確定の内容）がある間は2本指でも地図操作へ切り替えない。
-        //地図側にジェスチャーを渡すと描きかけの非表示固着や座標未確定の事故が起きるため、
-        //地図を動かしたいときは確定するか地図移動ツールへ持ち替える。
-        //ペンロック中は指のタッチ＝地図操作なので従来どおり切り替える
-        const hasUnfinishedDrawing =
-          (isPlotTool(currentDrawTool) && isEditingObject) ||
-          (isHandwritingTool(currentDrawTool) && (isEditingDraw || isEditingObject)) ||
-          (isMapMemoDrawTool(currentMapMemoTool) && mapMemoEditingLine.current.length > 0);
-        if (!isPencilModeActive && hasUnfinishedDrawing) return;
+        //作図系ツール（プロット・手書き・編集選択・分割）やマップメモのペン・消しゴムがオンの間は
+        //2本指でも地図操作へ切り替えない。地図側にジェスチャーを渡すと描きかけの非表示固着や
+        //座標未確定の事故が起きるため、地図を動かしたいときは地図移動ツールへの持ち替え
+        //（メモはツールをオフに）で行う。ペンロック中の指のみのタッチは地図操作なので従来どおり切り替える。
+        //編集選択は選択前だと地図移動ボタンが出ない（対象を探すパン・ズームが必要）ため、
+        //何かを選択・編集している間だけ無効にする
+        const isDrawToolActive =
+          isPlotTool(currentDrawTool) ||
+          isHandwritingTool(currentDrawTool) ||
+          currentDrawTool === 'SPLIT_LINE' ||
+          (currentDrawTool === 'SELECT' && (isEditingObject || isSelectedDraw));
+        if (!isPencilModeActive && (isDrawToolActive || isMapMemoDrawTool(currentMapMemoTool))) return;
         hideDrawLine();
         setIsPinch(true);
       } else if (isMapMemoDrawTool(currentMapMemoTool)) {
         //2本指が関与したジェスチャーでは、指を1本離した後の残り指で描かない
         if (!multiTouchSeenRef.current) handleMoveMapMemo(event);
       } else if (currentDrawTool === 'SELECT') {
-        //なげなわ選択の軌跡を伸ばす
-        handleMoveSelect(pXY);
+        //2本指が関与したジェスチャーでは、指を1本離した後の残り指でなげなわを伸ばさない
+        if (!multiTouchSeenRef.current) handleMoveSelect(pXY);
       } else if (isPlotTool(currentDrawTool)) {
         //2本指が関与したジェスチャーでは、指を1本離した後の残り指でノードを動かさない
         if (!multiTouchSeenRef.current) handleMovePlot(pXY);
@@ -2573,11 +2612,11 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       handleMoveSelect,
       selectLine,
       hideDrawLine,
-      isEditingDraw,
       isEditingObject,
       isPencilModeActive,
+      isPencilTouch,
       isPinchRef,
-      mapMemoEditingLine,
+      isSelectedDraw,
       pauseMapMemoDrawing,
       setIsPinch,
     ]
@@ -2618,6 +2657,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       //同時リフト時はchangedTouchesに複数入るため、記録漏れの保険としてここでも確認する
       const wasMultiTouch = multiTouchSeenRef.current || (event.nativeEvent.changedTouches?.length ?? 0) >= 2;
       multiTouchSeenRef.current = false;
+      multiTouchHandledRef.current = false;
 
       //isPinchはstateだとこのコールバックが古い値を掴み、ピンチ後の解除漏れや誤スキップが起きるためrefで判定する
       const wasPinch = isPinchRef.current;
@@ -2631,6 +2671,8 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
         //Grantで置いたプロットがlatlon未確定のまま残ると位置なしレコードとして保存されてしまうため、
         //ピンチ経路でも必ず取り消す（実ピンチはMoveで取り消し済みのため無害）
         cancelPlotGrant();
+        //なげなわの描きかけの残骸が画面に残らないようクリアする
+        selectLine.current = [];
         //releaseに到達した＝地図側はジェスチャーを取っておらず動いていないので、その場で再表示してよい
         showDrawLine({ immediate: true });
         if (wasPinch) setIsPinch(false);
@@ -2740,6 +2782,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       route.params,
       saveLine,
       savePolygon,
+      selectLine,
       setDrawTool,
       setIsPinch,
       showDrawLine,
@@ -2765,6 +2808,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     isPencilTouch.current = undefined;
     dragStartPosition.current = null;
     multiTouchSeenRef.current = false;
+    multiTouchHandledRef.current = false;
     if (longPressTimerRef.current) {
       clearTimeout(longPressTimerRef.current);
       longPressTimerRef.current = null;
@@ -2775,7 +2819,14 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
 
   const recordMultiTouch = useCallback((event: GestureResponderEvent) => {
     //2本目の指の着地はGrantを再発火しないため、ここで記録する（指が動かないズーム対策）
-    if (event.nativeEvent.touches.length >= 2) multiTouchSeenRef.current = true;
+    if (event.nativeEvent.touches.length >= 2) {
+      multiTouchSeenRef.current = true;
+      //2本指では長押しポップアップを出さない
+      if (longPressTimerRef.current) {
+        clearTimeout(longPressTimerRef.current);
+        longPressTimerRef.current = null;
+      }
+    }
     return true;
   }, []);
 

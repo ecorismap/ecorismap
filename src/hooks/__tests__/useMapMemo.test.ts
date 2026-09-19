@@ -1346,6 +1346,58 @@ describe('useMapMemo', () => {
     expect(getMemoData().length).toBe(1);
   });
 
+  it('flushPausedPenStroke: 中断中のストロークが確定して保存されrefが空になること', () => {
+    //ツール切替時に中断ストロークが見えないまま残ると、後で無関係な線に連結・突然保存されるため、
+    //切替時点で確定して決着させる
+    const mockMapViewRef = { current: {} } as any;
+    const { result } = renderHook(() => useMapMemo(mockMapViewRef), { wrapper });
+    jest.useFakeTimers();
+
+    act(() => {
+      result.current.setMapMemoTool('PEN');
+    });
+
+    const makeEvent = (x: number, y: number) =>
+      ({
+        nativeEvent: { locationX: x, locationY: y, pageX: x, pageY: y, touches: [{}] },
+        persist: jest.fn(),
+      } as any);
+
+    act(() => {
+      result.current.handleGrantMapMemo(makeEvent(100, 100));
+    });
+    act(() => {
+      result.current.handleMoveMapMemo(makeEvent(150, 150));
+    });
+    act(() => {
+      result.current.pauseMapMemoDrawing();
+    });
+    expect(result.current.mapMemoEditingLineLatLon.current.length).toBeGreaterThan(1);
+
+    act(() => {
+      result.current.flushPausedPenStroke();
+      jest.runAllTimers();
+    });
+    expect(getMemoData().length).toBe(1);
+    expect(result.current.mapMemoEditingLineLatLon.current.length).toBe(0);
+    expect(result.current.mapMemoEditingLine.current.length).toBe(0);
+  });
+
+  it('flushPausedPenStroke: 描きかけが無ければ何も保存しないこと', () => {
+    const mockMapViewRef = { current: {} } as any;
+    const { result } = renderHook(() => useMapMemo(mockMapViewRef), { wrapper });
+    jest.useFakeTimers();
+
+    act(() => {
+      result.current.setMapMemoTool('PEN');
+    });
+    act(() => {
+      result.current.flushPausedPenStroke();
+      jest.runAllTimers();
+    });
+    expect(getMemoData().length).toBe(0);
+  });
+
   it('ほぼ動いていないGrant直後のストロークはピンチ中断で破棄され点として確定されないこと', () => {
     const mockMapViewRef = { current: {} } as any;
     const { result } = renderHook(() => useMapMemo(mockMapViewRef), { wrapper });

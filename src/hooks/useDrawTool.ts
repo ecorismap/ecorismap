@@ -1933,13 +1933,19 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     const index = editingObjectIndex.current;
     if (index < 0 || index >= drawLine.current.length) return;
     const line = drawLine.current[index];
-    if (line.latlon.length === 0) {
+    if (line.latlon.length === 0 && line.record === undefined) {
       //Grantで作成した直後の新規オブジェクトを取り消す（undoのNEWも取り除く）
       drawLine.current = drawLine.current.filter((_, i) => i !== index);
       const lastUndo = undoLine.current[undoLine.current.length - 1];
       if (lastUndo !== undefined && lastUndo.action === 'NEW') undoLine.current.pop();
       isEditingObject.current = false;
       editingObjectIndex.current = -1;
+      editingLineXY.current = [];
+    } else if (line.latlon.length === 0) {
+      //位置なしレコードの位置編集で登録した空プロット（recordが紐づく）は削除しない。
+      //削除するとレコードとの紐付けが失われ、以後のタップが新規レコード追加になってしまう。
+      //Grantで拾ったxyだけを巻き戻し、編集状態は維持する
+      line.xy = [];
       editingLineXY.current = [];
     } else {
       line.xy = latLonArrayToXYArray(line.latlon, mapRegion, mapSize, mapViewRef);

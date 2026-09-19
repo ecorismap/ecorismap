@@ -122,6 +122,35 @@ export function isMapMemoDrawTool(tool: string) {
   return isPenTool(tool) || isBrushTool(tool) || isStampTool(tool) || isEraserTool(tool);
 }
 
+//地図ジェスチャー（パン・ズーム）を許可するか。
+//native(scrollEnabled/zoomEnabled)とWeb(dragPan等)の両方がこの判定を使い、二重管理を避ける。
+//描画系ツールがオンの間は無効（描きかけの消失・座標未確定事故の防止）。
+//ペンロック中は指のタッチ（isPencilTouch=false）だけ地図操作として許可する
+export function getMapGesturesEnabled(params: {
+  isPinch: boolean;
+  currentMapMemoTool: string;
+  currentDrawTool: string;
+  isPencilModeActive: boolean;
+  isPencilTouch: boolean | undefined;
+  hasMapMemoEditingLine: boolean;
+}) {
+  const { isPinch, currentMapMemoTool, currentDrawTool, isPencilModeActive, isPencilTouch, hasMapMemoEditingLine } =
+    params;
+  if (isPinch) return true;
+  if (isMapMemoDrawTool(currentMapMemoTool)) {
+    //メモ描画ツール中はペンロックの指タッチのみ（描きかけがあるときは不可）
+    return isPencilModeActive && !isPencilTouch && !hasMapMemoEditingLine;
+  }
+  return (
+    currentMapMemoTool === 'NONE' &&
+    (currentDrawTool === 'NONE' ||
+      currentDrawTool === 'MOVE' ||
+      currentDrawTool.includes('INFO') ||
+      currentDrawTool === 'MOVE_POINT' ||
+      (isPencilModeActive && !isPencilTouch))
+  );
+}
+
 export function nearDegree(deg: number, interval: number) {
   const q = Math.trunc((deg % interval) / (interval / 2.0)) * interval;
   const r = Math.trunc(deg / interval);
