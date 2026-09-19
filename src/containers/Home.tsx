@@ -252,6 +252,8 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
   //毎フレーム再実行すると冪等でない処理（cancelHandwritingStroke等）が二重適用される
   const multiTouchHandledRef = useRef(false);
   const longPressTimerRef = useRef<NodeJS.Timeout | null>(null);
+  //ズームボタン後に描きかけを確実に再表示するためのフォールバックタイマー
+  const zoomRestoreTimerRef = useRef<NodeJS.Timeout | null>(null);
   // 長押しポップアップが表示されたタッチでは、リリース時のフィーチャー選択を抑止する
   const longPressFiredRef = useRef(false);
   // iOS Google MapsでonPanDragが発火しないため、PanResponder側でGPS追従解除を行う用のref
@@ -1892,15 +1894,29 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     navigation.navigate('Home');
   }, [clearProject, deleteLocalEncryptKeys, disconnectGoogleAccount, googleAccountEmail, isSettingProject, logout, navigation]);
 
+  //ズーム後の描きかけ再表示はregion変化イベントの再計算に任せるが、上限・下限でクランプされた場合や
+  //refが無効な場合はイベントが来ず非表示のまま固着するため、フォールバックで必ず再表示する
+  //（既に再表示済みならno-op。位置編集中もズームボタンは押せるため、ここが漏れると
+  //「ポイントが見えないのに確定ボタンだけ出ている」状態になる）
+  const scheduleDrawLineRestore = useCallback(() => {
+    if (zoomRestoreTimerRef.current) clearTimeout(zoomRestoreTimerRef.current);
+    zoomRestoreTimerRef.current = setTimeout(() => {
+      zoomRestoreTimerRef.current = null;
+      showDrawLine({ immediate: true });
+    }, 400);
+  }, [showDrawLine]);
+
   const pressZoomIn = useCallback(() => {
     hideDrawLine();
     zoomIn();
-  }, [hideDrawLine, zoomIn]);
+    scheduleDrawLineRestore();
+  }, [hideDrawLine, scheduleDrawLineRestore, zoomIn]);
 
   const pressZoomOut = useCallback(() => {
     hideDrawLine();
     zoomOut();
-  }, [hideDrawLine, zoomOut]);
+    scheduleDrawLineRestore();
+  }, [hideDrawLine, scheduleDrawLineRestore, zoomOut]);
 
   /******************* project buttons ************************** */
 
@@ -2616,6 +2632,12 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       const wasPencilFingerTouch = isPencilModeActive && isPencilTouch.current === false;
       isPencilTouch.current = undefined;
 
+      const pXY = getPXY(event);
+
+      //ドラッグ距離（タップかドラッグかの判定用）。リセット前に計算しておく
+      const dragDistance = dragStartPosition.current
+        ? Math.hypot(pXY[0] - dragStartPosition.current.x, pXY[1] - dragStartPosition.current.y)
+        : 0;
       // ドラッグ開始位置をリセット
       dragStartPosition.current = null;
 
@@ -2624,8 +2646,6 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
         clearTimeout(longPressTimerRef.current);
         longPressTimerRef.current = null;
       }
-
-      const pXY = getPXY(event);
 
       if (route.params?.mode === 'editPosition') showDrawLine();
 
@@ -2652,7 +2672,10 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
         longPressFiredRef.current = false;
         return;
       } else if (currentDrawTool === 'MOVE') {
-        showDrawLine();
+        //タップだけ（地図が動いていない）ならregion変化イベントが来ず再計算が発火しないため即時再表示する。
+        //ドラッグ時に即時表示すると旧位置のxyのまま再計算フラグが消費され、パン後にずれて固着するため、
+        //従来どおりregion変化後の再計算で表示する
+        showDrawLine(dragDistance <= 5 ? { immediate: true } : undefined);
         return;
       } else if (currentDrawTool === 'SELECT') {
         handleReleaseSelect(pXY);
