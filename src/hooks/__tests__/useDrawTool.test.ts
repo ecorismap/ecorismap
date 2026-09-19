@@ -135,10 +135,15 @@ const mockMapRegion = {
   longitudeDelta: 0.01,
   zoom: 15,
 };
+//地図の移動を再現するテストのため差し替え可能にする（既定は同一参照）
+let mockCurrentMapRegion = mockMapRegion;
+const setMockMapRegion = (region: typeof mockMapRegion) => {
+  mockCurrentMapRegion = region;
+};
 jest.mock('../useWindow', () => ({
   useWindow: () => ({
     mapSize: mockMapSize,
-    mapRegion: mockMapRegion,
+    mapRegion: mockCurrentMapRegion,
   }),
 }));
 
@@ -261,6 +266,8 @@ const createTouchEvent = (x: number, y: number) =>
 describe('useDrawTool', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    //地図の移動を再現したテストの影響を残さない
+    setMockMapRegion(mockMapRegion);
     mockPointDataSet.length = 0;
     mockLineDataSet.length = 0;
     mockPolygonDataSet.length = 0;
@@ -692,6 +699,34 @@ describe('useDrawTool', () => {
         result.current.showDrawLine({ immediate: true });
       });
       expect(result.current.isDrawLineVisible).toBe(true);
+    });
+
+    it('即時再表示の後に地図の移動が反映されたら、その位置で座標を再計算する（ずれ防止）', () => {
+      //mapRegionの更新はカメラ情報の取得を挟むため非同期で、指を離した直後の即時再表示のほうが
+      //先に走ることがある。そこで再計算フラグを消費してしまうと移動前の座標で取り残される
+      const { result, rerender } = renderDrawTool();
+      result.current.drawLine.current = [
+        { id: 'draw1', layerId: undefined, record: undefined, xy: [[10, 10]], latlon: [[10, 10]], properties: ['EDIT'] },
+      ];
+      act(() => {
+        result.current.hideDrawLine();
+      });
+      //地図移動の完了より先に即時再表示が走る
+      act(() => {
+        result.current.showDrawLine({ immediate: true });
+      });
+      const converter = jest.requireMock('../../utils/Coords').latLonArrayToXYArray as jest.Mock;
+      converter.mockClear();
+
+      //遅れて地図の移動が反映される
+      const movedRegion = { latitude: 36, longitude: 136, latitudeDelta: 0.02, longitudeDelta: 0.02, zoom: 14 };
+      setMockMapRegion(movedRegion);
+      act(() => {
+        rerender();
+      });
+
+      //移動後のmapRegionで座標が作り直されること
+      expect(converter.mock.calls.some((call) => call[1] === movedRegion)).toBe(true);
     });
 
     it('latlon未確定のプロットはxyから座標を再生成して保存する（位置なしレコード防止）', () => {
