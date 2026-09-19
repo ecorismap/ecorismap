@@ -254,6 +254,8 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
   const longPressTimerRef = useRef<NodeJS.Timeout | null>(null);
   //ズームボタン後に描きかけを確実に再表示するためのフォールバックタイマー
   const zoomRestoreTimerRef = useRef<NodeJS.Timeout | null>(null);
+  //地図移動ツールに切り替える前のツール。もう一度押したときの戻り先
+  const toolBeforeMoveRef = useRef<DrawToolType | undefined>(undefined);
   // 長押しポップアップが表示されたタッチでは、リリース時のフィーチャー選択を抑止する
   const longPressFiredRef = useRef(false);
   // iOS Google MapsでonPanDragが発火しないため、PanResponder側でGPS追従解除を行う用のref
@@ -1457,21 +1459,37 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     await addLocationPoint();
   }, [addLocationPoint]);
 
+  //編集のキャンセル。ドローツールをオフにする操作と同じ後始末を行う。
+  //現在のツールに依存しないので、地図移動ツールへ持ち替えている間のキャンセルでも使える
+  const cancelDraw = useCallback(async () => {
+    if (isEditingDraw) {
+      const ret = await ConfirmAsync(t('Home.confirm.discard'));
+      if (!ret) return;
+    }
+    resetDrawTools();
+    setDrawTool('NONE');
+    toolBeforeMoveRef.current = undefined;
+    //飛翔図は1本＝1個体なので、やめたときも属性を未選択へ戻して選び直してもらう
+    if (editingLayer?.toolPalette === 'HISYOU') clearPaletteFieldValues(editingLayer.id);
+    if (route.params?.mode === 'editPosition') finishEditPosition(true);
+  }, [
+    clearPaletteFieldValues,
+    editingLayer?.id,
+    editingLayer?.toolPalette,
+    finishEditPosition,
+    isEditingDraw,
+    resetDrawTools,
+    route.params?.mode,
+    setDrawTool,
+  ]);
+
   const selectDrawTool = useCallback(
     async (value: DrawToolType) => {
       setInfoToolActive(false);
       if (isPointTool(value) || isLineTool(value) || isPolygonTool(value)) {
         if (currentDrawTool === value) {
-          if (isEditingDraw) {
-            const ret = await ConfirmAsync(t('Home.confirm.discard'));
-            if (!ret) return;
-          }
           //ドローツールをオフ（編集のキャンセルもここを通る）
-          resetDrawTools();
-          setDrawTool('NONE');
-          //飛翔図は1本＝1個体なので、やめたときも属性を未選択へ戻して選び直してもらう
-          if (editingLayer?.toolPalette === 'HISYOU') clearPaletteFieldValues(editingLayer.id);
-          if (route.params?.mode === 'editPosition') finishEditPosition(true);
+          await cancelDraw();
         } else {
           //ドローツールをオン
 
@@ -1539,46 +1557,38 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       } else {
         if (value === 'MOVE') {
           if (currentDrawTool === value) {
-            if (isEditingDraw || isSelectedDraw) return;
-            // MOVEツールを非アクティブにする場合、元の編集ツールに戻す
-            if (isEditingObject) {
-              if (featureButton === 'LINE') {
-                setDrawTool(currentLineTool);
-              } else if (featureButton === 'POLYGON') {
-                setDrawTool(currentPolygonTool);
-              } else {
-                setDrawTool('NONE');
-              }
-            } else {
-              setDrawTool('NONE');
-            }
+            //もう一度押したら地図移動に切り替える前のツールへ戻す。
+            //編集中に「押した同じボタンで戻れない」と、元のツールを探して押す必要があり気づきにくい
+            setDrawTool(toolBeforeMoveRef.current ?? 'NONE');
+            toolBeforeMoveRef.current = undefined;
           } else {
+            //戻り先を覚えておく（作図・編集用のツールのときだけ。NONE等は覚えない）
+            toolBeforeMoveRef.current =
+              isPlotTool(currentDrawTool) || isHandwritingTool(currentDrawTool) || currentDrawTool === 'SELECT'
+                ? currentDrawTool
+                : undefined;
             setDrawTool(value);
           }
         }
       }
     },
     [
+      cancelDraw,
       checkEditableLayerForDraw,
       checkEditableMapMemo,
-      clearPaletteFieldValues,
       isPaletteColorValueEmpty,
       editingLayer?.id,
       editingLayer?.toolPalette,
       convertSelectionToHandwriting,
       convertSessionToPlot,
       currentDrawTool,
-      currentLineTool,
-      currentPolygonTool,
       featureButton,
-      finishEditPosition,
       handleAddLocationPoint,
       handwritingPenStyleParam,
       isEditingDraw,
       isEditingObject,
       isSelectedDraw,
       resetDrawTools,
-      route.params?.mode,
       setDrawTool,
       setInfoToolActive,
       setMapMemoTool,
@@ -3248,6 +3258,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       isUndoAvailable,
       isRedoAvailable,
       pressSaveDraw,
+      cancelDraw,
       pressDeleteDraw,
       finishEditObject,
       resetDrawTools,
@@ -3316,6 +3327,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       isUndoAvailable,
       isRedoAvailable,
       pressSaveDraw,
+      cancelDraw,
       pressDeleteDraw,
       finishEditObject,
       resetDrawTools,

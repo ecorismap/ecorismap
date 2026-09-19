@@ -85,6 +85,7 @@ export interface DrawingToolsContextType {
   isUndoAvailable: boolean;
   isRedoAvailable: boolean;
   pressSaveDraw: () => Promise<boolean>;
+  cancelDraw: () => Promise<void>;
   pressDeleteDraw: () => Promise<void>;
   finishEditObject: () => boolean;
   resetDrawTools: () => void;
