@@ -10,7 +10,7 @@ import { useHomeTopLayout } from '../../hooks/useHomeTopLayout';
 
 //画面上部中央の確定・キャンセルバー。作図（点・線・面）とマップメモの編集選択で共通
 export const HomeEditControlButtons = React.memo(() => {
-  const { currentDrawTool, isEditingObject, pressSaveDraw, finishEditObject, selectDrawTool } =
+  const { currentDrawTool, isEditingObject, pressSaveDraw, finishEditObject, cancelDraw } =
     useContext(DrawingToolsContext);
   const { editControlTop } = useHomeTopLayout();
 
@@ -43,7 +43,13 @@ export const HomeEditControlButtons = React.memo(() => {
     },
   });
 
-  if (!isEditingObject || !(isPlotTool(currentDrawTool) || isHandwritingTool(currentDrawTool))) return null;
+  //地図移動ツールへ持ち替えている間も表示する。消えると編集が終わったように見え、
+  //元のツールへ戻す必要があることに気づけないため（保存はfeatureButtonで分岐するのでMOVE中でも動く）
+  if (
+    !isEditingObject ||
+    !(isPlotTool(currentDrawTool) || isHandwritingTool(currentDrawTool) || currentDrawTool === 'MOVE')
+  )
+    return null;
 
   return (
     <View style={styles.editControlContainer}>
@@ -64,7 +70,8 @@ export const HomeEditControlButtons = React.memo(() => {
       <Pressable
         style={[styles.editButton, { backgroundColor: COLOR.RED }]}
         onPress={() => {
-          selectDrawTool(currentDrawTool); //ツールボタンを押し直したときと同じ処理（resetDrawToolsも内部で呼ばれる）
+          //ツールボタンを押し直したときと同じ後始末。地図移動ツールへ持ち替えている間でもキャンセルできる
+          cancelDraw();
         }}
       >
         <MaterialCommunityIcons name="close" size={18} color={COLOR.WHITE} />

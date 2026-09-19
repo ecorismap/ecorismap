@@ -96,6 +96,7 @@ export const mockDrawingToolsContextValue: DrawingToolsContextType = {
   isUndoable: false,
   isRedoable: false,
   pressSaveDraw: jest.fn().mockResolvedValue(undefined),
+  cancelDraw: jest.fn().mockResolvedValue(undefined),
   pressDeleteDraw: jest.fn().mockResolvedValue(undefined),
   finishEditObject: jest.fn(() => false),
   resetDrawTools: jest.fn(),
