@@ -54,7 +54,6 @@ import { useSelector } from 'react-redux';
 import { RootState } from '../../store';
 import { MapViewContext } from '../../contexts/MapView';
 import { DrawingToolsContext } from '../../contexts/DrawingTools';
-import { SVGDrawingContext } from '../../contexts/SVGDrawing';
 import { PDFExportContext } from '../../contexts/PDFExport';
 import { LocationTrackingContext } from '../../contexts/LocationTracking';
 import { ProjectContext } from '../../contexts/Project';
@@ -146,9 +145,6 @@ export default function HomeScreen() {
     [bottomSheetRef, navSheetRef]
   );
 
-  // SVGDrawingContext
-  const { mapMemoEditingLine, mapMemoEditingLineLatLon } = useContext(SVGDrawingContext);
-
   // MapViewContext
   const {
     mapViewRef,
@@ -158,7 +154,6 @@ export default function HomeScreen() {
     onDrop,
     panResponder,
     isDrawLineVisible,
-    isPinch,
     isTerrainActive,
     toggleTerrain,
     updateLocationFromWebGeolocate,
@@ -173,14 +168,12 @@ export default function HomeScreen() {
   const mapGesturesEnabled = useMemo(
     () =>
       getMapGesturesEnabled({
-        isPinch,
         currentMapMemoTool,
         currentDrawTool,
         isPencilModeActive: false,
         isPencilTouch: undefined,
-        hasMapMemoEditingLine: mapMemoEditingLine.length > 0 || mapMemoEditingLineLatLon.length > 0,
       }),
-    [currentDrawTool, currentMapMemoTool, isPinch, mapMemoEditingLine.length, mapMemoEditingLineLatLon.length]
+    [currentDrawTool, currentMapMemoTool]
   );
 
   // PDFExportContext

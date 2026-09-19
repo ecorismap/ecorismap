@@ -352,8 +352,6 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     isInfoToolActive,
     currentInfoTool,
     isPencilTouch,
-    isPinch,
-    isPinchRef,
     isTerrainActive,
     setDrawTool,
     setPointTool,
@@ -375,7 +373,6 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     toggleTerrain,
     setVisibleInfoPicker,
     setCurrentInfoTool,
-    setIsPinch,
     isAreaSelected,
     featuresTransformAngle,
     handleGrantSelect,
@@ -736,9 +733,6 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       // 再計算useEffectが走らず描画オーバーレイ（マーカー/ライン）が旧位置に取り残される。
       // Webでは地図移動のたびにshowDrawLine()でrefreshフラグを立て、xyを地図へ追従させる。
       if (Platform.OS === 'web' || !isDrawLineVisible) showDrawLine();
-      //地図ジェスチャーの完了でピンチ状態を解除する（terminate経路はrefだけ先に解除し、stateはここで戻す。
-      //値が変わらなければReactが再レンダーを省くので毎回呼んでよい）
-      setIsPinch(false);
       closeVectorTileInfo();
       setPoiInfo(null);
       setMapLocationInfo(null);
@@ -751,7 +745,6 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       closeVectorTileInfo,
       isDrawLineVisible,
       showDrawLine,
-      setIsPinch,
       setPoiInfo,
       setMapLocationInfo,
       setTrackFocusPoint,
@@ -2388,9 +2381,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       multiTouchSeenRef.current = event.nativeEvent.touches.length >= 2;
       multiTouchHandledRef.current = false;
       //terminate後にonRegionChangeCompleteが来なかった場合の自己回復。
-      //新しいタッチの時点では地図は静止しているため、ピンチ状態の解除と描きかけの即時再表示が安全にできる
-      //（値が変わらなければReactが再レンダーを省くので毎回呼んでよい）
-      if (!isPinchRef.current) setIsPinch(false);
+      //新しいタッチの時点では地図は静止しているため、描きかけの即時再表示が安全にできる
       if (!isDrawLineVisible) showDrawLine({ immediate: true });
       if (!event.nativeEvent.touches.length) return;
 
@@ -2440,10 +2431,10 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
 
       //if (route.params?.mode === 'editPosition') hideDrawLine();
       if (isPencilModeActive && isPencilTouch.current === false) {
-        //手書きの描きかけがあれば確定してから地図操作へ
+        //ペンロック中の指タッチは地図操作（scrollEnabledは静的条件で既に有効）。
+        //手書きの描きかけがあれば確定し、地図が動く間は描きかけを隠す
         commitHandwritingStroke();
         hideDrawLine();
-        setIsPinch(true);
       } else if (currentDrawTool === 'MOVE') {
         hideDrawLine();
       } else if (currentDrawTool === 'SELECT') {
@@ -2482,9 +2473,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       isDrawLineVisible,
       isPencilModeActive,
       isPencilTouch,
-      isPinchRef,
       route.params?.mode,
-      setIsPinch,
       showDrawLine,
       mapRegion,
       mapSize,
@@ -2536,8 +2525,8 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
         }
       }
 
-      //isPinchはstateだとPanResponderのコールバックが古い値を掴むため、refで同期的に判定する
-      if (currentDrawTool === 'MOVE' || isPinchRef.current) {
+      //地図が処理するタッチ（MOVEツール・ペンロック中の指ドラッグ）では描画処理をしない
+      if (currentDrawTool === 'MOVE' || (isPencilModeActive && isPencilTouch.current === false)) {
         return;
       }
       if (gesture.numberActiveTouches === 2 || event.nativeEvent.touches.length >= 2) {
@@ -2571,20 +2560,9 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
         }
         //ペンで描画中はストロークを破棄せず中断し、後で続きを描けるようにする
         pauseMapMemoDrawing(isPinchIntentFromStart);
-        //作図系ツール（プロット・手書き・編集選択・分割）やマップメモのペン・消しゴムがオンの間は
-        //2本指でも地図操作へ切り替えない。地図側にジェスチャーを渡すと描きかけの非表示固着や
-        //座標未確定の事故が起きるため、地図を動かしたいときは地図移動ツールへの持ち替え
-        //（メモはツールをオフに）で行う。ペンロック中の指のみのタッチは地図操作なので従来どおり切り替える。
-        //編集選択は選択前だと地図移動ボタンが出ない（対象を探すパン・ズームが必要）ため、
-        //何かを選択・編集している間だけ無効にする
-        const isDrawToolActive =
-          isPlotTool(currentDrawTool) ||
-          isHandwritingTool(currentDrawTool) ||
-          currentDrawTool === 'SPLIT_LINE' ||
-          (currentDrawTool === 'SELECT' && (isEditingObject || isSelectedDraw));
-        if (!isPencilModeActive && (isDrawToolActive || isMapMemoDrawTool(currentMapMemoTool))) return;
-        hideDrawLine();
-        setIsPinch(true);
+        //2本指を地図操作へ引き渡すことはしない（地図ジェスチャーの可否はscrollEnabled等のpropsで
+        //静的に決まる）。ツールON中の2本指はここまでの後始末だけして無視する。
+        //地図を動かしたいときは地図移動ツールへの持ち替え（メモはツールをオフに）で行う
       } else if (isMapMemoDrawTool(currentMapMemoTool)) {
         //2本指が関与したジェスチャーでは、指を1本離した後の残り指で描かない
         if (!multiTouchSeenRef.current) handleMoveMapMemo(event);
@@ -2611,14 +2589,9 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       handleMovePlot,
       handleMoveSelect,
       selectLine,
-      hideDrawLine,
-      isEditingObject,
       isPencilModeActive,
       isPencilTouch,
-      isPinchRef,
-      isSelectedDraw,
       pauseMapMemoDrawing,
-      setIsPinch,
     ]
   );
 
@@ -2639,6 +2612,8 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
 
   const handlePanResponderRelease = useCallback(
     async (event: GestureResponderEvent) => {
+      //ペンロック中の指タッチは地図操作なので、情報取得タップ等を発火させない（リセット前に判定を取る）
+      const wasPencilFingerTouch = isPencilModeActive && isPencilTouch.current === false;
       isPencilTouch.current = undefined;
 
       // ドラッグ開始位置をリセット
@@ -2659,23 +2634,20 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       multiTouchSeenRef.current = false;
       multiTouchHandledRef.current = false;
 
-      //isPinchはstateだとこのコールバックが古い値を掴み、ピンチ後の解除漏れや誤スキップが起きるためrefで判定する
-      const wasPinch = isPinchRef.current;
-      if (wasPinch || wasMultiTouch) {
-        //2本指が関与したタッチは地図操作（パン・ズーム）なので描画は確定しない。
+      if (wasPencilFingerTouch || wasMultiTouch) {
+        //地図操作のタッチ（ペンロックの指）と2本指が関与したタッチでは描画を確定しない。
         //指が動かないズーム（2本指タップ・その場ピンチ）はMoveの2本指検出を通らないため、ここでも取り消す
-        if (!wasPinch && wasMultiTouch) {
+        if (wasMultiTouch) {
           commitHandwritingStroke();
           pauseMapMemoDrawing();
         }
         //Grantで置いたプロットがlatlon未確定のまま残ると位置なしレコードとして保存されてしまうため、
-        //ピンチ経路でも必ず取り消す（実ピンチはMoveで取り消し済みのため無害）
+        //ここでも必ず取り消す（Moveで取り消し済みなら無害）
         cancelPlotGrant();
         //なげなわの描きかけの残骸が画面に残らないようクリアする
         selectLine.current = [];
-        //releaseに到達した＝地図側はジェスチャーを取っておらず動いていないので、その場で再表示してよい
+        //描きかけを再表示する（地図が動いた場合はmapRegion更新時に位置を再計算して表示される）
         showDrawLine({ immediate: true });
-        if (wasPinch) setIsPinch(false);
         isMapDragging.current = false;
         longPressFiredRef.current = false;
         return;
@@ -2773,8 +2745,8 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       handleReleasePlotLinePolygon,
       handleReleasePlotPoint,
       handleReleaseSelect,
+      isPencilModeActive,
       isPencilTouch,
-      isPinchRef,
       mapLocationInfo,
       mapRegion,
       mapSize,
@@ -2784,7 +2756,6 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       savePolygon,
       selectLine,
       setDrawTool,
-      setIsPinch,
       showDrawLine,
       isMeasuring,
       setMeasureB,
@@ -2797,14 +2768,9 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     commitHandwritingStroke();
     cancelPlotGrant();
     pauseMapMemoDrawing();
-    //リリースが呼ばれないため、ここで再表示予約とピンチ解除をしないと
-    //描きかけが非表示のまま固着し、isPinchがtrueに固着して次のタップのreleaseが誤スキップされる
+    //リリースが呼ばれないため、ここで再表示を予約しないと描きかけが非表示のまま固着する
     //（地図がジェスチャーを取った後はmapRegionが更新されるので、再計算後に表示される）
     showDrawLine();
-    //refだけ先に解除して次のタップが誤ってピンチ扱いされないようにする。
-    //stateは地図のscrollEnabledを維持するため進行中のピンチが終わるまで残し、
-    //onRegionChangeMapView（ジェスチャー完了）で解除する
-    isPinchRef.current = false;
     isPencilTouch.current = undefined;
     dragStartPosition.current = null;
     multiTouchSeenRef.current = false;
@@ -2815,7 +2781,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     }
     isMapDragging.current = false;
     longPressFiredRef.current = false;
-  }, [cancelPlotGrant, commitHandwritingStroke, isPencilTouch, isPinchRef, pauseMapMemoDrawing, showDrawLine]);
+  }, [cancelPlotGrant, commitHandwritingStroke, isPencilTouch, pauseMapMemoDrawing, showDrawLine]);
 
   const recordMultiTouch = useCallback((event: GestureResponderEvent) => {
     //2本目の指の着地はGrantを再発火しないため、ここで記録する（指が動かないズーム対策）
@@ -3176,7 +3142,6 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       pressGPS,
       updateLocationFromWebGeolocate,
       endWebGeolocate,
-      isPinch,
       panResponder,
       isDrawLineVisible,
       isTerrainActive,
@@ -3212,7 +3177,6 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       isDrawLineVisible,
       isTerrainActive,
       toggleTerrain,
-      isPinch,
       poiInfo,
       setPoiInfoWithControl,
       mapLocationInfo,

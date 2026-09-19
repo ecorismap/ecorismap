@@ -33,7 +33,6 @@ export const mockMapViewContextValue: MapViewContextType = {
   pressGPS: jest.fn().mockResolvedValue(undefined),
   updateLocationFromWebGeolocate: jest.fn(),
   endWebGeolocate: jest.fn(),
-  isPinch: false,
   panResponder: PanResponder.create({
     onStartShouldSetPanResponder: () => false,
     onMoveShouldSetPanResponder: () => false,

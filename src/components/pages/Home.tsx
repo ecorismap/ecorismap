@@ -232,7 +232,7 @@ export default function HomeScreen() {
   );
 
   // SVGDrawingContext
-  const { isPencilTouch, mapMemoEditingLine, mapMemoEditingLineLatLon } = useContext(SVGDrawingContext);
+  const { isPencilTouch } = useContext(SVGDrawingContext);
 
   // MapViewContext
   const {
@@ -252,7 +252,6 @@ export default function HomeScreen() {
     pressCompass,
     pressGPS,
     panResponder,
-    isPinch,
     isDrawLineVisible,
     setPoiInfo,
   } = useContext(MapViewContext);
@@ -292,22 +291,12 @@ export default function HomeScreen() {
   const scrollEnabled = useMemo(
     () =>
       getMapGesturesEnabled({
-        isPinch,
         currentMapMemoTool,
         currentDrawTool,
         isPencilModeActive,
         isPencilTouch,
-        hasMapMemoEditingLine: mapMemoEditingLine.length > 0 || mapMemoEditingLineLatLon.length > 0,
       }),
-    [
-      currentDrawTool,
-      currentMapMemoTool,
-      isPencilModeActive,
-      isPencilTouch,
-      isPinch,
-      mapMemoEditingLine.length,
-      mapMemoEditingLineLatLon.length,
-    ]
+    [currentDrawTool, currentMapMemoTool, isPencilModeActive, isPencilTouch]
   );
 
   const styles = StyleSheet.create({

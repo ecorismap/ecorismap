@@ -29,7 +29,6 @@ export interface MapViewContextType {
   // Web専用: maplibre GeolocateControl（地図の現在地ボタン）のイベントからアプリのGPS状態を同期する
   updateLocationFromWebGeolocate: (coords: LocationType) => void;
   endWebGeolocate: () => void;
-  isPinch: boolean;
   panResponder: any;
   isDrawLineVisible: boolean;
   isTerrainActive?: boolean;

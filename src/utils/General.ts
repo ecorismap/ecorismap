@@ -122,24 +122,22 @@ export function isMapMemoDrawTool(tool: string) {
   return isPenTool(tool) || isBrushTool(tool) || isStampTool(tool) || isEraserTool(tool);
 }
 
-//地図ジェスチャー（パン・ズーム）を許可するか。
-//native(scrollEnabled/zoomEnabled)とWeb(dragPan等)の両方がこの判定を使い、二重管理を避ける。
-//描画系ツールがオンの間は無効（描きかけの消失・座標未確定事故の防止）。
+//地図ジェスチャー（パン・ズーム）を許可するか。ツール状態から静的に決まる唯一の判定関数で、
+//native(scrollEnabled/zoomEnabled)とWeb(dragPan等)の両方がこれを参照する。
+//作図系ツール・メモ描画ツールがオンの間は無効（描きかけの消失・座標未確定事故の防止）。
+//地図を動かしたいときは地図移動(MOVE)ツールへの持ち替え（メモはツールをオフ）で行う。
 //ペンロック中は指のタッチ（isPencilTouch=false）だけ地図操作として許可する
 export function getMapGesturesEnabled(params: {
-  isPinch: boolean;
   currentMapMemoTool: string;
   currentDrawTool: string;
   isPencilModeActive: boolean;
   isPencilTouch: boolean | undefined;
-  hasMapMemoEditingLine: boolean;
 }) {
-  const { isPinch, currentMapMemoTool, currentDrawTool, isPencilModeActive, isPencilTouch, hasMapMemoEditingLine } =
-    params;
-  if (isPinch) return true;
+  const { currentMapMemoTool, currentDrawTool, isPencilModeActive, isPencilTouch } = params;
   if (isMapMemoDrawTool(currentMapMemoTool)) {
-    //メモ描画ツール中はペンロックの指タッチのみ（描きかけがあるときは不可）
-    return isPencilModeActive && !isPencilTouch && !hasMapMemoEditingLine;
+    //メモ描画ツール中はペンロックの指タッチのみ地図操作。
+    //ピンチで中断したストロークが残っていても指で地図を動かせるよう、描きかけの有無は見ない
+    return isPencilModeActive && !isPencilTouch;
   }
   return (
     currentMapMemoTool === 'NONE' &&

@@ -489,7 +489,9 @@ export const HomeDrawTools = React.memo(() => {
 
         {/* 編集中はグレーアウトではなく非表示にする */}
         {!editPositionMode && !isSelectedDraw && !isEditingDraw && !isEditingObject && <SelectToolButton />}
-        {(isEditingDraw || isEditingObject) && <MoveToolButton />}
+        {/* 編集選択は選択前でも表示する。ツールON中は2本指で地図が動かないため、
+            対象を探すパン・ズームはこのボタンへの持ち替えで行う */}
+        {(isEditingDraw || isEditingObject || currentDrawTool === 'SELECT') && <MoveToolButton />}
         <PencilLockButton />
         {(isEditingDraw || isEditingObject || eraserActive) && <UndoToolButton />}
         {(isEditingDraw || isEditingObject || eraserActive) && <RedoToolButton />}
