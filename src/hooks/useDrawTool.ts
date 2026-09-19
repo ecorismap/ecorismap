@@ -21,6 +21,7 @@ import {
   PolygonRecordType,
   PolygonToolType,
   RecordType,
+  RegionType,
   UndoLineType,
   LocationType,
 } from '../types';
@@ -263,6 +264,8 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
   const [visibleInfoPicker, setVisibleInfoPicker] = useState(false);
   const [isDrawLineVisible, setDrawLineVisible] = useState(true);
   const refreshDrawLine = useRef(true);
+  //最後に再計算したときのmapRegion。地図が動いた回とそれ以外を見分けるために保持する
+  const lastRefreshedRegion = useRef<RegionType | null>(null);
   //latlonが座標の真。xyは表示・ヒットテスト用の派生値で、地図移動時にlatlonから再投影される。
   //編集操作ではxy全体からlatlonを再生成せず、変更した頂点のみxyToLatLonで部分更新する
   //（全再生成すると全頂点が画面ピクセル解像度に丸められ、編集のたびに精度劣化が累積するため）。
@@ -2481,6 +2484,9 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
   );
 
   useEffect(() => {
+    //地図の移動が反映された回かどうか。表示/非表示の切り替えだけで走った回と区別する
+    const isRegionUpdated = lastRefreshedRegion.current !== mapRegion;
+    lastRefreshedRegion.current = mapRegion;
     //ライン編集中にサイズ変更。移動中は更新しない。
     if (drawLine.current.length > 0 && refreshDrawLine.current) {
       drawLine.current = drawLine.current.map((line) => {
@@ -2491,8 +2497,11 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
       // 再計算したxyが次の別の再レンダーまで反映されない（描きかけが旧位置に取り残される）。
       // 明示的に再描画を促す
       setRedraw(ulid());
-      // 座標再計算後はフラグをリセット
-      refreshDrawLine.current = false;
+      // 地図の移動が反映された回だけフラグを消費する。
+      // mapRegionの更新はカメラ情報の取得を挟むため非同期で、指を離した直後の再表示
+      // （immediate）のほうが先に走ることがある。そこでフラグを消してしまうと、
+      // 移動前の座標で描いたまま取り残されて位置がずれる
+      if (isRegionUpdated) refreshDrawLine.current = false;
     }
   }, [isDrawLineVisible, mapRegion, mapSize, mapViewRef]);
 
