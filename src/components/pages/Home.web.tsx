@@ -161,8 +161,7 @@ export default function HomeScreen() {
   } = useContext(MapViewContext);
 
   // DrawingToolsContext
-  const { featureButton, currentDrawTool, onDragEndPoint, isEditingLine, editingLineId } =
-    useContext(DrawingToolsContext);
+  const { featureButton, currentDrawTool, onDragEndPoint } = useContext(DrawingToolsContext);
 
   //地図ジェスチャーの許可判定（nativeのscrollEnabledと同じルール）。Webにはペンロックが無い
   const mapGesturesEnabled = useMemo(
@@ -1025,7 +1024,6 @@ export default function HomeScreen() {
                   const layer = layers.find((v) => v.id === d.layerId);
                   if (!layer?.visible) return null;
 
-                  // isEditingLineがtrueのときのみeditingLineIdを渡す
                   return (
                     <Line
                       key={`${d.layerId}-${d.userId}`}
@@ -1034,7 +1032,6 @@ export default function HomeScreen() {
                       zoom={zoom}
                       zIndex={101}
                       selectedRecord={selectedRecord}
-                      editingLineId={isEditingLine ? editingLineId : undefined}
                       zoomDecimal={zoomDecimal}
                     />
                   );

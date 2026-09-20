@@ -17,8 +17,6 @@ import {
   latLonObjectsToXYArray,
   latLonToXY,
   latlonArrayToLatLonObjects,
-  simplifyWithTolerance,
-  smoothingByBezier,
   xyArrayToLatLonArray,
   xyToLatLon,
   refineArrowStroke,
@@ -65,8 +63,6 @@ export type UseMapMemoReturnType = {
   snapWithLine: boolean;
   arrowStyle: ArrowStyleType;
   isStraightStyle: boolean;
-  isEditingLine: boolean;
-  editingLineId: string | undefined;
   setMapMemoTool: Dispatch<SetStateAction<MapMemoToolType>>;
   setPenWidth: Dispatch<SetStateAction<PenWidthType>>;
   setVisibleMapMemoColor: Dispatch<SetStateAction<boolean>>;
@@ -78,7 +74,6 @@ export type UseMapMemoReturnType = {
   handleGrantMapMemo: (event: GestureResponderEvent) => void;
   handleMoveMapMemo: (event: GestureResponderEvent) => void;
   handleReleaseMapMemo: (event: GestureResponderEvent) => void;
-  handleLongPressMapMemo: (event: GestureResponderEvent) => void;
   pressUndoMapMemo: () => void;
   pressRedoMapMemo: () => void;
   clearMapMemoEditingLine: () => void;
@@ -158,11 +153,6 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
   const [mapMemoLines, setMapMemoLines] = useState<MapMemoStateType[]>([]);
   //保存済みだが地図レイヤの描画待ちの線。受け渡しの点滅防止のため短時間SVGにも重ねて表示する
   const [handoffLines, setHandoffLines] = useState<MapMemoStateType[]>([]);
-  const [isEditingLine, setIsEditingLine] = useState(false);
-  const [editingLineId, setEditingLineId] = useState<string | undefined>(undefined);
-  const [_editingLineIndex, setEditingLineIndex] = useState<number | undefined>(undefined);
-  const [editingPointIndex, setEditingPointIndex] = useState<number | undefined>(undefined);
-
   // Visibility state
   const [visibleMapMemoColor, setVisibleMapMemoColor] = useState(false);
   //タブ統合された設定モーダル
@@ -202,12 +192,6 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
   const offset = useRef([0, 0]);
   const timer = useRef<NodeJS.Timeout | undefined>(undefined);
   const handoffTimer = useRef<NodeJS.Timeout | undefined>(undefined);
-  const longPressTimer = useRef<NodeJS.Timeout | undefined>(undefined);
-  const longPressStartPosition = useRef<Position | null>(null);
-  //長押し（頂点編集）の誤発火防止。ゆっくり描き始めただけで既存線の編集に
-  //入ってしまい、離すと既存線が切り詰められるため、わずかな移動でも取り消す
-  const longPressMoveThreshold = 6;
-  const longPressDurationMs = 800;
 
   const { generateRecord } = useRecord();
 
@@ -295,13 +279,7 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
     mapMemoEditingLine.current = [];
     mapMemoEditingLineLatLon.current = [];
     snappedLine.current = undefined;
-    if (isEditingLine) {
-      setIsEditingLine(false);
-      setEditingLineId(undefined);
-      setEditingLineIndex(undefined);
-      setEditingPointIndex(undefined);
-    }
-  }, [isEditingLine]);
+  }, []);
 
   /**
    * ピンチ操作の開始時に呼ばれる。ペンで描画中ならストロークを破棄せず中断し、
@@ -311,12 +289,7 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
    */
   const pauseMapMemoDrawing = useCallback(
     (discardGrantStroke = false) => {
-      //ピンチ中に長押し編集が誤発火しないようタイマーをクリア
-      if (longPressTimer.current) {
-        clearTimeout(longPressTimer.current);
-        longPressTimer.current = undefined;
-      }
-      if (isPenTool(currentMapMemoTool) && !isEditingLine) {
+      if (isPenTool(currentMapMemoTool)) {
         //タッチ直後のピンチ移行、またはGrant以降ほとんど動いていない（描画意図なし）場合は、
         //Grant以降に拾った点を捨ててGrant前の状態へ巻き戻す
         const isGrantArtifact = discardGrantStroke || penStrokeDistancePx.current < PINCH_DISCARD_DISTANCE_PX;
@@ -332,7 +305,7 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
         clearMapMemoEditingLine();
       }
     },
-    [clearMapMemoEditingLine, currentMapMemoTool, isEditingLine]
+    [clearMapMemoEditingLine, currentMapMemoTool]
   );
 
   /**
@@ -354,28 +327,6 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
     },
     [mapRegion, mapSize, mapViewRef, memoLines]
   );
-
-  /**
-   * Finds closest point on a line and returns information about it
-   */
-  const findClosestPointOnLine = useCallback((pXY: Position, lineXY: Position[]) => {
-    let minDistance = Infinity;
-    let minIndex = -1;
-
-    for (let i = 0; i < lineXY.length; i++) {
-      const pointXY = lineXY[i];
-      const dx = pXY[0] - pointXY[0];
-      const dy = pXY[1] - pointXY[1];
-      const distance = Math.sqrt(dx * dx + dy * dy);
-
-      if (distance < minDistance) {
-        minDistance = distance;
-        minIndex = i;
-      }
-    }
-
-    return { index: minIndex, distance: minDistance };
-  }, []);
 
   /**
    * Saves the memo lines to the database
@@ -584,70 +535,11 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
   }, [mapMemoLines, saveMapMemo]);
 
   const flushPausedPenStroke = useCallback(() => {
-    //頂点編集中は既存線の一部を編集用に保持しているだけなので、確定すると
-    //その前半だけをコピーした新しい線が増えてしまう。編集を中断して捨てる
-    if (isEditingLine) {
-      clearMapMemoEditingLine();
-      return;
-    }
     if (mapMemoEditingLineLatLon.current.length > 1) {
       finishPenStroke();
     }
     clearMapMemoEditingLine();
-  }, [clearMapMemoEditingLine, finishPenStroke, isEditingLine]);
-
-  /**
-   * Handle long press to start line editing
-   */
-  const handleLongPressMapMemo = useCallback(
-    (event: GestureResponderEvent) => {
-      if (longPressTimer.current) {
-        clearTimeout(longPressTimer.current);
-        longPressTimer.current = undefined;
-      }
-
-      if (isEditingLine || !isPenTool(currentMapMemoTool)) {
-        return;
-      }
-
-      const pXY: Position = [event.nativeEvent.pageX + offset.current[0], event.nativeEvent.pageY + offset.current[1]];
-      const result = findSnappedLine(pXY);
-
-      if (result) {
-        // Find the line in memoLines
-        const lineIndex = memoLines.findIndex((line) => line.id === result.id);
-        if (lineIndex < 0) return;
-        // Find closest point on line to determine where to start editing
-        const closestInfo = findClosestPointOnLine(pXY, result.coordsXY);
-        // Only allow editing if we're close to a point and it's not at the beginning
-        if (closestInfo.distance < 30 && closestInfo.index > 0) {
-          // We found a line to edit
-          setIsEditingLine(true);
-          setEditingLineId(result.id);
-          setEditingLineIndex(lineIndex);
-          setEditingPointIndex(closestInfo.index);
-
-          // Store original line information
-          const lineRecord = memoLines[lineIndex];
-          if (lineRecord && lineRecord.coords !== undefined) {
-            // Start editing from the found point（緯度経度で保持する）
-            mapMemoEditingLineLatLon.current = latLonObjectsToLatLonArray(lineRecord.coords).slice(
-              0,
-              closestInfo.index + 1
-            );
-
-            // We set our tool to PEN for editing
-            if (!isPenTool(currentMapMemoTool)) {
-              setMapMemoTool('PEN');
-            }
-          }
-        }
-      }
-
-      setRedraw(ulid());
-    },
-    [currentMapMemoTool, findClosestPointOnLine, findSnappedLine, isEditingLine, memoLines, setMapMemoTool]
-  );
+  }, [clearMapMemoEditingLine, finishPenStroke]);
 
   /**
    * Handles the start of a touch gesture
@@ -664,22 +556,6 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
       ];
 
       const pXY: Position = [event.nativeEvent.pageX + offset.current[0], event.nativeEvent.pageY + offset.current[1]];
-
-      // Save long press start position
-      longPressStartPosition.current = pXY;
-
-      // Set up long press detection if using PEN tool
-      if (isPenTool(currentMapMemoTool) && !isEditingLine) {
-        if (longPressTimer.current) {
-          clearTimeout(longPressTimer.current);
-        }
-        event.persist();
-        longPressTimer.current = setTimeout(() => {
-          //描き始めていたら（点が増えていたら）編集ではなく描画の意図とみなす
-          if (mapMemoEditingLineLatLon.current.length > 1) return;
-          handleLongPressMapMemo(event);
-        }, longPressDurationMs);
-      }
 
       if (isStampTool(currentMapMemoTool)) {
         handleStampToolGrant(pXY);
@@ -714,8 +590,8 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
             penGrantSnapshot.current = [];
             mapMemoEditingLineLatLon.current = [xyToLatLon(pXY, mapRegionRef.current, mapSize, mapViewRef)];
           }
-        } else if (!isEditingLine) {
-          // If not already editing, start a new line
+        } else {
+          //新しい線を開始する
           if (isPenTool(currentMapMemoTool)) penGrantSnapshot.current = [];
           mapMemoEditingLineLatLon.current = [xyToLatLon(pXY, mapRegionRef.current, mapSize, mapViewRef)];
         }
@@ -729,9 +605,7 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
       flushPendingSave,
       finishPenStroke,
       handleBrushToolGrant,
-      handleLongPressMapMemo,
       handleStampToolGrant,
-      isEditingLine,
       mapSize,
       mapViewRef,
     ]
@@ -745,19 +619,6 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
       if (!event.nativeEvent.touches.length) return;
 
       const pXY: Position = [event.nativeEvent.pageX + offset.current[0], event.nativeEvent.pageY + offset.current[1]];
-
-      // Improve long press detection: cancel timer if movement exceeds threshold
-      if (longPressTimer.current && longPressStartPosition.current) {
-        const dx = pXY[0] - longPressStartPosition.current[0];
-        const dy = pXY[1] - longPressStartPosition.current[1];
-        const distance = Math.sqrt(dx * dx + dy * dy);
-
-        if (distance > longPressMoveThreshold) {
-          clearTimeout(longPressTimer.current);
-          longPressTimer.current = undefined;
-          longPressStartPosition.current = null;
-        }
-      }
 
       const isSnappedWithLine = snappedLine.current !== undefined && snappedLine.current.coordsXY.length > 1;
 
@@ -779,11 +640,6 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
    * Handles pen tool release
    */
   const handlePenToolRelease = useCallback(() => {
-    if (longPressTimer.current) {
-      clearTimeout(longPressTimer.current);
-      longPressTimer.current = undefined;
-    }
-
     const drawingLine = [...mapMemoEditingLineLatLon.current];
 
     // Handle edge cases with line points
@@ -795,104 +651,10 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
       // Convert a single point to a very small line
       drawingLine.push([drawingLine[0][0] + 0.0000001, drawingLine[0][1] + 0.0000001]);
     }
-    // Handle editing an existing line
-    if (isEditingLine && editingLineId && editingPointIndex !== undefined) {
-      let latlonCoords = drawingLine;
-      //通常ペンは編集時も無整形（離した瞬間に何も変わらない）。矢印スタイルのみ連結部を均す
-      if (arrowStyle !== 'NONE' && !isStraightStyle && latlonCoords.length > 8) {
-        //ピクセル単位のパラメータのため、現在ビューのスクリーン座標で行って緯度経度へ戻す
-        try {
-          const lineXY = latLonArrayToXYArray(latlonCoords, mapRegionRef.current, mapSize, mapViewRef);
-          //連結部の前後2点を除いて滑らかに繋ぐ
-          const line1 = lineXY.slice(0, editingPointIndex - 2);
-          const line2 = lineXY.slice(editingPointIndex + 2);
-          latlonCoords = xyArrayToLatLonArray(
-            simplifyWithTolerance(smoothingByBezier([...line1, ...line2]), PEN_SIMPLIFY_TOLERANCE_PX),
-            mapRegionRef.current,
-            mapSize,
-            mapViewRef
-          );
-        } catch (e) {
-          console.log('refine pen stroke error', e);
-        }
-      }
-
-      const lineIndex = memoLines.findIndex((line) => line.id === editingLineId);
-      if (lineIndex >= 0) {
-        const originalRecord = memoLines[lineIndex];
-        if (originalRecord) {
-          const updatedRecord = {
-            ...originalRecord,
-            coords: latlonArrayToLatLonObjects(latlonCoords),
-            field: {
-              ...originalRecord.field,
-              _strokeColor: penColor,
-              _strokeWidth: penWidth,
-              _strokeStyle: arrowStyle || '',
-            },
-          };
-
-          if (updatedRecord.userId !== dataUser.uid) {
-            dispatch(
-              deleteRecordsAction({
-                layerId: activeMemoLayer!.id,
-                userId: updatedRecord.userId,
-                data: [updatedRecord],
-              })
-            );
-          }
-          updatedRecord.userId = dataUser.uid;
-          updatedRecord.displayName = dataUser.displayName;
-          dispatch(
-            updateRecordsAction({
-              layerId: activeMemoLayer!.id,
-              userId: dataUser.uid,
-              data: [updatedRecord],
-            })
-          );
-
-          setHistory((prev) => [
-            ...(prev.length === MAX_HISTORY ? prev.slice(1) : prev),
-            {
-              operation: 'update',
-              data: [
-                {
-                  idx: lineIndex,
-                  line: originalRecord,
-                  updatedLine: updatedRecord,
-                },
-              ],
-            },
-          ]);
-
-          setFuture([]);
-        }
-      }
-      clearMapMemoEditingLine();
-      return;
-    }
-
     // Normal new line drawing
     finishPenStroke();
     clearMapMemoEditingLine();
-  }, [
-    isEditingLine,
-    editingLineId,
-    editingPointIndex,
-    isStraightStyle,
-    mapSize,
-    mapViewRef,
-    penColor,
-    penWidth,
-    arrowStyle,
-    clearMapMemoEditingLine,
-    finishPenStroke,
-    memoLines,
-    dataUser.uid,
-    dataUser.displayName,
-    dispatch,
-    activeMemoLayer,
-  ]);
+  }, [clearMapMemoEditingLine, finishPenStroke]);
 
   /**
    * Handles stamp tool release
@@ -1190,11 +952,6 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
     //1€フィルタは実際のタッチ位置より少し遅れて追従するため、
     //離した瞬間に最後の生タッチ位置を終点として追加し、止めた場所まで線を届かせる
     const finalTouchXY = lastTouchXY.current;
-    if (longPressTimer.current) {
-      clearTimeout(longPressTimer.current);
-      longPressTimer.current = undefined;
-      longPressStartPosition.current = null;
-    }
 
     const isSnappedWithLine = snappedLine.current !== undefined && snappedLine.current.coordsXY.length > 1;
 
@@ -1360,9 +1117,6 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
       if (timer.current) {
         clearTimeout(timer.current);
       }
-      if (longPressTimer.current) {
-        clearTimeout(longPressTimer.current);
-      }
       if (handoffTimer.current) {
         clearTimeout(handoffTimer.current);
       }
@@ -1388,8 +1142,6 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
     snapWithLine,
     arrowStyle,
     isStraightStyle,
-    isEditingLine,
-    editingLineId,
     setMapMemoTool,
     setPenWidth,
     setVisibleMapMemoColor,
@@ -1400,7 +1152,6 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
     handleGrantMapMemo,
     handleMoveMapMemo,
     handleReleaseMapMemo,
-    handleLongPressMapMemo,
     pressUndoMapMemo,
     pressRedoMapMemo,
     clearMapMemoHistory,
