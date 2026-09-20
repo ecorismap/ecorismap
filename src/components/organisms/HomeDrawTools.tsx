@@ -34,6 +34,7 @@ export const HomeDrawTools = React.memo(() => {
     isEditingDraw,
     isSelectedDraw,
     isEditingObject,
+    isAreaSelected,
     currentDrawTool,
     currentLineTool,
     currentPolygonTool,
@@ -121,6 +122,10 @@ export const HomeDrawTools = React.memo(() => {
           BRUSH[handwritingSubTool]
         : 'tools';
 
+  //なげなわで選んで移動・回転している間は、作図の道具は今の操作と関係ないので押せないようにする
+  //（抜けるのは確定・キャンセル。undo・削除・地図移動は移動中も使うので対象外）
+  const isToolLocked = isAreaSelected;
+
   //手書きツールを有効化する（消しゴム中なら解除してから）
   const startHandwriting = () => {
     if (eraserActive) selectMapMemoTool(undefined);
@@ -131,6 +136,7 @@ export const HomeDrawTools = React.memo(() => {
   };
 
   const pressPenButton = () => {
+    if (isToolLocked) return;
     if (handwritingActive && hwGroup === 'PEN') {
       //有効中の再タップは解除（編集選択中は解除しない。抜けるのはキャンセルで）
       if (!isSelectedDraw) selectDrawTool(currentDrawTool);
@@ -306,7 +312,7 @@ export const HomeDrawTools = React.memo(() => {
           {/* 飛翔図は1本＝1飛翔を手書きでなぞるので、プロットでの追加は出さない */}
           {featureButton === 'LINE' && editingLayer?.toolPalette !== 'HISYOU' && (
             <HomeLineToolButton
-              disabled={false}
+              disabled={isToolLocked}
               currentDrawTool={currentDrawTool}
               selectDrawTool={selectDrawTool}
               setLineTool={setLineTool}
@@ -324,7 +330,10 @@ export const HomeDrawTools = React.memo(() => {
               <View style={styles.button}>
                 <Button
                   name={LINETOOL.HANDWRITING_LINE}
-                  backgroundColor={handwritingActive && hwGroup === 'PEN' ? COLOR.ALFARED : COLOR.ALFABLUE}
+                  disabled={isToolLocked}
+                  backgroundColor={
+                    isToolLocked ? COLOR.ALFAGRAY : handwritingActive && hwGroup === 'PEN' ? COLOR.ALFARED : COLOR.ALFABLUE
+                  }
                   borderRadius={10}
                   onPress={pressPenButton}
                   labelText={t('Home.label.handwritingLine')}
@@ -338,10 +347,13 @@ export const HomeDrawTools = React.memo(() => {
                     <Button
                       // @ts-ignore
                       name={hwToolPaletteIcon}
+                      disabled={isToolLocked}
                       backgroundColor={
-                        handwritingActive && (hwGroup === 'STAMP' || hwGroup === 'BRUSH')
-                          ? COLOR.ALFARED
-                          : COLOR.ALFABLUE
+                        isToolLocked
+                          ? COLOR.ALFAGRAY
+                          : handwritingActive && (hwGroup === 'STAMP' || hwGroup === 'BRUSH')
+                            ? COLOR.ALFARED
+                            : COLOR.ALFABLUE
                       }
                       borderRadius={10}
                       onPress={() => setHwToolPaletteOpen(true)}
@@ -466,7 +478,7 @@ export const HomeDrawTools = React.memo(() => {
           )}
           {featureButton === 'POLYGON' && (
             <HomePolygonToolButton
-              disabled={false}
+              disabled={isToolLocked}
               currentDrawTool={currentDrawTool}
               selectDrawTool={selectDrawTool}
               setPolygonTool={setPolygonTool}
@@ -483,7 +495,8 @@ export const HomeDrawTools = React.memo(() => {
               <View style={styles.button}>
                 <Button
                   name={'palette'}
-                  backgroundColor={COLOR.ALFABLUE}
+                  disabled={isToolLocked}
+                  backgroundColor={isToolLocked ? COLOR.ALFAGRAY : COLOR.ALFABLUE}
                   borderRadius={10}
                   onPress={() => setVisibleStyleSettings(true)}
                   labelText={t('Home.label.styleTool')}
