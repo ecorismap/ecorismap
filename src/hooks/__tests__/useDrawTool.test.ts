@@ -165,6 +165,7 @@ import {
   selectPointFeaturesByArea,
   selectLineFeaturesByArea,
   checkDistanceFromLine,
+  reprojectCoordsOnModifiedLine,
   findNearNodeIndex,
   isValidLine,
   modifyLineWithSource,
@@ -902,6 +903,132 @@ describe('useDrawTool', () => {
       expect(result.current.currentDrawTool).toBe('NONE');
     });
 
+    it('保存前でも、線を描き直すとセッション中の行動記号が追従する', () => {
+      //飛翔線と行動記号を描いてから確定する前に線を直す流れ。
+      //保存済みの線の追従（saveLine側）とは別の経路で、こちらは追従していなかった
+      const { result } = renderDrawTool();
+      (reprojectCoordsOnModifiedLine as jest.Mock).mockReturnValue([[136, 36]]);
+      //なぞり修正の合成結果（実装側の計算はここでは検証しない）
+      (modifyLineWithSource as jest.Mock).mockReturnValue({
+        xy: [
+          [30, 30],
+          [40, 40],
+        ],
+        latlon: [
+          [135.2, 35.2],
+          [135.3, 35.3],
+        ],
+        junctions: [],
+      });
+      result.current.drawLine.current = [
+        {
+          id: 'parent-stroke',
+          layerId: undefined,
+          record: undefined,
+          xy: [
+            [10, 10],
+            [20, 20],
+          ],
+          latlon: [
+            [135, 35],
+            [135.1, 35.1],
+          ],
+          properties: ['HANDWRITING'],
+          style: { strokeColor: 'red', strokeWidth: 5, strokeStyle: 'ARROW_END', stamp: '', zoom: 15 },
+        },
+        {
+          id: 'child-stamp',
+          layerId: undefined,
+          record: undefined,
+          xy: [[15, 15]],
+          latlon: [[135.05, 35.05]],
+          properties: ['HANDWRITING'],
+          style: { strokeColor: 'red', strokeWidth: 5, strokeStyle: '', stamp: 'TOMARI', zoom: 15, groupId: 'parent-stroke' },
+        },
+      ];
+
+      act(() => {
+        result.current.setFeatureButton('LINE');
+      });
+      act(() => {
+        result.current.setDrawTool('HANDWRITING_LINE');
+      });
+      //線をなぞって修正する
+      act(() => {
+        result.current.handleGrantHandwriting([10, 10], {
+          strokeColor: 'red',
+          strokeWidth: 5,
+          arrowStyle: 'ARROW_END' as const,
+          isStraightStyle: false,
+          snapWithLine: true,
+        });
+      });
+      act(() => {
+        result.current.handleMoveHandwriting([30, 30], 16);
+        result.current.handleMoveHandwriting([40, 40], 32);
+      });
+      act(() => {
+        result.current.handleReleaseHandwriting();
+      });
+
+      //記号が新しい線の上へ移っていること
+      const child = result.current.drawLine.current.find((l) => l.id === 'child-stamp');
+      expect(child?.latlon).toEqual([[136, 36]]);
+    });
+
+    it('線を修正して保存すると、ぶら下がる行動記号が新しい線へ追従する', () => {
+      const child = {
+        ...mockLineRecord,
+        id: 'child1',
+        coords: [{ latitude: 35.0005, longitude: 135.0005 }],
+        field: { _group: mockLineRecord.id, _stamp: 'TOMARI' },
+      };
+      mockLineDataSet.push({ layerId: mockLineLayer.id, userId: 'user1', data: [child] });
+      //記号の付け替えが走ったことが分かるよう、移動後の座標を返すようにする
+      (reprojectCoordsOnModifiedLine as jest.Mock).mockReturnValue([[136, 36]]);
+      mockFindLayer.mockReturnValue(mockLineLayer);
+      mockFindRecord.mockReturnValue(mockLineRecord);
+      mockGetEditableLayerAndRecordSetWithCheck.mockReturnValue({
+        isOK: true,
+        message: '',
+        layer: mockLineLayer,
+        recordSet: [mockLineRecord],
+      });
+
+      const { result, store } = renderDrawTool();
+      act(() => {
+        store.dispatch(
+          addDataAction([{ layerId: mockLineLayer.id, userId: 'user1', data: [mockLineRecord, child] as RecordType[] }])
+        );
+      });
+      //選択した線を描き直した状態（座標が変わっている）
+      result.current.drawLine.current = [
+        {
+          id: mockLineRecord.id,
+          layerId: mockLineLayer.id,
+          record: mockLineRecord,
+          xy: [
+            [10, 10],
+            [90, 90],
+          ],
+          latlon: [
+            [135.5, 35.5],
+            [136.5, 36.5],
+          ],
+          properties: ['HANDWRITING'],
+          style: { strokeColor: 'red', strokeWidth: 5, strokeStyle: 'NONE', stamp: '', zoom: 15 },
+        },
+      ];
+
+      act(() => {
+        result.current.saveLine();
+      });
+
+      const saved = store.getState().dataSet.find((d) => d.layerId === mockLineLayer.id)?.data ?? [];
+      const movedChild = saved.find((d) => d.id === 'child1');
+      expect(movedChild?.coords).toEqual([{ latitude: 36, longitude: 136 }]);
+    });
+
     it('_groupでぶら下がる行動記号（ブラシ・スタンプ）も一緒に消える', () => {
       const child = {
         ...mockLineRecord,
@@ -969,6 +1096,41 @@ describe('useDrawTool', () => {
       expect(result.current.drawLine.current[0].properties).not.toContain('HANDWRITING');
       expect(result.current.currentDrawTool).toBe('PLOT_LINE');
       expect(result.current.isEditingDraw).toBe(true);
+      expect(result.current.isEditingObject).toBe(true);
+    });
+
+    it('指が少し揺れただけのタップはなげなわ扱いにならず、オブジェクトを選択できる', () => {
+      //以前は移動イベントの回数（5回超）でなげなわと判定していたため、
+      //タップでも揺れで回数を超えてしまい選択できないことがあった
+      const { result } = renderDrawTool();
+      (selectLineFeatureByLatLon as jest.Mock).mockReturnValue(mockLineRecord);
+      mockGetEditableLayerAndRecordSetWithCheck.mockReturnValue({
+        isOK: true,
+        message: '',
+        layer: mockLineLayer,
+        recordSet: [mockLineRecord],
+      });
+
+      act(() => {
+        result.current.setFeatureButton('LINE');
+      });
+      act(() => {
+        result.current.handleGrantSelect([135, 35]);
+      });
+      //1〜2pxの揺れで移動イベントが何度も来る状況を再現する
+      act(() => {
+        for (let i = 0; i < 12; i++) {
+          result.current.handleMoveSelect([135 + (i % 2), 35 + ((i + 1) % 2)]);
+        }
+      });
+      act(() => {
+        result.current.handleReleaseSelect([135, 35]);
+      });
+
+      //タップ選択として1件選ばれること（なげなわ＝一括変形にはならない）
+      expect(result.current.drawLine.current).toHaveLength(1);
+      expect(result.current.drawLine.current[0].record).toBe(mockLineRecord);
+      expect(result.current.isAreaSelected).toBe(false);
       expect(result.current.isEditingObject).toBe(true);
     });
 
