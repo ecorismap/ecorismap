@@ -12,6 +12,10 @@ interface Props {
  * 確定の前後で大きさ・形が変わらないようにする。
  * 数字・英字・文字はレコードのラベルを描くため、ここでは扱わない
  */
+//交尾の★。外接円の半径7・内側2.67の五芒星を、外接矩形の中心が(10,10)に来るよう下げたもの
+export const KOUBI_STAR_POINTS =
+  '10.00,3.67 11.57,8.51 16.66,8.51 12.54,11.49 14.11,16.33 10.00,13.34 5.89,16.33 7.46,11.49 3.34,8.51 8.43,8.51';
+
 export const StampSymbol = React.memo(({ stamp, lineColor }: Props) => {
   switch (stamp) {
     case 'TOMARI':
@@ -43,11 +47,10 @@ export const StampSymbol = React.memo(({ stamp, lineColor }: Props) => {
         </>
       );
     case 'KOUBI':
-      return (
-        <Text x="9" y="14" fontSize="18" fontWeight="bold" fill={lineColor} textAnchor="middle">
-          ★
-        </Text>
-      );
+      //★は文字ではなく多角形で描く。文字はベースライン基準なので中心が記録位置から上へずれ、
+      //さらに端末のフォントで形も大きさも変わる。座標は外接矩形の中心を(10,10)に合わせたもの
+      //（星は上の頂点が下辺より遠いため、外接円の中心で合わせると上寄りに見える）
+      return <Polygon points={KOUBI_STAR_POINTS} stroke={lineColor} strokeWidth="0" fill={lineColor} />;
     case 'SQUARE':
       return <Rect x="4" y="4" width="12" height="12" stroke={lineColor} strokeWidth="2" fill={lineColor} />;
     case 'CIRCLE':
