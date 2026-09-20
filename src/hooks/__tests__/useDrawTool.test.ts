@@ -2117,6 +2117,52 @@ describe('useDrawTool', () => {
       expect(result.current.drawLine.current.find((l) => l.id === stampId)?.xy).toEqual([[100, 100]]);
     });
 
+    it('単独の行動位置があるとhasStandaloneSymbolが立ち、線に紐づく記号では立たない', () => {
+      //単独の記号は1つで1件の記録になるため、確定・キャンセルするまで道具を持ち替えさせない
+      const { result } = renderDrawTool();
+      startHandwritingLine(result);
+      expect(result.current.hasStandaloneSymbol).toBe(false);
+
+      //スナップ先が無い＝単独の行動位置
+      (checkDistanceFromLine as jest.Mock).mockReturnValue({ isNear: false, distance: 9999 });
+      act(() => {
+        result.current.setHandwritingSubTool('TOMARI');
+      });
+      act(() => {
+        result.current.handleGrantHandwriting([100, 100], penStyle);
+      });
+      act(() => {
+        result.current.handleReleaseHandwriting();
+      });
+      expect(result.current.hasStandaloneSymbol).toBe(true);
+
+      //確定するとセッションが空になるので解除される
+      act(() => {
+        result.current.resetDrawTools();
+      });
+      expect(result.current.hasStandaloneSymbol).toBe(false);
+
+      //線に紐づく記号（スナップあり）では立たない
+      act(() => {
+        result.current.setHandwritingSubTool('PEN');
+      });
+      drawPenStroke(result, [
+        [0, 0],
+        [10, 0],
+      ]);
+      (checkDistanceFromLine as jest.Mock).mockReturnValue({ isNear: true, distance: 1 });
+      act(() => {
+        result.current.setHandwritingSubTool('TOMARI');
+      });
+      act(() => {
+        result.current.handleGrantHandwriting([5, 0], penStyle);
+      });
+      act(() => {
+        result.current.handleReleaseHandwriting();
+      });
+      expect(result.current.hasStandaloneSymbol).toBe(false);
+    });
+
     it('スタンプはペンストロークにスナップして_groupで紐づく', () => {
       const { result } = renderDrawTool();
       startHandwritingLine(result);

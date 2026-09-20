@@ -35,6 +35,7 @@ export const HomeToolPalette = React.memo(({ items, featureType }: Props) => {
     isSelectedDraw,
     isEditingDraw,
     isEditingObject,
+    hasStandaloneSymbol,
     selectDrawTool,
     setLineTool,
     setPolygonTool,
@@ -146,8 +147,17 @@ export const HomeToolPalette = React.memo(({ items, featureType }: Props) => {
     !isEditingDraw &&
     !isEditingObject;
 
+  //飛翔線に紐づかない行動位置は、それ1つで1件の記録になる。置いた後に他の道具へ持ち替えると
+  //1件のつもりの記録に別のものが混ざるため、確定・キャンセルするまで道具は固定する
+  //（属性ボタンは記録の中身なので選び直せるままにする）
+  const isLockedByStandaloneSymbol = (item: ToolPaletteItemType) =>
+    hasStandaloneSymbol && fieldNamesOf(item) === undefined;
+
+  const isItemDisabled = (item: ToolPaletteItemType) =>
+    isOptionGroupDisabled(item) || isLockedByStandaloneSymbol(item);
+
   const pressItem = async (item: ToolPaletteItemType, skipAttributeCheck = false) => {
-    if (isOptionGroupDisabled(item)) return;
+    if (isItemDisabled(item)) return;
     const fieldNames = fieldNamesOf(item);
     //属性が未選択のまま描き始めないよう、先に選んでもらう（選び終えたらこの道具を有効にする）
     if (
@@ -261,9 +271,9 @@ export const HomeToolPalette = React.memo(({ items, featureType }: Props) => {
               //値ごとに色を変えるパレットは、どの色で描くのかをアイコンの色で示す
               color={buttonProps.color}
               iconBackgroundColor={buttonProps.iconBackgroundColor}
-              disabled={isOptionGroupDisabled(item)}
+              disabled={isItemDisabled(item)}
               backgroundColor={
-                isOptionGroupDisabled(item)
+                isItemDisabled(item)
                   ? COLOR.ALFAGRAY
                   : isItemActive(item)
                   ? COLOR.ALFARED

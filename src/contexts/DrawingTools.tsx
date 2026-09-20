@@ -32,6 +32,8 @@ export interface DrawingState {
   isEditingDraw: boolean;
   isEditingObject: boolean;
   isSelectedDraw: boolean;
+  //単独の行動位置（飛翔線に紐づかない記号）があるか
+  hasStandaloneSymbol: boolean;
   isEditingLine: boolean;
   editingLineId: string | undefined;
 }
@@ -131,6 +133,7 @@ export interface DrawingToolsContextType {
   isEditingObject: boolean;
   isAreaSelected: boolean;
   isSelectedDraw: boolean;
+  hasStandaloneSymbol: boolean;
   isEditingLine: boolean;
   editingLineId: string | undefined;
   featureButton: FeatureButtonType;
