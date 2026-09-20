@@ -1406,9 +1406,15 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
         //手書きの修正はワンショットなので、undo後も修正モードには入れない
         isEditingObject.current = drawLine.current.length > 0;
         editingObjectIndex.current = -1;
+      } else if (currentDrawTool === 'PLOT_POINT') {
+        //ポイントは座標が残っている限り編集セッションを維持する。ここで一律に終了すると
+        //undo/redoのあと点が見えているのに確定・キャンセルバーが消えて保存できなくなる
+        const hasCoords = (drawLine.current[undo.index]?.xy.length ?? 0) > 0;
+        isEditingObject.current = hasCoords;
+        editingObjectIndex.current = hasCoords ? undo.index : -1;
       } else {
-        isEditingObject.current = currentDrawTool === 'PLOT_POINT' ? false : true;
-        editingObjectIndex.current = currentDrawTool === 'PLOT_POINT' ? -1 : undo.index;
+        isEditingObject.current = true;
+        editingObjectIndex.current = undo.index;
       }
     }
     if (undoLine.current.length === 0) {
@@ -1471,9 +1477,14 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
         //手書きの修正はワンショットなので、redo後も修正モードには入れない
         isEditingObject.current = drawLine.current.length > 0;
         editingObjectIndex.current = -1;
+      } else if (currentDrawTool === 'PLOT_POINT') {
+        //undoと同じく、座標が残っている限り編集セッションを維持する
+        const hasCoords = (drawLine.current[redo.index]?.xy.length ?? 0) > 0;
+        isEditingObject.current = hasCoords;
+        editingObjectIndex.current = hasCoords ? redo.index : -1;
       } else {
-        isEditingObject.current = currentDrawTool === 'PLOT_POINT' ? false : true;
-        editingObjectIndex.current = currentDrawTool === 'PLOT_POINT' ? -1 : redo.index;
+        isEditingObject.current = true;
+        editingObjectIndex.current = redo.index;
       }
     }
     setRedraw(ulid());

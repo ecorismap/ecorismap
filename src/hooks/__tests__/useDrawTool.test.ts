@@ -1324,6 +1324,37 @@ describe('useDrawTool', () => {
     });
   });
 
+  describe('ポイントのundo/redo', () => {
+    it('undo→redoで点が戻ったら確定・キャンセルバーも維持される', () => {
+      const { result } = renderDrawTool();
+      act(() => {
+        result.current.setDrawTool('PLOT_POINT');
+      });
+      act(() => {
+        result.current.handleGrantPlot([10, 10]);
+      });
+      act(() => {
+        result.current.handleReleasePlotPoint();
+      });
+      expect(result.current.drawLine.current[0].xy).toEqual([[10, 10]]);
+      expect(result.current.isEditingObject).toBe(true);
+
+      //元に戻す: 点の座標が消え、編集バーも消える（見えないのにバーだけ残らない）
+      act(() => {
+        result.current.undoDraw();
+      });
+      expect(result.current.drawLine.current[0].xy).toHaveLength(0);
+      expect(result.current.isEditingObject).toBe(false);
+
+      //やり直す: 点が戻るので編集バーも戻る（戻らないと保存できなくなる）
+      act(() => {
+        result.current.redoDraw();
+      });
+      expect(result.current.drawLine.current[0].xy).toEqual([[10, 10]]);
+      expect(result.current.isEditingObject).toBe(true);
+    });
+  });
+
   describe('ピンチ意図の取り消し（cancelPlotGrant）', () => {
     it('cancelPlotGrant: 位置なしレコードの位置編集中はレコードの紐付けが消えない', () => {
       //latlonが空でもrecordが紐づく空プロット（位置編集の登録）は削除してはいけない。
