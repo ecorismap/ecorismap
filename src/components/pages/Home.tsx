@@ -257,7 +257,8 @@ export default function HomeScreen() {
   } = useContext(MapViewContext);
 
   // DrawingToolsContext
-  const { featureButton, currentDrawTool, onDragEndPoint, editingLineId } = useContext(DrawingToolsContext);
+  const { featureButton, currentDrawTool, onDragEndPoint, isEditingLine, editingLineId } =
+    useContext(DrawingToolsContext);
 
   // PDFExportContext
   const {
@@ -639,7 +640,8 @@ export default function HomeScreen() {
                   zoom={zoom}
                   zIndex={101}
                   selectedRecord={selectedRecord}
-                  editingLineId={editingLineId}
+                  //編集中でないときに色が灰色のまま固着しないようwebと同じくガードする
+                  editingLineId={isEditingLine ? editingLineId : undefined}
                   bounds={bounds}
                   zoomDecimal={zoomDecimal}
                 />

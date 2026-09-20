@@ -14,7 +14,7 @@ export const HomeButtons = React.memo(() => {
   //console.log('render HomeButtons');
 
   const { gotoMaps, gotoSettings, gotoLayers } = useContext(AppStateContext);
-  const { featureButton, selectFeatureButton } = useContext(DrawingToolsContext);
+  const { featureButton, pressFeatureButton } = useContext(DrawingToolsContext);
   const { trackingState, pressTracking } = useContext(LocationTrackingContext);
 
   const { isLandscape } = useWindow();
@@ -49,7 +49,7 @@ export const HomeButtons = React.memo(() => {
           <Button
             id="POINT"
             name={HOME_FEATURE_BTN.POINT}
-            onPressCustom={() => selectFeatureButton('POINT')}
+            onPressCustom={() => pressFeatureButton('POINT')}
             backgroundColor={COLOR.BLUE}
             labelText={t('Home.label.point')}
             labelFontSize={7}
@@ -57,14 +57,14 @@ export const HomeButtons = React.memo(() => {
           <Button
             id="LINE"
             name={HOME_FEATURE_BTN.LINE}
-            onPressCustom={() => selectFeatureButton('LINE')}
+            onPressCustom={() => pressFeatureButton('LINE')}
             backgroundColor={COLOR.BLUE}
             labelText={t('Home.label.line')}
           />
           <Button
             id="POLYGON"
             name={HOME_FEATURE_BTN.POLYGON}
-            onPressCustom={() => selectFeatureButton('POLYGON')}
+            onPressCustom={() => pressFeatureButton('POLYGON')}
             backgroundColor={COLOR.BLUE}
             labelText={t('Home.label.polygon')}
             labelFontSize={7}
@@ -72,14 +72,14 @@ export const HomeButtons = React.memo(() => {
           <Button
             id="MEMO"
             name={HOME_FEATURE_BTN.MEMO}
-            onPressCustom={() => selectFeatureButton('MEMO')}
+            onPressCustom={() => pressFeatureButton('MEMO')}
             backgroundColor={COLOR.BLUE}
             labelText={t('Home.label.memo')}
           />
           <Button
             id="NONE"
             name={HOME_FEATURE_BTN.NONE}
-            onPressCustom={() => selectFeatureButton('NONE')}
+            onPressCustom={() => pressFeatureButton('NONE')}
             backgroundColor={COLOR.BLUE}
             labelText={t('Home.label.drawtool')}
           />

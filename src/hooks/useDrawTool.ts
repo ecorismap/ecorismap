@@ -1359,13 +1359,18 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     } else if (undo.action === 'EDIT_MULTI') {
       redoLine.current = [
         ...redoLine.current,
-        { index: -1, latlon: [], latlonList: drawLine.current.map((line) => line.latlon), action: 'EDIT_MULTI' },
+        {
+          index: -1,
+          latlon: [],
+          latlonEntries: drawLine.current.map((line) => ({ id: line.id, latlon: line.latlon })),
+          action: 'EDIT_MULTI',
+        },
       ];
     } else if (undo.action !== 'SELECT' && undo.action !== 'DELETE_SYMBOL') {
-      redoLine.current = [
-        ...redoLine.current,
-        { index: undo.index, latlon: drawLine.current[undo.index].latlon, action: undo.action },
-      ];
+      //対象が既に消えている場合（記号の削除で配列が詰まった後など）は退避も復元もしない
+      const target = drawLine.current[undo.index];
+      if (target === undefined) return;
+      redoLine.current = [...redoLine.current, { index: undo.index, latlon: target.latlon, action: undo.action }];
     }
 
     if (undo.action === 'DELETE_SYMBOL') {
@@ -1414,11 +1419,12 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
       //複数選択の一括移動・回転を取り消す（latlonList[i]がi番目の地物の座標列）
       featuresTransformAngle.current = 0;
       featuresTransformBaseAngle.current = 0;
-      undo.latlonList?.forEach((latlon, i) => {
-        const line = drawLine.current[i];
+      //配列の位置ではなくidで対応付ける（記号の削除などで順序が変わっても別の地物を壊さない）
+      undo.latlonEntries?.forEach((entry) => {
+        const line = drawLine.current.find((l) => l.id === entry.id);
         if (line === undefined) return;
-        line.latlon = latlon;
-        line.xy = latLonArrayToXYArray(latlon, mapRegion, mapSize, mapViewRef);
+        line.latlon = entry.latlon;
+        line.xy = latLonArrayToXYArray(entry.latlon, mapRegion, mapSize, mapViewRef);
       });
     } else if (undo.action === 'EDIT') {
       //修正の場合
@@ -1455,6 +1461,16 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
   const redoDraw = useCallback(() => {
     const redo = redoLine.current[redoLine.current.length - 1];
     if (redo === undefined) return;
+    //対象が既に消えている場合（記号の削除で配列が詰まった後など）は何もしない
+    if (
+      redo.action !== 'NEW' &&
+      redo.action !== 'EDIT_MULTI' &&
+      redo.action !== 'DELETE_SYMBOL' &&
+      drawLine.current[redo.index] === undefined
+    ) {
+      redoLine.current = redoLine.current.slice(0, -1);
+      return;
+    }
     redoLine.current = redoLine.current.slice(0, -1);
 
     //redo中のundoスタック積み直しはpushUndoを使わない（redo履歴を消さないため）
@@ -1482,14 +1498,14 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
       undoLine.current.push({
         index: -1,
         latlon: [],
-        latlonList: drawLine.current.map((line) => line.latlon),
+        latlonEntries: drawLine.current.map((line) => ({ id: line.id, latlon: line.latlon })),
         action: 'EDIT_MULTI',
       });
-      redo.latlonList?.forEach((latlon, i) => {
-        const line = drawLine.current[i];
+      redo.latlonEntries?.forEach((entry) => {
+        const line = drawLine.current.find((l) => l.id === entry.id);
         if (line === undefined) return;
-        line.latlon = latlon;
-        line.xy = latLonArrayToXYArray(latlon, mapRegion, mapSize, mapViewRef);
+        line.latlon = entry.latlon;
+        line.xy = latLonArrayToXYArray(entry.latlon, mapRegion, mapSize, mapViewRef);
       });
     } else if (redo.action === 'EDIT') {
       undoLine.current.push({ index: redo.index, latlon: drawLine.current[redo.index].latlon, action: 'EDIT' });
@@ -1853,7 +1869,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     pushUndo({
       index: -1,
       latlon: [],
-      latlonList: drawLine.current.map((line) => line.latlon),
+      latlonEntries: drawLine.current.map((line) => ({ id: line.id, latlon: line.latlon })),
       action: 'EDIT_MULTI',
     });
     drawLine.current.forEach((line) => {

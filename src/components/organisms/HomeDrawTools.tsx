@@ -35,6 +35,8 @@ export const HomeDrawTools = React.memo(() => {
     isSelectedDraw,
     isEditingObject,
     currentDrawTool,
+    currentLineTool,
+    currentPolygonTool,
     featureButton,
     selectDrawTool,
     setLineTool,
@@ -95,7 +97,12 @@ export const HomeDrawTools = React.memo(() => {
 
   //手書き系ツールは個別ボタン（ペン/スタンプ/ブラシ/消しゴム）。横展開パレットは廃止
   const eraserActive = isEraserTool(currentMapMemoTool);
-  const handwritingActive = isHandwritingTool(currentDrawTool);
+  //地図移動ツールへ持ち替えている間も手書きセッションは続いているため、
+  //持ち替え前のツール（currentLineTool/currentPolygonTool）で判定する。
+  //ツール名だけで見ると全ボタンが未選択に見え、押すと再変換が走ってスタイルが戻る
+  const handwritingActive =
+    isHandwritingTool(currentDrawTool) ||
+    (currentDrawTool === 'MOVE' && isHandwritingTool(featureButton === 'POLYGON' ? currentPolygonTool : currentLineTool));
   const hwActive = handwritingActive || eraserActive;
   const hwGroup: MapMemoToolGroupType = eraserActive
     ? 'ERASER'

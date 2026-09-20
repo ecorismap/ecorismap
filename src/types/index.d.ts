@@ -624,6 +624,8 @@ export type UndoLineType = {
   index: number;
   latlon: Position[];
   latlonList?: Position[][];
+  //一括変形の対象をidで対応付ける控え（配列の順序が変わっても別の地物を壊さない）
+  latlonEntries?: { id: string; latlon: Position[] }[];
   action: UndoActionType;
   //消した行動記号を戻すための控え（DELETE_SYMBOL用）。セッション中のものと保存済みのものがある
   deletedLine?: DrawLineType;
