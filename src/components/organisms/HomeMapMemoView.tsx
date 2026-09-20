@@ -122,15 +122,18 @@ export const ArrowHeads = React.memo(
     strokeColor,
     strokeWidth,
     arrowStyle,
+    sizeScale = 1,
   }: {
     points: Position[];
     strokeColor: string;
     strokeWidth: number;
     arrowStyle: ArrowStyleType;
+    //記号と大きさを揃えるための倍率（保存後のLineArrowと同じ）
+    sizeScale?: number;
   }) => {
     if (arrowStyle === 'NONE' || points.length < 2) return null;
     //LineArrow.tsxと同じスケール計算。strokeWidthが1未満でも負の平方根にならないようクランプ
-    const scale = Math.sqrt(Math.max(strokeWidth - 1, 0.25));
+    const scale = Math.sqrt(Math.max(strokeWidth - 1, 0.25)) * sizeScale;
     const size = 20 * scale;
     const d = `M${10 * scale} ${7 * scale} L${5 * scale} ${20 * scale} L${10 * scale} ${18 * scale} L${
       15 * scale

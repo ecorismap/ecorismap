@@ -2,7 +2,7 @@ import React, { useMemo } from 'react';
 import { Polyline, LatLng } from 'react-native-maps';
 import { ArrowStyleType, LayerType, LineRecordType, RecordType } from '../../types';
 import { LineLabel } from '../atoms';
-import { generateLabel, getColor, getLineWidthAtZoom } from '../../utils/Layer';
+import { generateLabel, getColor, getLineWidthAtZoom, SYMBOL_BASE_SIZE_PX } from '../../utils/Layer';
 import { COLOR } from '../../constants/AppConstants';
 import { isBrushTool } from '../../utils/General';
 import LineArrow from '../atoms/LineArrow';
@@ -143,6 +143,12 @@ interface PolylineProps {
 const PolylineComponent = React.memo((props: PolylineProps) => {
   const { label, color, lineColor, labelPosition, strokeWidth, zIndex, feature, zoom, selected } = props;
   const arrowStyle = feature.field._strokeStyle as ArrowStyleType | undefined;
+  //飛翔線のように線幅がズームで変わらない線（_zoomを持たない）は、矢印も縮小せず
+  //行動記号と同じ基準の大きさで固定する。メモや個別色の手書きは線幅がズームに連動するので、
+  //矢印もその太さから決める（従来どおり）
+  const hasZoomLinkedWidth = typeof feature.field._zoom === 'number' && feature.field._zoom > 0;
+  const arrowSizeScale = hasZoomLinkedWidth ? 1 : SYMBOL_BASE_SIZE_PX / 20;
+
 
   return (
     <>
@@ -153,6 +159,7 @@ const PolylineComponent = React.memo((props: PolylineProps) => {
           strokeColor={lineColor}
           strokeWidth={strokeWidth}
           arrowStyle={arrowStyle}
+          sizeScale={arrowSizeScale}
         />
       )}
       <Polyline

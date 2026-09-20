@@ -4,7 +4,7 @@ import { Marker } from 'react-native-maps';
 import { PointRecordType } from '../../types';
 import Svg, { Text } from 'react-native-svg';
 import { MARKER_BAND, markerZIndex } from '../../utils/markerZIndex';
-import { getMapMemoSymbolScaleAtZoom } from '../../utils/Layer';
+import { getMapMemoSymbolScaleAtZoom, SYMBOL_BASE_SIZE_PX } from '../../utils/Layer';
 import { hasStampSymbol, StampSymbol } from './HomeStampSymbol';
 
 interface Props {
@@ -28,8 +28,8 @@ export const HomeMapMemoStamp = React.memo((props: Props) => {
   // tracksViewChangesはfalse固定（trueだとiOSで毎フレーム再描画され、重なりの点滅と電池消費の原因）。
   // 見た目に影響する値をkeyに含め、変更時はremountで再描画する
   //描画時よりズームアウトしたら線幅と同様に縮小表示する
-  const scale = getMapMemoSymbolScaleAtZoom(feature, zoom);
-  const size = 20 * scale;
+  const scale = getMapMemoSymbolScaleAtZoom(zoom);
+  const size = SYMBOL_BASE_SIZE_PX * scale;
   const markerKey = `stamp-${selected}-${stamp}-${lineColor}-${size}-${label ?? ''}`;
   // 同一zIndexのマーカーは重なると描画順が不定で点滅するため、idハッシュで一意にする
   const zIndex = Platform.OS === 'ios' ? markerZIndex(MARKER_BAND.MAPMEMO, feature.id) : undefined;
@@ -41,7 +41,7 @@ export const HomeMapMemoStamp = React.memo((props: Props) => {
       if (label === undefined || label === '') return null;
       //文字は桁数が多くなるので横長の枠にする
       const isText = stamp === 'TEXT';
-      const boxWidth = (isText ? 80 : 20) * scale;
+      const boxWidth = (isText ? SYMBOL_BASE_SIZE_PX * 4 : SYMBOL_BASE_SIZE_PX) * scale;
       return (
         <Marker
           tracksViewChanges={false}

@@ -2229,6 +2229,130 @@ describe('useDrawTool', () => {
       expect(result.current.isEditingObject).toBe(false);
     });
 
+    it('飛翔線があるときは、線から離れた場所に行動位置を置けない', () => {
+      const { result } = renderDrawTool();
+      startHandwritingLine(result);
+      //まず飛翔線を1本描く
+      drawPenStroke(result, [
+        [0, 0],
+        [10, 0],
+      ]);
+      expect(result.current.drawLine.current).toHaveLength(1);
+
+      act(() => {
+        result.current.setHandwritingSubTool('TOMARI');
+      });
+      //線から離れた場所（スナップしない）をタップしても記号は増えない
+      (checkDistanceFromLine as jest.Mock).mockReturnValue({ isNear: false, distance: 9999 });
+      act(() => {
+        result.current.handleGrantHandwriting([500, 500], penStyle);
+      });
+      act(() => {
+        result.current.handleReleaseHandwriting();
+      });
+      expect(result.current.drawLine.current).toHaveLength(1);
+
+      //線の上なら置ける
+      (checkDistanceFromLine as jest.Mock).mockReturnValue({ isNear: true, distance: 1 });
+      act(() => {
+        result.current.handleGrantHandwriting([5, 0], penStyle);
+      });
+      act(() => {
+        result.current.handleReleaseHandwriting();
+      });
+      expect(result.current.drawLine.current).toHaveLength(2);
+    });
+
+    it('飛翔線が無いときは、線に紐づかない行動位置を置ける', () => {
+      const { result } = renderDrawTool();
+      startHandwritingLine(result);
+      act(() => {
+        result.current.setHandwritingSubTool('TOMARI');
+      });
+      (checkDistanceFromLine as jest.Mock).mockReturnValue({ isNear: false, distance: 9999 });
+      act(() => {
+        result.current.handleGrantHandwriting([100, 100], penStyle);
+      });
+      act(() => {
+        result.current.handleReleaseHandwriting();
+      });
+      //とまり・声のみは飛翔を追えていなくても記録できる
+      expect(result.current.drawLine.current).toHaveLength(1);
+      expect(result.current.hasStandaloneSymbol).toBe(true);
+    });
+
+    it('1点だけの記録（行動位置）は、線より広い当たり判定で先に探す', () => {
+      //行動位置は線と同じ当たり判定（約4.5px）で探していたため、タップで拾いにくかった
+      const stampRecord = {
+        ...mockLineRecord,
+        id: 'stamp-record-1',
+        coords: [{ latitude: 35.0005, longitude: 135.0005 }],
+        field: { _stamp: 'TOMARI' },
+      } as unknown as LineRecordType;
+      (selectLineFeatureByLatLon as jest.Mock).mockReturnValue(undefined);
+      mockGetEditableLayerAndRecordSetWithCheck.mockReturnValue({
+        isOK: true,
+        message: '',
+        layer: mockLineLayer,
+        recordSet: [mockLineRecord, stampRecord],
+      });
+
+      const { result } = renderDrawTool();
+      act(() => {
+        result.current.setFeatureButton('LINE');
+      });
+      act(() => {
+        result.current.handleReleaseSelect([135, 35]);
+      });
+
+      //1回目は記号だけを対象に探し、見つからなければ2回目で全体を探す
+      const calls = (selectLineFeatureByLatLon as jest.Mock).mock.calls;
+      expect(calls[0][0]).toEqual([stampRecord]);
+      expect(calls[1][0]).toEqual([mockLineRecord, stampRecord]);
+    });
+
+    it('行動位置を選ぶとその記号の道具に持ち替わり、タップで動かせる', () => {
+      //ペンのままだと選んだ直後のタップが新しい線の描き始めになり、記号を動かせなかった
+      const stampRecord = {
+        ...mockLineRecord,
+        id: 'stamp-record-1',
+        coords: [{ latitude: 35.0005, longitude: 135.0005 }],
+        field: { _stamp: 'TOMARI', _group: 'line-record-1', _strokeStyle: '' },
+      } as unknown as LineRecordType;
+      (selectLineFeatureByLatLon as jest.Mock).mockReturnValue(stampRecord);
+      mockGetEditableLayerAndRecordSetWithCheck.mockReturnValue({
+        isOK: true,
+        message: '',
+        layer: { ...mockLineLayer, toolPalette: 'HISYOU' },
+        recordSet: [stampRecord],
+      });
+
+      const { result } = renderDrawTool();
+      act(() => {
+        result.current.setFeatureButton('LINE');
+      });
+      act(() => {
+        result.current.handleReleaseSelect([135, 35]);
+      });
+
+      //選んだ記号の道具（とまり）に持ち替わること
+      expect(result.current.handwritingSubTool).toBe('TOMARI');
+      expect(result.current.drawLine.current).toHaveLength(1);
+      expect(result.current.drawLine.current[0].record).toBe(stampRecord);
+
+      //タップした位置へ動かせること（新しいオブジェクトは増えない）
+      (checkDistanceFromLine as jest.Mock).mockReturnValue({ isNear: false, distance: 9999 });
+      act(() => {
+        result.current.handleGrantHandwriting([300, 300], penStyle);
+      });
+      act(() => {
+        result.current.handleReleaseHandwriting();
+      });
+      expect(result.current.drawLine.current).toHaveLength(1);
+      expect(result.current.drawLine.current[0].xy).toEqual([[300, 300]]);
+      expect(result.current.drawLine.current[0].record).toBe(stampRecord);
+    });
+
     it('線に紐づかない行動位置は、置き直しを取り消すと元の位置へ戻る', () => {
       //操作対象を「末尾」固定で探していたため、置き直しの取り消しで別のストロークを
       //消してしまうことがあった。対象をidで持つようにしたことの確認

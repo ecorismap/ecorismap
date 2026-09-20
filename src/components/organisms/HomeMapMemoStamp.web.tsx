@@ -4,7 +4,7 @@ import { PointRecordType } from '../../types';
 import { Marker } from 'react-map-gl/maplibre';
 
 import Svg, { Circle, Line, Polygon, Rect, Text } from 'react-native-svg';
-import { getMapMemoSymbolScaleAtZoom } from '../../utils/Layer';
+import { getMapMemoSymbolScaleAtZoom, SYMBOL_BASE_SIZE_PX } from '../../utils/Layer';
 
 interface Props {
   feature: PointRecordType;
@@ -21,8 +21,8 @@ export const HomeMapMemoStamp = React.memo((props: Props) => {
 
   if (feature.coords === undefined) return null;
   //描画時よりズームアウトしたら線幅と同様に縮小表示する
-  const scale = getMapMemoSymbolScaleAtZoom(feature, zoom);
-  const size = 20 * scale;
+  const scale = getMapMemoSymbolScaleAtZoom(zoom);
+  const size = SYMBOL_BASE_SIZE_PX * scale;
   switch (stamp) {
     //数字・英字・文字はレイヤのラベル設定の値を描く。ラベルが「なし」なら描くものが無い
     case 'NUMBERS':
@@ -31,7 +31,7 @@ export const HomeMapMemoStamp = React.memo((props: Props) => {
       if (label === undefined || label === '') return null;
       //文字は桁数が多くなるので横長の枠にする
       const isText = stamp === 'TEXT';
-      const boxWidth = (isText ? 80 : 20) * scale;
+      const boxWidth = (isText ? SYMBOL_BASE_SIZE_PX * 4 : SYMBOL_BASE_SIZE_PX) * scale;
       return (
         <Marker key={`${feature.id}-${feature.redraw}`} {...feature.coords} anchor={'center'} draggable={false}>
           <View style={{ width: boxWidth, height: size }}>

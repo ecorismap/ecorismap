@@ -1,6 +1,9 @@
 import { COLOR } from '../../constants/AppConstants';
 import { LayerType } from '../../types';
-import { getColor, getColorRule, changeLayerId, applyColorStyle, getLineWidth, getLineWidthAtZoom, toIndividualColorLayer, restoreColorStyleFromIndividual, resolveCodeField, toCodeFieldValue, checkLayerInputs } from '../Layer';
+import { getColor, getColorRule, changeLayerId, applyColorStyle, getLineWidth, getLineWidthAtZoom, toIndividualColorLayer, restoreColorStyleFromIndividual, resolveCodeField, toCodeFieldValue, checkLayerInputs,
+  getMapMemoSymbolScaleAtZoom,
+  SYMBOL_BASE_ZOOM,
+} from '../Layer';
 import { getUserColor } from '../Color';
 
 describe('getColor', () => {
@@ -181,6 +184,24 @@ describe('getLineWidthAtZoom', () => {
 
   it('_strokeWidthを持たないレコードはレイヤ既定幅を基準に縮小', () => {
     expect(getLineWidthAtZoom(layer, record({ _zoom: 15 }), 14)).toBe(1.5);
+  });
+});
+
+describe('getMapMemoSymbolScaleAtZoom', () => {
+  it('基準ズーム（14）以上では1倍', () => {
+    expect(getMapMemoSymbolScaleAtZoom(14)).toBe(1);
+    expect(getMapMemoSymbolScaleAtZoom(18)).toBe(1);
+  });
+
+  it('基準ズームより引くと半分ずつ小さくなる', () => {
+    expect(getMapMemoSymbolScaleAtZoom(13)).toBe(0.5);
+    expect(getMapMemoSymbolScaleAtZoom(12)).toBe(0.25);
+  });
+
+  it('どのズームで描いても大きさは基準ズームで決まる（描画時ズームに依存しない）', () => {
+    //引数はレコードではなく現在のズームだけ。描いたときのズームでは変わらない
+    expect(getMapMemoSymbolScaleAtZoom(16)).toBe(getMapMemoSymbolScaleAtZoom(16));
+    expect(SYMBOL_BASE_ZOOM).toBe(14);
   });
 });
 

@@ -85,17 +85,18 @@ export const getLineWidthAtZoom = (layer: LayerType, feature: RecordType, zoom: 
   return width * 2 ** (zoom - drawnZoom);
 };
 
+//行動記号（スタンプ・ブラシ）の基準。どのズームで描いても基準ズームでの大きさを基準にする。
+//大きさを変えたいときはSYMBOL_BASE_SIZE_PXだけを変える（プレビューと保存後の両方に効く）
+export const SYMBOL_BASE_SIZE_PX = 26;
+export const SYMBOL_BASE_ZOOM = 14;
+
 /**
  * ズームに応じたマップメモ記号（スタンプ・ブラシ）の縮小率。
- * 線幅と同じく、描画時（_zoom）よりズームアウトした場合のみ2^(zoom - _zoom)倍に縮小する。
- * _zoomを持たない旧レコードは常に1（固定サイズ）。
+ * 基準ズームより引いたときだけ2^(zoom - 基準)倍に縮小し、寄ったときは1倍（画面上の大きさを保つ）。
+ * 描画時のズーム（_zoom）ではなく基準ズームで揃えるので、どのズームで描いても同じ大きさになる。
  */
-export const getMapMemoSymbolScaleAtZoom = (feature: RecordType, zoom: number): number => {
-  const drawnZoom = feature.field._zoom;
-  if (typeof drawnZoom !== 'number' || drawnZoom <= 0) return 1;
-  if (zoom >= drawnZoom) return 1;
-  return 2 ** (zoom - drawnZoom);
-};
+export const getMapMemoSymbolScaleAtZoom = (zoom: number): number =>
+  zoom >= SYMBOL_BASE_ZOOM ? 1 : 2 ** (zoom - SYMBOL_BASE_ZOOM);
 
 export const getColor = (layer: LayerType, feature: RecordType) => {
   //colorは以前はhexで保存していたが、rgbaで保存するように変更したため、hexの場合はrgbaに変換する。
