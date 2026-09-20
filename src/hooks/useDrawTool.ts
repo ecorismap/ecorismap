@@ -147,6 +147,9 @@ export type UseDrawToolReturnType = {
   isRedoable: boolean;
   isEditingObject: boolean;
   isSelectedDraw: boolean;
+  //飛翔線に紐づかない行動位置（単独の記号）がセッションにあるか。
+  //これ1つで1件の記録になるため、確定・キャンセルするまで道具を持ち替えさせない
+  hasStandaloneSymbol: boolean;
   drawLine: React.RefObject<DrawLineType[]>;
   editingLineXY: React.RefObject<Position[]>;
   selectLine: React.RefObject<Position[]>;
@@ -2601,6 +2604,9 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     isRedoable: redoLine.current.length > 0,
     isEditingObject: isEditingObject.current,
     isSelectedDraw: isSelectedDraw.current,
+    hasStandaloneSymbol: drawLine.current.some(
+      (line) => (line.style?.stamp ?? '') !== '' && line.style?.groupId === undefined
+    ),
     currentDrawTool,
     currentPointTool,
     currentLineTool,
