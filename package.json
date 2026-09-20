@@ -136,6 +136,7 @@
     "expo-document-picker": "~56.0.4",
     "expo-file-system": "~56.0.8",
     "expo-font": "~56.0.6",
+    "expo-gl": "~56.0.6",
     "expo-image-manipulator": "~56.0.18",
     "expo-image-picker": "~56.0.17",
     "expo-linear-gradient": "~56.0.4",

@@ -1596,9 +1596,8 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
 
   const toggleTerrain = useCallback(
     (activate?: boolean) => {
-      if (Platform.OS !== 'web' || mapViewRef === null) return;
+      if (mapViewRef === null) return;
 
-      const mapView = (mapViewRef as MapRef).getMap();
       let activateTerrain = activate;
 
       if (activate === undefined) {
@@ -1612,13 +1611,18 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
         if (isTerrainActive) return;
         if (activate !== undefined && !terrainPreferenceRef.current) return;
 
-        mapView.setTerrain({ source: 'rasterdem', exaggeration: TERRAIN_EXAGGERATION });
+        if (Platform.OS === 'web') {
+          // Webはmaplibreのterrainを有効化。ネイティブはHomeTerrain3D（自作エンジン）に切り替わるだけ
+          (mapViewRef as MapRef).getMap().setTerrain({ source: 'rasterdem', exaggeration: TERRAIN_EXAGGERATION });
+        }
         setIsTerrainActive(true);
       } else {
         if (!isTerrainActive) return;
 
+        if (Platform.OS === 'web') {
+          (mapViewRef as MapRef).getMap().setTerrain(null);
+        }
         // Terrain が有効のままだとピッチやベアリングが保持され、ライン変換の精度が落ちるためリセットする
-        mapView.setTerrain(null);
         dispatch(editSettingsAction({ mapRegion: { ...mapRegion, pitch: 0, bearing: 0 } }));
         setIsTerrainActive(false);
       }

@@ -23,6 +23,9 @@ import { Line } from '../organisms/HomeLine';
 import { Polygon } from '../organisms/HomePolygon';
 import { DownloadArea } from '../organisms/HomeDownloadArea';
 import { HomeZoomButton } from '../organisms/HomeZoomButton';
+import { HomeTerrain3D } from '../organisms/HomeTerrain3D';
+import { HomeTerrain3DButtons } from '../organisms/HomeTerrain3DButtons';
+import { HomeTerrainControl } from '../organisms/HomeTerrainControl';
 import { HomeAttributionText } from '../organisms/HomeAttributionText';
 import { HomeDrawTools } from '../organisms/HomeDrawTools';
 
@@ -234,6 +237,7 @@ export default function HomeScreen() {
   // SVGDrawingContext
   const { isPencilTouch } = useContext(SVGDrawingContext);
 
+
   // MapViewContext
   const {
     mapViewRef,
@@ -254,6 +258,8 @@ export default function HomeScreen() {
     panResponder,
     isDrawLineVisible,
     setPoiInfo,
+    isTerrainActive,
+    toggleTerrain,
   } = useContext(MapViewContext);
 
   // DrawingToolsContext
@@ -540,15 +546,18 @@ export default function HomeScreen() {
             pressSelectColorOK={selectPenColor}
             pressSelectColorCancel={() => setVisibleMapMemoColor(false)}
           />
-          <MapMemoView />
-          <HomePopup />
-          <HomePoiPopup />
+          {!isTerrainActive && <MapMemoView />}
+          {!isTerrainActive && <HomePopup />}
+          {!isTerrainActive && <HomePoiPopup />}
           <HomeMeasureBanner />
           <HomeViewshedBanner />
-          <HomeTrackPointPopup />
+          {!isTerrainActive && <HomeTrackPointPopup />}
           <HomeTrackPhotoModal />
-          {isDrawLineVisible && <SvgView />}
+          {!isTerrainActive && isDrawLineVisible && <SvgView />}
 
+          {/************** 3D地形ビュー（isTerrainActive時はMapViewと差し替え） ****************** */}
+          {isTerrainActive && <HomeTerrain3D />}
+          {!isTerrainActive && (
           <MapView
             ref={mapViewRef as React.RefObject<MapView>}
             provider={PROVIDER_GOOGLE}
@@ -673,6 +682,7 @@ export default function HomeScreen() {
             {/************* exportPDF mode ******************** */}
             {exportPDFMode && <PDFArea pdfArea={pdfArea} />}
           </MapView>
+          )}
           {mapRegion && (
             <View
               style={[
@@ -691,6 +701,15 @@ export default function HomeScreen() {
             zoomOut={pressZoomOut}
             showHeader={downloadMode || exportPDFMode}
           />
+          {!(downloadMode || exportPDFMode) && featureButton === 'NONE' && toggleTerrain !== undefined && (
+            <HomeTerrainControl
+              top={insets.top + 245}
+              left={13 + insets.left}
+              isTerrainActive={isTerrainActive ?? false}
+              toggleTerrain={toggleTerrain}
+            />
+          )}
+          {isTerrainActive && <HomeTerrain3DButtons top={insets.top + 285} left={13 + insets.left} />}
 
           {!downloadMode && !exportPDFMode && isShowingProjectButtons && <HomeProjectButtons />}
           {projectName === undefined || downloadMode || exportPDFMode ? null : (
@@ -712,10 +731,10 @@ export default function HomeScreen() {
           {/* HomeInfoToolButtonを非表示にする
           {!(downloadMode || exportPDFMode || editPositionMode) && <HomeInfoToolButton />}
           */}
-          {!(downloadMode || exportPDFMode) && featureButton !== 'NONE' && featureButton !== 'MEMO' && (
+          {!(downloadMode || exportPDFMode || isTerrainActive) && featureButton !== 'NONE' && featureButton !== 'MEMO' && (
             <HomeDrawTools />
           )}
-          {!(downloadMode || exportPDFMode) && featureButton === 'MEMO' && <HomeMapMemoTools />}
+          {!(downloadMode || exportPDFMode || isTerrainActive) && featureButton === 'MEMO' && <HomeMapMemoTools />}
           {!(downloadMode || exportPDFMode || editPositionMode) && <HomeButtons />}
           {downloadMode && (
             <>

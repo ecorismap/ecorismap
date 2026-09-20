@@ -112,7 +112,7 @@ describe('useMapView', () => {
   describe('zoom calculations', () => {
     it('should use stored camera zoom on mobile platform', () => {
       // 回転時にdeltaが膨らんでも狂わないよう、保存済みのカメラzoomをそのまま使う
-      const { result } = renderHook(() => useMapView(null), { wrapper });
+      const { result } = renderHook(() => useMapView({ current: null }), { wrapper });
 
       expect(result.current.zoomDecimal).toBe(15);
       expect(result.current.zoom).toBe(15);
@@ -131,7 +131,7 @@ describe('useMapView', () => {
         },
       });
 
-      const { result } = renderHook(() => useMapView(null), { wrapper });
+      const { result } = renderHook(() => useMapView({ current: null }), { wrapper });
 
       // Actual calculation: Math.log2(360 * (375 / 256 / 0.01)) ≈ 15.686
       expect(result.current.zoomDecimal).toBeCloseTo(15.68, 1);
@@ -141,7 +141,7 @@ describe('useMapView', () => {
     it('should calculate zoom decimal for web platform', () => {
       (Platform as any).OS = 'web';
 
-      const { result } = renderHook(() => useMapView(null), { wrapper });
+      const { result } = renderHook(() => useMapView({ current: null }), { wrapper });
 
       expect(result.current.zoomDecimal).toBe(15);
       expect(result.current.zoom).toBe(15);
@@ -155,7 +155,7 @@ describe('useMapView', () => {
         mapRegion: null,
       });
 
-      const { result } = renderHook(() => useMapView(null), { wrapper });
+      const { result } = renderHook(() => useMapView({ current: null }), { wrapper });
 
       expect(result.current.zoomDecimal).toBe(5);
       expect(result.current.zoom).toBe(5);
@@ -175,7 +175,7 @@ describe('useMapView', () => {
         },
       });
 
-      const { result } = renderHook(() => useMapView(null), { wrapper });
+      const { result } = renderHook(() => useMapView({ current: null }), { wrapper });
 
       // Should handle the negative case properly
       expect(result.current.zoomDecimal).toBeGreaterThan(0);
@@ -188,7 +188,7 @@ describe('useMapView', () => {
       const { isMapView } = require('../../utils/Map');
       isMapView.mockReturnValue(true);
 
-      const { result } = renderHook(() => useMapView(mockMapView as any), { wrapper });
+      const { result } = renderHook(() => useMapView({ current: mockMapView } as any), { wrapper });
 
       act(() => {
         result.current.zoomIn();
@@ -210,7 +210,7 @@ describe('useMapView', () => {
       const { isMapView } = require('../../utils/Map');
       isMapView.mockReturnValue(true);
 
-      const { result } = renderHook(() => useMapView(mockMapView as any), { wrapper });
+      const { result } = renderHook(() => useMapView({ current: mockMapView } as any), { wrapper });
 
       act(() => {
         result.current.zoomOut();
@@ -233,7 +233,7 @@ describe('useMapView', () => {
       isMapView.mockReturnValue(false);
       isMapRef.mockReturnValue(true);
 
-      const { result } = renderHook(() => useMapView(mockMapRef as any), { wrapper });
+      const { result } = renderHook(() => useMapView({ current: mockMapRef } as any), { wrapper });
 
       act(() => {
         result.current.zoomIn();
@@ -252,7 +252,7 @@ describe('useMapView', () => {
       isMapView.mockReturnValue(false);
       isMapRef.mockReturnValue(true);
 
-      const { result } = renderHook(() => useMapView(mockMapRef as any), { wrapper });
+      const { result } = renderHook(() => useMapView({ current: mockMapRef } as any), { wrapper });
 
       act(() => {
         result.current.zoomOut();
@@ -272,7 +272,7 @@ describe('useMapView', () => {
       isMapView.mockReturnValue(false);
       isMapRef.mockReturnValue(true);
 
-      const { result } = renderHook(() => useMapView(mockMapRef as any), { wrapper });
+      const { result } = renderHook(() => useMapView({ current: mockMapRef } as any), { wrapper });
 
       act(() => {
         result.current.zoomOut();
@@ -288,7 +288,7 @@ describe('useMapView', () => {
 
   describe('changeMapRegion', () => {
     it('should return early when region is undefined', () => {
-      const { result } = renderHook(() => useMapView(null), { wrapper });
+      const { result } = renderHook(() => useMapView({ current: null }), { wrapper });
 
       act(() => {
         result.current.changeMapRegion(undefined);
@@ -310,7 +310,7 @@ describe('useMapView', () => {
       const { isRegionType } = require('../../utils/Map');
       isRegionType.mockReturnValue(true);
 
-      const { result } = renderHook(() => useMapView(null), { wrapper });
+      const { result } = renderHook(() => useMapView({ current: null }), { wrapper });
 
       const newRegion = {
         latitude: 36.0,
@@ -334,7 +334,7 @@ describe('useMapView', () => {
       isRegionType.mockReturnValue(false);
       isViewState.mockReturnValue(true);
 
-      const { result } = renderHook(() => useMapView(null), { wrapper });
+      const { result } = renderHook(() => useMapView({ current: null }), { wrapper });
 
       const viewState = {
         latitude: 36.0,
@@ -367,7 +367,7 @@ describe('useMapView', () => {
       isViewState.mockReturnValue(true);
       isMapRef.mockReturnValue(true);
 
-      const { result } = renderHook(() => useMapView(mockMapRef as any), { wrapper });
+      const { result } = renderHook(() => useMapView({ current: mockMapRef } as any), { wrapper });
 
       const viewState = {
         latitude: 36.0,
@@ -398,7 +398,7 @@ describe('useMapView', () => {
       isRegionType.mockReturnValue(false);
       isMapView.mockReturnValue(false);
 
-      const { result } = renderHook(() => useMapView(null), { wrapper });
+      const { result } = renderHook(() => useMapView({ current: null }), { wrapper });
 
       const region = {
         latitude: 36.0,
@@ -425,7 +425,7 @@ describe('useMapView', () => {
       isMapView.mockReturnValue(true);
 
       const mockMapView = createMockMapView();
-      const { result } = renderHook(() => useMapView(mockMapView as any), { wrapper });
+      const { result } = renderHook(() => useMapView({ current: mockMapView } as any), { wrapper });
 
       const region = {
         latitude: 36.0,
@@ -454,7 +454,7 @@ describe('useMapView', () => {
 
       const mockMapView = createMockMapView();
       mockMapView.getCamera.mockRejectedValue(new Error('getCamera failed'));
-      const { result } = renderHook(() => useMapView(mockMapView as any), { wrapper });
+      const { result } = renderHook(() => useMapView({ current: mockMapView } as any), { wrapper });
 
       const region = {
         latitude: 36.0,
@@ -480,7 +480,7 @@ describe('useMapView', () => {
       isRegionType.mockReturnValue(true);
       isMapView.mockReturnValue(true);
 
-      const { result } = renderHook(() => useMapView(mockMapView as any), { wrapper });
+      const { result } = renderHook(() => useMapView({ current: mockMapView } as any), { wrapper });
 
       const region = {
         latitude: 36.0,

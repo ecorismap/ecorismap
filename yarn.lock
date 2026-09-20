@@ -14570,6 +14570,7 @@ __metadata:
     expo-document-picker: ~56.0.4
     expo-file-system: ~56.0.8
     expo-font: ~56.0.6
+    expo-gl: ~56.0.6
     expo-image-manipulator: ~56.0.18
     expo-image-picker: ~56.0.17
     expo-linear-gradient: ~56.0.4
@@ -15817,6 +15818,29 @@ __metadata:
     react: "*"
     react-native: "*"
   checksum: ff9d85c4567066f9a622476a5da409f2ed3498fc128c89ae0f16a2c100554c062cf386803ea4e752a28668c7c64fa66aa14902450122b93fec3cca9ffedc37f5
+  languageName: node
+  linkType: hard
+
+"expo-gl@npm:~56.0.6":
+  version: 56.0.6
+  resolution: "expo-gl@npm:56.0.6"
+  dependencies:
+    invariant: ^2.2.4
+  peerDependencies:
+    expo: "*"
+    react: "*"
+    react-dom: "*"
+    react-native: "*"
+    react-native-reanimated: "*"
+    react-native-web: "*"
+  peerDependenciesMeta:
+    react-dom:
+      optional: true
+    react-native-reanimated:
+      optional: true
+    react-native-web:
+      optional: true
+  checksum: c3ac8b5dcb1f3e7827013371b806990b0efaa9284ac14911b21b31a00e6d49c06662dc37e821a7df27770a6919dc08d25d49d1780314155584850f0ba5472ca6
   languageName: node
   linkType: hard
 

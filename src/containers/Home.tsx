@@ -302,7 +302,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
 
   const { importGeoFile } = useGeoFile();
   const { runTutrial } = useTutrial();
-  const { zoom, zoomDecimal, zoomIn, zoomOut, changeMapRegion } = useMapView(mapViewRef.current);
+  const { zoom, zoomDecimal, zoomIn, zoomOut, changeMapRegion } = useMapView(mapViewRef);
   const { isConnected } = useNetInfo();
 
   // 複数地図選択状態

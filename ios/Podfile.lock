@@ -1253,6 +1253,10 @@ PODS:
     - ExpoModulesCore
   - ExpoFont (56.0.6):
     - ExpoModulesCore
+  - ExpoGL (56.0.6):
+    - ExpoModulesCore
+    - ExpoModulesJSI
+    - ReactCommon/turbomodule/core
   - ExpoImageManipulator (56.0.18):
     - ExpoModulesCore
     - SDWebImageWebPCoder
@@ -4247,6 +4251,7 @@ DEPENDENCIES:
   - "ExpoDomWebView (from `../node_modules/@expo/dom-webview/ios`)"
   - ExpoFileSystem (from `../node_modules/expo-file-system/ios`)
   - ExpoFont (from `../node_modules/expo-font/ios`)
+  - ExpoGL (from `../node_modules/expo-gl`)
   - ExpoImageManipulator (from `../node_modules/expo-image-manipulator/ios`)
   - ExpoImagePicker (from `../node_modules/expo-image-picker/ios`)
   - ExpoKeepAwake (from `../node_modules/expo-keep-awake/ios`)
@@ -4450,6 +4455,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/expo-file-system/ios"
   ExpoFont:
     :path: "../node_modules/expo-font/ios"
+  ExpoGL:
+    :path: "../node_modules/expo-gl"
   ExpoImageManipulator:
     :path: "../node_modules/expo-image-manipulator/ios"
   ExpoImagePicker:
@@ -4726,6 +4733,7 @@ SPEC CHECKSUMS:
   ExpoDomWebView: 27205be8754f9992913b8a9a08e65019f2207075
   ExpoFileSystem: 9dc04ec1e11bc3c7b965d7feb2de12c789755c7b
   ExpoFont: 3a9fd9690216be709f109d2bd67d80e1beefdbee
+  ExpoGL: 4ce0ab81188ae14f0cd8bb1c0b4f5b7185249697
   ExpoImageManipulator: 7a3fe772fd8d7ea7e64963ea0cf32eb41e6182de
   ExpoImagePicker: 684cb450a38a6e73813c706848820db0d6db60d0
   ExpoKeepAwake: 359c47a1d9ccc3a3c519bca6e39562cce230c5bb
