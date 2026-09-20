@@ -1,8 +1,66 @@
 # Change Log
 
-## [0.6.1]　- Unreleased
+## [0.6.1]　- 2026-09-20
 
-- (in development)
+- Added a group creation button to the map and layer lists, with a dialog for entering the group name. Map groups can now also be deleted from the settings screen
+- Improved drawing tool buttons to stay visible and greyed out instead of disappearing while editing, so it is clear which tools are unavailable and how to get back
+- Improved the map-move button into a toggle that returns to the previous tool, and kept the confirm/cancel bar visible while the map is being moved
+- Improved tool buttons and tool palettes to be disabled while a lasso selection is being moved or rotated, and while a standalone behavior position is being placed
+- Improved two-finger map operation to be ignored while an unsaved drawing is on screen, so work in progress is never lost to an accidental pinch
+- Improved flight-record symbols and line arrows to be sized by a fixed reference zoom, so symbols drawn at different zoom levels no longer appear at different sizes
+- Improved flight-record drawing so behavior positions can only be placed on the flight line when a line is present, and symbols attached to a line select the line instead of themselves
+- Removed map memo line editing by long press: lines are now corrected with the partial eraser and redrawing, which is safer and easier to follow
+- Improved the encryption PIN to accept six or more digits when newly set (existing four-digit PINs continue to work)
+- Improved sessions where the encryption key was never registered to guide the user to the registration form instead of showing an error
+- Improved project saving so that members who have not signed up yet or have deleted their account can be kept as pending without blocking the save, with their status rechecked when the settings screen is opened
+- Improved the account creation password field to work with the browser's password generator and the iOS keychain suggestion
+- Improved the Android release build with code shrinking enabled, and replaced the encryption native libraries with 16 KB page size compatible builds
+- Fixed the object being edited disappearing (leaving only the confirm button) when the map was touched with two fingers during plot editing
+- Fixed an unsaved drawing staying hidden after a map-move tap, a zoom button, or a pinch
+- Fixed an unsaved drawing being redrawn at the wrong position after the map was moved
+- Fixed an unsaved drawing being silently discarded when track recording was started while drawing
+- Fixed the "Discard changes?" confirmation appearing when there was nothing to discard
+- Fixed the confirm/cancel bar disappearing after undo/redo while editing a point
+- Fixed a record being saved without a location when the coordinates had not been finalized, and fixed the record link being lost when editing the location of a record with no location
+- Fixed serial numbering restarting from 1, by numbering from the maximum value instead of the last record
+- Fixed taps in editing selection being treated as a lasso when the finger moved slightly
+- Fixed behavior symbols being left behind when the flight line was redrawn before saving
+- Fixed the mating (star) symbol being drawn off the recorded position
+- Fixed the pen settings of the flight-record palette remaining after switching to a normal line layer
+- Fixed crashes and data corruption in undo/redo (out-of-range access, and bulk transform undo rewriting unrelated features)
+- Fixed map memo strokes waiting to be saved being lost or saved late when the eraser or undo was used
+- Fixed drawing history and unsaved drawings being carried over when switching projects
+- Fixed several display inconsistencies while drawing (polygon fill disappearing with the map-move tool, leftover ghost dashed lines, lines staying grey)
+
+- 地図・レイヤ一覧にグループ作成ボタンを追加（名前を入力して直接作成。地図グループは設定画面から削除できるようにも改善）
+- 作図の道具ボタンを、編集中に消すのではなくグレーで無効表示するように改善（今使えない道具と戻り方が分かるように）
+- 地図移動ボタンをトグル化し、もう一度押すと元の道具へ戻るように改善。地図移動中も確定・キャンセルバーを表示
+- なげなわで選んで移動・回転している間と、単独の行動位置を置いている間は、関係のないボタンとツールパレットを無効にするように改善
+- 描きかけがある間は2本指の地図操作を無効にし、誤ったピンチで未保存の内容が失われないように改善
+- 行動記号と飛翔線の矢印の大きさを基準ズームで決めるように改善（どのズームで描いても同じ大きさになる）
+- 飛翔線があるときは線の上にだけ行動位置を置けるように改善。線に付いた記号をタップしたときはその飛翔線が選ばれる
+- マップメモの長押しによる線の編集を廃止（誤爆で既存の線が切り詰められるため。修正は部分消去＋描き足しに一本化）
+- 暗号化パスワード（PIN）を新規設定時に6桁以上で設定できるように改善（既存の4桁PINはそのまま使えます）
+- 暗号化キーの登録を完了していない場合に、エラー表示ではなく登録フォームへ誘導するように改善
+- アカウント未登録・退会済みのメンバーがいても「保留」のままプロジェクトを保存できるように改善（設定画面を開いたときに登録状況を再チェック）
+- アカウント作成のパスワード欄でブラウザのパスワード自動生成やiOSキーチェーンの提案を使えるように改善
+- Androidのリリースビルドでコードの難読化を有効にし、暗号化ライブラリを16KBページ対応版に差し替え
+- プロット編集中に2本指で地図を触ると編集中のオブジェクトが消え、確定ボタンだけが残る問題を修正
+- 地図移動のタップ・ズームボタン・ピンチのあとに描きかけが非表示のまま固着する問題を修正
+- 地図を移動したあとに描きかけの表示位置がずれる問題を修正
+- 作図中に軌跡の記録を開始すると描きかけが黙って破棄される問題を修正
+- 破棄するものが無いのに「変更を破棄しますか？」が出る問題を修正
+- ポイントの編集中に元に戻す・やり直すをすると確定・キャンセルバーが消える問題を修正
+- 座標が未確定のまま保存されて位置なしレコードができる問題と、位置なしレコードの位置編集中にレコードの紐付きが失われる問題を修正
+- 連番（SERIAL）の採番が1に戻る問題を修正（末尾レコード基準から最大値＋1へ変更）
+- 編集選択で指がわずかに揺れるとタップがなげなわ扱いになり選択できない問題を修正
+- 確定前に飛翔線を描き直すと行動記号が取り残される問題を修正
+- 交尾（★）の記号が記録位置からずれて描かれる問題を修正
+- 飛翔図のレイヤから普通のラインレイヤへ移ってもペンの設定（矢印・太さ・色）が残る問題を修正
+- 元に戻す・やり直すでのクラッシュと、一括変形の取り消しで無関係の地物の座標が書き換わる問題を修正
+- マップメモの保存待ちの線が、消しゴムや元に戻すの操作で失われたり後から保存されたりする問題を修正
+- プロジェクトを切り替えたときに作図の履歴と描きかけが持ち越される問題を修正
+- 作図中の表示の不整合を修正（地図移動ツールでポリゴンの塗りが消える、指の軌跡の破線が残る、線が灰色のままになる）
 
 ## [0.6.0]　- 2026-09-17
 
@@ -485,7 +543,7 @@
 ## [0.1.9] - 2022-11-13
 
 - App Release.
-  [0.6.1]: https://github.com/ecorismap/ecorismap/compare/7a0ebd1c...HEAD
+  [0.6.1]: https://github.com/ecorismap/ecorismap/compare/7a0ebd1c...bb439a2f
   [0.6.0]: https://github.com/ecorismap/ecorismap/compare/b0753cddf1b8db8d05f540a32a621f37eff9c741...7a0ebd1c
   [0.5.5]: https://github.com/ecorismap/ecorismap/compare/030e239c0bc4f548926c3eba796cc67d48e96a95...b0753cddf1b8db8d05f540a32a621f37eff9c741
   [0.5.4]: https://github.com/ecorismap/ecorismap/compare/a400ef19c0a56fff902837d4d8f5da31d1dde4a4...030e239c0bc4f548926c3eba796cc67d48e96a95
