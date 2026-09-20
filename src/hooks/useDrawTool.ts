@@ -77,6 +77,9 @@ const MIN_POINTS_FOR_REFINE = 5;
 const HANDWRITING_SELECT_MIN_POINTS = 15;
 //行動記号の消しゴムが反応する距離（スタンプは点なので画面上の距離で判定する）
 const SYMBOL_HIT_RADIUS_PX = 20;
+//編集選択で「なげなわ（ドラッグ）」と「タップ」を見分ける移動量。
+//点の数で見ると指のわずかな揺れでタップがなげなわ扱いになり、選択できない
+const LASSO_THRESHOLD_PX = 10;
 
 //色分けが「個別（_strokeColor参照）」のレイヤか。
 //このレイヤでは手書き以外（プロット・フリーハンド）で作る新規レコードにも現在の色・太さを書き込む
@@ -854,6 +857,24 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     [editingLineXY]
   );
 
+  /**
+   * 線の形を変えたとき、同じセッションでぶら下がっている行動記号を新しい線へ移す。
+   * 保存済みの線に付いた記号はsaveLineのreprojectGroupChildrenが担当するので、
+   * ここは「まだ保存していないセッション内の記号」を受け持つ
+   */
+  const reprojectSessionChildren = useCallback(
+    (parentId: string, oldLine: Position[], newLine: Position[]) => {
+      if (oldLine.length < 2 || newLine.length < 2) return;
+      drawLine.current = drawLine.current.map((line) => {
+        if (line.style?.groupId !== parentId || line.latlon.length === 0) return line;
+        const latlon = reprojectCoordsOnModifiedLine(line.latlon, oldLine, newLine);
+        if (latlon === undefined) return line;
+        return { ...line, latlon, xy: latLonArrayToXYArray(latlon, mapRegion, mapSize, mapViewRef) };
+      });
+    },
+    [drawLine, mapRegion, mapSize, mapViewRef]
+  );
+
   const editFreehandObject = useCallback(() => {
     // //ライン修正の場合
     const index = editingObjectIndex.current;
@@ -874,18 +895,43 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     //接続部をなぞり方に応じて平滑化（浅い角度=なめらか、急角度=かくっと維持）
     const blended = smoothJunctions(modified.xy, modified.latlon, modified.junctions, toLatLon);
 
-    pushUndo({
-      index: index,
-      latlon: drawLine.current[index].latlon,
-      action: 'EDIT',
-    });
+    const parentId = drawLine.current[index].id;
+    const oldLatlon = drawLine.current[index].latlon;
+    //記号がぶら下がっているときは、線と記号をまとめて戻せるよう一括のundoにする
+    const hasChildren = drawLine.current.some((line) => line.style?.groupId === parentId);
+    if (hasChildren) {
+      pushUndo({
+        index: -1,
+        latlon: [],
+        latlonEntries: drawLine.current.map((line) => ({ id: line.id, latlon: line.latlon })),
+        action: 'EDIT_MULTI',
+      });
+    } else {
+      pushUndo({
+        index: index,
+        latlon: oldLatlon,
+        action: 'EDIT',
+      });
+    }
 
     drawLine.current[index] = {
       ...drawLine.current[index],
       xy: blended.xy,
       latlon: blended.latlon,
     };
-  }, [pushUndo, currentDrawTool, drawLine, editingLineXY, editingObjectIndex, mapRegion, mapSize, mapViewRef]);
+    //線を描き直したら、ぶら下がる行動記号も新しい線へ移す
+    reprojectSessionChildren(parentId, oldLatlon, blended.latlon);
+  }, [
+    pushUndo,
+    currentDrawTool,
+    drawLine,
+    editingLineXY,
+    editingObjectIndex,
+    mapRegion,
+    mapSize,
+    mapViewRef,
+    reprojectSessionChildren,
+  ]);
 
   ////////////////////////////////////////////////////
 
@@ -1754,9 +1800,19 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
 
   const handleReleaseSelect = useCallback(
     (pXY: Position) => {
-      //なげなわ（ドラッグ）なら範囲選択、タップなら位置選択
-      const isLasso = selectLine.current.length > 5;
-      const isSelected = isLasso ? trySelectFeaturesByArea() : trySelectObjectAtPosition(pXY);
+      //なげなわ（ドラッグ）なら範囲選択、タップなら位置選択。
+      //判定は点の数ではなく指の移動量で行う（タップでも移動イベントは何度も来るため）
+      const start = selectLine.current[0];
+      const isLasso =
+        start !== undefined &&
+        selectLine.current.some((p) => Math.hypot(p[0] - start[0], p[1] - start[1]) > LASSO_THRESHOLD_PX);
+      let isSelected = isLasso ? trySelectFeaturesByArea() : trySelectObjectAtPosition(pXY);
+      //なげなわで何も囲めなかったときは、少し動いただけのタップとして拾い直す
+      let isTapSelection = !isLasso;
+      if (!isSelected && isLasso) {
+        isSelected = trySelectObjectAtPosition(pXY);
+        if (isSelected) isTapSelection = true;
+      }
       selectLine.current = [];
       if (isSelected) {
         isEditingDraw.current = true;
@@ -1769,7 +1825,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
         //個別編集では手書き由来（頂点が多い）のオブジェクトを手書きモードで編集する
         //（MEMOタブは手書きツールが無いため対象外）
         //飛翔図は選んだ線をそのまま描き足せるよう、タップ選択なら常に飛翔（手書き）にする
-        const editsIndividually = !isLasso && (isHandwrittenSelection() || layer?.toolPalette === 'HISYOU');
+        const editsIndividually = isTapSelection && (isHandwrittenSelection() || layer?.toolPalette === 'HISYOU');
         if (featureButton === 'POINT') {
           setDrawTool('PLOT_POINT');
         } else if (featureButton === 'LINE') {
