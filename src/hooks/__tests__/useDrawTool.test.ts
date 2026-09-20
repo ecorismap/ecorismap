@@ -2229,13 +2229,13 @@ describe('useDrawTool', () => {
       expect(result.current.isEditingObject).toBe(false);
     });
 
-    it('線に紐づかない記号を置き直しても、別のストロークを壊さない', () => {
-      //操作対象を「末尾」固定で探していたため、単独の記号を置き直すと
-      //直前に描いた線に属性が入ったり、2本指で線ごと消えたりしていた
+    it('線に紐づかない行動位置は、置き直しを取り消すと元の位置へ戻る', () => {
+      //操作対象を「末尾」固定で探していたため、置き直しの取り消しで別のストロークを
+      //消してしまうことがあった。対象をidで持つようにしたことの確認
       const { result } = renderDrawTool();
       startHandwritingLine(result);
 
-      //スナップ先が無い状態で単独の記号を置く（drawLine[0]）
+      //飛翔線が無い状態なら、線に紐づかない行動位置を置ける
       (checkDistanceFromLine as jest.Mock).mockReturnValue({ isNear: false, distance: 9999 });
       act(() => {
         result.current.setHandwritingSubTool('TOMARI');
@@ -2249,80 +2249,18 @@ describe('useDrawTool', () => {
       expect(result.current.drawLine.current).toHaveLength(1);
       const stampId = result.current.drawLine.current[0].id;
 
-      //続けてペンで線を描く（drawLine[1]）
-      act(() => {
-        result.current.setHandwritingSubTool('PEN');
-      });
-      drawPenStroke(result, [
-        [0, 0],
-        [10, 0],
-      ]);
-      expect(result.current.drawLine.current).toHaveLength(2);
-      const lineId = result.current.drawLine.current[1].id;
-
-      //記号ツールに戻して置き直す → 対象は記号であって線ではない
-      act(() => {
-        result.current.setHandwritingSubTool('TOMARI');
-      });
+      //置き直す（確定前はタップした位置へ動かせる）
       act(() => {
         result.current.handleGrantHandwriting([200, 200], penStyle);
       });
       expect(result.current.drawLine.current.find((l) => l.id === stampId)?.xy).toEqual([[200, 200]]);
 
-      //置き直しの途中で2本指に移っても、線は消えない
+      //途中で2本指に移ったときは、消さずに元の位置へ戻す
       act(() => {
         result.current.cancelHandwritingStroke();
       });
-      expect(result.current.drawLine.current).toHaveLength(2);
-      expect(result.current.drawLine.current.some((l) => l.id === lineId)).toBe(true);
-      //記号は置き直す前の位置へ戻る
+      expect(result.current.drawLine.current).toHaveLength(1);
       expect(result.current.drawLine.current.find((l) => l.id === stampId)?.xy).toEqual([[100, 100]]);
-    });
-
-    it('単独の行動位置があるとhasStandaloneSymbolが立ち、線に紐づく記号では立たない', () => {
-      //単独の記号は1つで1件の記録になるため、確定・キャンセルするまで道具を持ち替えさせない
-      const { result } = renderDrawTool();
-      startHandwritingLine(result);
-      expect(result.current.hasStandaloneSymbol).toBe(false);
-
-      //スナップ先が無い＝単独の行動位置
-      (checkDistanceFromLine as jest.Mock).mockReturnValue({ isNear: false, distance: 9999 });
-      act(() => {
-        result.current.setHandwritingSubTool('TOMARI');
-      });
-      act(() => {
-        result.current.handleGrantHandwriting([100, 100], penStyle);
-      });
-      act(() => {
-        result.current.handleReleaseHandwriting();
-      });
-      expect(result.current.hasStandaloneSymbol).toBe(true);
-
-      //確定するとセッションが空になるので解除される
-      act(() => {
-        result.current.resetDrawTools();
-      });
-      expect(result.current.hasStandaloneSymbol).toBe(false);
-
-      //線に紐づく記号（スナップあり）では立たない
-      act(() => {
-        result.current.setHandwritingSubTool('PEN');
-      });
-      drawPenStroke(result, [
-        [0, 0],
-        [10, 0],
-      ]);
-      (checkDistanceFromLine as jest.Mock).mockReturnValue({ isNear: true, distance: 1 });
-      act(() => {
-        result.current.setHandwritingSubTool('TOMARI');
-      });
-      act(() => {
-        result.current.handleGrantHandwriting([5, 0], penStyle);
-      });
-      act(() => {
-        result.current.handleReleaseHandwriting();
-      });
-      expect(result.current.hasStandaloneSymbol).toBe(false);
     });
 
     it('スタンプはペンストロークにスナップして_groupで紐づく', () => {
@@ -3092,13 +3030,13 @@ describe('useDrawTool', () => {
       act(() => {
         result.current.handleReleaseHandwriting();
       });
-      //スタンプ（スナップなし）
-      (checkDistanceFromLine as jest.Mock).mockReturnValue({ isNear: false, distance: 9999 });
+      //スタンプ（線があるときは線の上にだけ置ける）
+      (checkDistanceFromLine as jest.Mock).mockReturnValue({ isNear: true, distance: 1 });
       act(() => {
         result.current.setHandwritingSubTool('TOMARI');
       });
       act(() => {
-        result.current.handleGrantHandwriting([50, 50], penStyle);
+        result.current.handleGrantHandwriting([5, 0], penStyle);
       });
       act(() => {
         result.current.handleReleaseHandwriting();
