@@ -59,8 +59,6 @@ export const mockDrawingToolsContextValue: DrawingToolsContextType = {
     isEditingObject: false,
     isSelectedDraw: false,
     hasStandaloneSymbol: false,
-    isEditingLine: false,
-    editingLineId: undefined,
   },
   // Current tools (grouped)
   currentTools: {
@@ -120,8 +118,6 @@ export const mockDrawingToolsContextValue: DrawingToolsContextType = {
   isAreaSelected: false,
   isSelectedDraw: false,
   hasStandaloneSymbol: false,
-  isEditingLine: false,
-  editingLineId: undefined,
   featureButton: 'NONE',
   currentDrawTool: 'NONE',
   currentPointTool: 'PLOT_POINT',

@@ -17,13 +17,12 @@ interface Props {
   zoom: number;
   zIndex: number;
   selectedRecord: { layerId: string; record: RecordType } | undefined;
-  editingLineId?: string;
   //矢印ヘッドの太さ計算用の小数ズーム（線本体はMapLibre式で正確に処理される）
   zoomDecimal?: number;
 }
 
-export const Line = React.memo((props: Props & { editingLineId?: string }) => {
-  const { data, layer, zoom, selectedRecord, editingLineId, zoomDecimal } = props;
+export const Line = React.memo((props: Props) => {
+  const { data, layer, zoom, selectedRecord, zoomDecimal } = props;
 
   const { stampRecords, brushRecords, arrowRecords, lineRecords } = useMemo(() => {
     const stamps: LineRecordType[] = [];
@@ -115,7 +114,6 @@ export const Line = React.memo((props: Props & { editingLineId?: string }) => {
         userId={userId}
         displayName={displayName}
         zoom={zoom}
-        editingLineId={editingLineId}
       />
     </>
   );
@@ -127,17 +125,16 @@ interface PolylineProps {
   userId: string;
   displayName: string;
   zoom: number;
-  editingLineId?: string; // 追加
 }
 
 const PolylineComponent = React.memo((props: PolylineProps) => {
-  const { data, layer, userId, displayName, zoom, editingLineId } = props;
+  const { data, layer, userId, displayName, zoom } = props;
 
   const labelStyle = useMemo(() => getLabelStyle(layer, userId, displayName), [layer, userId, displayName]);
 
   const dataStyle = useMemo(
-    () => getDataStyleLine(layer, userId, displayName, editingLineId),
-    [layer, userId, displayName, editingLineId]
+    () => getDataStyleLine(layer, userId, displayName),
+    [layer, userId, displayName]
   );
 
   const geojsonData = useMemo(
