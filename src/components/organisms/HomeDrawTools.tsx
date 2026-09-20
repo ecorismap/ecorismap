@@ -36,6 +36,7 @@ export const HomeDrawTools = React.memo(() => {
     isEditingObject,
     isAreaSelected,
     currentDrawTool,
+    currentPointTool,
     currentLineTool,
     currentPolygonTool,
     featureButton,
@@ -125,6 +126,16 @@ export const HomeDrawTools = React.memo(() => {
   //なげなわで選んで移動・回転している間は、作図の道具は今の操作と関係ないので押せないようにする
   //（抜けるのは確定・キャンセル。undo・削除・地図移動は移動中も使うので対象外）
   const isToolLocked = isAreaSelected;
+
+  //地図移動ツールへ持ち替えている間も作図セッションは続いているため、持ち替え前の道具で判定する
+  //（ツール名だけで見ると未選択に見え、編集中なのにボタンが消灯する）
+  const activePointTool = currentDrawTool === 'MOVE' ? currentPointTool : currentDrawTool;
+  //ポイントはタップで選ぶと位置の移動そのものになるので、追加の道具は移動ボタンに持ち替える
+  //（なげなわの移動選択は別。そちらは道具を無効にしたまま残す）
+  const isPointObjectSelected = isSelectedDraw && !isAreaSelected;
+  //現在地ポイントは押した時点で1件追加して終わる操作で、ツールとして選択状態にならない。
+  //そのため赤（選択中）にはならず、何かを編集している間は押せないようにする
+  const isAddLocationDisabled = isEditingDraw || isEditingObject;
 
   //手書きツールを有効化する（消しゴム中なら解除してから）
   const startHandwriting = () => {
@@ -260,45 +271,41 @@ export const HomeDrawTools = React.memo(() => {
 
       <View style={styles.buttonContainer}>
         <View style={styles.toolColumn}>
-          {featureButton === 'POINT' &&
-            (!editPositionMode || editPositionWithoutCoord) &&
-            !isSelectedDraw &&
-            !isEditingDraw && (
-              <View style={styles.button}>
-                <Button
-                  name={POINTTOOL.ADD_LOCATION_POINT}
-                  backgroundColor={COLOR.ALFABLUE}
-                  borderRadius={10}
-                  onPress={() => selectDrawTool('ADD_LOCATION_POINT')}
-                  labelText={t('Home.label.addLocationPoint')}
-                />
-              </View>
-            )}
-          {featureButton === 'POINT' && currentDrawTool === 'ADD_LOCATION_POINT' && isEditingDraw && (
+          {/* ポイントの道具はライン・ポリゴンと同じく常に表示し、押せない状況では無効にする
+              （非表示にすると編集が終わったように見え、戻り方も分かりにくい） */}
+          {/* 現在地ポイントは押すと1件追加して終わる操作。編集中は押せないが、消すと
+              編集が終わったように見えるのでグレーで残す */}
+          {featureButton === 'POINT' && (!editPositionMode || editPositionWithoutCoord) && (
             <View style={styles.button}>
               <Button
+                id={'ADD_LOCATION_POINT'}
                 name={POINTTOOL.ADD_LOCATION_POINT}
-                backgroundColor={COLOR.ALFARED}
+                disabled={isAddLocationDisabled}
+                backgroundColor={isAddLocationDisabled ? COLOR.ALFAGRAY : COLOR.ALFABLUE}
                 borderRadius={10}
                 onPress={() => selectDrawTool('ADD_LOCATION_POINT')}
                 labelText={t('Home.label.addLocationPoint')}
               />
             </View>
           )}
-
-          {featureButton === 'POINT' && (!editPositionMode || editPositionWithoutCoord) && !isSelectedDraw && (
+          {featureButton === 'POINT' && (!editPositionMode || editPositionWithoutCoord) && !isPointObjectSelected && (
             <View style={styles.button}>
               <Button
                 id={'PLOT_POINT'}
                 name={POINTTOOL.PLOT_POINT}
-                backgroundColor={currentDrawTool === 'PLOT_POINT' ? COLOR.ALFARED : COLOR.ALFABLUE}
+                disabled={isToolLocked}
+                backgroundColor={
+                  isToolLocked ? COLOR.ALFAGRAY : activePointTool === 'PLOT_POINT' ? COLOR.ALFARED : COLOR.ALFABLUE
+                }
                 borderRadius={10}
                 onPress={() => selectDrawTool('PLOT_POINT')}
                 labelText={t('Home.label.plotPoint')}
               />
             </View>
           )}
-          {featureButton === 'POINT' && (isSelectedDraw || editPositionWithCoord) && (
+          {/* ポイントのオブジェクト選択は実質「位置の移動」なので、道具ではなく移動ボタンを出す
+              （データ一覧からの位置編集も同じ操作なのでまとめる） */}
+          {featureButton === 'POINT' && (isPointObjectSelected || editPositionWithCoord) && (
             <View style={styles.button}>
               <Button
                 name={DRAWTOOL.MOVE_POINT}
