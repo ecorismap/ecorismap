@@ -35,7 +35,10 @@ export const HomeModalSubToolPicker = React.memo((props: Props) => {
                   borderRadius={10}
                   onPress={() => select(item)}
                   labelText={item.label}
-                  labelFontSize={9}
+                  //一覧では正式名を出したいので省略せず、ボタン幅（44px）に収まるよう文字を縮める
+                  //（「ホバリング」が9pxだとはみ出してアイコンに重なる）
+                  labelFontSize={Math.min(9, Math.max(6, 42 / item.label.length))}
+                  labelNumberOfLines={1}
                   size={22}
                 />
               </View>

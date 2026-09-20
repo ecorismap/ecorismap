@@ -1107,12 +1107,20 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
   const prevEditingLayerRef = useRef<{ id: string; toolPalette?: LayerType['toolPalette'] } | undefined>(undefined);
   useEffect(() => {
     const prev = prevEditingLayerRef.current;
-    if (prev !== undefined && prev.id !== editingLayer?.id && prev.toolPalette === 'VEGETATION') {
-      clearPaletteFieldValues(prev.id);
+    if (prev !== undefined && prev.id !== editingLayer?.id) {
+      if (prev.toolPalette === 'VEGETATION') clearPaletteFieldValues(prev.id);
+      //飛翔図のパレットはペンに設定（太さ・矢印・種名の色）を焼き込む。普通のラインレイヤには
+      //それらを変えるボタンが無いため、持ち越すと矢印付きのまま直せなくなる。
+      //（矢印は色分けが個別でないレイヤでもレコードへ保存される）
+      if (prev.toolPalette === 'HISYOU' && editingLayer?.toolPalette !== 'HISYOU') {
+        setArrowStyle('NONE');
+        setPenWidth('PEN_MEDIUM');
+        selectPenColor(0, 0, 0, 0.7);
+      }
     }
     prevEditingLayerRef.current =
       editingLayer === undefined ? undefined : { id: editingLayer.id, toolPalette: editingLayer.toolPalette };
-  }, [editingLayer, clearPaletteFieldValues]);
+  }, [editingLayer, clearPaletteFieldValues, selectPenColor, setArrowStyle, setPenWidth]);
 
   const selectFieldValues = useCallback(
     (values: { [fieldName: string]: string }) => {
