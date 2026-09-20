@@ -571,12 +571,27 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
    * 捨てたつもりの線が突然保存されたりするため、切替時点で決着させる。
    * 1点だけの中断はピンチの副産物なので破棄する（Grant側の再開処理と同じ扱い）
    */
+  //1秒のデバウンス待ちの保存を今すぐ確定する。タイマーを黙って止めると
+  //画面には描かれているのに保存されない線が残り、後から無関係な操作で保存されてしまう
+  const flushPendingSave = useCallback(() => {
+    if (timer.current === undefined) return;
+    clearTimeout(timer.current);
+    timer.current = undefined;
+    saveMapMemo(mapMemoLines);
+  }, [mapMemoLines, saveMapMemo]);
+
   const flushPausedPenStroke = useCallback(() => {
+    //頂点編集中は既存線の一部を編集用に保持しているだけなので、確定すると
+    //その前半だけをコピーした新しい線が増えてしまう。編集を中断して捨てる
+    if (isEditingLine) {
+      clearMapMemoEditingLine();
+      return;
+    }
     if (mapMemoEditingLineLatLon.current.length > 1) {
       finishPenStroke();
     }
     clearMapMemoEditingLine();
-  }, [clearMapMemoEditingLine, finishPenStroke]);
+  }, [clearMapMemoEditingLine, finishPenStroke, isEditingLine]);
 
   /**
    * Handle long press to start line editing
@@ -636,9 +651,8 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
    */
   const handleGrantMapMemo = useCallback(
     (event: GestureResponderEvent) => {
-      if (timer.current) {
-        clearTimeout(timer.current);
-      }
+      //保存待ちの線をここで確定する（止めるだけだと未保存のまま画面に残り続ける）
+      flushPendingSave();
 
       // Calculate touch offset
       offset.current = [
@@ -707,6 +721,7 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
     [
       appendPenPointLatLon,
       currentMapMemoTool,
+      flushPendingSave,
       finishPenStroke,
       handleBrushToolGrant,
       handleLongPressMapMemo,
@@ -1232,6 +1247,8 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
    * Undoes the last map memo operation
    */
   const pressUndoMapMemo = useCallback(() => {
+    //保存待ちの線があると、履歴の末尾と実データがズレて別の線が消える
+    flushPendingSave();
     if (history.length === 0 || !activeMemoRecordSet) return;
 
     const lastOperation = history[history.length - 1];
@@ -1269,7 +1286,7 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
         data: newDrawLine,
       })
     );
-  }, [history, activeMemoRecordSet, future, dispatch]);
+  }, [history, activeMemoRecordSet, future, dispatch, flushPendingSave]);
 
   /**
    * Redoes the last undone map memo operation

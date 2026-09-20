@@ -62,7 +62,7 @@ import { updateLayerAction } from '../modules/layers';
 import { MapRef } from 'react-map-gl/maplibre';
 import { editSettingsAction } from '../modules/settings';
 import { useRecord } from './useRecord';
-import { isBrushTool, isHandwritingTool, isPlotTool, isPointTool, isStampTool } from '../utils/General';
+import { isBrushTool, isPlotTool, isPointTool, isStampTool } from '../utils/General';
 import { getHisyouBehavior } from '../constants/HisyouBehavior';
 import { PositionFilter } from '../utils/OneEuroFilter';
 import { Position } from 'geojson';
@@ -310,7 +310,11 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
   const handwritingSnapTarget = useRef<{ coordsXY: Position[]; targetId: string } | undefined>(undefined);
   const handwritingBrushStartXY = useRef<Position>([0, 0]);
   //タッチ中の手書きストロークが存在するか（release/pinch処理の対象判定）
-  const activeHandwritingStroke = useRef(false);
+  //このタッチで操作している手書きストロークのid（操作していなければundefined）。
+  //末尾固定で参照すると、既存の記号を動かしているときに別のストロークを壊してしまう
+  const activeHandwritingStroke = useRef<string | undefined>(undefined);
+  //このタッチで新しく作ったストロークかどうか（取り消し方が変わる）
+  const activeHandwritingIsNew = useRef(false);
 
   const offset = useRef([0, 0]);
 
@@ -509,6 +513,8 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
   ///////////////////////////////////////////////////
   const changeToEditingObject = useCallback(
     (index: number, featureType: FeatureButtonType) => {
+      //座標なしのライン・ポリゴンを位置編集しようとすると対象が作られず落ちるため守る
+      if (drawLine.current[index] === undefined) return;
       editingObjectIndex.current = index;
       const lineXY = drawLine.current[index].xy;
       pushUndo({
@@ -914,18 +920,21 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
   );
 
   const savePoint = useCallback(() => {
-    //削除したものを取り除く
-    drawLine.current = drawLine.current.filter((line) => line.xy.length !== 0);
+    //削除したもの（座標が無いもの）を除いた保存対象。検証を通るまでdrawLineは詰めない
+    //（途中でエラー復帰するとeditingObjectIndexが別のオブジェクトを指してしまうため）
+    const targetLines = drawLine.current.filter((line) => line.xy.length !== 0);
     //有効なポイントかチェック(ポイントの数)
-    const isValid = drawLine.current.every((line) => isValidPoint(line.xy));
+    const isValid = targetLines.every((line) => isValidPoint(line.xy));
 
-    if (!isValid) {
+    if (!isValid || targetLines.length === 0) {
+      //保存するものが無いまま成功扱いにすると、確定を押したのに何も起きない
       return { isOK: false, message: t('hooks.message.invalidPoint'), layer: undefined, recordSet: undefined };
     }
     const { isOK, message, layer, recordSet } = getEditableLayerAndRecordSetWithCheck('POINT');
     if (!isOK || layer === undefined || recordSet === undefined) {
       return { isOK: false, message, layer: undefined, recordSet: undefined };
     }
+    drawLine.current = targetLines;
 
     const savedRecordSet: RecordType[] = [];
     for (const line of drawLine.current) {
@@ -996,10 +1005,10 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
   );
 
   const saveLine = useCallback((defaultStyle?: DrawLineStyleType, applyStyleToSelected?: { color: boolean; width: boolean; arrow?: boolean }) => {
-    //削除したものを取り除く
-    drawLine.current = drawLine.current.filter((line) => line.xy.length !== 0);
+    //削除したもの（座標が無いもの）を除いた保存対象。検証を通るまでdrawLineは詰めない
+    const targetLines = drawLine.current.filter((line) => line.xy.length !== 0);
     //有効なラインかチェック(ポイントの数)
-    const isValid = drawLine.current.every((line) => isValidLine(line.xy));
+    const isValid = targetLines.every((line) => isValidLine(line.xy));
 
     if (!isValid) {
       return { isOK: false, message: t('hooks.message.invalidLine'), layer: undefined, recordSet: undefined };
@@ -1008,6 +1017,13 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     if (!isOK || layer === undefined || recordSet === undefined) {
       return { isOK: false, message, layer: undefined, recordSet: undefined };
     }
+    drawLine.current = targetLines;
+    //何らかの理由でlatlonが未確定なら、画面に見えている位置(xy)から作り直す（ポイント・ポリゴンと同じ保険）
+    drawLine.current.forEach((line) => {
+      if (line.latlon.length !== line.xy.length) {
+        line.latlon = xyArrayToLatLonArray(line.xy, mapRegion, mapSize, mapViewRef);
+      }
+    });
 
     const savedRecordSet: RecordType[] = [];
 
@@ -1107,6 +1123,9 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     findRecord,
     generateRecord,
     getEditableLayerAndRecordSetWithCheck,
+    mapRegion,
+    mapSize,
+    mapViewRef,
     reprojectGroupChildren,
     resetDrawTools,
     updateRecord,
@@ -1120,7 +1139,9 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     drawLine.current.forEach((line) => {
       const lineXY = line.xy;
       if (lineXY.length >= 3 && (lineXY[0][0] !== lineXY[lineXY.length - 1][0] || lineXY[0][1] !== lineXY[lineXY.length - 1][1])) {
-        if (currentDrawTool === 'HANDWRITING_POLYGON' && line.latlon.length === lineXY.length) {
+        //手書きかどうかはオブジェクト自身で判定する。ツール名だと地図移動ツールへ
+        //持ち替えてから確定した場合に平滑化されず、閉じ目の形が変わってしまう
+        if (line.properties.includes('HANDWRITING') && line.latlon.length === lineXY.length) {
           //フリーハンドは閉じ目をなぞり方の角度に応じて平滑化して閉じる（急角度ならかくっと閉じる）
           const closed = closeFreehandPolygonSeam(lineXY, line.latlon, (p) =>
             xyToLatLon(p, mapRegion, mapSize, mapViewRef)
@@ -1196,7 +1217,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
 
     resetDrawTools();
     return { isOK: true, message: '', layer: layer, recordSet: savedRecordSet };
-  }, [addRecord, currentDrawTool, findLayer, generateRecord, getEditableLayerAndRecordSetWithCheck, mapRegion, mapSize, mapViewRef, resetDrawTools, updateRecord]);
+  }, [addRecord, findLayer, generateRecord, getEditableLayerAndRecordSetWithCheck, mapRegion, mapSize, mapViewRef, resetDrawTools, updateRecord]);
 
   const selectSingleFeature = useCallback(
     (event: GestureResponderEvent) => {
@@ -1364,8 +1385,10 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     } else if (undo.action === 'NEW') {
       //追加の場合
       drawLine.current.pop();
-      //手書きセッションは残りのストロークがあれば編集状態（確定バー）を維持する
-      isEditingObject.current = isHandwritingTool(currentDrawTool) && drawLine.current.length > 0;
+      //未確定のオブジェクトが残っていれば編集状態（確定バー）を維持する。
+      //ツール名で判定すると、手書き→プロットへ持ち替えた後や地図移動中のundoで
+      //判定が外れ、描きかけが見えているのに確定バーだけ消える
+      isEditingObject.current = drawLine.current.length > 0;
       editingObjectIndex.current = -1;
     } else if (undo.action === 'SELECT') {
       //オブジェクトの選択をアンドゥする場合（状態がリセットされるためredoは不可）
@@ -1402,19 +1425,18 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
       drawLine.current[undo.index].xy = latLonArrayToXYArray(undo.latlon, mapRegion, mapSize, mapViewRef);
       drawLine.current[undo.index].latlon = undo.latlon;
       //drawLine.current[undo.index].properties = currentDrawTool === 'PLOT_POINT' ? ['POINT'] : ['EDIT'];
-      if (isHandwritingTool(currentDrawTool)) {
+      if (drawLine.current[undo.index]?.properties.includes('HANDWRITING')) {
         //手書きの修正はワンショットなので、undo後も修正モードには入れない
+        //（対象が手書きかどうかで判定する。ツール名だと持ち替え後に判定が外れる）
         isEditingObject.current = drawLine.current.length > 0;
         editingObjectIndex.current = -1;
-      } else if (currentDrawTool === 'PLOT_POINT') {
-        //ポイントは座標が残っている限り編集セッションを維持する。ここで一律に終了すると
-        //undo/redoのあと点が見えているのに確定・キャンセルバーが消えて保存できなくなる
+      } else {
+        //編集セッションの継続は「座標が残っているか」で決める。ツール名で分けると
+        //地図移動ツールへ持ち替えてからundoした場合に判定が外れ、
+        //見えていないのに確定・キャンセルバーだけ残る（または逆）不整合になる
         const hasCoords = (drawLine.current[undo.index]?.xy.length ?? 0) > 0;
         isEditingObject.current = hasCoords;
         editingObjectIndex.current = hasCoords ? undo.index : -1;
-      } else {
-        isEditingObject.current = true;
-        editingObjectIndex.current = undo.index;
       }
     }
     if (undoLine.current.length === 0) {
@@ -1424,7 +1446,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
       setDrawTool('NONE');
     }
     setRedraw(ulid());
-  }, [currentDrawTool, dispatch, mapRegion, mapSize, mapViewRef, resetDrawTools]);
+  }, [dispatch, mapRegion, mapSize, mapViewRef, resetDrawTools]);
 
   /**
    * undoDrawで取り消した操作をやり直す。
@@ -1473,22 +1495,19 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
       undoLine.current.push({ index: redo.index, latlon: drawLine.current[redo.index].latlon, action: 'EDIT' });
       drawLine.current[redo.index].xy = latLonArrayToXYArray(redo.latlon, mapRegion, mapSize, mapViewRef);
       drawLine.current[redo.index].latlon = redo.latlon;
-      if (isHandwritingTool(currentDrawTool)) {
+      if (drawLine.current[redo.index]?.properties.includes('HANDWRITING')) {
         //手書きの修正はワンショットなので、redo後も修正モードには入れない
         isEditingObject.current = drawLine.current.length > 0;
         editingObjectIndex.current = -1;
-      } else if (currentDrawTool === 'PLOT_POINT') {
-        //undoと同じく、座標が残っている限り編集セッションを維持する
+      } else {
+        //undoと同じく、座標が残っているかで決める（ツール名では判定しない）
         const hasCoords = (drawLine.current[redo.index]?.xy.length ?? 0) > 0;
         isEditingObject.current = hasCoords;
         editingObjectIndex.current = hasCoords ? redo.index : -1;
-      } else {
-        isEditingObject.current = true;
-        editingObjectIndex.current = redo.index;
       }
     }
     setRedraw(ulid());
-  }, [currentDrawTool, mapRegion, mapSize, mapViewRef]);
+  }, [mapRegion, mapSize, mapViewRef]);
 
   const toggleTerrain = useCallback(
     (activate?: boolean) => {
@@ -1599,8 +1618,19 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
    * EDIT装飾（頂点マーカー・青線）をやめて自身のスタイルで表示し、
    * 手書きと同じ操作（なぞって修正）で編集できるようにする
    */
+  //編集対象が単一オブジェクトへ移るので、なげなわの一括変形状態は解除する。
+  //残すとプロットへ戻したときにノード編集ができず、全体が一緒に動いてしまう
+  const exitAreaSelection = useCallback(() => {
+    isAreaSelected.current = false;
+    featuresTransformAngle.current = 0;
+    featuresTransformBaseAngle.current = 0;
+    featuresTransformMode.current = 'NONE';
+    featuresTransformStartXY.current = null;
+  }, []);
+
   const convertSelectionToHandwriting = useCallback(
     (penStyle: HandwritingPenStyleType) => {
+      exitAreaSelection();
       drawLine.current.forEach((line) => {
         if (line.record === undefined) {
           //追加（プロット）で作成中・プロット編集へ変換済みの未保存オブジェクトも手書きストロークへ
@@ -1635,7 +1665,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
       if (drawLine.current.length > 0) isEditingObject.current = true;
       setRedraw(ulid());
     },
-    [mapRegion.zoom]
+    [exitAreaSelection, mapRegion.zoom]
   );
 
   /**
@@ -1644,6 +1674,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
    * スタンプ・ブラシのストロークは対象外（手書き表示のまま）。手書きストロークが無ければ何もしない
    */
   const convertSessionToPlot = useCallback((featureType: FeatureButtonType) => {
+    exitAreaSelection();
     let lastPenIndex = -1;
     drawLine.current.forEach((line, index) => {
       if (!line.properties.includes('HANDWRITING')) return;
@@ -1665,7 +1696,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     editingObjectIndex.current = lastPenIndex;
     isEditingObject.current = true;
     setRedraw(ulid());
-  }, []);
+  }, [exitAreaSelection]);
 
   /**
    * 選択中のオブジェクトを手書きモードで編集するか。
@@ -1927,6 +1958,8 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
       //一括変形のドラッグ中にピンチへ移行した場合、latlonを正としてxyを戻す
       featuresTransformMode.current = 'NONE';
       featuresTransformStartXY.current = null;
+      //座標だけ戻して回転角を戻さないと、選択枠とハンドルだけ傾いたまま残る
+      featuresTransformAngle.current = featuresTransformBaseAngle.current;
       drawLine.current.forEach((line) => {
         line.xy = latLonArrayToXYArray(line.latlon, mapRegion, mapSize, mapViewRef);
       });
@@ -1952,6 +1985,8 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
       editingLineXY.current = [];
     } else {
       line.xy = latLonArrayToXYArray(line.latlon, mapRegion, mapSize, mapViewRef);
+      //指の軌跡が残ると、ツールを持ち替えたときにゴーストの破線が描かれる
+      editingLineXY.current = [];
     }
     setRedraw(ulid());
   }, [currentDrawTool, drawLine, editingLineXY, editingObjectIndex, isEditingObject, mapRegion, mapSize, mapViewRef, undoLine]);
@@ -2076,7 +2111,8 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
         return;
       }
       handwritingPenStyle.current = penStyle;
-      activeHandwritingStroke.current = false;
+      activeHandwritingStroke.current = undefined;
+      activeHandwritingIsNew.current = false;
       const subTool = featureButton === 'POLYGON' ? 'PEN' : handwritingSubTool;
       if (subTool === 'PEN') {
         strokeFilter.current.reset();
@@ -2108,7 +2144,8 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
           stamp: '',
           zoom: mapRegion.zoom,
         };
-        activeHandwritingStroke.current = true;
+        activeHandwritingStroke.current = newStroke.id;
+        activeHandwritingIsNew.current = true;
       } else if (isStampTool(subTool)) {
         const target = findHandwritingSnapTarget(pXY);
         let point = pXY;
@@ -2131,12 +2168,14 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
           drawLine.current[standaloneIndex].xy = [point];
           drawLine.current[standaloneIndex].latlon = [xyToLatLon(point, mapRegion, mapSize, mapViewRef)];
           isEditingObject.current = true;
-          activeHandwritingStroke.current = true;
+          activeHandwritingStroke.current = drawLine.current[standaloneIndex].id;
+          activeHandwritingIsNew.current = false;
           setRedraw(ulid());
           return;
         }
+        const stampId = ulid();
         drawLine.current.push({
-          id: ulid(),
+          id: stampId,
           layerId: undefined,
           record: undefined,
           xy: [point],
@@ -2153,7 +2192,8 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
         });
         pushUndo({ index: -1, latlon: [], action: 'NEW' });
         isEditingObject.current = true;
-        activeHandwritingStroke.current = true;
+        activeHandwritingStroke.current = stampId;
+        activeHandwritingIsNew.current = true;
       } else if (isBrushTool(subTool)) {
         //ブラシは線に沿って描く記号なのでスナップ必須
         const target = findHandwritingSnapTarget(pXY);
@@ -2163,8 +2203,9 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
         }
         handwritingSnapTarget.current = target;
         handwritingBrushStartXY.current = getSnappedPositionWithLine(pXY, target.coordsXY, { isXY: true }).position;
+        const brushId = ulid();
         drawLine.current.push({
-          id: ulid(),
+          id: brushId,
           layerId: undefined,
           record: undefined,
           xy: [],
@@ -2181,7 +2222,8 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
         });
         pushUndo({ index: -1, latlon: [], action: 'NEW' });
         isEditingObject.current = true;
-        activeHandwritingStroke.current = true;
+        activeHandwritingStroke.current = brushId;
+        activeHandwritingIsNew.current = true;
       }
       setRedraw(ulid());
     },
@@ -2207,9 +2249,9 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
         setRedraw(ulid());
         return;
       }
-      if (!activeHandwritingStroke.current) return;
+      if (activeHandwritingStroke.current === undefined) return;
       const subTool = featureButton === 'POLYGON' ? 'PEN' : handwritingSubTool;
-      const index = drawLine.current.length - 1;
+      const index = drawLine.current.findIndex((line) => line.id === activeHandwritingStroke.current);
       if (index < 0) return;
       if (subTool === 'PEN') {
         lastTouchXY.current = pXY;
@@ -2253,14 +2295,19 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
    */
   const finalizeHandwritingStroke = useCallback(
     (withCatchUp: boolean) => {
-      if (!activeHandwritingStroke.current) return;
-      activeHandwritingStroke.current = false;
+      const activeId = activeHandwritingStroke.current;
+      if (activeId === undefined) return;
+      activeHandwritingStroke.current = undefined;
+      const wasNew = activeHandwritingIsNew.current;
+      activeHandwritingIsNew.current = false;
       const subTool = featureButton === 'POLYGON' ? 'PEN' : handwritingSubTool;
-      const index = drawLine.current.length - 1;
+      const index = drawLine.current.findIndex((l) => l.id === activeId);
       if (index < 0) return;
       const line = drawLine.current[index];
       const discardStroke = () => {
-        drawLine.current.pop();
+        //このタッチで作ったものだけ取り除く（既存の記号を動かしていた場合は消さない）
+        if (!wasNew) return;
+        drawLine.current = drawLine.current.filter((_, i) => i !== index);
         const lastUndo = undoLine.current[undoLine.current.length - 1];
         if (lastUndo !== undefined && lastUndo.action === 'NEW') undoLine.current.pop();
         isEditingObject.current = drawLine.current.length > 0;
@@ -2348,6 +2395,9 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
 
   const handleReleaseHandwriting = useCallback(() => {
     if (editingObjectIndex.current !== -1) {
+      //なぞり修正の対象は手書きストロークのみ。プロットの編集中オブジェクトを合成・
+      //手書き化すると描画分岐から外れて見えなくなる（commit/cancel側と同じガード）
+      if (!drawLine.current[editingObjectIndex.current]?.properties.includes('HANDWRITING')) return;
       //なぞり修正を合成して確定する（ワンショット。styleは保持される）
       const index = editingObjectIndex.current;
       editFreehandObject();
@@ -2378,15 +2428,27 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
       setRedraw(ulid());
       return;
     }
-    if (!activeHandwritingStroke.current) return;
-    activeHandwritingStroke.current = false;
-    if (drawLine.current.length === 0) return;
-    drawLine.current = drawLine.current.slice(0, -1);
+    const activeId = activeHandwritingStroke.current;
+    if (activeId === undefined) return;
+    activeHandwritingStroke.current = undefined;
+    const wasNew = activeHandwritingIsNew.current;
+    activeHandwritingIsNew.current = false;
+    const index = drawLine.current.findIndex((l) => l.id === activeId);
+    if (index < 0) return;
     const lastUndo = undoLine.current[undoLine.current.length - 1];
-    if (lastUndo !== undefined && lastUndo.action === 'NEW') undoLine.current.pop();
+    if (wasNew) {
+      //このタッチで作ったストロークを取り消す（末尾固定にすると別のストロークを消してしまう）
+      drawLine.current = drawLine.current.filter((_, i) => i !== index);
+      if (lastUndo !== undefined && lastUndo.action === 'NEW') undoLine.current.pop();
+    } else if (lastUndo !== undefined && lastUndo.action === 'EDIT' && lastUndo.index === index) {
+      //既存の記号を動かしていただけなら、消さずに元の位置へ戻す
+      drawLine.current[index].latlon = lastUndo.latlon;
+      drawLine.current[index].xy = latLonArrayToXYArray(lastUndo.latlon, mapRegion, mapSize, mapViewRef);
+      undoLine.current.pop();
+    }
     isEditingObject.current = drawLine.current.length > 0;
     setRedraw(ulid());
-  }, []);
+  }, [mapRegion, mapSize, mapViewRef]);
 
   /**
    * ピンチ開始時に手書きの描きかけストロークをその場で確定する（実質描かれていなければ破棄）
@@ -2405,10 +2467,10 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
       setRedraw(ulid());
       return;
     }
-    if (!activeHandwritingStroke.current) return;
+    if (activeHandwritingStroke.current === undefined) return;
     const subTool = featureButton === 'POLYGON' ? 'PEN' : handwritingSubTool;
     if (subTool === 'PEN') {
-      const index = drawLine.current.length - 1;
+      const index = drawLine.current.findIndex((l) => l.id === activeHandwritingStroke.current);
       if (index < 0) return;
       const xy = drawLine.current[index].xy;
       //Grant以降の累計移動距離。極小なら描画意図なし（2本指タッチの1本目）とみなす
