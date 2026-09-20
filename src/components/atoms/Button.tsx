@@ -29,6 +29,9 @@ interface Props {
   iconBackgroundColor?: string; // アイコンを台座（縁取り付きの丸）に載せる。色チップがボタン背景と紛れないようにする
 }
 
+//無効なボタンの中身（アイコン・ラベル）の濃さ。背景のグレーだけでは押せるように見えるため
+const DISABLED_OPACITY = 0.45;
+
 const Button = React.memo((props: Props) => {
   const {
     disabled,
@@ -99,6 +102,9 @@ const Button = React.memo((props: Props) => {
       fontWeight: 'bold',
       marginBottom: 2,
     },
+    disabledContent: {
+      opacity: DISABLED_OPACITY,
+    },
     iconBackdrop: {
       alignItems: 'center',
       backgroundColor: iconBackgroundColor,
@@ -140,7 +146,8 @@ const Button = React.memo((props: Props) => {
       <MaterialCommunityIcons name={name} size={iconSize} color={color || COLOR.WHITE} selectable={undefined} />
     );
     return (
-      <View style={{ bottom: labelText ? (iconBackgroundColor ? 7 : 6) : 0 }}>
+      //無効なボタンは中身を薄くする。背景色だけだと「押せる操作」に見えてしまう
+      <View style={{ bottom: labelText ? (iconBackgroundColor ? 7 : 6) : 0, opacity: disabled ? DISABLED_OPACITY : 1 }}>
         {iconBackgroundColor ? <View style={styles.iconBackdrop}>{icon}</View> : icon}
       </View>
     );
@@ -164,10 +171,12 @@ const Button = React.memo((props: Props) => {
         onHoverOut={handlePressOut}
         style={[styles.button, style]}
       >
-        {labelText && labelOnTop && <Text style={styles.labelOnTopStyle}>{labelText}</Text>}
+        {labelText && labelOnTop && (
+          <Text style={[styles.labelOnTopStyle, disabled && styles.disabledContent]}>{labelText}</Text>
+        )}
         {renderIcon()}
         {labelText && !labelOnTop && (
-          <Text style={styles.label} numberOfLines={labelNumberOfLines}>
+          <Text style={[styles.label, disabled && styles.disabledContent]} numberOfLines={labelNumberOfLines}>
             {labelText}
           </Text>
         )}
