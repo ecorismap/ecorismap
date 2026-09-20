@@ -30,6 +30,8 @@ interface Props {
 export const HomeToolPalette = React.memo(({ items, featureType }: Props) => {
   const {
     currentDrawTool,
+    currentLineTool,
+    currentPolygonTool,
     isSelectedDraw,
     isEditingDraw,
     isEditingObject,
@@ -60,7 +62,12 @@ export const HomeToolPalette = React.memo(({ items, featureType }: Props) => {
   } = useContext(MapMemoContext);
 
   const eraserActive = isEraserTool(currentMapMemoTool);
-  const handwritingActive = isHandwritingTool(currentDrawTool);
+  //地図移動ツールへ持ち替えている間も手書きセッションは続いているため、
+  //持ち替え前のツール（currentLineTool/currentPolygonTool）で判定する。
+  //ツール名だけで見ると全ボタンが未選択に見え、押すと再変換が走ってスタイルが戻る
+  const handwritingActive =
+    isHandwritingTool(currentDrawTool) ||
+    (currentDrawTool === 'MOVE' && isHandwritingTool(featureType === 'POLYGON' ? currentPolygonTool : currentLineTool));
   //ポリゴンの手書き（フリー）はペン固定なので、持ち替えの対象は太さと色だけになる
   const isPolygon = featureType === 'POLYGON';
 

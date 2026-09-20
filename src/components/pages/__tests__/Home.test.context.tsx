@@ -72,6 +72,7 @@ export const mockDrawingToolsContextValue: DrawingToolsContextType = {
 
   // Tool actions
   selectFeatureButton: jest.fn(),
+  pressFeatureButton: jest.fn().mockResolvedValue(undefined),
   selectDrawTool: jest.fn(),
   setPointTool: jest.fn() as React.Dispatch<React.SetStateAction<any>>,
   setLineTool: jest.fn() as React.Dispatch<React.SetStateAction<any>>,

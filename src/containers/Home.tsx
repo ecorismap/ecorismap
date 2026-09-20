@@ -1214,11 +1214,21 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
         toggleTerrain(false);
         if (Platform.OS !== 'web') await toggleHeadingUp(false);
       }
+      flushPausedPenStroke();
       resetDrawTools();
       setDrawTool('NONE');
       setMapMemoTool('NONE');
     },
-    [resetDrawTools, setCurrentInfoTool, setDrawTool, setInfoToolActive, setMapMemoTool, toggleHeadingUp, toggleTerrain]
+    [
+      flushPausedPenStroke,
+      resetDrawTools,
+      setCurrentInfoTool,
+      setDrawTool,
+      setInfoToolActive,
+      setMapMemoTool,
+      toggleHeadingUp,
+      toggleTerrain,
+    ]
   );
 
   /************** select button ************/
@@ -1376,6 +1386,8 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     (value: FeatureButtonType) => {
       //中断中/描きかけのペンストロークが見えないまま残らないよう、タブ切替前に確定して保存する
       flushPausedPenStroke();
+      //以降は作図の描きかけを破棄する。画面のタブボタンから押されたときは
+      //pressFeatureButton側で確認を取ってからここへ来る
       setDrawTool('NONE');
       setMapMemoTool('NONE');
       toggleTerrain(value === 'NONE');
@@ -1394,6 +1406,19 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       clearMapMemoHistory,
       toggleHeadingUp,
     ]
+  );
+
+  //画面のタブボタン用。作図の描きかけがあれば破棄してよいか確認する
+  //（位置編集の終了や軌跡記録の開始など、プログラムから切り替える場合は確認しない）
+  const pressFeatureButton = useCallback(
+    async (value: FeatureButtonType) => {
+      if (isEditingDraw || isEditingObject) {
+        const ret = await ConfirmAsync(t('Home.confirm.discard'));
+        if (!ret) return;
+      }
+      selectFeatureButton(value);
+    },
+    [isEditingDraw, isEditingObject, selectFeatureButton]
   );
 
   const finishEditPosition = useCallback(
@@ -1461,7 +1486,9 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
   //編集のキャンセル。ドローツールをオフにする操作と同じ後始末を行う。
   //現在のツールに依存しないので、地図移動ツールへ持ち替えている間のキャンセルでも使える
   const cancelDraw = useCallback(async () => {
-    if (isEditingDraw) {
+    //ライン・ポリゴンの新規作図ではisEditingDrawが立たないため、編集対象の有無も見る
+    //（これを見ないとプロットで頂点を置いた後のキャンセルが無言で消える）
+    if (isEditingDraw || isEditingObject) {
       const ret = await ConfirmAsync(t('Home.confirm.discard'));
       if (!ret) return;
     }
@@ -1477,6 +1504,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     editingLayer?.toolPalette,
     finishEditPosition,
     isEditingDraw,
+    isEditingObject,
     resetDrawTools,
     route.params?.mode,
     setDrawTool,
@@ -1495,10 +1523,11 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
           if (isPointTool(value)) {
             if (!(await checkEditableLayerForDraw('POINT'))) return;
 
-            // ADD_LOCATION_POINTの場合は現在地でポイント編集を開始
+            //現在地ポイントは確認して即レコードを追加する操作なので、
+            //ツールとして選択状態にはしない（setDrawToolを呼ばずに終了する）
             if (value === 'ADD_LOCATION_POINT') {
               await handleAddLocationPoint();
-              return; // handleAddLocationPoint内でsetDrawToolを呼んでいるため
+              return;
             }
             //await runTutrial(`POINTTOOL_${value}`);
           } else if (isLineTool(value)) {
@@ -1531,7 +1560,9 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
             convertSessionToPlot(featureButton);
           }
 
-          //LINEタブの消しゴム（メモツール）が残っていれば解除する（相互排他）
+          //LINEタブの消しゴム（メモツール）が残っていれば解除する（相互排他）。
+          //描きかけのメモがあれば捨てずに確定してから解除する
+          flushPausedPenStroke();
           setMapMemoTool('NONE');
           setDrawTool(value);
         }
@@ -1549,6 +1580,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
             if (!(await checkEditableMapMemo())) return;
           }
           //消しゴム等のメモツールが残っていれば解除する（相互排他）
+          flushPausedPenStroke();
           setMapMemoTool('NONE');
           setDrawTool(value);
           //await runTutrial('SELECTIONTOOL');
@@ -1575,6 +1607,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       cancelDraw,
       checkEditableLayerForDraw,
       checkEditableMapMemo,
+      flushPausedPenStroke,
       isPaletteColorValueEmpty,
       editingLayer?.id,
       editingLayer?.toolPalette,
@@ -3243,6 +3276,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
 
       // Tool actions (stable references)
       selectFeatureButton,
+      pressFeatureButton,
       selectDrawTool,
       setPointTool,
       setLineTool,
@@ -3314,6 +3348,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       currentLineTool,
       currentPolygonTool,
       selectFeatureButton,
+      pressFeatureButton,
       selectDrawTool,
       setPointTool,
       setLineTool,

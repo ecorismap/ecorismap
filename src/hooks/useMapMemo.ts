@@ -204,7 +204,10 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
   const handoffTimer = useRef<NodeJS.Timeout | undefined>(undefined);
   const longPressTimer = useRef<NodeJS.Timeout | undefined>(undefined);
   const longPressStartPosition = useRef<Position | null>(null);
-  const longPressMoveThreshold = 20;
+  //長押し（頂点編集）の誤発火防止。ゆっくり描き始めただけで既存線の編集に
+  //入ってしまい、離すと既存線が切り詰められるため、わずかな移動でも取り消す
+  const longPressMoveThreshold = 6;
+  const longPressDurationMs = 800;
 
   const { generateRecord } = useRecord();
 
@@ -672,8 +675,10 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
         }
         event.persist();
         longPressTimer.current = setTimeout(() => {
+          //描き始めていたら（点が増えていたら）編集ではなく描画の意図とみなす
+          if (mapMemoEditingLineLatLon.current.length > 1) return;
           handleLongPressMapMemo(event);
-        }, 500); // 800ms for long press
+        }, longPressDurationMs);
       }
 
       if (isStampTool(currentMapMemoTool)) {
@@ -1339,6 +1344,16 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
   /**
    * Changes the active layer's color type to individual
    */
+  //プロジェクトが変わったら履歴と描きかけを持ち越さない。
+  //持ち越すと、undoで前のプロジェクトのレコードが現在のメモレイヤへ入ってしまう
+  useEffect(() => {
+    setHistory([]);
+    setFuture([]);
+    isDrawingPaused.current = false;
+    mapMemoEditingLine.current = [];
+    mapMemoEditingLineLatLon.current = [];
+  }, [projectId]);
+
   // Clean up timers on unmount
   useEffect(() => {
     return () => {

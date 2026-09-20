@@ -68,6 +68,8 @@ export interface DrawingToolsContextType {
 
   // Tool actions (stable references)
   selectFeatureButton: (value: FeatureButtonType) => void;
+  //画面のタブボタン用（描きかけがあれば破棄確認を出す）
+  pressFeatureButton: (value: FeatureButtonType) => Promise<void>;
   selectDrawTool: (value: DrawToolType) => void;
   setPointTool: React.Dispatch<React.SetStateAction<PointToolType>>;
   setLineTool: React.Dispatch<React.SetStateAction<LineToolType>>;

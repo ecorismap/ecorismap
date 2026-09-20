@@ -8,7 +8,7 @@ import { hasStampSymbol, StampSymbol } from './HomeStampSymbol';
 import { useWindow } from '../../hooks/useWindow';
 import { ulid } from 'ulid';
 import { COLOR } from '../../constants/AppConstants';
-import { isBrushTool, isHandwritingTool, isPlotTool, isPolygonTool } from '../../utils/General';
+import { isBrushTool, isHandwritingTool, isPlotTool } from '../../utils/General';
 import { DrawingToolsContext } from '../../contexts/DrawingTools';
 import { MapMemoContext } from '../../contexts/MapMemo';
 import { SVGDrawingContext } from '../../contexts/SVGDrawing';
@@ -60,7 +60,8 @@ const renderVertexMarkers = (
 };
 
 export const SvgView = React.memo(() => {
-  const { currentDrawTool, isEditingObject, isAreaSelected, editingLayer } = useContext(DrawingToolsContext);
+  const { currentDrawTool, featureButton, isEditingObject, isAreaSelected, editingLayer } =
+    useContext(DrawingToolsContext);
 
   //飛翔図は描いている最中も保存後と同じ色で見せる（どの種で描いているかが分かるように）。
   //色は選んでいる属性（種名）から色分け設定を引く。未選択なら従来の編集表示（青）にする
@@ -166,8 +167,9 @@ export const SvgView = React.memo(() => {
                 </G>
               );
             }
-            //編集中のポリゴンは従来どおり半透明の青で塗り、青＋水色の線で描く
-            if (currentDrawTool === 'HANDWRITING_POLYGON') {
+            //編集中のポリゴンは従来どおり半透明の青で塗り、青＋水色の線で描く。
+            //ツール名で判定すると地図移動へ持ち替えたときに塗りが消えるためタブで見る
+            if (featureButton === 'POLYGON') {
               return (
                 <G key={ulid()}>
                   <Path d={pointsToSvg(xy)} stroke="none" fill={COLOR.ALFABLUE2} />
@@ -292,7 +294,7 @@ export const SvgView = React.memo(() => {
                 strokeWidth="2"
                 strokeDasharray={'none'}
                 fill={
-                  isPolygonTool(currentDrawTool)
+                  featureButton === 'POLYGON'
                     ? properties.includes('EDIT')
                       ? COLOR.ALFABLUE2
                       : COLOR.ALFAYELLOW
@@ -305,8 +307,9 @@ export const SvgView = React.memo(() => {
             </G>
           );
         })}
-        {/* 修正のライン */}
-        {!isPlotTool(currentDrawTool) && (
+        {/* 修正のライン（手書きのなぞり修正中のみ。プロット中や地図移動中に
+            前の軌跡が残っていてもゴーストを描かない） */}
+        {isHandwritingTool(currentDrawTool) && (
           <G>
             <Path
               d={pointsToSvg(editingLine.current)}
