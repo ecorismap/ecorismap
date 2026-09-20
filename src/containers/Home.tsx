@@ -1410,15 +1410,20 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
 
   //画面のタブボタン用。作図の描きかけがあれば破棄してよいか確認する
   //（位置編集の終了や軌跡記録の開始など、プログラムから切り替える場合は確認しない）
+  //破棄確認は「画面に残っている描きかけ（座標を持つオブジェクト）」があるかで判断する。
+  //フラグ（isEditingDraw）は点を置いた時点で立ったまま元に戻しても下がらないため、
+  //何も無くなった後にも「変更を破棄しますか？」が出てしまう
+  const hasUnsavedDrawing = useCallback(() => drawLine.current.some((line) => line.xy.length > 0), [drawLine]);
+
   const pressFeatureButton = useCallback(
     async (value: FeatureButtonType) => {
-      if (isEditingDraw || isEditingObject) {
+      if (hasUnsavedDrawing()) {
         const ret = await ConfirmAsync(t('Home.confirm.discard'));
         if (!ret) return;
       }
       selectFeatureButton(value);
     },
-    [isEditingDraw, isEditingObject, selectFeatureButton]
+    [hasUnsavedDrawing, selectFeatureButton]
   );
 
   const finishEditPosition = useCallback(
@@ -1486,9 +1491,8 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
   //編集のキャンセル。ドローツールをオフにする操作と同じ後始末を行う。
   //現在のツールに依存しないので、地図移動ツールへ持ち替えている間のキャンセルでも使える
   const cancelDraw = useCallback(async () => {
-    //ライン・ポリゴンの新規作図ではisEditingDrawが立たないため、編集対象の有無も見る
-    //（これを見ないとプロットで頂点を置いた後のキャンセルが無言で消える）
-    if (isEditingDraw || isEditingObject) {
+    //描きかけが画面に残っているときだけ確認する（フラグではなく中身で判断する）
+    if (hasUnsavedDrawing()) {
       const ret = await ConfirmAsync(t('Home.confirm.discard'));
       if (!ret) return;
     }
@@ -1503,8 +1507,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     editingLayer?.id,
     editingLayer?.toolPalette,
     finishEditPosition,
-    isEditingDraw,
-    isEditingObject,
+    hasUnsavedDrawing,
     resetDrawTools,
     route.params?.mode,
     setDrawTool,
