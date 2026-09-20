@@ -9,6 +9,7 @@ import { useWindow } from '../../hooks/useWindow';
 import { ulid } from 'ulid';
 import { COLOR } from '../../constants/AppConstants';
 import { isBrushTool, isHandwritingTool, isPlotTool } from '../../utils/General';
+import { getMapMemoSymbolScaleAtZoom, SYMBOL_BASE_SIZE_PX, SYMBOL_BASE_ZOOM } from '../../utils/Layer';
 import { DrawingToolsContext } from '../../contexts/DrawingTools';
 import { MapMemoContext } from '../../contexts/MapMemo';
 import { SVGDrawingContext } from '../../contexts/SVGDrawing';
@@ -23,6 +24,9 @@ import { Position } from 'geojson';
 //  ・Android: markerUnits のスケール解釈がiOS/Webと異なりマーカーが大きくなる
 // 明示描画なら全プラットフォームでサイズ・挙動が一致する。
 // サイズは従来のmarkerWidth=12・viewBox=10（1単位≒2.4px）相当に合わせている。
+//編集選択で選んだ記号を囲む円の大きさ（記号より一回り大きくする）
+const SELECTION_RING_RADIUS_PX = 22;
+
 const renderVertexMarker = (markerUrl: string, x: number, y: number, key: string) => {
   switch (markerUrl) {
     case 'url(#firstPoint)':
@@ -78,22 +82,30 @@ export const SvgView = React.memo(() => {
   //ブラシ（行動範囲）は確定後に記号として地図へ描かれる。確定前も同じ間隔・角度で記号を出して
   //どんな記号が付くのか分かるようにする（間隔・角度の計算は保存後の描画と同じ）
   //描画時よりズームアウトしたら記号を縮小する（保存後の描画と同じ計算。整数ズームで比較する）
-  const symbolScale = (drawnZoom: number | undefined) => {
-    const zoom = Math.floor(mapRegion.zoom);
-    return typeof drawnZoom === 'number' && drawnZoom > 0 && zoom < drawnZoom ? 2 ** (zoom - drawnZoom) : 1;
-  };
+  //保存後と同じ計算（基準ズームより引いたときだけ縮小する）
+  const symbolScale = () => getMapMemoSymbolScaleAtZoom(Math.floor(mapRegion.zoom));
+  //矢印の大きさ。飛翔線のように線幅がズームで変わらない線（色分けが個別でない）は
+  //縮小せず行動記号と同じ基準の大きさで固定する。
+  //個別色の手書きは線幅から決まる従来どおりの大きさにする
+  const isIndividualStroke =
+    editingLayer?.colorStyle.colorType === 'INDIVIDUAL' &&
+    editingLayer.colorStyle.fieldName === '__CUSTOM' &&
+    editingLayer.colorStyle.customFieldValue === '_strokeColor';
+  const arrowSizeScale = isIndividualStroke ? 1 : SYMBOL_BASE_SIZE_PX / 20;
+  //記号は20の座標系で描いてあるので、基準サイズに合わせて拡大する
+  const symbolDrawScale = () => (symbolScale() * SYMBOL_BASE_SIZE_PX) / 20;
 
-  const brushSymbolPoints = (latlon: Position[], drawnZoom: number | undefined) => {
+  const brushSymbolPoints = (latlon: Position[]) => {
     if (latlon.length < 2) return [];
     try {
-      //間隔も描画時ズーム基準にする（保存後と同じ計算）
+      //間隔も基準ズームで固定する（保存後と同じ計算）
       const zoom = Math.floor(mapRegion.zoom);
-      const scale = symbolScale(drawnZoom);
-      const intervalZoom = scale < 1 && typeof drawnZoom === 'number' ? drawnZoom : zoom;
+      const scale = symbolScale();
+      const intervalZoom = scale < 1 ? SYMBOL_BASE_ZOOM : zoom;
       return interpolateLineString(latlon, 1 / 2 ** (intervalZoom - 10)).map((point) => ({
         xy: latLonToXY(point.coordinates as Position, mapRegion, mapSize, mapViewRef),
         angle: point.angle,
-        scale,
+        scale: symbolDrawScale(),
       }));
     } catch (e) {
       return [];
@@ -145,20 +157,35 @@ export const SvgView = React.memo(() => {
             //飛翔図は保存後と同じ色（種名の色）で描き、線と行動記号の見た目を揃える
             const strokeColor = paletteStrokeColor ?? style?.strokeColor ?? penColor;
             if (style !== undefined && style.stamp !== '') {
+              //編集選択で選んだ記号は、選ばれていることが分かるよう円で囲む
+              //（記号そのものには編集用の装飾が無く、選択できたのか分からないため）
+              const selectionRing =
+                line.record !== undefined && xy.length > 0 ? (
+                  <Circle
+                    cx={xy[0][0]}
+                    cy={xy[0][1]}
+                    r={SELECTION_RING_RADIUS_PX}
+                    stroke={COLOR.BLUE}
+                    strokeWidth={2.5}
+                    strokeDasharray="4,3"
+                    fill={COLOR.ALFABLUE2}
+                  />
+                ) : null;
               //記号は保存後と同じ図形・大きさで出す（数字・英字・文字はラベルが要るので従来の仮表示）
               if (hasStampSymbol(style.stamp) && xy.length > 0) {
-                const scale = symbolScale(style.zoom);
+                const scale = symbolDrawScale();
                 return (
-                  <G
-                    key={ulid()}
-                    transform={`translate(${xy[0][0]},${xy[0][1]}) scale(${scale}) translate(-10,-10)`}
-                  >
-                    <StampSymbol stamp={style.stamp} lineColor={strokeColor} />
+                  <G key={ulid()}>
+                    {selectionRing}
+                    <G transform={`translate(${xy[0][0]},${xy[0][1]}) scale(${scale}) translate(-10,-10)`}>
+                      <StampSymbol stamp={style.stamp} lineColor={strokeColor} />
+                    </G>
                   </G>
                 );
               }
               return (
                 <G key={ulid()}>
+                  {selectionRing}
                   <RenderStamp
                     stampPos={xy.length > 0 ? { x: xy[0][0], y: xy[0][1] } : undefined}
                     currentMapMemoTool={style.stamp as MapMemoToolType}
@@ -200,7 +227,7 @@ export const SvgView = React.memo(() => {
             const previewColor = paletteStrokeColor ?? 'lightblue';
             const previewWidth = paletteStrokeColor === undefined ? 2 : paletteStrokeWidth;
             //なぞり終えたブラシは記号で表示する（なぞっている最中は緯度経度がまだ無いので線で示す）
-            const brushPoints = isBrushStroke ? brushSymbolPoints(line.latlon, style?.zoom) : [];
+            const brushPoints = isBrushStroke ? brushSymbolPoints(line.latlon) : [];
             if (brushPoints.length > 0) {
               return (
                 <G key={ulid()}>
@@ -248,7 +275,13 @@ export const SvgView = React.memo(() => {
                   fill="none"
                 />
                 {!isBrushStroke && (arrowStyle === 'ARROW_END' || arrowStyle === 'ARROW_BOTH') && (
-                  <ArrowHeads points={xy} strokeColor={previewColor} strokeWidth={previewWidth} arrowStyle={arrowStyle} />
+                  <ArrowHeads
+                    points={xy}
+                    strokeColor={previewColor}
+                    strokeWidth={previewWidth}
+                    arrowStyle={arrowStyle}
+                    sizeScale={arrowSizeScale}
+                  />
                 )}
               </G>
             );

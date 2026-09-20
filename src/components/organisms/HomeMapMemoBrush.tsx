@@ -7,7 +7,7 @@ import { BrushSymbol } from './HomeBrushSymbol';
 
 import { interpolateLineString, latLonObjectsToLatLonArray } from '../../utils/Coords';
 import { MARKER_BAND, markerZIndex } from '../../utils/markerZIndex';
-import { getMapMemoSymbolScaleAtZoom } from '../../utils/Layer';
+import { getMapMemoSymbolScaleAtZoom, SYMBOL_BASE_SIZE_PX, SYMBOL_BASE_ZOOM } from '../../utils/Layer';
 
 interface Props {
   lineColor: string;
@@ -22,10 +22,9 @@ export const HomeMapMemoBrush = React.memo((props: Props) => {
   const latlon = latLonObjectsToLatLonArray(feature.coords);
   //描画時よりズームアウトしたら記号を線幅と同様に縮小し、間隔も描画時ズーム基準で固定して
   //ストローク全体が地図と一緒に相似縮小されるようにする（ズームイン側は従来どおり画面上の見た目を維持）
-  const scale = getMapMemoSymbolScaleAtZoom(feature, zoom);
-  const drawnZoom = feature.field._zoom;
-  const intervalZoom = scale < 1 && typeof drawnZoom === 'number' ? drawnZoom : zoom;
-  const size = 20 * scale;
+  const scale = getMapMemoSymbolScaleAtZoom(zoom);
+  const intervalZoom = scale < 1 ? SYMBOL_BASE_ZOOM : zoom;
+  const size = SYMBOL_BASE_SIZE_PX * scale;
   const points = interpolateLineString(latlon, 1 / 2 ** (intervalZoom - 10));
   //turfで
   return (

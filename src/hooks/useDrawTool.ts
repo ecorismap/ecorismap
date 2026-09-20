@@ -77,6 +77,10 @@ const MIN_POINTS_FOR_REFINE = 5;
 const HANDWRITING_SELECT_MIN_POINTS = 15;
 //行動記号の消しゴムが反応する距離（スタンプは点なので画面上の距離で判定する）
 const SYMBOL_HIT_RADIUS_PX = 20;
+//行動位置などの1点だけの記録をタップで拾うときの当たり判定。
+//calcDegreeRadiusの戻り値はturf.bufferへkmとして渡されるため、実際の広さは指定値の約1/111px
+//（線の500は約4.5px）。記号は見た目が20px程度あるので、それに合わせて広げる
+const SYMBOL_SELECT_RADIUS = 2500;
 //編集選択で「なげなわ（ドラッグ）」と「タップ」を見分ける移動量。
 //点の数で見ると指のわずかな揺れでタップがなげなわ扱いになり、選択できない
 const LASSO_THRESHOLD_PX = 10;
@@ -432,8 +436,26 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
       if (selectLineCoords.length > 5) {
         features = selectLineFeaturesByArea(recordSet as LineRecordType[], selectLineCoords);
       } else {
-        const radius = calcDegreeRadius(500, mapRegion, mapSize);
-        const feature = selectLineFeatureByLatLon(recordSet as LineRecordType[], selectLineCoords[0], radius);
+        //1点だけの記録（行動位置などの記号）は線より当たり判定が狭くてタップで拾いにくいので、
+        //記号の見た目に合わせた広さで先に探す
+        const symbols = (recordSet as LineRecordType[]).filter(
+          (record) => Array.isArray(record.coords) && record.coords.length === 1
+        );
+        const symbol =
+          symbols.length > 0
+            ? selectLineFeatureByLatLon(
+                symbols,
+                selectLineCoords[0],
+                calcDegreeRadius(SYMBOL_SELECT_RADIUS, mapRegion, mapSize)
+              )
+            : undefined;
+        const feature =
+          symbol ??
+          selectLineFeatureByLatLon(
+            recordSet as LineRecordType[],
+            selectLineCoords[0],
+            calcDegreeRadius(500, mapRegion, mapSize)
+          );
         features = feature !== undefined ? [feature] : [];
       }
       return features;
@@ -1831,8 +1853,11 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
         } else if (featureButton === 'LINE') {
           if (editsIndividually) {
             convertSelectionToHandwriting(handwritingPenStyle.current);
-            //道具はペンに戻す（前にスタンプ・ブラシを使っていると、選んだ直後に記号が付いてしまう）
-            setHandwritingSubTool('PEN');
+            //行動位置（記号）を選んだときは、その記号の道具に持ち替える。
+            //タップした場所へ動かせるようになる（ペンのままだと新しい線を描き始めてしまう）。
+            //それ以外は道具をペンに戻す（前にスタンプ・ブラシを使っていると記号が付いてしまう）
+            const selectedStamp = drawLine.current.find((l) => l.record !== undefined)?.style?.stamp ?? '';
+            setHandwritingSubTool(selectedStamp !== '' ? (selectedStamp as HandwritingSubToolType) : 'PEN');
             setLineTool('HANDWRITING_LINE');
             setDrawTool('HANDWRITING_LINE');
           } else {

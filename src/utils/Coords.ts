@@ -757,8 +757,22 @@ export const selectLineFeatureByLatLon = (
       const intersects = booleanIntersects(geometry, bufferPolygon);
       if (intersects) return feature;
     });
+    if (intersectingFeatures.length === 0) return undefined;
 
-    return intersectingFeatures.length > 0 ? intersectingFeatures[0] : undefined;
+    //重なっているときは小さいものを優先する。飛翔線の上に置いた行動記号のように、
+    //長い線と短い記号が重なる場所では、記号の方を選びたいことがほとんどのため
+    const featureSize = (feature: LineRecordType) => {
+      const geometry = createGeometry(feature);
+      if (!geometry || turf.getType(geometry) === 'Point') return 0;
+      try {
+        return turf.length(geometry as never, { units: 'kilometers' });
+      } catch (e) {
+        return Number.MAX_VALUE;
+      }
+    };
+    return intersectingFeatures.reduce((smallest, feature) =>
+      featureSize(feature) < featureSize(smallest) ? feature : smallest
+    );
   } catch (e) {
     console.error(e);
     return undefined;
