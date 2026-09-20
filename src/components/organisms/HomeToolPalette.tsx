@@ -35,6 +35,7 @@ export const HomeToolPalette = React.memo(({ items, featureType }: Props) => {
     isSelectedDraw,
     isEditingDraw,
     isEditingObject,
+    isAreaSelected,
     hasStandaloneSymbol,
     selectDrawTool,
     setLineTool,
@@ -153,8 +154,10 @@ export const HomeToolPalette = React.memo(({ items, featureType }: Props) => {
   const isLockedByStandaloneSymbol = (item: ToolPaletteItemType) =>
     hasStandaloneSymbol && fieldNamesOf(item) === undefined;
 
+  //なげなわで選んで移動・回転している間は、道具も属性も今の操作とは関係ないので押せないようにする
+  //（確定・キャンセルで抜ける。undo/削除/地図移動は移動中も使うので対象外）
   const isItemDisabled = (item: ToolPaletteItemType) =>
-    isOptionGroupDisabled(item) || isLockedByStandaloneSymbol(item);
+    isOptionGroupDisabled(item) || isLockedByStandaloneSymbol(item) || isAreaSelected;
 
   const pressItem = async (item: ToolPaletteItemType, skipAttributeCheck = false) => {
     if (isItemDisabled(item)) return;
