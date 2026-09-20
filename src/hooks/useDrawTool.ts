@@ -2116,6 +2116,19 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     []
   );
 
+  //記号を付けられる線（飛翔線）がセッションにあるか。スナップ候補と同じ条件で見る
+  const hasSnappableLine = useCallback(
+    () =>
+      drawLine.current.some(
+        (line) =>
+          line.style !== undefined &&
+          line.style.stamp === '' &&
+          !isBrushTool(line.style.strokeStyle) &&
+          line.xy.length >= 2
+      ),
+    []
+  );
+
   const findHandwritingSnapTarget = useCallback(
     (pXY: Position) => {
       //編集中の線にだけ行動記号を付けられるようにする。保存済みの線に付けたいときは
@@ -2223,6 +2236,9 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
         activeHandwritingIsNew.current = true;
       } else if (isStampTool(subTool)) {
         const target = findHandwritingSnapTarget(pXY);
+        //飛翔線があるときは、その線の上にだけ行動を置く。離れた場所に置くと線と無関係な
+        //1件の記録になってしまうため、線から外れたタップは無視する
+        if (target === undefined && hasSnappableLine()) return;
         let point = pXY;
         let groupId: string | undefined;
         if (target !== undefined && penStyle.snapWithLine) {
@@ -2307,6 +2323,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
       handwritingSubTool,
       eraseHandwritingSymbol,
       findHandwritingSnapTarget,
+      hasSnappableLine,
       editStartNewFreehandObject,
       pushUndo,
       mapRegion,
