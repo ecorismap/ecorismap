@@ -2281,20 +2281,27 @@ describe('useDrawTool', () => {
       expect(result.current.hasStandaloneSymbol).toBe(true);
     });
 
-    it('1点だけの記録（行動位置）は、線より広い当たり判定で先に探す', () => {
-      //行動位置は線と同じ当たり判定（約4.5px）で探していたため、タップで拾いにくかった
-      const stampRecord = {
+    it('単独の行動位置は広い当たり判定で先に探し、線に付いた記号は選択対象から外す', () => {
+      //単独の記号は線と同じ当たり判定（約4.5px）では拾いにくかったので広げる。
+      //一方、線に付いた記号は個別に選べないようにする（タップすると線が選ばれる）
+      const standalone = {
         ...mockLineRecord,
-        id: 'stamp-record-1',
+        id: 'standalone-stamp',
         coords: [{ latitude: 35.0005, longitude: 135.0005 }],
-        field: { _stamp: 'TOMARI' },
+        field: { _stamp: 'TOMARI', _group: '' },
+      } as unknown as LineRecordType;
+      const attached = {
+        ...mockLineRecord,
+        id: 'attached-stamp',
+        coords: [{ latitude: 35.0007, longitude: 135.0007 }],
+        field: { _stamp: 'TOMARI', _group: 'line-record-1' },
       } as unknown as LineRecordType;
       (selectLineFeatureByLatLon as jest.Mock).mockReturnValue(undefined);
       mockGetEditableLayerAndRecordSetWithCheck.mockReturnValue({
         isOK: true,
         message: '',
         layer: mockLineLayer,
-        recordSet: [mockLineRecord, stampRecord],
+        recordSet: [mockLineRecord, standalone, attached],
       });
 
       const { result } = renderDrawTool();
@@ -2305,10 +2312,11 @@ describe('useDrawTool', () => {
         result.current.handleReleaseSelect([135, 35]);
       });
 
-      //1回目は記号だけを対象に探し、見つからなければ2回目で全体を探す
       const calls = (selectLineFeatureByLatLon as jest.Mock).mock.calls;
-      expect(calls[0][0]).toEqual([stampRecord]);
-      expect(calls[1][0]).toEqual([mockLineRecord, stampRecord]);
+      //1回目は単独の記号だけを対象にする（線に付いた記号は含めない）
+      expect(calls[0][0]).toEqual([standalone]);
+      //2回目も線に付いた記号は候補から外れている
+      expect(calls[1][0]).toEqual([mockLineRecord, standalone]);
     });
 
     it('行動位置を選ぶとその記号の道具に持ち替わり、タップで動かせる', () => {

@@ -436,11 +436,14 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
       if (selectLineCoords.length > 5) {
         features = selectLineFeaturesByArea(recordSet as LineRecordType[], selectLineCoords);
       } else {
-        //1点だけの記録（行動位置などの記号）は線より当たり判定が狭くてタップで拾いにくいので、
+        //飛翔線に付いた行動記号（_groupを持つ）は個別に選べないようにする。タップすると線が選ばれる。
+        //行動を変えるときは行動削除で消してから置き直す
+        const isAttachedSymbol = (record: LineRecordType) =>
+          typeof record.field._group === 'string' && record.field._group !== '';
+        const selectable = (recordSet as LineRecordType[]).filter((record) => !isAttachedSymbol(record));
+        //線に紐づかない1点だけの記録（単独の行動位置）は線より当たり判定が狭くてタップで拾いにくいので、
         //記号の見た目に合わせた広さで先に探す
-        const symbols = (recordSet as LineRecordType[]).filter(
-          (record) => Array.isArray(record.coords) && record.coords.length === 1
-        );
+        const symbols = selectable.filter((record) => Array.isArray(record.coords) && record.coords.length === 1);
         const symbol =
           symbols.length > 0
             ? selectLineFeatureByLatLon(
@@ -450,12 +453,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
               )
             : undefined;
         const feature =
-          symbol ??
-          selectLineFeatureByLatLon(
-            recordSet as LineRecordType[],
-            selectLineCoords[0],
-            calcDegreeRadius(500, mapRegion, mapSize)
-          );
+          symbol ?? selectLineFeatureByLatLon(selectable, selectLineCoords[0], calcDegreeRadius(500, mapRegion, mapSize));
         features = feature !== undefined ? [feature] : [];
       }
       return features;
