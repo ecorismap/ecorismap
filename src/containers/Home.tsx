@@ -1783,7 +1783,9 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       if ((await confirmLocationPermission()) !== 'granted') return;
       await toggleGPS('follow');
       await toggleTracking('on');
-      setFeatureButton('NONE');
+      //作図中でも軌跡記録は開始できる。setFeatureButtonだけだと未確定の描きかけと
+      //ツール状態が残り、確定バーが消えたまま地図操作もできなくなるため後始末ごと行う
+      selectFeatureButton('NONE');
     } else if (trackingState === 'on') {
       const ret = await ConfirmAsync(t('Home.confirm.track'));
       if (ret) {
@@ -1811,7 +1813,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     isLandscape,
     navigateToSplit,
     saveTrackLog,
-    setFeatureButton,
+    selectFeatureButton,
     toggleGPS,
     toggleTracking,
     trackingState,

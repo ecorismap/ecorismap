@@ -1353,6 +1353,38 @@ describe('useDrawTool', () => {
       expect(result.current.drawLine.current[0].xy).toEqual([[10, 10]]);
       expect(result.current.isEditingObject).toBe(true);
     });
+
+    it('地図移動ツールへ持ち替えてからundoしても、見た目と確定バーが一致する', () => {
+      //ツール名で判定すると地図移動中のundoで判定が外れ、
+      //点が見えないのに確定・キャンセルバーだけ残ってしまう
+      const { result } = renderDrawTool();
+      act(() => {
+        result.current.setDrawTool('PLOT_POINT');
+      });
+      act(() => {
+        result.current.handleGrantPlot([10, 10]);
+      });
+      act(() => {
+        result.current.handleReleasePlotPoint();
+      });
+      act(() => {
+        result.current.setDrawTool('MOVE');
+      });
+      expect(result.current.isEditingObject).toBe(true);
+
+      act(() => {
+        result.current.undoDraw();
+      });
+      //座標が消えたら確定バーの条件も外れること
+      expect(result.current.drawLine.current[0].xy).toHaveLength(0);
+      expect(result.current.isEditingObject).toBe(false);
+
+      act(() => {
+        result.current.redoDraw();
+      });
+      expect(result.current.drawLine.current[0].xy).toEqual([[10, 10]]);
+      expect(result.current.isEditingObject).toBe(true);
+    });
   });
 
   describe('ピンチ意図の取り消し（cancelPlotGrant）', () => {
@@ -2033,6 +2065,56 @@ describe('useDrawTool', () => {
       //保存後はセッションがリセットされる
       expect(result.current.drawLine.current).toHaveLength(0);
       expect(result.current.isEditingObject).toBe(false);
+    });
+
+    it('線に紐づかない記号を置き直しても、別のストロークを壊さない', () => {
+      //操作対象を「末尾」固定で探していたため、単独の記号を置き直すと
+      //直前に描いた線に属性が入ったり、2本指で線ごと消えたりしていた
+      const { result } = renderDrawTool();
+      startHandwritingLine(result);
+
+      //スナップ先が無い状態で単独の記号を置く（drawLine[0]）
+      (checkDistanceFromLine as jest.Mock).mockReturnValue({ isNear: false, distance: 9999 });
+      act(() => {
+        result.current.setHandwritingSubTool('TOMARI');
+      });
+      act(() => {
+        result.current.handleGrantHandwriting([100, 100], penStyle);
+      });
+      act(() => {
+        result.current.handleReleaseHandwriting();
+      });
+      expect(result.current.drawLine.current).toHaveLength(1);
+      const stampId = result.current.drawLine.current[0].id;
+
+      //続けてペンで線を描く（drawLine[1]）
+      act(() => {
+        result.current.setHandwritingSubTool('PEN');
+      });
+      drawPenStroke(result, [
+        [0, 0],
+        [10, 0],
+      ]);
+      expect(result.current.drawLine.current).toHaveLength(2);
+      const lineId = result.current.drawLine.current[1].id;
+
+      //記号ツールに戻して置き直す → 対象は記号であって線ではない
+      act(() => {
+        result.current.setHandwritingSubTool('TOMARI');
+      });
+      act(() => {
+        result.current.handleGrantHandwriting([200, 200], penStyle);
+      });
+      expect(result.current.drawLine.current.find((l) => l.id === stampId)?.xy).toEqual([[200, 200]]);
+
+      //置き直しの途中で2本指に移っても、線は消えない
+      act(() => {
+        result.current.cancelHandwritingStroke();
+      });
+      expect(result.current.drawLine.current).toHaveLength(2);
+      expect(result.current.drawLine.current.some((l) => l.id === lineId)).toBe(true);
+      //記号は置き直す前の位置へ戻る
+      expect(result.current.drawLine.current.find((l) => l.id === stampId)?.xy).toEqual([[100, 100]]);
     });
 
     it('スタンプはペンストロークにスナップして_groupで紐づく', () => {
