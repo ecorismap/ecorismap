@@ -237,6 +237,9 @@ export default function HomeScreen() {
   // SVGDrawingContext
   const { isPencilTouch } = useContext(SVGDrawingContext);
 
+  // 3Dカメラの方位（コンパス盤面の連動用）。2D中は未使用
+  const [terrain3dHeading, setTerrain3dHeading] = useState(0);
+
 
   // MapViewContext
   const {
@@ -556,7 +559,7 @@ export default function HomeScreen() {
           {!isTerrainActive && isDrawLineVisible && <SvgView />}
 
           {/************** 3D地形ビュー（isTerrainActive時はMapViewと差し替え） ****************** */}
-          {isTerrainActive && <HomeTerrain3D />}
+          {isTerrainActive && <HomeTerrain3D onHeadingChange={setTerrain3dHeading} />}
           {!isTerrainActive && (
           <MapView
             ref={mapViewRef as React.RefObject<MapView>}
@@ -720,7 +723,8 @@ export default function HomeScreen() {
 
           {!(downloadMode || exportPDFMode) && (
             <HomeCompassButton
-              azimuth={azimuth}
+              // 3D中は盤面をカメラの方位と連動させる（Nが画面上の北を指す）
+              azimuth={isTerrainActive ? terrain3dHeading : azimuth}
               headingUp={headingUp}
               onPressCompass={pressCompass}
               onLongPressCompass={toggleDirectionLine}

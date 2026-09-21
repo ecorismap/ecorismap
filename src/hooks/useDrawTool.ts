@@ -211,6 +211,12 @@ export type UseDrawToolReturnType = {
   };
   undoDraw: () => true | undefined;
   finishEditObject: () => boolean;
+  selectSingleFeatureByLatLon: (latlon: Position) => {
+    layer: LayerType | undefined;
+    feature: PointRecordType | LineRecordType | PolygonRecordType | undefined;
+    recordSet: RecordType[] | undefined;
+    recordIndex: number | undefined;
+  };
   selectSingleFeature: (event: GestureResponderEvent) =>
     | {
         layer: undefined;
@@ -1288,12 +1294,9 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     return { isOK: true, message: '', layer: layer, recordSet: savedRecordSet };
   }, [addRecord, findLayer, generateRecord, getEditableLayerAndRecordSetWithCheck, mapRegion, mapSize, mapViewRef, resetDrawTools, updateRecord]);
 
-  const selectSingleFeature = useCallback(
-    (event: GestureResponderEvent) => {
+  const selectSingleFeatureByLatLon = useCallback(
+    (latlon: Position) => {
       resetDrawTools();
-
-      //選択処理
-      const pXY: Position = [event.nativeEvent.locationX, event.nativeEvent.locationY];
 
       let feature;
       let layer;
@@ -1303,11 +1306,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
       if (feature === undefined && (currentInfoTool === 'ALL_INFO' || currentInfoTool === 'POINT_INFO')) {
         const radius = calcDegreeRadius(2000, mapRegion, mapSize);
         for (const { layerId, data } of pointDataSet) {
-          const selectedFeature = selectPointFeatureByLatLon(
-            data,
-            xyToLatLon(pXY, mapRegion, mapSize, mapViewRef),
-            radius
-          );
+          const selectedFeature = selectPointFeatureByLatLon(data, latlon, radius);
           //console.log(selectedFeature);
           if (selectedFeature !== undefined) {
             const selectedLayer = findLayer(layerId);
@@ -1325,11 +1324,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
         const radius = calcDegreeRadius(2000, mapRegion, mapSize);
 
         for (const { layerId, data } of lineDataSet) {
-          const selectedFeature = selectLineFeatureByLatLon(
-            data,
-            xyToLatLon(pXY, mapRegion, mapSize, mapViewRef),
-            radius
-          );
+          const selectedFeature = selectLineFeatureByLatLon(data, latlon, radius);
 
           if (selectedFeature !== undefined) {
             const selectedLayer = findLayer(layerId);
@@ -1346,11 +1341,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
       if (feature === undefined && (currentInfoTool === 'ALL_INFO' || currentInfoTool === 'POLYGON_INFO')) {
         const radius = calcDegreeRadius(2000, mapRegion, mapSize);
         for (const { layerId, data } of polygonDataSet) {
-          const selectedFeature = selectPolygonFeatureByLatLon(
-            data,
-            xyToLatLon(pXY, mapRegion, mapSize, mapViewRef),
-            radius
-          );
+          const selectedFeature = selectPolygonFeatureByLatLon(data, latlon, radius);
           if (selectedFeature !== undefined) {
             const selectedLayer = findLayer(layerId);
             if (!selectedLayer?.visible) continue;
@@ -1369,17 +1360,15 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
 
       return { layer, feature, recordSet, recordIndex };
     },
-    [
-      currentInfoTool,
-      findLayer,
-      lineDataSet,
-      mapRegion,
-      mapSize,
-      mapViewRef,
-      pointDataSet,
-      polygonDataSet,
-      resetDrawTools,
-    ]
+    [currentInfoTool, findLayer, lineDataSet, mapRegion, mapSize, pointDataSet, polygonDataSet, resetDrawTools]
+  );
+
+  const selectSingleFeature = useCallback(
+    (event: GestureResponderEvent) => {
+      const pXY: Position = [event.nativeEvent.locationX, event.nativeEvent.locationY];
+      return selectSingleFeatureByLatLon(xyToLatLon(pXY, mapRegion, mapSize, mapViewRef));
+    },
+    [mapRegion, mapSize, mapViewRef, selectSingleFeatureByLatLon]
   );
 
   const hideDrawLine = useCallback(() => {
@@ -2734,6 +2723,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     setPolygonTool,
     setFeatureButton,
     selectSingleFeature,
+    selectSingleFeatureByLatLon,
     resetDrawTools,
     hideDrawLine,
     showDrawLine,

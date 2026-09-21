@@ -100,6 +100,7 @@ import {
   findNearestTrackPoint,
   latLonToXY,
 } from '../utils/Coords';
+import { isTerrain3DHandle } from '../utils/terrain3d/types';
 import { generateLabel, resolveCodeField, toCodeFieldValue } from '../utils/Layer';
 import { hex2rgba, hsv2rgbaString } from '../utils/Color';
 import { getAllTrackPoints } from '../utils/Location';
@@ -372,6 +373,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     isRedoable: isDrawRedoable,
     finishEditObject,
     selectSingleFeature,
+    selectSingleFeatureByLatLon,
     showDrawLine,
     hideDrawLine,
     resetDrawTools,
@@ -1797,6 +1799,12 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
   const pressCompass = useCallback(async () => {
     if (isInfoToolActive) return;
     if (featureButton !== 'NONE') return;
+    // 3D中はヘディングアップにせず、タップで北が上に戻るだけにする
+    if (Platform.OS !== 'web' && isTerrainActive) {
+      const handle = mapViewRef.current;
+      if (isTerrain3DHandle(handle)) handle.animateCamera({ heading: 0 }, { duration: 300 });
+      return;
+    }
     if (headingUp) {
       // オフは権限チェック・GPSサービス再同期を通さず即座に北向きへ戻す。
       // GPS状態は変更しない（follow中にshowへ降格させない）。
@@ -1807,7 +1815,23 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     // 回転（heading購読）を先に開始し、GPSサービス起動の完了を待たせない
     await toggleHeadingUp(true);
     await toggleGPS('show');
-  }, [confirmLocationPermission, featureButton, headingUp, isInfoToolActive, toggleGPS, toggleHeadingUp]);
+  }, [
+    confirmLocationPermission,
+    featureButton,
+    headingUp,
+    isInfoToolActive,
+    isTerrainActive,
+    mapViewRef,
+    toggleGPS,
+    toggleHeadingUp,
+  ]);
+
+  // 3D表示に入ったらヘディングアップを解除する（3D中は回転をユーザー操作に委ねる。
+  // 3D中はpressCompassが北向きリセットになるため再有効化もされない）
+  useEffect(() => {
+    if (Platform.OS === 'web') return;
+    if (isTerrainActive && headingUp) toggleHeadingUp(false);
+  }, [isTerrainActive, headingUp, toggleHeadingUp]);
 
   const pressTracking = useCallback(async () => {
     if (Platform.OS === 'web') {
@@ -2435,6 +2459,84 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       getPXY,
       mapRegion,
       mapSize,
+    ]
+  );
+
+  // 3Dビューのタップ用。緯度経度で地物のヒットテストを行い、2Dのタップと同じUI
+  // （軌跡=サマリー表示、その他=DataEditシート）を開く。
+  // 何も見つからなければtrueを返す（呼び出し側でベクタタイル情報の取得へ進む）
+  const getInfoOfFeatureAt = useCallback(
+    async (latlon: Position): Promise<boolean> => {
+      if (isEditingRecord) {
+        await AlertAsync(t('Home.alert.discardChanges'));
+        return false;
+      }
+      setTrackPointInfo(null);
+
+      const { layer, feature } = selectSingleFeatureByLatLon(latlon);
+
+      if (layer === undefined || feature === undefined) {
+        unselectRecord();
+        // 記録中の軌跡ログはレコード化前でselectSingleFeatureの対象外のため、別途ヒットテストする
+        if (trackMetadata.totalPoints > 0) {
+          const radius = calcDegreeRadius(2000, mapRegion, mapSize);
+          const nearest = findNearestTrackPoint(getAllTrackPoints(), latlon, radius);
+          const timestamp = nearest?.interpolatedTimestamp ?? nearest?.point.timestamp;
+          if (nearest !== undefined && timestamp !== undefined) {
+            openSheet(isLandscape ? 2 : 1);
+            navigateToSplit('TrackSummary', {
+              recording: true,
+              previous: 'Home',
+              initialFocusLatLon: { latitude: nearest.point.latitude, longitude: nearest.point.longitude },
+            });
+            return false;
+          }
+        }
+        return true;
+      }
+
+      // 保存済み軌跡（trackレイヤ）はDataEditを開かず軌跡サマリーを開く（2Dと同じ）
+      if (layer.id === 'track' && layer.type === 'LINE') {
+        const lineFeature = feature as LineRecordType;
+        if (lineFeature.coords !== undefined) {
+          const radius = calcDegreeRadius(2000, mapRegion, mapSize);
+          const nearest = findNearestTrackPoint(lineFeature.coords, latlon, radius);
+          const timestamp = nearest?.interpolatedTimestamp ?? nearest?.point.timestamp;
+          if (nearest !== undefined && timestamp !== undefined) {
+            openSheet(isLandscape ? 2 : 1);
+            navigateToSplit('TrackSummary', {
+              layerId: layer.id,
+              recordId: lineFeature.id,
+              userId: lineFeature.userId,
+              previous: 'Home',
+              initialFocusLatLon: { latitude: nearest.point.latitude, longitude: nearest.point.longitude },
+            });
+            return false;
+          }
+        }
+      }
+
+      // selectRecordはボトムシートが開いた後に実行する（2Dと同じ競合回避）
+      pendingSelectRecord.current = { layerId: layer.id, feature: { ...feature } };
+      openSheet(isLandscape ? 2 : 1);
+      navigateToSplit?.('DataEdit', {
+        previous: 'Data',
+        targetData: { ...feature },
+        targetLayer: { ...layer },
+      });
+      return false;
+    },
+    [
+      isEditingRecord,
+      isLandscape,
+      mapRegion,
+      mapSize,
+      navigateToSplit,
+      openSheet,
+      selectSingleFeatureByLatLon,
+      setTrackPointInfo,
+      trackMetadata.totalPoints,
+      unselectRecord,
     ]
   );
 
@@ -3617,6 +3719,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       setInfoToolActive,
       closeVectorTileInfo,
       getInfoOfMap,
+      getInfoOfFeatureAt,
     }),
     [
       currentInfoTool,
@@ -3624,6 +3727,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       vectorTileInfo,
       selectInfoTool,
       getInfoOfMap,
+      getInfoOfFeatureAt,
       setVisibleInfoPicker,
       setInfoToolActive,
       closeVectorTileInfo,

@@ -10,8 +10,21 @@ export const MAX_PITCH_DEG = 80;
 /** テクスチャタイルのズーム範囲。上限はオフライン地図ダウンロードの最大z=16に合わせる */
 export const MIN_TEX_ZOOM = 8;
 export const MAX_TEX_ZOOM = 16;
+/**
+ * カメラズームの上限（テクスチャ上限とは別）。16超はz16タイルの拡大表示になる
+ * （2Dのオーバーズームと同じ見え方）。下限はテクスチャ・DEMの下限z8に合わせる
+ */
+export const MAX_CAMERA_ZOOM = 20;
 /** 同時に保持するタイル数の上限（ジオメトリ）。48タイル=おおよそ7x7リング */
 export const MAX_TILES = 48;
+/**
+ * 遠景リング（近景よりΔ段粗いズームのタイル）のLODチェーン。
+ * タイル一辺が2^Δ倍になるため、少ないタイル数で大きな半径をカバーする。
+ * 外側のリングから順に描き、間でデプスをクリアして内側を重ねる。
+ * z16基準: Δ3=半径約17km、Δ6=約150km（蔵王・船形クラスの遠山まで入る）
+ */
+export const FAR_RING_DELTAS = [3, 6];
+export const MAX_FAR_TILES = 40;
 /** テクスチャLRUの上限枚数（256px RGBA≒256KB/枚 → 約25MB） */
 export const MAX_TEXTURES = 96;
 /** ズーム切替のヒステリシス。擬似ズームがこの幅を超えて変わったらタイルズームを変更 */

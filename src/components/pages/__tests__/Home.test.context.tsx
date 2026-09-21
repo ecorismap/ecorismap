@@ -271,6 +271,7 @@ export const mockInfoToolContextValue: InfoToolContextType = {
   setInfoToolActive: jest.fn(),
   closeVectorTileInfo: jest.fn(),
   getInfoOfMap: jest.fn(),
+  getInfoOfFeatureAt: jest.fn(async () => true),
 };
 
 // Mock implementation for AppStateContext

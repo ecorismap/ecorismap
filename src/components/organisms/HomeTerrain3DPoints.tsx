@@ -80,6 +80,7 @@ export const HomeTerrain3DPoints = React.memo(({ scene }: Props) => {
   useEffect(() => {
     if (scene === null) return;
     let lastUpdate = 0;
+    let trailing: ReturnType<typeof setTimeout> | null = null;
     const update = () => {
       const result: ProjectedItem[] = [];
       const { width, height } = viewportRef.current;
@@ -92,34 +93,68 @@ export const HomeTerrain3DPoints = React.memo(({ scene }: Props) => {
     };
     const unsubscribe = scene.addFrameListener(() => {
       const now = Date.now();
-      if (now - lastUpdate < PROJECT_INTERVAL_MS) return;
+      if (now - lastUpdate < PROJECT_INTERVAL_MS) {
+        // 間引き中でも最後のフレームを取りこぼさないよう末尾更新を予約する
+        // （最終描画を落とすとカメラ確定後もドットが古い位置に残る）
+        if (trailing === null) {
+          trailing = setTimeout(() => {
+            trailing = null;
+            lastUpdate = Date.now();
+            update();
+          }, PROJECT_INTERVAL_MS);
+        }
+        return;
+      }
       lastUpdate = now;
       update();
     });
     // データ変更時は即時反映
     update();
-    return unsubscribe;
+    return () => {
+      if (trailing !== null) clearTimeout(trailing);
+      unsubscribe();
+    };
     // itemsはrefで参照するがデータ変更時の即時反映のため依存に含める
   }, [scene, items]);
 
   return (
     <View style={StyleSheet.absoluteFill} pointerEvents="none">
       {projected.map((item) => (
-        <View
-          key={item.key}
-          style={[styles.marker, { left: item.x - DOT_SIZE / 2, top: item.y - DOT_SIZE / 2 }]}
-        >
-          <PointView size={DOT_SIZE} color={item.color} borderColor={item.borderColor} />
-          {item.label !== '' && <PointLabel label={item.label} size={15} color={item.color} borderColor={COLOR.WHITE} />}
+        // 幅0のアンカーを投影座標に置き、ドットとラベルをそれぞれ絶対配置で中央合わせする
+        // （コンテナのalignItemsだとラベル幅にドットが引きずられて位置がずれる）
+        <View key={item.key} style={[styles.anchor, { left: item.x, top: item.y }]}>
+          <View style={styles.dot}>
+            <PointView size={DOT_SIZE} color={item.color} borderColor={item.borderColor} />
+          </View>
+          {item.label !== '' && (
+            <View style={styles.label}>
+              <PointLabel label={item.label} size={15} color={item.color} borderColor={COLOR.WHITE} />
+            </View>
+          )}
         </View>
       ))}
     </View>
   );
 });
 
+const LABEL_BOX_WIDTH = 200;
+
 const styles = StyleSheet.create({
-  marker: {
-    alignItems: 'center',
+  anchor: {
+    height: 0,
     position: 'absolute',
+    width: 0,
+  },
+  dot: {
+    left: -DOT_SIZE / 2,
+    position: 'absolute',
+    top: -DOT_SIZE / 2,
+  },
+  label: {
+    alignItems: 'center',
+    left: -LABEL_BOX_WIDTH / 2,
+    position: 'absolute',
+    top: DOT_SIZE / 2,
+    width: LABEL_BOX_WIDTH,
   },
 });

@@ -8,7 +8,7 @@
  * 見た目の凹凸比率を実距離と一致させる（maplibreと同じ扱い）。
  */
 import { RegionType } from '../../types';
-import { CAMERA_FOV_DEG, INITIAL_PITCH_DEG, MAX_TEX_ZOOM, MIN_TEX_ZOOM } from './constants';
+import { CAMERA_FOV_DEG, INITIAL_PITCH_DEG, MAX_CAMERA_ZOOM, MIN_TEX_ZOOM } from './constants';
 import { Terrain3DCameraState } from './types';
 
 /** メルカトル全周[m] */
@@ -98,7 +98,7 @@ export const cameraToRegion = (camera: Terrain3DCameraState, viewportWidthPx: nu
   };
 };
 
-export const clampZoom = (zoom: number): number => Math.min(MAX_TEX_ZOOM, Math.max(MIN_TEX_ZOOM, zoom));
+export const clampZoom = (zoom: number): number => Math.min(MAX_CAMERA_ZOOM, Math.max(MIN_TEX_ZOOM, zoom));
 
 /** 標高の表示倍率。exaggerationに加えメルカトルの水平伸長と揃えるための1/cos(lat0)を掛ける */
 export const elevationScale = (originLatitude: number, exaggeration: number): number =>

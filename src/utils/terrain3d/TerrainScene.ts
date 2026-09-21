@@ -11,8 +11,10 @@ import { TERRAIN_EXAGGERATION } from '../../constants/DemSources';
 import { CameraController } from './CameraController';
 import {
   CAMERA_FOV_DEG,
+  FAR_RING_DELTAS,
   FOG_FAR_RATIO,
   FOG_NEAR_RATIO,
+  MAX_FAR_TILES,
   MAX_TEX_ZOOM,
   MAX_TILES,
   MIN_TEX_ZOOM,
@@ -75,6 +77,8 @@ export class TerrainScene {
   private gl: ExpoWebGLRenderingContext;
   private renderer: TerrainRenderer;
   private tileManager: TerrainTileManager;
+  /** FAR_RING_DELTASと同じ並び（内側→外側） */
+  private farTileManagers: TerrainTileManager[];
   private origin: MercatorPoint;
   private elevScale: number;
   /** dp単位のビューポート（2Dズームとの整合はdpで取る） */
@@ -105,6 +109,10 @@ export class TerrainScene {
     this.elevScale = elevationScale(cameraState.latitude, TERRAIN_EXAGGERATION);
     this.renderer = new TerrainRenderer(gl);
     this.tileManager = new TerrainTileManager(this.origin, this.elevScale, this.renderer, () => this.markDirty());
+    // 遠景リング（粗ズーム）のLODチェーン。近景タイルを上に重ね描きして遠方の山まで見せる
+    this.farTileManagers = FAR_RING_DELTAS.map(
+      () => new TerrainTileManager(this.origin, this.elevScale, this.renderer, () => this.markDirty())
+    );
     this.texZoom = Math.min(MAX_TEX_ZOOM, Math.max(MIN_TEX_ZOOM, Math.round(cameraState.zoom)));
   }
 
@@ -120,13 +128,19 @@ export class TerrainScene {
 
   setLayers(layers: LayerSpec[]): void {
     this.tileManager.setLayers(layers);
+    this.farTileManagers.forEach((manager) => manager.setLayers(layers));
     this.lastTileUpdateMs = 0;
     this.markDirty();
   }
 
-  /** 指定地点の表示中標高[m]（同期・なければnull）。オーバーレイのドレープ用 */
+  /** 指定地点の表示中標高[m]（同期・なければnull）。近景→遠景（内側→外側）の順に参照する */
   sampleElevation(latitude: number, longitude: number): number | null {
-    return this.tileManager.sampleElevation(latitude, longitude);
+    let elev = this.tileManager.sampleElevation(latitude, longitude);
+    for (const manager of this.farTileManagers) {
+      if (elev !== null) return elev;
+      elev = manager.sampleElevation(latitude, longitude);
+    }
+    return elev;
   }
 
   /** レイヤデータ（ライン・ポリゴン）のドレープ指定を差し替える */
@@ -179,8 +193,7 @@ export class TerrainScene {
 
     const heightAt = (px: number, pz: number): number => {
       const ll = mercatorToLonLat(this.origin.mx + px, this.origin.my - pz);
-      const elev = this.tileManager.sampleElevation(ll.latitude, ll.longitude);
-      return (elev ?? 0) * this.elevScale;
+      return (this.sampleElevation(ll.latitude, ll.longitude) ?? 0) * this.elevScale;
     };
     // レイマーチ: 地表を下回った区間を二分法で詰める
     const maxT = distance * 8;
@@ -294,16 +307,42 @@ export class TerrainScene {
     }
 
     const distance = zoomToDistance(state.zoom, this.viewportHeightDp);
-    // フォグはカメラからの視深度に対して掛かるため、注視点までの距離を底上げした上で
-    // タイルリング半径に連動させる（リング端のタイル欠けがフォグに隠れるように）
     const ringRadius = Math.sqrt(MAX_TILES / Math.PI) * tileSizeMeters(this.texZoom);
-    const fogNear = distance + ringRadius * FOG_NEAR_RATIO;
-    const fogFar = distance + ringRadius * FOG_FAR_RATIO;
+    // 遠景リング（粗ズーム）のLODチェーン。タイル一辺が2^Δ倍なので少ない枚数で大きく覆える。
+    // ズームが下限に張り付いて近景/前のリングと同じになったリングは省く
+    const farRings: { manager: TerrainTileManager; zoom: number; radius: number }[] = [];
+    let prevZoom = this.texZoom;
+    for (let i = 0; i < this.farTileManagers.length; i++) {
+      const zoom = Math.max(MIN_TEX_ZOOM, this.texZoom - FAR_RING_DELTAS[i]);
+      if (zoom >= prevZoom) break;
+      farRings.push({
+        manager: this.farTileManagers[i],
+        zoom,
+        radius: Math.sqrt(MAX_FAR_TILES / Math.PI) * tileSizeMeters(zoom),
+      });
+      prevZoom = zoom;
+    }
+    const hasFar = farRings.length > 0;
+    const outerRadius = hasFar ? farRings[farRings.length - 1].radius : ringRadius;
+    // フォグはカメラからの視深度に対して掛かるため、注視点までの距離を底上げした上で
+    // 視界（最外リング）の半径に連動させる（リング端のタイル欠けがフォグに隠れるように）
+    const fogNear = distance + outerRadius * FOG_NEAR_RATIO;
+    const fogFar = distance + outerRadius * FOG_FAR_RATIO;
 
     // タイル範囲の更新（間引き）
     if (nowMs - this.lastTileUpdateMs > TILE_UPDATE_INTERVAL_MS) {
       this.lastTileUpdateMs = nowMs;
       this.tileManager.updateVisibleTiles(state.latitude, state.longitude, state.heading, this.texZoom, ringRadius);
+      for (const ring of farRings) {
+        ring.manager.updateVisibleTiles(
+          state.latitude,
+          state.longitude,
+          state.heading,
+          ring.zoom,
+          ring.radius,
+          MAX_FAR_TILES
+        );
+      }
       const sampled = this.tileManager.sampleElevation(state.latitude, state.longitude);
       if (sampled !== null && Math.abs(sampled - this.targetElevation) > 1) {
         this.targetElevation = sampled;
@@ -332,8 +371,11 @@ export class TerrainScene {
     const viewProj = mat4Multiply(proj, view);
 
     this.lastViewProj = viewProj;
+    // 遠景（粗ズーム）を外側のリングから描き、リング毎にデプスをクリアして内側→近景を重ねる。
+    // 近景はlayerIndex+1でベースパスも透過合成にする（NODATA部分から遠景が透ける）
+    const nearPasses = this.tileManager.buildDrawPasses();
     this.renderer.drawFrame(
-      this.tileManager.buildDrawPasses(),
+      hasFar ? nearPasses.map((p) => ({ ...p, layerIndex: p.layerIndex + 1 })) : nearPasses,
       viewProj,
       {
         skyColor: skyColorVec(),
@@ -343,7 +385,12 @@ export class TerrainScene {
         // 環境光を上げて日向と日陰のコントラストを控えめにする（地図の可読性優先）
         ambient: 0.65,
       },
-      this.overlayResources
+      this.overlayResources,
+      // 外側→内側の順
+      farRings
+        .slice()
+        .reverse()
+        .map((ring) => ring.manager.buildDrawPasses())
     );
     this.frameListeners.forEach((listener) => listener());
     return true;
@@ -355,6 +402,7 @@ export class TerrainScene {
     this.overlayResources.forEach((pass) => this.renderer.deleteTileResources(pass.resources));
     this.overlayResources = [];
     this.tileManager.dispose();
+    this.farTileManagers.forEach((manager) => manager.dispose());
     this.renderer.dispose();
   }
 }

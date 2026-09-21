@@ -60,9 +60,16 @@ export class TerrainTileManager {
   }
 
   /** カメラ状態から必要タイルを判定し、取得をスケジュールする */
-  updateVisibleTiles(latitude: number, longitude: number, headingDeg: number, texZoom: number, radiusMeters: number): void {
+  updateVisibleTiles(
+    latitude: number,
+    longitude: number,
+    headingDeg: number,
+    texZoom: number,
+    radiusMeters: number,
+    maxTiles: number = MAX_TILES
+  ): void {
     if (this.disposed) return;
-    const needed = computeTileRing(latitude, longitude, headingDeg, texZoom, radiusMeters);
+    const needed = computeTileRing(latitude, longitude, headingDeg, texZoom, radiusMeters, maxTiles);
     const neededKeys = new Set(needed.map(keyString));
 
     // 不要タイルの破棄。ズーム切替中は旧ズームのreadyタイルを残す
@@ -226,7 +233,8 @@ export const computeTileRing = (
   longitude: number,
   headingDeg: number,
   texZoom: number,
-  radiusMeters: number
+  radiusMeters: number,
+  maxTiles: number = MAX_TILES
 ): TileKey[] => {
   const size = tileSizeMeters(texZoom);
   const h = (headingDeg * Math.PI) / 180;
@@ -253,5 +261,5 @@ export const computeTileRing = (
     }
   }
   candidates.sort((a, b) => a.dist - b.dist);
-  return candidates.slice(0, MAX_TILES).map((c) => c.key);
+  return candidates.slice(0, maxTiles).map((c) => c.key);
 };

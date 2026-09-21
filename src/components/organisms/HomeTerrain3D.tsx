@@ -20,7 +20,7 @@ import { DataOverlaySpec, TerrainScene } from '../../utils/terrain3d/TerrainScen
 import { parseColorToRgba } from '../../utils/terrain3d/colorUtils';
 import { MERCATOR_CIRCUMFERENCE } from '../../utils/terrain3d/coords';
 import { getColor, getLineWidthAtZoom, getLineWidth } from '../../utils/Layer';
-import { LineRecordType, PolygonRecordType } from '../../types';
+import { LineRecordType, PointRecordType, PolygonRecordType } from '../../types';
 import { HomeTerrain3DPoints } from './HomeTerrain3DPoints';
 import { DataSelectionContext } from '../../contexts/DataSelection';
 import { AppStateContext } from '../../contexts/AppState';
@@ -34,8 +34,12 @@ import { MapViewContext } from '../../contexts/MapView';
 import MapView from 'react-native-maps';
 import { MapRef } from 'react-map-gl/maplibre';
 
-/** 3Dで同時に描画するラスタレイヤの上限（重畳描画のコスト対策） */
-const MAX_3D_LAYERS = 3;
+/**
+ * 3Dで同時に描画するタイルレイヤの上限（重畳描画とテクスチャメモリのコスト対策）。
+ * PMTiles（距離標等のベクタ）も1枠を使うため、部分配信の写真+ベース地図の
+ * 実運用構成が収まるよう余裕を持たせる。範囲外タイル(missing)はコストゼロ
+ */
+const MAX_3D_LAYERS = 8;
 /** 3Dでドレープ描画するライン・ポリゴンの上限件数（超過分は表示しない） */
 const MAX_OVERLAY_FEATURES = 200;
 /** ポリゴン塗りの不透明度（2Dの塗りに近い控えめな値） */
@@ -87,16 +91,21 @@ export const selectTerrainLayers = (
     });
 };
 
-export const HomeTerrain3D = React.memo(() => {
+interface Props {
+  /** カメラ方位の変化通知（コンパス盤面の連動用、約100ms/1°で間引き） */
+  onHeadingChange?: (heading: number) => void;
+}
+
+export const HomeTerrain3D = React.memo(({ onHeadingChange }: Props) => {
   const dispatch = useDispatch();
   const { mapRegion, windowHeight, windowWidth } = useWindow();
   const { onDragMapView, mapViewRef, zoom } = useContext(MapViewContext);
-  const { lineDataSet, polygonDataSet } = useContext(DataSelectionContext);
+  const { pointDataSet, lineDataSet, polygonDataSet } = useContext(DataSelectionContext);
   const tileMaps = useSelector((state: RootState) => state.tileMaps);
   const tileSignatures = useSelector((state: RootState) => state.tileSignatures);
   const layers = useSelector((state: RootState) => state.layers);
   const { isOffline } = useContext(AppStateContext);
-  const { getInfoOfMap, closeVectorTileInfo } = useContext(InfoToolContext);
+  const { getInfoOfMap, closeVectorTileInfo, getInfoOfFeatureAt } = useContext(InfoToolContext);
   const sceneRef = useRef<TerrainScene | null>(null);
   // ポイントオーバーレイへ渡す用（onContextCreateは非同期のためrefでは購読開始が間に合わない）
   const [sceneState, setSceneState] = useState<TerrainScene | null>(null);
@@ -239,6 +248,26 @@ export const HomeTerrain3D = React.memo(() => {
     []
   );
 
+  // カメラ方位をコンパス盤面へ通知する（描画フレーム毎・間引き付き）
+  const onHeadingChangeRef = useRef(onHeadingChange);
+  onHeadingChangeRef.current = onHeadingChange;
+  useEffect(() => {
+    if (sceneState === null) return;
+    let lastSent = -999;
+    let lastSentMs = 0;
+    const emit = (force = false) => {
+      const heading = sceneState.controller.getState().heading;
+      const now = Date.now();
+      const delta = Math.abs(((heading - lastSent + 540) % 360) - 180);
+      if (!force && (delta < 1 || now - lastSentMs < 100)) return;
+      lastSent = heading;
+      lastSentMs = now;
+      onHeadingChangeRef.current?.(heading);
+    };
+    emit(true);
+    return sceneState.addFrameListener(() => emit());
+  }, [sceneState]);
+
   // レイヤ構成の変化を反映
   useEffect(() => {
     layersRef.current = terrainLayers;
@@ -290,8 +319,11 @@ export const HomeTerrain3D = React.memo(() => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const infoRef = useRef({ getInfoOfMap, closeVectorTileInfo });
-  infoRef.current = { getInfoOfMap, closeVectorTileInfo };
+  const infoRef = useRef({ getInfoOfMap, closeVectorTileInfo, getInfoOfFeatureAt });
+  infoRef.current = { getInfoOfMap, closeVectorTileInfo, getInfoOfFeatureAt };
+  // タップのポイント画面ピック用（ジェスチャコールバックから最新値を参照）
+  const pickDataRef = useRef({ pointDataSet, layers });
+  pickDataRef.current = { pointDataSet, layers };
 
   const gestures = useMemo(() => {
     // タップ: 地形上の地点へ逆投影し、2Dと同じ経路でベクタタイル情報をポップアップ表示する
@@ -305,7 +337,33 @@ export const HomeTerrain3D = React.memo(() => {
         const { width, height } = viewportRef.current;
         const latlon = scene.unprojectToLatLon(e.x, e.y, width, height);
         if (latlon === null) return;
-        infoRef.current.getInfoOfMap([latlon.longitude, latlon.latitude], [e.x, e.y]).catch(() => undefined);
+        const position = [latlon.longitude, latlon.latitude];
+        // ポイントは画面上の距離で先にピックする（描画と同じ投影を使うため、
+        // 俯瞰時の標高サンプル誤差で緯度経度判定が外れてもドットに確実に当たる）
+        let pickPosition = position;
+        let bestDp = 20;
+        for (const dataSet of pickDataRef.current.pointDataSet) {
+          const layer = pickDataRef.current.layers.find((v) => v.id === dataSet.layerId);
+          if (!layer?.visible) continue;
+          for (const record of dataSet.data as PointRecordType[]) {
+            if (!record.visible || record.coords === undefined) continue;
+            const screen = scene.projectToScreen(record.coords.latitude, record.coords.longitude, width, height);
+            if (screen === null) continue;
+            const d = Math.hypot(screen.x - e.x, screen.y - e.y);
+            if (d < bestDp) {
+              bestDp = d;
+              pickPosition = [record.coords.longitude, record.coords.latitude];
+            }
+          }
+        }
+        // 2Dと同じ優先順: レイヤの地物（ポイント/ライン/ポリゴン/軌跡）を先にヒットテストし、
+        // 何も見つからなければベクタタイル（PMTiles）の属性ポップアップへ
+        infoRef.current
+          .getInfoOfFeatureAt(pickPosition)
+          .then((notFound) => {
+            if (notFound) return infoRef.current.getInfoOfMap(position, [e.x, e.y]);
+          })
+          .catch(() => undefined);
       });
     const pan = Gesture.Pan()
       .runOnJS(true)

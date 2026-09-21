@@ -294,7 +294,11 @@ export class TerrainRenderer {
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
   }
 
-  /** 1フレーム描画。passesはタイル×レイヤの描画単位（layerIndex昇順に並んでいること） */
+  /**
+   * 1フレーム描画。passesはタイル×レイヤの描画単位（layerIndex昇順に並んでいること）。
+   * farPassRingsは遠景リング（外側→内側の順）。各リングを描くたびにデプスバッファを
+   * クリアするため、リング間・近景とメッシュの高さが食い違ってもz-fightingしない
+   */
   drawFrame(
     passes: DrawPass[],
     viewProj: Mat4,
@@ -305,7 +309,8 @@ export class TerrainRenderer {
       lightDir: [number, number, number];
       ambient: number;
     },
-    overlayPasses: OverlayPass[] = []
+    overlayPasses: OverlayPass[] = [],
+    farPassRings: DrawPass[][] = []
   ): void {
     const gl = this.gl;
     // iOSはレイアウト毎にデフォルトFBOが差し替わるため毎フレーム再バインドする
@@ -330,31 +335,40 @@ export class TerrainRenderer {
     gl.activeTexture(gl.TEXTURE0);
 
     let blendEnabled = false;
-    for (const pass of passes) {
-      const useTexture = pass.texture !== null;
-      const needsBlend = pass.opacity < 1 || pass.layerIndex > 0;
-      if (needsBlend !== blendEnabled) {
-        blendEnabled = needsBlend;
-        if (needsBlend) {
-          gl.enable(gl.BLEND);
-          gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-        } else {
-          gl.disable(gl.BLEND);
+    const drawPassList = (list: DrawPass[]) => {
+      for (const pass of list) {
+        const useTexture = pass.texture !== null;
+        const needsBlend = pass.opacity < 1 || pass.layerIndex > 0;
+        if (needsBlend !== blendEnabled) {
+          blendEnabled = needsBlend;
+          if (needsBlend) {
+            gl.enable(gl.BLEND);
+            gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+          } else {
+            gl.disable(gl.BLEND);
+          }
         }
+        gl.uniform1f(this.uniforms.isBase, pass.layerIndex === 0 ? 1 : 0);
+        if (pass.layerIndex > 0) {
+          gl.enable(gl.POLYGON_OFFSET_FILL);
+          gl.polygonOffset(-pass.layerIndex, -pass.layerIndex);
+        } else {
+          gl.disable(gl.POLYGON_OFFSET_FILL);
+        }
+        gl.uniform1f(this.uniforms.useTexture, useTexture ? 1 : 0);
+        gl.uniform1f(this.uniforms.opacity, pass.opacity);
+        if (pass.texture) gl.bindTexture(gl.TEXTURE_2D, pass.texture);
+        gl.bindVertexArray(pass.resources.vao);
+        gl.drawElements(gl.TRIANGLES, pass.resources.indexCount, gl.UNSIGNED_INT, 0);
       }
-      gl.uniform1f(this.uniforms.isBase, pass.layerIndex === 0 ? 1 : 0);
-      if (pass.layerIndex > 0) {
-        gl.enable(gl.POLYGON_OFFSET_FILL);
-        gl.polygonOffset(-pass.layerIndex, -pass.layerIndex);
-      } else {
-        gl.disable(gl.POLYGON_OFFSET_FILL);
-      }
-      gl.uniform1f(this.uniforms.useTexture, useTexture ? 1 : 0);
-      gl.uniform1f(this.uniforms.opacity, pass.opacity);
-      if (pass.texture) gl.bindTexture(gl.TEXTURE_2D, pass.texture);
-      gl.bindVertexArray(pass.resources.vao);
-      gl.drawElements(gl.TRIANGLES, pass.resources.indexCount, gl.UNSIGNED_INT, 0);
+    };
+    for (const ring of farPassRings) {
+      if (ring.length === 0) continue;
+      drawPassList(ring);
+      // リング間・近景とはメッシュの高さが食い違う（DEM解像度差）ため、深度を切り離す
+      gl.clear(gl.DEPTH_BUFFER_BIT);
     }
+    drawPassList(passes);
     gl.bindVertexArray(null);
     gl.disable(gl.POLYGON_OFFSET_FILL);
     gl.disable(gl.BLEND);
