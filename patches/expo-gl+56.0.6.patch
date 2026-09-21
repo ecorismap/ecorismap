@@ -1,0 +1,34 @@
+diff --git a/node_modules/expo-gl/ios/GLView.swift b/node_modules/expo-gl/ios/GLView.swift
+index 7197e3c..f0c117d 100644
+--- a/node_modules/expo-gl/ios/GLView.swift
++++ b/node_modules/expo-gl/ios/GLView.swift
+@@ -232,15 +232,16 @@ internal final class GLView: ExpoView, EXGLContextDelegate {
+     if glContext.isInitialized() && viewFramebuffer != 0 {
+       // Present current state of view buffers
+       // This happens exactly at `gl.endFrameEXP()` in the queue
+-      if viewColorbuffer != 0 && !isRenderbufferPresented {
++      //
++      // ecorismap patch: isRenderbufferPresented ゲートを撤去して毎display tickでpresentする。
++      // GLスレッドとメインスレッドから非同期に読み書きされる本フラグは同期化されておらず、
++      // まれに true で固着して以後一切presentされなくなる（画面が凍結したように見える）ため
++      if viewColorbuffer != 0 {
+         // bind renderbuffer and present it on the layer
+         glContext.runAsync {
+           glBindRenderbuffer(GLenum(GL_RENDERBUFFER), self.viewColorbuffer)
+           self.eaglContext.presentRenderbuffer(Int(GL_RENDERBUFFER))
+         }
+-
+-        // mark renderbuffer as presented
+-        isRenderbufferPresented = true
+       }
+     }
+   }
+@@ -321,6 +322,8 @@ internal final class GLView: ExpoView, EXGLContextDelegate {
+       EXGLContextDrawEnded(glContext.contextId)
+ 
+       blitFramebuffers()
++      // ecorismap patch: present側のフラグ固着に対する自己回復（上のdrawGLパッチと対）
++      isRenderbufferPresented = false
+     }
+   }
+ 

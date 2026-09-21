@@ -192,13 +192,25 @@ export const HomeTerrain3D = React.memo(({ onHeadingChange }: Props) => {
 
   const onContextCreate = useCallback(
     (gl: ExpoWebGLRenderingContext) => {
+      // GLコンテキストが再生成された場合（iOSで発生しうる）に旧シーンとループを確実に破棄する
+      if (rafRef.current !== null) {
+        cancelAnimationFrame(rafRef.current);
+        rafRef.current = null;
+      }
+      sceneRef.current?.dispose();
       const scene = new TerrainScene(gl, mapRegion, viewportRef.current.height);
       sceneRef.current = scene;
       setSceneState(scene);
       scene.setLayers(layersRef.current);
       scene.setDataOverlays(dataOverlaySpecsRef.current);
+      // ハートビート再描画: 静止時も一定間隔で強制的に1フレーム描く。
+      // iOSでプレゼントの取りこぼしや描画フラグの固着が起きても、最悪この間隔で自己回復する
+      const HEARTBEAT_MS = 500;
+      let lastRenderMs = 0;
       const loop = (t: number) => {
-        scene.frame(t);
+        const force = t - lastRenderMs > HEARTBEAT_MS;
+        const rendered = scene.frame(t, force);
+        if (rendered) lastRenderMs = t;
         rafRef.current = requestAnimationFrame(loop);
       };
       rafRef.current = requestAnimationFrame(loop);
@@ -290,8 +302,12 @@ export const HomeTerrain3D = React.memo(({ onHeadingChange }: Props) => {
     const sub = AppState.addEventListener('change', (state) => {
       if (state === 'active') {
         if (rafRef.current === null && sceneRef.current !== null) {
+          // 復帰時もハートビート付きループで再開（onContextCreate側と同じ規律）
+          const HEARTBEAT_MS = 500;
+          let lastRenderMs = 0;
           const loop = (t: number) => {
-            sceneRef.current?.frame(t);
+            const force = t - lastRenderMs > HEARTBEAT_MS;
+            if (sceneRef.current?.frame(t, force)) lastRenderMs = t;
             rafRef.current = requestAnimationFrame(loop);
           };
           sceneRef.current.markDirty();

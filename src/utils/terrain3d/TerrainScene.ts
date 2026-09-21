@@ -290,10 +290,13 @@ export class TerrainScene {
 
   /**
    * 毎フレーム呼ばれる。カメラ更新→（必要なら）タイル更新→（dirtyなら）描画。
+   * @param force dirtyフラグに関係なく描画する（ハートビート再描画用。
+   *   フラグ状態の固着やプレゼント取りこぼしがあっても定期的に自己回復させる）
    * @returns 描画したかどうか
    */
-  frame(nowMs: number): boolean {
+  frame(nowMs: number, force = false): boolean {
     if (this.disposed) return false;
+    if (force) this.dirty = true;
     const cameraActive = this.controller.update(nowMs);
     if (cameraActive) this.dirty = true;
 

@@ -334,7 +334,13 @@ export class TerrainRenderer {
     gl.uniform3f(this.uniforms.baseColor, 0.62, 0.61, 0.56);
     gl.activeTexture(gl.TEXTURE0);
 
+    // 描画状態は変化したときだけ設定する（JS→GLの命令数がフレーム時間と
+    // コマンドキュー滞留に直結するため、パス数が多くても命令を最小に保つ）
     let blendEnabled = false;
+    let lastLayerIndex = -1;
+    let lastUseTexture: boolean | null = null;
+    let lastOpacity = -1;
+    let lastTexture: WebGLTexture | null = null;
     const drawPassList = (list: DrawPass[]) => {
       for (const pass of list) {
         const useTexture = pass.texture !== null;
@@ -348,16 +354,28 @@ export class TerrainRenderer {
             gl.disable(gl.BLEND);
           }
         }
-        gl.uniform1f(this.uniforms.isBase, pass.layerIndex === 0 ? 1 : 0);
-        if (pass.layerIndex > 0) {
-          gl.enable(gl.POLYGON_OFFSET_FILL);
-          gl.polygonOffset(-pass.layerIndex, -pass.layerIndex);
-        } else {
-          gl.disable(gl.POLYGON_OFFSET_FILL);
+        if (pass.layerIndex !== lastLayerIndex) {
+          lastLayerIndex = pass.layerIndex;
+          gl.uniform1f(this.uniforms.isBase, pass.layerIndex === 0 ? 1 : 0);
+          if (pass.layerIndex > 0) {
+            gl.enable(gl.POLYGON_OFFSET_FILL);
+            gl.polygonOffset(-pass.layerIndex, -pass.layerIndex);
+          } else {
+            gl.disable(gl.POLYGON_OFFSET_FILL);
+          }
         }
-        gl.uniform1f(this.uniforms.useTexture, useTexture ? 1 : 0);
-        gl.uniform1f(this.uniforms.opacity, pass.opacity);
-        if (pass.texture) gl.bindTexture(gl.TEXTURE_2D, pass.texture);
+        if (useTexture !== lastUseTexture) {
+          lastUseTexture = useTexture;
+          gl.uniform1f(this.uniforms.useTexture, useTexture ? 1 : 0);
+        }
+        if (pass.opacity !== lastOpacity) {
+          lastOpacity = pass.opacity;
+          gl.uniform1f(this.uniforms.opacity, pass.opacity);
+        }
+        if (pass.texture && pass.texture !== lastTexture) {
+          lastTexture = pass.texture;
+          gl.bindTexture(gl.TEXTURE_2D, pass.texture);
+        }
         gl.bindVertexArray(pass.resources.vao);
         gl.drawElements(gl.TRIANGLES, pass.resources.indexCount, gl.UNSIGNED_INT, 0);
       }
