@@ -10,7 +10,7 @@
       "./jestSetupFile.js"
     ],
     "transformIgnorePatterns": [
-      "node_modules/(?!(jest-)?@react-native|react-native|react-clone-referenced-element|@react-native-community|expo(nent)?|@expo(nent)?/.*|react-navigation|@react-navigation/.*|@unimodules/.*|unimodules|sentry-expo|native-base|@sentry/.*|react-redux|immer|@noble/.*)"
+      "node_modules/(?!(jest-)?@react-native|react-native|react-clone-referenced-element|@react-native-community|expo(nent)?|@expo(nent)?/.*|react-navigation|@react-navigation/.*|@unimodules/.*|unimodules|sentry-expo|native-base|@sentry/.*|react-redux|immer|@noble/.*|earcut)"
     ],
     "testPathIgnorePatterns": [
       "src/__tests__/resources/.*",
@@ -129,6 +129,7 @@
     "date-fns": "^4.4.0",
     "dayjs": "^1.11.11",
     "dexie": "^4.0.8",
+    "earcut": "^3.2.3",
     "expo": "^56.0.0",
     "expo-asset": "~56.0.17",
     "expo-audio": "~56.0.12",

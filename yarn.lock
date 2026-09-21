@@ -14462,6 +14462,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"earcut@npm:^3.2.3":
+  version: 3.2.3
+  resolution: "earcut@npm:3.2.3"
+  checksum: 5bb1588a96c8ba51f8b5173c91ac06ba8839d2a2fdd1e5eb259cd203e043293e199ada98a4d5e2111a151eda83389e5ac8d24a9003e9dc1c052603a74a5da3b4
+  languageName: node
+  linkType: hard
+
 "eastasianwidth@npm:^0.2.0":
   version: 0.2.0
   resolution: "eastasianwidth@npm:0.2.0"
@@ -14557,6 +14564,7 @@ __metadata:
     date-fns: ^4.4.0
     dayjs: ^1.11.11
     dexie: ^4.0.8
+    earcut: ^3.2.3
     eslint: ^9.39.0
     eslint-config-prettier: ^10.1.8
     eslint-plugin-jest: ^29.15.2

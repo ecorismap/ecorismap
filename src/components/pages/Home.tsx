@@ -547,7 +547,7 @@ export default function HomeScreen() {
             pressSelectColorCancel={() => setVisibleMapMemoColor(false)}
           />
           {!isTerrainActive && <MapMemoView />}
-          {!isTerrainActive && <HomePopup />}
+          <HomePopup />
           {!isTerrainActive && <HomePoiPopup />}
           <HomeMeasureBanner />
           <HomeViewshedBanner />

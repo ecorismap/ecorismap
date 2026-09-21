@@ -14,6 +14,7 @@ import * as FileSystem from 'expo-file-system/legacy';
 import { TILE_FOLDER } from '../../constants/AppConstants';
 import { decodePngLite } from '../pngLite';
 import { loadLocalDemTilePng } from '../demTileLoader';
+import { renderPmtile } from './pmtileRasterizer';
 import { LayerSpec, TileKey, TileTextureSource } from './types';
 
 const CACHE_DIR = `${FileSystem.cacheDirectory}terrain3d_tex`;
@@ -46,12 +47,49 @@ const offlineTileUri = (layer: LayerSpec, tile: TileKey): string =>
 const cacheTileUri = (layer: LayerSpec, tile: TileKey, ext: string): string =>
   `${CACHE_DIR}/${layer.id}_${tile.z}_${tile.x}_${tile.y}.${ext}`;
 
+// ---- PMTiles（ベクタ/ラスタ）・pbf ----
+// 2Dと同じネイティブラスタライザでPNG化する。ラベルやmatch式スタイル、
+// オーバーズームまで2Dと同一の見た目になる
+const resolvePmtilesTexture = async (layer: LayerSpec, tile: TileKey): Promise<TileTextureSource> => {
+  await ensureCacheDir();
+  const cacheUri = `${CACHE_DIR}/${layer.id}_${tile.z}_${tile.x}_${tile.y}.png`;
+  const cached = await FileSystem.getInfoAsync(cacheUri).catch(() => null);
+  if (cached?.exists) {
+    if ((cached.size ?? 0) === 0) return { kind: 'missing' };
+    const size = layer.isVector ? 512 : 256;
+    return { kind: 'localUri', uri: cacheUri, width: size, height: size };
+  }
+  // 通信エラー等はthrow（呼び出し側で欠けたまま→タイル再構築時に再試行）
+  const tileSize = await renderPmtile({
+    urlTemplate: layer.urlTemplate,
+    styleURL: layer.styleURL,
+    tileCachePath: `${TILE_FOLDER}/${layer.id}`,
+    z: tile.z,
+    x: tile.x,
+    y: tile.y,
+    minimumZ: layer.minimumZ,
+    maximumZ: layer.maximumZ,
+    maximumNativeZ: layer.maximumNativeZ ?? 18,
+    flipY: layer.flipY,
+    offlineMode: layer.offlineMode ?? false,
+    isVector: layer.isVector ?? false,
+    outputPath: cacheUri,
+  });
+  if (tileSize === 0) {
+    // タイルなし（範囲外）。0バイトマーカーで記憶して再取得を防ぐ
+    await FileSystem.writeAsStringAsync(cacheUri, '').catch(() => undefined);
+    return { kind: 'missing' };
+  }
+  return { kind: 'localUri', uri: cacheUri, width: tileSize, height: tileSize };
+};
+
 /**
  * タイル画像をlocalUriへ解決する。
  * @returns localUri（存在保証あり）/ missing（恒久404・範囲外） / throw（通信エラー）
  */
 export const resolveTileTexture = async (layer: LayerSpec, tile: TileKey): Promise<TileTextureSource> => {
   if (tile.z < layer.minimumZ || tile.z > layer.maximumZ) return { kind: 'missing' };
+  if (layer.isPmtiles) return resolvePmtilesTexture(layer, tile);
 
   // 1. オフラインダウンロード済みタイル
   const offline = await FileSystem.getInfoAsync(offlineTileUri(layer, tile)).catch(() => null);

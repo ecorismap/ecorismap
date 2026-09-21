@@ -6,8 +6,8 @@
  * 1本指パン / ピンチズーム / 2本指回転 / 2本指縦ドラッグ（チルト）。
  * カメラはジェスチャ終了時にmapRegionへ同期し、2D復帰時に視点が引き継がれる。
  */
-import React, { useCallback, useContext, useEffect, useMemo, useRef } from 'react';
-import { AppState, StyleSheet } from 'react-native';
+import React, { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { AppState, StyleSheet, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { ExpoWebGLRenderingContext, GLView } from 'expo-gl';
 import { useDispatch, useSelector } from 'react-redux';
@@ -16,7 +16,15 @@ import { editSettingsAction } from '../../modules/settings';
 import { TileMapType } from '../../types';
 import { withTileSignature } from '../../utils/TileSignature';
 import { isDemProtocolUrl } from '../../utils/terrainShading';
-import { TerrainScene } from '../../utils/terrain3d/TerrainScene';
+import { DataOverlaySpec, TerrainScene } from '../../utils/terrain3d/TerrainScene';
+import { parseColorToRgba } from '../../utils/terrain3d/colorUtils';
+import { MERCATOR_CIRCUMFERENCE } from '../../utils/terrain3d/coords';
+import { getColor, getLineWidthAtZoom, getLineWidth } from '../../utils/Layer';
+import { LineRecordType, PolygonRecordType } from '../../types';
+import { HomeTerrain3DPoints } from './HomeTerrain3DPoints';
+import { DataSelectionContext } from '../../contexts/DataSelection';
+import { AppStateContext } from '../../contexts/AppState';
+import { InfoToolContext } from '../../contexts/InfoTool';
 import { cameraToRegion } from '../../utils/terrain3d/coords';
 import { REGION_SYNC_THROTTLE_MS } from '../../utils/terrain3d/constants';
 import { LayerSpec, Terrain3DHandle } from '../../utils/terrain3d/types';
@@ -28,17 +36,22 @@ import { MapRef } from 'react-map-gl/maplibre';
 
 /** 3Dで同時に描画するラスタレイヤの上限（重畳描画のコスト対策） */
 const MAX_3D_LAYERS = 3;
+/** 3Dでドレープ描画するライン・ポリゴンの上限件数（超過分は表示しない） */
+const MAX_OVERLAY_FEATURES = 200;
+/** ポリゴン塗りの不透明度（2Dの塗りに近い控えめな値） */
+const POLYGON_FILL_ALPHA = 0.35;
 
-/** 表示中tileMapsから3Dで描けるラスタXYZレイヤを抽出する（配列末尾が最下層） */
+/** 表示中tileMapsから3Dで描けるレイヤを抽出する（配列末尾が最下層） */
 export const selectTerrainLayers = (
   tileMaps: TileMapType[],
-  tileSignatures: RootState['tileSignatures']
+  tileSignatures: RootState['tileSignatures'],
+  isOffline: boolean
 ): LayerSpec[] => {
   const drawable = tileMaps.filter((tileMap) => {
     if (!tileMap.visible || tileMap.isGroup || !tileMap.url) return false;
     const url = tileMap.url;
-    // ベクタ・PMTiles・PDF・陰影プロトコルはv1非対応（陰影はライティングで代替）
-    if (url.startsWith('pmtiles://') || url.includes('.pmtiles') || url.includes('.pbf')) return false;
+    // PDF・陰影プロトコルは非対応（陰影はライティングで代替）。
+    // PMTiles・pbf（ベクタ含む）は2Dと同じネイティブラスタライザで描画する
     if (url.endsWith('.pdf') || url.startsWith('pdf://')) return false;
     if (isDemProtocolUrl(url)) return false;
     return true;
@@ -47,23 +60,46 @@ export const selectTerrainLayers = (
   return drawable
     .slice(0, MAX_3D_LAYERS)
     .reverse()
-    .map((tileMap) => ({
-      id: tileMap.id,
-      urlTemplate: withTileSignature(tileMap.url, tileSignatures),
-      opacity: 1 - tileMap.transparency,
-      minimumZ: tileMap.minimumZ,
-      maximumZ: tileMap.maximumZ,
-      flipY: tileMap.flipY,
-    }));
+    .map((tileMap) => {
+      const isPmtiles =
+        tileMap.url.startsWith('pmtiles://') || tileMap.url.includes('.pmtiles') || tileMap.url.includes('.pbf');
+      // オーバーズーム開始は2DのPMTile/UrlTile propsと同じ式
+      const maximumNativeZ =
+        isOffline && tileMap.overzoomThreshold > 16 && !tileMap.isVector
+          ? 16
+          : isOffline && tileMap.overzoomThreshold > 18 && tileMap.isVector
+          ? 18
+          : tileMap.overzoomThreshold;
+      return {
+        id: tileMap.id,
+        urlTemplate: withTileSignature(tileMap.url, tileSignatures).replace('pmtiles://', ''),
+        isPmtiles,
+        isVector: !!tileMap.isVector,
+        styleURL: tileMap.styleURL ? withTileSignature(tileMap.styleURL, tileSignatures) : undefined,
+        opacity: 1 - tileMap.transparency,
+        // 2DのPMTile描画（minimumZ=0/maximumZ=22固定）に合わせ、範囲はアーカイブ任せにする
+        minimumZ: isPmtiles ? 0 : tileMap.minimumZ,
+        maximumZ: isPmtiles ? 22 : tileMap.maximumZ,
+        maximumNativeZ,
+        offlineMode: isOffline,
+        flipY: isPmtiles ? false : tileMap.flipY,
+      };
+    });
 };
 
 export const HomeTerrain3D = React.memo(() => {
   const dispatch = useDispatch();
   const { mapRegion, windowHeight, windowWidth } = useWindow();
-  const { onDragMapView, mapViewRef } = useContext(MapViewContext);
+  const { onDragMapView, mapViewRef, zoom } = useContext(MapViewContext);
+  const { lineDataSet, polygonDataSet } = useContext(DataSelectionContext);
   const tileMaps = useSelector((state: RootState) => state.tileMaps);
   const tileSignatures = useSelector((state: RootState) => state.tileSignatures);
+  const layers = useSelector((state: RootState) => state.layers);
+  const { isOffline } = useContext(AppStateContext);
+  const { getInfoOfMap, closeVectorTileInfo } = useContext(InfoToolContext);
   const sceneRef = useRef<TerrainScene | null>(null);
+  // ポイントオーバーレイへ渡す用（onContextCreateは非同期のためrefでは購読開始が間に合わない）
+  const [sceneState, setSceneState] = useState<TerrainScene | null>(null);
   const rafRef = useRef<number | null>(null);
   const handleRef = useRef<Terrain3DHandle | null>(null);
   const lastSyncRef = useRef(0);
@@ -71,8 +107,63 @@ export const HomeTerrain3D = React.memo(() => {
   const viewportRef = useRef({ width: windowWidth, height: windowHeight });
   viewportRef.current = { width: windowWidth, height: windowHeight };
 
-  const layers = useMemo(() => selectTerrainLayers(tileMaps, tileSignatures), [tileMaps, tileSignatures]);
-  const layersRef = useRef(layers);
+  const terrainLayers = useMemo(
+    () => selectTerrainLayers(tileMaps, tileSignatures, isOffline),
+    [tileMaps, tileSignatures, isOffline]
+  );
+  const layersRef = useRef(terrainLayers);
+
+  // 可視レイヤのライン・ポリゴンをドレープ描画の指定へ変換する
+  const dataOverlaySpecs = useMemo(() => {
+    const specs: DataOverlaySpec[] = [];
+    // 線幅(px)→メルカトルm換算（整数ズーム単位で再計算し、再構築の頻発を避ける）
+    const pxToMercator = MERCATOR_CIRCUMFERENCE / (256 * Math.pow(2, zoom));
+    let featureCount = 0;
+    for (const dataSet of lineDataSet) {
+      const layer = layers.find((v) => v.id === dataSet.layerId);
+      if (!layer?.visible) continue;
+      for (const record of dataSet.data as LineRecordType[]) {
+        if (!record.visible || !Array.isArray(record.coords) || record.coords.length < 2) continue;
+        if (featureCount >= MAX_OVERLAY_FEATURES) break;
+        featureCount++;
+        const rgba = parseColorToRgba(getColor(layer, record));
+        specs.push({
+          id: `line-${dataSet.layerId}-${record.id}`,
+          kind: 'line',
+          coords: record.coords,
+          color: rgba,
+          widthMeters: Math.max(2, getLineWidthAtZoom(layer, record, zoom)) * pxToMercator,
+        });
+      }
+    }
+    for (const dataSet of polygonDataSet) {
+      const layer = layers.find((v) => v.id === dataSet.layerId);
+      if (!layer?.visible) continue;
+      for (const record of dataSet.data as PolygonRecordType[]) {
+        if (!record.visible || !Array.isArray(record.coords) || record.coords.length < 3) continue;
+        if (featureCount >= MAX_OVERLAY_FEATURES) break;
+        featureCount++;
+        const rgba = parseColorToRgba(getColor(layer, record));
+        specs.push({
+          id: `polygon-${dataSet.layerId}-${record.id}`,
+          kind: 'polygon',
+          coords: record.coords,
+          holes: record.holes,
+          color: [rgba[0], rgba[1], rgba[2], rgba[3] * POLYGON_FILL_ALPHA],
+        });
+        // 輪郭線（外周リングを閉じたリボン）
+        specs.push({
+          id: `polygon-outline-${dataSet.layerId}-${record.id}`,
+          kind: 'line',
+          coords: [...record.coords, record.coords[0]],
+          color: rgba,
+          widthMeters: Math.max(2, getLineWidth(layer, record)) * pxToMercator,
+        });
+      }
+    }
+    return specs;
+  }, [lineDataSet, polygonDataSet, layers, zoom]);
+  const dataOverlaySpecsRef = useRef(dataOverlaySpecs);
 
   // カメラ→mapRegion同期（ジェスチャ終了時・スロットル付き）
   const syncRegion = useCallback(
@@ -94,7 +185,9 @@ export const HomeTerrain3D = React.memo(() => {
     (gl: ExpoWebGLRenderingContext) => {
       const scene = new TerrainScene(gl, mapRegion, viewportRef.current.height);
       sceneRef.current = scene;
+      setSceneState(scene);
       scene.setLayers(layersRef.current);
+      scene.setDataOverlays(dataOverlaySpecsRef.current);
       const loop = (t: number) => {
         scene.frame(t);
         rafRef.current = requestAnimationFrame(loop);
@@ -116,14 +209,14 @@ export const HomeTerrain3D = React.memo(() => {
         isTerrain3D: true,
         animateCamera: (camera, opts) => animate(camera, opts?.duration ?? 300),
         animateToRegion: (region, duration = 300) => {
-          const zoom =
+          const targetZoom =
             region.latitudeDelta !== undefined && region.longitudeDelta !== undefined
               ? deltaToZoom(viewportRef.current.width, {
                   latitudeDelta: region.latitudeDelta,
                   longitudeDelta: region.longitudeDelta,
                 }).decimalZoom
               : undefined;
-          animate({ center: { latitude: region.latitude, longitude: region.longitude }, zoom }, duration);
+          animate({ center: { latitude: region.latitude, longitude: region.longitude }, zoom: targetZoom }, duration);
         },
         getCamera: async () => {
           const state = scene.controller.getState();
@@ -148,9 +241,15 @@ export const HomeTerrain3D = React.memo(() => {
 
   // レイヤ構成の変化を反映
   useEffect(() => {
-    layersRef.current = layers;
-    sceneRef.current?.setLayers(layers);
-  }, [layers]);
+    layersRef.current = terrainLayers;
+    sceneRef.current?.setLayers(terrainLayers);
+  }, [terrainLayers]);
+
+  // ライン・ポリゴンデータの変化を反映
+  useEffect(() => {
+    dataOverlaySpecsRef.current = dataOverlaySpecs;
+    sceneRef.current?.setDataOverlays(dataOverlaySpecs);
+  }, [dataOverlaySpecs]);
 
   // ビューポートサイズの変化を反映
   useEffect(() => {
@@ -191,12 +290,29 @@ export const HomeTerrain3D = React.memo(() => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const infoRef = useRef({ getInfoOfMap, closeVectorTileInfo });
+  infoRef.current = { getInfoOfMap, closeVectorTileInfo };
+
   const gestures = useMemo(() => {
+    // タップ: 地形上の地点へ逆投影し、2Dと同じ経路でベクタタイル情報をポップアップ表示する
+    const tap = Gesture.Tap()
+      .runOnJS(true)
+      .maxDuration(300)
+      .onEnd((e, success) => {
+        if (!success) return;
+        const scene = sceneRef.current;
+        if (!scene) return;
+        const { width, height } = viewportRef.current;
+        const latlon = scene.unprojectToLatLon(e.x, e.y, width, height);
+        if (latlon === null) return;
+        infoRef.current.getInfoOfMap([latlon.longitude, latlon.latitude], [e.x, e.y]).catch(() => undefined);
+      });
     const pan = Gesture.Pan()
       .runOnJS(true)
       .maxPointers(1)
       .onStart(() => {
         sceneRef.current?.controller.stopInertia();
+        infoRef.current.closeVectorTileInfo();
         onDragMapView();
       })
       .onChange((e) => {
@@ -213,6 +329,7 @@ export const HomeTerrain3D = React.memo(() => {
       });
     const pinch = Gesture.Pinch()
       .runOnJS(true)
+      .onStart(() => infoRef.current.closeVectorTileInfo())
       .onChange((e) => {
         const scene = sceneRef.current;
         if (!scene) return;
@@ -242,17 +359,24 @@ export const HomeTerrain3D = React.memo(() => {
         scene.markDirty();
       })
       .onEnd(() => syncRegion(true));
-    return Gesture.Simultaneous(pan, pinch, rotation, tilt);
+    // タップは移動系ジェスチャとRace構成にする（Simultaneousだとパン中もタップ判定が発火する）
+    return Gesture.Race(tap, Gesture.Simultaneous(pan, pinch, rotation, tilt));
   }, [onDragMapView, syncRegion]);
 
   return (
-    <GestureDetector gesture={gestures}>
-      <GLView style={styles.gl} onContextCreate={onContextCreate} />
-    </GestureDetector>
+    <View style={styles.container}>
+      <GestureDetector gesture={gestures}>
+        <GLView style={styles.gl} onContextCreate={onContextCreate} />
+      </GestureDetector>
+      <HomeTerrain3DPoints scene={sceneState} />
+    </View>
   );
 });
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
   gl: {
     flex: 1,
   },

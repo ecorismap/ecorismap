@@ -113,6 +113,8 @@ android {
 dependencies {
 
     implementation("com.facebook.react:react-android")
+    // PMTileRasterizerModuleがreact-native-mapsのTile型(play-services-maps)を参照するため
+    implementation "com.google.android.gms:play-services-maps:19.1.0"
     implementation platform('com.google.firebase:firebase-bom:34.3.0')
     implementation 'com.google.firebase:firebase-analytics'
     implementation 'com.google.firebase:firebase-appcheck-playintegrity'

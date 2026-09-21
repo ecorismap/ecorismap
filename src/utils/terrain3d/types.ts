@@ -13,8 +13,18 @@ export interface TileKey {
 export interface LayerSpec {
   /** tileMap.id。オフラインタイルのフォルダ名 */
   id: string;
-  /** 署名付与済みのURLテンプレート（{z}/{x}/{y}形式）。hillshade://等は除去済みであること */
+  /** 署名付与済みのURLテンプレート（{z}/{x}/{y}形式）。hillshade://・pmtiles://等の接頭辞は除去済みであること */
   urlTemplate: string;
+  /** PMTilesアーカイブまたは.pbfタイルの場合true（ネイティブラスタライザで描画） */
+  isPmtiles?: boolean;
+  /** ベクタタイルの場合true */
+  isVector?: boolean;
+  /** ベクタタイルのスタイル定義URL（署名付与済み） */
+  styleURL?: string;
+  /** オーバーズーム開始ズーム（2DのmaximumNativeZと同じ） */
+  maximumNativeZ?: number;
+  /** オフラインモード（2DのofflineModeと同じ） */
+  offlineMode?: boolean;
   /** 0(不透明)〜1(透明)ではなく、three.jsのopacity(1=不透明)に換算済みの値 */
   opacity: number;
   minimumZ: number;

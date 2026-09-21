@@ -18,6 +18,8 @@ export interface InfoToolContextType {
   setVisibleInfoPicker: (visible: boolean) => void;
   setInfoToolActive: (active: boolean) => void;
   closeVectorTileInfo: () => void;
+  /** タップ地点のベクタタイル情報を取得してポップアップ表示する（latlon=[経度,緯度]、xy=画面座標）。3Dビューのタップからも使う */
+  getInfoOfMap: (latlon: Position, xy: Position) => Promise<void>;
 }
 
 export const InfoToolContext = createContext<InfoToolContextType>({
@@ -28,4 +30,5 @@ export const InfoToolContext = createContext<InfoToolContextType>({
   setVisibleInfoPicker: () => {},
   setInfoToolActive: () => {},
   closeVectorTileInfo: () => {},
+  getInfoOfMap: async () => {},
 });
