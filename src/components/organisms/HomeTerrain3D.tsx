@@ -153,13 +153,16 @@ export const HomeTerrain3D = React.memo(({ onHeadingChange }: Props) => {
         if (featureCount >= MAX_OVERLAY_FEATURES) break;
         featureCount++;
         const rgba = parseColorToRgba(getColor(layer, record));
-        specs.push({
-          id: `polygon-${dataSet.layerId}-${record.id}`,
-          kind: 'polygon',
-          coords: record.coords,
-          holes: record.holes,
-          color: [rgba[0], rgba[1], rgba[2], rgba[3] * POLYGON_FILL_ALPHA],
-        });
+        // 2D(HomePolygon)と同じく、塗りなし設定のレイヤは輪郭線だけを描く
+        if (!layer.colorStyle.transparency) {
+          specs.push({
+            id: `polygon-${dataSet.layerId}-${record.id}`,
+            kind: 'polygon',
+            coords: record.coords,
+            holes: record.holes,
+            color: [rgba[0], rgba[1], rgba[2], rgba[3] * POLYGON_FILL_ALPHA],
+          });
+        }
         // 輪郭線（外周リングを閉じたリボン）
         specs.push({
           id: `polygon-outline-${dataSet.layerId}-${record.id}`,
