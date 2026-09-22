@@ -184,8 +184,10 @@ const ProjectedPointMarker = React.memo(
     label: string;
   }) => {
     // 幅0のアンカーを投影座標に置き、ドットとラベルをそれぞれ絶対配置で中央合わせする
-    // （コンテナのalignItemsだとラベル幅にドットが引きずられて位置がずれる）
-    const anchorStyle = useMemo(() => [styles.anchor, { transform: [{ translateX: x }, { translateY: y }] }], [x, y]);
+    // （コンテナのalignItemsだとラベル幅にドットが引きずられて位置がずれる）。
+    // 位置はtransformではなくleft/topで与える。サイズ0のViewのtransform更新は
+    // 画面に反映されず、マウント時の位置にドットが取り残された（遮蔽で作り直されるまで直らない）
+    const anchorStyle = useMemo(() => [styles.anchor, { left: x, top: y }], [x, y]);
     return (
       <View style={anchorStyle}>
         <View style={styles.dot}>

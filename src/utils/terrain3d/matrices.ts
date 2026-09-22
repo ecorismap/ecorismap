@@ -129,3 +129,75 @@ export const orbitUp = (headingDeg: number, pitchDeg: number): [number, number, 
   // 画面上方向 = 視線を上に90度回した向き。水平成分は北向き(heading方向)、垂直成分はsin(p)
   return [Math.sin(h) * Math.cos(p), Math.sin(p), -Math.cos(h) * Math.cos(p)];
 };
+
+export const normalize3 = (v: [number, number, number]): [number, number, number] => {
+  const len = Math.hypot(v[0], v[1], v[2]) || 1;
+  return [v[0] / len, v[1] / len, v[2] / len];
+};
+
+export const cross3 = (a: [number, number, number], b: [number, number, number]): [number, number, number] => [
+  a[1] * b[2] - a[2] * b[1],
+  a[2] * b[0] - a[0] * b[2],
+  a[0] * b[1] - a[1] * b[0],
+];
+
+/**
+ * 視線の正規直交基底（カメラ位置＋forward/right/upv）。
+ * mat4LookAtと同じ軸の取り方なので、この基底で作ったレイは
+ * 同じeye/target/upから作った行列の投影と厳密に対応する
+ */
+export interface RayBasis {
+  eye: [number, number, number];
+  forward: [number, number, number];
+  right: [number, number, number];
+  upv: [number, number, number];
+}
+
+export const rayBasisFromCamera = (
+  eye: [number, number, number],
+  target: [number, number, number],
+  up: [number, number, number]
+): RayBasis => {
+  const forward = normalize3([target[0] - eye[0], target[1] - eye[1], target[2] - eye[2]]);
+  const right = normalize3(cross3(forward, up));
+  const upv = cross3(right, forward);
+  return { eye, forward, right, upv };
+};
+
+/**
+ * NDC位置へ向かうレイ方向（非正規化・forward成分がちょうど1）。
+ * right/upvはforwardと直交なので、このベクトルに「視線前方軸への射影深度
+ * （透視投影のclip.w）」を掛けるとその画素のワールド点に正確に届く。
+ * 正規化してしまうと軸深度にcosθ補正（1/dot(dir,forward)）が必要になる
+ */
+export const rayDirForNdc = (
+  basis: RayBasis,
+  ndcX: number,
+  ndcY: number,
+  tanHalfFovY: number,
+  aspect: number
+): [number, number, number] => {
+  const { forward, right, upv } = basis;
+  return [
+    forward[0] + tanHalfFovY * (ndcX * aspect * right[0] + ndcY * upv[0]),
+    forward[1] + tanHalfFovY * (ndcX * aspect * right[1] + ndcY * upv[1]),
+    forward[2] + tanHalfFovY * (ndcX * aspect * right[2] + ndcY * upv[2]),
+  ];
+};
+
+/**
+ * スクリーン位置（NDC）と軸方向深度（clip.w = -z_view）からワールド点を復元する。
+ * 距離バッファに入っているのは「レイに沿ったユークリッド距離」ではなく
+ * この軸深度なので、復元は必ずこの関数を通すこと
+ */
+export const pointAtAxisDepth = (
+  basis: RayBasis,
+  ndcX: number,
+  ndcY: number,
+  tanHalfFovY: number,
+  aspect: number,
+  axisDepth: number
+): [number, number, number] => {
+  const dir = rayDirForNdc(basis, ndcX, ndcY, tanHalfFovY, aspect);
+  return [basis.eye[0] + dir[0] * axisDepth, basis.eye[1] + dir[1] * axisDepth, basis.eye[2] + dir[2] * axisDepth];
+};

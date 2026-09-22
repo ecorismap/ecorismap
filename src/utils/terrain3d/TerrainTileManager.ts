@@ -111,8 +111,6 @@ export class TerrainTileManager {
   private activeZoom: number | null = null;
   /** 直近のupdateVisibleTilesで要求されたズーム（標高サンプリングのキー計算に使う） */
   private lastTexZoom: number | null = null;
-  /** isSettledの計算結果（描画パスが変わるたびに捨てる） */
-  private settledCache: boolean | null = null;
   private inFlight = 0;
   private queue: (() => Promise<void>)[] = [];
   private generation = 0;
@@ -179,31 +177,6 @@ export class TerrainTileManager {
     return this.readyGen;
   }
 
-  /**
-   * 描いているタイルが単一ズームに収束しているか。
-   *
-   * ズーム切替中は新ズームが出揃うまで旧ズームを描き続けるので、新旧が混在する。
-   * この間はどちらのタイルから標高を取っても画面の地形と一致する保証がないため、
-   * 「切り替わり途中はドットを出さない」判断に使う。
-   *
-   * 「要求ズームが全部ready」ではなく「別ズームを描いていない」で判定するのは、
-   * 1枚でも取得に失敗すると前者が永久に成立せずドットが出なくなるため
-   */
-  get isSettled(): boolean {
-    if (this.lastTexZoom === null) return false;
-    if (this.settledCache === null) {
-      let mixed = false;
-      for (const entry of this.tiles.values()) {
-        if (entry.state === 'ready' && entry.key.z !== this.lastTexZoom) {
-          mixed = true;
-          break;
-        }
-      }
-      this.settledCache = !mixed;
-    }
-    return this.settledCache;
-  }
-
   /** カメラ状態から必要タイルを判定し、取得をスケジュールする */
   updateVisibleTiles(
     latitude: number,
@@ -214,7 +187,6 @@ export class TerrainTileManager {
     maxTiles: number = MAX_TILES
   ): void {
     if (this.disposed) return;
-    if (this.lastTexZoom !== texZoom) this.settledCache = null;
     this.lastTexZoom = texZoom;
     const needed = computeTileRing(
       latitude,
@@ -382,7 +354,6 @@ export class TerrainTileManager {
   /** 描画パスのキャッシュを破棄する（タイル集合・ready状態の変化時） */
   private invalidatePasses(): void {
     this.cachedPasses = null;
-    this.settledCache = null;
   }
 
   private enqueue(job: () => Promise<void>): void {

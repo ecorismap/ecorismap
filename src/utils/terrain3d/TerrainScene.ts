@@ -37,7 +37,19 @@ import {
   ZOOM_HYSTERESIS,
 } from './constants';
 import { elevationScale, lonLatToMercator, mercatorToLonLat, MercatorPoint, regionToCamera, tileSizeMeters, zoomToDistance } from './coords';
-import { Mat4, mat4LookAt, mat4Multiply, mat4Perspective, orbitEye, orbitUp } from './matrices';
+import {
+  Mat4,
+  mat4LookAt,
+  mat4Multiply,
+  mat4Perspective,
+  normalize3,
+  orbitEye,
+  orbitUp,
+  pointAtAxisDepth,
+  RayBasis,
+  rayBasisFromCamera,
+  rayDirForNdc,
+} from './matrices';
 import { TerrainDepthMap, TerrainRenderer, TerrainRingDraw, TileGpuResources } from './TerrainRenderer';
 import { TerrainTileManager } from './TerrainTileManager';
 import { DemTextureCache } from './demTextureCache';
@@ -132,17 +144,6 @@ const skyColorVec = (): [number, number, number] => [
   (SKY_COLOR & 0xff) / 255,
 ];
 
-const normalize3 = (v: [number, number, number]): [number, number, number] => {
-  const len = Math.hypot(v[0], v[1], v[2]) || 1;
-  return [v[0] / len, v[1] / len, v[2] / len];
-};
-
-const cross3 = (a: [number, number, number], b: [number, number, number]): [number, number, number] => [
-  a[1] * b[2] - a[2] * b[1],
-  a[2] * b[0] - a[0] * b[2],
-  a[0] * b[1] - a[1] * b[0],
-];
-
 const sunDirection = (): [number, number, number] => {
   const az = (SUN_AZIMUTH_DEG * Math.PI) / 180;
   const alt = (SUN_ALTITUDE_DEG * Math.PI) / 180;
@@ -201,6 +202,13 @@ export class TerrainScene {
   private builtOverlayZoom: number | null = null;
   /** 直近フレームのビュー射影行列（スクリーン投影用） */
   private lastViewProj: Mat4 | null = null;
+  /**
+   * lastViewProjを組んだのと同じeye/target/up/アスペクトから作った視線基底。
+   * 距離バッファ（軸深度）からワールド点を復元するときはこちらを使う。
+   * screenRay（現在のカメラ状態から作る）を使うと、描画済みフレームとの
+   * 状態ドリフトとdp/pxアスペクト差が復元誤差として混入する
+   */
+  private lastRayBasis: { basis: RayBasis; aspect: number } | null = null;
   /** 遮蔽判定用に読み戻した地形までの距離と、それを描いたときの行列 */
   private depthMap: TerrainDepthMap | null = null;
   private depthViewProj: Mat4 | null = null;
@@ -375,18 +383,12 @@ export class TerrainScene {
     const eye = orbitEye(target, distance, state.heading, state.pitch);
     const up = orbitUp(state.heading, state.pitch);
     // 視線基底（forward/right/upv）から画面位置方向のレイを作る
-    const forward = normalize3([target[0] - eye[0], target[1] - eye[1], target[2] - eye[2]]);
-    const right = normalize3(cross3(forward, up));
-    const upv = cross3(right, forward);
+    const basis = rayBasisFromCamera(eye, target, up);
     const aspect = viewportWidthDp / viewportHeightDp;
     const tanHalf = Math.tan((CAMERA_FOV_DEG * Math.PI) / 360);
     const ndcX = (xDp / viewportWidthDp) * 2 - 1;
     const ndcY = 1 - (yDp / viewportHeightDp) * 2;
-    const dir = normalize3([
-      forward[0] + tanHalf * (ndcX * aspect * right[0] + ndcY * upv[0]),
-      forward[1] + tanHalf * (ndcX * aspect * right[1] + ndcY * upv[1]),
-      forward[2] + tanHalf * (ndcX * aspect * right[2] + ndcY * upv[2]),
-    ]);
+    const dir = normalize3(rayDirForNdc(basis, ndcX, ndcY, tanHalf, aspect));
     return { eye, dir };
   }
 
@@ -459,6 +461,7 @@ export class TerrainScene {
     const proj = mat4Perspective((CAMERA_FOV_DEG * Math.PI) / 180, aspect, Math.max(1, distance * 0.02), far);
     const viewProj = mat4Multiply(proj, mat4LookAt(eye, target, up));
     this.lastViewProj = viewProj;
+    this.lastRayBasis = { basis: rayBasisFromCamera(eye, target, up), aspect };
     return { viewProj, eye };
   }
 
@@ -467,11 +470,15 @@ export class TerrainScene {
    *
    * JS側の標高サンプリングは、どう揃えてもシェーダと完全一致させきれなかった
    * （近景/遠景・取得時点・DEMの解像度差など）。そこで高さの正解を
-   * 距離バッファ（GPUが描いた地形までの視線距離）側に置く。
+   * 距離バッファ（GPUが描いた地形までの軸方向深度＝clip.w）側に置く。
    *
-   * 手順: 現在の高さで投影 → その画素の地形までの距離を引く → その距離まで
-   * 視線を伸ばした点の高さを新しい推定値にする、を数回繰り返す。
+   * 手順: 現在の高さで投影 → その画素の地形までの深度を引く → その深度に
+   * ある点の高さを新しい推定値にする、を数回繰り返す。
    * 斜面では1回で寄り切らないので反復するが、数回で収束する。
+   *
+   * 深度の復元は必ずlastRayBasis＋pointAtAxisDepthで行う。バッファの値は
+   * 「レイに沿ったユークリッド距離」ではないので、正規化レイに掛けると
+   * 画面端ほど点が浮く（垂直FOV60°の画面端で距離を15%過小評価する）。
    *
    * 距離バッファが現在のカメラのものでないときは初期値のまま返す
    * （ずらすより、JSの推定のままの方が害が小さい）。
@@ -479,30 +486,32 @@ export class TerrainScene {
   private placeOnDrawnTerrain(x: number, z: number, initialY: number): { y: number } {
     const map = this.depthMap;
     const m = this.lastViewProj;
+    const rayBasis = this.lastRayBasis;
     if (
       map === null ||
       m === null ||
+      rayBasis === null ||
       this.depthViewProj === null ||
-      !sameMat4(this.depthViewProj, m) ||
-      this.viewportWidthDp <= 0
+      !sameMat4(this.depthViewProj, m)
     ) {
       return { y: initialY };
     }
+    const tanHalf = Math.tan((CAMERA_FOV_DEG * Math.PI) / 360);
     let y = initialY;
     for (let i = 0; i < TERRAIN_PLACE_ITERATIONS; i++) {
       const w = m[3] * x + m[7] * y + m[11] * z + m[15];
       if (w <= 0) break;
-      const sx = ((m[0] * x + m[4] * y + m[8] * z + m[12]) / w) * 0.5 + 0.5;
-      const sy = 1 - (((m[1] * x + m[5] * y + m[9] * z + m[13]) / w) * 0.5 + 0.5);
-      const px = Math.round(sx * map.width);
-      const py = Math.round(sy * map.height);
-      if (px < 0 || py < 0 || px >= map.width || py >= map.height) break;
+      const ndcX = (m[0] * x + m[4] * y + m[8] * z + m[12]) / w;
+      const ndcY = (m[1] * x + m[5] * y + m[9] * z + m[13]) / w;
+      const sx = ndcX * 0.5 + 0.5;
+      const sy = 1 - (ndcY * 0.5 + 0.5);
+      if (sx < 0 || sx > 1 || sy < 0 || sy > 1) break;
+      const px = Math.min(map.width - 1, Math.floor(sx * map.width));
+      const py = Math.min(map.height - 1, Math.floor(sy * map.height));
       const dist = map.distances[py * map.width + px];
       if (!Number.isFinite(dist)) break; // 空。地形が無いので動かしようがない
-      const ray = this.screenRay(sx * this.viewportWidthDp, sy * this.viewportHeightDp);
-      if (ray === null) break;
       // その画素で見えている地形の高さ。これを次の推定値にする
-      const nextY = ray.eye[1] + ray.dir[1] * dist;
+      const nextY = pointAtAxisDepth(rayBasis.basis, ndcX, ndcY, tanHalf, rayBasis.aspect, dist)[1];
       if (Math.abs(nextY - y) < TERRAIN_PLACE_EPSILON_M * this.elevScale) {
         y = nextY;
         break;
@@ -513,26 +522,17 @@ export class TerrainScene {
   }
 
   /**
-   * ドットを地形に載せられる状態か。
-   *
-   * ズーム切替中は新旧のタイルが混在し、標高がどちらから返るかで
-   * 画面の地形と食い違う。3Dへ切り替えた直後もここを通るので、
-   * 確定するまでは投影せず「出さない」に倒す（ずれた位置に出すより良い）
-   */
-  private get terrainSettled(): boolean {
-    return this.tileManager.isSettled;
-  }
-
-  /**
    * 緯度経度→スクリーン座標(dp)。カメラの後ろや画面外はnull。
    * 直近の描画フレームの行列を使う（未描画ならnull）。
+   *
+   * 標高が取れた点から順に出す（タイルが出揃うのを待たない）。
+   * 読み込み途中の標高は多少粗くても、新しい標高が届くたびに投影し直されて正しい位置へ寄る
    */
   projectToScreen(latitude: number, longitude: number): { x: number; y: number } | null {
     const m = this.lastViewProj;
     const viewportWidthDp = this.viewportWidthDp;
     const viewportHeightDp = this.viewportHeightDp;
     if (m === null || viewportWidthDp <= 0 || viewportHeightDp <= 0) return null;
-    if (!this.terrainSettled) return null;
     const merc = lonLatToMercator(longitude, latitude);
     // 標高はドレープ（ライン・ポリゴンを地形に貼る処理）とまったく同じ関数で引く。
     // ここだけ近景リング限定にすると、同じ緯度経度なのにドットとドレープが
@@ -584,7 +584,23 @@ export class TerrainScene {
       const map = this.depthMap;
       const fresh = map !== null && this.depthViewProj !== null && sameMat4(this.depthViewProj, m);
       const fill = `${(this.renderer.lastDepthFillRatio * 100).toFixed(0)}% n${this.renderer.depthCaptureCount} t${this.renderer.lastDepthTileCount} ${this.renderer.lastDepthError}`;
-      const depthInfo = `${map === null ? 'depth:none' : `depth:${map.width}x${map.height}${fresh ? '' : '(old)'}`} fill=${fill}`;
+      // 距離バッファが「古い」と判定され続けると、ドットは生のJS標高のまま置かれる。
+      // どの行列要素が食い違っているかを出す（13=注視点の高さ、10/14=near/far、0/5=画角）
+      let matDiff = '';
+      if (!fresh && this.depthViewProj !== null) {
+        let worstIdx = -1;
+        let worstRel = 0;
+        for (let i = 0; i < 16; i++) {
+          const scale = Math.max(1, Math.abs(this.depthViewProj[i]), Math.abs(m[i]));
+          const rel = Math.abs(this.depthViewProj[i] - m[i]) / scale;
+          if (rel > worstRel) {
+            worstRel = rel;
+            worstIdx = i;
+          }
+        }
+        matDiff = ` d[${worstIdx}]=${worstRel.toExponential(1)}`;
+      }
+      const depthInfo = `${map === null ? 'depth:none' : `depth:${map.width}x${map.height}${fresh ? '' : '(old)'}`}${matDiff} fill=${fill}`;
       // ドットが「描かれている地形の上」に乗っているか。
       // 点までの距離と、同じ画素の地形までの距離が一致していなければ浮いている/沈んでいる
       // 診断では多少古い距離バッファでも値を出す（カメラの微動で常に?になるのを避ける）
@@ -627,9 +643,11 @@ export class TerrainScene {
     const map = this.depthMap;
     if (map === null || this.depthViewProj === null || this.lastViewProj === null) return false;
     if (!sameMat4(this.depthViewProj, this.lastViewProj)) return false;
-    const px = Math.round((screenX / this.viewportWidthDp) * map.width);
-    const py = Math.round((screenY / this.viewportHeightDp) * map.height);
-    if (px < 0 || py < 0 || px >= map.width || py >= map.height) return false;
+    const sx = screenX / this.viewportWidthDp;
+    const sy = screenY / this.viewportHeightDp;
+    if (sx < 0 || sx > 1 || sy < 0 || sy > 1) return false;
+    const px = Math.min(map.width - 1, Math.floor(sx * map.width));
+    const py = Math.min(map.height - 1, Math.floor(sy * map.height));
     const terrain = map.distances[py * map.width + px];
     if (!Number.isFinite(terrain)) return false;
     // 許容差は距離に比例させる。縮小解像度の1画素が遠方ほど広い範囲を代表するため
