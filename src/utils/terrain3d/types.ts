@@ -73,6 +73,11 @@ export interface Terrain3DHandle {
   rotateBy: (deltaDeg: number) => void;
   /** 傾きボタン用。現在pitchから相対変更（アニメーション付き） */
   pitchBy: (deltaDeg: number) => void;
+  /**
+   * ズームボタン用。現在ズームから相対変更（アニメーション付き）。
+   * mapRegion経由の値はカメラ同期の間引きで遅れるため、連続操作ではカメラ側の値を使う
+   */
+  zoomBy: (deltaZoom: number) => void;
   /** MapView実体との判別用 */
   isTerrain3D: true;
 }

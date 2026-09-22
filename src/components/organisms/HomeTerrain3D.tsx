@@ -7,9 +7,9 @@
  * カメラはジェスチャ終了時にmapRegionへ同期し、2D復帰時に視点が引き継がれる。
  */
 import React, { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { AppState, StyleSheet, View } from 'react-native';
+import { AppState, LayoutChangeEvent, PixelRatio, StyleSheet, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
-import { ExpoWebGLRenderingContext, GLView } from 'expo-gl';
+import { Canvas, CanvasRef, RNCanvasContext } from 'react-native-webgpu';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '../../store';
 import { editSettingsAction } from '../../modules/settings';
@@ -22,24 +22,30 @@ import { MERCATOR_CIRCUMFERENCE } from '../../utils/terrain3d/coords';
 import { getColor, getLineWidthAtZoom, getLineWidth } from '../../utils/Layer';
 import { LineRecordType, PointRecordType, PolygonRecordType } from '../../types';
 import { HomeTerrain3DPoints } from './HomeTerrain3DPoints';
+import { HomeTerrain3DPerf } from './HomeTerrain3DPerf';
 import { DataSelectionContext } from '../../contexts/DataSelection';
 import { AppStateContext } from '../../contexts/AppState';
 import { InfoToolContext } from '../../contexts/InfoTool';
 import { cameraToRegion } from '../../utils/terrain3d/coords';
-import { REGION_SYNC_THROTTLE_MS } from '../../utils/terrain3d/constants';
-import { LayerSpec, Terrain3DHandle } from '../../utils/terrain3d/types';
+import { MAX_TERRAIN_LAYERS, REGION_SYNC_THROTTLE_MS } from '../../utils/terrain3d/constants';
+import { LayerSpec, Terrain3DCameraState, Terrain3DHandle } from '../../utils/terrain3d/types';
 import { deltaToZoom } from '../../utils/Coords';
 import { useWindow } from '../../hooks/useWindow';
-import { MapViewContext } from '../../contexts/MapView';
+import { MapViewStableContext } from '../../contexts/MapViewStable';
+import { terrain3dHeadingStore } from '../../utils/terrain3d/headingStore';
+import { getTerrainDevice } from '../../utils/terrain3d/webgpuSupport';
 import MapView from 'react-native-maps';
 import { MapRef } from 'react-map-gl/maplibre';
 
 /**
- * 3Dで同時に描画するタイルレイヤの上限（重畳描画とテクスチャメモリのコスト対策）。
- * PMTiles（距離標等のベクタ）も1枠を使うため、部分配信の写真+ベース地図の
- * 実運用構成が収まるよう余裕を持たせる。範囲外タイル(missing)はコストゼロ
+ * 開発時の検証: ポイントの緯度経度にGPUで十字を描く。
+ *
+ * Reactで重ねるドットと、GPUが地形へ貼る十字を見比べるための仕掛け。
+ * ずれの原因が「JS側の標高」か「地形テクスチャ」かを切り分けられる。
+ * 常時は要らないのでfalse。調査するときだけtrueにする
  */
-const MAX_3D_LAYERS = 8;
+const DEBUG_POINT_CROSS = false;
+
 /** 3Dでドレープ描画するライン・ポリゴンの上限件数（超過分は表示しない） */
 const MAX_OVERLAY_FEATURES = 200;
 /** ポリゴン塗りの不透明度（2Dの塗りに近い控えめな値） */
@@ -60,9 +66,9 @@ export const selectTerrainLayers = (
     if (isDemProtocolUrl(url)) return false;
     return true;
   });
-  // tileMapsは先頭ほど上に表示される。上位MAX_3D_LAYERS枚を採用し、下層から並べる
+  // tileMapsは先頭ほど上に表示される。上位MAX_TERRAIN_LAYERS枚を採用し、下層から並べる
   return drawable
-    .slice(0, MAX_3D_LAYERS)
+    .slice(0, MAX_TERRAIN_LAYERS)
     .reverse()
     .map((tileMap) => {
       const isPmtiles =
@@ -91,15 +97,12 @@ export const selectTerrainLayers = (
     });
 };
 
-interface Props {
-  /** カメラ方位の変化通知（コンパス盤面の連動用、約100ms/1°で間引き） */
-  onHeadingChange?: (heading: number) => void;
-}
-
-export const HomeTerrain3D = React.memo(({ onHeadingChange }: Props) => {
+export const HomeTerrain3D = React.memo(() => {
   const dispatch = useDispatch();
   const { mapRegion, windowHeight, windowWidth } = useWindow();
-  const { onDragMapView, mapViewRef, zoom } = useContext(MapViewContext);
+  // 位置・方位を含むMapViewContextではなく安定値だけのコンテキストを購読する
+  // （GPS更新のたびに再レンダリングされると描画ループとジェスチャを阻害するため）
+  const { onDragMapView, mapViewRef, zoom } = useContext(MapViewStableContext);
   const { pointDataSet, lineDataSet, polygonDataSet } = useContext(DataSelectionContext);
   const tileMaps = useSelector((state: RootState) => state.tileMaps);
   const tileSignatures = useSelector((state: RootState) => state.tileSignatures);
@@ -107,11 +110,23 @@ export const HomeTerrain3D = React.memo(({ onHeadingChange }: Props) => {
   const { isOffline } = useContext(AppStateContext);
   const { getInfoOfMap, closeVectorTileInfo, getInfoOfFeatureAt } = useContext(InfoToolContext);
   const sceneRef = useRef<TerrainScene | null>(null);
-  // ポイントオーバーレイへ渡す用（onContextCreateは非同期のためrefでは購読開始が間に合わない）
+  // ポイントオーバーレイへ渡す用（初期化は非同期のためrefでは購読開始が間に合わない）
   const [sceneState, setSceneState] = useState<TerrainScene | null>(null);
+  const canvasRef = useRef<CanvasRef>(null);
+  /** getContextはビューのレイアウト確定後でないとサイズが取れない */
+  const [canvasLaidOut, setCanvasLaidOut] = useState(false);
+  /** デバイスロストからの再初期化トリガー */
+  const [deviceGeneration, setDeviceGeneration] = useState(0);
+  /** onLayoutで実測したキャンバスのdpサイズ */
+  const canvasLayoutRef = useRef({ width: 0, height: 0 });
+  const gpuRef = useRef<{ device: GPUDevice; context: RNCanvasContext; format: GPUTextureFormat } | null>(null);
   const rafRef = useRef<number | null>(null);
   const handleRef = useRef<Terrain3DHandle | null>(null);
   const lastSyncRef = useRef(0);
+  /** 直近にmapRegionへ同期したカメラ状態（無変化のdispatchを弾く） */
+  const lastSyncedCameraRef = useRef<Terrain3DCameraState | null>(null);
+  /** animate()が仕掛けた同期タイマー（追従中に何重にも積まない） */
+  const syncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   // ジェスチャコールバックから最新値を参照するためのref
   const viewportRef = useRef({ width: windowWidth, height: windowHeight });
   viewportRef.current = { width: windowWidth, height: windowHeight };
@@ -173,47 +188,98 @@ export const HomeTerrain3D = React.memo(({ onHeadingChange }: Props) => {
         });
       }
     }
+    // 開発時の検証用: ポイントと同じ緯度経度にGPUが描く十字を置く。
+    // Reactで重ねる赤ドットと、GPUが地形に貼る十字がずれるなら原因はオーバーレイ側、
+    // 両方が地図(ラスタ)からずれるならテクスチャ側、と切り分けられる
+    if (__DEV__ && DEBUG_POINT_CROSS) {
+      const d = 0.00025;
+      let n = 0;
+      for (const dataSet of pointDataSet) {
+        for (const record of dataSet.data as PointRecordType[]) {
+          if (!record.visible || record.coords === undefined || n >= 20) continue;
+          n++;
+          const { latitude: lat, longitude: lon } = record.coords;
+          const w = 3 * pxToMercator;
+          specs.push({
+            id: `dbg-h-${record.id}`,
+            kind: 'line',
+            coords: [
+              { latitude: lat, longitude: lon - d },
+              { latitude: lat, longitude: lon },
+              { latitude: lat, longitude: lon + d },
+            ],
+            color: [0, 0, 1, 1],
+            widthMeters: w,
+          });
+          specs.push({
+            id: `dbg-v-${record.id}`,
+            kind: 'line',
+            coords: [
+              { latitude: lat - d, longitude: lon },
+              { latitude: lat, longitude: lon },
+              { latitude: lat + d, longitude: lon },
+            ],
+            color: [0, 0, 1, 1],
+            widthMeters: w,
+          });
+        }
+      }
+    }
     return specs;
-  }, [lineDataSet, polygonDataSet, layers, zoom]);
+  }, [lineDataSet, polygonDataSet, pointDataSet, layers, zoom]);
   const dataOverlaySpecsRef = useRef(dataOverlaySpecs);
 
-  // カメラ→mapRegion同期（ジェスチャ終了時・スロットル付き）
+  // カメラ→mapRegion同期（ジェスチャ終了時・スロットル付き）。
+  // dispatchはHomeツリー全体の再レンダリングを起こすため、実質変化がなければ打たない
+  // （GPS追従のanimateCameraが位置更新のたびに呼ばれるため、これがないと常時再レンダリングになる）
   const syncRegion = useCallback(
     (force = false) => {
       const scene = sceneRef.current;
       if (scene === null) return;
       const now = Date.now();
       if (!force && now - lastSyncRef.current < REGION_SYNC_THROTTLE_MS) return;
+      const camera = scene.controller.getState();
+      const prev = lastSyncedCameraRef.current;
+      if (prev !== null) {
+        // 緯度経度の差は画面px換算で見る（ズームが浅いほど大きな移動まで無視してよい）
+        const pxPerDeg = (256 * Math.pow(2, camera.zoom)) / 360;
+        const movedPx = Math.hypot(camera.longitude - prev.longitude, camera.latitude - prev.latitude) * pxPerDeg;
+        if (
+          movedPx < 0.5 &&
+          Math.abs(camera.zoom - prev.zoom) < 0.001 &&
+          Math.abs(camera.heading - prev.heading) < 0.5 &&
+          Math.abs(camera.pitch - prev.pitch) < 0.5
+        ) {
+          return;
+        }
+      }
       lastSyncRef.current = now;
+      lastSyncedCameraRef.current = camera;
       const { width, height } = viewportRef.current;
-      dispatch(editSettingsAction({ mapRegion: cameraToRegion(scene.controller.getState(), width, height) }));
+      dispatch(editSettingsAction({ mapRegion: cameraToRegion(camera, width, height) }));
     },
     [dispatch]
   );
   const syncRegionRef = useRef(syncRegion);
   syncRegionRef.current = syncRegion;
 
-  const onContextCreate = useCallback(
-    (gl: ExpoWebGLRenderingContext) => {
-      // GLコンテキストが再生成された場合（iOSで発生しうる）に旧シーンとループを確実に破棄する
+  const initScene = useCallback(
+    (device: GPUDevice, context: RNCanvasContext, presentationFormat: GPUTextureFormat) => {
+      // デバイスロスト等で作り直す場合に備え、旧シーンとループを確実に破棄する
       if (rafRef.current !== null) {
         cancelAnimationFrame(rafRef.current);
         rafRef.current = null;
       }
       sceneRef.current?.dispose();
-      const scene = new TerrainScene(gl, mapRegion, viewportRef.current.height);
+      const layout = canvasLayoutRef.current;
+      const scene = new TerrainScene({ device, context, presentationFormat }, mapRegion, layout.height);
+      scene.setViewportSize(layout.width, layout.height);
       sceneRef.current = scene;
       setSceneState(scene);
       scene.setLayers(layersRef.current);
       scene.setDataOverlays(dataOverlaySpecsRef.current);
-      // ハートビート再描画: 静止時も一定間隔で強制的に1フレーム描く。
-      // iOSでプレゼントの取りこぼしや描画フラグの固着が起きても、最悪この間隔で自己回復する
-      const HEARTBEAT_MS = 500;
-      let lastRenderMs = 0;
       const loop = (t: number) => {
-        const force = t - lastRenderMs > HEARTBEAT_MS;
-        const rendered = scene.frame(t, force);
-        if (rendered) lastRenderMs = t;
+        scene.frame(t, false);
         rafRef.current = requestAnimationFrame(loop);
       };
       rafRef.current = requestAnimationFrame(loop);
@@ -226,8 +292,15 @@ export const HomeTerrain3D = React.memo(({ onHeadingChange }: Props) => {
       ) => {
         scene.controller.animateTo(target, duration, performance.now());
         scene.markDirty();
-        // アニメーション完了後にmapRegionへ同期（ズーム表記等の更新）
-        setTimeout(() => syncRegionRef.current(true), duration + 80);
+        // アニメーション完了後にmapRegionへ同期（ズーム表記等の更新）。
+        // GPS追従は位置更新のたびにanimateCameraを呼ぶため、未消化のタイマーがあれば積み増さない。
+        // ここはスロットルを効かせる（force=false）: 追従中に毎回dispatchすると
+        // mapRegionを購読しているHome全体が秒間十数回作り直される
+        if (syncTimerRef.current !== null) return;
+        syncTimerRef.current = setTimeout(() => {
+          syncTimerRef.current = null;
+          syncRegionRef.current(false);
+        }, duration + 80);
       };
       const handle: Terrain3DHandle = {
         isTerrain3D: true,
@@ -252,8 +325,10 @@ export const HomeTerrain3D = React.memo(({ onHeadingChange }: Props) => {
           };
         },
         setCamera: (camera) => animate(camera, 0),
-        rotateBy: (deltaDeg) => animate({ heading: scene.controller.getState().heading + deltaDeg }, 250),
-        pitchBy: (deltaDeg) => animate({ pitch: scene.controller.getState().pitch + deltaDeg }, 250),
+        // 連打で積み上がるよう、進行中のアニメーションの到達点を基準に足す
+        rotateBy: (deltaDeg) => animate({ heading: scene.controller.targetHeading + deltaDeg }, 250),
+        pitchBy: (deltaDeg) => animate({ pitch: scene.controller.targetPitch + deltaDeg }, 250),
+        zoomBy: (deltaZoom) => animate({ zoom: scene.controller.targetZoom + deltaZoom }, 200),
       };
       handleRef.current = handle;
       (mapViewRef as React.MutableRefObject<MapView | MapRef | Terrain3DHandle | null>).current = handle;
@@ -263,9 +338,69 @@ export const HomeTerrain3D = React.memo(({ onHeadingChange }: Props) => {
     []
   );
 
-  // カメラ方位をコンパス盤面へ通知する（描画フレーム毎・間引き付き）
-  const onHeadingChangeRef = useRef(onHeadingChange);
-  onHeadingChangeRef.current = onHeadingChange;
+  /**
+   * 描画バッファをビューの実サイズ（物理ピクセル）へ合わせる。回転・レイアウト変更のたびに呼ぶ。
+   * サイズはonLayoutの実測値を使う（canvas.clientWidthはレイアウト途中で0を返すことがあり、
+   * それを信じると描画バッファが1x1に潰れて画面が真っ黒になる）
+   */
+  const resizeCanvas = useCallback(() => {
+    const gpu = gpuRef.current;
+    const layout = canvasLayoutRef.current;
+    if (gpu === null || layout.width <= 0 || layout.height <= 0) return;
+     
+    const canvas = gpu.context.canvas as any;
+    const width = Math.round(layout.width * PixelRatio.get());
+    const height = Math.round(layout.height * PixelRatio.get());
+    if (canvas.width === width && canvas.height === height) return;
+    canvas.width = width;
+    canvas.height = height;
+    gpu.context.configure({ device: gpu.device, format: gpu.format, alphaMode: 'opaque' });
+    sceneRef.current?.markDirty();
+  }, []);
+
+  const onCanvasLayout = useCallback(
+    (e: LayoutChangeEvent) => {
+      const { width, height } = e.nativeEvent.layout;
+      if (width <= 0 || height <= 0) return;
+      canvasLayoutRef.current = { width, height };
+      // 投影・逆投影は画面全体ではなくキャンバスの実寸を基準にする
+      // （食い違うとドットの位置とタップ位置がずれる）
+      sceneRef.current?.setViewportSize(width, height);
+      setCanvasLaidOut(true);
+      resizeCanvas();
+    },
+    [resizeCanvas]
+  );
+
+  // GPUデバイスとキャンバスコンテキストの初期化（非同期のため、レイアウト確定後）
+  useEffect(() => {
+    if (!canvasLaidOut) return;
+    let cancelled = false;
+    (async () => {
+      const device = await getTerrainDevice();
+      if (cancelled || device === null) return;
+      const context = canvasRef.current?.getContext('webgpu') ?? null;
+      if (cancelled || context === null) return;
+      const format = navigator.gpu.getPreferredCanvasFormat();
+      gpuRef.current = { device, context, format };
+      resizeCanvas();
+      if (cancelled) {
+        gpuRef.current = null;
+        return;
+      }
+      // デバイスを失った場合は作り直す（getTerrainDevice側もキャッシュを捨てている）
+      device.lost.then(() => {
+        if (!cancelled) setDeviceGeneration((n) => n + 1);
+      });
+      initScene(device, context, format);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [canvasLaidOut, deviceGeneration, initScene, resizeCanvas]);
+
+  // カメラ方位をコンパス盤面へ通知する（描画フレーム毎・間引き付き）。
+  // 外部ストア経由なので、再レンダリングはコンパス盤面だけに閉じる
   useEffect(() => {
     if (sceneState === null) return;
     let lastSent = -999;
@@ -277,7 +412,7 @@ export const HomeTerrain3D = React.memo(({ onHeadingChange }: Props) => {
       if (!force && (delta < 1 || now - lastSentMs < 100)) return;
       lastSent = heading;
       lastSentMs = now;
-      onHeadingChangeRef.current?.(heading);
+      terrain3dHeadingStore.set(heading);
     };
     emit(true);
     return sceneState.addFrameListener(() => emit());
@@ -295,22 +430,21 @@ export const HomeTerrain3D = React.memo(({ onHeadingChange }: Props) => {
     sceneRef.current?.setDataOverlays(dataOverlaySpecs);
   }, [dataOverlaySpecs]);
 
-  // ビューポートサイズの変化を反映
-  useEffect(() => {
-    sceneRef.current?.setViewportHeight(windowHeight);
-  }, [windowHeight]);
+  // ビューポートサイズの変化は onLayout（setViewportSize）で反映する。
+  // 画面サイズではなくキャンバスの実寸が要るため、ここでは何もしない
 
-  // バックグラウンドで描画ループを停止（電池対策）
+  // バックグラウンドで描画ループを停止（電池対策）。
+  // 'inactive' は通知センターを開いた等の一時状態（iOSシミュレータではウィンドウが
+  // 最前面でない間ずっとこれになる）で、ここで止めると操作しても描画されなくなるため
+  // 止めるのは 'background' のときだけにする
   useEffect(() => {
     const sub = AppState.addEventListener('change', (state) => {
-      if (state === 'active') {
+      if (state !== 'background') {
         if (rafRef.current === null && sceneRef.current !== null) {
-          // 復帰時もハートビート付きループで再開（onContextCreate側と同じ規律）
-          const HEARTBEAT_MS = 500;
-          let lastRenderMs = 0;
+          // 復帰時はサーフェスが作り直されている場合があるので、描画前にサイズを合わせ直す
+          resizeCanvas();
           const loop = (t: number) => {
-            const force = t - lastRenderMs > HEARTBEAT_MS;
-            if (sceneRef.current?.frame(t, force)) lastRenderMs = t;
+            sceneRef.current?.frame(t, false);
             rafRef.current = requestAnimationFrame(loop);
           };
           sceneRef.current.markDirty();
@@ -322,18 +456,21 @@ export const HomeTerrain3D = React.memo(({ onHeadingChange }: Props) => {
       }
     });
     return () => sub.remove();
-  }, []);
+  }, [resizeCanvas]);
 
   // 破棄
   useEffect(() => {
     return () => {
       if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
+      if (syncTimerRef.current !== null) clearTimeout(syncTimerRef.current);
       // 自分が差し込んだファサードだけを外す（2D復帰時はMapViewのrefが上書きする）
       const refMut = mapViewRef as React.MutableRefObject<MapView | MapRef | Terrain3DHandle | null>;
       if (refMut.current === handleRef.current) refMut.current = null;
       handleRef.current = null;
       sceneRef.current?.dispose();
       sceneRef.current = null;
+      // デバイスは次回の3D表示で再利用するためここでは破棄しない（webgpuSupportが保持）
+      gpuRef.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -353,8 +490,7 @@ export const HomeTerrain3D = React.memo(({ onHeadingChange }: Props) => {
         if (!success) return;
         const scene = sceneRef.current;
         if (!scene) return;
-        const { width, height } = viewportRef.current;
-        const latlon = scene.unprojectToLatLon(e.x, e.y, width, height);
+        const latlon = scene.unprojectToLatLon(e.x, e.y);
         if (latlon === null) return;
         const position = [latlon.longitude, latlon.latitude];
         // ポイントは画面上の距離で先にピックする（描画と同じ投影を使うため、
@@ -366,7 +502,7 @@ export const HomeTerrain3D = React.memo(({ onHeadingChange }: Props) => {
           if (!layer?.visible) continue;
           for (const record of dataSet.data as PointRecordType[]) {
             if (!record.visible || record.coords === undefined) continue;
-            const screen = scene.projectToScreen(record.coords.latitude, record.coords.longitude, width, height);
+            const screen = scene.projectToScreen(record.coords.latitude, record.coords.longitude);
             if (screen === null) continue;
             const d = Math.hypot(screen.x - e.x, screen.y - e.y);
             if (d < bestDp) {
@@ -384,9 +520,15 @@ export const HomeTerrain3D = React.memo(({ onHeadingChange }: Props) => {
           })
           .catch(() => undefined);
       });
+    // 操作中はポイントの再投影などを止めるため、開始・終了をシーンへ知らせる
+    // （onBegin/onFinalizeは失敗した場合も対で呼ばれるのでカウンタが狂わない）
+    const markBegin = () => sceneRef.current?.beginInteraction();
+    const markFinalize = () => sceneRef.current?.endInteraction();
     const pan = Gesture.Pan()
       .runOnJS(true)
       .maxPointers(1)
+      .onBegin(markBegin)
+      .onFinalize(markFinalize)
       .onStart(() => {
         sceneRef.current?.controller.stopInertia();
         infoRef.current.closeVectorTileInfo();
@@ -406,6 +548,8 @@ export const HomeTerrain3D = React.memo(({ onHeadingChange }: Props) => {
       });
     const pinch = Gesture.Pinch()
       .runOnJS(true)
+      .onBegin(markBegin)
+      .onFinalize(markFinalize)
       .onStart(() => infoRef.current.closeVectorTileInfo())
       .onChange((e) => {
         const scene = sceneRef.current;
@@ -416,6 +560,8 @@ export const HomeTerrain3D = React.memo(({ onHeadingChange }: Props) => {
       .onEnd(() => syncRegion(true));
     const rotation = Gesture.Rotation()
       .runOnJS(true)
+      .onBegin(markBegin)
+      .onFinalize(markFinalize)
       .onChange((e) => {
         const scene = sceneRef.current;
         if (!scene) return;
@@ -428,6 +574,8 @@ export const HomeTerrain3D = React.memo(({ onHeadingChange }: Props) => {
       .runOnJS(true)
       .minPointers(2)
       .maxPointers(2)
+      .onBegin(markBegin)
+      .onFinalize(markFinalize)
       .onChange((e) => {
         const scene = sceneRef.current;
         if (!scene) return;
@@ -442,10 +590,15 @@ export const HomeTerrain3D = React.memo(({ onHeadingChange }: Props) => {
 
   return (
     <View style={styles.container}>
+      {/* GestureDetectorはCanvasへ直接付けるとタッチを受け取れないことがあるため、
+          素のViewを挟んでそちらにハンドラを付ける（collapsable=falseでViewを残す） */}
       <GestureDetector gesture={gestures}>
-        <GLView style={styles.gl} onContextCreate={onContextCreate} />
+        <View style={styles.gl} collapsable={false} onLayout={onCanvasLayout}>
+          <Canvas ref={canvasRef} style={styles.gl} />
+        </View>
       </GestureDetector>
       <HomeTerrain3DPoints scene={sceneState} />
+      <HomeTerrain3DPerf />
     </View>
   );
 });

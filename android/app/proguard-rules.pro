@@ -53,10 +53,8 @@
 # expo headless app loader (AndroidManifestのmeta-data経由でClass.forNameされる)
 -keep class expo.modules.adapters.react.apploader.RNHeadlessAppLoader { *; }
 
-# expo-gl (3Dビュー)
-# GLViewはExpoViewを継承せずTextureViewを直接継承するため、expo-modules-core同梱の
-# 「-keepclassmembers class * implements expo.modules.kotlin.views.ExpoView」が当たらない。
-# 生成はViewManagerWrapperのリフレクション経由なのでR8が生成箇所を認識できず、
-# クラスをabstract化して(Context, AppContext)コンストラクタごと削除してしまい、
-# 3D表示時に IllegalStateException: Didn't find a correct constructor で落ちる。
--keep class expo.modules.gl.** { *; }
+# react-native-webgpu (3Dビュー)
+# ネイティブ側はJNIからJavaクラス・メソッドを解決するため、R8に削除・改名されると
+# 3D表示時にリンクエラーで落ちる。
+-keep class com.webgpu.** { *; }
+-dontwarn com.webgpu.**

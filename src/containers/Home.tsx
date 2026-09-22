@@ -66,6 +66,7 @@ import { HomeModalUpdateInfo } from '../components/organisms/HomeModalUpdateInfo
 import { usePointTool } from '../hooks/usePointTool';
 import { useDrawTool } from '../hooks/useDrawTool';
 import { MapViewContext } from '../contexts/MapView';
+import { MapViewStableContext } from '../contexts/MapViewStable';
 import { DrawingToolsContext } from '../contexts/DrawingTools';
 import { PDFExportContext } from '../contexts/PDFExport';
 import { LocationTrackingContext } from '../contexts/LocationTracking';
@@ -3367,6 +3368,13 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     ]
   );
 
+  // 3D地形ビュー向け: 位置・方位を含まない安定値だけのコンテキスト
+  // （MapViewContextはGPS更新のたびに作り直されるため、描画ループを持つ3Dでは使えない）
+  const mapViewStableContextValue = useMemo(
+    () => ({ mapViewRef, zoom, zoomDecimal, onDragMapView }),
+    [mapViewRef, zoom, zoomDecimal, onDragMapView]
+  );
+
   // DrawingToolsContextの値をメモ化（SVG描画要素を除外）
   const drawingToolsContextValue = useMemo(
     () => ({
@@ -3773,6 +3781,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
 
   return (
     <MapViewContext.Provider value={mapViewContextValue}>
+      <MapViewStableContext.Provider value={mapViewStableContextValue}>
       <DrawingToolsContext.Provider value={drawingToolsContextValue}>
         <PDFExportContext.Provider value={pdfExportContextValue}>
           <LocationTrackingContext.Provider value={locationTrackingContextValue}>
@@ -3893,6 +3902,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
           </LocationTrackingContext.Provider>
         </PDFExportContext.Provider>
       </DrawingToolsContext.Provider>
+      </MapViewStableContext.Provider>
     </MapViewContext.Provider>
   );
 }

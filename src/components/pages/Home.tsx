@@ -29,7 +29,7 @@ import { HomeTerrainControl } from '../organisms/HomeTerrainControl';
 import { HomeAttributionText } from '../organisms/HomeAttributionText';
 import { HomeDrawTools } from '../organisms/HomeDrawTools';
 
-import { HomeCompassButton } from '../organisms/HomeCompassButton';
+import { HomeCompassRose } from '../organisms/HomeCompassRose';
 import { HomeAccountButton } from '../organisms/HomeAccountButton';
 
 import { HomeGPSButton } from '../organisms/HomeGPSButton';
@@ -42,6 +42,7 @@ import { useModalYieldingToDialog } from '../molecules/StyledDialog';
 import { t } from '../../i18n/config';
 import { DEM_VIEWSHED_MAP_ID } from '../../constants/DemSources';
 import { useWindow } from '../../hooks/useWindow';
+import { useTerrain3dSupport } from '../../hooks/useTerrain3dSupport';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../store';
 import { getMapGesturesEnabled } from '../../utils/General';
@@ -237,10 +238,6 @@ export default function HomeScreen() {
   // SVGDrawingContext
   const { isPencilTouch } = useContext(SVGDrawingContext);
 
-  // 3Dカメラの方位（コンパス盤面の連動用）。2D中は未使用
-  const [terrain3dHeading, setTerrain3dHeading] = useState(0);
-
-
   // MapViewContext
   const {
     mapViewRef,
@@ -290,6 +287,8 @@ export default function HomeScreen() {
   const layers = useSelector((state: RootState) => state.layers);
   const insets = useSafeAreaInsets();
   const { mapRegion, windowHeight, isLandscape, windowWidth } = useWindow();
+  // WebGPU非対応端末（Vulkanのない古いAndroid等）では3Dボタンを出さない
+  const terrain3dSupported = useTerrain3dSupport();
   const { bounds } = useViewportBounds(mapRegion);
 
   const navigationHeaderHeight = useMemo(
@@ -559,7 +558,7 @@ export default function HomeScreen() {
           {!isTerrainActive && isDrawLineVisible && <SvgView />}
 
           {/************** 3D地形ビュー（isTerrainActive時はMapViewと差し替え） ****************** */}
-          {isTerrainActive && <HomeTerrain3D onHeadingChange={setTerrain3dHeading} />}
+          {isTerrainActive && <HomeTerrain3D />}
           {!isTerrainActive && (
           <MapView
             ref={mapViewRef as React.RefObject<MapView>}
@@ -704,7 +703,7 @@ export default function HomeScreen() {
             zoomOut={pressZoomOut}
             showHeader={downloadMode || exportPDFMode}
           />
-          {!(downloadMode || exportPDFMode) && featureButton === 'NONE' && toggleTerrain !== undefined && (
+          {!(downloadMode || exportPDFMode) && featureButton === 'NONE' && toggleTerrain !== undefined && terrain3dSupported && (
             <HomeTerrainControl
               top={insets.top + 245}
               left={13 + insets.left}
@@ -722,9 +721,10 @@ export default function HomeScreen() {
           {downloadMode || exportPDFMode ? null : <HomeAccountButton />}
 
           {!(downloadMode || exportPDFMode) && (
-            <HomeCompassButton
+            <HomeCompassRose
               // 3D中は盤面をカメラの方位と連動させる（Nが画面上の北を指す）
-              azimuth={isTerrainActive ? terrain3dHeading : azimuth}
+              azimuth={azimuth}
+              isTerrainActive={!!isTerrainActive}
               headingUp={headingUp}
               onPressCompass={pressCompass}
               onLongPressCompass={toggleDirectionLine}

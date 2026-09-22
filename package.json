@@ -10,7 +10,7 @@
       "./jestSetupFile.js"
     ],
     "transformIgnorePatterns": [
-      "node_modules/(?!(jest-)?@react-native|react-native|react-clone-referenced-element|@react-native-community|expo(nent)?|@expo(nent)?/.*|react-navigation|@react-navigation/.*|@unimodules/.*|unimodules|sentry-expo|native-base|@sentry/.*|react-redux|immer|@noble/.*|earcut)"
+      "node_modules/(?!(jest-)?@react-native|react-native|react-clone-referenced-element|@react-native-community|expo(nent)?|@expo(nent)?/.*|react-navigation|@react-navigation/.*|@unimodules/.*|unimodules|sentry-expo|native-base|@sentry/.*|react-redux|immer|@noble/.*|earcut|react-native-webgpu)"
     ],
     "testPathIgnorePatterns": [
       "src/__tests__/resources/.*",
@@ -137,7 +137,6 @@
     "expo-document-picker": "~56.0.4",
     "expo-file-system": "~56.0.8",
     "expo-font": "~56.0.6",
-    "expo-gl": "~56.0.6",
     "expo-image-manipulator": "~56.0.18",
     "expo-image-picker": "~56.0.17",
     "expo-linear-gradient": "~56.0.4",
@@ -208,6 +207,7 @@
     "react-native-vector-icons": "^10.1.0",
     "react-native-virgil-crypto": "^0.6.4",
     "react-native-web": "^0.21.2",
+    "react-native-webgpu": "^0.10.2",
     "react-native-worklets": "0.9.2",
     "react-native-zip-archive": "^8.0.1",
     "react-redux": "^9.1.2",

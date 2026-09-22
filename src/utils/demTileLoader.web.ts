@@ -13,6 +13,7 @@ export const loadDemTilePng = async (url: string, _key: string): Promise<ArrayBu
 /** Webにはオフラインダウンロード機能がないため常にnull */
 export const loadLocalDemTilePng = async (_fileUri: string): Promise<ArrayBuffer | null> => null;
 
+
 export type LocalDemTileResult = { kind: 'data'; bytes: ArrayBuffer } | { kind: 'noData' } | { kind: 'missing' };
 
 /** Webにはオフラインダウンロード機能がないため常にmissing */

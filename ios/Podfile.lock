@@ -1253,10 +1253,6 @@ PODS:
     - ExpoModulesCore
   - ExpoFont (56.0.6):
     - ExpoModulesCore
-  - ExpoGL (56.0.6):
-    - ExpoModulesCore
-    - ExpoModulesJSI
-    - ReactCommon/turbomodule/core
   - ExpoImageManipulator (56.0.18):
     - ExpoModulesCore
     - SDWebImageWebPCoder
@@ -3264,6 +3260,27 @@ PODS:
     - ReactCommon/turbomodule/core
     - ReactNativeDependencies
     - Yoga
+  - react-native-webgpu (0.10.2):
+    - hermes-engine
+    - RCTRequired
+    - RCTTypeSafety
+    - React-Core
+    - React-debug
+    - React-Fabric
+    - React-featureflags
+    - React-graphics
+    - React-ImageManager
+    - React-jsi
+    - React-NativeModulesApple
+    - React-RCTFabric
+    - React-renderercss
+    - React-rendererdebug
+    - React-utils
+    - ReactCodegen
+    - ReactCommon/turbomodule/bridging
+    - ReactCommon/turbomodule/core
+    - ReactNativeDependencies
+    - Yoga
   - React-NativeModulesApple (0.85.3):
     - hermes-engine
     - React-callinvoker
@@ -4251,7 +4268,6 @@ DEPENDENCIES:
   - "ExpoDomWebView (from `../node_modules/@expo/dom-webview/ios`)"
   - ExpoFileSystem (from `../node_modules/expo-file-system/ios`)
   - ExpoFont (from `../node_modules/expo-font/ios`)
-  - ExpoGL (from `../node_modules/expo-gl`)
   - ExpoImageManipulator (from `../node_modules/expo-image-manipulator/ios`)
   - ExpoImagePicker (from `../node_modules/expo-image-picker/ios`)
   - ExpoKeepAwake (from `../node_modules/expo-keep-awake/ios`)
@@ -4323,6 +4339,7 @@ DEPENDENCIES:
   - "react-native-netinfo (from `../node_modules/@react-native-community/netinfo`)"
   - react-native-safe-area-context (from `../node_modules/react-native-safe-area-context`)
   - "react-native-slider (from `../node_modules/@react-native-community/slider`)"
+  - react-native-webgpu (from `../node_modules/react-native-webgpu`)
   - React-NativeModulesApple (from `../node_modules/react-native/ReactCommon/react/nativemodule/core/platform/ios`)
   - React-networking (from `../node_modules/react-native/ReactCommon/react/networking`)
   - React-oscompat (from `../node_modules/react-native/ReactCommon/oscompat`)
@@ -4455,8 +4472,6 @@ EXTERNAL SOURCES:
     :path: "../node_modules/expo-file-system/ios"
   ExpoFont:
     :path: "../node_modules/expo-font/ios"
-  ExpoGL:
-    :path: "../node_modules/expo-gl"
   ExpoImageManipulator:
     :path: "../node_modules/expo-image-manipulator/ios"
   ExpoImagePicker:
@@ -4596,6 +4611,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/react-native-safe-area-context"
   react-native-slider:
     :path: "../node_modules/@react-native-community/slider"
+  react-native-webgpu:
+    :path: "../node_modules/react-native-webgpu"
   React-NativeModulesApple:
     :path: "../node_modules/react-native/ReactCommon/react/nativemodule/core/platform/ios"
   React-networking:
@@ -4733,7 +4750,6 @@ SPEC CHECKSUMS:
   ExpoDomWebView: 27205be8754f9992913b8a9a08e65019f2207075
   ExpoFileSystem: 9dc04ec1e11bc3c7b965d7feb2de12c789755c7b
   ExpoFont: 3a9fd9690216be709f109d2bd67d80e1beefdbee
-  ExpoGL: 4ce0ab81188ae14f0cd8bb1c0b4f5b7185249697
   ExpoImageManipulator: 7a3fe772fd8d7ea7e64963ea0cf32eb41e6182de
   ExpoImagePicker: 684cb450a38a6e73813c706848820db0d6db60d0
   ExpoKeepAwake: 359c47a1d9ccc3a3c519bca6e39562cce230c5bb
@@ -4835,6 +4851,7 @@ SPEC CHECKSUMS:
   react-native-netinfo: adec161a2fc40d327f2c1bab7d8c57a91943ab74
   react-native-safe-area-context: 45435943d06e262f946fcc3f4c4de6bfd0c9cbe1
   react-native-slider: d3c62864af399014469359120d9a9a6cbbd9c6f7
+  react-native-webgpu: 5558fa7292704faf998705cf7075291685c82f2e
   React-NativeModulesApple: 0fa5a20ef85fadf1fae5da3ee5c434e2eea6c0c1
   React-networking: 008ca1fb7936195f6ae4f3fedae3596e44b9e62b
   React-oscompat: 563c536fc2d9cece1f54442fa2a3d9f68a9621e3
@@ -4905,6 +4922,6 @@ SPEC CHECKSUMS:
   VSCCrypto: 5924a94432beefae096387521d9910126ca618f2
   Yoga: 9d8e8094a2bed6a175d9e6001a0546d5dae663ee
 
-PODFILE CHECKSUM: 5acbc3784d73964fd984ea5ad1d3408430e5cfe4
+PODFILE CHECKSUM: 567130e704fdee3dd04d82583f9dff412c1a57af
 
 COCOAPODS: 1.16.2

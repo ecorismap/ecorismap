@@ -8,6 +8,7 @@ import { useWindow } from './useWindow';
 import { RegionType } from '../types';
 import { editSettingsAction } from '../modules/settings';
 import { deltaToZoom, zoomToDelta } from '../utils/Coords';
+import { isTerrain3DHandle } from '../utils/terrain3d/types';
 import { useDispatch } from 'react-redux';
 
 export type UseMapViewReturnType = {
@@ -44,6 +45,12 @@ export const useMapView = (mapViewRefObj: React.RefObject<MapView | MapRef | nul
   const zoomIn = useCallback(() => {
     // 3D切替などでrefの中身が差し替わるため、呼び出し時点のcurrentを解決する
     const mapViewRef = mapViewRefObj.current;
+    // 3Dはカメラ側の値を基準にする（mapRegionはカメラ同期の間引きで遅れるため、
+    // 連続で押すと同じズームを指し続けて効かなくなる）
+    if (isTerrain3DHandle(mapViewRef)) {
+      mapViewRef.zoomBy(1);
+      return;
+    }
     const { latitude, longitude, latitudeDelta, longitudeDelta } = mapRegion;
     const coords = {
       latitude: latitude,
@@ -61,6 +68,10 @@ export const useMapView = (mapViewRefObj: React.RefObject<MapView | MapRef | nul
 
   const zoomOut = useCallback(() => {
     const mapViewRef = mapViewRefObj.current;
+    if (isTerrain3DHandle(mapViewRef)) {
+      mapViewRef.zoomBy(-1);
+      return;
+    }
     const { latitude, longitude, latitudeDelta, longitudeDelta } = mapRegion;
     const coords = {
       latitude: latitude,

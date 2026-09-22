@@ -4,16 +4,64 @@
  * ラインは進行方向に直交する帯（リボン）として三角形化し、
  * ポリゴンはearcutで三角形分割する。各頂点の高さは表示中タイルの
  * 標高グリッドからサンプリングし、地形にわずかに浮かせてz-fightingを避ける。
- * WebGL非依存の純関数（jestでテスト可能）。
+ * GPU非依存の純関数（jestでテスト可能）。
  */
 import earcut from 'earcut';
 import { LocationType } from '../../types';
+import { Rgba } from './colorUtils';
 import { lonLatToMercator, MercatorPoint } from './coords';
 
 export interface OverlayGeometryData {
   /** ローカル座標(x=東,y=標高,z=南) */
   positions: Float32Array;
   indices: Uint32Array;
+}
+
+/** 全地物をまとめた1本のバッファ（色は頂点属性） */
+export interface OverlayBatchData {
+  positions: Float32Array;
+  /** 頂点色 RGBA8（シェーダ側で正規化して読む） */
+  colors: Uint8Array;
+  indices: Uint32Array;
+}
+
+/**
+ * 複数の地物ジオメトリを1本のバッファへ連結する。
+ *
+ * 1地物1ドローコールだと最大200件＋輪郭でフレーム毎のGL命令が跳ね上がるため、
+ * 色を頂点属性に落として1ドローコールにまとめる。
+ * 構築は時間スライスで進むので、追加と確定を分けられるようクラスにしてある。
+ */
+export class OverlayBatchBuilder {
+  private positions: number[] = [];
+  private colors: number[] = [];
+  private indices: number[] = [];
+  private vertexCount = 0;
+
+  add(geometry: OverlayGeometryData, color: Rgba): void {
+    const base = this.vertexCount;
+    const r = Math.round(color[0] * 255);
+    const g = Math.round(color[1] * 255);
+    const b = Math.round(color[2] * 255);
+    const a = Math.round(color[3] * 255);
+    for (let i = 0; i < geometry.positions.length; i++) this.positions.push(geometry.positions[i]);
+    for (let i = 0; i < geometry.positions.length / 3; i++) this.colors.push(r, g, b, a);
+    for (let i = 0; i < geometry.indices.length; i++) this.indices.push(base + geometry.indices[i]);
+    this.vertexCount += geometry.positions.length / 3;
+  }
+
+  get isEmpty(): boolean {
+    return this.indices.length === 0;
+  }
+
+  build(): OverlayBatchData | null {
+    if (this.indices.length === 0) return null;
+    return {
+      positions: new Float32Array(this.positions),
+      colors: new Uint8Array(this.colors),
+      indices: new Uint32Array(this.indices),
+    };
+  }
 }
 
 export type ElevationSampler = (latitude: number, longitude: number) => number | null;

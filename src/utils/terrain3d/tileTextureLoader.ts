@@ -4,8 +4,8 @@
  * 解決順:
  *  1. オフライン地図タイル（TILE_FOLDER/{tileMapId}/{z}/{x}/{y}、拡張子なし生バイト）
  *  2. オンラインダウンロード（cacheDirectory/terrain3d_tex、0バイト=404マーカー）
- * いずれもlocalUriとして返し、expo-glのtexImage2Dネイティブデコードに渡す。
- * 拡張子なしURIがデコードできない環境向けに、呼び出し側でpngLite経由の
+ * いずれもlocalUriとして返し、loadTileImageBitmapでネイティブデコードしてテクスチャ化する。
+ * デコードできなかった場合向けに、呼び出し側でpngLite経由の
  * RGBAフォールバック（loadTileAsRgba）を使える。
  *
  * URLテンプレートは署名付与済み（withTileSignature適用済み）を前提とする。
@@ -119,8 +119,21 @@ export const resolveTileTexture = async (layer: LayerSpec, tile: TileKey): Promi
 };
 
 /**
+ * localUriの画像をネイティブデコードしてImageBitmapで返す。
+ *
+ * ファイル拡張子ではなくバイト列の中身で判定されるため、オフラインタイル
+ * （拡張子なし）もJPEGも同じ経路で扱える。デコード不能ならnull（呼び出し側で
+ * loadTileAsRgbaのpngLiteフォールバックへ）。
+ */
+export const loadTileImageBitmap = async (uri: string): Promise<ImageBitmap | null> => {
+  const bytes = await loadLocalDemTilePng(uri);
+  if (bytes === null) return null;
+  return createImageBitmap(bytes).catch(() => null);
+};
+
+/**
  * localUriのPNGをJSデコードしてRGBAで返すフォールバック。
- * expo-glのネイティブデコードが使えない場合（拡張子なしファイル等）に使う。
+ * ネイティブデコードが失敗した場合に使う。
  * JPEGはデコードできないためmissingを返す。
  */
 export const loadTileAsRgba = async (uri: string): Promise<TileTextureSource> => {

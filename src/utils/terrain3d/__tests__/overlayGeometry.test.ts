@@ -1,4 +1,4 @@
-import { buildPolygonFill, buildRibbon } from '../overlayGeometry';
+import { buildPolygonFill, buildRibbon, OverlayBatchBuilder } from '../overlayGeometry';
 import { lonLatToMercator } from '../coords';
 import { parseColorToRgba } from '../colorUtils';
 
@@ -78,6 +78,59 @@ describe('buildPolygonFill', () => {
 
   it('3点未満はnull', () => {
     expect(buildPolygonFill(square.slice(0, 2), undefined, origin, 1, flatSampler)).toBeNull();
+  });
+});
+
+describe('OverlayBatchBuilder', () => {
+  const square = [
+    { latitude: 35.0, longitude: 138.0 },
+    { latitude: 35.0, longitude: 138.001 },
+    { latitude: 35.001, longitude: 138.001 },
+    { latitude: 35.001, longitude: 138.0 },
+  ];
+  const line = [
+    { latitude: 35.0, longitude: 138.0 },
+    { latitude: 35.0, longitude: 138.001 },
+  ];
+
+  it('何も追加しなければnull', () => {
+    const builder = new OverlayBatchBuilder();
+    expect(builder.isEmpty).toBe(true);
+    expect(builder.build()).toBeNull();
+  });
+
+  it('複数地物を連結し、インデックスが頂点オフセット分ずれる', () => {
+    const a = buildRibbon(line, 10, origin, 1, flatSampler)!;
+    const b = buildPolygonFill(square, undefined, origin, 1, flatSampler)!;
+    const builder = new OverlayBatchBuilder();
+    builder.add(a, [1, 0, 0, 1]);
+    builder.add(b, [0, 0, 1, 0.5]);
+    const batch = builder.build()!;
+
+    const aVertices = a.positions.length / 3;
+    expect(batch.positions.length).toBe(a.positions.length + b.positions.length);
+    expect(batch.indices.length).toBe(a.indices.length + b.indices.length);
+    // 1件目はそのまま、2件目は1件目の頂点数だけずれる
+    expect(batch.indices[0]).toBe(a.indices[0]);
+    expect(batch.indices[a.indices.length]).toBe(aVertices + b.indices[0]);
+    // インデックスが全頂点の範囲に収まる
+    const vertexCount = batch.positions.length / 3;
+    for (const i of batch.indices) expect(i).toBeLessThan(vertexCount);
+  });
+
+  it('色は頂点毎にRGBA8で展開される', () => {
+    const a = buildRibbon(line, 10, origin, 1, flatSampler)!;
+    const builder = new OverlayBatchBuilder();
+    builder.add(a, [1, 0, 0, 1]);
+    builder.add(buildPolygonFill(square, undefined, origin, 1, flatSampler)!, [0, 0, 1, 0.5]);
+    const batch = builder.build()!;
+
+    expect(batch.colors.length).toBe((batch.positions.length / 3) * 4);
+    // 1件目の先頭頂点は赤
+    expect(Array.from(batch.colors.slice(0, 4))).toEqual([255, 0, 0, 255]);
+    // 2件目の先頭頂点は半透明の青
+    const offset = (a.positions.length / 3) * 4;
+    expect(Array.from(batch.colors.slice(offset, offset + 4))).toEqual([0, 0, 255, 128]);
   });
 });
 

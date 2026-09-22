@@ -5,6 +5,7 @@ import {
   latToTileYFloat,
   lonLatToMercator,
   lonToTileXFloat,
+  MERCATOR_CIRCUMFERENCE,
   mercatorToLonLat,
   regionToCamera,
   tileSizeMeters,
@@ -102,5 +103,22 @@ describe('elevationScale', () => {
   it('赤道でexaggerationそのまま、高緯度で拡大', () => {
     expect(elevationScale(0, 1.5)).toBeCloseTo(1.5);
     expect(elevationScale(60, 1.5)).toBeCloseTo(3.0, 5);
+  });
+});
+
+describe('メルカトル座標からタイル座標を四則演算で出せる', () => {
+  // 遮蔽判定のレイマーチは1本につき最大96点を見るため、
+  // メルカトル→緯度経度→タイルの往復(exp/atan/log/tan)を避けて直接求めている。
+  // その式が従来の経路と一致することを保証する
+  it.each([
+    [35.6812, 139.7671, 16],
+    [39.5, 141.5, 15],
+    [-33.86, 151.21, 14],
+    [60.0, -135.0, 8],
+  ])('lat=%p lon=%p z=%p で一致する', (lat, lon, z) => {
+    const { mx, my } = lonLatToMercator(lon, lat);
+    const scale = Math.pow(2, z);
+    expect((mx / MERCATOR_CIRCUMFERENCE + 0.5) * scale).toBeCloseTo(lonToTileXFloat(lon, z), 9);
+    expect((0.5 - my / MERCATOR_CIRCUMFERENCE) * scale).toBeCloseTo(latToTileYFloat(lat, z), 9);
   });
 });

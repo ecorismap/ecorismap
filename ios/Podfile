@@ -71,6 +71,9 @@ target 'ecorismap' do
     
     $static_framework += [
       'react-native-gdalwarp',
+      # use_frameworks!だとヘッダがframework内へ移り、cpp/rnwgpu内の相対includeが
+      # 解決できない（RNWebGPUManager.h/GPU.h not found）。static libraryで組む
+      'react-native-webgpu',
       'react-native-maps',
       'Google-Maps-iOS-Utils',
       'GoogleMaps',

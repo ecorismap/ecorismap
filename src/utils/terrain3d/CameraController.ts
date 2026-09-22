@@ -103,6 +103,29 @@ export class CameraController {
     this.state.heading = normalizeHeading(this.state.heading + deltaDeg);
   }
 
+  /**
+   * 進行中のアニメーションの最終方位（アニメーションしていなければ現在方位）。
+   *
+   * ボタン連打の基準をここから取る。補間の途中値を基準にすると、
+   * 押すたびに「まだ回り切っていない位置＋30度」になって回転量が目減りする
+   */
+  get targetHeading(): number {
+    const tween = this.tweens.heading;
+    return tween === undefined ? this.state.heading : normalizeHeading(tween.to);
+  }
+
+  /** 進行中のアニメーションの最終ピッチ（同上） */
+  get targetPitch(): number {
+    const tween = this.tweens.pitch;
+    return tween === undefined ? this.state.pitch : tween.to;
+  }
+
+  /** 進行中のアニメーションの最終ズーム（同上） */
+  get targetZoom(): number {
+    const tween = this.tweens.zoom;
+    return tween === undefined ? this.state.zoom : tween.to;
+  }
+
   pitchBy(deltaDeg: number): void {
     this.cancelTweens();
     this.state.pitch = Math.min(MAX_PITCH_DEG, Math.max(MIN_PITCH_DEG, this.state.pitch + deltaDeg));

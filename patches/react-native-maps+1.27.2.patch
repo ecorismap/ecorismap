@@ -10991,10 +10991,10 @@ index 0000000..9faf374
 +#endif
 diff --git a/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapPMTile.m b/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapPMTile.m
 new file mode 100644
-index 0000000..08341df
+index 0000000..506526f
 --- /dev/null
 +++ b/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapPMTile.m
-@@ -0,0 +1,174 @@
+@@ -0,0 +1,178 @@
 +//
 +//  AIRGoogleMapPMTile.m
 +//
@@ -11124,7 +11124,10 @@ index 0000000..08341df
 +  _styleURL = styleURL;
 +  if (self.tileLayer) {
 +
-+    self.tileLayer.styleURL = [NSURL URLWithString:_styleURL];
++    // NSStringのまま渡す。NSURLを入れるとStyleManagerのinitが
++    // stringByTrimmingCharactersInSet: を呼んだ時点で落ちる（NSURLには無いセレクタ）。
++    // プロパティ宣言もNSStringで、受け側は文字列として扱っている
++    self.tileLayer.styleURL = _styleURL;
 +    [self.tileLayer clearTileCache];
 +    [self updateTileLayer];
 +  }
@@ -11144,7 +11147,8 @@ index 0000000..08341df
 +  if (!tileCachePath)
 +    return;
 +  _tileCachePath = tileCachePath;
-+  self.tileLayer.tileCachePath = [NSURL URLWithString:_tileCachePath];
++  // 同上。受け側は %@ 結合や [NSURL URLWithString:] の引数として文字列で扱う
++  self.tileLayer.tileCachePath = _tileCachePath;
 +  [self.tileLayer clearTileCache];
 +  [self updateTileLayer];
 +}
@@ -12837,10 +12841,10 @@ index 0000000..2708c31
 +#endif
 diff --git a/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapPMTileRasterizer.m b/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapPMTileRasterizer.m
 new file mode 100644
-index 0000000..6738369
+index 0000000..a3e872b
 --- /dev/null
 +++ b/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapPMTileRasterizer.m
-@@ -0,0 +1,147 @@
+@@ -0,0 +1,150 @@
 +//
 +//  AIRGoogleMapPMTileRasterizer.m
 +//
@@ -12927,9 +12931,12 @@ index 0000000..6738369
 +    overlay = [AIRGoogleMapPMTileOverlay new];
 +    overlay.tileTemplate = urlTemplate;
 +    overlay.styleURL = styleURL;
-+    // 2D(AIRGoogleMapPMTile.m:150)と同じ規約: file://付き文字列から作ったNSURLを
-+    // NSString型プロパティへそのまま代入する（overlay内部は%@結合でパスを組み立てるため）
-+    overlay.tileCachePath = tileCachePath ? (NSString *)[NSURL URLWithString:tileCachePath] : nil;
++    // NSStringのまま渡す。NSURLを入れるとベクタPMTilesで落ちる:
++    // StyleManagerのinitが stringByTrimmingCharactersInSet: を呼ぶため
++    // （NSURLには無いセレクタ = unrecognized selectorでSIGABRT）。
++    // overlay内部の他の箇所も [NSURL URLWithString:self.tileCachePath] のように
++    // NSStringとして扱っており、プロパティ宣言もNSStringになっている
++    overlay.tileCachePath = tileCachePath;
 +    overlay.minimumZ = minimumZ;
 +    overlay.maximumZ = maximumZ;
 +    overlay.maximumNativeZ = maximumNativeZ;
@@ -13064,10 +13071,10 @@ index 05b2afd..83cf84e 100644
  #endif
 +
 diff --git a/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapUrlTile.m b/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapUrlTile.m
-index b2e1eea..d512f70 100644
+index b2e1eea..4d1ddb2 100644
 --- a/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapUrlTile.m
 +++ b/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapUrlTile.m
-@@ -6,51 +6,219 @@
+@@ -6,51 +6,221 @@
  #ifdef HAVE_GOOGLE_MAPS
  
  #import "AIRGoogleMapUrlTile.h"
@@ -13261,7 +13268,9 @@ index b2e1eea..d512f70 100644
 +  if (!tileCachePath)
 +    return;
 +  _tileCachePath = tileCachePath;
-+  self.tileLayer.tileCachePath = [NSURL URLWithString:_tileCachePath];
++  // NSStringのまま渡す（プロパティ宣言もNSStringで、受け側は %@ 結合で
++  // パスを組み立てている）。NSURLを入れると文字列メソッドを呼んだ時点で落ちる
++  self.tileLayer.tileCachePath = _tileCachePath;
 +  [self.tileLayer clearTileCache];
 +}
  
