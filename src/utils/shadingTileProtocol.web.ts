@@ -18,6 +18,7 @@ import {
   ShadingOptions,
 } from './terrainShading';
 import { computeColorRelief, computeGebcoRelief, ReliefStyle } from './colorRelief';
+import { assembleWithHalo, cropAndScale } from './reliefTileCompose';
 
 export const SHADING_PROTOCOL = 'terrainshade';
 
@@ -132,69 +133,6 @@ async function loadElevationTile(
   } finally {
     inflight.delete(key);
   }
-}
-
-/**
- * 中央タイルと周囲8タイルから、袖付きの標高バッファを組み立てる。
- * 袖はhalo画素分だけあればよいので、隣接タイルは必要な帯だけコピーする。
- */
-function assembleWithHalo(tiles: (Float32Array | null)[], halo: number): Float32Array {
-  const bufferSize = TILE_SIZE + 2 * halo;
-  const buffer = new Float32Array(bufferSize * bufferSize).fill(NaN);
-
-  for (let ty = -1; ty <= 1; ty++) {
-    for (let tx = -1; tx <= 1; tx++) {
-      const tile = tiles[(ty + 1) * 3 + (tx + 1)];
-      if (!tile) continue;
-
-      // このタイルのうちバッファに入る範囲を、タイル内座標で求める
-      const srcX0 = tx === -1 ? TILE_SIZE - halo : 0;
-      const srcX1 = tx === 1 ? halo : TILE_SIZE;
-      const srcY0 = ty === -1 ? TILE_SIZE - halo : 0;
-      const srcY1 = ty === 1 ? halo : TILE_SIZE;
-      // バッファ上での左上位置
-      const dstX = halo + tx * TILE_SIZE + srcX0;
-      const dstY = halo + ty * TILE_SIZE + srcY0;
-
-      for (let y = srcY0; y < srcY1; y++) {
-        const src = y * TILE_SIZE + srcX0;
-        const dst = (dstY + (y - srcY0)) * bufferSize + dstX;
-        buffer.set(tile.subarray(src, src + (srcX1 - srcX0)), dst);
-      }
-    }
-  }
-  return buffer;
-}
-
-/**
- * 粗いズームで計算した陰影から該当部分を切り出して拡大する。
- * shift はズーム差、offsetX/Y は親タイル内の位置（0 〜 2^shift-1）。
- * 拡大はニアレストネイバー。陰影は連続的なので線形補間でなくても目立たない。
- */
-function cropAndScale(
-  rgba: Uint8ClampedArray,
-  shift: number,
-  offsetX: number,
-  offsetY: number
-): Uint8ClampedArray {
-  const scale = 1 << shift;
-  const cropSize = TILE_SIZE / scale;
-  const originX = offsetX * cropSize;
-  const originY = offsetY * cropSize;
-  const out = new Uint8ClampedArray(TILE_SIZE * TILE_SIZE * 4);
-  for (let y = 0; y < TILE_SIZE; y++) {
-    const srcY = originY + ((y / scale) | 0);
-    for (let x = 0; x < TILE_SIZE; x++) {
-      const srcX = originX + ((x / scale) | 0);
-      const src = (srcY * TILE_SIZE + srcX) * 4;
-      const dst = (y * TILE_SIZE + x) * 4;
-      out[dst] = rgba[src];
-      out[dst + 1] = rgba[src + 1];
-      out[dst + 2] = rgba[src + 2];
-      out[dst + 3] = rgba[src + 3];
-    }
-  }
-  return out;
 }
 
 /**

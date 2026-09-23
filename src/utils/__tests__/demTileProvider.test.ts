@@ -7,6 +7,7 @@ import {
   resolveDemTexturePixels,
 } from '../demTileProvider';
 import { loadDemTilePng, loadDownloadedDemTile } from '../demTileLoader';
+import { BATHYMETRY_EXAGGERATION as K } from '../bathymetryFill';
 
 jest.mock('../demTileLoader', () => ({
   loadDemTilePng: jest.fn(),
@@ -302,5 +303,95 @@ describe('テクスチャと同じ寿命で標高を持ち回れる（3Dのド�
     const pixels = await resolveDemTexturePixels(14, 33, 33);
     expect(pixels!.encoding).toBe('terrarium');
     expect(pixels!.elev![0]).toBeCloseTo(40, 5);
+  });
+});
+
+describe('海底モード（GEBCO表示中の3D）', () => {
+  // terrarium: e + 32768 = r*256 + g
+  const TERRARIUM_M1000: [number, number, number] = [124, 24, 0];
+  const TERRARIUM_M500: [number, number, number] = [126, 12, 0];
+  const TERRARIUM_M2000: [number, number, number] = [120, 48, 0];
+  const TERRARIUM_ZERO: [number, number, number] = [128, 0, 0];
+  const GSI_10M: [number, number, number] = [0, 3, 232];
+  const GSI_NODATA: [number, number, number] = [128, 0, 0];
+
+  /** URLからソースとズームを読み、表に従ってPNGを返すモック */
+  const serve = (table: Record<string, ArrayBuffer | null | 'error'>) =>
+    mockedLoadPng.mockImplementation(async (url: string) => {
+      const source = url.includes('terrarium') ? 'terrarium' : 'gsi';
+      const z = url.match(/\/(\d+)\/\d+\/\d+\.png/)![1];
+      const value = table[`${source}/${z}`];
+      if (value === 'error') throw new Error('network');
+      return value ?? null;
+    });
+
+  const decodeGsi = (data: Uint8Array, i: number) => {
+    const x = data[i * 4] * 65536 + data[i * 4 + 1] * 256 + data[i * 4 + 2];
+    if (x === 8388608) return NaN;
+    return x < 8388608 ? x / 100 : (x - 16777216) / 100;
+  };
+
+  // 海面下は海底モードでBATHYMETRY_EXAGGERATION倍に強調される（期待値は K 倍）
+  it('GSIの海域NoDataをz10祖先のterrariumの海底値で埋め、GSI形式で返す', async () => {
+    serve({ 'gsi/12': buildSplitPng(GSI_NODATA, GSI_10M), 'terrarium/10': buildUniformPng(...TERRARIUM_M1000) });
+    const pixels = await resolveDemTexturePixels(12, 3640, 1600, { bathymetry: true });
+    expect(pixels!.encoding).toBe('gsi');
+    // 左=海（埋めた海底）、右=陸（GSIのまま）
+    expect(pixels!.elev![0]).toBeCloseTo(-1000 * K, 3);
+    expect(pixels!.elev![255]).toBeCloseTo(10, 3);
+    // テクスチャのRGBも同じ値を表す（シェーダはGSI式でデコードする）
+    expect(decodeGsi(pixels!.data, 0)).toBeCloseTo(-1000 * K, 2);
+    expect(decodeGsi(pixels!.data, 255)).toBeCloseTo(10, 2);
+    expect(pixels!.blockMin[0]).toBeCloseTo(-1000 * K, 3);
+    expect(pixels!.blockMax[3]).toBeCloseTo(10, 3);
+  });
+
+  it('z11以上のterrarium（海が0m）は0以下の画素をz10祖先の海底値で埋める', async () => {
+    serve({
+      'gsi/12': null,
+      'terrarium/12': buildUniformPng(...TERRARIUM_ZERO),
+      'terrarium/10': buildUniformPng(...TERRARIUM_M500),
+    });
+    const pixels = await resolveDemTexturePixels(12, 100, 100, { bathymetry: true });
+    expect(pixels!.elev![1000]).toBeCloseTo(-500 * K, 3);
+  });
+
+  it('z10以下のterrariumは負値をクランプせずそのまま使う', async () => {
+    serve({ 'gsi/9': null, 'terrarium/9': buildUniformPng(...TERRARIUM_M2000) });
+    const pixels = await resolveDemTexturePixels(9, 450, 200, { bathymetry: true });
+    expect(pixels!.elev![0]).toBeCloseTo(-2000 * K, 3);
+    expect(decodeGsi(pixels!.data, 0)).toBeCloseTo(-2000 * K, 2);
+    // 祖先（自分自身）の二重取得はしない
+    expect(mockedLoadPng).toHaveBeenCalledTimes(2);
+  });
+
+  it('海底値は0m以下に丸める（粗い祖先が海岸で拾う正値で海面に凸を作らない）', async () => {
+    // 祖先は+50m（terrarium [128,50,0]）
+    serve({ 'gsi/12': buildUniformPng(...GSI_NODATA), 'terrarium/10': buildUniformPng(128, 50, 0) });
+    const pixels = await resolveDemTexturePixels(12, 3640, 1601, { bathymetry: true });
+    expect(pixels!.elev![0]).toBe(0);
+  });
+
+  it('祖先の通信エラーは海が欠けたまま確定させずundefined（再取得させる）', async () => {
+    serve({ 'gsi/12': buildSplitPng(GSI_NODATA, GSI_10M), 'terrarium/10': 'error' });
+    expect(await resolveDemTexturePixels(12, 3640, 1602, { bathymetry: true })).toBeUndefined();
+  });
+
+  it('符号付きの標高をviewshed向けのデコード済みキャッシュへ混ぜない', async () => {
+    serve({
+      'gsi/12': null,
+      'terrarium/12': buildUniformPng(...TERRARIUM_ZERO),
+      'terrarium/10': buildUniformPng(...TERRARIUM_M500),
+    });
+    await resolveDemTexturePixels(12, 200, 200, { bathymetry: true });
+    expect(peekDecodedDemTileFor('terrarium', 12, 200, 200)).toBeUndefined();
+    expect(peekDecodedDemTile(12, 200, 200)).toBeUndefined();
+  });
+
+  it('海底モードでなければ従来どおりterrariumの負値は0mへクランプする', async () => {
+    serve({ 'gsi/9': null, 'terrarium/9': buildUniformPng(...TERRARIUM_M2000) });
+    const pixels = await resolveDemTexturePixels(9, 451, 200);
+    expect(pixels!.encoding).toBe('terrarium');
+    expect(pixels!.elev![0]).toBe(0);
   });
 });
