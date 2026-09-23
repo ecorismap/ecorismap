@@ -954,6 +954,7 @@
       "delete": "delete",
       "finishEditPosition": "back",
       "gps": "GPS",
+      "terrain3d": "3D",
       "infoTool": "select",
       "plotLine": "add",
       "handwritingLine": "pen",

@@ -708,13 +708,16 @@ export default function HomeScreen() {
           />
           {!(downloadMode || exportPDFMode) && featureButton === 'NONE' && toggleTerrain !== undefined && terrain3dSupported && (
             <HomeTerrainControl
-              top={insets.top + 245}
-              left={13 + insets.left}
+              // GPSボタン（top=190、横向き180）の直下に同じ丸ボタンとして並べる
+              top={insets.top + (isLandscape ? 230 : 240)}
+              left={9 + insets.left}
               isTerrainActive={isTerrainActive ?? false}
               toggleTerrain={toggleTerrain}
             />
           )}
-          {isTerrainActive && <HomeTerrain3DButtons top={insets.top + 285} left={13 + insets.left} />}
+          {isTerrainActive && (
+            <HomeTerrain3DButtons top={insets.top + (isLandscape ? 280 : 290)} left={10 + insets.left} />
+          )}
 
           {!downloadMode && !exportPDFMode && isShowingProjectButtons && <HomeProjectButtons />}
           {projectName === undefined || downloadMode || exportPDFMode ? null : (
