@@ -5,12 +5,26 @@ EcorisMapプロジェクトのGit運用規約です。
 ## ブランチ戦略
 
 ### メインブランチ
-- `main` - 本番リリース用
+- `main` - 常に最新の開発内容が入り、いつでもリリースできる状態に保つ
+
+大きな機能でも長命ブランチにはせず、完成したら`main`へマージする。
+`main`を止めて別ブランチを進めると、小さな修正を両方へ入れる羽目になる。
 
 ### 開発ブランチ
 - `feature/*` - 新機能開発
 - `fix/*` - バグ修正
 - `refactor/*` - リファクタリング
+- `release/*` - リリース直前の仕上げ（バージョン更新・CHANGELOG・更新情報）
+- `hotfix/*` - 出荷済みバージョンへの緊急修正（リリースタグから切る）
+
+### リリースタグ
+リリースを`main`へマージしたら、その地点に注釈付きタグを打つ:
+```bash
+git tag -a v0.6.1 -m "0.6.1（2026-09-20リリース）"
+```
+モバイルアプリは審査に数日かかり、ユーザーは古い版を使い続ける。
+「実際に出荷したコミット」がタグで特定できないと、緊急修正をどこから
+切ればよいか分からなくなる。
 
 ## コミットメッセージ
 
@@ -131,9 +145,40 @@ git commit --no-verify
 - マージ後のプッシュは行わない（プッシュは別途明示的な指示がある場合のみ）
 - マージ済みブランチは削除してよい
 
+### release → main
+- ローカルで`--no-ff`マージし、**マージ地点にタグを打つ**（上記「リリースタグ」）
+
 ### hotfix → main
-- 同様にローカルで`--no-ff`マージ（履歴を保持）
+出荷済みバージョンへの緊急修正は、`main`からではなく**リリースタグから**切る。
+`main`には未リリースの機能が入っているため、そこから切ると出荷していない変更まで
+巻き込んでしまう。
+
+```bash
+git checkout -b hotfix/0.6.2 v0.6.1
+# 修正・バージョン更新・リリース
+git checkout main
+git merge --no-ff hotfix/0.6.2   # 修正をmainへ取り込む
+git tag -a v0.6.2 -m "0.6.2（ホットフィックス）"
+```
+`main`側が大きく進んでいて素直にマージできない場合は、該当コミットだけを
+`git cherry-pick`で取り込む。
 
 ## バージョン更新
 
-セマンティックバージョニング。更新時は`package.json`と`app.json`（Expo）の両方を変更する。
+セマンティックバージョニング。バージョンの実体は**ネイティブ側の2か所**にある:
+
+| プラットフォーム | ファイル | キー |
+|---|---|---|
+| iOS | `ios/ecorismap.xcodeproj/project.pbxproj` | `MARKETING_VERSION`（2箇所） |
+| Android | `android/app/build.gradle` | `versionName` |
+
+ビルド番号は iOS が `CURRENT_PROJECT_VERSION`、Android が `versionCode`
+（環境変数`VERSION_CODE`で上書き可）。
+
+`package.json`と`app.json`の`version`は`1.0.0`のまま使っていない。
+アプリのバージョンとして参照・更新しないこと。
+
+リリース時はあわせて次も更新する:
+- `CHANGELOG.md`（英語）
+- アプリ内の更新情報（`src/components/organisms/HomeModalUpdateInfo.tsx` と
+  `src/i18n/{ja,en}/translation.json`）
