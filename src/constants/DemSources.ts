@@ -37,6 +37,19 @@ export const DEM_DOWNLOAD_MIN_ZOOM = 8;
 export const DEM_DOWNLOAD_MAX_ZOOM = 14;
 
 /**
+ * 3D地形の遠景をオフラインで描くため、粗いズームだけ指定範囲の外側も取る。
+ *
+ * 遠景リング（terrain3d/constants.tsのFAR_RING_DELTAS）は近景の数十〜百数十km先まで
+ * 広がるが、DEMはユーザーが選んだ範囲（数km四方が多い）しか端末に無い。
+ * 周辺幅はz8で150km（z16表示時のΔ6リング半径）とし、1段細かくなるごとに半分にする。
+ * リングの半径もタイル枚数固定＝ズーム1段で半分になるので対応が取れ、
+ * 追加枚数もズームによらず各段25枚前後に収まる
+ */
+export const DEM_FAR_MARGIN_KM_AT_MIN_ZOOM = 150;
+/** 周辺も取る最も細かいズーム（z16表示時のΔ3リングが参照するDEM=z11） */
+export const DEM_FAR_MARGIN_MAX_ZOOM = 11;
+
+/**
  * Mapterhorn（terrariumエンコードWebP 512px、z0-15、全球）。
  * 日本は基盤地図情報DEM(1m/5m/10m)、国外はCopernicus GLO-30ほか各国の公開DEM。
  * WebPのため自前デコーダ（pngLite）では読めず、maplibreの内蔵デコード専用。

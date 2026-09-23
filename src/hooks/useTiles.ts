@@ -4,7 +4,6 @@ import { shallowEqual, useDispatch, useSelector, useStore } from 'react-redux';
 import { ulid } from 'ulid';
 import { RootState } from '../store';
 import { editSettingsAction } from '../modules/settings';
-import { tileGridForRegion } from '../utils/Tile';
 import { toDemUrl } from '../utils/terrainShading';
 import { withTileSignature } from '../utils/TileSignature';
 import { AlertAsync, ResumeDownloadConfirmAsync, StopDownloadConfirmAsync } from '../components/molecules/AlertAsync';
@@ -18,6 +17,7 @@ import { Buffer } from 'buffer';
 import { cloneDeep } from 'lodash';
 import {
   boundsFromCoords,
+  downloadTileGrid,
   getTileType,
   getZoomRange,
   listExistingTiles,
@@ -275,7 +275,7 @@ export const useTiles = (
 
       const { minZoom, maxZoom } = getZoomRange(tileType, tileMap, zoom);
 
-      const tiles = tileGridForRegion(downloadRegion, minZoom, maxZoom);
+      const tiles = downloadTileGrid(tileType, downloadRegion, minZoom, maxZoom);
 
       const BATCH_SIZE = 10;
 
@@ -579,7 +579,7 @@ export const useTiles = (
         const { minZoom, maxZoom } = getZoomRange(tileType, currentTileMap, tileRegion.zoom ?? zoom);
 
         // 再開時は現在の地図表示ではなく、保存された領域からタイル集合を復元する
-        const tiles = tileGridForRegion(boundsFromCoords(tileRegion.coords), minZoom, maxZoom);
+        const tiles = downloadTileGrid(tileType, boundsFromCoords(tileRegion.coords), minZoom, maxZoom);
         // 再開時のみ、保存済みタイルをスキップして残りだけダウンロードする
         // demはGSI側サブフォルダで判定（マーカーを最後に書くため「gsi側に在る=ペア処理完了」が成立する）
         const existingTiles = isResume

@@ -92,8 +92,9 @@ jest.mock('../../components/molecules/AlertAsync', () => ({
   ResumeDownloadConfirmAsync: jest.fn(() => Promise.resolve('later')),
 }));
 
-jest.mock('../../utils/Tile', () => ({
-  tileGridForRegion: jest.fn(() => [{ x: 0, y: 0, z: 0 }]),
+jest.mock('../../utils/tileDownloadHelpers', () => ({
+  ...jest.requireActual('../../utils/tileDownloadHelpers'),
+  downloadTileGrid: jest.fn(() => [{ x: 0, y: 0, z: 0 }]),
 }));
 
 jest.mock('pmtiles', () => ({
@@ -289,8 +290,8 @@ describe('useTiles', () => {
       mockSelector = jest.fn().mockReturnValue([pausedRegion]);
       mockTileRegions = [pausedRegion];
       // 全12タイル中10タイルが保存済みの状態
-      const { tileGridForRegion } = jest.requireMock('../../utils/Tile');
-      tileGridForRegion.mockReturnValueOnce(Array.from({ length: 12 }, (_, k) => ({ x: 5, y: k + 1, z: 10 })));
+      const { downloadTileGrid } = jest.requireMock('../../utils/tileDownloadHelpers');
+      downloadTileGrid.mockReturnValueOnce(Array.from({ length: 12 }, (_, k) => ({ x: 5, y: k + 1, z: 10 })));
       (FileSystem.readDirectoryAsync as jest.Mock).mockImplementation((path: string) => {
         if (path.endsWith('/M1')) return Promise.resolve(['10']);
         if (path.endsWith('/M1/10')) return Promise.resolve(['5']);
