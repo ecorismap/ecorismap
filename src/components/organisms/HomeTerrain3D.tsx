@@ -22,6 +22,8 @@ import { MERCATOR_CIRCUMFERENCE } from '../../utils/terrain3d/coords';
 import { getColor, getLineWidthAtZoom, getLineWidth } from '../../utils/Layer';
 import { LineRecordType, PointRecordType, PolygonRecordType } from '../../types';
 import { HomeTerrain3DPoints } from './HomeTerrain3DPoints';
+import { HomeTerrain3DTrack } from './HomeTerrain3DTrack';
+import { HomeTerrain3DCurrentMarker } from './HomeTerrain3DCurrentMarker';
 import { HomeTerrain3DPerf } from './HomeTerrain3DPerf';
 import { DataSelectionContext } from '../../contexts/DataSelection';
 import { AppStateContext } from '../../contexts/AppState';
@@ -659,6 +661,10 @@ export const HomeTerrain3D = React.memo(() => {
         </View>
       </GestureDetector>
       <HomeTerrain3DPoints scene={sceneState} />
+      {/* 軌跡はGPU（シーンのオーバーレイ系統）へ指定を流すだけで、画面出力は持たない */}
+      <HomeTerrain3DTrack scene={sceneState} />
+      {/* 現在地はポイントより手前に置く（2DのCURRENT_MARKER_ZINDEXと同じ扱い） */}
+      <HomeTerrain3DCurrentMarker scene={sceneState} />
       {DEBUG_PERF_HUD && <HomeTerrain3DPerf />}
     </View>
   );

@@ -971,7 +971,8 @@ export class TerrainRenderer {
     rings: TerrainRingDraw[],
     viewProj: Mat4,
     options: TerrainFrameOptions,
-    overlayBatch: TileGpuResources | null = null
+    /** ドレープオーバーレイのバッチ。先頭から順に描くので、前面に出したいものを後ろに置く */
+    overlayBatches: (TileGpuResources | null)[] = []
   ): void {
     const device = this.device;
      
@@ -1025,16 +1026,23 @@ export class TerrainRenderer {
         tileDraws++;
       }
     }
-    // オーバーレイ（ドレープしたライン・ポリゴン）は近景と同じ深度レンジで、その上に描く
-    if (overlayBatch !== null && overlayBatch.indexCount > 0 && overlayBatch.colorBuffer !== null) {
+    // オーバーレイ（ドレープしたライン・ポリゴン）は近景と同じ深度レンジで、その上に描く。
+    // パイプラインとフレームのバインドグループは全バッチ共通なので、設定は1回で済ませる
+    const drawableBatches = overlayBatches.filter(
+      (batch): batch is TileGpuResources & { colorBuffer: GPUBuffer } =>
+        batch !== null && batch.indexCount > 0 && batch.colorBuffer !== null
+    );
+    if (drawableBatches.length > 0) {
       const [minDepth, maxDepth] = depthRanges[ringCount - 1];
       pass.setViewport(0, 0, width, height, minDepth, maxDepth);
       pass.setPipeline(this.overlayPipeline);
       pass.setBindGroup(0, this.frameBindGroup);
-      pass.setVertexBuffer(0, overlayBatch.vertexBuffer);
-      pass.setVertexBuffer(1, overlayBatch.colorBuffer);
-      pass.setIndexBuffer(overlayBatch.indexBuffer, 'uint32');
-      pass.drawIndexed(overlayBatch.indexCount);
+      for (const batch of drawableBatches) {
+        pass.setVertexBuffer(0, batch.vertexBuffer);
+        pass.setVertexBuffer(1, batch.colorBuffer);
+        pass.setIndexBuffer(batch.indexBuffer, 'uint32');
+        pass.drawIndexed(batch.indexCount);
+      }
     }
     pass.end();
     // submit/presentはJSスレッドを同期でブロックする（vsync待ち＋iOSはコマンド

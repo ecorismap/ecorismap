@@ -90,6 +90,42 @@ interface OverlayBuildJob {
   hadMissing: boolean;
 }
 
+/**
+ * ドレープオーバーレイの系統。
+ *
+ * レイヤデータ（最大200地物）・保存済みの軌跡チャンク（数千〜数万点）・記録中の
+ * 軌跡（数百点）は更新の頻度がまるで違う。1系統にまとめると、1秒ごとに伸びる
+ * 軌跡のたびに全部を作り直すことになるため、specsからGPUバッファまでを分ける。
+ * 配列の順が描画順（後ろほど手前）。軌跡はレイヤの地物より上に出す
+ */
+export type OverlayChannelId = 'data' | 'trackSaved' | 'trackLive';
+const OVERLAY_CHANNEL_IDS: readonly OverlayChannelId[] = ['data', 'trackSaved', 'trackLive'];
+
+interface OverlayChannel {
+  specs: DataOverlaySpec[];
+  /** 全地物を連結した1本のGPUバッファ（1ドローコール） */
+  resources: TileGpuResources | null;
+  /** 進行中の構築ジョブ（完成するまで古いresourcesを描き続ける） */
+  job: OverlayBuildJob | null;
+  dirty: boolean;
+  hadMissing: boolean;
+  lastBuildMs: number;
+  /** 前回組んだ時点のタイル世代（新しい標高が来たかの判定用） */
+  lastReadyGen: number;
+  builtZoom: number | null;
+}
+
+const createOverlayChannel = (): OverlayChannel => ({
+  specs: [],
+  resources: null,
+  job: null,
+  dirty: false,
+  hadMissing: false,
+  lastBuildMs: 0,
+  lastReadyGen: -1,
+  builtZoom: null,
+});
+
 /** タイル取得範囲の再計算間隔[ms]（カメラが動いている間） */
 const TILE_UPDATE_INTERVAL_MS = 250;
 
@@ -210,19 +246,20 @@ export class TerrainScene {
     /** 地上からの視点の高さ[m] */
     heightM: number;
   } | null = null;
-  // レイヤデータのドレープオーバーレイ
-  private overlaySpecs: DataOverlaySpec[] = [];
-  /** 全地物を連結した1本のGPUバッファ（1ドローコール） */
-  private overlayResources: TileGpuResources | null = null;
-  /** 進行中の構築ジョブ（完成するまで古いoverlayResourcesを描き続ける） */
-  private overlayJob: OverlayBuildJob | null = null;
+  /** ドレープオーバーレイ（レイヤデータ・保存済み軌跡・記録中の軌跡） */
+  private readonly overlayChannels: Record<OverlayChannelId, OverlayChannel> = {
+    data: createOverlayChannel(),
+    trackSaved: createOverlayChannel(),
+    trackLive: createOverlayChannel(),
+  };
+  /**
+   * 構築スライスのタイマー（全系統で1本）。
+   * 系統ごとにタイマーを持つと1フレーム外の作業が系統数ぶんに増え、
+   * DEMデコードやタイル取得と競合してフレームが落ちる
+   */
   private overlayTimer: ReturnType<typeof setTimeout> | null = null;
-  private overlayDirty = false;
-  private overlayHadMissing = false;
-  private lastOverlayBuildMs = 0;
-  /** 前回オーバーレイを組んだ時点のタイル世代（新しい標高が来たかの判定用） */
-  private lastOverlayReadyGen = -1;
-  private builtOverlayZoom: number | null = null;
+  /** drawFrameへ渡す描画リスト（毎フレーム配列を作らないよう使い回す） */
+  private readonly overlayDrawList: TileGpuResources[] = [];
   /** 直近フレームのビュー射影行列（スクリーン投影用） */
   private lastViewProj: Mat4 | null = null;
   /**
@@ -505,11 +542,20 @@ export class TerrainScene {
     return null;
   }
 
+  /**
+   * 系統ごとにドレープ指定を差し替える。
+   * 系統が分かれているので、軌跡が伸びてもレイヤの地物は作り直されない
+   */
+  setOverlays(channel: OverlayChannelId, specs: DataOverlaySpec[]): void {
+    const target = this.overlayChannels[channel];
+    target.specs = specs;
+    target.dirty = true;
+    this.markDirty();
+  }
+
   /** レイヤデータ（ライン・ポリゴン）のドレープ指定を差し替える */
   setDataOverlays(specs: DataOverlaySpec[]): void {
-    this.overlaySpecs = specs;
-    this.overlayDirty = true;
-    this.markDirty();
+    this.setOverlays('data', specs);
   }
 
   /** 描画フレーム毎に呼ばれるリスナー（ポイントのスクリーン投影更新用） */
@@ -852,48 +898,69 @@ export class TerrainScene {
    * 永久に標高が取れないため、2秒ごとに全地物の再構築が回り続けてしまう
    */
   private maybeRebuildOverlays(nowMs: number): void {
-    const zoomChanged = this.builtOverlayZoom !== this.texZoom;
-    const readyGen = this.tileManager.readyGeneration;
-    const retry =
-      this.overlayHadMissing &&
-      readyGen !== this.lastOverlayReadyGen &&
-      nowMs - this.lastOverlayBuildMs > OVERLAY_RETRY_INTERVAL_MS;
-    if (!this.overlayDirty && !zoomChanged && !retry) return;
-    this.overlayDirty = false;
-    this.builtOverlayZoom = this.texZoom;
-    this.lastOverlayBuildMs = nowMs;
-    this.lastOverlayReadyGen = readyGen;
-    this.startOverlayJob();
+    // ジェスチャ中は起票しない（構築中のリボンは操作の裏で作り直され続けるだけで、
+    // 指を離した瞬間のendInteraction()がmarkDirty()するので次フレームで拾える）
+    if (this.interacting) return;
+    let started = false;
+    for (const id of OVERLAY_CHANNEL_IDS) {
+      if (this.maybeRebuildOverlayChannel(this.overlayChannels[id], nowMs)) started = true;
+    }
+    if (started) this.scheduleOverlaySlice();
   }
 
-  /**
-   * オーバーレイ構築ジョブを開始する。
-   * 最大200地物のリボン化・earcut・GPUバッファ生成を1フレームでまとめて行うと
-   * そのフレームが丸ごと伸びるため、時間スライスして描画フレームの外で進める。
-   * 完成するまでは古いリソースを描き続け、完成時に差し替える（描画の中断がない）。
-   */
-  private startOverlayJob(): void {
-    this.cancelOverlayJob();
-    const job: OverlayBuildJob = {
-      specs: this.overlaySpecs,
+  /** @returns 構築ジョブを起票したか */
+  private maybeRebuildOverlayChannel(channel: OverlayChannel, nowMs: number): boolean {
+    const zoomChanged = channel.builtZoom !== this.texZoom;
+    const readyGen = this.tileManager.readyGeneration;
+    const retry =
+      channel.hadMissing && readyGen !== channel.lastReadyGen && nowMs - channel.lastBuildMs > OVERLAY_RETRY_INTERVAL_MS;
+    if (!channel.dirty && !zoomChanged && !retry) return false;
+    channel.dirty = false;
+    channel.builtZoom = this.texZoom;
+    channel.lastBuildMs = nowMs;
+    channel.lastReadyGen = readyGen;
+    // 最大200地物のリボン化・earcut・GPUバッファ生成を1フレームでまとめて行うと
+    // そのフレームが丸ごと伸びるため、時間スライスして描画フレームの外で進める。
+    // 完成するまでは古いリソースを描き続け、完成時に差し替える（描画の中断がない）
+    channel.job = {
+      specs: channel.specs,
       index: 0,
       batch: new OverlayBatchBuilder(),
       hadMissing: false,
     };
-    this.overlayJob = job;
-    this.scheduleOverlaySlice(job);
+    return true;
   }
 
-  private scheduleOverlaySlice(job: OverlayBuildJob): void {
+  private scheduleOverlaySlice(): void {
+    if (this.overlayTimer !== null) return;
     this.overlayTimer = setTimeout(() => {
       this.overlayTimer = null;
-      this.runOverlaySlice(job);
+      this.runOverlaySlice();
     }, 0);
   }
 
-  private runOverlaySlice(job: OverlayBuildJob): void {
-    if (this.disposed || this.overlayJob !== job) return;
+  /**
+   * 進行中の全系統のジョブを、1回ぶんの時間予算を分け合って進める。
+   *
+   * 系統ごとに予算を与えると、系統数ぶんフレーム外の作業が増えてしまう。
+   * 各系統とも「最低1件は進める」ので、予算を使い切っていても停滞しない
+   */
+  private runOverlaySlice(): void {
+    if (this.disposed) return;
     const deadline = performance.now() + OVERLAY_SLICE_BUDGET_MS;
+    let pending = false;
+    for (const id of OVERLAY_CHANNEL_IDS) {
+      const channel = this.overlayChannels[id];
+      const job = channel.job;
+      if (job === null) continue;
+      this.advanceOverlayJob(channel, job, deadline);
+      if (channel.job !== null) pending = true;
+    }
+    if (pending) this.scheduleOverlaySlice();
+  }
+
+  /** 1系統のジョブをdeadlineまで進め、終わっていればGPUバッファへ確定する */
+  private advanceOverlayJob(channel: OverlayChannel, job: OverlayBuildJob, deadline: number): void {
     const sampler = (lat: number, lon: number): number | null => {
       const v = this.sampleElevation(lat, lon);
       if (v === null) job.hadMissing = true;
@@ -918,10 +985,7 @@ export class TerrainScene {
       if (performance.now() >= deadline) break;
     }
 
-    if (job.index < job.specs.length) {
-      this.scheduleOverlaySlice(job);
-      return;
-    }
+    if (job.index < job.specs.length) return; // 残りは次のスライスで
     // 全地物を1本のバッファにまとめてGPUへ送る（1ドローコール）
     const data = job.batch.build();
     let resources: TileGpuResources | null = null;
@@ -932,20 +996,30 @@ export class TerrainScene {
         resources = null;
       }
     }
-    if (this.overlayResources !== null) this.renderer.deleteTileResources(this.overlayResources);
-    this.overlayResources = resources;
-    this.overlayHadMissing = job.hadMissing;
-    this.overlayJob = null;
+    if (channel.resources !== null) this.renderer.deleteTileResources(channel.resources);
+    channel.resources = resources;
+    channel.hadMissing = job.hadMissing;
+    channel.job = null;
     this.markDirty();
   }
 
-  /** 進行中の構築ジョブを破棄する */
-  private cancelOverlayJob(): void {
+  /** 描画できる系統のGPUバッファを描画順に集める（配列は使い回す） */
+  private collectOverlayDraws(): TileGpuResources[] {
+    this.overlayDrawList.length = 0;
+    for (const id of OVERLAY_CHANNEL_IDS) {
+      const resources = this.overlayChannels[id].resources;
+      if (resources !== null) this.overlayDrawList.push(resources);
+    }
+    return this.overlayDrawList;
+  }
+
+  /** 進行中の構築ジョブをすべて破棄する */
+  private cancelOverlayJobs(): void {
     if (this.overlayTimer !== null) {
       clearTimeout(this.overlayTimer);
       this.overlayTimer = null;
     }
-    this.overlayJob = null;
+    for (const id of OVERLAY_CHANNEL_IDS) this.overlayChannels[id].job = null;
   }
 
   /**
@@ -1085,7 +1159,8 @@ export class TerrainScene {
         ambient: 0.65,
         elevScale: this.elevScale,
       },
-      this.overlayResources
+      // 軌跡はレイヤデータより後に描いて前面に出す（2DのzIndex 100/101と同じ並び）
+      this.collectOverlayDraws()
     );
     if (__DEV__) this.logPerf(perfStartMs);
     this.frameListeners.forEach((listener) => listener());
@@ -1165,7 +1240,7 @@ export class TerrainScene {
    * ブロックする（GPU待ち）ため、合算するとJS計算が重いのかGPUが重いのか判別できないため。
    */
   private logPerf(startMs: number): void {
-    const draws = this.renderer.lastTileDrawCount + (this.overlayResources === null ? 0 : 1);
+    const draws = this.renderer.lastTileDrawCount + this.overlayDrawList.length;
     const p = this.perf;
     if (!p.firstDrawLogged && draws > 0) {
       p.firstDrawLogged = true;
@@ -1216,9 +1291,13 @@ export class TerrainScene {
     terrain3dVistaStore.clear(); // 3Dを抜けたら高さ変更ボタンも消す
     setDemDecodeDeferPredicate(null);
     this.frameListeners.clear();
-    this.cancelOverlayJob();
-    if (this.overlayResources !== null) this.renderer.deleteTileResources(this.overlayResources);
-    this.overlayResources = null;
+    this.cancelOverlayJobs();
+    for (const id of OVERLAY_CHANNEL_IDS) {
+      const channel = this.overlayChannels[id];
+      if (channel.resources !== null) this.renderer.deleteTileResources(channel.resources);
+      channel.resources = null;
+    }
+    this.overlayDrawList.length = 0;
     this.tileManager.dispose();
     this.farTileManagers.forEach((manager) => manager.dispose());
     this.demCache.dispose();
