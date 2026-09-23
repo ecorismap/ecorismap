@@ -138,7 +138,9 @@ maplibre-native/
 # Pickle files
 *.pkl
 
-*.serena/*
+# Serenaのプロジェクト設定とメモリ（ローカルのツール状態）。
+# 以前の`*.serena/*`は「foo.serena/」にしか当たらず効いていなかった
+.serena/
 
 # Firebase keys
 keys/
