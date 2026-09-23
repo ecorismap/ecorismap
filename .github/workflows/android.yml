@@ -1,7 +1,8 @@
 name: Android CI and Deploy
-# 配信が走るのはmainとhotfixだけにする（作業ブランチのpushのたびに内部テストが
-# 更新されると、テスターの手元が未完成の版に入れ替わってしまう）。
-# 任意のブランチを試したいときはworkflow_dispatchで手動実行する
+# 配信が走るのはmain・hotfix・releaseだけにする（作業ブランチのpushのたびに
+# テスターの手元が未完成の版に入れ替わってしまうため）。
+# 配信先はブランチで分かれる: main→クローズドテスト、hotfix/release→内部テスト。
+# 任意のブランチ・任意のトラックへ送りたいときはworkflow_dispatchで手動実行する
 on:
   push:
     branches:
@@ -11,11 +12,12 @@ on:
   workflow_dispatch:
     inputs:
       track:
-        description: '配信先トラック（内部テスト=internal、クローズドテスト=alpha）'
+        description: '配信先トラック（auto=ブランチで決定: main→alpha / その他→internal）'
         required: false
-        default: internal
+        default: auto
         type: choice
         options:
+          - auto
           - internal
           - alpha
           - beta
@@ -121,12 +123,22 @@ jobs:
         run: cd android && ./gradlew bundleRelease
       - name: Determine Play track
         run: |
-          # 手動実行なら指定されたトラック、pushなら内部テストへ。
-          # 0.7.0の開発と0.6.xの修正を同時に配りたい場合は、Play Consoleで
-          # クローズドテスト（alpha）を作ったうえで、片方を手動実行でalphaへ送る
-          TRACK="${{ github.event.inputs.track }}"
-          echo "PLAY_TRACK=${TRACK:-internal}" >> $GITHUB_ENV
-          echo "Play track: ${TRACK:-internal}"
+          # 配信先はブランチで決める。開発中の版と、出荷済みへの修正とで
+          # テスターの手元が入れ替わらないよう、トラックを分ける:
+          # - main（次期バージョンの開発）→ クローズドテスト（alpha）
+          # - hotfix/**（出荷済みへの修正）→ 内部テスト（internal）
+          # - release/**（リリース前の仕上げ）→ 内部テスト（最終確認用）
+          # 手動実行（workflow_dispatch）で指定があればそちらを優先する
+          TRACK_INPUT="${{ github.event.inputs.track }}"
+          if [ -n "$TRACK_INPUT" ] && [ "$TRACK_INPUT" != "auto" ]; then
+            TRACK="$TRACK_INPUT"
+          elif [ "$GITHUB_REF_NAME" = "main" ]; then
+            TRACK="alpha"
+          else
+            TRACK="internal"
+          fi
+          echo "PLAY_TRACK=$TRACK" >> $GITHUB_ENV
+          echo "Branch: $GITHUB_REF_NAME / Play track: $TRACK"
       - name: Setup Google Play Config
         run: |
           echo '${{ secrets.PLAY_STORE_CONFIG_JSON }}' > play-store-config.json
