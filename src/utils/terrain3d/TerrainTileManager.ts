@@ -10,6 +10,7 @@
  */
 import { DEM_RANGE_BLOCKS, DEM_TILE_SIZE } from '../demTileProvider';
 import {
+  MAX_PARENT_TILE_LEVELS,
   MAX_TERRAIN_LAYERS,
   MAX_TILES,
   MESH_SEGMENTS,
@@ -29,6 +30,8 @@ import {
 } from './coords';
 import { clampDemZoom, sampleNearest } from './demProvider';
 import { DemTextureCache, DemTextureEntry } from './demTextureCache';
+import { createLayerTextureRef, LayerTextureRef, releaseLayerTexture, retainLayerTexture } from './layerTextureRef';
+import { parentTileKey, parentTileUv } from './parentTile';
 import { interpolateGridCell } from './sharedGridMesh';
 import { loadTileAsRgba, loadTileImageBitmap, resolveTileTexture } from './tileTextureLoader';
 import { TerrainRenderer, TileDrawPass } from './TerrainRenderer';
@@ -45,6 +48,13 @@ interface TileEntry {
 }
 
 const keyString = (t: TileKey): string => `${t.z}/${t.x}/${t.y}`;
+
+/** 全レイヤ等倍（自前のタイル画像を等倍で引く）のUV矩形 */
+const identityLayerUv = (): Float32Array => {
+  const uv = new Float32Array(MAX_TERRAIN_LAYERS * 4);
+  for (let i = 0; i < MAX_TERRAIN_LAYERS; i++) uv[i * 4 + 2] = 1;
+  return uv;
+};
 
 /**
  * スカート（タイル外周の垂れ壁）の底の高さ[m]。
@@ -129,6 +139,30 @@ export class TerrainTileManager {
   private readyGen = 0;
   /** 開発時の診断: 直近のsampleElevationがどのタイル・DEMから取ったか */
   lastSampleInfo = '';
+  /** 開発時の診断: 親タイルを借りて描き始めたタイルの累計数 */
+  borrowedCount = 0;
+  /** 開発時の診断: 「今この瞬間に親を借りている枚数/自前の絵がある枚数/絵が無い枚数」＋累計 */
+  get textureStats(): string {
+    let borrowed = 0;
+    let own = 0;
+    let none = 0;
+    for (const entry of this.tiles.values()) {
+      const pass = entry.pass;
+      if (pass === null) continue;
+      if (!pass.hasTexture) none++;
+      else if (pass.ownTextures) own++;
+      else borrowed++;
+    }
+    return `${borrowed}/${own}/${none}+${this.borrowedCount}`;
+  }
+  /**
+   * 親タイルのテクスチャを全リング横断で探す。
+   *
+   * 遠景リングはFAR_RING_DELTAS段粗いタイルを常時持っているので、
+   * 近景タイルの親としてそのまま使える。TerrainSceneが全マネージャを束ねて渡す
+   */
+  findLayerTexture: (key: TileKey, layerIndex: number) => LayerTextureRef | null = (key, layerIndex) =>
+    this.findOwnLayerTexture(key, layerIndex);
 
   constructor(
     origin: MercatorPoint,
@@ -199,8 +233,13 @@ export class TerrainTileManager {
     );
     const neededKeys = new Set(needed.map(keyString));
 
-    // 不要タイルの破棄。ズーム切替中は旧ズームのreadyタイルを残す
-    const newZoomReady = needed.every((t) => this.tiles.get(keyString(t))?.state === 'ready');
+    // 不要タイルの破棄。ズーム切替中は旧ズームのreadyタイルを残す。
+    // failedは「待っても来ない」ので完了扱いにする。さもないと1枚の通信失敗で
+    // 旧ズームが無期限に残り（下の分岐でstaleSinceも付かない）、activeZoomも進まなくなる
+    const newZoomReady = needed.every((t) => {
+      const state = this.tiles.get(keyString(t))?.state;
+      return state === 'ready' || state === 'failed';
+    });
     const now = Date.now();
     const retainLimit = Math.ceil(maxTiles * TILE_RETAIN_RATIO);
     // 同じズームで範囲から外れただけのタイルは猶予付きで持っておく（回転の往復で作り直さない）
@@ -379,6 +418,9 @@ export class TerrainTileManager {
     const k = keyString(entry.key);
     const stale = () => gen !== this.generation || this.tiles.get(k) !== entry;
     try {
+      // キュー待ちの間に破棄・世代交代されたジョブは、DEMを取りに行く前に捨てる。
+      // ここを通してしまうと、もう描かないタイルの展開が直列デコードレーンを占有する
+      if (stale()) return;
       // 1) DEM: テクスチャが確保できた時点で地形を描き始める（レイヤテクスチャは待たない）
       const demZoom = clampDemZoom(entry.key.z - this.demZoomOffset);
       const dz = entry.key.z - demZoom;
@@ -395,6 +437,8 @@ export class TerrainTileManager {
       }
       entry.dem = dem;
       entry.pass = this.buildPass(entry.key, dem, demX, demY, dz);
+      // タイル画像の通信を待たずに、親タイルを引き伸ばして先に絵を出す
+      this.borrowParentTextures(entry);
       entry.state = 'ready';
       this.readyGen++;
       this.invalidatePasses();
@@ -410,7 +454,11 @@ export class TerrainTileManager {
         resolved.forEach((t) => t !== null && this.renderer.deleteTexture(t));
         return;
       }
-      entry.pass.layerTextures = resolved;
+      // 借りていた親タイルを返し、自前のテクスチャへ等倍で差し替える
+      this.releaseLayerTextures(entry.pass);
+      entry.pass.layerTextures = resolved.map((t) => (t === null ? null : createLayerTextureRef(t)));
+      entry.pass.layerUv = identityLayerUv();
+      entry.pass.ownTextures = true;
       entry.pass.hasTexture = resolved.some((t) => t !== null);
       // テクスチャが差し替わったのでレンダラーが作ったバインドグループを捨てさせる
       entry.pass.bindGroup = undefined;
@@ -462,9 +510,52 @@ export class TerrainTileManager {
       // 深い縦穴になり、遠景で壁のテクスチャが縦縞として見える）
       noDataElev: minElev,
       demTexture: dem.texture ?? this.renderer.zeroDem,
-      layerTextures: new Array<GPUTexture | null>(this.layers.length).fill(null),
+      layerTextures: new Array<LayerTextureRef | null>(this.layers.length).fill(null),
+      layerUv: identityLayerUv(),
+      ownTextures: false,
       hasTexture: false,
     };
+  }
+
+  /**
+   * このタイルのレイヤテクスチャを、自分の座標で保持しているタイルから探す。
+   * 親を借りた「又貸し」は返さない（孫のUV計算が親のズーム前提で狂うため）
+   */
+  findOwnLayerTexture(key: TileKey, layerIndex: number): LayerTextureRef | null {
+    const entry = this.tiles.get(keyString(key));
+    const pass = entry?.pass;
+    if (pass === undefined || pass === null || !pass.ownTextures) return null;
+    return pass.layerTextures[layerIndex] ?? null;
+  }
+
+  /**
+   * タイル画像が届くまでの仮表示として、親タイル（粗ズーム）のテクスチャを借りる。
+   *
+   * DEMが取れた直後に同期で走るので、タイル画像の通信を待たずに絵が出る。
+   * 親は近景リングに残っている1段上のタイルか、遠景リング（FAR_RING_DELTAS）のタイル。
+   * 見つからなければ従来どおり灰色（fillBase）になる
+   */
+  private borrowParentTextures(entry: TileEntry): void {
+    const pass = entry.pass;
+    if (pass === null || this.layers.length === 0 || MAX_PARENT_TILE_LEVELS <= 0) return;
+    for (let i = 0; i < this.layers.length; i++) {
+      for (let dz = 1; dz <= MAX_PARENT_TILE_LEVELS; dz++) {
+        const parentZ = entry.key.z - dz;
+        if (parentZ < 0) break;
+        const pk = parentTileKey(entry.key.z, entry.key.x, entry.key.y, parentZ);
+        const uv = parentTileUv(entry.key.z, entry.key.x, entry.key.y, parentZ);
+        if (pk === null || uv === null) break;
+        const ref = this.findLayerTexture({ z: parentZ, x: pk.x, y: pk.y }, i);
+        if (ref === null) continue;
+        pass.layerTextures[i] = retainLayerTexture(ref);
+        pass.layerUv[i * 4] = uv.offsetU;
+        pass.layerUv[i * 4 + 1] = uv.offsetV;
+        pass.layerUv[i * 4 + 2] = uv.scale;
+        if (!pass.hasTexture) this.borrowedCount++;
+        pass.hasTexture = true;
+        break;
+      }
+    }
   }
 
   private async resolveTexture(layer: LayerSpec, tile: TileKey): Promise<GPUTexture | null> {
@@ -495,7 +586,14 @@ export class TerrainTileManager {
     // 描き直しと同時にポイントの再投影も走り、古い標高のまま取り残されない
     this.onDirty();
     this.demCache.release(entry.dem);
-    entry.pass?.layerTextures.forEach((t) => t !== null && this.renderer.deleteTexture(t));
+    // 子タイルが親として借りている間は破棄されない（参照が0になったときだけ実際に消える）
+    this.releaseLayerTextures(entry.pass);
+  }
+
+  private releaseLayerTextures(pass: TileDrawPass | null): void {
+    if (pass === null) return;
+    pass.layerTextures.forEach((ref) => releaseLayerTexture(ref, (t) => this.renderer.deleteTexture(t)));
+    pass.layerTextures.fill(null);
   }
 
   private disposeAllTiles(): void {

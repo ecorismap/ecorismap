@@ -7,6 +7,7 @@ type State = {
   showProjectButtons: boolean;
   showMeasureBanner: boolean;
   showViewshedBanner: boolean;
+  showVistaBanner: boolean;
   isEditingObject: boolean;
 };
 
@@ -42,6 +43,13 @@ const visibleRanges = (state: State) => {
       bottom: layout.viewshedBannerTop + HOME_TOP_HEIGHTS.banner,
     });
   }
+  if (state.showVistaBanner) {
+    ranges.push({
+      name: 'vistaBanner',
+      top: layout.vistaBannerTop,
+      bottom: layout.vistaBannerTop + HOME_TOP_HEIGHTS.banner,
+    });
+  }
   //編集レイヤチップは作図タブのときだけ出る。確定バーはさらに編集中だけ
   ranges.push({
     name: 'editingLayer',
@@ -55,26 +63,29 @@ const visibleRanges = (state: State) => {
   return ranges;
 };
 
-//5つの真偽値の全組み合わせ（32通り）を網羅する
+//6つの真偽値の全組み合わせ（64通り）を網羅する
 const BOTH = [false, true];
 const allStates: State[] = BOTH.flatMap((hasProjectLabel) =>
   BOTH.flatMap((showProjectButtons) =>
     BOTH.flatMap((showMeasureBanner) =>
       BOTH.flatMap((showViewshedBanner) =>
-        BOTH.map((isEditingObject) => ({
-          hasProjectLabel,
-          showProjectButtons,
-          showMeasureBanner,
-          showViewshedBanner,
-          isEditingObject,
-        }))
+        BOTH.flatMap((showVistaBanner) =>
+          BOTH.map((isEditingObject) => ({
+            hasProjectLabel,
+            showProjectButtons,
+            showMeasureBanner,
+            showViewshedBanner,
+            showVistaBanner,
+            isEditingObject,
+          }))
+        )
       )
     )
   )
 );
 
 describe('calcHomeTopLayout', () => {
-  it('どの状態でも要素が重ならない（全32通り）', () => {
+  it('どの状態でも要素が重ならない（全64通り）', () => {
     const overlapping = allStates.filter((state) => {
       const ranges = visibleRanges(state);
       return ranges.some((r, i) => i > 0 && r.top < ranges[i - 1].bottom);
@@ -89,6 +100,7 @@ describe('calcHomeTopLayout', () => {
       showProjectButtons: false,
       showMeasureBanner: false,
       showViewshedBanner: false,
+      showVistaBanner: false,
     });
     //プロジェクト外・バナー無しでは編集レイヤチップが一番上に来る
     expect(none.editingLayerTop).toBe(10);
@@ -100,6 +112,7 @@ describe('calcHomeTopLayout', () => {
       showProjectButtons: false,
       showMeasureBanner: false,
       showViewshedBanner: false,
+      showVistaBanner: false,
     });
     //ボタンを閉じているときは、ボタンの高さ分は空けない
     expect(closed.editingLayerTop).toBe(10 + HOME_TOP_HEIGHTS.projectLabel + GAP);
@@ -111,6 +124,7 @@ describe('calcHomeTopLayout', () => {
       hasProjectLabel: true,
       showMeasureBanner: false,
       showViewshedBanner: false,
+      showVistaBanner: false,
     };
     const closed = calcHomeTopLayout({ ...base, showProjectButtons: false });
     const opened = calcHomeTopLayout({ ...base, showProjectButtons: true });
@@ -122,7 +136,7 @@ describe('calcHomeTopLayout', () => {
   });
 
   it('バナーはプロジェクトの表示に合わせて下がり、下の要素を押し下げる', () => {
-    const base = { topInset: 0, showMeasureBanner: true, showViewshedBanner: true };
+    const base = { topInset: 0, showMeasureBanner: true, showViewshedBanner: true, showVistaBanner: false };
     const outside = calcHomeTopLayout({ ...base, hasProjectLabel: false, showProjectButtons: false });
     //プロジェクト外ならバナーが一番上
     expect(outside.measureBannerTop).toBe(10);
@@ -137,7 +151,7 @@ describe('calcHomeTopLayout', () => {
   });
 
   it('測定バナーだけのときは可視領域バナーの分を空けない', () => {
-    const base = { topInset: 0, hasProjectLabel: false, showProjectButtons: false };
+    const base = { topInset: 0, hasProjectLabel: false, showProjectButtons: false, showVistaBanner: false };
     const measureOnly = calcHomeTopLayout({ ...base, showMeasureBanner: true, showViewshedBanner: false });
     const viewshedOnly = calcHomeTopLayout({ ...base, showMeasureBanner: false, showViewshedBanner: true });
     //どちらか一方ならバナーは同じ位置
@@ -151,6 +165,7 @@ describe('calcHomeTopLayout', () => {
       showProjectButtons: true,
       showMeasureBanner: true,
       showViewshedBanner: true,
+      showVistaBanner: false,
     };
     const zero = calcHomeTopLayout({ ...base, topInset: 0 });
     const notch = calcHomeTopLayout({ ...base, topInset: 47 });

@@ -27,7 +27,16 @@ import { DataSelectionContext } from '../../contexts/DataSelection';
 import { AppStateContext } from '../../contexts/AppState';
 import { InfoToolContext } from '../../contexts/InfoTool';
 import { cameraToRegion } from '../../utils/terrain3d/coords';
-import { MAX_TERRAIN_LAYERS, REGION_SYNC_THROTTLE_MS } from '../../utils/terrain3d/constants';
+import {
+  LONG_PRESS_MAX_MOVE_DP,
+  LONG_PRESS_MS,
+  MAX_PITCH_DEG,
+  MAX_TERRAIN_LAYERS,
+  REGION_SYNC_THROTTLE_MS,
+  VISTA_DURATION_MS,
+  VISTA_EYE_HEIGHT_M,
+  VISTA_MAX_PITCH_DEG,
+} from '../../utils/terrain3d/constants';
 import { LayerSpec, Terrain3DCameraState, Terrain3DHandle } from '../../utils/terrain3d/types';
 import { deltaToZoom } from '../../utils/Coords';
 import { useWindow } from '../../hooks/useWindow';
@@ -45,6 +54,14 @@ import { MapRef } from 'react-map-gl/maplibre';
  * 常時は要らないのでfalse。調査するときだけtrueにする
  */
 const DEBUG_POINT_CROSS = false;
+
+/**
+ * 開発時の検証: fps・JS時間・GPU待ち・DEMデコード枚数などを画面に重ねる。
+ *
+ * 実機ではMetroのコンソールを見られない場面が多く、性能や
+ * タイル・標高まわりを調べるときだけtrueにする（計測ログ自体は常に出ている）
+ */
+const DEBUG_PERF_HUD = false;
 
 /** 3Dでドレープ描画するライン・ポリゴンの上限件数（超過分は表示しない） */
 const MAX_OVERLAY_FEATURES = 200;
@@ -102,7 +119,7 @@ export const HomeTerrain3D = React.memo(() => {
   const { mapRegion, windowHeight, windowWidth } = useWindow();
   // 位置・方位を含むMapViewContextではなく安定値だけのコンテキストを購読する
   // （GPS更新のたびに再レンダリングされると描画ループとジェスチャを阻害するため）
-  const { onDragMapView, mapViewRef, zoom } = useContext(MapViewStableContext);
+  const { onDragMapView, mapViewRef, zoom, setMapLocationInfo } = useContext(MapViewStableContext);
   const { pointDataSet, lineDataSet, polygonDataSet } = useContext(DataSelectionContext);
   const tileMaps = useSelector((state: RootState) => state.tileMaps);
   const tileSignatures = useSelector((state: RootState) => state.tileSignatures);
@@ -288,9 +305,11 @@ export const HomeTerrain3D = React.memo(() => {
       // これでズームボタン(useMapView)やGPS追従・ヘディングアップ(useLocation)が3Dでも効く
       const animate = (
         target: { center?: { latitude: number; longitude: number }; heading?: number; zoom?: number; pitch?: number },
-        duration: number
+        duration: number,
+        // 眺望中は水平より上も向けるよう、ピッチ上限を広げる
+        maxPitchDeg = scene.isVistaActive ? VISTA_MAX_PITCH_DEG : MAX_PITCH_DEG
       ) => {
-        scene.controller.animateTo(target, duration, performance.now());
+        scene.controller.animateTo(target, duration, performance.now(), maxPitchDeg);
         scene.markDirty();
         // アニメーション完了後にmapRegionへ同期（ズーム表記等の更新）。
         // GPS追従は位置更新のたびにanimateCameraを呼ぶため、未消化のタイマーがあれば積み増さない。
@@ -325,8 +344,24 @@ export const HomeTerrain3D = React.memo(() => {
           };
         },
         setCamera: (camera) => animate(camera, 0),
-        // 連打で積み上がるよう、進行中のアニメーションの到達点を基準に足す
-        rotateBy: (deltaDeg) => animate({ heading: scene.controller.targetHeading + deltaDeg }, 250),
+        moveToVista: (latitude, longitude) => {
+          const moved = scene.moveToVista(latitude, longitude, VISTA_EYE_HEIGHT_M, performance.now(), VISTA_DURATION_MS);
+          // 移動後の視点をmapRegionへ反映する（ズーム表記や2Dへ戻したときの位置）
+          if (moved) setTimeout(() => syncRegionRef.current(true), VISTA_DURATION_MS + 80);
+          return moved;
+        },
+        changeVistaHeight: (step) => {
+          if (scene.changeVistaHeight(step)) syncRegionRef.current(true);
+        },
+        clearVista: () => {
+          scene.clearVista(performance.now());
+          syncRegionRef.current(true);
+        },
+        // 連打で積み上がるよう、進行中のアニメーションの到達点を基準に足す。
+        // 眺望中はアイコンを「地図がどちらへ回るか」ではなく「自分がどちらへ向き直るか」と
+        // 読むのが自然なので符号を反転する（地図を回すのと首を振るのは逆向きになる）
+        rotateBy: (deltaDeg) =>
+          animate({ heading: scene.controller.targetHeading + (scene.isVistaActive ? -deltaDeg : deltaDeg) }, 250),
         pitchBy: (deltaDeg) => animate({ pitch: scene.controller.targetPitch + deltaDeg }, 250),
         zoomBy: (deltaZoom) => animate({ zoom: scene.controller.targetZoom + deltaZoom }, 200),
       };
@@ -480,8 +515,29 @@ export const HomeTerrain3D = React.memo(() => {
   // タップのポイント画面ピック用（ジェスチャコールバックから最新値を参照）
   const pickDataRef = useRef({ pointDataSet, layers });
   pickDataRef.current = { pointDataSet, layers };
+  // 長押しメニューの表示（ジェスチャのuseMemoを張り替えずに最新のsetterを呼ぶ）
+  const longPressRef = useRef(setMapLocationInfo);
+  longPressRef.current = setMapLocationInfo;
 
   const gestures = useMemo(() => {
+    // 長押し: 2Dと同じ長押しメニュー（HomePoiPopup）をその場に出す。
+    // 閾値・キャンセル条件は2D（containers/Home.tsx）に合わせる。
+    // タップはmaxDuration(300)なので競合せず、指が動けばpanが勝って自動的に消える
+    const longPress = Gesture.LongPress()
+      .runOnJS(true)
+      .minDuration(LONG_PRESS_MS)
+      .maxDistance(LONG_PRESS_MAX_MOVE_DP)
+      .onStart((e) => {
+        const scene = sceneRef.current;
+        if (!scene) return;
+        const latlon = scene.unprojectToLatLon(e.x, e.y);
+        if (latlon === null) return; // 空を指した
+        infoRef.current.closeVectorTileInfo();
+        longPressRef.current({
+          coordinate: { latitude: latlon.latitude, longitude: latlon.longitude },
+          position: { x: e.x, y: e.y },
+        });
+      });
     // タップ: 地形上の地点へ逆投影し、2Dと同じ経路でベクタタイル情報をポップアップ表示する
     const tap = Gesture.Tap()
       .runOnJS(true)
@@ -537,13 +593,18 @@ export const HomeTerrain3D = React.memo(() => {
       .onChange((e) => {
         const scene = sceneRef.current;
         if (!scene) return;
-        scene.controller.panByScreenDelta(e.changeX, e.changeY);
-        scene.markDirty();
+        // 眺望中はその場で見回す（立ち位置は動かさない）
+        if (scene.isVistaActive) scene.lookByScreenDelta(e.changeX, e.changeY);
+        else {
+          scene.controller.panByScreenDelta(e.changeX, e.changeY);
+          scene.markDirty();
+        }
       })
       .onEnd((e) => {
         const scene = sceneRef.current;
         if (!scene) return;
-        scene.controller.startPanInertia(e.velocityX / 1000, e.velocityY / 1000);
+        // 見回しに慣性は付けない（立ち位置が動かないので流れる意味がなく、視界だけが滑る）
+        if (!scene.isVistaActive) scene.controller.startPanInertia(e.velocityX / 1000, e.velocityY / 1000);
         syncRegion(true);
       });
     const pinch = Gesture.Pinch()
@@ -585,7 +646,7 @@ export const HomeTerrain3D = React.memo(() => {
       })
       .onEnd(() => syncRegion(true));
     // タップは移動系ジェスチャとRace構成にする（Simultaneousだとパン中もタップ判定が発火する）
-    return Gesture.Race(tap, Gesture.Simultaneous(pan, pinch, rotation, tilt));
+    return Gesture.Race(longPress, tap, Gesture.Simultaneous(pan, pinch, rotation, tilt));
   }, [onDragMapView, syncRegion]);
 
   return (
@@ -598,7 +659,7 @@ export const HomeTerrain3D = React.memo(() => {
         </View>
       </GestureDetector>
       <HomeTerrain3DPoints scene={sceneState} />
-      <HomeTerrain3DPerf />
+      {DEBUG_PERF_HUD && <HomeTerrain3DPerf />}
     </View>
   );
 });

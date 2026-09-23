@@ -1,6 +1,7 @@
 import React from 'react';
 import MapView from 'react-native-maps';
 import { MapRef } from 'react-map-gl/maplibre';
+import { MapLocationInfoType } from '../types';
 
 /**
  * MapViewContextのうち、位置・方位の更新で変化しない部分だけを切り出したコンテキスト。
@@ -16,6 +17,8 @@ export interface MapViewStableContextType {
   zoom: number;
   zoomDecimal: number;
   onDragMapView: () => void;
+  /** 長押しメニュー（HomePoiPopup）の表示位置と地点。3Dの長押しからも使う */
+  setMapLocationInfo: React.Dispatch<React.SetStateAction<MapLocationInfoType | null>>;
 }
 
 export const MapViewStableContext = React.createContext<MapViewStableContextType>({} as MapViewStableContextType);

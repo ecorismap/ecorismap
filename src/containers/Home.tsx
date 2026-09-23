@@ -3371,8 +3371,8 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
   // 3D地形ビュー向け: 位置・方位を含まない安定値だけのコンテキスト
   // （MapViewContextはGPS更新のたびに作り直されるため、描画ループを持つ3Dでは使えない）
   const mapViewStableContextValue = useMemo(
-    () => ({ mapViewRef, zoom, zoomDecimal, onDragMapView }),
-    [mapViewRef, zoom, zoomDecimal, onDragMapView]
+    () => ({ mapViewRef, zoom, zoomDecimal, onDragMapView, setMapLocationInfo }),
+    [mapViewRef, zoom, zoomDecimal, onDragMapView, setMapLocationInfo]
   );
 
   // DrawingToolsContextの値をメモ化（SVG描画要素を除外）

@@ -14,6 +14,7 @@
  */
 import { RNCanvasContext } from 'react-native-webgpu';
 import { MAX_TERRAIN_LAYERS } from './constants';
+import { LayerTextureRef } from './layerTextureRef';
 import { Mat4 } from './matrices';
 import { OverlayBatchData } from './overlayGeometry';
 import { buildSharedGridMesh } from './sharedGridMesh';
@@ -53,6 +54,11 @@ struct Tile {
   misc: vec4<f32>,
   /** レイヤ毎の不透明度（vec4×2に詰める。uniform配列のstrideが16バイトのため） */
   layerOpacity: array<vec4<f32>, 2>,
+  /**
+   * レイヤ毎のUV矩形 xy=オフセット, z=スケール。
+   * 自前のタイル画像なら(0,0,1)、届くまでは親タイルの部分矩形を指す
+   */
+  layerUv: array<vec4<f32>, ${MAX_TERRAIN_LAYERS}>,
 };
 
 @group(0) @binding(0) var<uniform> frame: Frame;
@@ -143,7 +149,10 @@ fn fs(in: VSOut) -> @location(0) vec4<f32> {
   let layerCount = i32(tile.misc.w);
   for (var i = 0; i < ${MAX_TERRAIN_LAYERS}; i++) {
     if (i >= layerCount) { break; }
-    let t = layerTexel(i, in.uv);
+    // 自前のタイル画像なら等倍、届くまでは親タイルの部分矩形を引く。
+    // 矩形の外側へ滲むのは隣のタイルの絵そのものなので、継ぎ目は出ない
+    let rect = tile.layerUv[i];
+    let t = layerTexel(i, rect.xy + in.uv * rect.z);
     let a = t.a * layerAlpha(i);
     acc = t.rgb * a + acc * (1.0 - a);
     accA = a + accA * (1.0 - a);
@@ -258,7 +267,17 @@ export interface TileDrawPass {
   /** DEM標高テクスチャ（データなしのタイルは0mのゼロテクスチャ） */
   demTexture: GPUTexture;
   /** レイヤスロット（未取得・範囲外はnull→透明ダミーを割り当てる） */
-  layerTextures: (GPUTexture | null)[];
+  layerTextures: (LayerTextureRef | null)[];
+  /**
+   * レイヤ毎のUV矩形（8スロット×[offsetU, offsetV, scale, 予備]）。
+   * 自前のテクスチャなら等倍(0,0,1)、親タイルを借りている間はその部分矩形
+   */
+  layerUv: Float32Array;
+  /**
+   * layerTexturesがこのタイル自身のズームで取得したものか。
+   * 借り物（親タイル）は又貸しできない（孫のUV計算が親のズーム前提で狂うため）
+   */
+  ownTextures: boolean;
   /** 1枚でもレイヤテクスチャを持っているか（遠景の上に重ねる際のスキップ判定） */
   hasTexture: boolean;
   /** テクスチャのバインドグループ（レンダラーが遅延生成してここへ持たせる） */
@@ -341,8 +360,15 @@ const DEPTH_RANGES: [number, number][][] = [
   ],
 ];
 
-/** タイルuniform1件分のfloat数（vec4×3＋不透明度vec4×2） */
-const TILE_UNIFORM_FLOATS = 20;
+/** タイルuniform内でレイヤ毎のUV矩形が始まるfloat位置（vec4×3＋不透明度vec4×2の後ろ） */
+const TILE_LAYER_UV_OFFSET = 20;
+/**
+ * タイルuniform1件分のfloat数（vec4×3＋不透明度vec4×2＋レイヤUV矩形vec4×8）。
+ *
+ * dynamic offsetのアライメント（多くの環境で256バイト）でストライドが切り上がるため、
+ * 52float=208バイトまでは足してもバッファ量・転送量とも変わらない
+ */
+const TILE_UNIFORM_FLOATS = TILE_LAYER_UV_OFFSET + MAX_TERRAIN_LAYERS * 4;
 /** 同時に描けるタイル数の上限（uniformバッファの確保数。近景＋遠景リングの合計に余裕を見る） */
 const MAX_TILE_UNIFORMS = 256;
 /** フレーム共通uniformのfloat数（mat4＋vec4×4） */
@@ -697,7 +723,7 @@ export class TerrainRenderer {
     if (tile.bindGroup !== undefined) return tile.bindGroup;
     const entries: GPUBindGroupEntry[] = [{ binding: 0, resource: tile.demTexture.createView() }];
     for (let i = 0; i < MAX_TERRAIN_LAYERS; i++) {
-      const texture = tile.layerTextures[i] ?? this.emptyLayerTexture;
+      const texture = tile.layerTextures[i]?.texture ?? this.emptyLayerTexture;
       entries.push({ binding: i + 1, resource: texture.createView() });
     }
     const group = this.device.createBindGroup({ layout: this.textureLayout, entries });
@@ -907,10 +933,13 @@ export class TerrainRenderer {
     // 画面外のタイルは描かない（頂点数がフレーム時間に直結するため効果が大きい）
     extractFrustumPlanes(viewProj, this.frustumPlanes);
     const stridePerTile = this.tileStride / 4;
-    const visible: { tile: TileDrawPass; slot: number }[][] = [];
+    const visible: { tile: TileDrawPass; slot: number }[][] = rings.map(() => []);
     let slot = 0;
-    for (const ring of rings) {
-      const ringVisible: { tile: TileDrawPass; slot: number }[] = [];
+    // 近景（ringsの末尾）から先にスロットを割り当てる。
+    // 手前から詰めないと、溢れたときに黙って落ちるのが必ず近景になる
+    for (let r = rings.length - 1; r >= 0; r--) {
+      const ring = rings[r];
+      const ringVisible = visible[r];
       for (const tile of ring.tiles) {
         if (slot >= MAX_TILE_UNIFORMS) break;
         if (isTileCulled(this.frustumPlanes, tile.tileParams, elevScale)) continue;
@@ -918,16 +947,16 @@ export class TerrainRenderer {
         this.tileData.set(tile.tileParams, base);
         this.tileData.set(tile.demParams, base + 4);
         this.tileData[base + 8] = tile.noDataElev;
-        // テクスチャがまだ来ていないタイルは、奥のリングの有無に関わらず灰色地形として不透明に描く
+        // 自前の画像も親タイルも無いタイルだけ、灰色地形として不透明に描く
         // （透過させると背後に何も無い起動直後に地形が消えてしまう）
         this.tileData[base + 9] = ring.fillBase || !tile.hasTexture ? 1 : 0;
         this.tileData[base + 10] = ring.segments;
         this.tileData[base + 11] = ring.layerCount;
         this.tileData.set(ring.layerOpacity, base + 12);
+        this.tileData.set(tile.layerUv, base + TILE_LAYER_UV_OFFSET);
         ringVisible.push({ tile, slot });
         slot++;
       }
-      visible.push(ringVisible);
     }
     if (slot > 0) this.device.queue.writeBuffer(this.tileBuffer, 0, this.tileData, 0, slot * stridePerTile);
     return visible;

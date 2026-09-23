@@ -69,6 +69,15 @@ export interface Terrain3DHandle {
   }>;
   /** jumpTo等の即時移動用（MapView.setCamera互換） */
   setCamera: (camera: { center?: { latitude: number; longitude: number }; zoom?: number; heading?: number }) => void;
+  /**
+   * 指定地点の地上1.7mから真北を水平に見る視点へ移す（長押しメニューの「ここからの眺望」）。
+   * @returns 標高が取れず移動できなかった場合はfalse
+   */
+  moveToVista: (latitude: number, longitude: number) => boolean;
+  /** 眺望の視点の高さを1段上げ下げする（+1で高く、-1で低く） */
+  changeVistaHeight: (step: number) => void;
+  /** 眺望モードを解除して通常の俯瞰へ戻す */
+  clearVista: () => void;
   /** 回転ボタン用。現在headingから相対回転（アニメーション付き） */
   rotateBy: (deltaDeg: number) => void;
   /** 傾きボタン用。現在pitchから相対変更（アニメーション付き） */

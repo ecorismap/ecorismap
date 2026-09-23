@@ -98,6 +98,17 @@ export class CameraController {
     this.state.zoom = clampZoom(this.state.zoom + Math.log2(scale));
   }
 
+  /**
+   * 注視点を外部の計算結果で置き換える（眺望モードで毎フレーム呼ばれる）。
+   *
+   * tweenは止めない。方位・俯角の補間中も注視点はそこから導出し直すため、
+   * ここでキャンセルすると補間が1フレームで終わってしまう
+   */
+  setDerivedCenter(latitude: number, longitude: number): void {
+    this.state.latitude = latitude;
+    this.state.longitude = longitude;
+  }
+
   rotateBy(deltaDeg: number): void {
     this.cancelTweens();
     this.state.heading = normalizeHeading(this.state.heading + deltaDeg);
@@ -126,21 +137,29 @@ export class CameraController {
     return tween === undefined ? this.state.zoom : tween.to;
   }
 
-  pitchBy(deltaDeg: number): void {
+  /**
+   * @param maxPitchDeg ピッチの上限。眺望（水平より上も向ける）だけ広げて渡す
+   */
+  pitchBy(deltaDeg: number, maxPitchDeg: number = MAX_PITCH_DEG): void {
     this.cancelTweens();
-    this.state.pitch = Math.min(MAX_PITCH_DEG, Math.max(MIN_PITCH_DEG, this.state.pitch + deltaDeg));
+    this.state.pitch = Math.min(maxPitchDeg, Math.max(MIN_PITCH_DEG, this.state.pitch + deltaDeg));
   }
 
   /**
    * animateCamera互換のアニメーション。headingは最短方向へ回す。
    * duration 0以下は即時反映。
+   *
+   * @param maxPitchDeg ピッチの上限。眺望（水平に見る＝90度）のように、
+   *   通常の操作上限MAX_PITCH_DEGを超えて倒す必要がある呼び出しだけ指定する
    */
   animateTo(
     target: { center?: { latitude: number; longitude: number }; heading?: number; zoom?: number; pitch?: number },
     durationMs: number,
-    nowMs: number
+    nowMs: number,
+    maxPitchDeg: number = MAX_PITCH_DEG
   ): void {
     this.stopInertia();
+    const clampPitch = (deg: number): number => Math.min(maxPitchDeg, Math.max(MIN_PITCH_DEG, deg));
     if (durationMs <= 0) {
       if (target.center) {
         this.state.latitude = target.center.latitude;
@@ -148,7 +167,7 @@ export class CameraController {
       }
       if (target.heading !== undefined) this.state.heading = normalizeHeading(target.heading);
       if (target.zoom !== undefined) this.state.zoom = clampZoom(target.zoom);
-      if (target.pitch !== undefined) this.state.pitch = Math.min(MAX_PITCH_DEG, Math.max(MIN_PITCH_DEG, target.pitch));
+      if (target.pitch !== undefined) this.state.pitch = clampPitch(target.pitch);
       return;
     }
     if (target.center) {
@@ -165,8 +184,7 @@ export class CameraController {
       this.tweens.zoom = { from: this.state.zoom, to: clampZoom(target.zoom), startMs: nowMs, durationMs };
     }
     if (target.pitch !== undefined) {
-      const to = Math.min(MAX_PITCH_DEG, Math.max(MIN_PITCH_DEG, target.pitch));
-      this.tweens.pitch = { from: this.state.pitch, to, startMs: nowMs, durationMs };
+      this.tweens.pitch = { from: this.state.pitch, to: clampPitch(target.pitch), startMs: nowMs, durationMs };
     }
   }
 

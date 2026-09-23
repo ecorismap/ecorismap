@@ -16,6 +16,7 @@ import { HomeTrackPhotoModal } from '../organisms/HomeTrackPhotoModal';
 import { HomeMeasure } from '../organisms/HomeMeasure';
 import { HomeMeasureBanner } from '../organisms/HomeMeasureBanner';
 import { HomeViewshedBanner } from '../organisms/HomeViewshedBanner';
+import { HomeTerrain3DVistaBanner } from '../organisms/HomeTerrain3DVistaBanner';
 import { HomeViewshedPreview } from '../organisms/HomeViewshedPreview';
 import { HomeSeaLabels } from '../organisms/HomeSeaLabels';
 import { Point } from '../organisms/HomePoint';
@@ -550,9 +551,11 @@ export default function HomeScreen() {
           />
           {!isTerrainActive && <MapMemoView />}
           <HomePopup />
-          {!isTerrainActive && <HomePoiPopup />}
+          {/* 長押しメニューは3Dでも出す（項目はHomePoiPopup側で3D用に出し分ける） */}
+          <HomePoiPopup />
           <HomeMeasureBanner />
           <HomeViewshedBanner />
+          <HomeTerrain3DVistaBanner />
           {!isTerrainActive && <HomeTrackPointPopup />}
           <HomeTrackPhotoModal />
           {!isTerrainActive && isDrawLineVisible && <SvgView />}

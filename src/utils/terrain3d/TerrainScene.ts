@@ -24,6 +24,7 @@ import {
   FAR_RING_FORWARD_BIAS,
   FAR_RING_MESH_SEGMENTS,
   FOG_FAR_RATIO,
+  INITIAL_PITCH_DEG,
   FOG_NEAR_RATIO,
   MAX_FAR_TILES,
   MAX_TEX_ZOOM,
@@ -34,6 +35,10 @@ import {
   SKY_COLOR,
   SUN_ALTITUDE_DEG,
   SUN_AZIMUTH_DEG,
+  VISTA_EYE_HEIGHTS_M,
+  VISTA_MAX_PITCH_DEG,
+  VISTA_NEAR_M,
+  VISTA_PITCH_DEG,
   ZOOM_HYSTERESIS,
 } from './constants';
 import { elevationScale, lonLatToMercator, mercatorToLonLat, MercatorPoint, regionToCamera, tileSizeMeters, zoomToDistance } from './coords';
@@ -55,7 +60,9 @@ import { TerrainTileManager } from './TerrainTileManager';
 import { DemTextureCache } from './demTextureCache';
 import { buildPolygonFill, buildRibbon, OverlayBatchBuilder } from './overlayGeometry';
 import { Rgba } from './colorUtils';
-import { LayerSpec, Terrain3DCameraState } from './types';
+import { LayerSpec, Terrain3DCameraState, TileKey } from './types';
+import { LayerTextureRef } from './layerTextureRef';
+import { terrain3dVistaStore } from './vistaStore';
 import { LocationType } from '../../types';
 
 /** レイヤデータ（ライン・ポリゴン）のドレープ描画指定 */
@@ -187,6 +194,22 @@ export class TerrainScene {
   };
   /** 注視点の標高キャッシュ（メートル） */
   private targetElevation = 0;
+  /**
+   * 眺望モードの状態（通常はnull）。
+   *
+   * orbitカメラは「注視点の地表標高」に高さが従うので、そのままでは見晴らす先の
+   * 地形の高さに視点が引きずられる。眺望中は立ち位置と高さをここに持ち、
+   * 注視点を毎フレーム導出して「その地点に立っている」状態を保つ。
+   * 立ち位置はタイル集合の中心にも使う（注視点は前方はるか先にあるため）
+   */
+  private vista: {
+    latitude: number;
+    longitude: number;
+    /** 立ち位置の地表標高[m] */
+    groundElevation: number;
+    /** 地上からの視点の高さ[m] */
+    heightM: number;
+  } | null = null;
   // レイヤデータのドレープオーバーレイ
   private overlaySpecs: DataOverlaySpec[] = [];
   /** 全地物を連結した1本のGPUバッファ（1ドローコール） */
@@ -267,12 +290,28 @@ export class TerrainScene {
         )
     );
     this.texZoom = Math.min(MAX_TEX_ZOOM, Math.max(MIN_TEX_ZOOM, Math.round(cameraState.zoom)));
+    // タイル画像が届くまでの仮表示に使う親タイルを、リングをまたいで探せるようにする。
+    // 遠景リングは常にFAR_RING_DELTAS段粗いタイルを持っているので、
+    // 近景タイルはDEMが取れた瞬間に遠景の絵を引き伸ばして出せる
+    const lookup = (key: TileKey, layerIndex: number): LayerTextureRef | null => {
+      for (const manager of this.allTileManagers()) {
+        const ref = manager.findOwnLayerTexture(key, layerIndex);
+        if (ref !== null) return ref;
+      }
+      return null;
+    };
+    for (const manager of this.allTileManagers()) manager.findLayerTexture = lookup;
     // 操作中はDEMの展開を始めない（1枚数十msの同期処理で、始めると指が止まる）
     setDemDecodeDeferPredicate(() => this.interacting);
   }
 
   markDirty(): void {
     this.dirty = true;
+  }
+
+  /** 近景＋遠景の全リング（近景を先頭に。親タイルは細かい方から探したい） */
+  private allTileManagers(): TerrainTileManager[] {
+    return [this.tileManager, ...this.farTileManagers];
   }
 
   /**
@@ -329,7 +368,127 @@ export class TerrainScene {
     this.markDirty();
   }
 
+  /**
+   * 指定地点の地上eyeHeightMの高さに立ち、真北を水平に見る視点へ移す（眺望）。
+   *
+   * 立ち位置はvistaに保持し、注視点は毎フレームapplyVistaCameraが
+   * 「視点＝立ち位置」になるよう導出する。ここでは向き（方位・俯角）だけを動かすので、
+   * 到着してから北・水平へ向き直る動きになる。
+   *
+   * @returns 標高が取れず移動できなかった場合はfalse
+   */
+  moveToVista(latitude: number, longitude: number, eyeHeightM: number, nowMs: number, durationMs: number): boolean {
+    const ground = this.sampleElevation(latitude, longitude);
+    if (ground === null) return false;
+    this.vista = { latitude, longitude, groundElevation: ground, heightM: eyeHeightM };
+    this.lastTileUpdateMs = 0; // 足元中心でタイルを取り直す
+    this.controller.animateTo({ heading: 0, pitch: VISTA_PITCH_DEG }, durationMs, nowMs, VISTA_MAX_PITCH_DEG);
+    this.applyVistaCamera();
+    this.publishVista();
+    this.markDirty();
+    return true;
+  }
+
+  /** 眺望中か（ボタンの出し分け・回転の向きの判断に使う） */
+  get isVistaActive(): boolean {
+    return this.vista !== null;
+  }
+
+  /**
+   * 眺望中の1本指ドラッグ＝その場で見回す（移動はしない）。
+   *
+   * 画面のdp移動量を視野角へ換算するので、掴んだ景色が指に付いてくる。
+   * 1画素あたりの角度は縦横とも画角/高さで足りる（画素は正方形）
+   */
+  lookByScreenDelta(dxDp: number, dyDp: number): void {
+    if (this.vista === null || this.viewportHeightDp <= 0) return;
+    const degPerDp = CAMERA_FOV_DEG / this.viewportHeightDp;
+    // 右へドラッグ＝景色が右へ動く＝自分は左を向く（headingは減る）
+    this.controller.rotateBy(-dxDp * degPerDp);
+    // 下へドラッグ＝景色が下へ動く＝見上げる（pitchは90=水平から増える）
+    this.controller.pitchBy(dyDp * degPerDp, VISTA_MAX_PITCH_DEG);
+    this.applyVistaCamera();
+    this.markDirty();
+  }
+
+  /**
+   * 眺望の視点の高さを段階的に上げ下げする（VISTA_EYE_HEIGHTS_Mを1段ずつ）。
+   * @param step +1で高く、-1で低く
+   * @returns 眺望中でない・端に達しているなど、変わらなかった場合はfalse
+   */
+  changeVistaHeight(step: number): boolean {
+    const vista = this.vista;
+    if (vista === null) return false;
+    const index = VISTA_EYE_HEIGHTS_M.indexOf(vista.heightM);
+    const current = index >= 0 ? index : 0;
+    const next = Math.min(VISTA_EYE_HEIGHTS_M.length - 1, Math.max(0, current + step));
+    if (next === current) return false;
+    vista.heightM = VISTA_EYE_HEIGHTS_M[next];
+    this.applyVistaCamera();
+    this.publishVista();
+    this.markDirty();
+    return true;
+  }
+
+  private publishVista(): void {
+    const vista = this.vista;
+    if (vista === null) terrain3dVistaStore.clear();
+    else terrain3dVistaStore.set({ active: true, heightM: vista.heightM });
+  }
+
   /** 指定地点の表示中標高[m]（同期・なければnull）。近景→遠景（内側→外側）の順に参照する */
+
+  /**
+   * 眺望中の注視点を、立っている地点・方位・俯角から導出してカメラへ書き戻す。
+   *
+   * orbitカメラは注視点まわりに視点が回るので、素のままだと回転や傾きで立ち位置がずれる。
+   * 逆に「視点＝立ち位置」を保つ注視点を毎フレーム計算すれば、
+   * 回転＝その場で首を振る／傾き＝見上げ下ろす、になる。
+   *
+   * orbitEye(target, distance, h, p) の逆算:
+   *   注視点 = 視点 + 方位hへ水平にdistance*sin(p)
+   *   注視点の標高 = 視点の標高 - distance*cos(p)/elevScale
+   */
+  private applyVistaCamera(): void {
+    const origin = this.vista;
+    if (origin === null) return;
+    const eyeElevation = origin.groundElevation + origin.heightM;
+    const state = this.controller.getState();
+    const distance = zoomToDistance(state.zoom, this.viewportHeightDp);
+    const pitchRad = (state.pitch * Math.PI) / 180;
+    const headingRad = (state.heading * Math.PI) / 180;
+    const forward = distance * Math.sin(pitchRad);
+    const merc = lonLatToMercator(origin.longitude, origin.latitude);
+    // メルカトル座標でheading方向へforward進める（heading=0が北＝my+）
+    const center = mercatorToLonLat(
+      merc.mx + Math.sin(headingRad) * forward,
+      merc.my + Math.cos(headingRad) * forward
+    );
+    this.controller.setDerivedCenter(center.latitude, center.longitude);
+    this.targetElevation = eyeElevation - (distance * Math.cos(pitchRad)) / this.elevScale;
+  }
+
+  /**
+   * 眺望モードを解除して通常の俯瞰へ戻す（パンなど、その場を離れる操作で呼ぶ）。
+   *
+   * 眺望中の注視点ははるか前方にあり、解除してそのまま地形追従に戻すと
+   * 前方の地形の高さへ視点が飛ぶ。立っていた地点を注視点にし、俯角も通常値へ戻して
+   * 「立っていた場所の俯瞰」という分かる形で抜ける
+   */
+  clearVista(nowMs: number): void {
+    const origin = this.vista;
+    if (origin === null) return;
+    this.vista = null;
+    this.publishVista();
+    this.controller.animateTo(
+      { center: { latitude: origin.latitude, longitude: origin.longitude }, pitch: INITIAL_PITCH_DEG },
+      0,
+      nowMs
+    );
+    this.lastTileUpdateMs = 0; // 次のフレームで注視点の標高とタイル集合を取り直す
+    this.markDirty();
+  }
+
   sampleElevation(latitude: number, longitude: number): number | null {
     const merc = lonLatToMercator(longitude, latitude);
     return this.sampleElevationAtMercator(merc.mx, merc.my);
@@ -458,7 +617,10 @@ export class TerrainScene {
     const canvas = this.context.canvas as any;
     const aspect = canvas.width / canvas.height;
     const far = Math.max(fogFar * 1.5, distance * 3);
-    const proj = mat4Perspective((CAMERA_FOV_DEG * Math.PI) / 180, aspect, Math.max(1, distance * 0.02), far);
+    // 眺望モードは視点が地面から1.7mしかないので、通常のニア面（注視点距離の2%＝数十m）では
+    // 足元から数十m手前までが切り取られ、画面下半分に地形の穴が開く
+    const near = this.vista === null ? Math.max(1, distance * 0.02) : VISTA_NEAR_M;
+    const proj = mat4Perspective((CAMERA_FOV_DEG * Math.PI) / 180, aspect, near, far);
     const viewProj = mat4Multiply(proj, mat4LookAt(eye, target, up));
     this.lastViewProj = viewProj;
     this.lastRayBasis = { basis: rayBasisFromCamera(eye, target, up), aspect };
@@ -810,6 +972,9 @@ export class TerrainScene {
     this.cameraActive = cameraActive;
     if (cameraActive) this.dirty = true;
 
+    // 眺望中は「視点を固定して注視点を回す」ため、注視点をカメラ状態から導出し直す。
+    // これをしないと回転・傾き・ズームのたびに視点が注視点のまわりを動いて立ち位置がずれる
+    this.applyVistaCamera();
     const state = this.controller.getState();
 
     // ズーム切替（ヒステリシス付き）
@@ -860,7 +1025,15 @@ export class TerrainScene {
     const deferredTooLong = nowMs - this.lastTileUpdateMs > TILE_UPDATE_MAX_DEFER_MS;
     if ((cameraSettled || deferredTooLong) && nowMs - this.lastTileUpdateMs > TILE_UPDATE_INTERVAL_MS) {
       this.lastTileUpdateMs = nowMs;
-      this.tileManager.updateVisibleTiles(state.latitude, state.longitude, state.heading, this.texZoom, ringRadius);
+      // 眺望中は足元を中心に集める（注視点は水平に見た先＝はるか前方にあるため）
+      const tileCenter = this.vista ?? { latitude: state.latitude, longitude: state.longitude };
+      this.tileManager.updateVisibleTiles(
+        tileCenter.latitude,
+        tileCenter.longitude,
+        state.heading,
+        this.texZoom,
+        ringRadius
+      );
       // 起動直後は近景を優先し、近景が1枚描けるか一定時間経ってから遠景の取得を始める
       if (!this.farRingsStarted) {
         const elapsed = this.firstFrameMs === null ? 0 : nowMs - this.firstFrameMs;
@@ -869,8 +1042,8 @@ export class TerrainScene {
       if (this.farRingsStarted) {
         for (const ring of farRings) {
           ring.manager.updateVisibleTiles(
-            state.latitude,
-            state.longitude,
+            tileCenter.latitude,
+            tileCenter.longitude,
             state.heading,
             ring.zoom,
             ring.radius,
@@ -878,10 +1051,13 @@ export class TerrainScene {
           );
         }
       }
-      const sampled = this.tileManager.sampleElevation(state.latitude, state.longitude);
-      if (sampled !== null && Math.abs(sampled - this.targetElevation) > 1) {
-        this.targetElevation = sampled;
-        this.dirty = true;
+      // 眺望モード中は視点の高さを固定する（見晴らす先の地形に引きずられない）
+      if (this.vista === null) {
+        const sampled = this.tileManager.sampleElevation(state.latitude, state.longitude);
+        if (sampled !== null && Math.abs(sampled - this.targetElevation) > 1) {
+          this.targetElevation = sampled;
+          this.dirty = true;
+        }
       }
     }
 
@@ -1015,7 +1191,10 @@ export class TerrainScene {
       `${this.projDiag}\n` +
       `worst:${this.projWorstSurf.toFixed(0)}m pts:${this.projSamples.join(' ')} log:${this.overlaySampleLog.size}\n` +
       `${this.describeViewport()}\n` +
-      `dem decode ${dem.count}枚 ${dem.totalMs.toFixed(0)}ms`;
+      `dem decode ${dem.count}枚 ${dem.totalMs.toFixed(0)}ms\n` +
+      `tex ${this.allTileManagers()
+        .map((m) => m.textureStats)
+        .join(' ')} (親/自前/無+累計)`;
     // 実機ではコンソールを見られないことが多いので画面にも出す
     terrain3dPerfStore.set(summary);
     // eslint-disable-next-line no-console
@@ -1033,6 +1212,8 @@ export class TerrainScene {
 
   dispose(): void {
     this.disposed = true;
+    this.vista = null;
+    terrain3dVistaStore.clear(); // 3Dを抜けたら高さ変更ボタンも消す
     setDemDecodeDeferPredicate(null);
     this.frameListeners.clear();
     this.cancelOverlayJob();

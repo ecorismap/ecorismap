@@ -64,6 +64,43 @@ export const TILE_LOAD_CONCURRENCY = 6;
 export const TILE_RETAIN_MS = 4000;
 export const TILE_RETAIN_RATIO = 1.5;
 /**
+ * タイル画像が届くまでに、何段上の親タイルまで遡って仮表示に使うか。
+ *
+ * 0にすると親を探さなくなり、未着タイルは従来どおり灰色になる（不具合時の切り戻し用）。
+ * 3あれば遠景リング（FAR_RING_DELTASの1段目=3）のタイルを親にできる。
+ * 4段＝256画素を16画素まで引き伸ばすことになり、それ以上は絵として見るに堪えない
+ */
+export const MAX_PARENT_TILE_LEVELS = 3;
+/**
+ * 眺望（その地点に立って見る視点）の設定。
+ *
+ * pitchは90＝水平。通常のジェスチャ・ボタンはMAX_PITCH_DEGまでだが、
+ * 眺望は「水平に見る」ことが目的なので真横まで倒す。
+ * ニア面は視点が地上1.7mしかないため小さくする（既定値は注視点距離の2%で数十mある）
+ */
+export const VISTA_EYE_HEIGHT_M = 1.7;
+export const VISTA_PITCH_DEG = 90;
+export const VISTA_NEAR_M = 1;
+/**
+ * 眺望の視点の高さ[m]の段階（ボタンで上下する）。
+ * 立った目線から、丘や木立の上・上空へと見晴らしを上げていける刻みにする
+ */
+export const VISTA_EYE_HEIGHTS_M = [VISTA_EYE_HEIGHT_M, 5, 10, 20, 50, 100, 200, 500, 1000];
+/**
+ * 眺望中のピッチ上限[度]（90=水平）。
+ *
+ * 山頂や稜線を見上げられるよう、水平より上も向けるようにする。
+ * 通常の操作はMAX_PITCH_DEGのままで、ここを使うのは眺望中だけ
+ */
+export const VISTA_MAX_PITCH_DEG = 120;
+export const VISTA_DURATION_MS = 600;
+/**
+ * 長押しメニューを出す閾値。2D（containers/Home.tsxのPanResponder）と揃える。
+ * 誤爆のコストが大きいので、指が動いたら長押しにしない
+ */
+export const LONG_PRESS_MS = 800;
+export const LONG_PRESS_MAX_MOVE_DP = 10;
+/**
  * タイル集合の中心を進行方向へずらす割合（半径に対する比）。
  *
  * 近景は進む先を厚く見せたいので前方へ寄せるが、遠景リングでは0にする。
