@@ -17,6 +17,22 @@ EcorisMapプロジェクトのGit運用規約です。
 - `release/*` - リリース直前の仕上げ（バージョン更新・CHANGELOG・更新情報）
 - `hotfix/*` - 出荷済みバージョンへの緊急修正（リリースタグから切る）
 
+### ブランチと配信先
+pushするとCIがビルドして配信する。**どこへ配信されるかはブランチで決まる**:
+
+| ブランチ | Android（Google Play） | iOS |
+|---|---|---|
+| `main` | クローズドテスト（alpha） | TestFlight |
+| `hotfix/*` | 内部テスト（internal） | TestFlight |
+| `release/*` | 内部テスト（internal） | TestFlight |
+| その他 | 配信しない（テストとLintのみ） | 配信しない |
+
+開発中の次期バージョンと、出荷済みへの修正とで、テスターの手元が入れ替わらない
+ようトラックを分けている。iOSはTestFlightに複数バージョンのビルドが並存できるため
+振り分けは不要（配布グループはApp Store Connectで設定する）。
+
+任意のブランチ・トラックへ送りたいときは、GitHubのActionsから手動実行する。
+
 ### リリースタグ
 リリースを`main`へマージしたら、その地点に注釈付きタグを打つ:
 ```bash
