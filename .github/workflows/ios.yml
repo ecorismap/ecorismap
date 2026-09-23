@@ -1,5 +1,14 @@
 name: iOS Build and Upload
-on: [push, workflow_dispatch]
+# ビルドが走るのはmainとhotfixだけにする（作業ブランチのpushのたびにTestFlightへ
+# 上がると、審査待ちのビルドが積み上がり、CI時間も無駄になる）。
+# 任意のブランチを試したいときはworkflow_dispatchで手動実行する
+on:
+  push:
+    branches:
+      - main
+      - 'hotfix/**'
+      - 'release/**'
+  workflow_dispatch:
 jobs:
   build-and-upload:
     name: Build and Upload to App Store
@@ -86,18 +95,17 @@ jobs:
 
       - name: Set build number
         run: |
-          # App Store Connectは同一バージョンでのビルド番号重複を拒否するため、
-          # Androidと同じくコミット数で単調増加させる（pbxprojの値はビルド時に上書きするだけで変更しない）
-          VERSION_FROM_COMMITS=$(git rev-list --count HEAD)
-          VERSION_FROM_PBXPROJ=$(grep -m1 "CURRENT_PROJECT_VERSION" ios/ecorismap.xcodeproj/project.pbxproj | grep -o '[0-9]\+')
-
-          if [ "$VERSION_FROM_COMMITS" -gt "$VERSION_FROM_PBXPROJ" ]; then
-            BUILD_NUMBER=$VERSION_FROM_COMMITS
-          else
-            BUILD_NUMBER=$((VERSION_FROM_PBXPROJ + 1))
-          fi
+          # App Store Connectは同一バージョンでのビルド番号重複を拒否する。
+          # 以前はコミット数で採番していたが、これはブランチごとに値が変わるため、
+          # リリースタグから切ったhotfixブランチではmainより小さい番号になってしまう。
+          # 実行番号はリポジトリ全体で単調増加し、どのブランチから流しても衝突しない
+          # （pbxprojの値はビルド時に上書きするだけで、ファイルは変更しない）。
+          # 注意: ワークフローファイル名を変えると実行番号が1に戻るので、
+          # その場合はオフセットを上げ直すこと
+          BUILD_NUMBER_OFFSET=3000
+          BUILD_NUMBER=$((BUILD_NUMBER_OFFSET + GITHUB_RUN_NUMBER))
           echo "BUILD_NUMBER=$BUILD_NUMBER" >> $GITHUB_ENV
-          echo "Commit count: $VERSION_FROM_COMMITS / pbxproj: $VERSION_FROM_PBXPROJ / build number: $BUILD_NUMBER"
+          echo "Run number: $GITHUB_RUN_NUMBER / build number: $BUILD_NUMBER"
 
       - name: Update AppConstants with build number
         run: |
