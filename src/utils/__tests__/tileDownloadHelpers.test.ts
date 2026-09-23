@@ -1,7 +1,10 @@
 import { TileMapType, TileRegionType } from '../../types';
 import {
   boundsFromCoords,
+  countDownloadTiles,
   countTilesForRegion,
+  downloadBoundsForZoom,
+  downloadTileGrid,
   DOWNLOAD_TILE_COUNT_LIMIT,
   estimateDownloadTileCount,
   getTileType,
@@ -133,6 +136,49 @@ describe('estimateDownloadTileCount', () => {
 
   it('対象地図がなければ0', () => {
     expect(estimateDownloadTileCount(boundsFromCoords(baseRegion.coords), [], 11)).toBe(0);
+  });
+});
+
+describe('DEMダウンロードの3D遠景用周辺幅', () => {
+  // 蔵王付近の約2km四方
+  const small = { minLon: 140.43, minLat: 38.13, maxLon: 140.45, maxLat: 38.15 };
+
+  it('z8は指定範囲の外側150km前後まで広げる', () => {
+    const b = downloadBoundsForZoom('dem', small, 8);
+    expect(small.minLat - b.minLat).toBeCloseTo(150 / 111.32, 3);
+    expect(b.maxLon - small.maxLon).toBeGreaterThan(150 / 111.32);
+  });
+
+  it('周辺幅はズーム1段ごとに半分になり、z12以上は広げない', () => {
+    const w8 = small.minLat - downloadBoundsForZoom('dem', small, 8).minLat;
+    const w11 = small.minLat - downloadBoundsForZoom('dem', small, 11).minLat;
+    expect(w11).toBeCloseTo(w8 / 8, 6);
+    expect(downloadBoundsForZoom('dem', small, 12)).toBe(small);
+  });
+
+  it('dem以外の地図は広げない', () => {
+    expect(downloadBoundsForZoom('png', small, 8)).toBe(small);
+  });
+
+  it('追加は各段数十枚に収まり、指定範囲のタイルはすべて含む', () => {
+    const tiles = downloadTileGrid('dem', small, 8, 14);
+    const keys = new Set(tiles.map((t) => `${t.z}/${t.x}/${t.y}`));
+    for (const t of tileGridForRegion(small, 8, 14)) expect(keys.has(`${t.z}/${t.x}/${t.y}`)).toBe(true);
+    for (let z = 8; z <= 11; z++) {
+      expect(tiles.filter((t) => t.z === z).length).toBeLessThanOrEqual(36);
+    }
+  });
+
+  it('枚数の見積もりは実列挙と一致する', () => {
+    expect(countDownloadTiles('dem', small, 8, 14)).toBe(downloadTileGrid('dem', small, 8, 14).length);
+    const dem = { ...baseMap, id: 'dem_viewshed' };
+    expect(estimateDownloadTileCount(small, [dem], 14)).toBe(downloadTileGrid('dem', small, 8, 14).length);
+  });
+
+  it('日付変更線・高緯度でも範囲外に出ない', () => {
+    const b = downloadBoundsForZoom('dem', { minLon: 179.5, minLat: 84, maxLon: 179.9, maxLat: 84.5 }, 8);
+    expect(b.maxLon).toBeLessThan(180);
+    expect(b.maxLat).toBeLessThanOrEqual(85);
   });
 });
 

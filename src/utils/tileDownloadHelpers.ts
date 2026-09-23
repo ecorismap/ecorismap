@@ -1,10 +1,16 @@
 import * as FileSystem from 'expo-file-system/legacy';
 import { TileMapType, TileRegionType } from '../types';
 import { TILE_FOLDER } from '../constants/AppConstants';
-import { DEM_DOWNLOAD_MAX_ZOOM, DEM_DOWNLOAD_MIN_ZOOM, DEM_VIEWSHED_MAP_ID } from '../constants/DemSources';
+import {
+  DEM_DOWNLOAD_MAX_ZOOM,
+  DEM_DOWNLOAD_MIN_ZOOM,
+  DEM_FAR_MARGIN_KM_AT_MIN_ZOOM,
+  DEM_FAR_MARGIN_MAX_ZOOM,
+  DEM_VIEWSHED_MAP_ID,
+} from '../constants/DemSources';
 import { getExt } from './General';
 import { isDemProtocolUrl } from './terrainShading';
-import { lonToTileX, latToTileY } from './Tile';
+import { lonToTileX, latToTileY, tilesForZoom } from './Tile';
 
 // hillshadeはrelief://（陰影段彩）も含む。どちらも生のDEMタイルを保存する点で同じ扱い。
 // demは可視領域用の疑似地図（GSI→terrariumフォールバック保存、demTileDownload.ts）
@@ -52,15 +58,56 @@ export const countTilesForRegion = (
   return count;
 };
 
+type Bounds = { minLon: number; minLat: number; maxLon: number; maxLat: number };
+
+const KM_PER_DEG_LAT = 111.32;
+// Webメルカトルの有効範囲。lonToTileXは180度ちょうどで範囲外の番号を返すので手前で止める
+const MAX_MERCATOR_LAT = 85;
+const MAX_LON = 179.9999;
+
+/**
+ * ズームzで実際にダウンロードする範囲。demの粗いズームだけ3D遠景用の周辺幅を足す
+ * （DEM_FAR_MARGIN_KM_AT_MIN_ZOOM参照）。それ以外は指定範囲そのまま
+ */
+export const downloadBoundsForZoom = (tileType: TileType, bounds: Bounds, z: number): Bounds => {
+  if (tileType !== 'dem' || z > DEM_FAR_MARGIN_MAX_ZOOM) return bounds;
+  const marginKm = DEM_FAR_MARGIN_KM_AT_MIN_ZOOM / Math.pow(2, z - DEM_DOWNLOAD_MIN_ZOOM);
+  const dLat = marginKm / KM_PER_DEG_LAT;
+  // 経度方向は範囲の赤道側の緯度で換算する（高緯度側で換算すると幅が過大になる）
+  const lat = Math.min(Math.abs(bounds.minLat), Math.abs(bounds.maxLat));
+  const dLon = marginKm / (KM_PER_DEG_LAT * Math.cos((lat * Math.PI) / 180));
+  return {
+    minLon: Math.max(-180, bounds.minLon - dLon),
+    maxLon: Math.min(MAX_LON, bounds.maxLon + dLon),
+    minLat: Math.max(-MAX_MERCATOR_LAT, bounds.minLat - dLat),
+    maxLat: Math.min(MAX_MERCATOR_LAT, bounds.maxLat + dLat),
+  };
+};
+
+/** ダウンロードするタイル一覧（開始時と再開時で同じ集合になるよう必ずこれを使う） */
+export const downloadTileGrid = (tileType: TileType, bounds: Bounds, minZoom: number, maxZoom: number) => {
+  const tiles: { x: number; y: number; z: number }[] = [];
+  for (let z = minZoom; z <= maxZoom; z++) {
+    tiles.push(...tilesForZoom(downloadBoundsForZoom(tileType, bounds, z), z));
+  }
+  return tiles;
+};
+
+/** downloadTileGridの枚数を配列を作らずに数える */
+export const countDownloadTiles = (tileType: TileType, bounds: Bounds, minZoom: number, maxZoom: number): number => {
+  let count = 0;
+  for (let z = minZoom; z <= maxZoom; z++) {
+    count += countTilesForRegion(downloadBoundsForZoom(tileType, bounds, z), z, z);
+  }
+  return count;
+};
+
 // 対象地図ごとに実際の取得ズーム範囲（getZoomRange）でタイル数を見積もり合算する
-export const estimateDownloadTileCount = (
-  bounds: { minLon: number; minLat: number; maxLon: number; maxLat: number },
-  maps: TileMapType[],
-  zoom: number
-): number =>
+export const estimateDownloadTileCount = (bounds: Bounds, maps: TileMapType[], zoom: number): number =>
   maps.reduce((total, tileMap) => {
-    const { minZoom, maxZoom } = getZoomRange(getTileType(tileMap), tileMap, zoom);
-    return total + countTilesForRegion(bounds, minZoom, maxZoom);
+    const tileType = getTileType(tileMap);
+    const { minZoom, maxZoom } = getZoomRange(tileType, tileMap, zoom);
+    return total + countDownloadTiles(tileType, bounds, minZoom, maxZoom);
   }, 0);
 
 // 保存済みregionの4隅座標からダウンロード範囲を復元する（頂点順序に依存しない）
