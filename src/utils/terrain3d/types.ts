@@ -2,6 +2,7 @@
  * 3D地形エンジンの共通型。
  * エンジン部（src/utils/terrain3d/）はReact非依存の純TSとして実装し、jestでテスト可能にする。
  */
+import type { ReliefStyle } from '../colorRelief';
 
 export interface TileKey {
   z: number;
@@ -31,6 +32,11 @@ export interface LayerSpec {
   maximumZ: number;
   /** タイルY座標が反転（TMS）の場合true */
   flipY: boolean;
+  /**
+   * relief://（標高タイルの段彩）の場合に指定。urlTemplateは接頭辞・#以降を除いた標高タイルURL。
+   * JS側で段彩ラスタを生成して貼る（reliefTexture.ts）
+   */
+  relief?: { style: ReliefStyle };
 }
 
 /** orbitカメラの状態。targetは地表上の注視点 */
@@ -83,10 +89,7 @@ export interface Terrain3DHandle {
    * 一時停止・終了は endReplay。再生中に3Dへ切り替えた場合も、
    * 追従していなければ呼び直して途中から追わせられる
    */
-  startReplay: (
-    start: { latitude: number; longitude: number; bearingDeg: number },
-    totalKm: number
-  ) => void;
+  startReplay: (start: { latitude: number; longitude: number; bearingDeg: number }, totalKm: number) => void;
   /** 毎フレームの進行位置と進行方位（平滑はシーン側） */
   setReplayTarget: (latitude: number, longitude: number, bearingDeg: number) => void;
   /** 追従をやめる（カメラはその場に残る） */

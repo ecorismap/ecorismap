@@ -15,7 +15,8 @@ import { RootState } from '../../store';
 import { editSettingsAction } from '../../modules/settings';
 import { TileMapType } from '../../types';
 import { withTileSignature } from '../../utils/TileSignature';
-import { isDemProtocolUrl } from '../../utils/terrainShading';
+import { isDemProtocolUrl, isReliefUrl, toDemUrl } from '../../utils/terrainShading';
+import { reliefStyleFromUrl } from '../../utils/colorRelief';
 import { DataOverlaySpec, TerrainScene } from '../../utils/terrain3d/TerrainScene';
 import { parseColorToRgba } from '../../utils/terrain3d/colorUtils';
 import { MERCATOR_CIRCUMFERENCE } from '../../utils/terrain3d/coords';
@@ -84,10 +85,11 @@ export const selectTerrainLayers = (
   const drawable = tileMaps.filter((tileMap) => {
     if (!tileMap.visible || tileMap.isGroup || !tileMap.url) return false;
     const url = tileMap.url;
-    // PDF・陰影プロトコルは非対応（陰影はライティングで代替）。
+    // PDF・陰影（hillshade://）は非対応（陰影はライティングで代替）。
+    // 段彩（relief://）はJSで生成して貼る。GEBCOスタイルなら地形も海底モードになる。
     // PMTiles・pbf（ベクタ含む）は2Dと同じネイティブラスタライザで描画する
     if (url.endsWith('.pdf') || url.startsWith('pdf://')) return false;
-    if (isDemProtocolUrl(url)) return false;
+    if (isDemProtocolUrl(url) && !isReliefUrl(url)) return false;
     return true;
   });
   // tileMapsは先頭ほど上に表示される。上位MAX_TERRAIN_LAYERS枚を採用し、下層から並べる
@@ -104,6 +106,19 @@ export const selectTerrainLayers = (
           : isOffline && tileMap.overzoomThreshold > 18 && tileMap.isVector
           ? 18
           : tileMap.overzoomThreshold;
+      if (isReliefUrl(tileMap.url)) {
+        return {
+          id: tileMap.id,
+          urlTemplate: toDemUrl(withTileSignature(tileMap.url, tileSignatures)),
+          relief: { style: reliefStyleFromUrl(tileMap.url) },
+          opacity: 1 - tileMap.transparency,
+          minimumZ: tileMap.minimumZ,
+          maximumZ: tileMap.maximumZ,
+          maximumNativeZ,
+          offlineMode: isOffline,
+          flipY: tileMap.flipY,
+        };
+      }
       return {
         id: tileMap.id,
         urlTemplate: withTileSignature(tileMap.url, tileSignatures).replace('pmtiles://', ''),

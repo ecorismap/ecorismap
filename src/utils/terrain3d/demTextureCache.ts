@@ -56,10 +56,20 @@ export class DemTextureCache {
   private entries = new Map<string, DemTextureEntry>();
   private pending = new Map<string, Promise<DemTextureEntry>>();
   private disposed = false;
+  /** 海底モード（GEBCO表示中）。海域を海底の深さで埋めたDEMを使う */
+  private bathymetry = false;
 
   constructor(renderer: TerrainRenderer, maxEntries: number = MAX_DEM_TEXTURES) {
     this.renderer = renderer;
     this.maxEntries = maxEntries;
+  }
+
+  /**
+   * 海底モードを切り替える。キーが別になるので、以後のacquireは別エントリを引く。
+   * 既存タイルの作り直しは呼び出し側（レイヤ差し替えで全タイル再構築）に任せる
+   */
+  setBathymetry(enabled: boolean): void {
+    this.bathymetry = enabled;
   }
 
   /**
@@ -68,7 +78,8 @@ export class DemTextureCache {
    * 使い終わったら必ずrelease()すること。
    */
   async acquire(z: number, x: number, y: number): Promise<DemTextureEntry> {
-    const key = `${z}/${x}/${y}`;
+    const bathymetry = this.bathymetry;
+    const key = `${bathymetry ? 'bathy:' : ''}${z}/${x}/${y}`;
     const hit = this.entries.get(key);
     if (hit !== undefined) {
       // 参照したものを末尾へ移してLRUを維持する
@@ -83,7 +94,7 @@ export class DemTextureCache {
       if (entry.state !== 'error') entry.refs++;
       return entry;
     }
-    const promise = this.load(key, z, x, y);
+    const promise = this.load(key, z, x, y, bathymetry);
     this.pending.set(key, promise);
     try {
       const entry = await promise;
@@ -110,10 +121,10 @@ export class DemTextureCache {
     this.pending.clear();
   }
 
-  private async load(key: string, z: number, x: number, y: number): Promise<DemTextureEntry> {
+  private async load(key: string, z: number, x: number, y: number, bathymetry: boolean): Promise<DemTextureEntry> {
     let entry: DemTextureEntry;
     try {
-      const pixels = await resolveDemTexturePixels(z, x, y);
+      const pixels = await resolveDemTexturePixels(z, x, y, { bathymetry });
       if (pixels === undefined) {
         entry = ERROR_ENTRY(key); // 通信エラー。記憶せず次回再取得させる
       } else if (pixels === null) {

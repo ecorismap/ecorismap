@@ -15,6 +15,7 @@ import { TILE_FOLDER } from '../../constants/AppConstants';
 import { decodePngLite } from '../pngLite';
 import { loadLocalDemTilePng } from '../demTileLoader';
 import { renderPmtile } from './pmtileRasterizer';
+import { resolveReliefTexture } from './reliefTexture';
 import { LayerSpec, TileKey, TileTextureSource } from './types';
 
 const CACHE_DIR = `${FileSystem.cacheDirectory}terrain3d_tex`;
@@ -34,10 +35,7 @@ const extensionForUrl = (urlTemplate: string): string => {
 
 const buildTileUrl = (layer: LayerSpec, tile: TileKey): string => {
   const y = layer.flipY ? Math.pow(2, tile.z) - 1 - tile.y : tile.y;
-  return layer.urlTemplate
-    .replace('{z}', String(tile.z))
-    .replace('{x}', String(tile.x))
-    .replace('{y}', String(y));
+  return layer.urlTemplate.replace('{z}', String(tile.z)).replace('{x}', String(tile.x)).replace('{y}', String(y));
 };
 
 /** オフライン地図タイルのパス（ネイティブパッチ・ダウンロード処理と同一規約） */
@@ -90,6 +88,8 @@ const resolvePmtilesTexture = async (layer: LayerSpec, tile: TileKey): Promise<T
 export const resolveTileTexture = async (layer: LayerSpec, tile: TileKey): Promise<TileTextureSource> => {
   if (tile.z < layer.minimumZ || tile.z > layer.maximumZ) return { kind: 'missing' };
   if (layer.isPmtiles) return resolvePmtilesTexture(layer, tile);
+  // relief://は標高タイルからJSで段彩を生成する（オフライン探索も内部で行う）
+  if (layer.relief !== undefined) return resolveReliefTexture(layer, tile);
 
   // 1. オフラインダウンロード済みタイル
   const offline = await FileSystem.getInfoAsync(offlineTileUri(layer, tile)).catch(() => null);

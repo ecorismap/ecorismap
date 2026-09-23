@@ -428,6 +428,9 @@ export class TerrainScene {
   }
 
   setLayers(layers: LayerSpec[]): void {
+    // GEBCO海底地形図の表示中は、海域を海底の深さで埋めたDEMで地形を作る。
+    // 切り替えはレイヤ差し替え（全タイル再構築）と同時なので、ここで立てれば全タイルに効く
+    this.demCache.setBathymetry(layers.some((layer) => layer.relief?.style === 'gebco'));
     this.tileManager.setLayers(layers);
     this.farTileManagers.forEach((manager) => manager.setLayers(layers));
     this.lastTileUpdateMs = 0;
@@ -448,7 +451,8 @@ export class TerrainScene {
     if (this.replay !== null) return false;
     const ground = this.sampleElevation(latitude, longitude);
     if (ground === null) return false;
-    this.vista = { latitude, longitude, groundElevation: ground, heightM: eyeHeightM };
+    // 海底モードの海上では地面が海底なので、海面に立つ（視点が海中へ沈まないように）
+    this.vista = { latitude, longitude, groundElevation: Math.max(0, ground), heightM: eyeHeightM };
     this.lastTileUpdateMs = 0; // 足元中心でタイルを取り直す
     this.controller.animateTo({ heading: 0, pitch: VISTA_PITCH_DEG }, durationMs, nowMs, VISTA_MAX_PITCH_DEG);
     this.applyVistaCamera();
@@ -535,7 +539,8 @@ export class TerrainScene {
     const ground = this.sampleElevation(replay.latitude, replay.longitude);
     replay.camera = stepReplayCamera(
       replay.camera,
-      { bearingDeg: replay.bearingDeg, groundElevationM: ground },
+      // 海上の軌跡は海面を追う（海底モードで海底へ潜らないように）
+      { bearingDeg: replay.bearingDeg, groundElevationM: ground === null ? null : Math.max(0, ground) },
       dtMs,
       { headingMs: REPLAY_HEADING_TAU_MS, elevationMs: REPLAY_ELEVATION_TAU_MS }
     );
@@ -613,10 +618,7 @@ export class TerrainScene {
     const forward = distance * Math.sin(pitchRad);
     const merc = lonLatToMercator(origin.longitude, origin.latitude);
     // メルカトル座標でheading方向へforward進める（heading=0が北＝my+）
-    const center = mercatorToLonLat(
-      merc.mx + Math.sin(headingRad) * forward,
-      merc.my + Math.cos(headingRad) * forward
-    );
+    const center = mercatorToLonLat(merc.mx + Math.sin(headingRad) * forward, merc.my + Math.cos(headingRad) * forward);
     this.controller.setDerivedCenter(center.latitude, center.longitude);
     this.targetElevation = eyeElevation - (distance * Math.cos(pitchRad)) / this.elevScale;
   }
@@ -775,7 +777,7 @@ export class TerrainScene {
     ];
     const eye = orbitEye(target, distance, state.heading, state.pitch);
     const up = orbitUp(state.heading, state.pitch);
-     
+
     const canvas = this.context.canvas as any;
     const aspect = canvas.width / canvas.height;
     const far = Math.max(fogFar * 1.5, distance * 3);
@@ -1029,7 +1031,9 @@ export class TerrainScene {
     const zoomChanged = channel.builtZoom !== this.texZoom;
     const readyGen = this.tileManager.readyGeneration;
     const retry =
-      channel.hadMissing && readyGen !== channel.lastReadyGen && nowMs - channel.lastBuildMs > OVERLAY_RETRY_INTERVAL_MS;
+      channel.hadMissing &&
+      readyGen !== channel.lastReadyGen &&
+      nowMs - channel.lastBuildMs > OVERLAY_RETRY_INTERVAL_MS;
     if (!channel.dirty && !zoomChanged && !retry) return false;
     channel.dirty = false;
     channel.builtZoom = this.texZoom;
@@ -1340,7 +1344,6 @@ export class TerrainScene {
    * 縦横の倍率が食い違うと、ドットだけが中心から離れるほどずれる
    */
   private describeViewport(): string {
-     
     const canvas = this.context.canvas as any;
     const cw = Number(canvas.width) || 0;
     const ch = Number(canvas.height) || 0;

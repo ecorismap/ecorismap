@@ -10,6 +10,14 @@ import { decodeElevation } from './terrainShading';
 import { decodePngLite } from './pngLite';
 import { loadDemTilePng, loadDownloadedDemTile } from './demTileLoader';
 import { GSI_DEM_URL, TERRARIUM_URL } from '../constants/DemSources';
+import {
+  BATHYMETRY_EXAGGERATION,
+  BATHYMETRY_MAX_ZOOM,
+  bathymetryAncestor,
+  encodeGsiRgba,
+  exaggerateDepths,
+  fillSeaWithBathymetry,
+} from './bathymetryFill';
 
 /** 標高タイルの一辺画素数（GSI dem_png / terrariumとも256px固定） */
 export const DEM_TILE_SIZE = 256;
@@ -117,7 +125,7 @@ export const takeDemDecodeStats = (): { count: number; totalMs: number } => {
   return snapshot;
 };
 
-const runInDecodeLane = <T>(job: () => T): Promise<T> => {
+export const runInDecodeLane = <T>(job: () => T): Promise<T> => {
   const result = decodeLaneTail.then(async () => {
     // 操作中は着手を見送る（始めてしまうと途中で止められない）
     await waitWhileDeferred();
@@ -200,6 +208,7 @@ export const clearDemTileCache = (): void => {
   tileCache.clear();
   tileCacheBytes = 0;
   decodedCache.clear();
+  bathymetryCache.clear();
 };
 
 /**
@@ -372,19 +381,147 @@ const elevationRangeBlocks = (
   return { blockMin, blockMax, elev };
 };
 
+/** 4x4ブロック毎の標高範囲（NaNは除く。有効画素が無いブロックは0/0） */
+const blocksFromElev = (
+  elev: Float32Array,
+  width: number,
+  height: number
+): { blockMin: Float32Array; blockMax: Float32Array } => {
+  const n = DEM_RANGE_BLOCKS;
+  const blockMin = new Float32Array(n * n).fill(Infinity);
+  const blockMax = new Float32Array(n * n).fill(-Infinity);
+  for (let py = 0; py < height; py++) {
+    const by = Math.min(n - 1, Math.floor((py * n) / height));
+    for (let px = 0; px < width; px++) {
+      const v = elev[py * width + px];
+      // eslint-disable-next-line no-self-compare
+      if (v !== v) continue; // NaN
+      const b = by * n + Math.min(n - 1, Math.floor((px * n) / width));
+      if (v < blockMin[b]) blockMin[b] = v;
+      if (v > blockMax[b]) blockMax[b] = v;
+    }
+  }
+  for (let b = 0; b < blockMin.length; b++) {
+    if (!Number.isFinite(blockMin[b])) {
+      blockMin[b] = 0;
+      blockMax[b] = 0;
+    }
+  }
+  return { blockMin, blockMax };
+};
+
+// 海底値の祖先タイル（z10以下のterrarium、符号付き）のデコード結果。
+// z12のDEMなら4x4=16枚が同じ祖先を引くので、展開は1回で済ませる
+const BATHYMETRY_CACHE_MAX_ENTRIES = 8;
+const bathymetryCache = new Map<string, Float32Array | null>();
+
+const decodeBathymetryAncestor = (key: string, png: ArrayBuffer): Float32Array | null => {
+  const hit = bathymetryCache.get(key);
+  if (hit !== undefined) return hit;
+  const pixels = pngToRgba(png);
+  let elev: Float32Array | null = null;
+  if (pixels !== null && pixels.width === DEM_TILE_SIZE && pixels.height === DEM_TILE_SIZE) {
+    elev = new Float32Array(DEM_TILE_SIZE * DEM_TILE_SIZE);
+    const d = pixels.data;
+    for (let i = 0, p = 0; i < elev.length; i++, p += 4) elev[i] = d[p] * 256 + d[p + 1] + d[p + 2] / 256 - 32768;
+  }
+  bathymetryCache.set(key, elev);
+  while (bathymetryCache.size > BATHYMETRY_CACHE_MAX_ENTRIES) {
+    const oldestKey = bathymetryCache.keys().next().value;
+    if (oldestKey === undefined) break;
+    bathymetryCache.delete(oldestKey);
+  }
+  return elev;
+};
+
+/**
+ * 海底モードのDEM画素。陸はGSI（無ければterrarium）、海はterrariumの海底値で埋め、
+ * GSI方式のRGBへ詰め直して返す（エンコードを1種類にしてシェーダを変えずに済ませる）。
+ *
+ * terrariumの海底値はz10までしか無いので、z11以上はz10の祖先から引き伸ばす（bathymetryFill参照）。
+ * 描画とタップ等のJS側標高が一致するよう、elevも埋めた後の値を返す。
+ * 符号付きの値をviewshed向けのdecodedCacheへ混ぜないよう、ここではキャッシュへ書かない。
+ */
+const resolveBathymetryDemPixels = async (
+  zoom: number,
+  x: number,
+  y: number
+): Promise<DemTexturePixels | null | undefined> => {
+  const gsiBytes = await fetchTileBytes('gsi', GSI_DEM_URL, zoom, x, y);
+  if (gsiBytes === undefined) return undefined;
+  let primary: { encoding: DemEncoding; bytes: ArrayBuffer | null } = { encoding: 'gsi', bytes: gsiBytes };
+  if (gsiBytes === null) {
+    const terrariumBytes = await fetchTileBytes('terrarium', TERRARIUM_URL, zoom, x, y);
+    if (terrariumBytes === undefined) return undefined;
+    primary = { encoding: 'terrarium', bytes: terrariumBytes };
+  }
+  const ancestor = bathymetryAncestor(zoom, x, y);
+  // z10以下のterrariumはそれ自体が海底値を持つので祖先は要らない
+  const needsAncestor = primary.encoding === 'gsi' || zoom > BATHYMETRY_MAX_ZOOM;
+  const ancestorBytes = needsAncestor
+    ? await fetchTileBytes('terrarium', TERRARIUM_URL, ancestor.z, ancestor.x, ancestor.y)
+    : null;
+  // 通信エラーは海が欠けたまま確定させず、失敗させて再取得に回す
+  if (ancestorBytes === undefined) return undefined;
+  if (primary.bytes === null && ancestorBytes === null) return null;
+  const primaryBytes = primary.bytes;
+
+  return await runInDecodeLane(() => {
+    const startMs = __DEV__ ? performance.now() : 0;
+    const size = DEM_TILE_SIZE;
+    let elev: Float32Array;
+    const pixels = primaryBytes === null ? null : pngToRgba(primaryBytes);
+    if (pixels !== null && pixels.width === size && pixels.height === size) {
+      elev = new Float32Array(size * size);
+      const d = pixels.data;
+      if (primary.encoding === 'terrarium') {
+        for (let i = 0, p = 0; i < elev.length; i++, p += 4) elev[i] = d[p] * 256 + d[p + 1] + d[p + 2] / 256 - 32768;
+      } else {
+        for (let i = 0, p = 0; i < elev.length; i++, p += 4) elev[i] = decodeElevation(d[p], d[p + 1], d[p + 2]);
+      }
+    } else {
+      // 陸のデータが無い（両ソースとも404・256px以外）→ 全面を海底値で埋める
+      elev = new Float32Array(size * size).fill(NaN);
+    }
+    if (needsAncestor && ancestorBytes) {
+      const ancestorElev = decodeBathymetryAncestor(`${ancestor.z}/${ancestor.x}/${ancestor.y}`, ancestorBytes);
+      if (ancestorElev !== null) {
+        // terrariumのz11以上は海が0m（または僅かな負値）で入っているので、0以下を海とみなす
+        fillSeaWithBathymetry(elev, size, { z: zoom, x, y }, ancestorElev, ancestor, primary.encoding === 'terrarium');
+      }
+    }
+    // 描画とJS側の標高（タップ・投影）が一致するよう、強調はelevの段階で掛ける
+    exaggerateDepths(elev, BATHYMETRY_EXAGGERATION);
+    const data = new Uint8Array(size * size * 4);
+    encodeGsiRgba(elev, data);
+    const { blockMin, blockMax } = blocksFromElev(elev, size, size);
+    if (__DEV__) {
+      const elapsed = performance.now() - startMs;
+      decodeStats.count++;
+      decodeStats.totalMs += elapsed;
+      // eslint-disable-next-line no-console
+      console.log(`[terrain3d] dem decode bathy/${zoom}/${x}/${y} ${elapsed.toFixed(1)}ms`);
+    }
+    return { data, width: size, height: size, encoding: 'gsi' as const, blockMin, blockMax, elev };
+  });
+};
+
 /**
  * DEMタイルをGPUテクスチャ化するための画素を返す。
  * fetchDemTileと同じ優先順（GSI→404ならterrarium）。
+ * bathymetry=trueなら海域を海底の深さで埋める（GEBCO海底地形図の3D表示用）。
  *
  * @returns 画素 / null=データなし / undefined=通信エラー（一時的）
  */
 export const resolveDemTexturePixels = async (
   zoom: number,
   x: number,
-  y: number
+  y: number,
+  options: { bathymetry?: boolean } = {}
 ): Promise<DemTexturePixels | null | undefined> => {
   const max = Math.pow(2, zoom);
   if (x < 0 || y < 0 || x >= max || y >= max) return null;
+  if (options.bathymetry === true) return resolveBathymetryDemPixels(zoom, x, y);
   const sources: { encoding: DemEncoding; url: string }[] = [
     { encoding: 'gsi', url: GSI_DEM_URL },
     { encoding: 'terrarium', url: TERRARIUM_URL },
