@@ -1212,7 +1212,9 @@
       "maxAltitude": "Max Altitude",
       "minAltitude": "Min Altitude",
       "elevationProfile": "Elevation Profile",
-      "photos": "Photos"
+      "photos": "Photos",
+      "replay": "Play track",
+      "pause": "Pause playback"
     },
     "noAltitudeData": "No altitude data",
     "notFound": "Track data not found",

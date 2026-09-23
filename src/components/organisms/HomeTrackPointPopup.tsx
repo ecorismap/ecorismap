@@ -1,12 +1,13 @@
-import React, { useContext, useCallback, useMemo, useState, useEffect } from 'react';
+import React, { useContext, useCallback, useMemo, useState, useEffect, useSyncExternalStore } from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { Pressable } from '../atoms/Pressable';
 import { MapViewContext } from '../../contexts/MapView';
-import { TrackFocusContext } from '../../contexts/TrackFocus';
+import { TrackFocusContext, TrackFocusSetterContext } from '../../contexts/TrackFocus';
 import { COLOR } from '../../constants/AppConstants';
 import { latLonToXY } from '../../utils/Coords';
 import { copyToClipboard } from '../../utils/Clipboard';
+import { trackReplayStore } from '../../utils/trackReplayStore';
 import { useWindow } from '../../hooks/useWindow';
 import { t } from '../../i18n/config';
 import dayjs from '../../i18n/dayjs';
@@ -14,7 +15,11 @@ import dayjs from '../../i18n/dayjs';
 export const HomeTrackPointPopup = React.memo(() => {
   const { trackPointInfo, setTrackPointInfo, mapViewRef } = useContext(MapViewContext);
   // 軌跡サマリーのグラフカーソル（フォーカス地点）があればそちらを優先し、ポップアップも追随させる
-  const { trackFocusPoint, setTrackFocusPoint } = useContext(TrackFocusContext);
+  const { trackFocusPoint } = useContext(TrackFocusContext);
+  // 再生中は隠す。進行位置に追随して画面を覆ううえ、×を押してフォーカスを消しても
+  // 次の更新で再設定されて戻ってきてしまう（一時停止すれば止めた地点の情報が見られる）
+  const { playing: isReplayPlaying } = useSyncExternalStore(trackReplayStore.subscribe, trackReplayStore.getSnapshot);
+  const setTrackFocusPoint = useContext(TrackFocusSetterContext);
   const { mapRegion, mapSize } = useWindow();
   const WIDTH = 150;
 
@@ -93,7 +98,7 @@ export const HomeTrackPointPopup = React.memo(() => {
     return { x: xy[0], y: xy[1] };
   }, [displayInfo, mapRegion, mapSize, mapViewRef]);
 
-  if (!displayInfo || !position || !timeText) return null;
+  if (isReplayPlaying || !displayInfo || !position || !timeText) return null;
 
   return (
     <View

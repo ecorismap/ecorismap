@@ -1212,7 +1212,9 @@
       "maxAltitude": "最高標高",
       "minAltitude": "最低標高",
       "elevationProfile": "標高グラフ",
-      "photos": "写真"
+      "photos": "写真",
+      "replay": "軌跡を再生",
+      "pause": "再生を一時停止"
     },
     "noAltitudeData": "標高データがありません",
     "notFound": "軌跡データが見つかりません",

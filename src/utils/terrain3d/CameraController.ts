@@ -109,6 +109,17 @@ export class CameraController {
     this.state.longitude = longitude;
   }
 
+  /**
+   * 方位を外部の計算結果で置き換える（リプレイが毎フレーム呼ぶ）。
+   *
+   * setDerivedCenterと同じくtweenは止めない。開始時のピッチ・ズームの寄せと
+   * 併走させるため（止めると寄せが1フレームで終わる）。
+   * ただしheadingのtweenとは奪い合うので、リプレイ中はheadingをtweenしないこと
+   */
+  setDerivedHeading(deg: number): void {
+    this.state.heading = normalizeHeading(deg);
+  }
+
   rotateBy(deltaDeg: number): void {
     this.cancelTweens();
     this.state.heading = normalizeHeading(this.state.heading + deltaDeg);

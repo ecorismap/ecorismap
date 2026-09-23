@@ -32,6 +32,8 @@ import {
   MESH_SEGMENTS,
   MIN_TEX_ZOOM,
   NEAR_RING_DEM_ZOOM_OFFSET,
+  REPLAY_ELEVATION_TAU_MS,
+  REPLAY_HEADING_TAU_MS,
   SKY_COLOR,
   SUN_ALTITUDE_DEG,
   SUN_AZIMUTH_DEG,
@@ -41,7 +43,16 @@ import {
   VISTA_PITCH_DEG,
   ZOOM_HYSTERESIS,
 } from './constants';
-import { elevationScale, lonLatToMercator, mercatorToLonLat, MercatorPoint, regionToCamera, tileSizeMeters, zoomToDistance } from './coords';
+import {
+  distanceToZoom,
+  elevationScale,
+  lonLatToMercator,
+  mercatorToLonLat,
+  MercatorPoint,
+  regionToCamera,
+  tileSizeMeters,
+  zoomToDistance,
+} from './coords';
 import {
   Mat4,
   mat4LookAt,
@@ -63,6 +74,7 @@ import { Rgba } from './colorUtils';
 import { LayerSpec, Terrain3DCameraState, TileKey } from './types';
 import { LayerTextureRef } from './layerTextureRef';
 import { terrain3dVistaStore } from './vistaStore';
+import { ReplayCameraState, stepReplayCamera } from './replayCamera';
 import { LocationType } from '../../types';
 
 /** レイヤデータ（ライン・ポリゴン）のドレープ描画指定 */
@@ -246,6 +258,21 @@ export class TerrainScene {
     /** 地上からの視点の高さ[m] */
     heightM: number;
   } | null = null;
+  /**
+   * 軌跡リプレイ（三人称追従カメラ）の状態。通常はnull。
+   *
+   * 眺望と同じく「注視点を毎フレーム導出する」モードなので、両立させない
+   * （どちらも注視点を書くため）。目標は外から押し込まれ、平滑はここで行う
+   */
+  private replay: {
+    /** 押し込まれた進行位置と生の進行方位 */
+    latitude: number;
+    longitude: number;
+    bearingDeg: number;
+    /** 平滑済みのカメラ状態 */
+    camera: ReplayCameraState;
+    lastFrameMs: number;
+  } | null = null;
   /** ドレープオーバーレイ（レイヤデータ・保存済み軌跡・記録中の軌跡） */
   private readonly overlayChannels: Record<OverlayChannelId, OverlayChannel> = {
     data: createOverlayChannel(),
@@ -367,7 +394,9 @@ export class TerrainScene {
    * ドットが取り残される
    */
   get cameraSettled(): boolean {
-    return !this.cameraActive && this.interactionCount === 0;
+    // リプレイ中はsetDerivedCenterで動かすためcameraActiveが立たない。ここに含めないと
+    // 「止まっている」と見なされ、毎フレーム距離バッファのGPU読み戻しと300点の再投影が走る
+    return !this.cameraActive && this.interactionCount === 0 && this.replay === null;
   }
 
   beginInteraction(): void {
@@ -415,6 +444,8 @@ export class TerrainScene {
    * @returns 標高が取れず移動できなかった場合はfalse
    */
   moveToVista(latitude: number, longitude: number, eyeHeightM: number, nowMs: number, durationMs: number): boolean {
+    // リプレイ中は注視点をリプレイが握っているので受け付けない
+    if (this.replay !== null) return false;
     const ground = this.sampleElevation(latitude, longitude);
     if (ground === null) return false;
     this.vista = { latitude, longitude, groundElevation: ground, heightM: eyeHeightM };
@@ -429,6 +460,91 @@ export class TerrainScene {
   /** 眺望中か（ボタンの出し分け・回転の向きの判断に使う） */
   get isVistaActive(): boolean {
     return this.vista !== null;
+  }
+
+  /**
+   * 軌跡リプレイの三人称追従カメラを始める。
+   *
+   * 注視点は毎フレームsetReplayTargetで押し込まれるので、ここで寄せるのは
+   * 俯角と視点距離だけ。方位はtweenしない（毎フレームの平滑と奪い合うため）
+   *
+   * @param eyeDistanceM 視点距離[m]（軌跡の総距離から決める）
+   */
+  startReplay(
+    start: { latitude: number; longitude: number; bearingDeg: number },
+    eyeDistanceM: number,
+    pitchDeg: number,
+    enterMs: number,
+    nowMs: number
+  ): void {
+    // 注視点の所有権が衝突するので眺望は解除する
+    this.clearVista(nowMs);
+    this.replay = {
+      ...start,
+      camera: { headingDeg: this.controller.getState().heading, elevationM: null },
+      lastFrameMs: nowMs,
+    };
+    this.controller.animateTo(
+      { zoom: distanceToZoom(eyeDistanceM, this.viewportHeightDp), pitch: pitchDeg },
+      enterMs,
+      nowMs
+    );
+    this.lastTileUpdateMs = 0; // 出発地のタイルをすぐ取りに行く
+    this.applyReplayCamera(nowMs);
+    this.markDirty();
+  }
+
+  /** リプレイの進行位置と生の進行方位を押し込む（平滑はシーン側で行う） */
+  setReplayTarget(latitude: number, longitude: number, bearingDeg: number): void {
+    if (this.replay === null) return;
+    this.replay.latitude = latitude;
+    this.replay.longitude = longitude;
+    this.replay.bearingDeg = bearingDeg;
+    this.markDirty();
+  }
+
+  /**
+   * 追従をやめる。カメラは今いる場所に残す（元の視点へ戻さない）。
+   *
+   * 一時停止でもここまで戻すのは、replayを残すとcameraSettledがfalseのままになり、
+   * 距離バッファの撮り直しが止まってマーカーの遮蔽判定が効かないため
+   */
+  stopReplay(): void {
+    if (this.replay === null) return;
+    this.replay = null;
+    this.lastTileUpdateMs = 0; // 止まった位置のタイルを取り直す
+    this.markDirty();
+  }
+
+  /** 追従中か（＝カメラが軌跡に追随している。一時停止中はfalse） */
+  get isReplayActive(): boolean {
+    return this.replay !== null;
+  }
+
+  /**
+   * リプレイ中の注視点・方位・視点高さを毎フレーム導出する。
+   *
+   * controller.update()は動きを返さない（tweenでも慣性でもない）ので、
+   * ここでmarkDirty()しないと1フレームも描かれない
+   */
+  private applyReplayCamera(nowMs: number): void {
+    const replay = this.replay;
+    if (replay === null) return;
+    const dtMs = Math.min(100, Math.max(0, nowMs - replay.lastFrameMs));
+    replay.lastFrameMs = nowMs;
+    const ground = this.sampleElevation(replay.latitude, replay.longitude);
+    replay.camera = stepReplayCamera(
+      replay.camera,
+      { bearingDeg: replay.bearingDeg, groundElevationM: ground },
+      dtMs,
+      { headingMs: REPLAY_HEADING_TAU_MS, elevationMs: REPLAY_ELEVATION_TAU_MS }
+    );
+    this.controller.setDerivedCenter(replay.latitude, replay.longitude);
+    this.controller.setDerivedHeading(replay.camera.headingDeg);
+    // 注視点の標高は毎フレーム更新する（既存の追従はタイル更新と同じ250ms間隔なので、
+    // 追従中は視点の高さが段付きになる）
+    if (replay.camera.elevationM !== null) this.targetElevation = replay.camera.elevationM;
+    this.markDirty();
   }
 
   /**
@@ -1047,8 +1163,10 @@ export class TerrainScene {
     if (cameraActive) this.dirty = true;
 
     // 眺望中は「視点を固定して注視点を回す」ため、注視点をカメラ状態から導出し直す。
-    // これをしないと回転・傾き・ズームのたびに視点が注視点のまわりを動いて立ち位置がずれる
-    this.applyVistaCamera();
+    // これをしないと回転・傾き・ズームのたびに視点が注視点のまわりを動いて立ち位置がずれる。
+    // リプレイ中は注視点を軌跡上へ置くモードなので、どちらか一方だけが書く
+    if (this.replay !== null) this.applyReplayCamera(nowMs);
+    else this.applyVistaCamera();
     const state = this.controller.getState();
 
     // ズーム切替（ヒステリシス付き）
@@ -1125,8 +1243,10 @@ export class TerrainScene {
           );
         }
       }
-      // 眺望モード中は視点の高さを固定する（見晴らす先の地形に引きずられない）
-      if (this.vista === null) {
+      // 眺望モード中は視点の高さを固定する（見晴らす先の地形に引きずられない）。
+      // リプレイ中はapplyReplayCameraが毎フレーム更新するので、ここでは触らない
+      // （1m閾値の飛び飛びな更新が混ざると視点の高さがカクつく）
+      if (this.vista === null && this.replay === null) {
         const sampled = this.tileManager.sampleElevation(state.latitude, state.longitude);
         if (sampled !== null && Math.abs(sampled - this.targetElevation) > 1) {
           this.targetElevation = sampled;
@@ -1288,6 +1408,7 @@ export class TerrainScene {
   dispose(): void {
     this.disposed = true;
     this.vista = null;
+    this.replay = null;
     terrain3dVistaStore.clear(); // 3Dを抜けたら高さ変更ボタンも消す
     setDemDecodeDeferPredicate(null);
     this.frameListeners.clear();

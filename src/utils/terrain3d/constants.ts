@@ -95,6 +95,28 @@ export const VISTA_EYE_HEIGHTS_M = [VISTA_EYE_HEIGHT_M, 5, 10, 20, 50, 100, 200,
 export const VISTA_MAX_PITCH_DEG = 120;
 export const VISTA_DURATION_MS = 600;
 /**
+ * 軌跡リプレイ（三人称追従カメラ）の設定。
+ *
+ * 俯角はMAX_PITCH_DEG(80)の手前にして、見下ろしすぎず地平線も少し入る構図にする。
+ * 方位の平滑は「急カーブで画面が振り回されない」ための時定数で、短くすると
+ * 折り返しのたびにカメラが振り子のように回る
+ */
+export const REPLAY_PITCH_DEG = 68;
+/** 開始時に構図へ寄せる時間[ms]。この間は進行させない（飛び出してから構図が決まるのを防ぐ） */
+export const REPLAY_ENTER_MS = 900;
+/** 進行方位の指数平滑の時定数[ms] */
+export const REPLAY_HEADING_TAU_MS = 900;
+/** 注視点標高の指数平滑の時定数[ms]（DEM解像度が切り替わる段差を吸収する） */
+export const REPLAY_ELEVATION_TAU_MS = 250;
+/**
+ * 追従カメラの視点距離[m]の下限・上限。
+ * 長い軌跡ほど引いて画面上の流速を揃える（近いままだと景色が流れすぎ、
+ * 近景タイルの取得も追いつかない）
+ */
+export const REPLAY_EYE_DISTANCE_MIN_M = 700;
+export const REPLAY_EYE_DISTANCE_MAX_M = 6000;
+
+/**
  * 長押しメニューを出す閾値。2D（containers/Home.tsxのPanResponder）と揃える。
  * 誤爆のコストが大きいので、指が動いたら長押しにしない
  */

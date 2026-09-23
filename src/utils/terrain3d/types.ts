@@ -78,6 +78,21 @@ export interface Terrain3DHandle {
   changeVistaHeight: (step: number) => void;
   /** 眺望モードを解除して通常の俯瞰へ戻す */
   clearVista: () => void;
+  /**
+   * 軌跡リプレイの三人称追従を始める（軌跡の総距離[km]から視点距離を決める）。
+   * 一時停止・終了は endReplay。再生中に3Dへ切り替えた場合も、
+   * 追従していなければ呼び直して途中から追わせられる
+   */
+  startReplay: (
+    start: { latitude: number; longitude: number; bearingDeg: number },
+    totalKm: number
+  ) => void;
+  /** 毎フレームの進行位置と進行方位（平滑はシーン側） */
+  setReplayTarget: (latitude: number, longitude: number, bearingDeg: number) => void;
+  /** 追従をやめる（カメラはその場に残る） */
+  endReplay: () => void;
+  /** いま追従中か（再生中に3Dへ切り替えたときの取り付け判定に使う） */
+  isReplayFollowing: () => boolean;
   /** 回転ボタン用。現在headingから相対回転（アニメーション付き） */
   rotateBy: (deltaDeg: number) => void;
   /** 傾きボタン用。現在pitchから相対変更（アニメーション付き） */

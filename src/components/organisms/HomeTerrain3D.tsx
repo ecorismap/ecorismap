@@ -24,6 +24,7 @@ import { LineRecordType, PointRecordType, PolygonRecordType } from '../../types'
 import { HomeTerrain3DPoints } from './HomeTerrain3DPoints';
 import { HomeTerrain3DTrack } from './HomeTerrain3DTrack';
 import { HomeTerrain3DCurrentMarker } from './HomeTerrain3DCurrentMarker';
+import { HomeTerrain3DFocusMarker } from './HomeTerrain3DFocusMarker';
 import { HomeTerrain3DPerf } from './HomeTerrain3DPerf';
 import { DataSelectionContext } from '../../contexts/DataSelection';
 import { AppStateContext } from '../../contexts/AppState';
@@ -35,6 +36,8 @@ import {
   MAX_PITCH_DEG,
   MAX_TERRAIN_LAYERS,
   REGION_SYNC_THROTTLE_MS,
+  REPLAY_ENTER_MS,
+  REPLAY_PITCH_DEG,
   VISTA_DURATION_MS,
   VISTA_EYE_HEIGHT_M,
   VISTA_MAX_PITCH_DEG,
@@ -44,6 +47,8 @@ import { deltaToZoom } from '../../utils/Coords';
 import { useWindow } from '../../hooks/useWindow';
 import { MapViewStableContext } from '../../contexts/MapViewStable';
 import { terrain3dHeadingStore } from '../../utils/terrain3d/headingStore';
+import { requestTrackReplayPause } from '../../utils/trackReplayStore';
+import { replayEyeDistanceM } from '../../utils/terrain3d/replayCamera';
 import { getTerrainDevice } from '../../utils/terrain3d/webgpuSupport';
 import MapView from 'react-native-maps';
 import { MapRef } from 'react-map-gl/maplibre';
@@ -311,6 +316,13 @@ export const HomeTerrain3D = React.memo(() => {
         // 眺望中は水平より上も向けるよう、ピッチ上限を広げる
         maxPitchDeg = scene.isVistaActive ? VISTA_MAX_PITCH_DEG : MAX_PITCH_DEG
       ) => {
+        // リプレイ追従中は注視点をリプレイが握っている。GPS追従（useLocationの
+        // animateCamera）が毎回の位置更新でcenterを書きに来るので、ここで落とす
+        if (scene.isReplayActive && target.center !== undefined) {
+          const { center, ...rest } = target;
+          void center;
+          target = rest;
+        }
         scene.controller.animateTo(target, duration, performance.now(), maxPitchDeg);
         scene.markDirty();
         // アニメーション完了後にmapRegionへ同期（ズーム表記等の更新）。
@@ -359,6 +371,22 @@ export const HomeTerrain3D = React.memo(() => {
           scene.clearVista(performance.now());
           syncRegionRef.current(true);
         },
+        startReplay: (start, totalKm) => {
+          scene.startReplay(
+            start,
+            replayEyeDistanceM(totalKm),
+            REPLAY_PITCH_DEG,
+            REPLAY_ENTER_MS,
+            performance.now()
+          );
+        },
+        setReplayTarget: (latitude, longitude, bearingDeg) => scene.setReplayTarget(latitude, longitude, bearingDeg),
+        endReplay: () => {
+          scene.stopReplay();
+          // 追従をやめた位置をmapRegionへ反映する（2Dへ戻したときの視点）
+          syncRegionRef.current(true);
+        },
+        isReplayFollowing: () => scene.isReplayActive,
         // 連打で積み上がるよう、進行中のアニメーションの到達点を基準に足す。
         // 眺望中はアイコンを「地図がどちらへ回るか」ではなく「自分がどちらへ向き直るか」と
         // 読むのが自然なので符号を反転する（地図を回すのと首を振るのは逆向きになる）
@@ -580,7 +608,12 @@ export const HomeTerrain3D = React.memo(() => {
       });
     // 操作中はポイントの再投影などを止めるため、開始・終了をシーンへ知らせる
     // （onBegin/onFinalizeは失敗した場合も対で呼ばれるのでカウンタが狂わない）
-    const markBegin = () => sceneRef.current?.beginInteraction();
+    const markBegin = () => {
+      // 再生中に地図へ触れたら一時停止する。追従だけ止めると進行位置が画面外へ
+      // 消えていき、戻す手段がなくなる（動画プレイヤーと同じ挙動にする）
+      requestTrackReplayPause();
+      sceneRef.current?.beginInteraction();
+    };
     const markFinalize = () => sceneRef.current?.endInteraction();
     const pan = Gesture.Pan()
       .runOnJS(true)
@@ -663,6 +696,8 @@ export const HomeTerrain3D = React.memo(() => {
       <HomeTerrain3DPoints scene={sceneState} />
       {/* 軌跡はGPU（シーンのオーバーレイ系統）へ指定を流すだけで、画面出力は持たない */}
       <HomeTerrain3DTrack scene={sceneState} />
+      {/* 軌跡サマリーのカーソル位置（グラフをなぞる・リプレイ中の進行位置） */}
+      <HomeTerrain3DFocusMarker scene={sceneState} />
       {/* 現在地はポイントより手前に置く（2DのCURRENT_MARKER_ZINDEXと同じ扱い） */}
       <HomeTerrain3DCurrentMarker scene={sceneState} />
       {DEBUG_PERF_HUD && <HomeTerrain3DPerf />}

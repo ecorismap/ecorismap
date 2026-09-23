@@ -133,7 +133,8 @@ import { useMaps } from '../hooks/useMaps';
 import { useRepository } from '../hooks/useRepository';
 import { ConflictResolverModal } from '../components/organisms/HomeModalConflictResolver';
 import { selectNonDeletedDataSet } from '../modules/selectors';
-import { TrackFocusContext, TrackFocusProvider } from '../contexts/TrackFocus';
+import { TrackFocusProvider, TrackFocusSetterContext } from '../contexts/TrackFocus';
+import { isTrackReplayEngaged } from '../utils/trackReplayStore';
 import { TrackPhotoProvider, TrackPhotoContext } from '../contexts/TrackPhoto';
 import { MeasureContext, MeasureProvider } from '../contexts/Measure';
 import { ViewshedContext, ViewshedProvider } from '../contexts/Viewshed';
@@ -270,7 +271,8 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
   // 軌跡上の写真マーカー（タップ判定はMarkerのonPressではなくここの画面タップヒットテストで行う）
   const { trackPhotos, setSelectedPhoto, expandedClusterId, setExpandedClusterId } = useContext(TrackPhotoContext);
   // 軌跡サマリーのフォーカス地点（時刻ポップアップとマーカーの表示元）。地図を動かしたら解除する
-  const { setTrackFocusPoint } = useContext(TrackFocusContext);
+  // 値ではなくsetterだけを購読する（フォーカスが動くたびにHome全体を作り直さないため）
+  const setTrackFocusPoint = useContext(TrackFocusSetterContext);
   const tileMaps = useSelector((state: RootState) => state.tileMaps);
   const user = useSelector((state: RootState) => state.user);
   const tileRegions = useSelector((state: RootState) => state.settings.tileRegions, shallowEqual);
@@ -743,7 +745,8 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       setPoiInfo(null);
       setMapLocationInfo(null);
       setTrackPointInfo(null);
-      setTrackFocusPoint(null);
+      // 再生中のフォーカスは進行位置そのものなので消さない
+      if (!isTrackReplayEngaged()) setTrackFocusPoint(null);
       setExpandedClusterId(null);
     },
     [
@@ -825,7 +828,8 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     setPoiInfo(null);
     setMapLocationInfo(null);
     setTrackPointInfo(null);
-    setTrackFocusPoint(null);
+    // 再生中の地図操作は一時停止扱い（3D側で依頼が飛ぶ）。進行位置は残す
+    if (!isTrackReplayEngaged()) setTrackFocusPoint(null);
     setExpandedClusterId(null);
   }, [setPoiInfo, setMapLocationInfo, setTrackFocusPoint, setExpandedClusterId]);
 
