@@ -2,6 +2,7 @@
  * 3D表示中のカメラ操作ボタン（回転・傾き）。
  * ピンチ回転・2本指チルトのジェスチャが使えない場面（片手操作等）向けの補助UI。
  * mapViewRefに差し込まれたTerrain3DHandle経由でカメラを動かす。
+ * 見た目はズームボタンと同じ半透明の青い縦長パネルにまとめ、左側のボタン群と揃える。
  */
 import React, { useCallback, useContext, useSyncExternalStore } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
@@ -55,7 +56,7 @@ export const HomeTerrain3DButtons = React.memo((props: Props) => {
             //@ts-ignore アイコン名はグリフマップに存在する
             name={button.icon}
             size={20}
-            color={COLOR.BLACK}
+            color={COLOR.WHITE}
             pointerEvents="none"
           />
         </Pressable>
@@ -64,13 +65,13 @@ export const HomeTerrain3DButtons = React.memo((props: Props) => {
       {vista.active && (
         <>
           <Pressable style={styles.button} onPress={() => withHandle((h) => h.changeVistaHeight(1))}>
-            <MaterialCommunityIcons name="arrow-up" size={20} color={COLOR.BLACK} pointerEvents="none" />
+            <MaterialCommunityIcons name="arrow-up" size={20} color={COLOR.WHITE} pointerEvents="none" />
           </Pressable>
           <View style={styles.height}>
             <Text style={styles.heightText}>{formatHeight(vista.heightM)}</Text>
           </View>
           <Pressable style={styles.button} onPress={() => withHandle((h) => h.changeVistaHeight(-1))}>
-            <MaterialCommunityIcons name="arrow-down" size={20} color={COLOR.BLACK} pointerEvents="none" />
+            <MaterialCommunityIcons name="arrow-down" size={20} color={COLOR.WHITE} pointerEvents="none" />
           </Pressable>
         </>
       )}
@@ -85,33 +86,28 @@ const formatHeight = (heightM: number): string =>
 const styles = StyleSheet.create({
   button: {
     alignItems: 'center',
-    backgroundColor: COLOR.WHITE,
-    borderColor: COLOR.GRAY2,
-    borderRadius: 5,
-    borderWidth: 1,
-    height: 30,
+    height: 36,
     justifyContent: 'center',
-    marginBottom: 5,
-    width: 30,
+    width: 38,
   },
+  // ズームボタン（HomeZoomButton）と同じパネル
   container: {
+    alignItems: 'center',
+    backgroundColor: COLOR.ALFABLUE,
+    borderRadius: 10,
     elevation: 100,
+    paddingVertical: 2,
     position: 'absolute',
+    width: 38,
     zIndex: 100,
   },
   height: {
     alignItems: 'center',
-    backgroundColor: COLOR.WHITE,
-    borderColor: COLOR.GRAY2,
-    borderRadius: 5,
-    borderWidth: 1,
     justifyContent: 'center',
-    marginBottom: 5,
-    paddingVertical: 3,
-    width: 30,
+    paddingVertical: 2,
   },
   heightText: {
-    color: COLOR.BLACK,
-    fontSize: 9,
+    color: COLOR.WHITE,
+    fontSize: 10,
   },
 });
