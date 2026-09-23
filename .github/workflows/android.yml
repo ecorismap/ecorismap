@@ -1,5 +1,24 @@
 name: Android CI and Deploy
-on: [push, workflow_dispatch]
+# 配信が走るのはmainとhotfixだけにする（作業ブランチのpushのたびに内部テストが
+# 更新されると、テスターの手元が未完成の版に入れ替わってしまう）。
+# 任意のブランチを試したいときはworkflow_dispatchで手動実行する
+on:
+  push:
+    branches:
+      - main
+      - 'hotfix/**'
+      - 'release/**'
+  workflow_dispatch:
+    inputs:
+      track:
+        description: '配信先トラック（内部テスト=internal、クローズドテスト=alpha）'
+        required: false
+        default: internal
+        type: choice
+        options:
+          - internal
+          - alpha
+          - beta
 jobs:
   build-and-deploy:
     name: Build and Deploy Release
@@ -56,23 +75,18 @@ jobs:
           echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > android/app/release.keystore
       - name: Get and increment version code
         run: |
-          # Get the current highest version code from Google Play Console using git tags or commit count
-          # Option 1: Use git commit count (always increasing)
-          VERSION_FROM_COMMITS=$(git rev-list --count HEAD)
+          # versionCodeはワークフローの実行番号から決める。
+          # 以前は`git rev-list --count HEAD`（コミット数）だったが、これはブランチごとに
+          # 値が変わる。リリースタグから切ったhotfixブランチはmainよりコミット数が少ないため、
+          # mainのビルドが消費した番号より小さくなり、Playに「使用済み」と弾かれていた。
+          # 実行番号はリポジトリ全体で単調増加し、どのブランチから流しても衝突しない。
+          # オフセットは、コミット数方式で消費済みの番号（2855まで）を確実に超えるための下駄。
+          # 注意: ワークフローファイル名を変えると実行番号が1に戻るので、その場合は
+          # オフセットを上げ直すこと
+          VERSION_CODE_OFFSET=3000
+          NEW_VERSION=$((VERSION_CODE_OFFSET + GITHUB_RUN_NUMBER))
 
-          # Option 2: Get from build.gradle as baseline
-          VERSION_FROM_GRADLE=$(grep "versionCode" android/app/build.gradle | grep -o '[0-9]\+' | tail -1)
-
-          # Use the higher value to ensure it's always increasing
-          if [ $VERSION_FROM_COMMITS -gt $VERSION_FROM_GRADLE ]; then
-            NEW_VERSION=$VERSION_FROM_COMMITS
-          else
-            # If gradle version is higher, use gradle version + 1
-            NEW_VERSION=$((VERSION_FROM_GRADLE + 1))
-          fi
-
-          echo "Commit count: $VERSION_FROM_COMMITS"
-          echo "Gradle version: $VERSION_FROM_GRADLE"
+          echo "Run number: $GITHUB_RUN_NUMBER"
           echo "New version code: $NEW_VERSION"
 
           # Set as environment variable
@@ -105,6 +119,14 @@ jobs:
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: cd android && ./gradlew bundleRelease
+      - name: Determine Play track
+        run: |
+          # 手動実行なら指定されたトラック、pushなら内部テストへ。
+          # 0.7.0の開発と0.6.xの修正を同時に配りたい場合は、Play Consoleで
+          # クローズドテスト（alpha）を作ったうえで、片方を手動実行でalphaへ送る
+          TRACK="${{ github.event.inputs.track }}"
+          echo "PLAY_TRACK=${TRACK:-internal}" >> $GITHUB_ENV
+          echo "Play track: ${TRACK:-internal}"
       - name: Setup Google Play Config
         run: |
           echo '${{ secrets.PLAY_STORE_CONFIG_JSON }}' > play-store-config.json
@@ -115,6 +137,6 @@ jobs:
           packageName: jp.co.ecoris.ecorismap
           releaseFiles: android/app/build/outputs/bundle/release/app-release.aab
           mappingFile: android/app/build/outputs/mapping/release/mapping.txt
-          track: internal
+          track: ${{ env.PLAY_TRACK }}
           status: completed
           whatsNewDirectory: whatsnew
