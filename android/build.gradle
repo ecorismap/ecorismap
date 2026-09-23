@@ -3,7 +3,9 @@
 buildscript {
     ext {
         buildToolsVersion = "36.0.0"
-        minSdkVersion = 24
+        // react-native-webgpu（3D地形の描画基盤）がAHardwareBuffer APIを使うため26以上が必須。
+        // WebGPUのバックエンドであるVulkanも実質Android 8.0以降の前提
+        minSdkVersion = 26
         compileSdkVersion = 36
         targetSdkVersion = 36
 

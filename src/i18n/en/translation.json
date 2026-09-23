@@ -992,7 +992,8 @@
       "elevationUnavailable": "Elevation unavailable",
       "copied": "Copied",
       "createViewshed": "Create Viewshed",
-      "measureDistance": "Measure Distance"
+      "measureDistance": "Measure Distance",
+      "vista": "View from here"
     },
     "measure": {
       "tapToSetPoint": "Tap the map to set a point",
@@ -1010,6 +1011,9 @@
       "observerHeight": "Observer height (m)",
       "useSnapPoint": "Use point \"{{name}}\" as center",
       "previewCount": "Viewshed: {{count}}"
+    },
+    "vista": {
+      "banner": "Vista mode"
     },
     "layerSelect": {
       "title": "Select a layer to edit",
@@ -1208,7 +1212,9 @@
       "maxAltitude": "Max Altitude",
       "minAltitude": "Min Altitude",
       "elevationProfile": "Elevation Profile",
-      "photos": "Photos"
+      "photos": "Photos",
+      "replay": "Play track",
+      "pause": "Pause playback"
     },
     "noAltitudeData": "No altitude data",
     "notFound": "Track data not found",

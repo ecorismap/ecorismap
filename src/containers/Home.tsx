@@ -66,6 +66,7 @@ import { HomeModalUpdateInfo } from '../components/organisms/HomeModalUpdateInfo
 import { usePointTool } from '../hooks/usePointTool';
 import { useDrawTool } from '../hooks/useDrawTool';
 import { MapViewContext } from '../contexts/MapView';
+import { MapViewStableContext } from '../contexts/MapViewStable';
 import { DrawingToolsContext } from '../contexts/DrawingTools';
 import { PDFExportContext } from '../contexts/PDFExport';
 import { LocationTrackingContext } from '../contexts/LocationTracking';
@@ -100,6 +101,7 @@ import {
   findNearestTrackPoint,
   latLonToXY,
 } from '../utils/Coords';
+import { isTerrain3DHandle } from '../utils/terrain3d/types';
 import { generateLabel, resolveCodeField, toCodeFieldValue } from '../utils/Layer';
 import { hex2rgba, hsv2rgbaString } from '../utils/Color';
 import { getAllTrackPoints } from '../utils/Location';
@@ -131,7 +133,8 @@ import { useMaps } from '../hooks/useMaps';
 import { useRepository } from '../hooks/useRepository';
 import { ConflictResolverModal } from '../components/organisms/HomeModalConflictResolver';
 import { selectNonDeletedDataSet } from '../modules/selectors';
-import { TrackFocusContext, TrackFocusProvider } from '../contexts/TrackFocus';
+import { TrackFocusProvider, TrackFocusSetterContext } from '../contexts/TrackFocus';
+import { isTrackReplayEngaged } from '../utils/trackReplayStore';
 import { TrackPhotoProvider, TrackPhotoContext } from '../contexts/TrackPhoto';
 import { MeasureContext, MeasureProvider } from '../contexts/Measure';
 import { ViewshedContext, ViewshedProvider } from '../contexts/Viewshed';
@@ -268,7 +271,8 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
   // 軌跡上の写真マーカー（タップ判定はMarkerのonPressではなくここの画面タップヒットテストで行う）
   const { trackPhotos, setSelectedPhoto, expandedClusterId, setExpandedClusterId } = useContext(TrackPhotoContext);
   // 軌跡サマリーのフォーカス地点（時刻ポップアップとマーカーの表示元）。地図を動かしたら解除する
-  const { setTrackFocusPoint } = useContext(TrackFocusContext);
+  // 値ではなくsetterだけを購読する（フォーカスが動くたびにHome全体を作り直さないため）
+  const setTrackFocusPoint = useContext(TrackFocusSetterContext);
   const tileMaps = useSelector((state: RootState) => state.tileMaps);
   const user = useSelector((state: RootState) => state.user);
   const tileRegions = useSelector((state: RootState) => state.settings.tileRegions, shallowEqual);
@@ -302,7 +306,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
 
   const { importGeoFile } = useGeoFile();
   const { runTutrial } = useTutrial();
-  const { zoom, zoomDecimal, zoomIn, zoomOut, changeMapRegion } = useMapView(mapViewRef.current);
+  const { zoom, zoomDecimal, zoomIn, zoomOut, changeMapRegion } = useMapView(mapViewRef);
   const { isConnected } = useNetInfo();
 
   // 複数地図選択状態
@@ -372,6 +376,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     isRedoable: isDrawRedoable,
     finishEditObject,
     selectSingleFeature,
+    selectSingleFeatureByLatLon,
     showDrawLine,
     hideDrawLine,
     resetDrawTools,
@@ -740,7 +745,8 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       setPoiInfo(null);
       setMapLocationInfo(null);
       setTrackPointInfo(null);
-      setTrackFocusPoint(null);
+      // 再生中のフォーカスは進行位置そのものなので消さない
+      if (!isTrackReplayEngaged()) setTrackFocusPoint(null);
       setExpandedClusterId(null);
     },
     [
@@ -822,7 +828,8 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     setPoiInfo(null);
     setMapLocationInfo(null);
     setTrackPointInfo(null);
-    setTrackFocusPoint(null);
+    // 再生中の地図操作は一時停止扱い（3D側で依頼が飛ぶ）。進行位置は残す
+    if (!isTrackReplayEngaged()) setTrackFocusPoint(null);
     setExpandedClusterId(null);
   }, [setPoiInfo, setMapLocationInfo, setTrackFocusPoint, setExpandedClusterId]);
 
@@ -1797,6 +1804,12 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
   const pressCompass = useCallback(async () => {
     if (isInfoToolActive) return;
     if (featureButton !== 'NONE') return;
+    // 3D中はヘディングアップにせず、タップで北が上に戻るだけにする
+    if (Platform.OS !== 'web' && isTerrainActive) {
+      const handle = mapViewRef.current;
+      if (isTerrain3DHandle(handle)) handle.animateCamera({ heading: 0 }, { duration: 300 });
+      return;
+    }
     if (headingUp) {
       // オフは権限チェック・GPSサービス再同期を通さず即座に北向きへ戻す。
       // GPS状態は変更しない（follow中にshowへ降格させない）。
@@ -1807,7 +1820,23 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     // 回転（heading購読）を先に開始し、GPSサービス起動の完了を待たせない
     await toggleHeadingUp(true);
     await toggleGPS('show');
-  }, [confirmLocationPermission, featureButton, headingUp, isInfoToolActive, toggleGPS, toggleHeadingUp]);
+  }, [
+    confirmLocationPermission,
+    featureButton,
+    headingUp,
+    isInfoToolActive,
+    isTerrainActive,
+    mapViewRef,
+    toggleGPS,
+    toggleHeadingUp,
+  ]);
+
+  // 3D表示に入ったらヘディングアップを解除する（3D中は回転をユーザー操作に委ねる。
+  // 3D中はpressCompassが北向きリセットになるため再有効化もされない）
+  useEffect(() => {
+    if (Platform.OS === 'web') return;
+    if (isTerrainActive && headingUp) toggleHeadingUp(false);
+  }, [isTerrainActive, headingUp, toggleHeadingUp]);
 
   const pressTracking = useCallback(async () => {
     if (Platform.OS === 'web') {
@@ -2435,6 +2464,84 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       getPXY,
       mapRegion,
       mapSize,
+    ]
+  );
+
+  // 3Dビューのタップ用。緯度経度で地物のヒットテストを行い、2Dのタップと同じUI
+  // （軌跡=サマリー表示、その他=DataEditシート）を開く。
+  // 何も見つからなければtrueを返す（呼び出し側でベクタタイル情報の取得へ進む）
+  const getInfoOfFeatureAt = useCallback(
+    async (latlon: Position): Promise<boolean> => {
+      if (isEditingRecord) {
+        await AlertAsync(t('Home.alert.discardChanges'));
+        return false;
+      }
+      setTrackPointInfo(null);
+
+      const { layer, feature } = selectSingleFeatureByLatLon(latlon);
+
+      if (layer === undefined || feature === undefined) {
+        unselectRecord();
+        // 記録中の軌跡ログはレコード化前でselectSingleFeatureの対象外のため、別途ヒットテストする
+        if (trackMetadata.totalPoints > 0) {
+          const radius = calcDegreeRadius(2000, mapRegion, mapSize);
+          const nearest = findNearestTrackPoint(getAllTrackPoints(), latlon, radius);
+          const timestamp = nearest?.interpolatedTimestamp ?? nearest?.point.timestamp;
+          if (nearest !== undefined && timestamp !== undefined) {
+            openSheet(isLandscape ? 2 : 1);
+            navigateToSplit('TrackSummary', {
+              recording: true,
+              previous: 'Home',
+              initialFocusLatLon: { latitude: nearest.point.latitude, longitude: nearest.point.longitude },
+            });
+            return false;
+          }
+        }
+        return true;
+      }
+
+      // 保存済み軌跡（trackレイヤ）はDataEditを開かず軌跡サマリーを開く（2Dと同じ）
+      if (layer.id === 'track' && layer.type === 'LINE') {
+        const lineFeature = feature as LineRecordType;
+        if (lineFeature.coords !== undefined) {
+          const radius = calcDegreeRadius(2000, mapRegion, mapSize);
+          const nearest = findNearestTrackPoint(lineFeature.coords, latlon, radius);
+          const timestamp = nearest?.interpolatedTimestamp ?? nearest?.point.timestamp;
+          if (nearest !== undefined && timestamp !== undefined) {
+            openSheet(isLandscape ? 2 : 1);
+            navigateToSplit('TrackSummary', {
+              layerId: layer.id,
+              recordId: lineFeature.id,
+              userId: lineFeature.userId,
+              previous: 'Home',
+              initialFocusLatLon: { latitude: nearest.point.latitude, longitude: nearest.point.longitude },
+            });
+            return false;
+          }
+        }
+      }
+
+      // selectRecordはボトムシートが開いた後に実行する（2Dと同じ競合回避）
+      pendingSelectRecord.current = { layerId: layer.id, feature: { ...feature } };
+      openSheet(isLandscape ? 2 : 1);
+      navigateToSplit?.('DataEdit', {
+        previous: 'Data',
+        targetData: { ...feature },
+        targetLayer: { ...layer },
+      });
+      return false;
+    },
+    [
+      isEditingRecord,
+      isLandscape,
+      mapRegion,
+      mapSize,
+      navigateToSplit,
+      openSheet,
+      selectSingleFeatureByLatLon,
+      setTrackPointInfo,
+      trackMetadata.totalPoints,
+      unselectRecord,
     ]
   );
 
@@ -3265,6 +3372,13 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     ]
   );
 
+  // 3D地形ビュー向け: 位置・方位を含まない安定値だけのコンテキスト
+  // （MapViewContextはGPS更新のたびに作り直されるため、描画ループを持つ3Dでは使えない）
+  const mapViewStableContextValue = useMemo(
+    () => ({ mapViewRef, zoom, zoomDecimal, onDragMapView, setMapLocationInfo }),
+    [mapViewRef, zoom, zoomDecimal, onDragMapView, setMapLocationInfo]
+  );
+
   // DrawingToolsContextの値をメモ化（SVG描画要素を除外）
   const drawingToolsContextValue = useMemo(
     () => ({
@@ -3616,12 +3730,16 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       setVisibleInfoPicker,
       setInfoToolActive,
       closeVectorTileInfo,
+      getInfoOfMap,
+      getInfoOfFeatureAt,
     }),
     [
       currentInfoTool,
       isInfoToolActive,
       vectorTileInfo,
       selectInfoTool,
+      getInfoOfMap,
+      getInfoOfFeatureAt,
       setVisibleInfoPicker,
       setInfoToolActive,
       closeVectorTileInfo,
@@ -3667,6 +3785,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
 
   return (
     <MapViewContext.Provider value={mapViewContextValue}>
+      <MapViewStableContext.Provider value={mapViewStableContextValue}>
       <DrawingToolsContext.Provider value={drawingToolsContextValue}>
         <PDFExportContext.Provider value={pdfExportContextValue}>
           <LocationTrackingContext.Provider value={locationTrackingContextValue}>
@@ -3787,6 +3906,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
           </LocationTrackingContext.Provider>
         </PDFExportContext.Provider>
       </DrawingToolsContext.Provider>
+      </MapViewStableContext.Provider>
     </MapViewContext.Provider>
   );
 }

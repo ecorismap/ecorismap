@@ -9,6 +9,7 @@ import { getDemElevation } from '../../utils/viewshed';
 import { copyToClipboard } from '../../utils/Clipboard';
 import { useWindow } from '../../hooks/useWindow';
 import { MeasureContext } from '../../contexts/Measure';
+import { isTerrain3DHandle } from '../../utils/terrain3d/types';
 import { t } from '../../i18n/config';
 
 export const HomePoiPopup = React.memo(() => {
@@ -21,6 +22,7 @@ export const HomePoiPopup = React.memo(() => {
     currentLocation,
     gpsState,
     pressCreateViewshed,
+    isTerrainActive,
   } = useContext(MapViewContext);
   const { startMeasure } = useContext(MeasureContext);
   const { mapRegion, mapSize } = useWindow();
@@ -86,7 +88,19 @@ export const HomePoiPopup = React.memo(() => {
     if (success) setCopied(true);
   }, [coordinateText]);
 
-  const HEIGHT = 40 + (distanceText ? 20 : 0) + 20 + (coordinateText ? 20 : 0) + (isPOI ? 0 : 60);
+  // 3Dでは可視領域・距離測定（2Dの地図操作が前提）を出さず、代わりに眺望を出す
+  const menuItemCount = isPOI ? 0 : isTerrainActive ? 1 : 2;
+  const HEIGHT = 40 + (distanceText ? 20 : 0) + 20 + (coordinateText ? 20 : 0) + menuItemCount * 30;
+
+  // その地点に立って真北を水平に見る視点へ3Dカメラを移す
+  const handleVista = useCallback(() => {
+    if (!locationInfo) return;
+    const { latitude, longitude } = locationInfo.coordinate;
+    const handle = mapViewRef.current;
+    setPoiInfo(null);
+    setMapLocationInfo(null);
+    if (isTerrain3DHandle(handle)) handle.moveToVista(latitude, longitude);
+  }, [locationInfo, mapViewRef, setPoiInfo, setMapLocationInfo]);
 
   // 長押し位置の可視領域作成ダイアログを開く（近くの既存ポイントがあればスナップ候補として渡す）
   const handleCreateViewshed = useCallback(() => {
@@ -217,7 +231,18 @@ export const HomePoiPopup = React.memo(() => {
               {t('Home.poi.openInGoogleMaps')}
             </Text>
           </Pressable>
-          {!isPOI && (
+          {!isPOI && isTerrainActive && (
+            <Pressable
+              onPress={handleVista}
+              style={{
+                paddingHorizontal: 10,
+                paddingVertical: 6,
+              }}
+            >
+              <Text style={{ color: COLOR.BLUE, fontSize: 14, fontWeight: 'bold' }}>{t('Home.poi.vista')}</Text>
+            </Pressable>
+          )}
+          {!isPOI && !isTerrainActive && (
             <Pressable
               onPress={handleCreateViewshed}
               style={{
@@ -230,7 +255,7 @@ export const HomePoiPopup = React.memo(() => {
               </Text>
             </Pressable>
           )}
-          {!isPOI && (
+          {!isPOI && !isTerrainActive && (
             <Pressable
               onPress={handleMeasureDistance}
               style={{

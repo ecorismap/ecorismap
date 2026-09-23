@@ -2,7 +2,8 @@ import React, { useCallback, useContext, useEffect, useMemo, useRef, useState } 
 import { useDispatch, useSelector } from 'react-redux';
 import TrackSummary from '../components/pages/TrackSummary';
 import { TrackSummaryContext } from '../contexts/TrackSummary';
-import { TrackFocusContext } from '../contexts/TrackFocus';
+import { TrackFocusSetterContext } from '../contexts/TrackFocus';
+import { useTrackReplay } from '../hooks/useTrackReplay';
 import { TrackPhotoContext } from '../contexts/TrackPhoto';
 import { LocationTrackingContext } from '../contexts/LocationTracking';
 import { useBottomSheetNavigation, useBottomSheetRoute } from '../contexts/BottomSheetNavigationContext';
@@ -86,7 +87,7 @@ export default function TrackSummaryContainers() {
   // タップ地点から開いた場合はその場所を初期フォーカスにしてマーカーを即表示する。
   // 記録中はprofileが伸び続けて再計算されるため、初期フォーカスは一度だけ適用し
   // 以後のグラフカーソル操作を上書きしない
-  const { setTrackFocusPoint } = useContext(TrackFocusContext);
+  const setTrackFocusPoint = useContext(TrackFocusSetterContext);
   const initialFocusLatLon = params?.initialFocusLatLon;
   const appliedInitialFocusRef = useRef(false);
   useEffect(() => {
@@ -106,6 +107,9 @@ export default function TrackSummaryContainers() {
   useEffect(() => {
     return () => setTrackFocusPoint(null);
   }, [setTrackFocusPoint]);
+
+  // 軌跡の再生（3Dではカメラが追従する）
+  const { isReplaying, canReplay, toggleReplay } = useTrackReplay(profile);
 
   // 軌跡の記録時間帯で端末ライブラリの写真を照合し、地図側のマーカーへContext経由で渡す。
   // 画面を離れたら消す（TrackFocusと同じライフサイクル）
@@ -318,6 +322,9 @@ export default function TrackSummaryContainers() {
         trackPhotoCount: trackPhotos.length,
         isLimitedAccess,
         presentLimitedPicker,
+        isReplaying,
+        canReplay,
+        toggleReplay,
       }}
     >
       <TrackSummary />

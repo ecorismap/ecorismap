@@ -7,6 +7,10 @@ global.Buffer = Buffer;
 // Reset module registry before mocking
 jest.resetModules();
 
+// react-native-webgpuはimport時にネイティブTurboModuleを要求するため、
+// パッケージ同梱のJSスタンドインへ差し替える（3D地形ビューを含む画面のテスト用）
+jest.mock('react-native-webgpu', () => require('react-native-webgpu/lib/module/mock'));
+
 // Mock redux-persist to prevent timeout issues in tests
 jest.mock('redux-persist', () => {
   const real = jest.requireActual('redux-persist');

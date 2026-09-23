@@ -31,6 +31,17 @@
 # gson 2.8.8 (react-native-mapsのpatchで追加、proguard rules非同梱の版)
 -keepattributes Signature,*Annotation*,InnerClasses,EnclosingMethod
 -dontwarn com.google.gson.**
+# TypeTokenの匿名サブクラス（new TypeToken<VectorStyle>(){}）はジェネリック型解決に使われる
+-keep,allowobfuscation,allowshrinking class com.google.gson.reflect.TypeToken
+-keep,allowobfuscation,allowshrinking class * extends com.google.gson.reflect.TypeToken
+
+# react-native-mapsのPMTilesベクタタイル（patchで追加されたスタイル解釈まわり）
+# style.jsonとPMTilesのメタデータをGsonがフィールド名でマッピングするため、R8で
+# 難読化されるとVectorStyle.layers等がnullになり、2D地図のベクタが一切描画されなくなる
+# （@SerializedName付きのフィールドしか生き残らない）。クラッシュしないので気づきにくい。
+-keep class VectorTileStyle.** { *; }
+-keep class VectorTileStyleManager.** { *; }
+-keep class PMTiles.** { *; }
 
 # react-native-device-info (READMEで要求されているルール)
 -keep class com.android.installreferrer.api.** { *; }
@@ -41,3 +52,9 @@
 
 # expo headless app loader (AndroidManifestのmeta-data経由でClass.forNameされる)
 -keep class expo.modules.adapters.react.apploader.RNHeadlessAppLoader { *; }
+
+# react-native-webgpu (3Dビュー)
+# ネイティブ側はJNIからJavaクラス・メソッドを解決するため、R8に削除・改名されると
+# 3D表示時にリンクエラーで落ちる。
+-keep class com.webgpu.** { *; }
+-dontwarn com.webgpu.**

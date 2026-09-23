@@ -1,4 +1,4 @@
-import { useMemo, useRef } from 'react';
+import React, { useMemo, useRef } from 'react';
 import { useCallback } from 'react';
 import MapView, { Region } from 'react-native-maps';
 import { MapRef, ViewState } from 'react-map-gl/maplibre';
@@ -8,6 +8,7 @@ import { useWindow } from './useWindow';
 import { RegionType } from '../types';
 import { editSettingsAction } from '../modules/settings';
 import { deltaToZoom, zoomToDelta } from '../utils/Coords';
+import { isTerrain3DHandle } from '../utils/terrain3d/types';
 import { useDispatch } from 'react-redux';
 
 export type UseMapViewReturnType = {
@@ -18,7 +19,7 @@ export type UseMapViewReturnType = {
   changeMapRegion: (region: Region | ViewState | undefined, jumpTo?: boolean) => void;
 };
 
-export const useMapView = (mapViewRef: MapView | MapRef | null): UseMapViewReturnType => {
+export const useMapView = (mapViewRefObj: React.RefObject<MapView | MapRef | null>): UseMapViewReturnType => {
   const { windowWidth, mapRegion } = useWindow();
   const dispatch = useDispatch();
   const regionChangeSeq = useRef(0);
@@ -42,6 +43,14 @@ export const useMapView = (mapViewRef: MapView | MapRef | null): UseMapViewRetur
   const zoom = useMemo(() => Math.floor(zoomDecimal), [zoomDecimal]);
 
   const zoomIn = useCallback(() => {
+    // 3D切替などでrefの中身が差し替わるため、呼び出し時点のcurrentを解決する
+    const mapViewRef = mapViewRefObj.current;
+    // 3Dはカメラ側の値を基準にする（mapRegionはカメラ同期の間引きで遅れるため、
+    // 連続で押すと同じズームを指し続けて効かなくなる）
+    if (isTerrain3DHandle(mapViewRef)) {
+      mapViewRef.zoomBy(1);
+      return;
+    }
     const { latitude, longitude, latitudeDelta, longitudeDelta } = mapRegion;
     const coords = {
       latitude: latitude,
@@ -55,9 +64,14 @@ export const useMapView = (mapViewRef: MapView | MapRef | null): UseMapViewRetur
       const mapRef = mapViewRef.getMap();
       mapRef.flyTo({ center: [longitude, latitude], zoom: mapRef.getZoom() + 1, essential: true });
     }
-  }, [mapRegion, mapViewRef]);
+  }, [mapRegion, mapViewRefObj]);
 
   const zoomOut = useCallback(() => {
+    const mapViewRef = mapViewRefObj.current;
+    if (isTerrain3DHandle(mapViewRef)) {
+      mapViewRef.zoomBy(-1);
+      return;
+    }
     const { latitude, longitude, latitudeDelta, longitudeDelta } = mapRegion;
     const coords = {
       latitude: latitude,
@@ -75,10 +89,11 @@ export const useMapView = (mapViewRef: MapView | MapRef | null): UseMapViewRetur
         essential: true,
       });
     }
-  }, [mapRegion, mapViewRef]);
+  }, [mapRegion, mapViewRefObj]);
 
   const changeMapRegion = useCallback(
     (region: Region | ViewState | RegionType | undefined, jumpTo = false) => {
+      const mapViewRef = mapViewRefObj.current;
       if (region === undefined) return;
       if (Platform.OS === 'web') {
         if (isRegionType(region)) {
@@ -123,7 +138,7 @@ export const useMapView = (mapViewRef: MapView | MapRef | null): UseMapViewRetur
         }
       }
     },
-    [dispatch, mapViewRef, windowWidth]
+    [dispatch, mapViewRefObj, windowWidth]
   );
 
   return { zoom, zoomDecimal, zoomIn, zoomOut, changeMapRegion } as const;

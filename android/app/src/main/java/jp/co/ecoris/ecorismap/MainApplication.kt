@@ -23,6 +23,8 @@ class MainApplication : Application(), ReactApplication {
         PackageList(this).packages.apply {
           // Packages that cannot be autolinked yet can be added manually here, for example:
           // add(MyReactNativePackage())
+          // 3D地形ビュー用のPMTilesラスタライザ（react-native-mapsパッチ内の実装をJSへ公開）
+          add(PMTileRasterizerPackage())
         }
     )
   }

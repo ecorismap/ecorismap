@@ -16,6 +16,7 @@ import { HomeTrackPhotoModal } from '../organisms/HomeTrackPhotoModal';
 import { HomeMeasure } from '../organisms/HomeMeasure';
 import { HomeMeasureBanner } from '../organisms/HomeMeasureBanner';
 import { HomeViewshedBanner } from '../organisms/HomeViewshedBanner';
+import { HomeTerrain3DVistaBanner } from '../organisms/HomeTerrain3DVistaBanner';
 import { HomeViewshedPreview } from '../organisms/HomeViewshedPreview';
 import { HomeSeaLabels } from '../organisms/HomeSeaLabels';
 import { Point } from '../organisms/HomePoint';
@@ -23,10 +24,13 @@ import { Line } from '../organisms/HomeLine';
 import { Polygon } from '../organisms/HomePolygon';
 import { DownloadArea } from '../organisms/HomeDownloadArea';
 import { HomeZoomButton } from '../organisms/HomeZoomButton';
+import { HomeTerrain3D } from '../organisms/HomeTerrain3D';
+import { HomeTerrain3DButtons } from '../organisms/HomeTerrain3DButtons';
+import { HomeTerrainControl } from '../organisms/HomeTerrainControl';
 import { HomeAttributionText } from '../organisms/HomeAttributionText';
 import { HomeDrawTools } from '../organisms/HomeDrawTools';
 
-import { HomeCompassButton } from '../organisms/HomeCompassButton';
+import { HomeCompassRose } from '../organisms/HomeCompassRose';
 import { HomeAccountButton } from '../organisms/HomeAccountButton';
 
 import { HomeGPSButton } from '../organisms/HomeGPSButton';
@@ -39,6 +43,7 @@ import { useModalYieldingToDialog } from '../molecules/StyledDialog';
 import { t } from '../../i18n/config';
 import { DEM_VIEWSHED_MAP_ID } from '../../constants/DemSources';
 import { useWindow } from '../../hooks/useWindow';
+import { useTerrain3dSupport } from '../../hooks/useTerrain3dSupport';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../store';
 import { getMapGesturesEnabled } from '../../utils/General';
@@ -254,6 +259,8 @@ export default function HomeScreen() {
     panResponder,
     isDrawLineVisible,
     setPoiInfo,
+    isTerrainActive,
+    toggleTerrain,
   } = useContext(MapViewContext);
 
   // DrawingToolsContext
@@ -281,6 +288,8 @@ export default function HomeScreen() {
   const layers = useSelector((state: RootState) => state.layers);
   const insets = useSafeAreaInsets();
   const { mapRegion, windowHeight, isLandscape, windowWidth } = useWindow();
+  // WebGPU非対応端末（Vulkanのない古いAndroid等）では3Dボタンを出さない
+  const terrain3dSupported = useTerrain3dSupport();
   const { bounds } = useViewportBounds(mapRegion);
 
   const navigationHeaderHeight = useMemo(
@@ -540,15 +549,20 @@ export default function HomeScreen() {
             pressSelectColorOK={selectPenColor}
             pressSelectColorCancel={() => setVisibleMapMemoColor(false)}
           />
-          <MapMemoView />
+          {!isTerrainActive && <MapMemoView />}
           <HomePopup />
+          {/* 長押しメニューは3Dでも出す（項目はHomePoiPopup側で3D用に出し分ける） */}
           <HomePoiPopup />
           <HomeMeasureBanner />
           <HomeViewshedBanner />
-          <HomeTrackPointPopup />
+          <HomeTerrain3DVistaBanner />
+          {!isTerrainActive && <HomeTrackPointPopup />}
           <HomeTrackPhotoModal />
-          {isDrawLineVisible && <SvgView />}
+          {!isTerrainActive && isDrawLineVisible && <SvgView />}
 
+          {/************** 3D地形ビュー（isTerrainActive時はMapViewと差し替え） ****************** */}
+          {isTerrainActive && <HomeTerrain3D />}
+          {!isTerrainActive && (
           <MapView
             ref={mapViewRef as React.RefObject<MapView>}
             provider={PROVIDER_GOOGLE}
@@ -673,6 +687,7 @@ export default function HomeScreen() {
             {/************* exportPDF mode ******************** */}
             {exportPDFMode && <PDFArea pdfArea={pdfArea} />}
           </MapView>
+          )}
           {mapRegion && (
             <View
               style={[
@@ -691,6 +706,15 @@ export default function HomeScreen() {
             zoomOut={pressZoomOut}
             showHeader={downloadMode || exportPDFMode}
           />
+          {!(downloadMode || exportPDFMode) && featureButton === 'NONE' && toggleTerrain !== undefined && terrain3dSupported && (
+            <HomeTerrainControl
+              top={insets.top + 245}
+              left={13 + insets.left}
+              isTerrainActive={isTerrainActive ?? false}
+              toggleTerrain={toggleTerrain}
+            />
+          )}
+          {isTerrainActive && <HomeTerrain3DButtons top={insets.top + 285} left={13 + insets.left} />}
 
           {!downloadMode && !exportPDFMode && isShowingProjectButtons && <HomeProjectButtons />}
           {projectName === undefined || downloadMode || exportPDFMode ? null : (
@@ -700,8 +724,10 @@ export default function HomeScreen() {
           {downloadMode || exportPDFMode ? null : <HomeAccountButton />}
 
           {!(downloadMode || exportPDFMode) && (
-            <HomeCompassButton
+            <HomeCompassRose
+              // 3D中は盤面をカメラの方位と連動させる（Nが画面上の北を指す）
               azimuth={azimuth}
+              isTerrainActive={!!isTerrainActive}
               headingUp={headingUp}
               onPressCompass={pressCompass}
               onLongPressCompass={toggleDirectionLine}
@@ -712,10 +738,10 @@ export default function HomeScreen() {
           {/* HomeInfoToolButtonを非表示にする
           {!(downloadMode || exportPDFMode || editPositionMode) && <HomeInfoToolButton />}
           */}
-          {!(downloadMode || exportPDFMode) && featureButton !== 'NONE' && featureButton !== 'MEMO' && (
+          {!(downloadMode || exportPDFMode || isTerrainActive) && featureButton !== 'NONE' && featureButton !== 'MEMO' && (
             <HomeDrawTools />
           )}
-          {!(downloadMode || exportPDFMode) && featureButton === 'MEMO' && <HomeMapMemoTools />}
+          {!(downloadMode || exportPDFMode || isTerrainActive) && featureButton === 'MEMO' && <HomeMapMemoTools />}
           {!(downloadMode || exportPDFMode || editPositionMode) && <HomeButtons />}
           {downloadMode && (
             <>

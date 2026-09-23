@@ -10991,10 +10991,10 @@ index 0000000..9faf374
 +#endif
 diff --git a/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapPMTile.m b/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapPMTile.m
 new file mode 100644
-index 0000000..08341df
+index 0000000..506526f
 --- /dev/null
 +++ b/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapPMTile.m
-@@ -0,0 +1,174 @@
+@@ -0,0 +1,178 @@
 +//
 +//  AIRGoogleMapPMTile.m
 +//
@@ -11124,7 +11124,10 @@ index 0000000..08341df
 +  _styleURL = styleURL;
 +  if (self.tileLayer) {
 +
-+    self.tileLayer.styleURL = [NSURL URLWithString:_styleURL];
++    // NSStringのまま渡す。NSURLを入れるとStyleManagerのinitが
++    // stringByTrimmingCharactersInSet: を呼んだ時点で落ちる（NSURLには無いセレクタ）。
++    // プロパティ宣言もNSStringで、受け側は文字列として扱っている
++    self.tileLayer.styleURL = _styleURL;
 +    [self.tileLayer clearTileCache];
 +    [self updateTileLayer];
 +  }
@@ -11144,7 +11147,8 @@ index 0000000..08341df
 +  if (!tileCachePath)
 +    return;
 +  _tileCachePath = tileCachePath;
-+  self.tileLayer.tileCachePath = [NSURL URLWithString:_tileCachePath];
++  // 同上。受け側は %@ 結合や [NSURL URLWithString:] の引数として文字列で扱う
++  self.tileLayer.tileCachePath = _tileCachePath;
 +  [self.tileLayer clearTileCache];
 +  [self updateTileLayer];
 +}
@@ -12813,6 +12817,184 @@ index 0000000..9cdc53c
 +@end
 +
 +#endif
+diff --git a/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapPMTileRasterizer.h b/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapPMTileRasterizer.h
+new file mode 100644
+index 0000000..2708c31
+--- /dev/null
++++ b/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapPMTileRasterizer.h
+@@ -0,0 +1,16 @@
++//
++//  AIRGoogleMapPMTileRasterizer.h
++//
++//  3D地形ビュー用: PMTiles（ベクタ/ラスタ）をPNGファイルへラスタライズするJSモジュール。
++//  AIRGoogleMapPMTileOverlayの描画実装をGoogle Maps表示なしで呼び出す。
++//
++
++#ifdef HAVE_GOOGLE_MAPS
++
++#import <Foundation/Foundation.h>
++#import <React/RCTBridgeModule.h>
++
++@interface AIRGoogleMapPMTileRasterizer : NSObject <RCTBridgeModule>
++@end
++
++#endif
+diff --git a/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapPMTileRasterizer.m b/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapPMTileRasterizer.m
+new file mode 100644
+index 0000000..a3e872b
+--- /dev/null
++++ b/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapPMTileRasterizer.m
+@@ -0,0 +1,150 @@
++//
++//  AIRGoogleMapPMTileRasterizer.m
++//
++//  3D地形ビュー用: PMTiles（ベクタ/ラスタ）をPNGファイルへラスタライズするJSモジュール。
++//
++//  AIRGoogleMapPMTileOverlayはPMTilesヘッダーを非同期で取得する（メインスレッドでの
++//  同期フェッチはFabricのprops適用中にタイムアウトしtileType=-1に固定される既知バグの
++//  対策）ため、tileTypeが確定するまで待ってからタイルを描画する。
++//  オーバーレイのインスタンスは設定キーごとにキャッシュし、直列キューで実行する。
++//
++
++#ifdef HAVE_GOOGLE_MAPS
++
++#import "AIRGoogleMapPMTileRasterizer.h"
++#import "AIRGoogleMapPMTileOverlay.h"
++
++// AIRGoogleMapPMTileOverlay.mの非公開メソッドを呼ぶためのカテゴリ宣言
++@interface AIRGoogleMapPMTileOverlay (Rasterizer)
++- (NSData *)getTile:(NSUInteger)zoom x:(NSUInteger)x y:(NSUInteger)y;
++- (NSData *)drawOverZoomTile:(NSUInteger)tryZ
++                           x:(NSUInteger)x
++                           y:(NSUInteger)y
++                        minZ:(NSInteger)minZ;
++@end
++
++@implementation AIRGoogleMapPMTileRasterizer {
++  NSMutableDictionary<NSString *, AIRGoogleMapPMTileOverlay *> *_overlays;
++  dispatch_queue_t _queue;
++}
++
++RCT_EXPORT_MODULE(PMTileRasterizer)
++
++- (instancetype)init {
++  if (self = [super init]) {
++    _overlays = [NSMutableDictionary new];
++    _queue = dispatch_queue_create("jp.co.ecoris.pmtilerasterizer", DISPATCH_QUEUE_SERIAL);
++  }
++  return self;
++}
++
+++ (BOOL)requiresMainQueueSetup {
++  return NO;
++}
++
++// 全処理を専用直列キューで実行する（オーバーレイ内部状態はスレッドセーフでないため）
++- (dispatch_queue_t)methodQueue {
++  return _queue;
++}
++
++/** file://スキームを外して実パスにする */
++static NSString *stripFileScheme(NSString *path) {
++  if ([path hasPrefix:@"file://"]) {
++    return [[NSURL URLWithString:path] path];
++  }
++  return path;
++}
++
++RCT_EXPORT_METHOD(renderTile:(NSDictionary *)options
++                  resolve:(RCTPromiseResolveBlock)resolve
++                  reject:(RCTPromiseRejectBlock)reject) {
++  NSString *urlTemplate = options[@"urlTemplate"];
++  NSString *outputPath = options[@"outputPath"];
++  if (urlTemplate == nil || outputPath == nil) {
++    reject(@"E_ARGS", @"urlTemplate and outputPath are required", nil);
++    return;
++  }
++  NSString *styleURL = options[@"styleURL"] ?: @"";
++  NSString *tileCachePath = options[@"tileCachePath"];
++  NSInteger z = [options[@"z"] integerValue];
++  NSInteger x = [options[@"x"] integerValue];
++  NSInteger y = [options[@"y"] integerValue];
++  NSInteger minimumZ = options[@"minimumZ"] ? [options[@"minimumZ"] integerValue] : 0;
++  NSInteger maximumZ = options[@"maximumZ"] ? [options[@"maximumZ"] integerValue] : 22;
++  NSInteger maximumNativeZ = options[@"maximumNativeZ"] ? [options[@"maximumNativeZ"] integerValue] : 18;
++  BOOL flipY = [options[@"flipY"] boolValue];
++  BOOL offlineMode = [options[@"offlineMode"] boolValue];
++  BOOL isVector = [options[@"isVector"] boolValue];
++
++  NSString *key = [NSString stringWithFormat:@"%@|%@|%@|%ld|%d|%d", urlTemplate, styleURL,
++                                             tileCachePath ?: @"", (long)maximumNativeZ,
++                                             offlineMode, isVector];
++  AIRGoogleMapPMTileOverlay *overlay = _overlays[key];
++  if (overlay == nil) {
++    overlay = [AIRGoogleMapPMTileOverlay new];
++    overlay.tileTemplate = urlTemplate;
++    overlay.styleURL = styleURL;
++    // NSStringのまま渡す。NSURLを入れるとベクタPMTilesで落ちる:
++    // StyleManagerのinitが stringByTrimmingCharactersInSet: を呼ぶため
++    // （NSURLには無いセレクタ = unrecognized selectorでSIGABRT）。
++    // overlay内部の他の箇所も [NSURL URLWithString:self.tileCachePath] のように
++    // NSStringとして扱っており、プロパティ宣言もNSStringになっている
++    overlay.tileCachePath = tileCachePath;
++    overlay.minimumZ = minimumZ;
++    overlay.maximumZ = maximumZ;
++    overlay.maximumNativeZ = maximumNativeZ;
++    overlay.doubleTileSize = 0;
++    overlay.tileCacheMaxAge = 0;
++    overlay.flipY = flipY;
++    overlay.offlineMode = offlineMode;
++    overlay.isVector = isVector;
++    [overlay updateTileLayer];
++    _overlays[key] = overlay;
++  }
++
++  // ヘッダー取得完了（tileType確定）を待つ。SharedCacheのタイムアウトは10秒
++  int waitedMs = 0;
++  while (overlay.tileType == -2 && waitedMs < 12000) {
++    usleep(100 * 1000);
++    waitedMs += 100;
++  }
++  if (overlay.tileType == -2 || (overlay.tileType == -1 && !overlay.offlineMode)) {
++    reject(@"E_HEADER", @"PMTiles header not available", nil);
++    return;
++  }
++
++  NSData *data = nil;
++  if (z > maximumNativeZ) {
++    data = [overlay drawOverZoomTile:z x:x y:y minZ:maximumNativeZ];
++  } else {
++    data = [overlay getTile:z x:x y:y];
++  }
++  if (data == nil || data.length == 0) {
++    resolve(@(0));
++    return;
++  }
++  NSString *outPath = stripFileScheme(outputPath);
++  [[NSFileManager defaultManager]
++      createDirectoryAtPath:[outPath stringByDeletingLastPathComponent]
++      withIntermediateDirectories:YES
++                 attributes:nil
++                      error:nil];
++  NSError *writeError = nil;
++  if (![data writeToFile:outPath options:NSDataWritingAtomic error:&writeError]) {
++    reject(@"E_WRITE", writeError.localizedDescription ?: @"write failed", writeError);
++    return;
++  }
++  // ベクタは512px、ラスタは256pxで描画される
++  NSInteger tileSize = (overlay.tileType == 0 || overlay.tileType == 1) ? 512 : 256;
++  resolve(@(tileSize));
++}
++
++RCT_EXPORT_METHOD(clearProviders:(RCTPromiseResolveBlock)resolve
++                  reject:(RCTPromiseRejectBlock)reject) {
++  [_overlays removeAllObjects];
++  resolve(nil);
++}
++
++@end
++
++#endif
 diff --git a/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapURLTileManager.m b/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapURLTileManager.m
 index ee501d8..6851fd9 100644
 --- a/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapURLTileManager.m
@@ -12889,10 +13071,10 @@ index 05b2afd..83cf84e 100644
  #endif
 +
 diff --git a/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapUrlTile.m b/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapUrlTile.m
-index b2e1eea..d512f70 100644
+index b2e1eea..4d1ddb2 100644
 --- a/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapUrlTile.m
 +++ b/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapUrlTile.m
-@@ -6,51 +6,219 @@
+@@ -6,51 +6,221 @@
  #ifdef HAVE_GOOGLE_MAPS
  
  #import "AIRGoogleMapUrlTile.h"
@@ -13086,7 +13268,9 @@ index b2e1eea..d512f70 100644
 +  if (!tileCachePath)
 +    return;
 +  _tileCachePath = tileCachePath;
-+  self.tileLayer.tileCachePath = [NSURL URLWithString:_tileCachePath];
++  // NSStringのまま渡す（プロパティ宣言もNSStringで、受け側は %@ 結合で
++  // パスを組み立てている）。NSURLを入れると文字列メソッドを呼んだ時点で落ちる
++  self.tileLayer.tileCachePath = _tileCachePath;
 +  [self.tileLayer clearTileCache];
 +}
  

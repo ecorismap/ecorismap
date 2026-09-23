@@ -18,6 +18,11 @@ interface TrackSummaryContextType {
   trackPhotoCount: number;
   isLimitedAccess: boolean;
   presentLimitedPicker: () => Promise<void>;
+  // 軌跡の再生（3Dではカメラが追従する。2Dはマーカーとグラフのカーソルが進む）
+  isReplaying: boolean;
+  // 標高プロファイルが無い・全長0の軌跡は再生できない
+  canReplay: boolean;
+  toggleReplay: () => void;
 }
 
 export const TrackSummaryContext = createContext({} as TrackSummaryContextType);

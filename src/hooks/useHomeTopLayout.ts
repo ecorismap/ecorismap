@@ -1,8 +1,9 @@
-import { useContext, useMemo } from 'react';
+import { useContext, useMemo, useSyncExternalStore } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MeasureContext } from '../contexts/Measure';
 import { ProjectContext } from '../contexts/Project';
 import { ViewshedContext } from '../contexts/Viewshed';
+import { terrain3dVistaStore } from '../utils/terrain3d/vistaStore';
 
 /**
  * 地図の上部中央に重ねる要素の縦位置。
@@ -11,7 +12,8 @@ import { ViewshedContext } from '../contexts/Viewshed';
  * 表示要素が増えた状態で重なる。上から順に積んで、出ていない要素の分は詰める。
  *
  * 並び順（上から）:
- *   プロジェクトラベル → プロジェクトボタン → 測定バナー → 可視領域バナー → 編集レイヤチップ → 確定・キャンセル
+ *   プロジェクトラベル → プロジェクトボタン → 測定バナー → 可視領域バナー → 眺望バナー
+ *   → 編集レイヤチップ → 確定・キャンセル
  * プロジェクトボタンはラベルをタップして開くものなのでラベルの直下に置き、
  * 作業中であることを示すバナーはその下、作図の操作系はさらに下に積む
  */
@@ -35,6 +37,7 @@ export type HomeTopLayout = {
   projectButtonsTop: number;
   measureBannerTop: number;
   viewshedBannerTop: number;
+  vistaBannerTop: number;
   editingLayerTop: number;
   editControlTop: number;
 };
@@ -45,12 +48,14 @@ export const calcHomeTopLayout = ({
   showProjectButtons,
   showMeasureBanner,
   showViewshedBanner,
+  showVistaBanner,
 }: {
   topInset: number;
   hasProjectLabel: boolean;
   showProjectButtons: boolean;
   showMeasureBanner: boolean;
   showViewshedBanner: boolean;
+  showVistaBanner: boolean;
 }): HomeTopLayout => {
   let y = topInset + TOP_MARGIN;
 
@@ -67,12 +72,23 @@ export const calcHomeTopLayout = ({
   const viewshedBannerTop = y;
   if (showViewshedBanner) y += HOME_TOP_HEIGHTS.banner + GAP;
 
+  const vistaBannerTop = y;
+  if (showVistaBanner) y += HOME_TOP_HEIGHTS.banner + GAP;
+
   const editingLayerTop = y;
   y += HOME_TOP_HEIGHTS.editingLayer + GAP;
 
   const editControlTop = y;
 
-  return { projectLabelTop, projectButtonsTop, measureBannerTop, viewshedBannerTop, editingLayerTop, editControlTop };
+  return {
+    projectLabelTop,
+    projectButtonsTop,
+    measureBannerTop,
+    viewshedBannerTop,
+    vistaBannerTop,
+    editingLayerTop,
+    editControlTop,
+  };
 };
 
 export const useHomeTopLayout = (): HomeTopLayout => {
@@ -80,6 +96,9 @@ export const useHomeTopLayout = (): HomeTopLayout => {
   const { projectName, isShowingProjectButtons } = useContext(ProjectContext);
   const { isMeasuring } = useContext(MeasureContext);
   const { hasViewshedPreview } = useContext(ViewshedContext);
+  // 眺望モードは3Dシーンが持つ状態なので外部ストアから取る（activeだけを見て、
+  // 高さ変更のたびにバナー以外まで再レンダリングされないようにする）
+  const isVista = useSyncExternalStore(terrain3dVistaStore.subscribe, () => terrain3dVistaStore.getSnapshot().active);
 
   return useMemo(
     () =>
@@ -89,7 +108,8 @@ export const useHomeTopLayout = (): HomeTopLayout => {
         showProjectButtons: isShowingProjectButtons,
         showMeasureBanner: isMeasuring,
         showViewshedBanner: hasViewshedPreview,
+        showVistaBanner: isVista,
       }),
-    [hasViewshedPreview, insets.top, isMeasuring, isShowingProjectButtons, projectName]
+    [hasViewshedPreview, insets.top, isMeasuring, isShowingProjectButtons, isVista, projectName]
   );
 };

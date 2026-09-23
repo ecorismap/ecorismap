@@ -35,7 +35,8 @@ export const HomeTerrainControl = React.memo((props: Props) => {
 
   return (
     <Pressable style={styles.buttonContainer} onPress={() => toggleTerrain()}>
-      <Svg width={22} height={22} viewBox="0 0 22 22">
+      {/* AndroidでSvgがタッチを飲み込みPressableが発火しないためpointerEventsを切る */}
+      <Svg pointerEvents="none" width={22} height={22} viewBox="0 0 22 22">
         <Path
           d="m1.754 13.406 4.453-4.851 3.09 3.09 3.281 3.277.969-.969-3.309-3.312 3.844-4.121 6.148 6.886h1.082v-.855l-7.207-8.07-4.84 5.187L6.169 6.57l-5.48 5.965v.871ZM.688 16.844h20.625v1.375H.688Zm0 0"
           fill={isTerrainActive ? COLOR.BLUE : COLOR.BLACK}

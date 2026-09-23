@@ -40,6 +40,9 @@ export default function TrackSummary() {
     trackPhotoCount,
     isLimitedAccess,
     presentLimitedPicker,
+    isReplaying,
+    canReplay,
+    toggleReplay,
   } = useContext(TrackSummaryContext);
 
   const timeRangeText = useMemo(() => {
@@ -111,6 +114,19 @@ export default function TrackSummary() {
         onBack={gotoBack}
         rightComponent={
           <View style={styles.headerButtons}>
+            {/* 再生はヘッダに置く。シートが半開きでもグラフと地図を見ながら押せる */}
+            <TouchableOpacity
+              style={styles.replayButton}
+              onPress={toggleReplay}
+              disabled={!canReplay}
+              accessibilityLabel={t(isReplaying ? 'TrackSummary.label.pause' : 'TrackSummary.label.replay')}
+            >
+              <MaterialCommunityIcons
+                name={isReplaying ? 'pause-circle' : 'play-circle'}
+                size={24}
+                color={canReplay ? COLOR.BLACK : COLOR.GRAY3}
+              />
+            </TouchableOpacity>
             <TouchableOpacity
               style={styles.exportButton}
               onPress={pressExportTrack}
@@ -282,6 +298,10 @@ const styles = StyleSheet.create({
   photoToggle: {
     alignItems: 'center',
     flexDirection: 'row',
+    padding: 5,
+  },
+  replayButton: {
+    alignItems: 'center',
     padding: 5,
   },
   timeText: {

@@ -8,6 +8,7 @@
  * @returns PNGバイト列。404はnull。ネットワークエラーはthrow（呼び出し側でキャッシュさせないため）
  */
 import * as FileSystem from 'expo-file-system/legacy';
+import { File } from 'expo-file-system';
 import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
 import { TILE_FOLDER } from '../constants/AppConstants';
 import { DEM_VIEWSHED_MAP_ID } from '../constants/DemSources';
@@ -42,9 +43,23 @@ const base64ToArrayBuffer = (base64: string): ArrayBuffer => {
   return bytes.buffer;
 };
 
+/**
+ * タイルファイルをバイト列として読む。
+ * base64文字列を経由せずネイティブから直接バイトを受け取る（タイル1枚あたり
+ * 数万文字のデコードが消えるため、大量のタイルを読む3D地形・viewshedで効く）。
+ * 新APIが使えない環境（旧OS等）ではbase64経由へフォールバックする。
+ */
 const readTileFile = async (fileUri: string): Promise<ArrayBuffer> => {
-  const base64 = await FileSystem.readAsStringAsync(fileUri, { encoding: FileSystem.EncodingType.Base64 });
-  return base64ToArrayBuffer(base64);
+  try {
+    const bytes = await new File(fileUri).bytes();
+    // Uint8Arrayのviewがバッファ全体とは限らないため、必要ならコピーして切り出す
+    return bytes.byteOffset === 0 && bytes.byteLength === bytes.buffer.byteLength
+      ? bytes.buffer
+      : bytes.slice().buffer;
+  } catch {
+    const base64 = await FileSystem.readAsStringAsync(fileUri, { encoding: FileSystem.EncodingType.Base64 });
+    return base64ToArrayBuffer(base64);
+  }
 };
 
 export const loadDemTilePng = async (url: string, key: string): Promise<ArrayBuffer | null> => {

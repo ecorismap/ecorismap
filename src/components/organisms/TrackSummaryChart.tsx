@@ -5,7 +5,7 @@ import Svg, { Path, Line, Circle, Text as SvgText } from 'react-native-svg';
 import { COLOR } from '../../constants/AppConstants';
 import { ElevationProfilePoint } from '../../utils/trackStatistics';
 import { CHART_PADDING as PADDING, buildElevationChart } from '../../utils/trackChart';
-import { TrackFocusContext } from '../../contexts/TrackFocus';
+import { TrackFocusContext, TrackFocusSetterContext } from '../../contexts/TrackFocus';
 import dayjs from '../../i18n/dayjs';
 
 interface Props {
@@ -16,7 +16,8 @@ interface Props {
 export const TrackSummaryChart = React.memo(({ profile, height = 180 }: Props) => {
   const [width, setWidth] = useState(0);
   // カーソル位置はTrackFocusContextと共有し、地図マーカーと双方向連動する
-  const { trackFocusPoint, setTrackFocusPoint } = useContext(TrackFocusContext);
+  const { trackFocusPoint } = useContext(TrackFocusContext);
+  const setTrackFocusPoint = useContext(TrackFocusSetterContext);
   const touchIndex =
     trackFocusPoint !== null && trackFocusPoint.index >= 0 && trackFocusPoint.index < profile.length
       ? trackFocusPoint.index

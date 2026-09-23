@@ -14462,6 +14462,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"earcut@npm:^3.2.3":
+  version: 3.2.3
+  resolution: "earcut@npm:3.2.3"
+  checksum: 5bb1588a96c8ba51f8b5173c91ac06ba8839d2a2fdd1e5eb259cd203e043293e199ada98a4d5e2111a151eda83389e5ac8d24a9003e9dc1c052603a74a5da3b4
+  languageName: node
+  linkType: hard
+
 "eastasianwidth@npm:^0.2.0":
   version: 0.2.0
   resolution: "eastasianwidth@npm:0.2.0"
@@ -14557,6 +14564,7 @@ __metadata:
     date-fns: ^4.4.0
     dayjs: ^1.11.11
     dexie: ^4.0.8
+    earcut: ^3.2.3
     eslint: ^9.39.0
     eslint-config-prettier: ^10.1.8
     eslint-plugin-jest: ^29.15.2
@@ -14648,6 +14656,7 @@ __metadata:
     react-native-vector-icons: ^10.1.0
     react-native-virgil-crypto: ^0.6.4
     react-native-web: ^0.21.2
+    react-native-webgpu: ^0.10.2
     react-native-worklets: 0.9.2
     react-native-zip-archive: ^8.0.1
     react-redux: ^9.1.2
@@ -24746,6 +24755,23 @@ __metadata:
     react: ^18.0.0 || ^19.0.0
     react-dom: ^18.0.0 || ^19.0.0
   checksum: 3d8be3ee2bae2790949683d8002973882538a49d5182bdda2a38739d44f0a5918bf082427ad062c98b71d3585ab9664c406685ceafe2432bb99877188dc9782d
+  languageName: node
+  linkType: hard
+
+"react-native-webgpu@npm:^0.10.2":
+  version: 0.10.2
+  resolution: "react-native-webgpu@npm:0.10.2"
+  peerDependencies:
+    react: "*"
+    react-native: ">=0.81.0"
+    react-native-reanimated: ">=4.2.1"
+    react-native-worklets: ">=0.7.2"
+  peerDependenciesMeta:
+    react-native-reanimated:
+      optional: true
+    react-native-worklets:
+      optional: true
+  checksum: 5bde8287b36775561b9362f41ff1f0caa32897daaef0106df2aad0dabca560239597493db6eb229597a57018041e330cc81be0a5a9a136b3600fc096520844c1
   languageName: node
   linkType: hard
 
