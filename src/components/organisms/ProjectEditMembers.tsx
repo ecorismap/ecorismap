@@ -123,15 +123,18 @@ const MemberTextInput = React.memo((props: any) => {
     <View style={styles.tr2}>
       <View style={{ flexDirection: 'row' }}>
         <Text style={styles.title}>{label}</Text>
-        <Button
-          style={{
-            backgroundColor: verified === 'OK' ? COLOR.GREEN : verified === 'HOLD' ? COLOR.ORANGE : COLOR.RED,
-            padding: 0,
-          }}
-          disabled={true}
-          name={verified ? 'account-check' : 'account-alert'}
-          size={14}
-        />
+        {/* 押せるボタンではなく状態表示。Buttonのdisabledは中身を薄くするため、白いアイコンが背景色に溶けてしまう */}
+        <View
+          style={[
+            styles.statusBadge,
+            {
+              backgroundColor:
+                verified === 'OK' ? COLOR.DARKGREEN : verified === 'HOLD' ? COLOR.ORANGE : COLOR.RED,
+            },
+          ]}
+        >
+          <MaterialCommunityIcons name={verified ? 'account-check' : 'account-alert'} size={18} color={COLOR.WHITE} />
+        </View>
         {keyStale && (
           <View style={styles.staleBadge}>
             <MaterialCommunityIcons name="key-alert" size={12} color={COLOR.WHITE} />
@@ -184,6 +187,13 @@ const styles = StyleSheet.create({
     color: COLOR.TEXT_DARK,
     fontSize: 15,
     marginLeft: 12,
+  },
+  statusBadge: {
+    alignItems: 'center',
+    borderRadius: 14,
+    height: 28,
+    justifyContent: 'center',
+    width: 28,
   },
   staleBadge: {
     alignItems: 'center',
