@@ -37,15 +37,16 @@ export const HomeTerrain3DButtons = React.memo((props: Props) => {
     [mapViewRef]
   );
 
-  // アイコンは「地図がどちらへ回るか」を表す（眺望中は「自分がどちらへ向き直るか」に
-  // なるよう、Terrain3DHandle.rotateBy側で符号を反転している）。
+  // アイコンは「画面上の地面がどちらへ回るか」を表す（眺望中も同じ）。
   // rotateByはカメラの向き（heading）を動かすので符号が裏返る:
-  // headingを増やす＝視線が東へ振れる＝画面上の地図は反時計回りに回る
+  // headingを増やす＝視線が東へ振れる＝画面上の地図は反時計回りに回る。
+  // 傾きも同じ考え方で、pitchを増やす（視線を寝かせる）と地面は
+  // axis-x-rotate-counterclockwiseの矢印の向きに回って見える（実機で逆だったため入れ替えた）
   const buttons: { key: string; icon: string; run: (handle: Terrain3DHandle) => void }[] = [
     { key: 'rotateCcw', icon: 'axis-z-rotate-counterclockwise', run: (h) => h.rotateBy(ROTATE_STEP_DEG) },
     { key: 'rotateCw', icon: 'axis-z-rotate-clockwise', run: (h) => h.rotateBy(-ROTATE_STEP_DEG) },
-    { key: 'pitchUp', icon: 'axis-x-rotate-counterclockwise', run: (h) => h.pitchBy(-PITCH_STEP_DEG) },
-    { key: 'pitchDown', icon: 'axis-x-rotate-clockwise', run: (h) => h.pitchBy(PITCH_STEP_DEG) },
+    { key: 'pitchCcw', icon: 'axis-x-rotate-counterclockwise', run: (h) => h.pitchBy(PITCH_STEP_DEG) },
+    { key: 'pitchCw', icon: 'axis-x-rotate-clockwise', run: (h) => h.pitchBy(-PITCH_STEP_DEG) },
   ];
 
   return (
