@@ -403,10 +403,8 @@ export const HomeTerrain3D = React.memo(() => {
         },
         isReplayFollowing: () => scene.isReplayActive,
         // 連打で積み上がるよう、進行中のアニメーションの到達点を基準に足す。
-        // 眺望中はアイコンを「地図がどちらへ回るか」ではなく「自分がどちらへ向き直るか」と
-        // 読むのが自然なので符号を反転する（地図を回すのと首を振るのは逆向きになる）
-        rotateBy: (deltaDeg) =>
-          animate({ heading: scene.controller.targetHeading + (scene.isVistaActive ? -deltaDeg : deltaDeg) }, 250),
+        // 眺望中も符号は変えない（反転するとアイコンと画面の回り方が逆になると指摘があった）
+        rotateBy: (deltaDeg) => animate({ heading: scene.controller.targetHeading + deltaDeg }, 250),
         pitchBy: (deltaDeg) => animate({ pitch: scene.controller.targetPitch + deltaDeg }, 250),
         zoomBy: (deltaZoom) => animate({ zoom: scene.controller.targetZoom + deltaZoom }, 200),
       };
