@@ -910,7 +910,7 @@
       "feature1": "You can now manage personal projects with Google Drive",
       "feature2": "Added track features such as summary with statistics and elevation graph, automatic photo display, and export",
       "feature3": "Various other improvements and bug fixes",
-      "feature4": "This update fixes issues with the drawing tools and improves their stability",
+      "feature4": "This update fixes issues with the drawing tools and vector PMTiles not being displayed on Android",
       "improvement1": "Improved logout process",
       "improvement2": "Updated dependencies",
       "bugFix1": "Fixed PMTiles numeric attribute errors on iOS",

@@ -1,5 +1,11 @@
 # Change Log
 
+## [0.6.2]　- 2026-09-24
+
+- Fixed vector PMTiles not being displayed in the Android release build
+
+- Androidのリリース版でベクタ形式のPMTilesが表示されない問題を修正
+
 ## [0.6.1]　- 2026-09-20
 
 - Added a group creation button to the map and layer lists, with a dialog for entering the group name. Map groups can now also be deleted from the settings screen
