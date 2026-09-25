@@ -47,7 +47,7 @@ description: システム設計・アーキテクチャ決定を行うエージ�
 
 2. **状態管理**
    - Redux Toolkit: グローバル状態
-   - React Context: 機能特化状態（HomeContextからの移行）
+   - React Context: 機能特化状態（機能別Context。構成はdocs/MIGRATION_GUIDE.md）
    - useState: ローカル状態
 
 3. **データフロー**
@@ -80,8 +80,7 @@ const slice = createSlice({
   reducers: { ... },
 });
 
-// Context移行パターン
-// HomeContext → 小さなContext（docs/MIGRATION_GUIDE.md参照）
+// 機能別Context（新規追加の手順はdocs/MIGRATION_GUIDE.md参照）
 ```
 
 #### データパターン

@@ -51,8 +51,8 @@ Owner > Admin > Member
 
 #### ルール変更時
 ```bash
-# 必ずエミュレータでテスト
-yarn testemu
+# Rules専用のjest設定で実行する（yarn testemuは通常設定のためRulesテストを起動できない）
+yarn testrules
 ```
 
 ### 4. ファイルアップロード

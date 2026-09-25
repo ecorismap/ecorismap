@@ -54,7 +54,7 @@
       "description": "Firebaseルール変更時にテストを推奨",
       "type": "PostToolUse",
       "matcher": "Write(**/firestore.rules)",
-      "command": "echo '🔒 Security Rules変更: yarn testemuでテストを実行してください'"
+      "command": "echo '🔒 Security Rules変更: yarn testrulesでテストを実行してください'"
     },
     {
       "name": "api-keys-warning",
@@ -76,13 +76,6 @@
       "type": "PostToolUse",
       "matcher": "Write(**/src/**/*.tsx)",
       "command": "echo '⚠️ console.logが含まれている場合は、本番コードから削除してください'"
-    },
-    {
-      "name": "context-migration-reminder",
-      "description": "HomeContext変更時に移行ガイドを参照",
-      "type": "PostToolUse",
-      "matcher": "Write(**/HomeContext*.ts)",
-      "command": "echo '📋 HomeContext変更: docs/MIGRATION_GUIDE.mdを参照してContext移行を検討してください'"
     },
     {
       "name": "virgil-encryption-check",

@@ -1,6 +1,6 @@
 ---
 name: security-reviewer
-description: "セキュリティ観点でコードをレビューするエージェント。Firebase認証、Virgil暗号化、Security Rulesの観点でチェックを行います。\\n\\n<example>\\nuser: \"セキュリティチェックをして\"\\nassistant: \"セキュリティレビューエージェントでコードの安全性を確認します\"\\n</example>\\n\\n<example>\\nuser: \"認証周りのコードを確認して\"\\nassistant: \"セキュリティレビューエージェントで認証フローをレビューします\"\\n</example>"
+description: "Firebase認証・Virgil暗号化・Security Rulesの観点でコードの安全性をレビューするエージェント。セキュリティチェックや認証周りの確認を依頼されたときに使用。"
 model: sonnet
 ---
 
@@ -105,8 +105,8 @@ Owner > Admin > Member
 ## Security Rulesテスト
 
 ```bash
-# 必ずエミュレータでテスト
-yarn testemu
+# Rules専用のjest設定で実行する（yarn testemuは通常設定のためRulesテストを起動できない）
+yarn testrules
 ```
 
 ## 注意事項

@@ -1,6 +1,6 @@
 ---
 name: tdd-guide
-description: "TDDスペシャリストエージェント。Red-Green-Refactorサイクルを厳密に適用し、テストカバレッジを確保します。\\n\\nExamples:\\n\\n<example>\\nuser: \"新しい機能をTDDで実装したい\"\\nassistant: \"TDDガイドエージェントを使って、テスト駆動開発をサポートします\"\\n</example>\\n\\n<example>\\nuser: \"カバレッジを上げながらリファクタリングしたい\"\\nassistant: \"TDDガイドエージェントでカバレッジを維持しながらのリファクタリングを支援します\"\\n</example>"
+description: "Red-Green-Refactorでテスト駆動開発を進めるエージェント。TDDでの実装や、カバレッジを保ちながらのリファクタリングを依頼されたときに使用。"
 model: sonnet
 ---
 

@@ -1,6 +1,6 @@
 ---
 name: doc-updater
-description: "ドキュメントの同期と更新を行うエージェント。CLAUDE.md、docs/、READMEの整合性を保ちます。\\n\\n<example>\\nuser: \"ドキュメントを更新して\"\\nassistant: \"ドキュメント更新エージェントでドキュメントを同期します\"\\n</example>\\n\\n<example>\\nuser: \"新機能のドキュメントを追加して\"\\nassistant: \"ドキュメント更新エージェントで関連ドキュメントを更新します\"\\n</example>"
+description: "CLAUDE.md・docs/・READMEの内容を実装と同期させるエージェント。ドキュメントの更新や新機能のドキュメント追加を依頼されたときに使用。"
 model: sonnet
 ---
 

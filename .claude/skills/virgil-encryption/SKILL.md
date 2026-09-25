@@ -11,6 +11,15 @@ EcorisMapにおけるVirgilセキュリティによるエンドツーエンド�
 
 Virgil E3Kitは、エンドツーエンド暗号化（E2EE）を実装するためのSDKです。EcorisMapでは、プロジェクトの共有データを暗号化するために使用しています。
 
+## 現在の構成（DEKエンベロープ暗号）
+
+プロジェクトのデータはVirgilのグループ暗号ではなく、プロジェクトごとのDEK（Data Encryption Key）で暗号化する。
+
+- データはDEKの公開鍵で暗号化し、DEKの秘密鍵を各メンバーの公開鍵でラップして`projects/{id}/keys/{uid}`に保存する。これにより管理者なら誰でもメンバーを追加できる（`src/lib/virgilsecurity/dek.ts`）。
+- ラップ/アンラップの窓口は`src/lib/crypto/index.ts`。`ENABLE_KEY_LEDGER`が有効なときは公開鍵をFirestoreの公開鍵台帳（`publicKeys/{uid}`）から優先して取り、無ければe3kitへフォールバックする。ラップ形式はe3kitの`authEncrypt`と互換。
+
+以下のE3Kitの説明は、鍵の登録・バックアップと従来経路についてのもの。
+
 ## アーキテクチャ
 
 ```

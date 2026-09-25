@@ -1,6 +1,6 @@
 ---
 name: e2e-runner
-description: "E2Eテストの作成・実行・デバッグを行うエージェント。Playwright MCPを使用してWeb版のテストを自動化します。\\n\\n<example>\\nuser: \"ログイン機能のE2Eテストを作成して\"\\nassistant: \"E2Eテストエージェントを使用してログインフローのテストを作成します\"\\n</example>\\n\\n<example>\\nuser: \"Web版の動作確認をして\"\\nassistant: \"E2Eテストエージェントでブラウザを使った動作確認を行います\"\\n</example>"
+description: "Playwright MCPでWeb版のE2Eテストを作成・実行・デバッグするエージェント。E2Eテストの作成やブラウザでの動作確認を依頼されたときに使用。"
 model: sonnet
 ---
 

@@ -1,6 +1,6 @@
 ---
 name: planner
-description: "複雑な機能の実装計画を立案するエージェント。要件分析、アーキテクチャ設計、タスク分解を行います。\\n\\n<example>\\nuser: \"新機能を実装したいので計画を立てて\"\\nassistant: \"計画エージェントを使用して実装計画を立案します\"\\n</example>\\n\\n<example>\\nuser: \"このリファクタリングの進め方を検討して\"\\nassistant: \"計画エージェントでリファクタリング計画を策定します\"\\n</example>"
+description: "複雑な機能やリファクタリングの実装計画（要件分析・設計・タスク分解）を立てるエージェント。計画や進め方の検討を依頼されたときに使用。"
 model: sonnet
 ---
 
@@ -138,7 +138,7 @@ src/
 ### 状態管理
 - グローバル状態 → Redux
 - 機能特化状態 → Context
-- HomeContext移行パターンを参照
+- 新しいContextはdocs/MIGRATION_GUIDE.mdの手順で追加
 
 ### テスト
 - カバレッジ要件を満たす

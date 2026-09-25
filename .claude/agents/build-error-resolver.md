@@ -1,6 +1,6 @@
 ---
 name: build-error-resolver
-description: "iOS/Android/Webの3プラットフォームのビルドエラーを診断・解決するエージェント。\\n\\n<example>\\nuser: \"Androidのビルドが失敗した\"\\nassistant: \"ビルドエラー解決エージェントを使用してAndroidビルドの問題を診断します\"\\n</example>\\n\\n<example>\\nuser: \"yarn webでエラーが出る\"\\nassistant: \"ビルドエラー解決エージェントでWebビルドの問題を確認します\"\\n</example>"
+description: "iOS/Android/Webのビルドエラー（Xcode・Gradle・Metro・型エラー）を診断・解決するエージェント。ビルドやyarn web/ios/androidの起動が失敗したときに使用。"
 model: sonnet
 ---
 
@@ -67,7 +67,7 @@ yarn build:web  # プロダクションビルド
 
 | エラー | 原因 | 解決策 |
 |--------|------|--------|
-| webpack設定 | metro設定 | metro.config.js確認 |
+| モジュール解決エラー | Metroの解決設定 | metro.config.jsのresolver確認 |
 | Platform固有コード | Web非対応コード | .web.tsx作成 |
 | babel設定 | トランスパイル | babel.config.js確認 |
 | 型エラー | TypeScript | `npx tsc --noEmit`で確認 |
