@@ -97,7 +97,7 @@ cp -r .claude/skills/* ~/.claude/skills/
 
 ## 設定一覧
 
-### エージェント（10種）
+### エージェント（9種）
 
 | エージェント | 説明 |
 |-------------|------|
@@ -105,7 +105,6 @@ cp -r .claude/skills/* ~/.claude/skills/
 | build-error-resolver | ビルドエラー解決 |
 | code-refactoring-cleaner | リファクタリング支援 |
 | code-reviewer | コード品質レビュー |
-| context-migration | Context分割支援 |
 | doc-updater | ドキュメント更新 |
 | e2e-runner | E2Eテスト実行 |
 | planner | 実装計画立案 |

@@ -1,6 +1,6 @@
 ---
 name: code-reviewer
-description: "Use this agent when you need to review recently written or modified code for quality, best practices, bugs, and potential improvements. This agent should be invoked after significant code changes are made, before committing code, or when explicitly asked to review code.\\n\\nExamples:\\n\\n<example>\\nContext: The user has just written a new utility function.\\nuser: \"新しいユーティリティ関数を書いたので確認してください\"\\nassistant: \"コードレビューエージェントを使って、書かれたコードをレビューします\"\\n<Task tool invocation to launch code-reviewer agent>\\n</example>\\n\\n<example>\\nContext: The user has completed implementing a feature and wants feedback.\\nuser: \"この機能の実装が終わりました\"\\nassistant: \"実装お疲れ様です。コードレビューエージェントを使って、実装されたコードの品質チェックを行います\"\\n<Task tool invocation to launch code-reviewer agent>\\n</example>\\n\\n<example>\\nContext: The user asks for a general code review.\\nuser: \"コードレビューして\"\\nassistant: \"コードレビューエージェントを起動して、最近の変更をレビューします\"\\n<Task tool invocation to launch code-reviewer agent>\\n</example>"
+description: "直近の変更や指定ファイルを、品質・バグ・プロジェクト規約の観点でレビューするエージェント。まとまった変更の後やコミット前、レビューを依頼されたときに使用。"
 model: sonnet
 ---
 

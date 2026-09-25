@@ -1,6 +1,6 @@
 ---
 name: code-refactoring-cleaner
-description: "Use this agent when the user wants to refactor code, clean up technical debt, improve code quality, or reorganize code structure. This includes removing dead code, simplifying complex functions, improving naming conventions, extracting reusable components, or applying design patterns. Examples:\\n\\n<example>\\nContext: User asks to clean up a specific file or function.\\nuser: \"このuseDataHook.tsをリファクタリングして\"\\nassistant: \"リファクタリングを行うために、code-refactoring-cleanerエージェントを使用します\"\\n<commentary>\\nユーザーが特定のファイルのリファクタリングを依頼しているため、code-refactoring-cleanerエージェントを使用してコードの品質改善を行います。\\n</commentary>\\n</example>\\n\\n<example>\\nContext: User wants to remove unused code or imports.\\nuser: \"不要なコードを削除して\"\\nassistant: \"code-refactoring-cleanerエージェントを使用して、不要なコードの検出と削除を行います\"\\n<commentary>\\n未使用のコード削除はcode-refactoring-cleanerエージェントの担当タスクです。\\n</commentary>\\n</example>\\n\\n<example>\\nContext: User wants to improve code structure after implementing a feature.\\nuser: \"機能は動くけど、コードが汚いので綺麗にして\"\\nassistant: \"code-refactoring-cleanerエージェントを使用して、コードの整理とリファクタリングを行います\"\\n<commentary>\\nコードの品質改善リクエストのため、code-refactoring-cleanerエージェントを起動します。\\n</commentary>\\n</example>"
+description: "リファクタリングと技術的負債の整理を行うエージェント。デッドコードの削除、複雑な関数の単純化、命名の改善、再利用できる部品の抽出を依頼されたときに使用。"
 model: sonnet
 ---
 
@@ -30,7 +30,7 @@ You are an expert code refactoring specialist with deep knowledge of clean code 
    - Atomic Designパターンへの準拠（atoms, molecules, organisms, pages）
    - コンテナ/プレゼンテーショナル分離の徹底
    - カスタムフックへのロジック抽出
-   - Context分割（HomeContextからの移行パターンに準拠）
+   - Context分割（docs/MIGRATION_GUIDE.mdの構成と手順に準拠）
 
 ## リファクタリング手順
 

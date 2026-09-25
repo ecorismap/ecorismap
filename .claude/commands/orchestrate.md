@@ -88,7 +88,7 @@
 #### 例
 
 ```
-/orchestrate refactor HomeContextを小さなContextに分割
+/orchestrate refactor DrawingToolsContextを責務ごとに分割
 ```
 
 ### security - セキュリティ強化
@@ -133,7 +133,7 @@
    ↓ 影響範囲の調査
 2. planner エージェント
    ↓ 移行計画
-3. context-migration エージェント
+3. code-refactoring-cleaner エージェント
    ↓ 段階的移行実行
 4. code-reviewer エージェント
    ↓ 移行結果のレビュー

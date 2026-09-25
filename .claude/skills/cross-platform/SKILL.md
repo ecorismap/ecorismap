@@ -219,7 +219,7 @@ describe('Cross-platform component', () => {
 
 1. **Web版でモジュールが見つからない**
    - `.web.ts`ファイルの存在確認
-   - webpack設定でextensions確認
+   - Metroの解決設定（metro.config.jsのresolver）を確認
 
 2. **スタイルが効かない**
    - Platform.selectの使用確認
