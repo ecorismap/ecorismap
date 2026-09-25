@@ -1,6 +1,0 @@
-[mcp_servers.playwright-test]
-command = "npx"
-args = [
-    "playwright",
-    "run-test-mcp-server",
-]

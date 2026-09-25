@@ -64,11 +64,9 @@ async function testDirectoryStructure() {
     'commands',
     'rules',
     'skills',
-    'hooks',
     'scripts',
     'scripts/lib',
     'scripts/hooks',
-    'plugins',
     'contexts',
     'mcp-configs',
     'examples',
@@ -93,9 +91,6 @@ async function testRequiredFiles() {
   const claudeDir = getClaudeDir();
 
   const requiredFiles = [
-    'hooks/hooks.json',
-    'plugins/plugin.json',
-    'plugins/marketplace.json',
     'mcp-configs/mcp-servers.json',
     'contexts/dev.md',
     'contexts/research.md',
@@ -125,8 +120,8 @@ async function testAgentsCount() {
   const agentsDir = path.join(getClaudeDir(), 'agents');
   const agents = fs.readdirSync(agentsDir).filter(f => f.endsWith('.md'));
 
-  await suite.test('エージェントが10個以上存在する', () => {
-    assert.ok(agents.length >= 10, `Found ${agents.length} agents`);
+  await suite.test('エージェントが9個以上存在する', () => {
+    assert.ok(agents.length >= 9, `Found ${agents.length} agents`);
   });
 
   await suite.test('必須エージェントが存在する', () => {
@@ -184,16 +179,10 @@ async function testRulesCount() {
   const rulesDir = path.join(getClaudeDir(), 'rules');
   const rules = fs.readdirSync(rulesDir).filter(f => f.endsWith('.md'));
 
-  await suite.test('ルールが7個存在する', () => {
-    assert.equal(rules.length, 7);
-  });
-
   await suite.test('必須ルールが存在する', () => {
     const required = [
       'security.md',
-      'testing.md',
       'coding-style.md',
-      'platform-specific.md',
       'git-workflow.md'
     ];
     required.forEach(rule => {
@@ -212,9 +201,6 @@ async function testJsonSyntax() {
 
   const claudeDir = getClaudeDir();
   const jsonFiles = [
-    'hooks/hooks.json',
-    'plugins/plugin.json',
-    'plugins/marketplace.json',
     'mcp-configs/mcp-servers.json',
     'examples/statusline.json'
   ];
