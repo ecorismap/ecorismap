@@ -1,4 +1,4 @@
-import { renderHook } from '@testing-library/react-hooks';
+import { act, renderHook } from '@testing-library/react-hooks';
 import { useFeatureStyle } from '../useFeatureStyle';
 import { ColorTypesType, LayerType } from '../../types';
 
@@ -108,5 +108,56 @@ describe('useFeatureStyle カラータイプの選択肢', () => {
 
     // 選択中の値が選択肢から消えるとピッカーの表示が壊れるため残す
     expect(result.current.colorTypes).toContain('USER');
+  });
+});
+
+describe('useFeatureStyle 色の更新ボタン', () => {
+  const createCategorizedLayer = (colorList: LayerType['colorStyle']['colorList']): LayerType => {
+    const layer = createLayer('CATEGORIZED', 'POLYGON');
+    return {
+      ...layer,
+      colorStyle: { ...layer.colorStyle, fieldName: 'kind', colorList },
+      field: [
+        {
+          id: 'F1',
+          name: 'kind',
+          format: 'LIST',
+          list: [
+            { value: 'A', isOther: false, customFieldValue: '' },
+            { value: 'B', isOther: false, customFieldValue: '' },
+          ],
+        },
+      ],
+    };
+  };
+
+  beforeEach(() => {
+    mockProjectId = undefined;
+  });
+
+  test('区分が増えたときは既存の色を残し、新しい区分だけ色を付ける', () => {
+    //レンダーのたびにレイヤを作り直すと、レイヤの変化とみなされて色の状態がリセットされ続ける
+    const layer = createCategorizedLayer([{ value: 'A', color: '#111111' }]);
+    const { result } = renderHook(() => useFeatureStyle(layer, false));
+
+    act(() => result.current.reloadValue());
+
+    expect(result.current.colorStyle.colorList.map((c) => c.value)).toEqual(['A', 'B']);
+    expect(result.current.colorStyle.colorList[0].color).toBe('#111111');
+  });
+
+  test('区分が変わらないときは押すたびに全ての色を振り直す', () => {
+    const layer = createCategorizedLayer([
+      { value: 'A', color: '#111111' },
+      { value: 'B', color: '#222222' },
+    ]);
+    const { result } = renderHook(() => useFeatureStyle(layer, false));
+
+    act(() => result.current.reloadValue());
+    const first = result.current.colorStyle.colorList.map((c) => c.color);
+    expect(first).not.toEqual(['#111111', '#222222']);
+
+    act(() => result.current.reloadValue());
+    expect(result.current.colorStyle.colorList.map((c) => c.color)).not.toEqual(first);
   });
 });
