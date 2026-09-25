@@ -269,11 +269,14 @@ export const useFeatureStyle = (layer_: LayerType, isEdited_: boolean): UseFeatu
       valueList = displayNames;
     }
     const newColorStyle = cloneDeep(colorStyle);
-    //既に色を決めてある値はその色を残す（区分を足しただけで全部の色が変わると困る）
+    //区分が増減したときは、既に色を決めてある値はその色を残す（区分を足しただけで全部の色が変わると困る）。
+    //区分が変わらないときは色の振り直しとみなし、押すたびに全ての色をランダムに変える
     const previousColors = new Map(colorStyle.colorList.map(({ value, color }) => [value, color]));
+    const isSameValues =
+      valueList.length === previousColors.size && valueList.every((value) => previousColors.has(value));
     newColorStyle.colorList = valueList.map((value) => ({
       value,
-      color: previousColors.get(value) ?? getRandomColor(),
+      color: (!isSameValues && previousColors.get(value)) || getRandomColor(),
     }));
     setColorStyle(newColorStyle);
     setIsEdited(true);
