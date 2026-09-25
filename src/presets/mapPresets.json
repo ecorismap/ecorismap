@@ -109,7 +109,7 @@
       "attribution": "産総研シームレス標高タイル",
       "maptype": "none",
       "visible": true,
-      "transparency": 0.5,
+      "transparency": 0,
       "overzoomThreshold": 15,
       "highResolutionEnabled": false,
       "minimumZ": 0,
