@@ -276,7 +276,8 @@ export default function HomeScreen() {
     useContext(LocationTrackingContext);
 
   // ProjectContext
-  const { projectName, isSynced, isShowingProjectButtons, pressProjectLabel } = useContext(ProjectContext);
+  const { projectName, isSynced, isShowingProjectButtons, isSettingProject, pressProjectLabel } =
+    useContext(ProjectContext);
   //console.log(Platform.Version);
   const layers = useSelector((state: RootState) => state.layers);
   const insets = useSafeAreaInsets();
@@ -692,7 +693,7 @@ export default function HomeScreen() {
             showHeader={downloadMode || exportPDFMode}
           />
 
-          {!downloadMode && !exportPDFMode && isShowingProjectButtons && <HomeProjectButtons />}
+          {!downloadMode && !exportPDFMode && (isShowingProjectButtons || isSettingProject) && <HomeProjectButtons />}
           {projectName === undefined || downloadMode || exportPDFMode ? null : (
             <HomeProjectLabel name={projectName} onPress={pressProjectLabel} />
           )}

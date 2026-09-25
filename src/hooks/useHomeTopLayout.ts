@@ -77,7 +77,7 @@ export const calcHomeTopLayout = ({
 
 export const useHomeTopLayout = (): HomeTopLayout => {
   const insets = useSafeAreaInsets();
-  const { projectName, isShowingProjectButtons } = useContext(ProjectContext);
+  const { projectName, isShowingProjectButtons, isSettingProject } = useContext(ProjectContext);
   const { isMeasuring } = useContext(MeasureContext);
   const { hasViewshedPreview } = useContext(ViewshedContext);
 
@@ -86,10 +86,11 @@ export const useHomeTopLayout = (): HomeTopLayout => {
       calcHomeTopLayout({
         topInset: insets.top,
         hasProjectLabel: projectName !== undefined,
-        showProjectButtons: isShowingProjectButtons,
+        //プロジェクト設定中は保存・破棄ボタンをラベルのタップに関係なく出している
+        showProjectButtons: isShowingProjectButtons || isSettingProject,
         showMeasureBanner: isMeasuring,
         showViewshedBanner: hasViewshedPreview,
       }),
-    [hasViewshedPreview, insets.top, isMeasuring, isShowingProjectButtons, projectName]
+    [hasViewshedPreview, insets.top, isMeasuring, isSettingProject, isShowingProjectButtons, projectName]
   );
 };
