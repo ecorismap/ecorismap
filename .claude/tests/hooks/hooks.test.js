@@ -23,16 +23,7 @@ async function testHookFilesExist() {
   const suite = createTestSuite('フックファイル存在確認');
 
   const claudeDir = getClaudeDir();
-  const hooksDir = path.join(claudeDir, 'hooks');
   const scriptsHooksDir = path.join(claudeDir, 'scripts', 'hooks');
-
-  await suite.test('hooksディレクトリが存在する', () => {
-    assert.dirExists(hooksDir);
-  });
-
-  await suite.test('hooks.jsonが存在する', () => {
-    assert.fileExists(path.join(hooksDir, 'hooks.json'));
-  });
 
   await suite.test('scripts/hooks/pre-commit.jsが存在する', () => {
     assert.fileExists(path.join(scriptsHooksDir, 'pre-commit.js'));
@@ -40,51 +31,6 @@ async function testHookFilesExist() {
 
   await suite.test('scripts/hooks/post-checkout.jsが存在する', () => {
     assert.fileExists(path.join(scriptsHooksDir, 'post-checkout.js'));
-  });
-
-  return suite;
-}
-
-/**
- * hooks.json構造テスト
- */
-async function testHooksJsonStructure() {
-  const suite = createTestSuite('hooks.json構造確認');
-
-  const hooksJsonPath = path.join(getClaudeDir(), 'hooks', 'hooks.json');
-
-  let hooksConfig;
-
-  await suite.test('hooks.jsonが有効なJSONである', () => {
-    const content = fs.readFileSync(hooksJsonPath, 'utf8');
-    hooksConfig = JSON.parse(content);
-    assert.ok(hooksConfig);
-  });
-
-  await suite.test('hooksプロパティが存在する', () => {
-    assert.ok(hooksConfig.hooks);
-  });
-
-  await suite.test('hooksが配列である', () => {
-    assert.ok(Array.isArray(hooksConfig.hooks));
-  });
-
-  await suite.test('各フックにmatcherプロパティがある', () => {
-    hooksConfig.hooks.forEach((hook, index) => {
-      assert.ok(
-        hook.matcher !== undefined,
-        `Hook ${index} is missing matcher property`
-      );
-    });
-  });
-
-  await suite.test('各フックにhooksプロパティがある', () => {
-    hooksConfig.hooks.forEach((hook, index) => {
-      assert.ok(
-        hook.hooks !== undefined,
-        `Hook ${index} is missing hooks property`
-      );
-    });
   });
 
   return suite;
@@ -205,7 +151,6 @@ async function runAllTests() {
 
   const suites = [
     await testHookFilesExist(),
-    await testHooksJsonStructure(),
     await testPreCommitScript(),
     await testPostCheckoutScript(),
     await testUtilsScript(),

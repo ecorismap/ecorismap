@@ -41,9 +41,6 @@ cp .claude/rules/*.md ~/.claude/rules/
 
 # スキル
 cp -r .claude/skills/* ~/.claude/skills/
-
-# フック（settings.jsonにマージ）
-# .claude/hooks/hooks.json の内容を追加
 ```
 
 ### MCP設定
@@ -62,9 +59,7 @@ cp -r .claude/skills/* ~/.claude/skills/
 ├── commands/         # スラッシュコマンド定義
 ├── rules/            # コーディング規約・ルール
 ├── skills/           # 開発スキル・パターン集
-├── hooks/            # イベントフック設定
 ├── scripts/          # 自動化スクリプト
-├── plugins/          # プラグイン設定
 ├── contexts/         # コンテキスト定義
 ├── mcp-configs/      # MCPサーバー設定
 ├── examples/         # 設定例・テンプレート
@@ -133,17 +128,13 @@ cp -r .claude/skills/* ~/.claude/skills/
 | update-docs | ドキュメント更新 |
 | verify | 包括的検証 |
 
-### ルール（7種）
+### ルール（3種）
 
 | ルール | 説明 |
 |--------|------|
 | coding-style | コーディングスタイル |
-| geospatial | 地理空間データ処理 |
 | git-workflow | Gitワークフロー |
-| performance | パフォーマンス最適化 |
-| platform-specific | クロスプラットフォーム |
 | security | セキュリティ要件 |
-| testing | テスト要件 |
 
 ## カスタマイズ
 
