@@ -17,8 +17,18 @@
  *   m = clamp(MPI  / mpiMaxDeg) ^ mpiGamma
  *   明度 = 255 × (1 − s) × (1 − m)
  *
- * 急峻な谷が最も暗く、平坦な尾根・台地は白になる。乗算で重ねる前提の図なので、
- * ベースマップに重ねるより単体（transparency: 0）で背景として使う方が本来の姿。
+ * 急峻な谷が最も暗く、平坦な尾根・台地は白になる。
+ *
+ * 地図に重ねる陰影（computeShading）は、次の2層を重ねた見え方を1枚で出力する。
+ * MPIだけでは斜面の向きが読み取りにくく、方向陰影だけでは光源と平行な谷を見落とすため、
+ * 薄い方向陰影を下敷きにしてMPIの暗さを乗算で重ねると両方の弱点を補い合う。
+ *
+ *   下層: 地理院の陰影起伏図と同じ北西・高度45°の方向陰影を不透明度30%で重ねる
+ *   上層: MPIの明度gを不透明度50%で乗算する
+ *         （乗算 B×g は黒を不透明度(1−g)で重ねた結果と一致するので黒＋不透明度で表す）
+ *
+ * 2層を順に重ねた結果はPorter-Duffのover合成で1枚のRGBAに畳み込める。
+ * 地図エンジンに合成モードがなくても、通常の透過合成だけで下地に対して正確に同じ見え方になる。
  *
  * 参考: Kaneda, H., and T. Chiba (2019), Stereopaired morphometric protection index
  * red relief image maps (Stereo MPI-RRIMs), Bull. Seismol. Soc. Am., 109, 99-109.
@@ -238,7 +248,61 @@ export function computeShadeField(
 }
 
 /**
+ * 方向陰影の不透明度（地理院の陰影起伏図を透過70%で重ねるのに相当）。
+ * ネイティブ（MapDEMTileProvider.java / AIRGoogleMapDEMTileOverlay.m）にも同じ値を持つ
+ */
+export const DIRECTIONAL_OPACITY = 0.3;
+/** MPI陰影を乗算で重ねる強さ（透過50%に相当）。ネイティブにも同じ値を持つ */
+export const MPI_OPACITY = 0.5;
+
+/** 方向陰影の光源（地理院の陰影起伏図に合わせて北西・高度45°） */
+const LIGHT_AZIMUTH_RAD = (315 * Math.PI) / 180;
+const LIGHT_ALTITUDE_RAD = (45 * Math.PI) / 180;
+const LIGHT_EAST = Math.sin(LIGHT_AZIMUTH_RAD) * Math.cos(LIGHT_ALTITUDE_RAD);
+const LIGHT_NORTH = Math.cos(LIGHT_AZIMUTH_RAD) * Math.cos(LIGHT_ALTITUDE_RAD);
+const LIGHT_UP = Math.sin(LIGHT_ALTITUDE_RAD);
+
+/**
+ * 袖付きの標高バッファから、中央 size×size 分の方向陰影（明度0〜1）を計算する。
+ * 勾配はHorn法（3×3）、明度は面の法線と光源方向の内積（影側は0）。
+ * 3×3にNoDataを含む画素はNaN。引数はcomputeShadeField参照。
+ */
+export function computeDirectionalShade(
+  elevation: Float32Array,
+  bufferWidth: number,
+  offset: number,
+  size: number,
+  metersPerPx: number
+): Float64Array {
+  const out = new Float64Array(size * size);
+  const inv8 = 1 / (8 * metersPerPx);
+  const w = bufferWidth;
+  for (let y = 0; y < size; y++) {
+    const rowBase = (offset + y) * w + offset;
+    for (let x = 0; x < size; x++) {
+      const c = rowBase + x;
+      const nw = elevation[c - w - 1];
+      const n = elevation[c - w];
+      const ne = elevation[c - w + 1];
+      const west = elevation[c - 1];
+      const east = elevation[c + 1];
+      const sw = elevation[c + w - 1];
+      const s = elevation[c + w];
+      const se = elevation[c + w + 1];
+      // バッファの行は南へ進むので、北向きの勾配は上の行から下の行を引く
+      const dzdx = (ne + 2 * east + se - (nw + 2 * west + sw)) * inv8;
+      const dzdy = (nw + 2 * n + ne - (sw + 2 * s + se)) * inv8;
+      // 法線 (−dzdx, −dzdy, 1) を正規化して光源方向との内積をとる。NaNはそのまま伝わる
+      const dot = (-dzdx * LIGHT_EAST - dzdy * LIGHT_NORTH + LIGHT_UP) / Math.sqrt(dzdx * dzdx + dzdy * dzdy + 1);
+      out[y * size + x] = dot < 0 ? 0 : dot;
+    }
+  }
+  return out;
+}
+
+/**
  * 袖付きの標高バッファから、中央 size×size 分の陰影RGBAを計算する。
+ * 方向陰影とMPI陰影の2層をover合成した1枚を返す（冒頭コメント参照）。
  * 引数はcomputeShadeField参照。
  */
 export function computeShading(
@@ -250,17 +314,23 @@ export function computeShading(
   options: ShadingOptions = DEFAULT_SHADING_OPTIONS
 ): Uint8ClampedArray {
   const shade = computeShadeField(elevation, bufferWidth, offset, size, metersPerPx, options);
+  const directional = computeDirectionalShade(elevation, bufferWidth, offset, size, metersPerPx);
   const out = new Uint8ClampedArray(size * size * 4);
   for (let i = 0; i < size * size; i++) {
-    const v = shade[i];
+    const g = shade[i];
+    const h = directional[i];
     // eslint-disable-next-line no-self-compare
-    if (v !== v) continue; // NoDataは透明（alphaは0のまま）
+    if (g !== g || h !== h) continue; // NoDataは透明（alphaは0のまま）
+    // 下層（灰色h・不透明度a1）の上に上層（黒・不透明度a2）を重ねたover合成
+    const a1 = DIRECTIONAL_OPACITY;
+    const a2 = MPI_OPACITY * (1 - g);
+    const alpha = 1 - (1 - a1) * (1 - a2); // a1>0なので0にならない
+    const gray = (255 * (1 - a2) * a1 * h) / alpha;
     const p = i * 4;
-    const gray = 255 * v;
     out[p] = gray;
     out[p + 1] = gray;
     out[p + 2] = gray;
-    out[p + 3] = 255;
+    out[p + 3] = 255 * alpha;
   }
   return out;
 }
