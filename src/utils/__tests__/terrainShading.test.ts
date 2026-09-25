@@ -1,6 +1,9 @@
 import {
   computeShading,
   computeShadeField,
+  computeDirectionalShade,
+  DIRECTIONAL_OPACITY,
+  MPI_OPACITY,
   decodeElevation,
   metersPerPixel,
   requiredHalo,
@@ -44,6 +47,14 @@ function rotate90(buffer: Float32Array): Float32Array {
 
 const shade = (buffer: Float32Array) => computeShading(buffer, BUFFER, HALO, SIZE, 10);
 
+/** MPI陰影の明度だけを0〜255の灰色RGBAにする（方向陰影を混ぜる前の層） */
+function mpiLayer(buffer: Float32Array, options = DEFAULT_SHADING_OPTIONS): Uint8ClampedArray {
+  const field = computeShadeField(buffer, BUFFER, HALO, SIZE, 10, options);
+  const out = new Uint8ClampedArray(SIZE * SIZE * 4);
+  for (let i = 0; i < field.length; i++) out.fill(255 * field[i], i * 4, i * 4 + 4);
+  return out;
+}
+
 /** RGBAを180度回す（画素単位で入れ替える） */
 function rotateRgba180(rgba: Uint8ClampedArray): Uint8ClampedArray {
   const n = rgba.length / 4;
@@ -69,7 +80,15 @@ function maxDiff(a: Uint8ClampedArray, b: Uint8ClampedArray): number {
   return m;
 }
 
+/** 灰色RGBAの明度 */
 const grayAt = (rgba: Uint8ClampedArray, x: number, y: number) => rgba[(y * SIZE + x) * 4];
+
+/** 下地の明度bに重ねたときの見え方（ストレートアルファの透過合成） */
+const overAt = (rgba: Uint8ClampedArray, x: number, y: number, b: number) => {
+  const p = (y * SIZE + x) * 4;
+  const a = rgba[p + 3] / 255;
+  return rgba[p] * a + b * (1 - a);
+};
 
 /** 起伏に富んだ試験地形 */
 const TEST_TERRAIN = (x: number, y: number) =>
@@ -152,19 +171,6 @@ describe('地図URLの判定', () => {
 });
 
 describe('computeShadeField', () => {
-  it('computeShadingのグレー値は255×shadeと一致する', () => {
-    const buffer = makeBuffer((x, y) => 100 + 5 * Math.sin(x / 5) * Math.cos(y / 7) + 0.1 * x);
-    const mpp = metersPerPixel(12, 1600);
-    const rgba = computeShading(buffer, BUFFER, HALO, SIZE, mpp);
-    const shade = computeShadeField(buffer, BUFFER, HALO, SIZE, mpp);
-    for (let i = 0; i < SIZE * SIZE; i++) {
-      const expected = new Uint8ClampedArray(1);
-      expected[0] = 255 * shade[i];
-      expect(rgba[i * 4]).toBe(expected[0]);
-      expect(rgba[i * 4 + 3]).toBe(255);
-    }
-  });
-
   it('NoData画素はNaNになる', () => {
     const buffer = makeBuffer(() => 100);
     buffer[(HALO + 10) * BUFFER + (HALO + 10)] = NaN;
@@ -182,42 +188,22 @@ describe('computeShadeField', () => {
   });
 });
 
-// 本方式の存在理由そのもの。光源を使う従来の陰影図はここで失敗する
-describe('方向非依存性', () => {
+// MPI層の存在理由そのもの。光源を使う従来の陰影図はここで失敗する
+describe('MPI陰影の方向非依存性', () => {
   it('地形を180度回すと陰影も同じだけ回る', () => {
     const buffer = makeBuffer(TEST_TERRAIN);
-    expect(maxDiff(shade(rotate180(buffer)), rotateRgba180(shade(buffer)))).toBe(0);
+    expect(maxDiff(mpiLayer(rotate180(buffer)), rotateRgba180(mpiLayer(buffer)))).toBe(0);
   });
 
   it('地形を90度回すと陰影も同じだけ回る', () => {
     const buffer = makeBuffer(TEST_TERRAIN);
-    expect(maxDiff(shade(rotate90(buffer)), rotateRgba90(shade(buffer)))).toBe(0);
+    expect(maxDiff(mpiLayer(rotate90(buffer)), rotateRgba90(mpiLayer(buffer)))).toBe(0);
   });
 });
 
-describe('computeShading', () => {
-  it('平坦地は白になり、乗算で重ねても下地を変えない', () => {
-    const rgba = shade(makeBuffer(() => 100));
-    for (let i = 0; i < rgba.length; i += 4) {
-      expect([rgba[i], rgba[i + 1], rgba[i + 2], rgba[i + 3]]).toEqual([255, 255, 255, 255]);
-    }
-  });
-
-  it('NoDataは透明にする', () => {
-    const rgba = shade(makeBuffer(() => NaN));
-    for (let i = 0; i < rgba.length; i += 4) expect(rgba[i + 3]).toBe(0);
-  });
-
-  it('無彩色になる（R=G=B）', () => {
-    const rgba = shade(makeBuffer(TEST_TERRAIN));
-    for (let i = 0; i < rgba.length; i += 4) {
-      expect(rgba[i]).toBe(rgba[i + 1]);
-      expect(rgba[i + 1]).toBe(rgba[i + 2]);
-    }
-  });
-
+describe('MPI陰影', () => {
   it('窪地は暗く、周囲の平坦地は白のまま', () => {
-    const rgba = shade(
+    const rgba = mpiLayer(
       makeBuffer((x, y) => {
         const r = Math.hypot(x - CX, y - CX);
         return r < 20 ? (r - 20) * 5 : 0;
@@ -228,14 +214,14 @@ describe('computeShading', () => {
   });
 
   it('尾根は平坦地と同じく明るい（MPIが負になり暗さに寄与しない）', () => {
-    const ridge = shade(makeBuffer((x, y) => Math.max(0, 200 - 8 * Math.abs(y - CX))));
+    const ridge = mpiLayer(makeBuffer((x, y) => Math.max(0, 200 - 8 * Math.abs(y - CX))));
     // 稜線上は傾斜も0なのでどちらの暗さも効かない
     expect(grayAt(ridge, CX, CX)).toBe(255);
   });
 
   it('一様な斜面は傾斜のぶんだけ一様に暗くなる', () => {
-    const gentle = shade(makeBuffer((x) => x * 1));
-    const steep = shade(makeBuffer((x) => x * 5));
+    const gentle = mpiLayer(makeBuffer((x) => x * 1));
+    const steep = mpiLayer(makeBuffer((x) => x * 5));
     expect(grayAt(steep, CX, CX)).toBeLessThan(grayAt(gentle, CX, CX));
     // 一様なので場所によらず同じ濃さ（偽の凹凸を作らない）
     expect(grayAt(steep, 5, 5)).toBe(grayAt(steep, CX, CX));
@@ -246,8 +232,8 @@ describe('computeShading', () => {
       const r = Math.hypot(x - CX, y - CX);
       return r < 20 ? (r - 20) * 5 : 0;
     });
-    const valleyWall = grayAt(shade(buffer), CX + 12, CX);
-    const uniformSlope = grayAt(shade(makeBuffer((x) => x * 5)), CX, CX);
+    const valleyWall = grayAt(mpiLayer(buffer), CX + 12, CX);
+    const uniformSlope = grayAt(mpiLayer(makeBuffer((x) => x * 5)), CX, CX);
     expect(valleyWall).toBeLessThan(uniformSlope);
   });
 
@@ -257,12 +243,90 @@ describe('computeShading', () => {
       const r = Math.hypot(x - CX, y - CX);
       return r < 20 ? (r - 20) * 0.5 : 0;
     });
-    const base = computeShading(buffer, BUFFER, HALO, SIZE, 10);
-    const strong = computeShading(buffer, BUFFER, HALO, SIZE, 10, {
-      ...DEFAULT_SHADING_OPTIONS,
-      mpiGamma: 0.5,
-    });
+    const base = mpiLayer(buffer);
+    const strong = mpiLayer(buffer, { ...DEFAULT_SHADING_OPTIONS, mpiGamma: 0.5 });
     expect(grayAt(strong, CX, CX)).toBeLessThan(grayAt(base, CX, CX));
+  });
+});
+
+describe('computeDirectionalShade', () => {
+  const directional = (buffer: Float32Array) => computeDirectionalShade(buffer, BUFFER, HALO, SIZE, 10);
+
+  it('平坦地は光源高度45°の正弦（≈0.707）', () => {
+    expect(directional(makeBuffer(() => 100))[CX * SIZE + CX]).toBeCloseTo(Math.SQRT1_2, 6);
+  });
+
+  it('北西を向いた斜面は南東を向いた斜面より明るい', () => {
+    // バッファのyは南向き。南東へ登る（x・yが増えるほど高い）斜面は北西を向く
+    const facingNW = directional(makeBuffer((x, y) => (x + y) * 3));
+    const facingSE = directional(makeBuffer((x, y) => -(x + y) * 3));
+    expect(facingNW[CX * SIZE + CX]).toBeGreaterThan(Math.SQRT1_2);
+    expect(facingSE[CX * SIZE + CX]).toBeLessThan(Math.SQRT1_2);
+  });
+
+  it('光源に対して影になる急斜面は0', () => {
+    expect(directional(makeBuffer((x, y) => -(x + y) * 50))[CX * SIZE + CX]).toBe(0);
+  });
+
+  it('3×3にNoDataを含む画素はNaN', () => {
+    const buffer = makeBuffer(() => 100);
+    buffer[(HALO + 10) * BUFFER + (HALO + 10)] = NaN;
+    const field = directional(buffer);
+    expect(Number.isNaN(field[11 * SIZE + 11])).toBe(true);
+    expect(Number.isNaN(field[12 * SIZE + 12])).toBe(false);
+  });
+});
+
+describe('computeShading', () => {
+  it('2層（方向陰影→MPI乗算）を順に重ねた見え方と一致する', () => {
+    const buffer = makeBuffer(TEST_TERRAIN);
+    const rgba = shade(buffer);
+    const g = computeShadeField(buffer, BUFFER, HALO, SIZE, 10);
+    const h = computeDirectionalShade(buffer, BUFFER, HALO, SIZE, 10);
+    for (const b of [0, 128, 255]) {
+      for (const [x, y] of [
+        [0, 0],
+        [CX, CX],
+        [10, 50],
+        [60, 5],
+      ]) {
+        const i = y * SIZE + x;
+        const lower = 255 * h[i] * DIRECTIONAL_OPACITY + b * (1 - DIRECTIONAL_OPACITY);
+        const expected = lower * (1 - MPI_OPACITY * (1 - g[i]));
+        // 8bitへの丸めがあるので±1.5まで許す
+        expect(Math.abs(overAt(rgba, x, y, b) - expected)).toBeLessThan(1.5);
+      }
+    }
+  });
+
+  it('平坦地は方向陰影だけが薄く乗る（不透明度30%・明度≈180）', () => {
+    const rgba = shade(makeBuffer(() => 100));
+    const p = (CX * SIZE + CX) * 4;
+    expect(rgba[p + 3]).toBe(Math.round(255 * DIRECTIONAL_OPACITY));
+    expect(Math.abs(rgba[p] - 255 * Math.SQRT1_2)).toBeLessThanOrEqual(1);
+  });
+
+  it('無彩色になる（R=G=B）', () => {
+    const rgba = shade(makeBuffer(TEST_TERRAIN));
+    for (let i = 0; i < rgba.length; i += 4) {
+      expect(rgba[i]).toBe(rgba[i + 1]);
+      expect(rgba[i + 1]).toBe(rgba[i + 2]);
+    }
+  });
+
+  it('NoDataは透明にする', () => {
+    const rgba = shade(makeBuffer(() => NaN));
+    for (let i = 0; i < rgba.length; i += 4) expect(rgba[i + 3]).toBe(0);
+  });
+
+  it('谷は平坦地より暗く見える', () => {
+    const rgba = shade(
+      makeBuffer((x, y) => {
+        const r = Math.hypot(x - CX, y - CX);
+        return r < 20 ? (r - 20) * 5 : 0;
+      })
+    );
+    expect(overAt(rgba, CX + 12, CX, 255)).toBeLessThan(overAt(rgba, 0, 0, 255));
   });
 });
 

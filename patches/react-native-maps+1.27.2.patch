@@ -357,10 +357,10 @@ index e4010de..e9a07ad 100644
 \ No newline at end of file
 diff --git a/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapDEMTileProvider.java b/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapDEMTileProvider.java
 new file mode 100644
-index 0000000..8d8ca23
+index 0000000..f3852ef
 --- /dev/null
 +++ b/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapDEMTileProvider.java
-@@ -0,0 +1,732 @@
+@@ -0,0 +1,757 @@
 +package com.rnmaps.maps;
 +
 +import android.content.Context;
@@ -397,6 +397,13 @@ index 0000000..8d8ca23
 +  private static final float MPI_GAMMA = 1.0f;
 +  /** 袖の幅。探索半径に加えて傾斜の中央差分に1画素余分に要る */
 +  private static final int HALO = SEARCH_RADIUS + 1;
++  // 方向陰影（地理院の陰影起伏図に合わせた北西・高度45°）を下敷きにし、MPI陰影を乗算で重ねる。
++  // 2層をover合成した1枚を出す（Web版 terrainShading.ts の computeShading と対応）
++  private static final double DIRECTIONAL_OPACITY = 0.3;
++  private static final double MPI_OPACITY = 0.5;
++  private static final double LIGHT_EAST = Math.sin(Math.toRadians(315)) * Math.cos(Math.toRadians(45));
++  private static final double LIGHT_NORTH = Math.cos(Math.toRadians(315)) * Math.cos(Math.toRadians(45));
++  private static final double LIGHT_UP = Math.sin(Math.toRadians(45));
 +  /** 標高タイルが無いとき、何段まで粗いズームへ降りるか（z15→海域データの上限z10に届く段数） */
 +  private static final int MAX_ZOOM_FALLBACK = 5;
 +
@@ -800,11 +807,29 @@ index 0000000..8d8ca23
 +            continue;
 +          }
 +
-+          int gray = Math.round(255.0f * (1.0f - sTerm) * (1.0f - mTerm));
-+          if (gray < 0) gray = 0;
-+          if (gray > 255) gray = 255;
++          // 方向陰影: Horn法の勾配と光源方向の内積。バッファの行は南へ進む
++          int w = bufferSize;
++          double nw = buffer[center - w - 1], n = buffer[center - w], ne = buffer[center - w + 1];
++          double we = buffer[center - 1], ea = buffer[center + 1];
++          double sw = buffer[center + w - 1], so = buffer[center + w], se = buffer[center + w + 1];
++          double dzdx = (ne + 2 * ea + se - (nw + 2 * we + sw)) / (8.0 * metersPerPx);
++          double dzdy = (nw + 2 * n + ne - (sw + 2 * so + se)) / (8.0 * metersPerPx);
++          double dot = (-dzdx * LIGHT_EAST - dzdy * LIGHT_NORTH + LIGHT_UP) / Math.sqrt(dzdx * dzdx + dzdy * dzdy + 1.0);
++          if (Double.isNaN(dot)) {
++            pixels[py * size + px] = 0; // 透明
++            continue;
++          }
++          double h = dot < 0 ? 0 : dot;
 +
-+          pixels[py * size + px] = 0xff000000 | (gray << 16) | (gray << 8) | gray;
++          // 下層（灰色h・不透明度a1）の上に上層（黒・不透明度a2＝MPIの乗算）を重ねたover合成
++          double g = (1.0 - (double) sTerm) * (1.0 - (double) mTerm);
++          double a1 = DIRECTIONAL_OPACITY;
++          double a2 = MPI_OPACITY * (1.0 - g);
++          double alpha = 1.0 - (1.0 - a1) * (1.0 - a2);
++          int gray = clamp255((int) Math.round(255.0 * (1.0 - a2) * a1 * h / alpha));
++          int a = clamp255((int) Math.round(255.0 * alpha));
++
++          pixels[py * size + px] = (a << 24) | (gray << 16) | (gray << 8) | gray;
 +        }
 +      }
 +
@@ -10215,10 +10240,10 @@ index 0000000..c9f56f2
 +#endif
 diff --git a/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapDEMTileOverlay.m b/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapDEMTileOverlay.m
 new file mode 100644
-index 0000000..1e4df7d
+index 0000000..36c63ca
 --- /dev/null
 +++ b/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapDEMTileOverlay.m
-@@ -0,0 +1,708 @@
+@@ -0,0 +1,736 @@
 +//
 +//  AIRGoogleMapDEMTileOverlay.m
 +//  AirGoogleMaps
@@ -10249,6 +10274,12 @@ index 0000000..1e4df7d
 +static const float kMpiGamma = 1.0f;
 +/** 袖の幅。探索半径に加えて傾斜の中央差分に1画素余分に要る */
 +static const NSInteger kHalo = kSearchRadius + 1;
++// 方向陰影（地理院の陰影起伏図に合わせた北西・高度45°）を下敷きにし、MPI陰影を乗算で重ねる。
++// 2層をover合成した1枚を出す（Web版 terrainShading.ts の computeShading と対応）
++static const double kDirectionalOpacity = 0.3;
++static const double kMpiOpacity = 0.5;
++static const double kLightAzimuthDeg = 315;
++static const double kLightAltitudeDeg = 45;
 +/** 標高タイルが無いとき、何段まで粗いズームへ降りるか（z15→海域データの上限z10に届く段数） */
 +static const NSInteger kMaxZoomFallback = 5;
 +
@@ -10580,6 +10611,9 @@ index 0000000..1e4df7d
 +    uint8_t *rgba = (uint8_t *)rgbaData.mutableBytes;
 +    const float toDeg = (float)(180.0 / M_PI);
 +    const float slopeInv = (float)(1.0 / (2.0 * metersPerPx));
++    const double lightEast = sin(kLightAzimuthDeg * M_PI / 180.0) * cos(kLightAltitudeDeg * M_PI / 180.0);
++    const double lightNorth = cos(kLightAzimuthDeg * M_PI / 180.0) * cos(kLightAltitudeDeg * M_PI / 180.0);
++    const double lightUp = sin(kLightAltitudeDeg * M_PI / 180.0);
 +
 +    // 陰影段彩用: 等深線の間隔（zoomは計算を実行したsourceZoom）
 +    const BOOL reliefMode = self.reliefMode;
@@ -10659,11 +10693,30 @@ index 0000000..1e4df7d
 +                continue;
 +            }
 +
-+            float gray = 255.0f * (1.0f - sTerm) * (1.0f - mTerm);
-+            uint8_t value = (uint8_t)fmaxf(0.0f, fminf(255.0f, roundf(gray)));
++            // 方向陰影: Horn法の勾配と光源方向の内積。バッファの行は南へ進む
++            const NSInteger w = bufferSize;
++            double nw = buffer[center - w - 1], n = buffer[center - w], ne = buffer[center - w + 1];
++            double we = buffer[center - 1], ea = buffer[center + 1];
++            double sw = buffer[center + w - 1], so = buffer[center + w], se = buffer[center + w + 1];
++            double dzdx = (ne + 2 * ea + se - (nw + 2 * we + sw)) / (8.0 * metersPerPx);
++            double dzdy = (nw + 2 * n + ne - (sw + 2 * so + se)) / (8.0 * metersPerPx);
++            double dot = (-dzdx * lightEast - dzdy * lightNorth + lightUp) / sqrt(dzdx * dzdx + dzdy * dzdy + 1.0);
++            if (isnan(dot)) {
++                rgba[out] = rgba[out + 1] = rgba[out + 2] = rgba[out + 3] = 0; // 透明
++                continue;
++            }
++            double h = dot < 0 ? 0 : dot;
 +
-+            rgba[out] = rgba[out + 1] = rgba[out + 2] = value;
-+            rgba[out + 3] = 255;
++            // 下層（灰色h・不透明度a1）の上に上層（黒・不透明度a2＝MPIの乗算）を重ねたover合成。
++            // コンテキストは乗算済みアルファなのでRGBには色×不透明度を入れる
++            double g = (1.0 - (double)sTerm) * (1.0 - (double)mTerm);
++            double a1 = kDirectionalOpacity;
++            double a2 = kMpiOpacity * (1.0 - g);
++            double alpha = 1.0 - (1.0 - a1) * (1.0 - a2);
++            uint8_t premulGray = (uint8_t)fmax(0.0, fmin(255.0, round(255.0 * (1.0 - a2) * a1 * h)));
++
++            rgba[out] = rgba[out + 1] = rgba[out + 2] = premulGray;
++            rgba[out + 3] = (uint8_t)fmax(0.0, fmin(255.0, round(255.0 * alpha)));
 +        }
 +    }
 +
