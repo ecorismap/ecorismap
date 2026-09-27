@@ -1,5 +1,11 @@
 # Change Log
 
+## [0.6.3]　- Unreleased
+
+- Fixed outline-only polygons (transparent fill) being selected by tapping inside them. They now respond only to taps near their outline
+
+- 枠だけ（塗りなし）のポリゴンが内側のタップでも選択されていた問題を修正。枠線付近をタップしたときだけ反応するようにしました
+
 ## [0.6.2]　- 2026-09-24
 
 - Fixed vector PMTiles not being displayed in the Android release build
