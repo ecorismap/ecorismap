@@ -120,7 +120,7 @@ export const HomeModalUpdateInfo = React.memo(() => {
 
             <ScrollView style={styles.updateInfoContainer} showsVerticalScrollIndicator={true}>
               <View style={styles.updateInfoSection}>
-                <Text style={styles.updateInfoSectionTitle}>{t('Home.updateInfo.newFeatures')}</Text>
+                <Text style={styles.updateInfoSectionTitle}>{t('Home.updateInfo.improvements')}</Text>
                 {t('Home.updateInfo.feature1') && (
                   <Text style={styles.updateInfoItem}>• {t('Home.updateInfo.feature1')}</Text>
                 )}
