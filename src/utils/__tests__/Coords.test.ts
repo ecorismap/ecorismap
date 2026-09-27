@@ -714,6 +714,15 @@ describe('selectPolygonFeatureByLatLon', () => {
   it('面から離れた場所のタップでは選択しない', () => {
     expect(selectPolygonFeatureByLatLon([square], [20, 20], 0.1)).toBeUndefined();
   });
+
+  it('枠だけの指定では面の内側のタップで選択しない', () => {
+    expect(selectPolygonFeatureByLatLon([square], [5, 5], 0.1, true)).toBeUndefined();
+  });
+
+  it('枠だけの指定でも枠線付近のタップでは選択できる', () => {
+    const selected = selectPolygonFeatureByLatLon([square], [9.9995, 5], 0.1, true);
+    expect(selected?.id).toBe('p1');
+  });
 });
 
 describe('reprojectCoordsOnModifiedLine', () => {
