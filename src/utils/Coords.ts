@@ -810,7 +810,8 @@ export const findNearestTrackPoint = (
 export const selectPolygonFeatureByLatLon = (
   polygonFeatures: PolygonRecordType[],
   pointCoords: Position,
-  radius: number
+  radius: number,
+  edgeOnly = false
 ) => {
   try {
     const bufferPolygon = turf.buffer(turf.point(pointCoords), radius);
@@ -822,7 +823,8 @@ export const selectPolygonFeatureByLatLon = (
         if (bufferPolygon === undefined) return undefined;
         //自前のbooleanIntersectsは境界の交差しか判定しないため、面の内側をタップしたときは
         //拾えない。タップ位置の内外判定を先に見る（枠線付近は従来どおり交差で拾う）
-        const tapInsideFeature = turf.booleanPointInPolygon(turf.point(pointCoords), featurePolygon);
+        //枠だけ（塗りなし）のポリゴンは見た目どおり枠線付近のタップだけで拾う
+        const tapInsideFeature = !edgeOnly && turf.booleanPointInPolygon(turf.point(pointCoords), featurePolygon);
         const intersects = tapInsideFeature || booleanIntersects(featurePolygon, bufferPolygon);
         if (intersects) return feature;
       })
