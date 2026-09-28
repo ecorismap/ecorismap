@@ -1,6 +1,6 @@
 # Change Log
 
-## [0.6.3]　- Unreleased
+## [0.6.3]　- 2026-09-28
 
 - Fixed outline-only polygons (transparent fill) being selected by tapping inside them. They now respond only to taps near their outline
 
