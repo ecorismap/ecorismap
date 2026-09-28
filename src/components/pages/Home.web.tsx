@@ -19,6 +19,7 @@ import maplibregl, {
   FillLayerSpecification,
   LayerSpecification,
   LineLayerSpecification,
+  RasterDEMTileSource,
   RequestParameters,
 } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
@@ -95,8 +96,11 @@ import {
 import { isDemProtocolUrl, isReliefUrl, toDemUrl } from '../../utils/terrainShading';
 import { reliefStyleFromUrl } from '../../utils/colorRelief';
 import {
+  BATHY_TERRAIN_PROTOCOL,
   GSJDEM_PROTOCOL,
+  buildBathymetryTerrainTileUrl,
   buildGsjDemTileUrl,
+  createBathymetryTerrainProtocolHandler,
   createGsjDemProtocolHandler,
   gebcoSourceParams,
   getGebcoContourTilesUrl,
@@ -292,6 +296,8 @@ export default function HomeScreen() {
 
   // GEBCO海底地形図用: GSJ数値PNG→Terrain-RGB変換プロトコル（raster-demソースが読む）
   maplibregl.addProtocol(GSJDEM_PROTOCOL, createGsjDemProtocolHandler());
+  // GEBCO表示中の3D地形: Mapterhornの海（0m）をGEBCOの海底で埋めるプロトコル
+  maplibregl.addProtocol(BATHY_TERRAIN_PROTOCOL, createBathymetryTerrainProtocolHandler());
 
   //console.log('Home');
 
@@ -685,13 +691,25 @@ export default function HomeScreen() {
       }
     });
 
+    // GEBCO海底地形図の表示中は、3D地形の海を海底の深さで起伏させる（ネイティブの海底モード相当）
+    const gebcoMap = tileMaps.find(
+      (tm) => tm.visible && !tm.isGroup && isReliefUrl(tm.url) && reliefStyleFromUrl(tm.url) === 'gebco'
+    );
+    const terrainTileUrl = gebcoMap
+      ? buildBathymetryTerrainTileUrl(withTileSignature(toDemUrl(gebcoMap.url), tileSignatures))
+      : MAPTERHORN_URL;
+    const demSource = map.getSource('rasterdem') as RasterDEMTileSource | undefined;
+    if (demSource && demSource.tiles?.[0] !== terrainTileUrl) {
+      demSource.setTiles([terrainTileUrl]);
+    }
+
     // isTerrainActiveの状態に基づいて地形設定を復元
     if (isTerrainActive) {
       map.setTerrain({ source: 'rasterdem', exaggeration: TERRAIN_EXAGGERATION });
     } else {
       map.setTerrain(null);
     }
-  }, [tileMaps, getTileMapLayers, mapViewRef, isTerrainActive]);
+  }, [tileMaps, getTileMapLayers, mapViewRef, isTerrainActive, tileSignatures]);
 
   // ========== Hooks ==========
 

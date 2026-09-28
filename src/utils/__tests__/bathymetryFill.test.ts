@@ -97,3 +97,27 @@ describe('exaggerateDepths', () => {
     expect(elev[3]).toBeNaN();
   });
 });
+
+describe('fillSeaWithBathymetry（祖先の画素数がタイルと異なる）', () => {
+  it('512pxのタイルに256pxの祖先を正しい位置で埋める', () => {
+    // 祖先2×2（西半分-100・東半分-900）を、同じズームの4×4タイルへ埋める
+    const ancestor = new Float32Array([-100, -900, -100, -900]);
+    const elev = new Float32Array(16);
+    const tile = { z: 3, x: 1, y: 1 };
+    fillSeaWithBathymetry(elev, 4, tile, ancestor, tile, true, 2);
+    expect(elev[0]).toBe(-100);
+    expect(elev[3]).toBe(-900);
+    expect(elev[12]).toBe(-100);
+    expect(elev[15]).toBe(-900);
+    // 中央の2列は補間される
+    expect(elev[1]).toBeCloseTo(-300);
+    expect(elev[2]).toBeCloseTo(-700);
+  });
+
+  it('子タイルは祖先の該当象限から引く', () => {
+    const ancestor = new Float32Array([-100, -900, -100, -900]);
+    const east = new Float32Array(16);
+    fillSeaWithBathymetry(east, 4, { z: 4, x: 3, y: 2 }, ancestor, { z: 3, x: 1, y: 1 }, true, 2);
+    expect(east[3]).toBe(-900);
+  });
+});
