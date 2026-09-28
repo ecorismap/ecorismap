@@ -34,12 +34,12 @@ const PARENT_FALLBACK_DEPTH = 4;
 
 /**
  * NoDataの番兵。maplibreのraster-demは透明画素を表現できないため、NoDataは
- * Terrain-RGBの最大値（標高約+167万m）にエンコードし、color-relief側のstep式で
+ * Terrain-RGBの最大値（標高約+167万m）にエンコードし、color-relief側の末尾の停止点で
  * 透明にする（データ整備域が限られるソース＝内閣府地形データ等で、範囲外を下の地図に抜く）。
  * 実在の標高（最高でも9000m弱）とは桁違いなので衝突しない。
  */
 const NODATA_TERRAIN_RGB = 0xffffff;
-/** step式でこの標高を超えたら透明にする閾値[m] */
+/** この標高以上を透明にする閾値[m]。閾値−1mの停止点までは最高標高の色を保つ */
 const NODATA_STEP_ELEV = 500000;
 
 type ElevationTile = { width: number; data: Float32Array };
@@ -233,7 +233,17 @@ export function getGebcoContourTilesUrl(maplibregl: MaplibreLike, demUrlTemplate
     // 等値線はデータ整備域の縁で自然に途切れる
     return { width: tile.width, height: tile.width, data: tile.data };
   };
-  demSource.setupMaplibre(maplibregl);
+  // setupMaplibreは使わない。worker:falseだとキャッシュ済みの等深線タイルのArrayBufferを
+  // 複製せずに返し、maplibreがworkerへ転送した時点でdetachされる。同じタイルを再要求すると
+  // DataCloneErrorで等深線が欠けるため、毎回複製して渡す
+  maplibregl.addProtocol(demSource.sharedDemProtocolId, demSource.sharedDemProtocol);
+  maplibregl.addProtocol(
+    demSource.contourProtocolId,
+    async (request: RequestParameters, abortController: AbortController) => {
+      const response = await demSource.contourProtocol(request, abortController);
+      return { ...response, data: response.data.slice(0) };
+    }
+  );
 
   const contourTilesUrl = demSource.contourProtocolUrl({
     multiplier: 1,
@@ -258,14 +268,19 @@ export function getGebcoNameSources(id: string): Record<string, unknown> {
 
 /**
  * GEBCO_RELIEF_RAMPからデモと同じ指数補間(0.8)のcolor-relief式を組み立てる。
- * NoData番兵（+167万m相当）はstep式で透明にする。
+ *
+ * maplibreのcolor-reliefは式の最上位がinterpolateのときだけ停止点を色テーブルにする
+ * （それ以外は透明1色になり何も塗られない）。そのためNoData番兵（+167万m相当）の透明化は
+ * stepで包まず、最高標高の色を閾値直前まで延ばしてから透明の停止点を足して表す。
  */
-function colorReliefExpression(): unknown[] {
+export function colorReliefExpression(): unknown[] {
   const ramp: unknown[] = ['interpolate', ['exponential', 0.8], ['elevation']];
   for (const [elev, r, g, b] of GEBCO_RELIEF_RAMP) {
     ramp.push(elev, `rgb(${r},${g},${b})`);
   }
-  return ['step', ['elevation'], ramp, NODATA_STEP_ELEV, 'rgba(0,0,0,0)'];
+  const [, r, g, b] = GEBCO_RELIEF_RAMP[GEBCO_RELIEF_RAMP.length - 1];
+  ramp.push(NODATA_STEP_ELEV - 1, `rgb(${r},${g},${b})`, NODATA_STEP_ELEV, 'rgba(0,0,0,0)');
+  return ramp;
 }
 
 /**
