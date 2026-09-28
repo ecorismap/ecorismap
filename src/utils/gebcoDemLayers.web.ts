@@ -23,6 +23,8 @@ import type { LayerSpecification, RequestParameters } from 'maplibre-gl';
 import mlcontour from 'maplibre-contour';
 import { decodeElevation, toDemUrl } from './terrainShading';
 import { CONTOUR_INTERVALS, GEBCO_RELIEF_RAMP } from './colorRelief';
+import { BATHYMETRY_EXAGGERATION, exaggerateDepths, fillSeaWithBathymetry } from './bathymetryFill';
+import { MAPTERHORN_URL } from '../constants/DemSources';
 import type { TileMapType } from '../types';
 import msilIslandsJson from '../presets/data/msil_islands.json';
 import msilUnderseaFeaturesJson from '../presets/data/msil_undersea_features.json';
@@ -185,6 +187,88 @@ export function createGsjDemProtocolHandler() {
     } catch {
       return { data: null };
     }
+  };
+}
+
+// ---- 3D地形（海底モード）----
+export const BATHY_TERRAIN_PROTOCOL = 'bathyterrain';
+
+/** 3D地形のタイル（Mapterhornと同じ512px） */
+const TERRAIN_TILE_SIZE = 512;
+
+/**
+ * 3D地形用raster-demのタイルURL。GEBCO表示中はMapterhornの代わりにこれを使う。
+ * 引数はGEBCO段彩と同じ標高テンプレート（標高キャッシュを共有するため）
+ */
+export function buildBathymetryTerrainTileUrl(demUrlTemplate: string): string {
+  return `${BATHY_TERRAIN_PROTOCOL}://${encodeURIComponent(demUrlTemplate)}/{z}/{x}/{y}`;
+}
+
+/** Mapterhornのterrarium WebPを標高配列にする。タイルが無い（外洋）ときは全面0m */
+async function loadMapterhornElevation(z: number, x: number, y: number, signal: AbortSignal): Promise<Float32Array> {
+  const url = MAPTERHORN_URL.replace('{z}', String(z)).replace('{x}', String(x)).replace('{y}', String(y));
+  const response = await fetch(url, { signal });
+  const size = TERRAIN_TILE_SIZE;
+  const elev = new Float32Array(size * size);
+  if (response.status === 404) return elev;
+  if (!response.ok) throw new Error(`mapterhorn ${response.status}`);
+  // 標高をRGBに詰めた画像なので、色空間変換・アルファ乗算で値が変わらないようにする
+  const bitmap = await createImageBitmap(await response.blob(), {
+    colorSpaceConversion: 'none',
+    premultiplyAlpha: 'none',
+  });
+  const canvas = new OffscreenCanvas(size, size);
+  const ctx = canvas.getContext('2d', { willReadFrequently: true });
+  if (!ctx) throw new Error('no canvas context');
+  ctx.drawImage(bitmap, 0, 0, size, size);
+  bitmap.close();
+  const { data: rgba } = ctx.getImageData(0, 0, size, size);
+  for (let i = 0, p = 0; i < elev.length; i++, p += 4) {
+    elev[i] = rgba[p] * 256 + rgba[p + 1] + rgba[p + 2] / 256 - 32768;
+  }
+  return elev;
+}
+
+/**
+ * GEBCO表示中の3D地形タイル（terrarium PNG）を作るプロトコルハンドラ。
+ *
+ * MapterhornはWeb版の3D地形の標高だが、海底の値を持たない（海は0m、外洋のタイルは404）。
+ * そのままではGEBCO段彩を貼っても海が平らなので、ネイティブの海底モード（demTileProvider）と同じく
+ * 0m以下の画素をGEBCO標高で埋め、海面下だけBATHYMETRY_EXAGGERATION倍にする。
+ * 陸はMapterhornの詳細な標高のまま。
+ */
+export function createBathymetryTerrainProtocolHandler() {
+  return async (params: RequestParameters, abortController: AbortController) => {
+    const parts = params.url.split('/');
+    const [rawTemplate, zs, xs, ys] = parts.slice(-4);
+    const demUrlTemplate = decodeURIComponent(rawTemplate);
+    const z = Number(zs);
+    const x = Number(xs);
+    const y = Number(ys);
+    const size = TERRAIN_TILE_SIZE;
+
+    const elev = await loadMapterhornElevation(z, x, y, abortController.signal);
+    const az = Math.min(z, gebcoSourceParams(demUrlTemplate).maxzoom);
+    const ancestorTile = { z: az, x: x >> (z - az), y: y >> (z - az) };
+    const ancestor = await loadElevationMerged(demUrlTemplate, ancestorTile.z, ancestorTile.x, ancestorTile.y);
+    if (ancestor !== null) {
+      fillSeaWithBathymetry(elev, size, { z, x, y }, ancestor.data, ancestorTile, true, ancestor.width);
+      exaggerateDepths(elev, BATHYMETRY_EXAGGERATION);
+    }
+
+    const out = new Uint8ClampedArray(size * size * 4);
+    for (let i = 0, p = 0; i < elev.length; i++, p += 4) {
+      // terrarium: 標高 = R×256 + G + B/256 − 32768。強調した海溝は表現範囲の下限で頭打ちにする
+      let v = elev[i] + 32768;
+      if (v < 0) v = 0;
+      else if (v > 65535) v = 65535;
+      const whole = Math.floor(v);
+      out[p] = whole >> 8;
+      out[p + 1] = whole & 0xff;
+      out[p + 2] = Math.floor((v - whole) * 256);
+      out[p + 3] = 255;
+    }
+    return { data: fastPngEncode({ width: size, height: size, data: out, channels: 4, depth: 8 }) };
   };
 }
 
