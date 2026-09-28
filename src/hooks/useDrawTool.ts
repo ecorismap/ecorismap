@@ -468,13 +468,18 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
   );
 
   const selectPolygonFeatures = useCallback(
-    (selectLineCoords: Position[], recordSet: RecordType[]) => {
+    (selectLineCoords: Position[], recordSet: RecordType[], edgeOnly: boolean) => {
       let features;
       if (selectLineCoords.length > 5) {
         features = selectPolygonFeaturesByArea(recordSet as PolygonRecordType[], selectLineCoords);
       } else {
         const radius = calcDegreeRadius(500, mapRegion, mapSize);
-        const feature = selectPolygonFeatureByLatLon(recordSet as PolygonRecordType[], selectLineCoords[0], radius);
+        const feature = selectPolygonFeatureByLatLon(
+          recordSet as PolygonRecordType[],
+          selectLineCoords[0],
+          radius,
+          edgeOnly
+        );
         features = feature !== undefined ? [feature] : [];
       }
       return features;
@@ -515,7 +520,9 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
         features = selectLineFeatures(selectLineCoords, recordSet);
         if (features.length > 0) convertLineFeatureToDrawLine(layer.id, [features[0]]);
       } else if (featureButton === 'POLYGON') {
-        features = selectPolygonFeatures(selectLineCoords, recordSet);
+        //数値だった頃の互換性のためBoolean()を使用
+        const edgeOnly = Boolean(layer.colorStyle.transparency);
+        features = selectPolygonFeatures(selectLineCoords, recordSet, edgeOnly);
         if (features.length > 0) convertPolygonFeatureToDrawLine(layer.id, [features[0]]);
       }
       if (features.length > 0) {
@@ -1341,10 +1348,11 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
       if (feature === undefined && (currentInfoTool === 'ALL_INFO' || currentInfoTool === 'POLYGON_INFO')) {
         const radius = calcDegreeRadius(2000, mapRegion, mapSize);
         for (const { layerId, data } of polygonDataSet) {
-          const selectedFeature = selectPolygonFeatureByLatLon(data, latlon, radius);
+          const selectedLayer = findLayer(layerId);
+          if (!selectedLayer?.visible) continue;
+          const edgeOnly = Boolean(selectedLayer.colorStyle.transparency);
+          const selectedFeature = selectPolygonFeatureByLatLon(data, latlon, radius, edgeOnly);
           if (selectedFeature !== undefined) {
-            const selectedLayer = findLayer(layerId);
-            if (!selectedLayer?.visible) continue;
             layer = selectedLayer;
             recordSet = data;
             recordIndex = data.findIndex((d) => d.id === selectedFeature.id);
