@@ -226,7 +226,8 @@
       "createNewLayerForType": "編集できる{{type}}レイヤがありません。新規レイヤを作成しますか？",
       "deleteCategory": "この区分を選択肢から削除しますか？\n（この区分で保存済みのデータはそのまま残ります）",
       "pdfUnprintableMaps": "次の地図はPDFに含まれません。\n{{maps}}\n\nこのまま出力しますか？",
-      "openDataPDF": "データ一覧のPDFを開きますか？"
+      "openDataPDF": "データ一覧のPDFを開きますか？",
+      "pdfManyTiles": "PDFに貼る地図タイルが{{count}}枚あり、作成に時間がかかります。端末によってはメモリ不足で失敗することがあります。\n\n用紙サイズか地図のズームレベルを下げると枚数が減ります。このまま作成しますか？"
     },
     "message": {
       "duplicateValue": "同じ名前の選択肢があります",
@@ -356,7 +357,8 @@
       "redo": "やり直す",
       "download": "取得",
       "noEditingLayer": "レイヤ未選択",
-      "pdfGenerating": "PDFを作成しています…"
+      "pdfGenerating": "PDFを作成しています…",
+      "pdfCancelling": "PDFの作成を中止しています…"
     },
     "poi": {
       "openInGoogleMaps": "Google Mapsへ",

@@ -2,98 +2,74 @@ import * as RNFS from 'react-native-fs';
 import { TILE_FOLDER } from '../constants/AppConstants';
 import { SaveFormat, manipulateAsync } from 'expo-image-manipulator';
 import * as FileSystem from 'expo-file-system/legacy';
-import { getTileRegion, tileToWebMercator } from './Tile';
+import { tileToWebMercator } from './Tile';
 import { TileMapType } from '../types';
 import { warpedFileType } from 'react-native-gdalwarp';
 import ImageEditor from '@react-native-community/image-editor';
 import { moveFile, unlink } from '../utils/File';
-import { buildTileUrl, getPrintableTileMaps } from './pdfExport/tiles';
+import { buildTileMapHTML, buildTileUrl, listPdfTiles, PdfTileRequest } from './pdfExport/tiles';
+import { CancelToken, runTasks } from './pdfExport/runTasks';
 
-// 一時ファイルにコピーし、画像を操作する関数
+//PDF用に取得したタイルの一時置き場。オフライン地図のタイルフォルダ（TILE_FOLDER）には保存しない
+//（保存範囲の一覧や容量管理の外で溜まり続けるため）
+const PDF_TILE_TEMP_DIR = `${FileSystem.cacheDirectory}pdf-tiles/`;
+//同時に取得・変換するタイル数。多すぎると端末のメモリと通信が詰まる
+const PDF_TILE_CONCURRENCY = 6;
+
 // manipulateAsyncを通さないと特殊なpngタイルが正常に出力されないため使用する
-//　iOSにおいて、拡張子がないpngを処理できないバグがmanipulateAsyncにあるため、一時ファイルを使って操作する
-async function handleImageManipulation(sourceUri: string, tempFileUri: string) {
-  // 既存の一時ファイルを削除して上書き
-  if (await RNFS.exists(tempFileUri)) {
-    await RNFS.unlink(tempFileUri);
-  }
-  await RNFS.copyFile(sourceUri, tempFileUri);
-  // manipulateAsync に渡して、操作後に一時ファイルを削除
+// iOSにおいて、拡張子がないpngを処理できないバグがmanipulateAsyncにあるため、拡張子付きの一時ファイルを使う
+async function toBase64Png(tempFileUri: string) {
   const result = await manipulateAsync(tempFileUri, [], { base64: true, format: SaveFormat.PNG }).catch(
     () => undefined
   );
-  await RNFS.unlink(tempFileUri); // 一時ファイルを削除
-  return result;
+  await FileSystem.deleteAsync(tempFileUri, { idempotent: true });
+  //manipulateAsyncの出力ファイルも残さない
+  if (result) await FileSystem.deleteAsync(result.uri, { idempotent: true });
+  return result?.base64;
+}
+
+async function loadTileBase64(tile: PdfTileRequest): Promise<string | undefined> {
+  const { map, z, x, y } = tile;
+  const tempFileUri = `${PDF_TILE_TEMP_DIR}${map.id}_${z}_${x}_${y}.png`;
+  try {
+    // オフライン保存済みのタイルがあればそれを使う
+    const localUri = `${TILE_FOLDER}/${map.id}/${z}/${x}/${y}`;
+    if (await RNFS.exists(localUri)) {
+      await FileSystem.deleteAsync(tempFileUri, { idempotent: true });
+      await RNFS.copyFile(localUri, tempFileUri);
+      return await toBase64Png(tempFileUri);
+    }
+    // PDF(file://)やpmtiles://などダウンロードできないURLはスキップ
+    if (!map.url.startsWith('http://') && !map.url.startsWith('https://')) return undefined;
+    const resp = await FileSystem.downloadAsync(buildTileUrl(map, z, x, y), tempFileUri);
+    if (resp.status !== 200) {
+      await FileSystem.deleteAsync(tempFileUri, { idempotent: true });
+      return undefined;
+    }
+    return await toBase64Png(tempFileUri);
+  } catch (e) {
+    // 1タイルの取得失敗でPDF全体の生成を止めない
+    return undefined;
+  }
 }
 
 export async function generateTileMap(
   tileMaps: TileMapType[],
   pdfRegion: { minLon: number; minLat: number; maxLon: number; maxLat: number },
-  pdfTileMapZoomLevel: string
+  pdfTileMapZoomLevel: string,
+  options: { cancel?: CancelToken; onProgress?: (done: number, total: number) => void } = {}
 ) {
-  const tileZoom = parseInt(pdfTileMapZoomLevel, 10);
-  const { leftTileX, rightTileX, bottomTileY, topTileY } = getTileRegion(pdfRegion, tileZoom);
-
-  let tileContents = '';
-  const maps = getPrintableTileMaps(tileMaps, false);
-
-  for (const map of maps) {
-    // overzoomThresholdを超えるズームでは、画面表示のオーバーズームと同様に
-    // 提供上限ズームの親タイルを拡大して描画する（例: 1:1000のz19で地理院地図はz18を2倍表示）
-    const dz = Math.max(0, tileZoom - (map.overzoomThreshold ?? tileZoom));
-    const mapZoom = tileZoom - dz;
-    const scaleFactor = Math.pow(2, dz);
-    const tileSize = 256 * scaleFactor;
-    const mapLeftTileX = Math.floor(leftTileX / scaleFactor);
-    const mapRightTileX = Math.floor(rightTileX / scaleFactor);
-    const mapTopTileY = Math.floor(topTileY / scaleFactor);
-    const mapBottomTileY = Math.floor(bottomTileY / scaleFactor);
-
-    tileContents += '<div style="position: absolute; left: 0; top: 0;">';
-    for (let y = mapTopTileY; y <= mapBottomTileY; y++) {
-      for (let x = mapLeftTileX; x <= mapRightTileX; x++) {
-        let mapSrc;
-        const mapUri = `${TILE_FOLDER}/${map.id}/${mapZoom}/${x}/${y}`;
-        const tempFileUri = `${FileSystem.cacheDirectory}${map.id}_${x}_${y}.png`; // 一時ファイル
-
-        try {
-          // 画像が既にローカルにある場合
-          if (await RNFS.exists(mapUri)) {
-            mapSrc = await handleImageManipulation(mapUri, tempFileUri);
-          }
-          // インターネットから画像をダウンロードする場合
-          else if (map.url.startsWith('http://') || map.url.startsWith('https://')) {
-            const mapUrl = buildTileUrl(map, mapZoom, x, y);
-
-            await FileSystem.makeDirectoryAsync(`${TILE_FOLDER}/${map.id}/${mapZoom}/${x}`, {
-              intermediates: true,
-            });
-            const resp = await FileSystem.downloadAsync(mapUrl, `${TILE_FOLDER}/${map.id}/${mapZoom}/${x}/${y}`);
-            if (resp.status === 200) {
-              mapSrc = await handleImageManipulation(resp.uri, tempFileUri);
-            }
-          }
-          // PDF(file://)やpmtiles://などダウンロードできないURLはスキップ
-        } catch (e) {
-          // 1タイルの取得失敗でPDF全体の生成を止めない
-          mapSrc = undefined;
-        }
-
-        // 画像が正常に取得できた場合のみHTMLに追加
-        if (mapSrc) {
-          tileContents += `<img src="data:image/png;base64,${
-            mapSrc.base64
-          }" style="position: absolute; width: ${tileSize}px; height: ${tileSize}px; left: ${
-            256 * (x * scaleFactor - leftTileX)
-          }px; top: ${256 * (y * scaleFactor - topTileY)}px; margin: 0; padding: 0; opacity:${(
-            1 - map.transparency
-          ).toFixed(1)}" />`;
-        }
-      }
-    }
-    tileContents += '</div>';
+  const tiles = listPdfTiles(tileMaps, pdfRegion, parseInt(pdfTileMapZoomLevel, 10), false);
+  await FileSystem.makeDirectoryAsync(PDF_TILE_TEMP_DIR, { intermediates: true }).catch(() => undefined);
+  try {
+    const base64s = await runTasks(tiles, PDF_TILE_CONCURRENCY, loadTileBase64, options);
+    return buildTileMapHTML(
+      tiles,
+      base64s.map((b) => (b === undefined ? undefined : `data:image/png;base64,${b}`))
+    );
+  } finally {
+    await FileSystem.deleteAsync(PDF_TILE_TEMP_DIR, { idempotent: true }).catch(() => undefined);
   }
-  return tileContents;
 }
 
 const calculateOffset = (
