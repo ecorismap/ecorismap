@@ -118,6 +118,7 @@ import {
 
 import { usePDF } from '../hooks/usePDF';
 import { waitForImages } from '../utils/pdfExport/waitForImages';
+import { printAndCloseWindow } from '../utils/pdfExport/printWindow';
 import { CancelToken, PdfCancelledError } from '../utils/pdfExport/runTasks';
 import { shareWithFileName } from '../utils/pdfExport/shareFile';
 import { PDF_TILE_WARNING_COUNT } from '../utils/pdfExport/tiles';
@@ -2258,8 +2259,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       await waitForImages(mapWindow.document.images);
       setIsLoading(false);
       mapWindow.document.title = fileName;
-      mapWindow.print();
-      mapWindow.close();
+      await printAndCloseWindow(mapWindow);
 
       if (outputDataPDF) {
         //印刷ダイアログの後はユーザー操作が切れてポップアップがブロックされるため、確認ボタンの操作で開く
@@ -2277,8 +2277,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
         }
         await waitForImages(dataWindow.document.images);
         dataWindow.document.title = fileName.replace('_map_', '_data_');
-        dataWindow.print();
-        dataWindow.close();
+        await printAndCloseWindow(dataWindow);
       }
       return;
     }
