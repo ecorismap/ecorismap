@@ -1,54 +1,30 @@
-import { getTileRegion } from './Tile';
 import { TileMapType } from '../types';
 import * as pdfjs from 'pdfjs-dist';
 import initGdalJs from 'gdal3.js';
 import { warpedFileType } from 'react-native-gdalwarp';
 import { GeoInfo } from './PDF';
-import { buildTileUrl, getPrintableTileMaps } from './pdfExport/tiles';
+import { buildTileMapHTML, buildTileUrl, listPdfTiles } from './pdfExport/tiles';
+import { CancelToken } from './pdfExport/runTasks';
 
 // Metro では webpack 専用エントリ(pdfjs-dist/webpack)が使えないため、worker を明示指定する。
 // worker は scripts/copy-web-assets.js が public/static/ へコピーする。
 // document.baseURI 基準の絶対URLに解決し、サブディレクトリ配信でも正しく参照させる(dev はルート配信)。
 pdfjs.GlobalWorkerOptions.workerSrc = new URL('static/pdf.worker.min.mjs', document.baseURI).href;
 
+//Webはタイルの取得をブラウザに任せ（URLをそのまま貼る）、読み込み完了は印刷前にwaitForImagesで待つ。
+//存在確認のHEADリクエストはしない（タイル枚数分の往復で遅く、CORS非対応のサーバーでは画像は表示できるのに
+//失敗扱いになる）。読み込めなかった画像は印刷前に取り除く。取得がないので進捗・中止は使わない
 export async function generateTileMap(
   tileMaps: TileMapType[],
   pdfRegion: { minLon: number; minLat: number; maxLon: number; maxLat: number },
-  pdfTileMapZoomLevel: string
+  pdfTileMapZoomLevel: string,
+  _options: { cancel?: CancelToken; onProgress?: (done: number, total: number) => void } = {}
 ) {
-  const tileZoom = parseInt(pdfTileMapZoomLevel, 10);
-  const { leftTileX, rightTileX, bottomTileY, topTileY } = getTileRegion(pdfRegion, tileZoom);
-
-  let tileContents = '';
-  const maps = getPrintableTileMaps(tileMaps, true);
-
-  for (const map of maps) {
-    // overzoomThresholdを超えるズームでは、画面表示のオーバーズームと同様に
-    // 提供上限ズームの親タイルを拡大して描画する（例: 1:1000のz19で地理院地図はz18を2倍表示）
-    const dz = Math.max(0, tileZoom - (map.overzoomThreshold ?? tileZoom));
-    const mapZoom = tileZoom - dz;
-    const scaleFactor = Math.pow(2, dz);
-    const tileSize = 256 * scaleFactor;
-    const mapLeftTileX = Math.floor(leftTileX / scaleFactor);
-    const mapRightTileX = Math.floor(rightTileX / scaleFactor);
-    const mapTopTileY = Math.floor(topTileY / scaleFactor);
-    const mapBottomTileY = Math.floor(bottomTileY / scaleFactor);
-
-    tileContents += '<div style="position: absolute; left: 0; top: 0;">';
-    for (let y = mapTopTileY; y <= mapBottomTileY; y++) {
-      for (let x = mapLeftTileX; x <= mapRightTileX; x++) {
-        //存在確認のHEADリクエストはしない（タイル枚数分の往復で遅く、CORS非対応のサーバーでは画像は表示できるのに
-        //失敗扱いになる）。読み込めなかった画像は印刷前にwaitForImagesで取り除く
-        tileContents += `<img src="${buildTileUrl(map, mapZoom, x, y)}" style="position: absolute; width: ${tileSize}px; height: ${tileSize}px; left: ${
-          256 * (x * scaleFactor - leftTileX)
-        }px; top: ${256 * (y * scaleFactor - topTileY)}px; margin: 0; padding: 0; opacity:${(1 - map.transparency).toFixed(
-          1
-        )}" />`;
-      }
-    }
-    tileContents += '</div>';
-  }
-  return tileContents;
+  const tiles = listPdfTiles(tileMaps, pdfRegion, parseInt(pdfTileMapZoomLevel, 10), true);
+  return buildTileMapHTML(
+    tiles,
+    tiles.map((tile) => buildTileUrl(tile.map, tile.z, tile.x, tile.y))
+  );
 }
 
 async function decodeBase64(base64: string): Promise<Uint8Array> {

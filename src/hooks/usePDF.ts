@@ -30,8 +30,10 @@ import {
   buildAttributionText,
   getPdfMapNotices,
   getPrintableTileMaps,
+  listPdfTiles,
   UnprintableReason,
 } from '../utils/pdfExport/tiles';
+import { CancelToken, PdfCancelledError } from '../utils/pdfExport/runTasks';
 
 export type UseEcorisMapFileReturnType = {
   isPDFSettingsVisible: boolean;
@@ -49,9 +51,13 @@ export type UseEcorisMapFileReturnType = {
   //表示中だがPDFに載らない地図（出力前の通知用）
   pdfMapNotices: { name: string; reason: UnprintableReason }[];
   //Webは印刷用ウィンドウを渡すとそこへ書き込む（ポップアップブロックを避けるため、クリック直後に開いたものを渡す）
+  //PDFに貼るタイルの枚数（多すぎるときの警告用）
+  pdfTileCount: number;
+  //モバイルはタイル取得の進捗通知と中止ができる。中止されたらPdfCancelledErrorを投げる
   generatePDF: (
     data: { dataSet: DataType[]; layers: LayerType[] },
-    targetWindow?: Window
+    targetWindow?: Window,
+    options?: PdfProgressOptions
   ) => Promise<string | Window | null>;
   generateDataPDF: (
     data: { dataSet: DataType[]; layers: LayerType[] },
@@ -66,6 +72,8 @@ export type UseEcorisMapFileReturnType = {
   setOutputVRT: React.Dispatch<React.SetStateAction<boolean>>;
   setOutputDataPDF: React.Dispatch<React.SetStateAction<boolean>>;
 };
+
+export type PdfProgressOptions = { cancel?: CancelToken; onProgress?: (done: number, total: number) => void };
 
 const writeToWindow = (html: string, targetWindow: Window | undefined, width: number, height: number) => {
   const pW = targetWindow ?? window.open('', '', `height=${height}px, width=${width}px`);
@@ -196,12 +204,17 @@ export const usePDF = (): UseEcorisMapFileReturnType => {
     };
   }, [layout.region, mapRegion.latitude, mapRegion.longitude]);
 
+  const pdfTileCount = useMemo(
+    () => listPdfTiles(tileMaps, layout.region, parseInt(pdfTileMapZoomLevel, 10), isWeb).length,
+    [isWeb, layout.region, pdfTileMapZoomLevel, tileMaps]
+  );
+
   const pdfMapNotices = useMemo(() => getPdfMapNotices(tileMaps, isWeb), [isWeb, tileMaps]);
 
   const generateVRT = useCallback((fileName: string) => buildVRT(layout, fileName), [layout]);
 
   const generatePDF = useCallback(
-    async (data: { dataSet: DataType[]; layers: LayerType[] }, targetWindow?: Window) => {
+    async (data: { dataSet: DataType[]; layers: LayerType[] }, targetWindow?: Window, options?: PdfProgressOptions) => {
       try {
         const tileZoom = parseInt(pdfTileMapZoomLevel, 10);
         const tileScale = getTileScale(layout, tileZoom);
@@ -216,7 +229,7 @@ export const usePDF = (): UseEcorisMapFileReturnType => {
         // タイル地図を作成するための HTML
         let mapContents = `<div style="position: absolute; left: ${margin.pixel}px; top:${margin.pixel}px;width: ${page.widthPixel}px;height: ${page.heightPixel}px;overflow: hidden;">`;
         mapContents += `<div style="transform-origin: ${shiftX}px ${shiftY}px;transform: translate(-${shiftX}px, -${shiftY}px) scale(${tileScale}, ${tileScale});">`;
-        mapContents += await generateTileMap(tileMaps, layout.region, pdfTileMapZoomLevel);
+        mapContents += await generateTileMap(tileMaps, layout.region, pdfTileMapZoomLevel, options);
         mapContents += generateVectorMapSvg(data.dataSet, data.layers, svgContext);
         mapContents += '</div>';
         mapContents += '</div>';
@@ -235,18 +248,39 @@ export const usePDF = (): UseEcorisMapFileReturnType => {
         //Androidの場合はwidthとheightに+1しないとvrtのXSize,YSizeとずれてQGISでエラーになる。
         const outputWidth = Platform.OS === 'android' ? paper.widthPoint + 1 : paper.widthPoint;
         const outputHeight = Platform.OS === 'android' ? paper.heightPoint + 1 : paper.heightPoint;
+        //PDF化・GeoPDF化は途中で止められないため、各段階の間で中止を確かめる
+        const throwIfCancelled = () => {
+          if (options?.cancel?.cancelled) throw new PdfCancelledError();
+        };
+        throwIfCancelled();
         const { uri } = await Print.printToFileAsync({ html, width: outputWidth, height: outputHeight });
         const xmlUri = uri.replace('.pdf', '.xml');
-        await FileSystem.writeAsStringAsync(xmlUri, generateCompositionXML(layout, uri.replace('file://', '')), {
-          encoding: FileSystem.EncodingType.UTF8,
-        });
-        const { outputFiles } = await convert(xmlUri.replace('file://', '')).catch((error) => {
-          console.error(error);
-          return { outputFiles: [] };
-        });
-        if (outputFiles.length === 0) return null;
-        return 'file://' + outputFiles[0].uri;
+        let outputUri: string | undefined;
+        try {
+          throwIfCancelled();
+          await FileSystem.writeAsStringAsync(xmlUri, generateCompositionXML(layout, uri.replace('file://', '')), {
+            encoding: FileSystem.EncodingType.UTF8,
+          });
+          const { outputFiles } = await convert(xmlUri.replace('file://', '')).catch((error) => {
+            console.error(error);
+            return { outputFiles: [] };
+          });
+          if (outputFiles.length === 0) return null;
+          outputUri = 'file://' + outputFiles[0].uri;
+          throwIfCancelled();
+          return outputUri;
+        } catch (error) {
+          //中止されたら出来上がったGeoPDFも残さない
+          if (outputUri !== undefined) await FileSystem.deleteAsync(outputUri, { idempotent: true }).catch(() => undefined);
+          throw error;
+        } finally {
+          //GeoPDF化の入力（expo-printのPDFと合成定義）はもう使わない。A0では数十MBになるので、中止・失敗時も残さない
+          await FileSystem.deleteAsync(uri, { idempotent: true }).catch(() => undefined);
+          await FileSystem.deleteAsync(xmlUri, { idempotent: true }).catch(() => undefined);
+        }
       } catch (error) {
+        //中止は失敗ではないので呼び出し側へ伝える
+        if (error instanceof PdfCancelledError) throw error;
         console.error('generatePDF', error);
         return null;
       }
@@ -293,6 +327,7 @@ export const usePDF = (): UseEcorisMapFileReturnType => {
     outputVRT,
     outputDataPDF,
     pdfMapNotices,
+    pdfTileCount,
     generatePDF,
     generateDataPDF,
     generateVRT,

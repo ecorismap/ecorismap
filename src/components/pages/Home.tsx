@@ -276,6 +276,8 @@ export default function HomeScreen() {
     pdfTileMapZoomLevel,
     pressExportPDF,
     pressPDFSettingsOpen,
+    pdfProgress,
+    cancelExportPDF,
   } = useContext(PDFExportContext);
 
   // LocationTrackingContext
@@ -542,7 +544,11 @@ export default function HomeScreen() {
             memberLocations.map((memberLocation) => (
               <MemberMarker key={memberLocation.uid} memberLocation={memberLocation} />
             ))}
-          <Loading visible={isLoading} text="" />
+          <Loading
+            visible={isLoading}
+            text={pdfProgress?.text ?? ''}
+            onCancel={pdfProgress?.cancelable ? cancelExportPDF : undefined}
+          />
           <HomeModalColorPicker
             color={colorPickerColor}
             modalVisible={visibleMapMemoColor}
