@@ -915,7 +915,7 @@
       "feature1": "Added a group creation button to the map and layer lists",
       "feature2": "Fixed issues with the drawing tools and improved their stability",
       "feature3": "Outline-only polygons (transparent fill) now respond only to taps near their outline",
-      "feature4": "",
+      "feature4": "Improved PDF export to match the map display, with a progress indicator and cancel button while creating",
       "improvement1": "Improved logout process",
       "improvement2": "Updated dependencies",
       "bugFix1": "Fixed PMTiles numeric attribute errors on iOS",

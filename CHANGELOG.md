@@ -1,6 +1,30 @@
 # Change Log
 
-## [0.6.3]　- Unreleased
+## [0.6.4]　- Unreleased
+
+- Improved PDF export to match what is shown on the map: hidden records and layers are no longer drawn, line widths and stamp sizes follow the map zoom, labels and the drawing order are corrected, and an error message is now shown when export fails
+- Improved PDF export on iOS/Android to download map tiles in parallel, with a progress indicator and a cancel button. Temporary files are now deleted after export
+- Improved PDF printing on the web to wait until map tiles have finished loading
+- Improved the all-direction hillshade to include directional shading and to be blended over the base map by multiplication
+- Improved the color refresh button in style settings to reassign random colors each time it is pressed
+- Fixed PMTiles tiles on iOS sometimes staying blank while the map was being moved until the layer was toggled off and on
+- Fixed the member registration status icons in project settings blending into their background
+- Fixed the save/discard buttons overlapping the editing layer label while editing project settings
+- Fixed a triangular hole in the PDF area frame on the web
+- Fixed the GEBCO bathymetry map not being colored on the web
+
+- PDF出力を地図の表示どおりに改善。非表示のレコード・レイヤを描かない、線幅やスタンプの大きさを地図のズームに合わせる、ラベルや重なり順を修正、失敗時にエラーを表示するようにしました
+- iOS/AndroidのPDF作成で地図タイルを並列に取得し、進捗表示と中止ボタンを追加。作成後に一時ファイルを削除するようにしました
+- Web版のPDF印刷で、地図タイルの読み込み完了を待つようにしました
+- 全方位陰影に方向陰影を内蔵し、下地の地図に乗算で重なるようにしました
+- スタイル設定の色の更新ボタンを押すたびに、色をランダムに振り直すようにしました
+- iOSでPMTilesを表示中に地図を動かすと、一部のタイルが表示の切り替えまで空白のまま残ることがある問題を修正
+- プロジェクト設定でメンバーの登録状態アイコンが背景に溶けて見えない問題を修正
+- プロジェクト設定中に保存・破棄ボタンと編集レイヤのラベルが重なる問題を修正
+- Web版でPDF範囲の枠に三角の穴が開く問題を修正
+- Web版でGEBCO海底地形図に段彩が塗られない問題を修正
+
+## [0.6.3]　- 2026-09-28
 
 - Fixed outline-only polygons (transparent fill) being selected by tapping inside them. They now respond only to taps near their outline
 
