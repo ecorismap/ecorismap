@@ -10,6 +10,8 @@ interface Props {
 export const PDFArea = React.memo((props: Props) => {
   const { pdfArea } = props;
   const coordinates = pdfArea.coords.map((coord) => [coord.longitude, coord.latitude]);
+  //GeoJSONのポリゴンは始点と終点が同じ閉じたリングが必須。閉じていないとMapLibreの三角形分割が崩れ、枠に三角の穴が開く
+  coordinates.push(coordinates[0]);
   //pdfAreaを単純に描画する
   const features = {
     type: 'FeatureCollection',
