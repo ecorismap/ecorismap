@@ -4,6 +4,7 @@ import * as pdfjs from 'pdfjs-dist';
 import initGdalJs from 'gdal3.js';
 import { warpedFileType } from 'react-native-gdalwarp';
 import { GeoInfo } from './PDF';
+import { buildTileUrl, getPrintableTileMaps } from './pdfExport/tiles';
 
 // Metro では webpack 専用エントリ(pdfjs-dist/webpack)が使えないため、worker を明示指定する。
 // worker は scripts/copy-web-assets.js が public/static/ へコピーする。
@@ -19,22 +20,9 @@ export async function generateTileMap(
   const { leftTileX, rightTileX, bottomTileY, topTileY } = getTileRegion(pdfRegion, tileZoom);
 
   let tileContents = '';
-  const maps = tileMaps.filter((m) => !m.isGroup && m.visible && m.id !== 'standard' && m.id !== 'hybrid').reverse();
+  const maps = getPrintableTileMaps(tileMaps, true);
 
   for (const map of maps) {
-    if (
-      map.url.includes('file://') ||
-      map.url.includes('pmtiles://') ||
-      map.url.includes('.pmtiles') ||
-      map.url.includes('pdf://') ||
-      map.url.includes('.pdf') ||
-      map.url.includes('.pbf') ||
-      map.url.includes('blob:') ||
-      map.url.startsWith('hillshade://') ||
-      map.url.startsWith('relief://')
-    )
-      continue;
-
     // overzoomThresholdを超えるズームでは、画面表示のオーバーズームと同様に
     // 提供上限ズームの親タイルを拡大して描画する（例: 1:1000のz19で地理院地図はz18を2倍表示）
     const dz = Math.max(0, tileZoom - (map.overzoomThreshold ?? tileZoom));
@@ -49,10 +37,7 @@ export async function generateTileMap(
     tileContents += '<div style="position: absolute; left: 0; top: 0;">';
     for (let y = mapTopTileY; y <= mapBottomTileY; y++) {
       for (let x = mapLeftTileX; x <= mapRightTileX; x++) {
-        const mapUrl = map.url
-          .replace('{z}', mapZoom.toString())
-          .replace('{x}', x.toString())
-          .replace('{y}', y.toString());
+        const mapUrl = buildTileUrl(map, mapZoom, x, y);
 
         try {
           const response = await fetch(mapUrl, { method: 'HEAD' });

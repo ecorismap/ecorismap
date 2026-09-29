@@ -517,6 +517,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     setPdfTileMapZoomLevel,
     setOutputVRT,
     setOutputDataPDF,
+    pdfMapNotices,
   } = usePDF();
 
   const {
@@ -2201,60 +2202,93 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
   );
 
   const pressExportPDF = useCallback(async () => {
-    //console.log('pressExportPDF');
-    let mapUri: string | Window | null;
-    let dataUri: string | Window | null;
-    let vrt: string;
-    try {
-      const fileName = `ecorismap_map_${dayjs().format('YYYYMMDD_HHmmss')}.pdf`;
-      if (outputVRT) {
-        vrt = generateVRT(fileName);
-        await exportFileFromData(vrt, fileName.replace('.pdf', '.vrt'));
-      }
-      // 作成した PDF を共有
-      if (Platform.OS === 'web') {
-        mapUri = await generatePDF({ dataSet, layers });
+    const fileName = `ecorismap_map_${dayjs().format('YYYYMMDD_HHmmss')}.pdf`;
+    const data = { dataSet, layers };
 
-        setTimeout(async () => {
-          (mapUri as Window).document.title = fileName;
-          (mapUri as Window).print();
-          (mapUri as Window).close();
-          if (outputDataPDF) {
-            dataUri = await generateDataPDF({ dataSet, layers });
-
-            setTimeout(async () => {
-              (dataUri as Window).document.title = fileName.replace('_map_', '_data_');
-              (dataUri as Window).print();
-              (dataUri as Window).close();
-            }, 1000);
-          }
-        }, 5000);
-      } else {
-        if (outputDataPDF) {
-          setIsLoading(true);
-          mapUri = await generatePDF({ dataSet, layers });
-          dataUri = await generateDataPDF({ dataSet, layers });
-          const mapResult = await exportFileFromUri(mapUri as string, fileName, { mimeType: 'application/pdf' });
-          const dataResult = await exportFileFromUri(dataUri as string, fileName.replace('_map_', '_data_'), {
-            mimeType: 'application/pdf',
-          });
-          setIsLoading(false);
-          if (mapResult === 'saved' || dataResult === 'saved') await AlertAsync(t('Home.alert.exportPDF'));
-        } else {
-          setIsLoading(true);
-          mapUri = await generatePDF({ dataSet, layers });
-          const mapResult = await exportFileFromUri(mapUri as string, fileName, { mimeType: 'application/pdf' });
-          setIsLoading(false);
-          if (mapResult === 'saved') await AlertAsync(t('Home.alert.exportPDF'));
-        }
-      }
-    } catch (e) {
-      // Error logged
-      setIsLoading(false);
-    } finally {
-      setIsLoading(false);
+    //表示中なのにPDFに載らない地図を先に知らせる（白紙や欠けたPDFの不意打ちを防ぐ）
+    if (pdfMapNotices.length > 0) {
+      const list = pdfMapNotices.map((m) => `・${m.name}（${t(`Home.pdfUnprintable.${m.reason}`)}）`).join('\n');
+      const ok = await ConfirmAsync(t('Home.confirm.pdfUnprintableMaps', { maps: list }));
+      if (!ok) return;
     }
-  }, [dataSet, generateDataPDF, generatePDF, generateVRT, layers, outputDataPDF, outputVRT]);
+
+    if (Platform.OS === 'web') {
+      //ポップアップブロックを避けるため、タイル取得を待たずにユーザー操作の直後にウィンドウを開いておく
+      const mapWindow = window.open('', '_blank');
+      if (mapWindow === null) {
+        await AlertAsync(t('Home.alert.pdfPopupBlocked'));
+        return;
+      }
+      mapWindow.document.write(`<p style="font-family: Arial">${t('Home.label.pdfGenerating')}</p>`);
+      setIsLoading(true);
+      try {
+        if (outputVRT) await exportFileFromData(generateVRT(fileName), fileName.replace('.pdf', '.vrt'));
+        const result = await generatePDF(data, mapWindow);
+        if (result === null) throw new Error('generatePDF failed');
+      } catch (e) {
+        console.error(e);
+        mapWindow.close();
+        setIsLoading(false);
+        await AlertAsync(t('Home.alert.failExportPDF'));
+        return;
+      }
+      setIsLoading(false);
+      //タイル画像の読み込みを待ってから印刷する
+      await new Promise((resolve) => setTimeout(resolve, 5000));
+      mapWindow.document.title = fileName;
+      mapWindow.print();
+      mapWindow.close();
+
+      if (outputDataPDF) {
+        //印刷ダイアログの後はユーザー操作が切れてポップアップがブロックされるため、確認ボタンの操作で開く
+        const ok = await ConfirmAsync(t('Home.confirm.openDataPDF'));
+        if (!ok) return;
+        const dataWindow = window.open('', '_blank');
+        if (dataWindow === null) {
+          await AlertAsync(t('Home.alert.pdfPopupBlocked'));
+          return;
+        }
+        if ((await generateDataPDF(data, dataWindow)) === null) {
+          dataWindow.close();
+          await AlertAsync(t('Home.alert.failExportPDF'));
+          return;
+        }
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+        dataWindow.document.title = fileName.replace('_map_', '_data_');
+        dataWindow.print();
+        dataWindow.close();
+      }
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      if (outputVRT) await exportFileFromData(generateVRT(fileName), fileName.replace('.pdf', '.vrt'));
+      const mapUri = await generatePDF(data);
+      const dataUri = outputDataPDF ? await generateDataPDF(data) : undefined;
+      if (typeof mapUri !== 'string' || dataUri === null) throw new Error('generatePDF failed');
+      const mapResult = await exportFileFromUri(mapUri, fileName, { mimeType: 'application/pdf' });
+      const dataResult =
+        typeof dataUri === 'string'
+          ? await exportFileFromUri(dataUri, fileName.replace('_map_', '_data_'), { mimeType: 'application/pdf' })
+          : undefined;
+      setIsLoading(false);
+      if (mapResult === 'saved' || dataResult === 'saved') await AlertAsync(t('Home.alert.exportPDF'));
+    } catch (e) {
+      console.error(e);
+      setIsLoading(false);
+      await AlertAsync(t('Home.alert.failExportPDF'));
+    }
+  }, [
+    dataSet,
+    generateDataPDF,
+    generatePDF,
+    generateVRT,
+    layers,
+    outputDataPDF,
+    outputVRT,
+    pdfMapNotices,
+  ]);
 
   const pressPDFSettingsOpen = useCallback(() => {
     setIsPDFSettingsVisible(true);
