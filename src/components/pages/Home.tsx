@@ -48,6 +48,7 @@ import { useSelector } from 'react-redux';
 import { RootState } from '../../store';
 import { getMapGesturesEnabled } from '../../utils/General';
 import { withTileSignature } from '../../utils/TileSignature';
+import { getPmtileMaximumNativeZ } from '../../utils/pmtileProps';
 import { TileMapType, PaperOrientationType, PaperSizeType, ScaleType } from '../../types';
 import { MapViewContext } from '../../contexts/MapView';
 import { DrawingToolsContext } from '../../contexts/DrawingTools';
@@ -118,15 +119,8 @@ const TileMaps = React.memo(({ tileMaps, isOffline }: TileMapsProps) => {
                 maximumZ={22}
                 zIndex={mapIndex}
                 doubleTileSize={false}
-                maximumNativeZ={
-                  //offlineで通常のタイルの場合、ダウンロードしたレベルの16にセットする.
-                  //vectorタイルなら18
-                  isOffline && tileMap.overzoomThreshold > 16 && !tileMap.isVector
-                    ? 16
-                    : isOffline && tileMap.overzoomThreshold > 18 && tileMap.isVector
-                    ? 18
-                    : tileMap.overzoomThreshold
-                }
+                //offlineで通常のタイルの場合、ダウンロードしたレベルの16にセットする。vectorタイルなら18
+                maximumNativeZ={getPmtileMaximumNativeZ(tileMap, isOffline)}
                 tileCachePath={`${TILE_FOLDER}/${tileMap.id}`}
                 //tileCacheMaxAge={604800}
                 offlineMode={isOffline}

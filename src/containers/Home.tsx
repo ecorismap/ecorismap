@@ -2291,6 +2291,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       if (outputVRT) await exportFileFromData(generateVRT(fileName), fileName.replace('.pdf', '.vrt'));
       const mapUri = await generatePDF(data, undefined, {
         cancel,
+        isOffline: effectiveOffline,
         onProgress: (done, total) => setPdfProgress({ text: `${generatingText}\n${done} / ${total}`, cancelable: true }),
       });
       //ここから先（データ一覧・共有）は中止できないので中止ボタンを消す
@@ -2316,6 +2317,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     }
   }, [
     dataSet,
+    effectiveOffline,
     generateDataPDF,
     generatePDF,
     generateVRT,

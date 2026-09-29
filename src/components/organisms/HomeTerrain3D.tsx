@@ -15,6 +15,7 @@ import { RootState } from '../../store';
 import { editSettingsAction } from '../../modules/settings';
 import { TileMapType } from '../../types';
 import { withTileSignature } from '../../utils/TileSignature';
+import { getPmtileMaximumNativeZ } from '../../utils/pmtileProps';
 import { isDemProtocolUrl, isReliefUrl, toDemUrl } from '../../utils/terrainShading';
 import { reliefStyleFromUrl } from '../../utils/colorRelief';
 import { DataOverlaySpec, TerrainScene } from '../../utils/terrain3d/TerrainScene';
@@ -100,12 +101,7 @@ export const selectTerrainLayers = (
       const isPmtiles =
         tileMap.url.startsWith('pmtiles://') || tileMap.url.includes('.pmtiles') || tileMap.url.includes('.pbf');
       // オーバーズーム開始は2DのPMTile/UrlTile propsと同じ式
-      const maximumNativeZ =
-        isOffline && tileMap.overzoomThreshold > 16 && !tileMap.isVector
-          ? 16
-          : isOffline && tileMap.overzoomThreshold > 18 && tileMap.isVector
-          ? 18
-          : tileMap.overzoomThreshold;
+      const maximumNativeZ = getPmtileMaximumNativeZ(tileMap, isOffline);
       if (isReliefUrl(tileMap.url)) {
         return {
           id: tileMap.id,

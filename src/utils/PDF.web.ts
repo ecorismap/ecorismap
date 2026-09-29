@@ -3,8 +3,20 @@ import * as pdfjs from 'pdfjs-dist';
 import initGdalJs from 'gdal3.js';
 import { warpedFileType } from 'react-native-gdalwarp';
 import { GeoInfo } from './PDF';
-import { buildTileMapHTML, buildTileUrl, listPdfTiles } from './pdfExport/tiles';
-import { CancelToken } from './pdfExport/runTasks';
+import {
+  buildTileMapHTML,
+  buildTileUrl,
+  isPmtilesMap,
+  isVectorPmtilesMap,
+  listPdfTiles,
+  PdfTileMapOptions,
+} from './pdfExport/tiles';
+import { runTasks } from './pdfExport/runTasks';
+import { createRasterPmtileLoader, renderVectorChunks } from './pdfExport/webPmtiles';
+import { getTileRegion } from './Tile';
+
+//ラスタPMTilesのタイルを同時に取り出す数
+const PMTILES_CONCURRENCY = 6;
 
 // Metro では webpack 専用エントリ(pdfjs-dist/webpack)が使えないため、worker を明示指定する。
 // worker は scripts/copy-web-assets.js が public/static/ へコピーする。
@@ -13,18 +25,41 @@ pdfjs.GlobalWorkerOptions.workerSrc = new URL('static/pdf.worker.min.mjs', docum
 
 //Webはタイルの取得をブラウザに任せ（URLをそのまま貼る）、読み込み完了は印刷前にwaitForImagesで待つ。
 //存在確認のHEADリクエストはしない（タイル枚数分の往復で遅く、CORS非対応のサーバーでは画像は表示できるのに
-//失敗扱いになる）。読み込めなかった画像は印刷前に取り除く。取得がないので進捗・中止は使わない
+//失敗扱いになる）。読み込めなかった画像は印刷前に取り除く。
+//PMTilesはURLで貼れないので、ラスタはタイル画像を取り出し、ベクタ（pbf含む）は地図表示と同じスタイルで描いて貼る。
+//進捗・中止はまだ使わない
 export async function generateTileMap(
   tileMaps: TileMapType[],
   pdfRegion: { minLon: number; minLat: number; maxLon: number; maxLat: number },
   pdfTileMapZoomLevel: string,
-  _options: { cancel?: CancelToken; onProgress?: (done: number, total: number) => void } = {}
+  options: PdfTileMapOptions = {}
 ) {
-  const tiles = listPdfTiles(tileMaps, pdfRegion, parseInt(pdfTileMapZoomLevel, 10), true);
-  return buildTileMapHTML(
-    tiles,
-    tiles.map((tile) => buildTileUrl(tile.map, tile.z, tile.x, tile.y))
+  const tileZoom = parseInt(pdfTileMapZoomLevel, 10);
+  const signatures = options.tileSignatures ?? {};
+  const tiles = listPdfTiles(tileMaps, pdfRegion, tileZoom, true);
+  const srcs = tiles.map((tile) =>
+    isPmtilesMap(tile.map) ? undefined : buildTileUrl(tile.map, tile.z, tile.x, tile.y)
   );
+
+  const rasterIndexes = tiles.flatMap((tile, i) =>
+    isPmtilesMap(tile.map) && !isVectorPmtilesMap(tile.map) ? [i] : []
+  );
+  const loadRasterPmtile = createRasterPmtileLoader(signatures);
+  const rasterSrcs = await runTasks(rasterIndexes, PMTILES_CONCURRENCY, (i) => loadRasterPmtile(tiles[i]));
+  rasterIndexes.forEach((tileIndex, k) => (srcs[tileIndex] = rasterSrcs[k]));
+
+  const vectorIndexes = tiles.flatMap((tile, i) => (isVectorPmtilesMap(tile.map) ? [i] : []));
+  if (vectorIndexes.length > 0) {
+    const { leftTileX, topTileY } = getTileRegion(pdfRegion, tileZoom);
+    const vectorSrcs = await renderVectorChunks(
+      vectorIndexes.map((i) => tiles[i]),
+      { x: leftTileX * 256, y: topTileY * 256 },
+      signatures,
+      options.renderWindow ?? window
+    );
+    vectorIndexes.forEach((tileIndex, k) => (srcs[tileIndex] = vectorSrcs[k]));
+  }
+  return buildTileMapHTML(tiles, srcs);
 }
 
 async function decodeBase64(base64: string): Promise<Uint8Array> {

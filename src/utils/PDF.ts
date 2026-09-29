@@ -7,8 +7,18 @@ import { TileMapType } from '../types';
 import { warpedFileType } from 'react-native-gdalwarp';
 import ImageEditor from '@react-native-community/image-editor';
 import { moveFile, unlink } from '../utils/File';
-import { buildTileMapHTML, buildTileUrl, listPdfTiles, PdfTileRequest } from './pdfExport/tiles';
-import { CancelToken, runTasks } from './pdfExport/runTasks';
+import {
+  buildTileMapHTML,
+  buildTileUrl,
+  isPmtilesMap,
+  listPdfTiles,
+  PdfTileMapOptions,
+  PdfTileRequest,
+} from './pdfExport/tiles';
+import { runTasks } from './pdfExport/runTasks';
+import { renderPmtile } from './terrain3d/pmtileRasterizer';
+import { withTileSignature } from './TileSignature';
+import { getPmtileMaximumNativeZ } from './pmtileProps';
 
 //PDF用に取得したタイルの一時置き場。オフライン地図のタイルフォルダ（TILE_FOLDER）には保存しない
 //（保存範囲の一覧や容量管理の外で溜まり続けるため）
@@ -28,10 +38,48 @@ async function toBase64Png(tempFileUri: string) {
   return result?.base64;
 }
 
-async function loadTileBase64(tile: PdfTileRequest): Promise<string | undefined> {
+/**
+ * PMTiles・pbfは2Dの地図と同じネイティブ描画（3Dと共用のPMTileRasterizer）でPNGにする。
+ * 2Dと同じキャッシュ・オフライン保存（TILE_FOLDER/{地図ID}）を使い、ラベルやオーバーズームも2Dと同じになる
+ */
+async function renderPmtileBase64(
+  tile: PdfTileRequest,
+  tempFileUri: string,
+  options: PdfTileMapOptions
+): Promise<string | undefined> {
+  const { map, z, x, y } = tile;
+  const signatures = options.tileSignatures ?? {};
+  const isOffline = options.isOffline ?? false;
+  await FileSystem.deleteAsync(tempFileUri, { idempotent: true });
+  const tileSize = await renderPmtile({
+    urlTemplate: withTileSignature(map.url, signatures).replace('pmtiles://', ''),
+    styleURL: map.styleURL ? withTileSignature(map.styleURL, signatures) : undefined,
+    tileCachePath: `${TILE_FOLDER}/${map.id}`,
+    z,
+    x,
+    y,
+    //2DのPMTileと同じく範囲はアーカイブ任せ
+    minimumZ: 0,
+    maximumZ: 22,
+    maximumNativeZ: getPmtileMaximumNativeZ(map, isOffline),
+    flipY: false,
+    offlineMode: isOffline,
+    isVector: !!map.isVector,
+    outputPath: tempFileUri,
+  });
+  //0はタイルなし（範囲外）
+  if (tileSize === 0) {
+    await FileSystem.deleteAsync(tempFileUri, { idempotent: true });
+    return undefined;
+  }
+  return await toBase64Png(tempFileUri);
+}
+
+async function loadTileBase64(tile: PdfTileRequest, options: PdfTileMapOptions): Promise<string | undefined> {
   const { map, z, x, y } = tile;
   const tempFileUri = `${PDF_TILE_TEMP_DIR}${map.id}_${z}_${x}_${y}.png`;
   try {
+    if (isPmtilesMap(map)) return await renderPmtileBase64(tile, tempFileUri, options);
     // オフライン保存済みのタイルがあればそれを使う
     const localUri = `${TILE_FOLDER}/${map.id}/${z}/${x}/${y}`;
     if (await RNFS.exists(localUri)) {
@@ -39,7 +87,7 @@ async function loadTileBase64(tile: PdfTileRequest): Promise<string | undefined>
       await RNFS.copyFile(localUri, tempFileUri);
       return await toBase64Png(tempFileUri);
     }
-    // PDF(file://)やpmtiles://などダウンロードできないURLはスキップ
+    // PDF(file://)などダウンロードできないURLはスキップ
     if (!map.url.startsWith('http://') && !map.url.startsWith('https://')) return undefined;
     const resp = await FileSystem.downloadAsync(buildTileUrl(map, z, x, y), tempFileUri);
     if (resp.status !== 200) {
@@ -57,12 +105,12 @@ export async function generateTileMap(
   tileMaps: TileMapType[],
   pdfRegion: { minLon: number; minLat: number; maxLon: number; maxLat: number },
   pdfTileMapZoomLevel: string,
-  options: { cancel?: CancelToken; onProgress?: (done: number, total: number) => void } = {}
+  options: PdfTileMapOptions = {}
 ) {
   const tiles = listPdfTiles(tileMaps, pdfRegion, parseInt(pdfTileMapZoomLevel, 10), false);
   await FileSystem.makeDirectoryAsync(PDF_TILE_TEMP_DIR, { intermediates: true }).catch(() => undefined);
   try {
-    const base64s = await runTasks(tiles, PDF_TILE_CONCURRENCY, loadTileBase64, options);
+    const base64s = await runTasks(tiles, PDF_TILE_CONCURRENCY, (tile) => loadTileBase64(tile, options), options);
     return buildTileMapHTML(
       tiles,
       base64s.map((b) => (b === undefined ? undefined : `data:image/png;base64,${b}`))

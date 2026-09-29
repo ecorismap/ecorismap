@@ -73,7 +73,12 @@ export type UseEcorisMapFileReturnType = {
   setOutputDataPDF: React.Dispatch<React.SetStateAction<boolean>>;
 };
 
-export type PdfProgressOptions = { cancel?: CancelToken; onProgress?: (done: number, total: number) => void };
+//isOfflineはモバイルのPMTiles描画に使う（2Dの地図と同じくオフラインでは保存したタイルから描く）
+export type PdfProgressOptions = {
+  cancel?: CancelToken;
+  onProgress?: (done: number, total: number) => void;
+  isOffline?: boolean;
+};
 
 const writeToWindow = (html: string, targetWindow: Window | undefined, width: number, height: number) => {
   const pW = targetWindow ?? window.open('', '', `height=${height}px, width=${width}px`);
@@ -87,6 +92,7 @@ const writeToWindow = (html: string, targetWindow: Window | undefined, width: nu
 
 export const usePDF = (): UseEcorisMapFileReturnType => {
   const tileMaps = useSelector((state: RootState) => state.tileMaps);
+  const tileSignatures = useSelector((state: RootState) => state.tileSignatures);
   const { mapRegion } = useWindow();
   const [outputVRT, setOutputVRT] = useState(false);
   const [outputDataPDF, setOutputDataPDF] = useState(false);
@@ -229,7 +235,11 @@ export const usePDF = (): UseEcorisMapFileReturnType => {
         // タイル地図を作成するための HTML
         let mapContents = `<div style="position: absolute; left: ${margin.pixel}px; top:${margin.pixel}px;width: ${page.widthPixel}px;height: ${page.heightPixel}px;overflow: hidden;">`;
         mapContents += `<div style="transform-origin: ${shiftX}px ${shiftY}px;transform: translate(-${shiftX}px, -${shiftY}px) scale(${tileScale}, ${tileScale});">`;
-        mapContents += await generateTileMap(tileMaps, layout.region, pdfTileMapZoomLevel, options);
+        mapContents += await generateTileMap(tileMaps, layout.region, pdfTileMapZoomLevel, {
+          ...options,
+          tileSignatures,
+          renderWindow: targetWindow,
+        });
         mapContents += generateVectorMapSvg(data.dataSet, data.layers, svgContext);
         mapContents += '</div>';
         mapContents += '</div>';
@@ -285,7 +295,7 @@ export const usePDF = (): UseEcorisMapFileReturnType => {
         return null;
       }
     },
-    [isWeb, layout, pdfTileMapZoomLevel, tileMaps]
+    [isWeb, layout, pdfTileMapZoomLevel, tileMaps, tileSignatures]
   );
 
   const generateDataPDF = useCallback(
