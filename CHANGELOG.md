@@ -1,6 +1,6 @@
 # Change Log
 
-## [0.6.4]　- Unreleased
+## [0.6.4]　- 2026-09-29
 
 - Improved PDF export to match what is shown on the map: hidden records and layers are no longer drawn, line widths and stamp sizes follow the map zoom, labels and the drawing order are corrected, and an error message is now shown when export fails
 - Improved PDF export on iOS/Android to download map tiles in parallel, with a progress indicator and a cancel button. Temporary files are now deleted after export
