@@ -116,6 +116,9 @@ import {
 
 import { usePDF } from '../hooks/usePDF';
 import { waitForImages } from '../utils/pdfExport/waitForImages';
+import { CancelToken, PdfCancelledError } from '../utils/pdfExport/runTasks';
+import { shareWithFileName } from '../utils/pdfExport/shareFile';
+import { PDF_TILE_WARNING_COUNT } from '../utils/pdfExport/tiles';
 import { HomeModalPDFSettings } from '../components/organisms/HomeModalPDFSettings';
 import { HomeModalViewshedSettings } from '../components/organisms/HomeModalViewshedSettings';
 import { calcViewshedPreview } from '../utils/viewshedPreview';
@@ -514,6 +517,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     setOutputVRT,
     setOutputDataPDF,
     pdfMapNotices,
+    pdfTileCount,
   } = usePDF();
 
   const {
@@ -2173,9 +2177,26 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     [navigation]
   );
 
+  //PDF作成中の進捗表示と中止（モバイルのタイル取得）
+  const [pdfProgress, setPdfProgress] = useState<{ text: string; cancelable: boolean } | undefined>(undefined);
+  const pdfCancelRef = useRef<CancelToken | undefined>(undefined);
+  const cancelExportPDF = useCallback(() => {
+    if (!pdfCancelRef.current) return;
+    pdfCancelRef.current.cancelled = true;
+    //取得中のタイルが終わるまで少し待つので、その間は中止中と示してボタンを消す
+    //（消さないと、すぐ下にあるPDFボタンを押し直してしまう）
+    setPdfProgress({ text: t('Home.label.pdfCancelling'), cancelable: false });
+  }, []);
+
   const pressExportPDF = useCallback(async () => {
     const fileName = `ecorismap_map_${dayjs().format('YYYYMMDD_HHmmss')}.pdf`;
     const data = { dataSet, layers };
+
+    //タイルが多すぎると時間がかかり、モバイルはメモリ不足で失敗する恐れがあるので先に確認する
+    if (pdfTileCount > PDF_TILE_WARNING_COUNT) {
+      const ok = await ConfirmAsync(t('Home.confirm.pdfManyTiles', { count: pdfTileCount }));
+      if (!ok) return;
+    }
 
     //表示中なのにPDFに載らない地図を先に知らせる（白紙や欠けたPDFの不意打ちを防ぐ）
     if (pdfMapNotices.length > 0) {
@@ -2233,23 +2254,37 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       return;
     }
 
+    const cancel: CancelToken = { cancelled: false };
+    pdfCancelRef.current = cancel;
+    const generatingText = t('Home.label.pdfGenerating');
+    setPdfProgress({ text: generatingText, cancelable: true });
     setIsLoading(true);
     try {
       if (outputVRT) await exportFileFromData(generateVRT(fileName), fileName.replace('.pdf', '.vrt'));
-      const mapUri = await generatePDF(data);
+      const mapUri = await generatePDF(data, undefined, {
+        cancel,
+        onProgress: (done, total) => setPdfProgress({ text: `${generatingText}\n${done} / ${total}`, cancelable: true }),
+      });
+      //ここから先（データ一覧・共有）は中止できないので中止ボタンを消す
+      setPdfProgress(undefined);
       const dataUri = outputDataPDF ? await generateDataPDF(data) : undefined;
       if (typeof mapUri !== 'string' || dataUri === null) throw new Error('generatePDF failed');
-      const mapResult = await exportFileFromUri(mapUri, fileName, { mimeType: 'application/pdf' });
+      const sharePDF = (uri: string, name: string) =>
+        shareWithFileName(uri, name, (namedUri) => exportFileFromUri(namedUri, name, { mimeType: 'application/pdf' }));
+      const mapResult = await sharePDF(mapUri, fileName);
       const dataResult =
-        typeof dataUri === 'string'
-          ? await exportFileFromUri(dataUri, fileName.replace('_map_', '_data_'), { mimeType: 'application/pdf' })
-          : undefined;
+        typeof dataUri === 'string' ? await sharePDF(dataUri, fileName.replace('_map_', '_data_')) : undefined;
       setIsLoading(false);
       if (mapResult === 'saved' || dataResult === 'saved') await AlertAsync(t('Home.alert.exportPDF'));
     } catch (e) {
-      console.error(e);
       setIsLoading(false);
+      //中止はユーザーの操作なので失敗として知らせない
+      if (e instanceof PdfCancelledError) return;
+      console.error(e);
       await AlertAsync(t('Home.alert.failExportPDF'));
+    } finally {
+      setPdfProgress(undefined);
+      pdfCancelRef.current = undefined;
     }
   }, [
     dataSet,
@@ -2260,6 +2295,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     outputDataPDF,
     outputVRT,
     pdfMapNotices,
+    pdfTileCount,
   ]);
 
   const pressPDFSettingsOpen = useCallback(() => {
@@ -3442,6 +3478,8 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       pdfTileMapZoomLevel,
       pressExportPDF,
       pressPDFSettingsOpen,
+      pdfProgress,
+      cancelExportPDF,
     }),
     [
       exportPDFMode,
@@ -3452,6 +3490,8 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       pdfTileMapZoomLevel,
       pressExportPDF,
       pressPDFSettingsOpen,
+      pdfProgress,
+      cancelExportPDF,
     ]
   );
 

@@ -30,6 +30,7 @@ jest.mock('expo-print', () => ({
 }));
 jest.mock('expo-file-system/legacy', () => ({
   writeAsStringAsync: jest.fn().mockResolvedValue(undefined),
+  deleteAsync: jest.fn().mockResolvedValue(undefined),
   EncodingType: { UTF8: 'UTF8' },
 }));
 jest.mock('react-native-gdalwarp', () => ({
@@ -231,6 +232,20 @@ describe('usePDF', () => {
     });
 
     expect(generateResult).toBe('file://mock://output.pdf');
+  });
+
+  it('GeoPDF化の入力（expo-printのPDFと合成定義）は変換後に消す', async () => {
+    const { convert } = require('react-native-gdalwarp');
+    convert.mockResolvedValue({ outputFiles: [{ uri: 'mock://output.pdf' }] });
+    const FileSystem = require('expo-file-system/legacy');
+
+    const { result } = renderHook(() => usePDF(), { wrapper });
+    await act(async () => {
+      await result.current.generatePDF({ dataSet: [], layers: [] });
+    });
+
+    expect(FileSystem.deleteAsync).toHaveBeenCalledWith('mock://print.pdf', { idempotent: true });
+    expect(FileSystem.deleteAsync).toHaveBeenCalledWith('mock://print.xml', { idempotent: true });
   });
 
   it('should handle PDF generation error', async () => {

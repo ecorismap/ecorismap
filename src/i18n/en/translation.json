@@ -881,7 +881,8 @@
       "createNewLayerForType": "There are no editable {{type}} layers. Create a new layer?",
       "deleteCategory": "Delete this category from the list?\n(Records already saved with it remain unchanged)",
       "pdfUnprintableMaps": "The following maps will not be included in the PDF.\n{{maps}}\n\nContinue?",
-      "openDataPDF": "Open the data list PDF?"
+      "openDataPDF": "Open the data list PDF?",
+      "pdfManyTiles": "The PDF needs {{count}} map tiles and will take a while to create. It may fail on some devices due to low memory.\n\nLowering the paper size or map zoom level reduces the number of tiles. Continue?"
     },
     "message": {
       "duplicateValue": "This name is already used",
@@ -988,7 +989,8 @@
       "syncPosition": "share",
       "download": "DL",
       "noEditingLayer": "No layer selected",
-      "pdfGenerating": "Creating PDF…"
+      "pdfGenerating": "Creating PDF…",
+      "pdfCancelling": "Cancelling PDF…"
     },
     "poi": {
       "openInGoogleMaps": "To Google Maps",

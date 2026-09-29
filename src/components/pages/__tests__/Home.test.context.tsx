@@ -180,6 +180,8 @@ export const mockPDFExportContextValue: PDFExportContextType = {
   pdfTileMapZoomLevel: '16',
   pressExportPDF: jest.fn().mockResolvedValue(undefined),
   pressPDFSettingsOpen: jest.fn(),
+  pdfProgress: undefined,
+  cancelExportPDF: jest.fn(),
 };
 
 // Mock implementation for SVGDrawingContext
