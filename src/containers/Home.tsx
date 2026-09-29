@@ -117,6 +117,7 @@ import {
 } from '../contexts/BottomSheetNavigationContext';
 
 import { usePDF } from '../hooks/usePDF';
+import { waitForImages } from '../utils/pdfExport/waitForImages';
 import { HomeModalPDFSettings } from '../components/organisms/HomeModalPDFSettings';
 import { HomeModalViewshedSettings } from '../components/organisms/HomeModalViewshedSettings';
 import { calcViewshedPreview } from '../utils/viewshedPreview';
@@ -2232,9 +2233,9 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
         await AlertAsync(t('Home.alert.failExportPDF'));
         return;
       }
+      //タイル画像の読み込みを待ち、読み込めなかったタイルを取り除いてから印刷する
+      await waitForImages(mapWindow.document.images);
       setIsLoading(false);
-      //タイル画像の読み込みを待ってから印刷する
-      await new Promise((resolve) => setTimeout(resolve, 5000));
       mapWindow.document.title = fileName;
       mapWindow.print();
       mapWindow.close();
@@ -2253,7 +2254,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
           await AlertAsync(t('Home.alert.failExportPDF'));
           return;
         }
-        await new Promise((resolve) => setTimeout(resolve, 1000));
+        await waitForImages(dataWindow.document.images);
         dataWindow.document.title = fileName.replace('_map_', '_data_');
         dataWindow.print();
         dataWindow.close();

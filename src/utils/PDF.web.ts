@@ -37,20 +37,13 @@ export async function generateTileMap(
     tileContents += '<div style="position: absolute; left: 0; top: 0;">';
     for (let y = mapTopTileY; y <= mapBottomTileY; y++) {
       for (let x = mapLeftTileX; x <= mapRightTileX; x++) {
-        const mapUrl = buildTileUrl(map, mapZoom, x, y);
-
-        try {
-          const response = await fetch(mapUrl, { method: 'HEAD' });
-          if (response.ok) {
-            tileContents += `<img src="${mapUrl}" style="position: absolute; width: ${tileSize}px; height: ${tileSize}px; left: ${
-              256 * (x * scaleFactor - leftTileX)
-            }px; top: ${256 * (y * scaleFactor - topTileY)}px; margin: 0; padding: 0; opacity:${(
-              1 - map.transparency
-            ).toFixed(1)}" />`;
-          }
-        } catch (error) {
-          console.error(`Failed to fetch tile: ${mapUrl}`, error);
-        }
+        //存在確認のHEADリクエストはしない（タイル枚数分の往復で遅く、CORS非対応のサーバーでは画像は表示できるのに
+        //失敗扱いになる）。読み込めなかった画像は印刷前にwaitForImagesで取り除く
+        tileContents += `<img src="${buildTileUrl(map, mapZoom, x, y)}" style="position: absolute; width: ${tileSize}px; height: ${tileSize}px; left: ${
+          256 * (x * scaleFactor - leftTileX)
+        }px; top: ${256 * (y * scaleFactor - topTileY)}px; margin: 0; padding: 0; opacity:${(1 - map.transparency).toFixed(
+          1
+        )}" />`;
       }
     }
     tileContents += '</div>';
