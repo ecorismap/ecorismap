@@ -11336,10 +11336,10 @@ index 0000000..583fc83
 +#endif
 diff --git a/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapPMTileOverlay.m b/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapPMTileOverlay.m
 new file mode 100644
-index 0000000..9cdc53c
+index 0000000..f824df8
 --- /dev/null
 +++ b/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapPMTileOverlay.m
-@@ -0,0 +1,1530 @@
+@@ -0,0 +1,1571 @@
 +//
 +//  AIRGoogleMapPMTile.m
 +//
@@ -11379,20 +11379,7 @@ index 0000000..9cdc53c
 +    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
 +      __strong typeof(weakSelf) strongSelf = weakSelf;
 +      if (!strongSelf) return;
-+      headerv3 header = [pmtiles fetchHeader];
-+      if (header.tile_entries_count == 0) {
-+        strongSelf.tileType = -1;
-+      } else {
-+        strongSelf.tileType = header.tile_type;
-+      }
-+      if (strongSelf.tileType == 0 || strongSelf.tileType == 1) {
-+        strongSelf.metadata = [strongSelf loadMetadata];
-+        strongSelf.styleManager =
-+            [[StyleManager alloc] initWithURLTemplate:strongSelf.tileTemplate
-+                                        tileCachePath:strongSelf.tileCachePath
-+                                             styleURL:strongSelf.styleURL
-+                                          offlineMode:strongSelf.offlineMode];
-+      }
++      [strongSelf resolveTileTypeWithPMTiles:pmtiles];
 +      dispatch_async(dispatch_get_main_queue(), ^{
 +        [strongSelf clearTileCache];
 +      });
@@ -11407,6 +11394,30 @@ index 0000000..9cdc53c
 +                                    tileCachePath:self.tileCachePath
 +                                         styleURL:self.styleURL
 +                                      offlineMode:self.offlineMode];
++  }
++}
++
++// ヘッダーからタイル種別を確定する。取得失敗時はtileType=-1のままで、
++// getTileから再試行される（初回の通信失敗でレイヤ全体が出なくならないように）
++- (void)resolveTileTypeWithPMTiles:(PMTiles *)pmtiles {
++  @synchronized(self) {
++    if (pmtiles != self.pmtiles) return; // URL変更で差し替え済み
++    if (self.tileType >= 0) return;      // 他スレッドで確定済み
++    headerv3 header = [pmtiles fetchHeader];
++    if (header.tile_entries_count == 0) {
++      self.tileType = -1;
++      return;
++    }
++    if (header.tile_type == 0 || header.tile_type == 1) {
++      self.metadata = [self loadMetadata];
++      self.styleManager =
++          [[StyleManager alloc] initWithURLTemplate:self.tileTemplate
++                                      tileCachePath:self.tileCachePath
++                                           styleURL:self.styleURL
++                                        offlineMode:self.offlineMode];
++    }
++    // styleManagerを用意してから公開する（先に種別だけ見えると未初期化で描画される）
++    self.tileType = header.tile_type;
 +  }
 +}
 +
@@ -11504,10 +11515,15 @@ index 0000000..9cdc53c
 +  }
 +  // NSLog(@"drawType %d,%ld,%ld", drawType, zoom, self.maximumNativeZ);
 +  NSData *data;
++  BOOL failed = NO;
 +  if (drawType == 0 || drawType == 1) {
-+    data = [self getTile:zoom x:x y:y];
++    data = [self getTile:zoom x:x y:y failed:&failed];
 +  } else if (drawType == 2) {
-+    data = [self drawOverZoomTile:zoom x:x y:y minZ:self.maximumNativeZ];
++    data = [self drawOverZoomTile:zoom
++                                x:x
++                                y:y
++                             minZ:self.maximumNativeZ
++                           failed:&failed];
 +  }
 +  // if (!data && self.offlineMode && self.tileCachePath) {
 +  //   NSInteger zoomLevelToStart = (zoom > self.maximumZ) ? self.maximumZ :
@@ -11522,12 +11538,17 @@ index 0000000..9cdc53c
 +  // }
 +  if (data) {
 +    UIImage *img = [[UIImage alloc] initWithData:data];
-+    return img;
++    return img ?: kGMSTileLayerNoTile;
 +  }
-+  return kGMSTileLayerNoTile;
++  // kGMSTileLayerNoTileは「タイル無し」で確定しclearTileCacheまで再要求されない。
++  // 通信失敗・判定中はnilを返し、後で再要求させる
++  return failed ? nil : kGMSTileLayerNoTile;
 +}
 +
-+- (NSData *)getTile:(NSUInteger)zoom x:(NSUInteger)x y:(NSUInteger)y {
++- (NSData *)getTile:(NSUInteger)zoom
++                  x:(NSUInteger)x
++                  y:(NSUInteger)y
++             failed:(BOOL *)failed {
 +
 +  // NSString *url = self.offlineMode && self.tileCachePath ?  [NSString
 +  // stringWithFormat:@"%@%@",self.tileCachePath,@"/{z}/{x}/{y}.png"] :
@@ -11574,10 +11595,17 @@ index 0000000..9cdc53c
 +  //   // }
 +  // }
 +  if (!data) {
++    if (self.tileType == -1 && self.pmtiles) {
++      // 初回のヘッダー取得に失敗していた。取り直せたらそのまま取得する
++      [self resolveTileTypeWithPMTiles:self.pmtiles];
++    }
 +    if (self.tileType == 0 || self.tileType == 1) {
-+      data = [self fetchVectorTile:zoom x:x y:y];
-+    } else if (self.tileType == 2) {
-+      data = [self fetchRasterTile:zoom x:x y:y];
++      data = [self fetchVectorTile:zoom x:x y:y failed:failed];
++    } else if (self.tileType == 2 || self.tileType == 3) { // PNG / JPEG
++      data = [self fetchRasterTile:zoom x:x y:y failed:failed];
++    } else if (self.tileType < 0) {
++      // 判定中(-2)またはヘッダー未取得(-1)。後で再要求させる
++      *failed = YES;
 +    }
 +
 +    if (!data) {
@@ -11597,7 +11625,10 @@ index 0000000..9cdc53c
 +  }
 +}
 +
-+- (NSData *)getPbfTileWithZ:(NSUInteger)zoom x:(NSUInteger)x y:(NSUInteger)y {
++- (NSData *)getPbfTileWithZ:(NSUInteger)zoom
++                          x:(NSUInteger)x
++                          y:(NSUInteger)y
++                     failed:(BOOL *)failed {
 +  __block NSData *data = nil;
 +  __block NSError *error = nil;
 +
@@ -11623,7 +11654,7 @@ index 0000000..9cdc53c
 +  NSURLSessionConfiguration *config =
 +      [NSURLSessionConfiguration defaultSessionConfiguration];
 +  config.timeoutIntervalForRequest =
-+      1; // タイムアウト時間を秒単位で設定（例：10秒）
++      10; // 1秒では地図移動中の同時要求で失敗が多発する
 +
 +  NSURLSession *session = [NSURLSession sessionWithConfiguration:config];
 +
@@ -11650,11 +11681,13 @@ index 0000000..9cdc53c
 +    // タイムアウトが発生した場合
 +    // NSLog(@"Request timed out.");
 +    [task cancel]; // タスクをキャンセル
++    *failed = YES;
 +    return nil;
 +  }
 +
 +  if (error) {
 +    // NSLog(@"Error fetching PBF tile: %@", [error localizedDescription]);
++    *failed = YES;
 +    return nil;
 +  } else {
 +    return data;
@@ -12580,13 +12613,19 @@ index 0000000..9cdc53c
 +  }
 +}
 +
-+- (NSData *)fetchRasterTile:(NSUInteger)zoom x:(NSUInteger)x y:(NSUInteger)y {
-+  NSData *data = [self.pmtiles getTileWithZ:zoom x:x y:y];
++- (NSData *)fetchRasterTile:(NSUInteger)zoom
++                          x:(NSUInteger)x
++                          y:(NSUInteger)y
++                     failed:(BOOL *)failed {
++  NSData *data = [self.pmtiles getTileWithZ:zoom x:x y:y failed:failed];
 +
 +  return data;
 +}
 +
-+- (NSData *)fetchVectorTile:(NSUInteger)zoom x:(NSUInteger)x y:(NSUInteger)y {
++- (NSData *)fetchVectorTile:(NSUInteger)zoom
++                          x:(NSUInteger)x
++                          y:(NSUInteger)y
++                     failed:(BOOL *)failed {
 +  NSError *error;
 +
 +  NSURL *tileCacheFileDirectory =
@@ -12606,9 +12645,9 @@ index 0000000..9cdc53c
 +      return nil;
 +    }
 +    if (self.tileType == 0) {
-+      pbfData = [self getPbfTileWithZ:zoom x:x y:y];
++      pbfData = [self getPbfTileWithZ:zoom x:x y:y failed:failed];
 +    } else if (self.tileType == 1) {
-+      pbfData = [self.pmtiles getTileWithZ:zoom x:x y:y];
++      pbfData = [self.pmtiles getTileWithZ:zoom x:x y:y failed:failed];
 +    }
 +
 +    if (!pbfData) {
@@ -12812,16 +12851,18 @@ index 0000000..9cdc53c
 +- (NSData *)drawOverZoomTile:(NSUInteger)tryZ
 +                           x:(NSUInteger)x
 +                           y:(NSUInteger)y
-+                        minZ:(NSInteger)minZ {
++                        minZ:(NSInteger)minZ
++                      failed:(BOOL *)failed {
 +  // NSLog(@"#$#$#$#$#$ %ld,%ld,%ld,%ld", tryZ,x,y,minZ);
 +  if (tryZ <= minZ) {
-+    return [self getTile:tryZ x:x y:y];
++    return [self getTile:tryZ x:x y:y failed:failed];
 +
 +  } else if (tryZ > minZ) {
 +    NSData *Data = [self drawOverZoomTile:(tryZ - 1)
 +                                        x:(x / 2)
 +                                        y:(y / 2)
-+                                     minZ:minZ];
++                                     minZ:minZ
++                                   failed:failed];
 +    if (!Data) {
 +      return nil;
 +    }
@@ -14017,10 +14058,10 @@ index 0000000..9f3ef17
 +@end
 diff --git a/node_modules/react-native-maps/ios/AirGoogleMaps/PMTiles/FetchSource.m b/node_modules/react-native-maps/ios/AirGoogleMaps/PMTiles/FetchSource.m
 new file mode 100644
-index 0000000..50517de
+index 0000000..388ec53
 --- /dev/null
 +++ b/node_modules/react-native-maps/ios/AirGoogleMaps/PMTiles/FetchSource.m
-@@ -0,0 +1,191 @@
+@@ -0,0 +1,193 @@
 +#import "FetchSource.h"
 +
 +@interface FetchSource ()
@@ -14127,6 +14168,8 @@ index 0000000..50517de
 +    requestURL = [NSURL URLWithString:encodedUrlString];
 +  }
 +  NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:requestURL];
++  // 呼び出し側の待機(10秒)を過ぎた要求が既定の60秒間も接続枠を塞がないようにする
++  request.timeoutInterval = 10;
 +
 +  [request setValue:[NSString
 +                        stringWithFormat:@"bytes=%lu-%lu",
@@ -14250,10 +14293,10 @@ index 0000000..900ea88
 +} headerv3;
 diff --git a/node_modules/react-native-maps/ios/AirGoogleMaps/PMTiles/PMTiles.h b/node_modules/react-native-maps/ios/AirGoogleMaps/PMTiles/PMTiles.h
 new file mode 100644
-index 0000000..a26ac22
+index 0000000..3adf1a0
 --- /dev/null
 +++ b/node_modules/react-native-maps/ios/AirGoogleMaps/PMTiles/PMTiles.h
-@@ -0,0 +1,87 @@
+@@ -0,0 +1,92 @@
 +// pmtiles.h
 +
 +#import "FetchSource.h"
@@ -14323,6 +14366,11 @@ index 0000000..a26ac22
 +
 +- (instancetype)initWithURL:(NSString *)urlString;
 +- (NSData *)getTileWithZ:(uint8_t)z x:(uint32_t)x y:(uint32_t)y;
++// failed: 通信失敗・タイムアウトでYES。アーカイブにタイルが無い場合はNOのままnilを返す
++- (NSData *)getTileWithZ:(uint8_t)z
++                       x:(uint32_t)x
++                       y:(uint32_t)y
++                  failed:(BOOL *)failed;
 +- (headerv3)fetchHeader;
 +- (NSDictionary *)fetchMetadata;
 +
@@ -14343,10 +14391,10 @@ index 0000000..a26ac22
 +@end
 diff --git a/node_modules/react-native-maps/ios/AirGoogleMaps/PMTiles/PMTiles.m b/node_modules/react-native-maps/ios/AirGoogleMaps/PMTiles/PMTiles.m
 new file mode 100644
-index 0000000..3806926
+index 0000000..0a58f42
 --- /dev/null
 +++ b/node_modules/react-native-maps/ios/AirGoogleMaps/PMTiles/PMTiles.m
-@@ -0,0 +1,487 @@
+@@ -0,0 +1,500 @@
 +#import "PMTiles.h"
 +#import "Decompress.h"
 +#import "FetchSource.h"
@@ -14759,10 +14807,18 @@ index 0000000..3806926
 +}
 +
 +- (NSData *)getTileWithZ:(uint8_t)z x:(uint32_t)x y:(uint32_t)y {
++  return [self getTileWithZ:z x:x y:y failed:NULL];
++}
++
++- (NSData *)getTileWithZ:(uint8_t)z
++                       x:(uint32_t)x
++                       y:(uint32_t)y
++                  failed:(BOOL *)failed {
 +  uint64_t tileID = [PMTiles zxyToTileID:z x:x y:y];
 +  headerv3 header = [self.sharedCache getHeaderWithSource:self.fetchSource];
 +  if (header.tile_entries_count == 0) {
 +    // NSLog(@"Error fetching header");
++    if (failed) *failed = YES;
 +    return nil;
 +  }
 +  uint64_t dirOffset = header.root_dir_offset;
@@ -14772,6 +14828,7 @@ index 0000000..3806926
 +                                                        offset:dirOffset
 +                                                        length:dirLength];
 +    if (dirData == nil) {
++      if (failed) *failed = YES;
 +      return nil;
 +    }
 +    NSData *decompressedData =
@@ -14787,6 +14844,10 @@ index 0000000..3806926
 +            fetchTileWithSource:self.fetchSource
 +                         offset:header.tile_data_offset + entry.offset
 +                         length:entry.length];
++        if (resp == nil) {
++          if (failed) *failed = YES;
++          return nil;
++        }
 +        NSData *decompressedData =
 +            [Decompress decompress:resp compression:header.tile_compression];
 +        return decompressedData;
@@ -14860,10 +14921,10 @@ index 0000000..537df07
 +@end
 diff --git a/node_modules/react-native-maps/ios/AirGoogleMaps/PMTiles/SharedCache.m b/node_modules/react-native-maps/ios/AirGoogleMaps/PMTiles/SharedCache.m
 new file mode 100644
-index 0000000..eb93c82
+index 0000000..4409a75
 --- /dev/null
 +++ b/node_modules/react-native-maps/ios/AirGoogleMaps/PMTiles/SharedCache.m
-@@ -0,0 +1,150 @@
+@@ -0,0 +1,160 @@
 +#import "SharedCache.h"
 +#import "Decompress.h"
 +#import "PMTiles.h"
@@ -14876,15 +14937,18 @@ index 0000000..eb93c82
 +  return self;
 +}
 +
++// タイル要求は複数スレッドから同時に来る。ヘッダー・ディレクトリの共有状態は排他して触る
 +- (headerv3)getHeaderWithSource:(FetchSource *)source {
-+  if (!self.isHeaderSet) {
-+    self.header = [self fetchHeaderWithSource:source];
-+    if (self.header.tile_entries_count == 0) {
-+      return (headerv3){0};
++  @synchronized(self) {
++    if (!self.isHeaderSet) {
++      self.header = [self fetchHeaderWithSource:source];
++      if (self.header.tile_entries_count == 0) {
++        return (headerv3){0};
++      }
++      self.isHeaderSet = YES;
 +    }
-+    self.isHeaderSet = YES;
++    return self.header;
 +  }
-+  return self.header;
 +}
 +
 +- (headerv3)fetchHeaderWithSource:(FetchSource *)source {
@@ -14925,14 +14989,19 @@ index 0000000..eb93c82
 +                            length:(NSUInteger)length {
 +  NSString *key =
 +      [NSString stringWithFormat:@"%@-%lu-%lu", source.url, offset, length];
-+  if (self.cache[key]) {
-+    return self.cache[key];
-+  } else {
-+    self.cache[key] = [self fetchTileWithSource:source
-+                                         offset:offset
-+                                         length:length];
-+    return self.cache[key];
++  @synchronized(self.cache) {
++    NSData *cached = self.cache[key];
++    if (cached) {
++      return cached;
++    }
 +  }
++  NSData *data = [self fetchTileWithSource:source offset:offset length:length];
++  if (data) {
++    @synchronized(self.cache) {
++      self.cache[key] = data;
++    }
++  }
++  return data;
 +}
 +- (NSData *)fetchTileWithSource:(FetchSource *)source
 +                         offset:(NSUInteger)offset
@@ -14954,8 +15023,10 @@ index 0000000..eb93c82
 +                    dispatch_semaphore_signal(semaphore);
 +                  }];
 +
++  // 地図の移動中は要求が同時接続数の上限で待たされる。1秒では待ち行列にいるだけで
++  // 失敗扱いになり、読み込まれないタイルが残っていた。Android(10秒)に揃える
 +  dispatch_time_t timeout =
-+      dispatch_time(DISPATCH_TIME_NOW, (int64_t)(1 * NSEC_PER_SEC));
++      dispatch_time(DISPATCH_TIME_NOW, (int64_t)(10.0 * NSEC_PER_SEC));
 +  long waitResult = dispatch_semaphore_wait(semaphore, timeout);
 +  if (waitResult != 0) {
 +    // NSLog(@"タイルの取得がタイムアウトしました。");
