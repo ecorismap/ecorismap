@@ -224,7 +224,9 @@
       "activateLayer": "「{{name}}」を編集レイヤにしますか？",
       "showLayerAndEdit": "編集レイヤ「{{name}}」が非表示です。表示して続けますか？",
       "createNewLayerForType": "編集できる{{type}}レイヤがありません。新規レイヤを作成しますか？",
-      "deleteCategory": "この区分を選択肢から削除しますか？\n（この区分で保存済みのデータはそのまま残ります）"
+      "deleteCategory": "この区分を選択肢から削除しますか？\n（この区分で保存済みのデータはそのまま残ります）",
+      "pdfUnprintableMaps": "次の地図はPDFに含まれません。\n{{maps}}\n\nこのまま出力しますか？",
+      "openDataPDF": "データ一覧のPDFを開きますか？"
     },
     "message": {
       "duplicateValue": "同じ名前の選択肢があります",
@@ -248,7 +250,9 @@
       "exportPDF": "PDFを保存しました。",
       "viewshedDistanceRange": "距離は0.1〜100kmの範囲で入力してください。10kmを超えると距離に応じて解像度が粗くなります。",
       "viewshedHeightRange": "観測点の高さは0〜1000mの範囲で入力してください。",
-      "tooManyTiles": "範囲が広すぎるためダウンロードできません。ズームインするか、対象の地図を減らしてください。"
+      "tooManyTiles": "範囲が広すぎるためダウンロードできません。ズームインするか、対象の地図を減らしてください。",
+      "failExportPDF": "PDFを作成できませんでした。通信状態を確認するか、用紙サイズや地図のズームレベルを下げて再度お試しください。",
+      "pdfPopupBlocked": "ポップアップがブロックされたためPDFを開けませんでした。ブラウザでこのサイトのポップアップを許可してください。"
     },
     "navigation": {
       "download": "ダウンロード",
@@ -350,7 +354,8 @@
       "color": "色選択",
       "redo": "やり直す",
       "download": "取得",
-      "noEditingLayer": "レイヤ未選択"
+      "noEditingLayer": "レイヤ未選択",
+      "pdfGenerating": "PDFを作成しています…"
     },
     "poi": {
       "openInGoogleMaps": "Google Mapsへ",
@@ -381,6 +386,12 @@
     "layerSelect": {
       "title": "編集するレイヤを選択",
       "createNew": "新規レイヤを作成"
+    },
+    "pdfUnprintable": {
+      "basemap": "標準地図・衛星写真は出力できません",
+      "terrain": "陰影起伏・段彩は出力できません",
+      "vector": "ベクタタイルは出力できません",
+      "local": "Web版では端末内の地図は出力できません"
     }
   },
   "AccountSettings": {

@@ -850,7 +850,9 @@
       "noInternet": "I'm not connected to the internet. \nPlease connect and try again.",
       "viewshedDistanceRange": "Enter a distance between 0.1 and 100 km. Beyond 10 km, the resolution becomes coarser with distance.",
       "viewshedHeightRange": "Enter an observer height between 0 and 1000 m.",
-      "tooManyTiles": "The area is too large to download. Please zoom in or reduce the number of selected maps."
+      "tooManyTiles": "The area is too large to download. Please zoom in or reduce the number of selected maps.",
+      "failExportPDF": "Could not create the PDF. Check your connection, or try again with a smaller paper size or map zoom level.",
+      "pdfPopupBlocked": "The PDF could not be opened because a pop-up was blocked. Please allow pop-ups for this site in your browser."
     },
     "confirm": {
       "individualColor": "The layer's color type will be changed to [Individual] for the pen (restored when you change it back). Continue?",
@@ -877,7 +879,9 @@
       "activateLayer": "Set \"{{name}}\" as the editing layer?",
       "showLayerAndEdit": "The editing layer \"{{name}}\" is hidden. Show it and continue?",
       "createNewLayerForType": "There are no editable {{type}} layers. Create a new layer?",
-      "deleteCategory": "Delete this category from the list?\n(Records already saved with it remain unchanged)"
+      "deleteCategory": "Delete this category from the list?\n(Records already saved with it remain unchanged)",
+      "pdfUnprintableMaps": "The following maps will not be included in the PDF.\n{{maps}}\n\nContinue?",
+      "openDataPDF": "Open the data list PDF?"
     },
     "message": {
       "duplicateValue": "This name is already used",
@@ -983,7 +987,8 @@
       "redo": "redo",
       "syncPosition": "share",
       "download": "DL",
-      "noEditingLayer": "No layer selected"
+      "noEditingLayer": "No layer selected",
+      "pdfGenerating": "Creating PDF…"
     },
     "poi": {
       "openInGoogleMaps": "To Google Maps",
@@ -1014,6 +1019,12 @@
     "layerSelect": {
       "title": "Select a layer to edit",
       "createNew": "Create a new layer"
+    },
+    "pdfUnprintable": {
+      "basemap": "standard and satellite maps cannot be exported",
+      "terrain": "hillshade and relief maps cannot be exported",
+      "vector": "vector tiles cannot be exported",
+      "local": "on-device maps cannot be exported on the web"
     }
   },
   "LayerEditFeatureStyle": {

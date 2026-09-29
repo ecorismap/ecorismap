@@ -7,6 +7,7 @@ import { TileMapType } from '../types';
 import { warpedFileType } from 'react-native-gdalwarp';
 import ImageEditor from '@react-native-community/image-editor';
 import { moveFile, unlink } from '../utils/File';
+import { buildTileUrl, getPrintableTileMaps } from './pdfExport/tiles';
 
 // 一時ファイルにコピーし、画像を操作する関数
 // manipulateAsyncを通さないと特殊なpngタイルが正常に出力されないため使用する
@@ -34,18 +35,7 @@ export async function generateTileMap(
   const { leftTileX, rightTileX, bottomTileY, topTileY } = getTileRegion(pdfRegion, tileZoom);
 
   let tileContents = '';
-  // hillshade://やrelief://はローカルに生DEMタイルしか持たずPDFに描画できないため除外する
-  const maps = tileMaps
-    .filter(
-      (m) =>
-        !m.isGroup &&
-        m.visible &&
-        m.id !== 'standard' &&
-        m.id !== 'hybrid' &&
-        !m.url.startsWith('hillshade://') &&
-        !m.url.startsWith('relief://')
-    )
-    .reverse();
+  const maps = getPrintableTileMaps(tileMaps, false);
 
   for (const map of maps) {
     // overzoomThresholdを超えるズームでは、画面表示のオーバーズームと同様に
@@ -73,10 +63,7 @@ export async function generateTileMap(
           }
           // インターネットから画像をダウンロードする場合
           else if (map.url.startsWith('http://') || map.url.startsWith('https://')) {
-            const mapUrl = map.url
-              .replace('{z}', mapZoom.toString())
-              .replace('{x}', x.toString())
-              .replace('{y}', y.toString());
+            const mapUrl = buildTileUrl(map, mapZoom, x, y);
 
             await FileSystem.makeDirectoryAsync(`${TILE_FOLDER}/${map.id}/${mapZoom}/${x}`, {
               intermediates: true,
