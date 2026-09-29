@@ -14,14 +14,7 @@ import Map, {
   NavigationControl,
   ScaleControl,
 } from 'react-map-gl/maplibre';
-import maplibregl, {
-  BackgroundLayerSpecification,
-  FillLayerSpecification,
-  LayerSpecification,
-  LineLayerSpecification,
-  RasterDEMTileSource,
-  RequestParameters,
-} from 'maplibre-gl';
+import maplibregl, { LayerSpecification, RasterDEMTileSource, RequestParameters } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { Point } from '../organisms/HomePoint';
 import { Polygon } from '../organisms/HomePolygon.web';
@@ -111,6 +104,7 @@ import { withTileSignature } from '../../utils/TileSignature';
 import { tileToWebMercator } from '../../utils/Tile';
 import { fromBlob } from 'geotiff';
 import { db } from '../../utils/db';
+import { getPmtilesSource, getVectorLayerStyles, VECTOR_GLYPHS_URL } from '../../utils/vectorTileStyle';
 import { HomeTerrainControl } from '../organisms/HomeTerrainControl';
 import { Pressable } from '../atoms/Pressable';
 
@@ -342,114 +336,6 @@ export default function HomeScreen() {
 
   // ========== レイヤースタイル関連の処理 ==========
 
-  /**
-   * PMTilesファイルのメタデータからデフォルトのベクタースタイルを生成
-   * @param tileMap 対象のタイルマップ
-   * @returns デフォルトのレイヤースタイル配列
-   */
-  // 署名を参照するようになったため、useCallbackで依存を明示する
-  // （毎レンダリング作り直すとgetVectorLayersの同一性が壊れる）
-  const getDefaultStyle = useCallback(async (tileMap: TileMapType) => {
-    try {
-      const pmtile = new pmtiles.PMTiles(withTileSignature(tileMap.url, tileSignatures).replace('pmtiles://', ''));
-      const metadata: any = await pmtile.getMetadata();
-
-      //const header = await pmtile.getHeader();
-      let layers_: LayerSpecification[] = [];
-
-      if (metadata.type !== 'baselayer') {
-        layers_ = [];
-      }
-
-      let vector_layers: LayerSpecification[];
-      if (metadata.json) {
-        const j = JSON.parse(metadata.json);
-        vector_layers = j.vector_layers;
-      } else {
-        vector_layers = metadata.vector_layers;
-      }
-
-      if (vector_layers) {
-        for (const layer of vector_layers) {
-          layers_.push({
-            id: layer.id + '_fill',
-            type: 'fill',
-            source: 'source',
-            'source-layer': layer.id,
-            paint: {
-              'fill-color': '#00FF00',
-              'fill-outline-color': '#000000',
-              'fill-opacity': 0.5,
-            },
-            filter: ['==', ['geometry-type'], 'Polygon'],
-          });
-          layers_.push({
-            id: layer.id + '_stroke',
-            type: 'line',
-            source: 'source',
-            'source-layer': layer.id,
-            paint: {
-              'line-color': '#0000FF',
-              'line-width': 1,
-            },
-            filter: ['==', ['geometry-type'], 'LineString'],
-          });
-          layers_.push({
-            id: layer.id + '_point',
-            type: 'circle',
-            source: 'source',
-            'source-layer': layer.id,
-            paint: {
-              'circle-color': '#FF0000',
-              'circle-radius': 3,
-              'circle-stroke-width': 1,
-              'circle-stroke-color': '#FFFFFF',
-            },
-            filter: ['==', ['geometry-type'], 'Point'],
-          });
-        }
-      }
-      //console.log('layers_', layers_);
-      return layers_ as LineLayerSpecification[] | FillLayerSpecification[];
-    } catch (e) {
-      console.log(e);
-      return [];
-    }
-  }, [tileSignatures]);
-
-  /**
-   * ローカルストレージ（IndexedDB）からベクタースタイルを取得
-   * @param tileMap 対象のタイルマップ
-   * @returns レイヤースタイル配列
-   */
-  const getStyleFromLocal = useCallback(async (tileMap: TileMapType) => {
-    const style = (await db.pmtiles.get(tileMap.id))?.style;
-    if (style) {
-      const layerStyles = JSON.parse(style).layers as LineLayerSpecification[] | FillLayerSpecification[];
-      if (Array.isArray(layerStyles)) return layerStyles;
-    }
-    return [];
-  }, []);
-
-  /**
-   * 外部URLからベクタースタイルを取得
-   * @param tileMap 対象のタイルマップ
-   * @returns レイヤースタイル配列
-   */
-  const getStyleFromURL = useCallback(async (tileMap: TileMapType) => {
-    const url = tileMap.styleURL;
-    if (!url) return [];
-    const response = await fetch(withTileSignature(url, tileSignatures));
-    if (response.ok) {
-      const json = await response.json();
-      if (json) {
-        const layerStyles = json.layers;
-        if (Array.isArray(layerStyles)) return layerStyles as LineLayerSpecification[] | FillLayerSpecification[];
-      }
-    }
-    return [];
-    // 署名が届いたら取得し直す必要があるため依存に含める
-  }, [tileSignatures]);
 
   // ========== レイヤー生成関数 ==========
 
@@ -519,66 +405,10 @@ export default function HomeScreen() {
     ];
   }, []);
 
-  /**
-   * ベクタータイル用のレイヤー定義を生成（非同期処理）
-   * スタイル情報を取得し、透過度を適用して返す
-   * @param tileMap 対象のタイルマップ
-   * @returns ベクターレイヤー定義の配列
-   */
   const getVectorLayers = useCallback(
-    async (tileMap: TileMapType) => {
-      let layerStyles: LineLayerSpecification[] | FillLayerSpecification[] | BackgroundLayerSpecification[] = [];
-      if (tileMap.styleURL && tileMap.styleURL.startsWith('style://')) {
-        layerStyles = await getStyleFromLocal(tileMap);
-      } else if (tileMap.styleURL && tileMap.styleURL !== '') {
-        layerStyles = await getStyleFromURL(tileMap);
-      }
-      //Pmtilesのスタイルがない場合はデフォルトスタイルを取得.
-      //pbfの場合はメタデータの取得方法が異なるため、デフォルトスタイルを取得しない
-      if (layerStyles.length === 0) {
-        if (tileMap.url.startsWith('pmtiles://') || tileMap.url.includes('.pmtiles')) {
-          layerStyles = await getDefaultStyle(tileMap);
-        } else {
-          return [];
-        }
-      }
-      //レイヤのIDをtileMapのIDとインデックスで設定
-      //スタイルの透過設定とレイヤの透過設定を統合
-      const updatedLayers = layerStyles.map(
-        (layerStyle: LineLayerSpecification | FillLayerSpecification | BackgroundLayerSpecification, index: number) => {
-          const newLayerStyle = { ...layerStyle };
-          newLayerStyle.id = `${tileMap.id}_${index}`;
-          if (newLayerStyle.type !== 'background' && newLayerStyle.source) {
-            newLayerStyle.source = `${tileMap.id}`;
-          }
-
-          if (newLayerStyle.type === 'fill' && newLayerStyle.paint) {
-            if (
-              newLayerStyle.paint['fill-opacity'] !== undefined &&
-              typeof newLayerStyle.paint['fill-opacity'] === 'number'
-            ) {
-              newLayerStyle.paint['fill-opacity'] = newLayerStyle.paint['fill-opacity'] * (1 - tileMap.transparency);
-            } else {
-              newLayerStyle.paint['fill-opacity'] = 1 - tileMap.transparency;
-            }
-          } else if (newLayerStyle.type === 'background' && newLayerStyle.paint) {
-            if (
-              newLayerStyle.paint['background-opacity'] &&
-              typeof newLayerStyle.paint['background-opacity'] === 'number'
-            ) {
-              newLayerStyle.paint['background-opacity'] =
-                newLayerStyle.paint['background-opacity'] * (1 - tileMap.transparency);
-            } else {
-              newLayerStyle.paint['background-opacity'] = 1 - tileMap.transparency;
-            }
-          }
-          return newLayerStyle;
-        }
-      );
-
-      return updatedLayers;
-    },
-    [getDefaultStyle, getStyleFromLocal, getStyleFromURL]
+    (tileMap: TileMapType) => getVectorLayerStyles(tileMap, tileSignatures),
+    // 署名が届いたら取得し直す必要があるため依存に含める
+    [tileSignatures]
   );
 
   /**
@@ -780,35 +610,9 @@ export default function HomeScreen() {
       .reverse()
       .reduce((result: any, tileMap: TileMapType) => {
         if (tileMap.visible && !tileMap.isGroup) {
-          if (tileMap.url && (tileMap.url.startsWith('pmtiles://') || tileMap.url.includes('.pmtiles'))) {
-            return {
-              ...result,
-              [tileMap.id]: {
-                type: tileMap.isVector ? 'vector' : 'raster',
-                url: withTileSignature(
-                  tileMap.url.startsWith('pmtiles://') ? tileMap.url : 'pmtiles://' + tileMap.url,
-                  tileSignatures
-                ),
-                minzoom: tileMap.minimumZ,
-                maxzoom: tileMap.overzoomThreshold,
-                scheme: 'xyz',
-                tileSize: tileMap.isVector ? 512 : 256,
-                attribution: tileMap.attribution,
-              },
-            };
-          } else if (tileMap.url.includes('.pbf')) {
-            return {
-              ...result,
-              [tileMap.id]: {
-                type: 'vector',
-                tiles: [withTileSignature(tileMap.url, tileSignatures)],
-                minzoom: tileMap.minimumZ,
-                maxzoom: tileMap.maximumZ,
-                scheme: 'xyz',
-                tileSize: 512,
-                attribution: tileMap.attribution,
-              },
-            };
+          const pmtilesSource = getPmtilesSource(tileMap, tileSignatures);
+          if (pmtilesSource !== undefined) {
+            return { ...result, [tileMap.id]: pmtilesSource };
           } else if (tileMap.url.endsWith('.pdf') || tileMap.url.startsWith('pdf://') || tileMap.url.startsWith('file://')) {
             return {
               ...result,
@@ -917,7 +721,7 @@ export default function HomeScreen() {
 
     return {
       version: 8,
-      glyphs: 'https://map.ecoris.info/glyphs/{fontstack}/{range}.pbf',
+      glyphs: VECTOR_GLYPHS_URL,
       //glyphs: 'https://gsi-cyberjapan.github.io/optimal_bvmap/glyphs/{fontstack}/{range}.pbf',
       //sprite: 'https://gsi-cyberjapan.github.io/optimal_bvmap/sprite/std',
       sources: { ...sources, rasterdem: rasterdem },

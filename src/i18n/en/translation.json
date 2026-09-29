@@ -1030,7 +1030,6 @@
     "pdfUnprintable": {
       "basemap": "standard and satellite maps cannot be exported",
       "terrain": "hillshade and relief maps cannot be exported",
-      "vector": "vector tiles cannot be exported",
       "local": "on-device maps cannot be exported on the web"
     }
   },

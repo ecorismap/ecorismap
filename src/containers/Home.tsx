@@ -118,6 +118,7 @@ import {
 
 import { usePDF } from '../hooks/usePDF';
 import { waitForImages } from '../utils/pdfExport/waitForImages';
+import { printAndCloseWindow } from '../utils/pdfExport/printWindow';
 import { CancelToken, PdfCancelledError } from '../utils/pdfExport/runTasks';
 import { shareWithFileName } from '../utils/pdfExport/shareFile';
 import { PDF_TILE_WARNING_COUNT } from '../utils/pdfExport/tiles';
@@ -2258,8 +2259,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       await waitForImages(mapWindow.document.images);
       setIsLoading(false);
       mapWindow.document.title = fileName;
-      mapWindow.print();
-      mapWindow.close();
+      await printAndCloseWindow(mapWindow);
 
       if (outputDataPDF) {
         //印刷ダイアログの後はユーザー操作が切れてポップアップがブロックされるため、確認ボタンの操作で開く
@@ -2277,8 +2277,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
         }
         await waitForImages(dataWindow.document.images);
         dataWindow.document.title = fileName.replace('_map_', '_data_');
-        dataWindow.print();
-        dataWindow.close();
+        await printAndCloseWindow(dataWindow);
       }
       return;
     }
@@ -2292,6 +2291,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       if (outputVRT) await exportFileFromData(generateVRT(fileName), fileName.replace('.pdf', '.vrt'));
       const mapUri = await generatePDF(data, undefined, {
         cancel,
+        isOffline: effectiveOffline,
         onProgress: (done, total) => setPdfProgress({ text: `${generatingText}\n${done} / ${total}`, cancelable: true }),
       });
       //ここから先（データ一覧・共有）は中止できないので中止ボタンを消す
@@ -2317,6 +2317,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     }
   }, [
     dataSet,
+    effectiveOffline,
     generateDataPDF,
     generatePDF,
     generateVRT,

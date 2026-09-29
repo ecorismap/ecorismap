@@ -12935,10 +12935,10 @@ index 0000000..2708c31
 +#endif
 diff --git a/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapPMTileRasterizer.m b/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapPMTileRasterizer.m
 new file mode 100644
-index 0000000..a3e872b
+index 0000000..bec88f6
 --- /dev/null
 +++ b/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapPMTileRasterizer.m
-@@ -0,0 +1,150 @@
+@@ -0,0 +1,158 @@
 +//
 +//  AIRGoogleMapPMTileRasterizer.m
 +//
@@ -12955,13 +12955,15 @@ index 0000000..a3e872b
 +#import "AIRGoogleMapPMTileRasterizer.h"
 +#import "AIRGoogleMapPMTileOverlay.h"
 +
-+// AIRGoogleMapPMTileOverlay.mの非公開メソッドを呼ぶためのカテゴリ宣言
++// AIRGoogleMapPMTileOverlay.mの非公開メソッドを呼ぶためのカテゴリ宣言。
++// overlay側のシグネチャと必ず一致させる（違うとコンパイルは通り、実行時にunrecognized selectorで落ちる）
 +@interface AIRGoogleMapPMTileOverlay (Rasterizer)
-+- (NSData *)getTile:(NSUInteger)zoom x:(NSUInteger)x y:(NSUInteger)y;
++- (NSData *)getTile:(NSUInteger)zoom x:(NSUInteger)x y:(NSUInteger)y failed:(BOOL *)failed;
 +- (NSData *)drawOverZoomTile:(NSUInteger)tryZ
 +                           x:(NSUInteger)x
 +                           y:(NSUInteger)y
-+                        minZ:(NSInteger)minZ;
++                        minZ:(NSInteger)minZ
++                      failed:(BOOL *)failed;
 +@end
 +
 +@implementation AIRGoogleMapPMTileRasterizer {
@@ -13055,10 +13057,16 @@ index 0000000..a3e872b
 +  }
 +
 +  NSData *data = nil;
++  BOOL failed = NO;
 +  if (z > maximumNativeZ) {
-+    data = [overlay drawOverZoomTile:z x:x y:y minZ:maximumNativeZ];
++    data = [overlay drawOverZoomTile:z x:x y:y minZ:maximumNativeZ failed:&failed];
 +  } else {
-+    data = [overlay getTile:z x:x y:y];
++    data = [overlay getTile:z x:x y:y failed:&failed];
++  }
++  // 通信失敗・判定中はタイル無しと区別し、呼び出し側で再試行させる
++  if (data == nil && failed) {
++    reject(@"E_FETCH", @"PMTiles tile fetch failed", nil);
++    return;
 +  }
 +  if (data == nil || data.length == 0) {
 +    resolve(@(0));
