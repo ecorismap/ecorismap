@@ -9,10 +9,11 @@
  *  - タイル範囲の再計算は間引く（TILE_UPDATE_INTERVAL_MS）
  *  - 描画パスの配列はTileManager側でキャッシュし、毎フレーム作り直さない
  *  - オーバーレイの構築は時間スライスしてフレーム外（setTimeout）で進める
- *  - 標高サンプリングはデコード済みDEMキャッシュからO(1)で引く（demProvider.peekElevationAt）
+ *  - 標高サンプリングはDEMテクスチャと同じ配列からO(1)で引く（TerrainTileManager.sampleElevationAtMercator）
  */
 import { RNCanvasContext } from 'react-native-webgpu';
-import { setDemDecodeDeferPredicate, takeDemDecodeStats } from '../demTileProvider';
+import { setDemDecodeDeferPredicate } from './decodeLane';
+import { takeTerrainDemStats } from './terrainDem';
 import { terrain3dPerfStore } from './perfStore';
 import { RegionType } from '../../types';
 import { TERRAIN_EXAGGERATION } from '../../constants/DemSources';
@@ -430,7 +431,7 @@ export class TerrainScene {
   setLayers(layers: LayerSpec[]): void {
     // GEBCO海底地形図の表示中は、海域を海底の深さで埋めたDEMで地形を作る。
     // 切り替えはレイヤ差し替え（全タイル再構築）と同時なので、ここで立てれば全タイルに効く
-    this.demCache.setBathymetry(layers.some((layer) => layer.relief?.style === 'gebco'));
+    this.demCache.setBathymetry(layers.find((layer) => layer.relief?.style === 'gebco') ?? null);
     this.tileManager.setLayers(layers);
     this.farTileManagers.forEach((manager) => manager.setLayers(layers));
     this.lastTileUpdateMs = 0;
@@ -1378,7 +1379,7 @@ export class TerrainScene {
     p.draws += draws;
     if (p.lastLogMs === 0) p.lastLogMs = now;
     if (now - p.lastLogMs < PERF_LOG_INTERVAL_MS) return;
-    const dem = takeDemDecodeStats();
+    const dem = takeTerrainDemStats();
     const summary =
       `${(p.frames / ((now - p.lastLogMs) / 1000)).toFixed(1)}fps ` +
       `js=${(p.jsMs / p.frames).toFixed(1)} present=${(p.presentMs / p.frames).toFixed(1)}ms/f\n` +
@@ -1389,7 +1390,7 @@ export class TerrainScene {
       `${this.projDiag}\n` +
       `worst:${this.projWorstSurf.toFixed(0)}m pts:${this.projSamples.join(' ')} log:${this.overlaySampleLog.size}\n` +
       `${this.describeViewport()}\n` +
-      `dem decode ${dem.count}枚 ${dem.totalMs.toFixed(0)}ms\n` +
+      `dem ${dem.count}枚 ${dem.totalMs.toFixed(0)}ms（取得＋ネイティブデコード、JSは塞がない）\n` +
       `tex ${this.allTileManagers()
         .map((m) => m.textureStats)
         .join(' ')} (親/自前/無+累計)`;

@@ -1,0 +1,11 @@
+{
+  "name": "dem-decoder",
+  "version": "0.1.0",
+  "description": "標高タイル（WebP/PNG）をネイティブで標高Float32へデコードする",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "license": "MIT",
+  "author": "ecorismap",
+  "homepage": "https://github.com/ecorismap/ecorismap",
+  "private": true
+}

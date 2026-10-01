@@ -233,7 +233,7 @@ async function loadMapterhornElevation(z: number, x: number, y: number, signal: 
  * GEBCO表示中の3D地形タイル（terrarium PNG）を作るプロトコルハンドラ。
  *
  * MapterhornはWeb版の3D地形の標高だが、海底の値を持たない（海は0m、外洋のタイルは404）。
- * そのままではGEBCO段彩を貼っても海が平らなので、ネイティブの海底モード（demTileProvider）と同じく
+ * そのままではGEBCO段彩を貼っても海が平らなので、ネイティブの海底モード（terrain3d/terrainDem.ts）と同じく
  * 0m以下の画素をGEBCO標高で埋め、海面下だけBATHYMETRY_EXAGGERATION倍にする。
  * 陸はMapterhornの詳細な標高のまま。
  */

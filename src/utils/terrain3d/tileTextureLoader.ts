@@ -13,7 +13,7 @@
 import * as FileSystem from 'expo-file-system/legacy';
 import { TILE_FOLDER } from '../../constants/AppConstants';
 import { decodePngLite } from '../pngLite';
-import { loadLocalDemTilePng } from '../demTileLoader';
+import { readLocalFileBytes } from '../demTileLoader';
 import { renderPmtile } from './pmtileRasterizer';
 import { resolveReliefTexture } from './reliefTexture';
 import { LayerSpec, TileKey, TileTextureSource } from './types';
@@ -126,7 +126,7 @@ export const resolveTileTexture = async (layer: LayerSpec, tile: TileKey): Promi
  * loadTileAsRgbaのpngLiteフォールバックへ）。
  */
 export const loadTileImageBitmap = async (uri: string): Promise<ImageBitmap | null> => {
-  const bytes = await loadLocalDemTilePng(uri);
+  const bytes = await readLocalFileBytes(uri);
   if (bytes === null) return null;
   return createImageBitmap(bytes).catch(() => null);
 };
@@ -137,7 +137,7 @@ export const loadTileImageBitmap = async (uri: string): Promise<ImageBitmap | nu
  * JPEGはデコードできないためmissingを返す。
  */
 export const loadTileAsRgba = async (uri: string): Promise<TileTextureSource> => {
-  const bytes = await loadLocalDemTilePng(uri);
+  const bytes = await readLocalFileBytes(uri);
   if (bytes === null) return { kind: 'missing' };
   const decoded = decodePngLite(bytes);
   if (decoded === null) return { kind: 'missing' };

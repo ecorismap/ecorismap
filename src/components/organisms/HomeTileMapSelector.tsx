@@ -4,7 +4,7 @@ import { CheckBox } from '../molecules/CheckBox';
 import { TileManagementContext } from '../../contexts/TileManagement';
 import { Pressable } from '../atoms/Pressable';
 import { COLOR } from '../../constants/AppConstants';
-import { DEM_VIEWSHED_MAP_ID } from '../../constants/DemSources';
+import { DEM_MAPTERHORN_MAP_ID } from '../../constants/DemSources';
 import { t } from '../../i18n/config';
 
 interface Props {
@@ -49,7 +49,7 @@ export const HomeTileMapSelector = React.memo((props: Props) => {
       // 初めて個別選択する場合
       toggleTileMapSelection(tileMapId);
       // 可視領域用DEM（疑似地図）は表示地図にはなれない
-      setSelectedDisplayTileMapId(tileMapId === DEM_VIEWSHED_MAP_ID ? null : tileMapId);
+      setSelectedDisplayTileMapId(tileMapId === DEM_MAPTERHORN_MAP_ID ? null : tileMapId);
     } else {
       // すでに個別選択がある場合
       toggleTileMapSelection(tileMapId);
@@ -59,7 +59,7 @@ export const HomeTileMapSelector = React.memo((props: Props) => {
         ? selectedTileMapIds.filter((id) => id !== tileMapId)
         : [...selectedTileMapIds, tileMapId];
       // 表示地図の候補から疑似地図を除く
-      const displayCandidateIds = newSelectedIds.filter((id) => id !== DEM_VIEWSHED_MAP_ID);
+      const displayCandidateIds = newSelectedIds.filter((id) => id !== DEM_MAPTERHORN_MAP_ID);
 
       if (displayCandidateIds.length === 0) {
         setSelectedDisplayTileMapId(null);
@@ -106,10 +106,10 @@ export const HomeTileMapSelector = React.memo((props: Props) => {
           ))}
           {/* 可視領域用DEM。地図一覧には出さない内部専用のダウンロードターゲット */}
           <CheckBox
-            key={DEM_VIEWSHED_MAP_ID}
+            key={DEM_MAPTERHORN_MAP_ID}
             label={t('Home.download.demViewshed')}
-            checked={isMapSelected(DEM_VIEWSHED_MAP_ID)}
-            onCheck={() => handleMapSelect(DEM_VIEWSHED_MAP_ID)}
+            checked={isMapSelected(DEM_MAPTERHORN_MAP_ID)}
+            onCheck={() => handleMapSelect(DEM_MAPTERHORN_MAP_ID)}
             labelAlign="row"
             labelSize={16}
             width={280}

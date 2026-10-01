@@ -1,32 +1,20 @@
-import { resolveReliefTexture } from '../reliefTexture';
-import { loadDemTileAsPngBytes, loadLocalDemTileAsPngBytes } from '../../demTileLoader';
-import { decodePngLite } from '../../pngLite';
+import { resolveReliefTexture, toTileSizeElevation } from '../reliefTexture';
+import { decodeDemTileFile, fetchDemTileFile, localDemTileFile } from '../../demTileLoader';
 import { LayerSpec } from '../types';
 
 jest.mock('../../../constants/AppConstants', () => ({ TILE_FOLDER: 'file:///tiles' }));
 jest.mock('../../demTileLoader', () => ({
-  loadDemTileAsPngBytes: jest.fn(),
-  loadLocalDemTileAsPngBytes: jest.fn(async () => null),
+  fetchDemTileFile: jest.fn(),
+  localDemTileFile: jest.fn(async () => null),
+  decodeDemTileFile: jest.fn(),
 }));
-// PNGの組み立てを省き、バイト列の先頭1バイトを「標高の種類」としてデコード結果を差し替える
-jest.mock('../../pngLite', () => ({ decodePngLite: jest.fn() }));
 
-const mockedRemote = loadDemTileAsPngBytes as jest.MockedFunction<typeof loadDemTileAsPngBytes>;
-const mockedLocal = loadLocalDemTileAsPngBytes as jest.MockedFunction<typeof loadLocalDemTileAsPngBytes>;
-const mockedDecode = decodePngLite as jest.MockedFunction<typeof decodePngLite>;
+const mockedRemote = fetchDemTileFile as jest.MockedFunction<typeof fetchDemTileFile>;
+const mockedLocal = localDemTileFile as jest.MockedFunction<typeof localDemTileFile>;
+const mockedDecode = decodeDemTileFile as jest.MockedFunction<typeof decodeDemTileFile>;
 
-/** GSI方式で標高elevの一様な256pxタイル（RGB 3ch） */
-const uniformDecoded = (elevM: number) => {
-  const x = Math.round(elevM * 100);
-  const raw = x < 0 ? x + 16777216 : x;
-  const data = new Uint8Array(256 * 256 * 3);
-  for (let i = 0; i < 256 * 256; i++) {
-    data[i * 3] = (raw >> 16) & 255;
-    data[i * 3 + 1] = (raw >> 8) & 255;
-    data[i * 3 + 2] = raw & 255;
-  }
-  return { width: 256, height: 256, data, channels: 3 } as unknown as ReturnType<typeof decodePngLite>;
-};
+/** 標高elevの一様な256pxタイル（デコード済み） */
+const uniformDecoded = (elevM: number) => ({ size: 256, elev: new Float32Array(256 * 256).fill(elevM) });
 
 let layerSeq = 0;
 const gebcoLayer = (overrides: Partial<LayerSpec> = {}): LayerSpec => ({
@@ -44,8 +32,8 @@ const gebcoLayer = (overrides: Partial<LayerSpec> = {}): LayerSpec => ({
 beforeEach(() => {
   jest.clearAllMocks();
   mockedLocal.mockResolvedValue(null);
-  mockedDecode.mockImplementation(() => uniformDecoded(-3000));
-  mockedRemote.mockImplementation(async () => new ArrayBuffer(8));
+  mockedDecode.mockImplementation(async () => uniformDecoded(-3000));
+  mockedRemote.mockImplementation(async (url: string) => `file:///cache/${encodeURIComponent(url)}`);
 });
 
 describe('resolveReliefTexture', () => {
@@ -72,7 +60,7 @@ describe('resolveReliefTexture', () => {
   });
 
   it('オフラインのダウンロード済みタイルを優先し、ネットワークを叩かない', async () => {
-    mockedLocal.mockResolvedValue(new ArrayBuffer(8));
+    mockedLocal.mockImplementation(async (uri: string) => uri);
     const layer = gebcoLayer({ offlineMode: true });
     const result = await resolveReliefTexture(layer, { z: 8, x: 10, y: 10 });
     expect(result.kind).toBe('rgba');
@@ -91,11 +79,29 @@ describe('resolveReliefTexture', () => {
     await expect(resolveReliefTexture(gebcoLayer(), { z: 8, x: 2, y: 2 })).rejects.toThrow();
   });
 
+  it('GEBCOはGSI形式、それ以外（Mapterhorn）はterrarium形式でデコードする', async () => {
+    await resolveReliefTexture(gebcoLayer(), { z: 8, x: 4, y: 4 });
+    expect(mockedDecode.mock.calls.every(([, encoding]) => encoding === 'gsi')).toBe(true);
+    mockedDecode.mockClear();
+    await resolveReliefTexture(gebcoLayer({ relief: { style: 'default' } }), { z: 8, x: 4, y: 4 });
+    expect(mockedDecode.mock.calls.every(([, encoding]) => encoding === 'terrarium')).toBe(true);
+  });
+
   it('同じタイルの2回目は生成済みを返す（再取得しない）', async () => {
     const layer = gebcoLayer();
     await resolveReliefTexture(layer, { z: 8, x: 3, y: 3 });
     const calls = mockedRemote.mock.calls.length;
     await resolveReliefTexture(layer, { z: 8, x: 3, y: 3 });
     expect(mockedRemote.mock.calls.length).toBe(calls);
+  });
+});
+
+describe('toTileSizeElevation', () => {
+  it('512pxは1画素おきに間引いて256pxにする', () => {
+    const elev = Float32Array.from({ length: 512 * 512 }, (_, i) => i % 512);
+    const out = toTileSizeElevation(elev, 512);
+    expect(out?.length).toBe(256 * 256);
+    expect(out?.[1]).toBe(2);
+    expect(toTileSizeElevation(new Float32Array(300 * 300), 300)).toBeNull();
   });
 });

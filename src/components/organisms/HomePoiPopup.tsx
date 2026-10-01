@@ -40,8 +40,8 @@ export const HomePoiPopup = React.memo(() => {
     return t('Home.poi.distanceFromCurrentLocation', { distance });
   }, [isPOI, locationInfo, gpsState, currentLocation]);
 
-  // 長押し/POI位置の標高を標高タイルから取得する（国内=GSI、国外=Terrain Tiles）
-  // undefined: 取得中, null: 取得失敗（国内の海上・通信エラー等）, number: 標高(m)
+  // 長押し/POI位置の標高を標高タイル（Mapterhorn）から取得する
+  // undefined: 取得中, null: 取得失敗（通信エラー等）, number: 標高(m)
   const lat = locationInfo?.coordinate.latitude;
   const lon = locationInfo?.coordinate.longitude;
   const [elevation, setElevation] = useState<number | null | undefined>(undefined);

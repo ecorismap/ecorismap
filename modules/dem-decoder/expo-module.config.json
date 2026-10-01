@@ -1,0 +1,9 @@
+{
+  "platforms": ["apple", "android"],
+  "apple": {
+    "modules": ["DemDecoderModule"]
+  },
+  "android": {
+    "modules": ["expo.modules.demdecoder.DemDecoderModule"]
+  }
+}

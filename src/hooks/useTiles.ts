@@ -25,8 +25,8 @@ import {
   removeIncompleteRegions,
   toCompletedRegion,
 } from '../utils/tileDownloadHelpers';
-import { downloadDemTilePair, getDemViewshedTileMap } from '../utils/demTileDownload';
-import { DEM_VIEWSHED_MAP_ID } from '../constants/DemSources';
+import { downloadDemTile, getDemTileMap } from '../utils/demTileDownload';
+import { DEM_MAPTERHORN_MAP_ID } from '../constants/DemSources';
 
 export type UseTilesReturnType = {
   isDownloading: boolean;
@@ -113,8 +113,8 @@ export const useTiles = (
       const downloadableMapIds = tileMaps
         .filter((map) => !map.isGroup && map.id !== 'standard' && map.id !== 'hybrid')
         .map((map) => map.id);
-      // 可視領域用DEM（疑似地図）は「すべての地図」に常に含める
-      downloadableMapIds.push(DEM_VIEWSHED_MAP_ID);
+      // 標高タイル（疑似地図）は「すべての地図」に常に含める
+      downloadableMapIds.push(DEM_MAPTERHORN_MAP_ID);
       return tileRegions.filter(({ tileMapId }) => downloadableMapIds.includes(tileMapId));
     }
     // どちらでもない場合は全て返す
@@ -581,10 +581,7 @@ export const useTiles = (
         // 再開時は現在の地図表示ではなく、保存された領域からタイル集合を復元する
         const tiles = downloadTileGrid(tileType, boundsFromCoords(tileRegion.coords), minZoom, maxZoom);
         // 再開時のみ、保存済みタイルをスキップして残りだけダウンロードする
-        // demはGSI側サブフォルダで判定（マーカーを最後に書くため「gsi側に在る=ペア処理完了」が成立する）
-        const existingTiles = isResume
-          ? await listExistingTiles(tileType === 'dem' ? `${DEM_VIEWSHED_MAP_ID}/gsi` : currentTileMap.id)
-          : null;
+        const existingTiles = isResume ? await listExistingTiles(currentTileMap.id) : null;
         const tilesToDownload = existingTiles
           ? tiles.filter((tile) => !existingTiles.has(`${tile.z}/${tile.x}/${tile.y}`))
           : tiles;
@@ -605,10 +602,7 @@ export const useTiles = (
         // フォルダ作成
         let batch: Promise<void>[] = [];
         for (const tile of tilesToDownload) {
-          const folder =
-            tileType === 'dem'
-              ? `${TILE_FOLDER}/${DEM_VIEWSHED_MAP_ID}/gsi/${tile.z}/${tile.x}`
-              : `${TILE_FOLDER}/${currentTileMap.id}/${tile.z}/${tile.x}`;
+          const folder = `${TILE_FOLDER}/${currentTileMap.id}/${tile.z}/${tile.x}`;
           const folderPromise = FileSystem.makeDirectoryAsync(folder, { intermediates: true });
           batch.push(folderPromise);
           if (batch.length >= BATCH_SIZE) {
@@ -720,8 +714,8 @@ export const useTiles = (
                 errorCount++;
               });
           } else if (tileType === 'dem') {
-            // 可視領域用DEM: GSI→404ならterrariumへタイル単位フォールバック（両方404はマーカーのみ=正常）
-            tilePromise = downloadDemTilePair(tile).catch(() => {
+            // 標高タイル（Mapterhorn）。404（外洋）はマーカーのみ=正常
+            tilePromise = downloadDemTile(tile).catch(() => {
               errorCount++;
             });
           }
@@ -776,9 +770,9 @@ export const useTiles = (
     const resumeRegions: TileRegionType[] = [];
     const orphanIds: string[] = [];
     for (const region of pendingRegions) {
-      // 可視領域用DEMの疑似地図はRedux tileMapsに存在しないため合成して引き当てる
+      // 標高タイルの疑似地図はRedux tileMapsに存在しないため合成して引き当てる
       const map =
-        region.tileMapId === DEM_VIEWSHED_MAP_ID ? getDemViewshedTileMap() : maps.find((m) => m.id === region.tileMapId);
+        region.tileMapId === DEM_MAPTERHORN_MAP_ID ? getDemTileMap() : maps.find((m) => m.id === region.tileMapId);
       if (map) {
         resumeMaps.push(map);
         resumeRegions.push(region);
@@ -849,12 +843,12 @@ export const useTiles = (
         return;
       }
 
-      // 選択された地図のサイズの合計を計算。疑似地図（可視領域用DEM）はフォルダ名=IDなのでIDベースで走査し、
+      // 選択された地図のサイズの合計を計算。疑似地図（標高タイル）はフォルダ名=IDなのでIDベースで走査し、
       // 「すべての地図」（未選択）時は常に含める
       const idsToCheck =
         selectedTileMapIds && selectedTileMapIds.length > 0
           ? selectedTileMapIds
-          : [...tileMaps.map((m) => m.id), DEM_VIEWSHED_MAP_ID];
+          : [...tileMaps.map((m) => m.id), DEM_MAPTERHORN_MAP_ID];
 
       let totalSize = 0;
       for (const id of idsToCheck) {

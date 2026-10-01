@@ -1206,6 +1206,9 @@ PODS:
   - BoringSSL-GRPC/Implementation (0.0.37):
     - BoringSSL-GRPC/Interface (= 0.0.37)
   - BoringSSL-GRPC/Interface (0.0.37)
+  - DemDecoder (0.1.0):
+    - ExpoModulesCore
+    - libwebp
   - EXApplication (56.0.3):
     - ExpoModulesCore
   - EXConstants (56.0.18):
@@ -3059,6 +3062,7 @@ PODS:
     - Google-Maps-iOS-Utils (= 6.1.0)
     - GoogleMaps (= 9.4.0)
     - hermes-engine
+    - libwebp
     - Protobuf
     - RCTRequired
     - RCTTypeSafety
@@ -3086,6 +3090,7 @@ PODS:
     - Google-Maps-iOS-Utils (= 6.1.0)
     - GoogleMaps (= 9.4.0)
     - hermes-engine
+    - libwebp
     - Protobuf
     - RCTRequired
     - RCTTypeSafety
@@ -4257,6 +4262,7 @@ PODS:
   - Yoga (0.0.0)
 
 DEPENDENCIES:
+  - DemDecoder (from `../modules/dem-decoder/ios`)
   - EXApplication (from `../node_modules/expo-application/ios`)
   - EXConstants (from `../node_modules/expo-constants/ios`)
   - Expo (from `../node_modules/expo`)
@@ -4450,6 +4456,8 @@ SPEC REPOS:
     - VirgilCryptoPythia
 
 EXTERNAL SOURCES:
+  DemDecoder:
+    :path: "../modules/dem-decoder/ios"
   EXApplication:
     :path: "../node_modules/expo-application/ios"
   EXConstants:
@@ -4739,6 +4747,7 @@ SPEC CHECKSUMS:
   AppAuth: ef4da5a3fc2e10b90c09a0a94a9baeaedc0341d5
   AppCheckCore: 214137f5c378d1dec88a68425c467fe65aaff637
   BoringSSL-GRPC: dded2a44897e45f28f08ae87a55ee4bcd19bc508
+  DemDecoder: 003f0a1d9bfc39cd84fb7487b3f9a45a9c33305a
   EXApplication: e6040c92edc5522accd62852342e6b14742d42c0
   EXConstants: e836b478e4f5c835f3c77921d8162e1918e2c06e
   Expo: 2196099c08b483fc8e0354dc1fa8204d16a12af3
@@ -4847,7 +4856,7 @@ SPEC CHECKSUMS:
   react-native-get-random-values: 5d3658304df38260da9e2f4e6388c47030c69619
   react-native-image-editor: 4a60f08744436d8d9fbaf5adfb382ea49fbbe329
   react-native-japanese-text-analyzer: 7a5378afd3fc4192f8cd7facbe8cc960934221e3
-  react-native-maps: 6171bc934c9f2052710d68be61e18491350b0058
+  react-native-maps: 1a32d12a2b1b824c09f6421508b982aa6b52e6ae
   react-native-netinfo: adec161a2fc40d327f2c1bab7d8c57a91943ab74
   react-native-safe-area-context: 45435943d06e262f946fcc3f4c4de6bfd0c9cbe1
   react-native-slider: d3c62864af399014469359120d9a9a6cbbd9c6f7

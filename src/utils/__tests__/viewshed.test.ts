@@ -1,4 +1,3 @@
-import { deflate } from 'pako';
 import {
   computeVisibility,
   traceBoundaryRings,
@@ -6,65 +5,39 @@ import {
   selectDemZoom,
   fetchDemGrid,
   makeCircleRing,
-  decodeDemTile,
   getDemElevation,
-  clearDemTileCache,
+  loadViewshedDemTile,
 } from '../viewshed';
-import { loadDemTilePng, loadDownloadedDemTile } from '../demTileLoader';
+import { getDemTile } from '../demSource';
 
-jest.mock('../demTileLoader', () => ({
-  loadDemTilePng: jest.fn(),
-  loadDownloadedDemTile: jest.fn(async () => ({ kind: 'missing' })),
+jest.mock('../demSource', () => ({
+  DEM_SOURCE_TILE_SIZE: 512,
+  getDemTile: jest.fn(),
 }));
 
-/** 全ピクセル同一RGBの256x256 PNGを組み立てる */
-const buildUniformPng = (r: number, g: number, b: number): Uint8Array => {
-  const size = 256;
-  const stride = size * 3;
-  const raw = new Uint8Array(size * (stride + 1));
-  for (let row = 0; row < size; row++) {
-    const offset = row * (stride + 1) + 1;
-    for (let col = 0; col < size; col++) {
-      raw[offset + col * 3] = r;
-      raw[offset + col * 3 + 1] = g;
-      raw[offset + col * 3 + 2] = b;
-    }
-  }
-  const idat = deflate(raw);
-  const chunk = (type: string, data: Uint8Array) => {
-    const out = new Uint8Array(12 + data.length);
-    new DataView(out.buffer).setUint32(0, data.length);
-    for (let i = 0; i < 4; i++) out[4 + i] = type.charCodeAt(i);
-    out.set(data, 8);
-    return out;
-  };
-  const ihdr = new Uint8Array(13);
-  const v = new DataView(ihdr.buffer);
-  v.setUint32(0, size);
-  v.setUint32(4, size);
-  ihdr[8] = 8; // bitDepth
-  ihdr[9] = 2; // RGB
-  const parts = [new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]), chunk('IHDR', ihdr), chunk('IDAT', idat), chunk('IEND', new Uint8Array(0))];
-  const total = parts.reduce((s, p) => s + p.length, 0);
-  const png = new Uint8Array(total);
-  let pos = 0;
-  for (const p of parts) {
-    png.set(p, pos);
-    pos += p.length;
-  }
-  return png;
-};
+const mockGetDemTile = getDemTile as jest.Mock;
+
+/** 全画素同じ標高の512pxタイル */
+const uniformTile = (z: number, x: number, y: number, value: number) => ({
+  z,
+  x,
+  y,
+  size: 512,
+  elev: new Float32Array(512 * 512).fill(value),
+  min: value,
+  max: value,
+});
 
 describe('selectDemZoom', () => {
-  it('UIの上限である半径10kmまでは日本全域で最大ズーム(z14)を選ぶ', () => {
-    expect(selectDemZoom(35, 1000)).toBe(14);
-    expect(selectDemZoom(35, 10000)).toBe(14);
-    expect(selectDemZoom(45, 10000)).toBe(14); // 北海道北端でもz14を維持
+  it('UIの上限である半径10kmまでは日本全域で最大ズーム(z13・512px)を選ぶ', () => {
+    expect(selectDemZoom(35, 1000)).toBe(13);
+    expect(selectDemZoom(35, 10000)).toBe(13);
+    expect(selectDemZoom(45, 10000)).toBe(13); // 北海道北端でも最大ズームを維持
   });
   it('さらに大きい半径ではズームを下げてグリッドを上限内に収める', () => {
     const z = selectDemZoom(35, 30000);
-    expect(z).toBeLessThan(14);
-    const mpp = (40075017.0 * Math.cos((35 * Math.PI) / 180)) / (256 * Math.pow(2, z));
+    expect(z).toBeLessThan(13);
+    const mpp = (40075017.0 * Math.cos((35 * Math.PI) / 180)) / (512 * Math.pow(2, z));
     expect((2 * 30000) / mpp).toBeLessThanOrEqual(3000);
   });
 });
@@ -203,8 +176,8 @@ describe('traceBoundaryRings', () => {
 });
 
 describe('visibilityToPolygons', () => {
-  // 北緯35度・東経138度付近のワールドピクセル座標（z14）
-  const GRID = { size: 32, zoom: 14, originPxX: 3704000, originPxY: 1661000 };
+  // 北緯35度・東経138度付近のワールドピクセル座標（z13・512pxタイル基準）
+  const GRID = { size: 32, zoom: 13, originPxX: 3704000, originPxY: 1661000 };
 
   it('矩形の可視域が1つのポリゴンになり緯度経度に変換される', () => {
     const vis = new Uint8Array(GRID.size * GRID.size);
@@ -243,26 +216,6 @@ describe('visibilityToPolygons', () => {
   });
 });
 
-describe('decodeDemTile', () => {
-  it('GSI方式をデコードできる（100m = x:10000, 0.01m単位）', () => {
-    // x = 2^16*R + 2^8*G + B = 10000 → R=0, G=39, B=16
-    const elev = decodeDemTile(buildUniformPng(0, 39, 16).buffer as ArrayBuffer, 'gsi');
-    expect(elev![0]).toBeCloseTo(100);
-  });
-
-  it('terrarium方式をデコードできる（e = R*256+G+B/256-32768）', () => {
-    // 標高1000m: 33768 = R*256+G → R=131, G=232, B=0
-    const elev = decodeDemTile(buildUniformPng(131, 232, 0).buffer as ArrayBuffer, 'terrarium');
-    expect(elev![0]).toBeCloseTo(1000);
-  });
-
-  it('terrariumの負値（海洋バスメトリ）は0にクランプされる', () => {
-    // -1000m: 31768 = R*256+G → R=124, G=24, B=0
-    const elev = decodeDemTile(buildUniformPng(124, 24, 0).buffer as ArrayBuffer, 'terrarium');
-    expect(elev![0]).toBe(0);
-  });
-});
-
 describe('makeCircleRing', () => {
   it('閉じたリングで各頂点が指定半径の距離にある', () => {
     const center = { latitude: 35.0, longitude: 138.0 };
@@ -287,10 +240,10 @@ describe('makeCircleRing', () => {
 describe('fetchDemGrid', () => {
   it('タイルローダーから標高グリッドを組み立てる', async () => {
     // 全域100mの平坦なタイルを返すローダー
-    const loader = jest.fn(async () => new Float32Array(256 * 256).fill(100));
+    const loader = jest.fn(async () => new Float32Array(512 * 512).fill(100));
     const grid = await fetchDemGrid({ latitude: 35.0, longitude: 138.0 }, 1000, loader);
     expect(grid).not.toBeNull();
-    expect(grid!.zoom).toBe(14);
+    expect(grid!.zoom).toBe(13);
     expect(grid!.size % 2).toBe(1); // 中心セルを持つ奇数サイズ
     expect(grid!.elev[0]).toBe(100);
     expect(grid!.elev[grid!.elev.length - 1]).toBe(100);
@@ -305,7 +258,7 @@ describe('fetchDemGrid', () => {
   it('通信エラー（undefined）のタイルが1枚でもあれば全体をnullにする', async () => {
     // 欠損域を海面0m扱いのまま計算した誤ったポリゴンを黙って保存しないため
     let count = 0;
-    const loader = jest.fn(async () => (count++ === 0 ? undefined : new Float32Array(256 * 256).fill(100)));
+    const loader = jest.fn(async () => (count++ === 0 ? undefined : new Float32Array(512 * 512).fill(100)));
     const grid = await fetchDemGrid({ latitude: 35.0, longitude: 138.0 }, 1000, loader);
     expect(grid).toBeNull();
   });
@@ -313,67 +266,91 @@ describe('fetchDemGrid', () => {
   it('データなし（null）のタイルが混ざっても取得できたタイルでグリッドを組み立てる', async () => {
     // 海上・提供範囲外の404は恒久的な欠損なので0m扱いで計算を続ける
     let count = 0;
-    const loader = jest.fn(async () => (count++ === 0 ? null : new Float32Array(256 * 256).fill(100)));
+    const loader = jest.fn(async () => (count++ === 0 ? null : new Float32Array(512 * 512).fill(100)));
     const grid = await fetchDemGrid({ latitude: 35.0, longitude: 138.0 }, 1000, loader);
     expect(grid).not.toBeNull();
   });
 });
 
-describe('getDemElevation（オフラインダウンロード済みタイルの参照）', () => {
-  const mockLoadDownloaded = loadDownloadedDemTile as jest.Mock;
-  const mockLoadPng = loadDemTilePng as jest.Mock;
-
+describe('getDemElevation（長押し標高）', () => {
   beforeEach(() => {
-    clearDemTileCache();
     jest.clearAllMocks();
-    mockLoadDownloaded.mockResolvedValue({ kind: 'missing' });
-    mockLoadPng.mockResolvedValue(null);
   });
 
-  it('ダウンロード済みGSIタイルがあればネットワークへ行かない', async () => {
-    mockLoadDownloaded.mockImplementation(async (source: string) =>
-      source === 'gsi'
-        ? { kind: 'data', bytes: buildUniformPng(0, 39, 16).buffer as ArrayBuffer } // 100m
-        : { kind: 'missing' }
+  it('z15のタイルから標高を返す', async () => {
+    mockGetDemTile.mockImplementation(async (z: number, x: number, y: number) => uniformTile(z, x, y, 123.5));
+    expect(await getDemElevation(35.0, 138.0)).toBe(123.5);
+    expect(mockGetDemTile).toHaveBeenCalledTimes(1);
+    expect(mockGetDemTile.mock.calls[0][0]).toBe(15);
+  });
+
+  it('z15が無い地域（404）は親タイルへ降りる', async () => {
+    mockGetDemTile.mockImplementation(async (z: number, x: number, y: number) =>
+      z >= 13 ? null : uniformTile(z, x, y, 456)
     );
-    const elev = await getDemElevation(35.0, 138.0);
-    expect(elev).toBeCloseTo(100);
-    expect(mockLoadPng).not.toHaveBeenCalled();
+    expect(await getDemElevation(35.0, 138.0)).toBe(456);
+    // z15が404なら残りの段（z14〜8）はまとめて並列に取りに行き、細かい段から採用する
+    expect(mockGetDemTile.mock.calls.map((c) => c[0])).toEqual([15, 14, 13, 12, 11, 10, 9, 8]);
+    // 親タイルの番号は子の番号を段差分だけ右シフトしたもの
+    const [, x15, y15] = mockGetDemTile.mock.calls[0];
+    expect(mockGetDemTile.mock.calls[3].slice(1)).toEqual([x15 >> 3, y15 >> 3]);
   });
 
-  it('GSIが確定404マーカー(noData)ならterrariumのダウンロード済みタイルへフォールバックする', async () => {
-    // オフラインでダウンロード済みの海・国外タイル相当
-    mockLoadDownloaded.mockImplementation(async (source: string) =>
-      source === 'gsi'
-        ? { kind: 'noData' }
-        : { kind: 'data', bytes: buildUniformPng(131, 232, 0).buffer as ArrayBuffer } // 1000m
+  it('どの段にもタイルが無い（外洋）なら海面0m', async () => {
+    mockGetDemTile.mockResolvedValue(null);
+    expect(await getDemElevation(35.0, 145.0)).toBe(0);
+  });
+
+  it('細かい段が通信エラーなら、粗い段にデータがあってもnull', async () => {
+    mockGetDemTile.mockImplementation(async (z: number, x: number, y: number) =>
+      z === 15 ? null : z === 14 ? undefined : uniformTile(z, x, y, 1)
     );
-    const elev = await getDemElevation(35.0, 138.0);
-    expect(elev).toBeCloseTo(1000);
-    expect(mockLoadPng).not.toHaveBeenCalled();
+    expect(await getDemElevation(35.0, 138.0)).toBeNull();
   });
 
-  it('未ダウンロード(missing)なら従来どおりloadDemTilePng（キャッシュ→ネットワーク）へ行く', async () => {
-    mockLoadPng.mockResolvedValue(buildUniformPng(0, 39, 16).buffer as ArrayBuffer);
-    const elev = await getDemElevation(35.0, 138.0);
-    expect(elev).toBeCloseTo(100);
-    expect(mockLoadPng).toHaveBeenCalled();
+  it('通信エラーならnull（粗い段へ静かにすり替えない）', async () => {
+    mockGetDemTile.mockResolvedValue(undefined);
+    expect(await getDemElevation(35.0, 138.0)).toBeNull();
+    expect(mockGetDemTile).toHaveBeenCalledTimes(1);
   });
 
-  it('ネットワークエラーは1回リトライし、成功すれば標高を返す', async () => {
-    mockLoadPng
-      .mockRejectedValueOnce(new Error('network error'))
-      .mockResolvedValueOnce(buildUniformPng(0, 39, 16).buffer as ArrayBuffer);
-    const elev = await getDemElevation(35.0, 138.0);
-    expect(elev).toBeCloseTo(100);
-    expect(mockLoadPng).toHaveBeenCalledTimes(2);
+  it('タイル内の画素位置を正しく引く', async () => {
+    // 列番号を標高にしたタイル
+    mockGetDemTile.mockImplementation(async (z: number, x: number, y: number) => {
+      const tile = uniformTile(z, x, y, 0);
+      for (let i = 0; i < tile.elev.length; i++) tile.elev[i] = i % 512;
+      return tile;
+    });
+    // タイル(z15)の左端の経度＋半画素 → 列0
+    const n = Math.pow(2, 15);
+    const tileX = Math.floor(((138.0 + 180) / 360) * n);
+    const lonLeft = (tileX / n) * 360 - 180;
+    const pixelDeg = 360 / n / 512;
+    expect(await getDemElevation(35.0, lonLeft + pixelDeg * 0.5)).toBe(0);
+    expect(await getDemElevation(35.0, lonLeft + pixelDeg * 10.5)).toBe(10);
+  });
+});
+
+describe('loadViewshedDemTile', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
   });
 
-  it('リトライしても通信エラーならnullを返す（terrariumへフォールバックしない）', async () => {
-    mockLoadPng.mockRejectedValue(new Error('network error'));
-    const elev = await getDemElevation(35.0, 138.0);
-    expect(elev).toBeNull();
-    // GSIの2回（初回＋リトライ）のみ。低解像度への静かなすり替えはしない
-    expect(mockLoadPng).toHaveBeenCalledTimes(2);
+  it('指定ズームのタイルがあればその標高を返す', async () => {
+    mockGetDemTile.mockImplementation(async (z: number, x: number, y: number) => uniformTile(z, x, y, 50));
+    const elev = await loadViewshedDemTile(13, 100, 200);
+    expect(elev?.length).toBe(512 * 512);
+    expect(elev?.[0]).toBe(50);
+  });
+
+  it('無ければ3段まで親から引き伸ばし、それでも無ければnull', async () => {
+    mockGetDemTile.mockImplementation(async (z: number, x: number, y: number) =>
+      z === 11 ? uniformTile(z, x, y, 70) : null
+    );
+    expect((await loadViewshedDemTile(13, 100, 200))?.[1000]).toBeCloseTo(70);
+    mockGetDemTile.mockResolvedValue(null);
+    expect(await loadViewshedDemTile(13, 100, 200)).toBeNull();
+    // 指定段が404なら残り3段を並列に取るので、各回4回
+    expect(mockGetDemTile).toHaveBeenCalledTimes(4 + 4);
   });
 });

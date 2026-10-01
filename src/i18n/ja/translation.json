@@ -69,7 +69,7 @@
     "point": "ポイント",
     "track": "軌跡",
     "memo": "メモ",
-    "demAttribution": "国土地理院・Terrain Tiles（標高タイルを加工して作成）",
+    "demAttribution": "© Mapterhorn（日本域は国土地理院 基盤地図情報。標高タイルを加工して作成）",
     "polygon": "ポリゴン",
     "project": "プロジェクト",
     "user": "ユーザー",
@@ -265,7 +265,7 @@
       "selectAll": "すべて選択",
       "allMaps": "すべての地図",
       "mapsSelected": "個の地図",
-      "demViewshed": "標高タイル（可視領域用）",
+      "demViewshed": "標高タイル（可視領域・3D用）",
       "downloading": "ダウンロード中",
       "stop": "停止"
     },

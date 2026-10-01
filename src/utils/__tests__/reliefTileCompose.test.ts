@@ -1,4 +1,4 @@
-import { assembleWithHalo, cropAndScale, upsampleHaloBuffer } from '../reliefTileCompose';
+import { assembleWithHalo, cropAndScale, extractHaloRegion, resizeRgbaNearest, upsampleHaloBuffer } from '../reliefTileCompose';
 
 describe('assembleWithHalo', () => {
   const size = 4;
@@ -74,5 +74,28 @@ describe('upsampleHaloBuffer', () => {
     const out = upsampleHaloBuffer(src, halo, 1, 0, 0, halo, size);
     const values = Array.from(out).filter((v) => !Number.isNaN(v));
     expect(values.every((v) => v === -100)).toBe(true);
+  });
+});
+
+describe('extractHaloRegion', () => {
+  it('袖込みで指定区画を切り出す（512pxタイルから地図タイル1枚分の区画）', () => {
+    // 4px四方のタイル＋袖1。値は「行*100+列」（バッファ座標）
+    const halo = 1;
+    const width = 4 + 2 * halo;
+    const buffer = Float32Array.from({ length: width * width }, (_, i) => Math.floor(i / width) * 100 + (i % width));
+    // 右下の2px区画（タイル内(2,2)）を袖1付きで → バッファの(2..5, 2..5)
+    const out = extractHaloRegion(buffer, width, halo, 2, 2, 2);
+    expect(out.length).toBe(16);
+    expect(out[0]).toBe(202);
+    expect(out[15]).toBe(505);
+  });
+});
+
+describe('resizeRgbaNearest', () => {
+  it('同じ寸法ならそのまま返し、2倍は画素を複製する', () => {
+    const src = new Uint8ClampedArray([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]);
+    expect(resizeRgbaNearest(src, 2, 2)).toBe(src);
+    const out = resizeRgbaNearest(src, 2, 4);
+    expect(Array.from(out.slice(0, 16))).toEqual([1, 2, 3, 4, 1, 2, 3, 4, 5, 6, 7, 8, 5, 6, 7, 8]);
   });
 });

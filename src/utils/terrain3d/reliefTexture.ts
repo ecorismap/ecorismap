@@ -13,14 +13,15 @@
  */
 import { TILE_FOLDER } from '../../constants/AppConstants';
 import { computeColorRelief, computeGebcoRelief } from '../colorRelief';
-import { loadDemTileAsPngBytes, loadLocalDemTileAsPngBytes } from '../demTileLoader';
-import { runInDecodeLane } from '../demTileProvider';
-import { decodePngLite } from '../pngLite';
+import { decodeDemTileFile, fetchDemTileFile, localDemTileFile } from '../demTileLoader';
+import { runInDecodeLane } from './decodeLane';
 import { assembleWithHalo, upsampleHaloBuffer } from '../reliefTileCompose';
-import { decodeElevation, DEFAULT_SHADING_OPTIONS, metersPerPixel, requiredHalo } from '../terrainShading';
+import { DEFAULT_SHADING_OPTIONS, metersPerPixel, requiredHalo } from '../terrainShading';
 import { LayerSpec, TileKey, TileTextureSource } from './types';
 
 const TILE_SIZE = 256;
+/** loadReliefElevationが返す標高の一辺[px]（512pxのソースは間引いて揃える） */
+export const RELIEF_ELEVATION_TILE_SIZE = TILE_SIZE;
 /** 中央タイルが無いとき何段まで粗いズームへ降りるか（Webの陰影プロトコルと同じ） */
 const MAX_ZOOM_FALLBACK = 5;
 /** 生成済みRGBAのキャッシュ枚数（1枚256KB）。PNGエンコーダが無いのでディスクには残さない */
@@ -51,37 +52,19 @@ const lruSet = <T>(map: Map<string, T>, key: string, value: T, max: number): voi
   }
 };
 
-/** PNGを256x256の標高配列へ（elev2の512pxは1画素おきに間引く）。読めなければnull */
-const decodeElevationTile = (png: ArrayBuffer): Float32Array | null => {
-  const decoded = decodePngLite(png);
-  if (decoded === null) return null;
-  const { width, height, data, channels, palette } = decoded;
-  if (width !== height || width % TILE_SIZE !== 0) return null;
-  const step = width / TILE_SIZE;
-  const elev = new Float32Array(TILE_SIZE * TILE_SIZE);
+/**
+ * デコード済み標高を256x256へ揃える（512pxは1画素おきに間引く）。揃えられなければnull
+ */
+export const toTileSizeElevation = (elev: Float32Array, size: number): Float32Array | null => {
+  if (size === TILE_SIZE) return elev;
+  if (size % TILE_SIZE !== 0) return null;
+  const step = size / TILE_SIZE;
+  const out = new Float32Array(TILE_SIZE * TILE_SIZE);
   for (let y = 0; y < TILE_SIZE; y++) {
-    for (let x = 0; x < TILE_SIZE; x++) {
-      const i = y * step * width + x * step;
-      let r: number;
-      let g: number;
-      let b: number;
-      if (palette !== undefined && channels === 1) {
-        const p = data[i] * 3;
-        r = palette[p];
-        g = palette[p + 1];
-        b = palette[p + 2];
-      } else if (channels >= 3) {
-        const p = i * channels;
-        r = data[p];
-        g = data[p + 1];
-        b = data[p + 2];
-      } else {
-        return null;
-      }
-      elev[y * TILE_SIZE + x] = decodeElevation(r, g, b);
-    }
+    const row = y * step * size;
+    for (let x = 0; x < TILE_SIZE; x++) out[y * TILE_SIZE + x] = elev[row + x * step];
   }
-  return elev;
+  return out;
 };
 
 const buildUrl = (layer: LayerSpec, z: number, x: number, y: number): string => {
@@ -90,10 +73,10 @@ const buildUrl = (layer: LayerSpec, z: number, x: number, y: number): string => 
 };
 
 /**
- * 標高タイル1枚を取得・デコードする。
- * @returns 標高 / null=データなし（記憶する）/ undefined=通信エラー（記憶しない）
+ * 標高タイル1枚を取得・デコードする。3Dの海底モード（terrainDem）も海底値の取得に使う。
+ * @returns 標高（GSI方式、NoDataはNaN） / null=データなし（記憶する）/ undefined=通信エラー（記憶しない）
  */
-const loadElevation = (layer: LayerSpec, z: number, x: number, y: number): Promise<Float32Array | null | undefined> => {
+export const loadReliefElevation = (layer: LayerSpec, z: number, x: number, y: number): Promise<Float32Array | null | undefined> => {
   const key = `${layer.urlTemplate}|${z}/${x}/${y}`;
   const cached = lruGet(elevationCache, key);
   if (cached !== undefined) return Promise.resolve(cached);
@@ -102,18 +85,20 @@ const loadElevation = (layer: LayerSpec, z: number, x: number, y: number): Promi
 
   const task = (async (): Promise<Float32Array | null | undefined> => {
     // オフラインダウンロード済みの生DEMタイル（TILE_FOLDER/{地図id}/z/x/y）を優先する
-    let png = await loadLocalDemTileAsPngBytes(`${TILE_FOLDER}/${layer.id}/${z}/${x}/${y}`);
-    if (png === null) {
+    let file = await localDemTileFile(`${TILE_FOLDER}/${layer.id}/${z}/${x}/${y}`);
+    if (file === null) {
       if (layer.offlineMode === true) return null;
       try {
         // ディスクキャッシュのキーはcontourLabelsと揃え、2Dのラベル用に取ったタイルを共用する
-        png = await loadDemTileAsPngBytes(buildUrl(layer, z, x, y), `gebco|${layer.urlTemplate}|${z}/${x}/${y}`);
+        file = await fetchDemTileFile(buildUrl(layer, z, x, y), `gebco|${layer.urlTemplate}|${z}/${x}/${y}`);
       } catch {
         return undefined;
       }
     }
-    const bytes = png;
-    const elev = bytes === null ? null : await runInDecodeLane(() => decodeElevationTile(bytes));
+    // GEBCO段彩はGSI形式、それ以外（Mapterhorn）はterrarium形式（terrainShading.isTerrariumDemUrl）。
+    // デコードはネイティブでJSスレッドの外
+    const decoded = file === null ? null : await decodeDemTileFile(file, layer.relief?.style === 'gebco' ? 'gsi' : 'terrarium');
+    const elev = decoded === null ? null : toTileSizeElevation(decoded.elev, decoded.size);
     lruSet(elevationCache, key, elev, MAX_CACHED_ELEVATIONS);
     return elev;
   })();
@@ -148,7 +133,7 @@ export const resolveReliefTexture = async (layer: LayerSpec, tile: TileKey): Pro
           const nx = (((sx + dx) % max) + max) % max; // 経度方向は巻き戻す
           const ny = sy + dy;
           if (ny < 0 || ny >= max) return Promise.resolve(null);
-          return loadElevation(layer, sourceZ, nx, ny);
+          return loadReliefElevation(layer, sourceZ, nx, ny);
         })
       )
     );

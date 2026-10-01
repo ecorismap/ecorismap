@@ -6,59 +6,53 @@
  */
 
 /**
- * 国土地理院 標高タイル（DEM10B統合、最大z14 ≒ 10m解像度、日本国内のみ・海はNoData）。
- * 独自エンコードのPNGで、maplibreは直接デコードできない（pngLite + decodeElevationで自前デコード）。
- * 用途: 可視領域の計算・長押しポップアップの標高表示（国内）。
- * 利用条件: 国土地理院コンテンツ利用規約（出典と加工した旨の記載）。
- * https://maps.gsi.go.jp/development/demtile.html
+ * 旧・可視領域用DEMタイル（dem_png＋terrarium）の疑似地図ID。
+ * Mapterhornへの移行で使わなくなった。起動時に保存済みデータと領域記録を削除するためだけに残す
+ * （demSourceMigration.ts）
  */
-export const GSI_DEM_URL = 'https://cyberjapandata.gsi.go.jp/xyz/dem_png/{z}/{x}/{y}.png';
+export const LEGACY_DEM_VIEWSHED_MAP_ID = 'dem_viewshed';
 
 /**
- * AWS Terrain Tiles（旧Mapzen、terrariumエンコードPNG 256px、z0-15、全球30m級）。
- * 出典: Mapzen/AWS Open Data "Terrain Tiles"（SRTM, GMTED, ETOPO1等の合成）。
- * 用途: 可視領域・標高表示の国外フォールバック。3D地形の非常用差し替え先。
- * 利用条件: 無料・キー不要。出典表記は https://github.com/tilezen/joerd/blob/master/docs/attribution.md
- * https://registry.opendata.aws/terrain-tiles/
+ * ダウンロードするズーム範囲（Mapterhorn 512px）。
+ * 可視領域（viewshed.ts VIEWSHED_MIN/MAX_DEM_ZOOM）と3D（terrainDem.ts TERRAIN_DEM_MIN/MAX_ZOOM）の
+ * 参照範囲z7〜13に揃える。長押し標高はz15を使うが、無ければ親へ降りるのでz13のDLで足りる
  */
-export const TERRARIUM_URL = 'https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png';
-
-/**
- * 可視領域用DEMタイルの疑似地図ID。
- * Redux tileMapsには登録しない内部専用のダウンロードターゲットで、
- * tileRegions.tileMapId・TILE_FOLDER配下のフォルダ名・ダウンロードセレクタの選択IDに使う。
- * 保存構造: TILE_FOLDER/dem_viewshed/{gsi|terrarium}/{z}/{x}/{y}
- * （ユーザー地図のIDはulid、組み込みはstandard/hybridのみなので衝突しない）
- */
-export const DEM_VIEWSHED_MAP_ID = 'dem_viewshed';
-
-/** ダウンロードするズーム範囲。viewshed.tsのselectDemZoomの返域(z8-14)と一致させる */
-export const DEM_DOWNLOAD_MIN_ZOOM = 8;
-export const DEM_DOWNLOAD_MAX_ZOOM = 14;
+export const DEM_DOWNLOAD_MIN_ZOOM = 7;
+export const DEM_DOWNLOAD_MAX_ZOOM = 13;
 
 /**
  * 3D地形の遠景をオフラインで描くため、粗いズームだけ指定範囲の外側も取る。
  *
  * 遠景リング（terrain3d/constants.tsのFAR_RING_DELTAS）は近景の数十〜百数十km先まで
  * 広がるが、DEMはユーザーが選んだ範囲（数km四方が多い）しか端末に無い。
- * 周辺幅はz8で150km（z16表示時のΔ6リング半径）とし、1段細かくなるごとに半分にする。
+ * 周辺幅は最も粗いz7で150km（z16表示時のΔ6リング半径）とし、1段細かくなるごとに半分にする。
  * リングの半径もタイル枚数固定＝ズーム1段で半分になるので対応が取れ、
  * 追加枚数もズームによらず各段25枚前後に収まる
  */
 export const DEM_FAR_MARGIN_KM_AT_MIN_ZOOM = 150;
-/** 周辺も取る最も細かいズーム（z16表示時のΔ3リングが参照するDEM=z11） */
-export const DEM_FAR_MARGIN_MAX_ZOOM = 11;
+/** 周辺も取る最も細かいズーム（z16表示時のΔ3リングが参照するDEM=z10・512px） */
+export const DEM_FAR_MARGIN_MAX_ZOOM = 10;
 
 /**
- * Mapterhorn（terrariumエンコードWebP 512px、z0-15、全球）。
- * 日本は基盤地図情報DEM(1m/5m/10m)、国外はCopernicus GLO-30ほか各国の公開DEM。
- * WebPのため自前デコーダ（pngLite）では読めず、maplibreの内蔵デコード専用。
- * 用途: Web版の3D地形表示（raster-dem）。
+ * Mapterhorn（terrariumエンコードWebP 512px、全球）。
+ * 日本は基盤地図情報DEM(1m/5m/10m)でz16まで、国外はCopernicus GLO-30ほか各国の公開DEM。
+ * 海は0m（深さなし）、外洋は404。z11以下は鉛直1m丸め。
+ * ネイティブはmodules/dem-decoder、WebはcreateImageBitmap（色変換なし）でデコードする（demSource.ts）。
+ * 用途: 標高の主ソース（docs/MAPTERHORN_MIGRATION_PLAN.mdで段階的に移行中）、Web版の3D地形（raster-dem）。
  * 利用条件: 無料・キー不要・要出典表記（© Mapterhorn）。有志運営（SLAなし）のため、
- * 停止時はTERRARIUM_URL（PNG 256px）へ差し替えて復旧できる。
+ * 停止時はMAPTERHORN_URLを同じ形式（terrarium WebP 512px）の配信先へ差し替えて復旧する
+ * （例: Mapterhornの日本域を切り出して自前配信。docs/DEM_SOURCES.md参照）。
  * https://mapterhorn.com/
  */
 export const MAPTERHORN_URL = 'https://tiles.mapterhorn.com/{z}/{x}/{y}.webp';
+
+/**
+ * 標高タイル（Mapterhorn）のオフライン保存用の疑似地図ID。
+ * Redux tileMapsには登録しない内部専用のダウンロードターゲットで、
+ * tileRegions.tileMapId・TILE_FOLDER配下のフォルダ名・ダウンロードセレクタの選択IDに使う。
+ * 保存構造: TILE_FOLDER/dem_mapterhorn/{z}/{x}/{y}.webp（0バイト=404マーカー）
+ */
+export const DEM_MAPTERHORN_MAP_ID = 'dem_mapterhorn';
 
 /** Web版3D地形の起伏強調率。Home.web.tsxとuseDrawTool.tsのsetTerrainで共用 */
 export const TERRAIN_EXAGGERATION = 1.5;

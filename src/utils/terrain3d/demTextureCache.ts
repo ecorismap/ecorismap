@@ -1,18 +1,17 @@
 /**
  * DEMタイルのGPUテクスチャ管理（参照カウント付きLRU）。
  *
- * 標高PNGをJSで展開せず、localUriのままtexImage2Dでネイティブデコードさせ、
- * 頂点シェーダがtexelFetchで読んでデコードする（maplibreと同じ方式）。
- * これによりタイル読み込み時のJS処理（base64展開・inflate・65536画素ループ・
- * 格子点の補間）がまるごと消える。
+ * 標高はネイティブ（modules/dem-decoder）でFloat32まで復元済みのものを
+ * r32floatテクスチャとして上げ、頂点シェーダがtextureLoadで読む（terrainDem参照）。
  *
- * テクスチャタイル(z15/z16)は親のDEMタイル(z14)を共有するため、
+ * テクスチャタイルは親のDEMタイルを共有するため、
  * 近景リング48枚でもDEMは数枚で足りる。近景・遠景リングの全TileManagerで
  * 1インスタンスを共有し、この重複をまとめて省く。
  */
-import { DEM_RANGE_BLOCKS, DemEncoding, resolveDemTexturePixels } from '../demTileProvider';
 import { MAX_DEM_TEXTURES } from './constants';
+import { DEM_RANGE_BLOCKS, resolveTerrainDem } from './terrainDem';
 import { TerrainRenderer } from './TerrainRenderer';
+import { LayerSpec } from './types';
 
 export interface DemTextureEntry {
   key: string;
@@ -20,12 +19,13 @@ export interface DemTextureEntry {
   state: 'ready' | 'missing' | 'error';
   /** state=readyのときのみ非null */
   texture: GPUTexture | null;
-  encoding: DemEncoding;
-  /** DEMを4x4に区切ったブロック毎の標高範囲[m]。スカート底の算出に使う（demTileProvider参照） */
+  /** DEMの一辺[px]（データなしは0） */
+  size: number;
+  /** DEMをDEM_RANGE_BLOCKS四方に区切ったブロック毎の標高範囲[m]。スカート底の算出に使う */
   blockMin: Float32Array;
   blockMax: Float32Array;
   /**
-   * デコード済み標高[m]（NoDataはNaN）。GPUへ上げたのと同じバイト列から作ったもの。
+   * 標高[m]。GPUへ上げたのと同じ配列。
    *
    * テクスチャと同じ寿命で持つことで、「地形は描けているのにJSだけ標高を引けず
    * ドットが消える」状態が起きなくなる（別LRUに預けると寿命がずれる）
@@ -42,7 +42,7 @@ const ERROR_ENTRY = (key: string): DemTextureEntry => ({
   key,
   state: 'error',
   texture: null,
-  encoding: 'gsi',
+  size: 0,
   blockMin: ZERO_BLOCKS,
   blockMax: ZERO_BLOCKS,
   elev: null,
@@ -56,8 +56,8 @@ export class DemTextureCache {
   private entries = new Map<string, DemTextureEntry>();
   private pending = new Map<string, Promise<DemTextureEntry>>();
   private disposed = false;
-  /** 海底モード（GEBCO表示中）。海域を海底の深さで埋めたDEMを使う */
-  private bathymetry = false;
+  /** 海底モード（GEBCO表示中）の海底値の取得元レイヤ。nullなら通常モード */
+  private bathymetryLayer: LayerSpec | null = null;
 
   constructor(renderer: TerrainRenderer, maxEntries: number = MAX_DEM_TEXTURES) {
     this.renderer = renderer;
@@ -68,8 +68,8 @@ export class DemTextureCache {
    * 海底モードを切り替える。キーが別になるので、以後のacquireは別エントリを引く。
    * 既存タイルの作り直しは呼び出し側（レイヤ差し替えで全タイル再構築）に任せる
    */
-  setBathymetry(enabled: boolean): void {
-    this.bathymetry = enabled;
+  setBathymetry(layer: LayerSpec | null): void {
+    this.bathymetryLayer = layer;
   }
 
   /**
@@ -78,8 +78,8 @@ export class DemTextureCache {
    * 使い終わったら必ずrelease()すること。
    */
   async acquire(z: number, x: number, y: number): Promise<DemTextureEntry> {
-    const bathymetry = this.bathymetry;
-    const key = `${bathymetry ? 'bathy:' : ''}${z}/${x}/${y}`;
+    const bathymetry = this.bathymetryLayer;
+    const key = `${bathymetry === null ? '' : `bathy:${bathymetry.urlTemplate}|`}${z}/${x}/${y}`;
     const hit = this.entries.get(key);
     if (hit !== undefined) {
       // 参照したものを末尾へ移してLRUを維持する
@@ -121,33 +121,39 @@ export class DemTextureCache {
     this.pending.clear();
   }
 
-  private async load(key: string, z: number, x: number, y: number, bathymetry: boolean): Promise<DemTextureEntry> {
+  private async load(
+    key: string,
+    z: number,
+    x: number,
+    y: number,
+    bathymetry: LayerSpec | null
+  ): Promise<DemTextureEntry> {
     let entry: DemTextureEntry;
     try {
-      const pixels = await resolveDemTexturePixels(z, x, y, { bathymetry });
-      if (pixels === undefined) {
+      const dem = await resolveTerrainDem(z, x, y, bathymetry);
+      if (dem === undefined) {
         entry = ERROR_ENTRY(key); // 通信エラー。記憶せず次回再取得させる
-      } else if (pixels === null) {
+      } else if (dem === null) {
         entry = {
           key,
           state: 'missing',
           texture: null,
-          encoding: 'gsi',
+          size: 0,
           blockMin: ZERO_BLOCKS,
           blockMax: ZERO_BLOCKS,
           elev: null,
           refs: 0,
         };
       } else {
-        const texture = this.renderer.createDemTexture(pixels.data, pixels.width, pixels.height);
+        const texture = this.renderer.createDemTexture(dem.elev, dem.size);
         entry = {
           key,
           state: 'ready',
           texture,
-          encoding: pixels.encoding,
-          blockMin: pixels.blockMin,
-          blockMax: pixels.blockMax,
-          elev: pixels.elev,
+          size: dem.size,
+          blockMin: dem.blockMin,
+          blockMax: dem.blockMax,
+          elev: dem.elev,
           refs: 0,
         };
       }

@@ -104,9 +104,9 @@
     "presetName": "陰影起伏図(全方位対応)",
     "map": {
       "name": "陰影起伏図(全方位対応)",
-      "url": "hillshade://https://tiles.gsj.jp/tiles/elev/mixed/{z}/{y}/{x}.png",
+      "url": "hillshade://https://tiles.mapterhorn.com/{z}/{x}/{y}.webp",
       "styleURL": "",
-      "attribution": "産総研シームレス標高タイル",
+      "attribution": "© Mapterhorn（日本域は国土地理院 基盤地図情報）",
       "maptype": "none",
       "visible": true,
       "transparency": 0,
