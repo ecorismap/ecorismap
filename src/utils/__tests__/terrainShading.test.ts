@@ -10,6 +10,8 @@ import {
   isShadingUrl,
   isReliefUrl,
   isDemProtocolUrl,
+  isTerrariumDemUrl,
+  decodeTerrarium,
   toDemUrl,
   SHADING_URL_PREFIX,
   RELIEF_URL_PREFIX,
@@ -362,5 +364,20 @@ describe('粗いズームからの切り出し', () => {
     }
     // 4画素ごとに同じ値が並ぶ（2倍拡大なので横に2つ連続する）
     expect(expected[0]).toBe(expected[4]);
+  });
+});
+
+describe('terrarium（Mapterhorn）対応', () => {
+  it('陰影起伏・汎用段彩はterrarium、GEBCO段彩と通常の地図は対象外', () => {
+    expect(isTerrariumDemUrl('hillshade://https://tiles.mapterhorn.com/{z}/{x}/{y}.webp')).toBe(true);
+    expect(isTerrariumDemUrl('relief://https://tiles.mapterhorn.com/{z}/{x}/{y}.webp')).toBe(true);
+    expect(isTerrariumDemUrl('relief://https://tiles.gsj.jp/tiles/elev/gebco/{z}/{y}/{x}.png#style=gebco')).toBe(false);
+    expect(isTerrariumDemUrl('https://example.com/{z}/{x}/{y}.png')).toBe(false);
+  });
+
+  it('terrariumの標高を復元する（負値もそのまま）', () => {
+    expect(decodeTerrarium(131, 232, 0)).toBe(1000);
+    expect(decodeTerrarium(124, 24, 0)).toBe(-1000);
+    expect(decodeTerrarium(128, 0, 128)).toBe(0.5);
   });
 });

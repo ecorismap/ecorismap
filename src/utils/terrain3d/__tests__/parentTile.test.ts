@@ -3,9 +3,9 @@
  * 同じ規約であることを確かめる。
  *
  * どちらかだけ式が変わると、地形の起伏とタイル画像が別の場所を指して見た目がずれる。
- * DEM側はテクセル単位（256px基準）、こちらは正規化UVなので、256倍して突き合わせる。
+ * DEM側はテクセル単位（512px）、こちらは正規化UVなので、512倍して突き合わせる。
  */
-import { DEM_TILE_SIZE } from '../../demTileProvider';
+import { DEM_SOURCE_TILE_SIZE as DEM_TILE_SIZE } from '../../demSourceCommon';
 import { IDENTITY_TILE_UV, parentTileKey, parentTileUv } from '../parentTile';
 
 /** TerrainTileManager.buildPass と同じ式（テクセル単位） */

@@ -80,8 +80,8 @@ import {
   DOWNLOAD_TILE_COUNT_LIMIT,
   ESTIMATED_TILE_SIZE_MB,
 } from '../utils/tileDownloadHelpers';
-import { getDemViewshedTileMap } from '../utils/demTileDownload';
-import { DEM_VIEWSHED_MAP_ID } from '../constants/DemSources';
+import { getDemTileMap } from '../utils/demTileDownload';
+import { DEM_MAPTERHORN_MAP_ID } from '../constants/DemSources';
 import { MapMemoContext } from '../contexts/MapMemo';
 import { DataSelectionContext } from '../contexts/DataSelection';
 import { InfoToolContext } from '../contexts/InfoTool';
@@ -1752,14 +1752,14 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
   const downloadTargetMaps = useMemo(() => {
     if (selectedTileMapIds.length > 0) {
       const maps = tileMaps.filter((map) => selectedTileMapIds.includes(map.id));
-      if (selectedTileMapIds.includes(DEM_VIEWSHED_MAP_ID)) maps.push(getDemViewshedTileMap());
+      if (selectedTileMapIds.includes(DEM_MAPTERHORN_MAP_ID)) maps.push(getDemTileMap());
       return maps;
     }
     if (route.params?.mode === 'download') {
       // 「すべての地図」が選択されている場合、ダウンロード可能な全ての地図
       return [
         ...tileMaps.filter((map) => !map.isGroup && map.id !== 'standard' && map.id !== 'hybrid'),
-        getDemViewshedTileMap(),
+        getDemTileMap(),
       ];
     }
     return route.params?.tileMap !== undefined ? [route.params.tileMap] : [];
@@ -1925,12 +1925,12 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     // 選択された地図を削除
     if (selectedTileMapIds.length > 0) {
       mapsToDelete = tileMaps.filter((map) => selectedTileMapIds.includes(map.id));
-      if (selectedTileMapIds.includes(DEM_VIEWSHED_MAP_ID)) mapsToDelete.push(getDemViewshedTileMap());
+      if (selectedTileMapIds.includes(DEM_MAPTERHORN_MAP_ID)) mapsToDelete.push(getDemTileMap());
     } else if (downloadMode && route.params?.mode === 'download') {
       // ダウンロードモードで「すべての地図」が選択されている場合、ダウンロード可能な全ての地図を削除
       mapsToDelete = [
         ...tileMaps.filter((map) => !map.isGroup && map.id !== 'standard' && map.id !== 'hybrid'),
-        getDemViewshedTileMap(),
+        getDemTileMap(),
       ];
     } else if (route.params?.tileMap !== undefined) {
       // 従来の単一地図削除（後方互換性のため）

@@ -131,7 +131,7 @@
     "point": "point",
     "track": "track",
     "memo": "memo",
-    "demAttribution": "GSI Japan, Terrain Tiles (derived from elevation tiles)",
+    "demAttribution": "© Mapterhorn (Japan: GSI Fundamental Geospatial Data; derived from elevation tiles)",
     "polygon": "polygon",
     "message": {
       "failGetUids": "Failed to retrieve user ID",
@@ -898,7 +898,7 @@
       "selectAll": "Select All",
       "allMaps": "All Maps",
       "mapsSelected": "maps selected",
-      "demViewshed": "Elevation tiles (for viewshed)",
+      "demViewshed": "Elevation tiles (viewshed & 3D)",
       "downloading": "Downloading",
       "stop": "Stop"
     },

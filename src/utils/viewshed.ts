@@ -1,7 +1,7 @@
 /**
  * 可視領域（viewshed）解析。
  *
- * 指定地点から指定距離内で見通せる範囲を国土地理院の標高タイル(dem_png)から計算し、
+ * 指定地点から指定距離内で見通せる範囲をMapterhornの標高タイル（512px、demSource）から計算し、
  * ポリゴン（外周リング＋穴）として返す。iOS/Android/Web共通の純JS実装。
  *
  * 流れ: fetchDemGrid（DEMタイル取得→グリッド化） → computeVisibility（R2レイキャスト）
@@ -10,24 +10,29 @@
 import simplify from '@turf/simplify';
 import * as turf from '@turf/helpers';
 import { LocationType } from '../types';
-import { DEM_DOWNLOAD_MAX_ZOOM, DEM_DOWNLOAD_MIN_ZOOM, TERRARIUM_URL } from '../constants/DemSources';
-import { clearDemTileCache, decodeDemTile, fetchDemTile, fetchTileFromSource } from './demTileProvider';
-import type { DemEncoding } from './demTileProvider';
+import { DEM_SOURCE_TILE_SIZE, getDemTile } from './demSource';
+import { findCoveringDemTile, resampleFromAncestor } from './demSourceCommon';
 
-// タイル取得・デコード・キャッシュはdemTileProviderへ切り出した（3D地形エンジンと共用）。
-// 既存の利用元・テストのためにここから再exportする
-export { clearDemTileCache, decodeDemTile };
-export type { DemEncoding };
-
-const TILE_SIZE = 256;
-const MAX_DEM_ZOOM = DEM_DOWNLOAD_MAX_ZOOM;
-const MIN_DEM_ZOOM = DEM_DOWNLOAD_MIN_ZOOM;
+const TILE_SIZE = DEM_SOURCE_TILE_SIZE;
+/** 可視領域に使うズーム範囲（512px。旧dem_png 256pxのz8〜14と同じ画素密度） */
+export const VIEWSHED_MAX_DEM_ZOOM = 13;
+export const VIEWSHED_MIN_DEM_ZOOM = 7;
+const MAX_DEM_ZOOM = VIEWSHED_MAX_DEM_ZOOM;
+const MIN_DEM_ZOOM = VIEWSHED_MIN_DEM_ZOOM;
+/** 長押し標高のズーム。1枚で済むので最も細かい段を使う（日本域で約2m） */
+export const POINT_ELEVATION_DEM_ZOOM = 15;
+/**
+ * 指定ズームのタイルが無いとき（国外の多くはz12前後まで）、親タイルを何段まで遡るか。
+ * 長押しはz15から使うので、国外でもz8までは届くようにする
+ */
+const VIEWSHED_ANCESTOR_DEPTH = 3;
+const POINT_ANCESTOR_DEPTH = 7;
 /**
  * グリッド一辺の上限（画素）。
  * 上限を下げるとズームが粗くなり可視領域の検出が激減する（z12は z14 の4割程度）ため、
- * 日本全域で半径10kmまで z14（10m DEM）を維持できる値にしている
+ * 日本全域で半径10kmまで最大ズーム（約10m/画素）を維持できる値にしている
  * （北緯45度・半径10kmでグリッド一辺 約2959px）。
- * 10km時のコストの目安: タイル約120枚・標高グリッド約27MB・計算1〜2秒(デスクトップ)。
+ * 10km時のコストの目安: タイル約30枚・標高グリッド約27MB・計算1〜2秒(デスクトップ)。
  */
 const MAX_GRID_SIZE = 3000;
 /** 地球半径[m] */
@@ -36,12 +41,12 @@ const EARTH_RADIUS = 6371000;
 const REFRACTION_COEF = 0.13;
 
 export interface DemGrid {
-  /** 標高[m]。NoData（海・国外）はNaN */
+  /** 標高[m]。データなし（外洋の404タイル）はNaN */
   elev: Float32Array;
   /** グリッド一辺の画素数 */
   size: number;
   zoom: number;
-  /** グリッド左上のワールドピクセル座標（zoomにおける256pxタイル基準） */
+  /** グリッド左上のワールドピクセル座標（zoomにおける512pxタイル基準） */
   originPxX: number;
   originPxY: number;
   /** 中心緯度における1画素あたりのメートル数 */
@@ -53,7 +58,7 @@ export interface ViewshedPolygon {
   holes: { [key: string]: LocationType[] };
 }
 
-/** 経度・緯度→ワールドピクセル座標（zoomにおける256pxタイル基準） */
+/** 経度・緯度→ワールドピクセル座標（zoomにおける512pxタイル基準） */
 const lonToPx = (lon: number, zoom: number) => ((lon + 180) / 360) * TILE_SIZE * Math.pow(2, zoom);
 const latToPx = (lat: number, zoom: number) => {
   const rad = (lat * Math.PI) / 180;
@@ -76,29 +81,38 @@ export const selectDemZoom = (latitude: number, radiusMeters: number): number =>
 };
 
 
+/** 1枚分の標高を返すローダー。null=データなし（外洋）、undefined=通信エラー */
+export type DemTileLoader = (zoom: number, x: number, y: number) => Promise<Float32Array | null | undefined>;
+
 /**
- * 指定座標の標高[m]を標高タイルから取得する（国内=GSI 10m、国外=Terrain Tiles 30-90m）。
- * 長押しポップアップの標高表示用。可視領域と同じキャッシュを共有する。
- * 取得できない場合（国内の海上NoData・通信エラー等）はnullを返す。
+ * 指定タイルの標高を返す。そのズームのタイルが無い地域では親タイルから引き伸ばす。
+ */
+export const loadViewshedDemTile: DemTileLoader = async (zoom, x, y) => {
+  const covering = await findCoveringDemTile(getDemTile, zoom, x, y, VIEWSHED_ANCESTOR_DEPTH);
+  if (covering === null || covering === undefined) return covering;
+  if (covering.tile.size !== TILE_SIZE) return null;
+  return resampleFromAncestor(covering, x, y);
+};
+
+/**
+ * 指定座標の標高[m]を標高タイルから取得する（日本域は約2m、国外は提供域に応じて30m級など）。
+ * 長押しポップアップの標高表示用。
+ * 外洋（どの段にもタイルが無い）は海面0m。通信エラー時はnullを返す。
  */
 export const getDemElevation = async (latitude: number, longitude: number): Promise<number | null> => {
-  const zoom = MAX_DEM_ZOOM;
-  const px = lonToPx(longitude, zoom);
-  const py = latToPx(latitude, zoom);
-  const tileX = Math.floor(px / TILE_SIZE);
-  const tileY = Math.floor(py / TILE_SIZE);
-  const col = Math.min(TILE_SIZE - 1, Math.floor(px - tileX * TILE_SIZE));
-  const row = Math.min(TILE_SIZE - 1, Math.floor(py - tileY * TILE_SIZE));
-  const tile = await fetchDemTile(zoom, tileX, tileY);
-  if (tile instanceof Float32Array) {
-    const e = tile[row * TILE_SIZE + col];
-    if (!isNaN(e)) return e;
-    // GSIタイル内のNoData（沿岸の海など）はterrariumで補完し、
-    // 沖合（GSIタイルなし→terrarium 0m）と表示を一致させる
-    const terra = await fetchTileFromSource('terrarium', TERRARIUM_URL, zoom, tileX, tileY);
-    if (terra instanceof Float32Array) return terra[row * TILE_SIZE + col];
-  }
-  return null;
+  const zoom = POINT_ELEVATION_DEM_ZOOM;
+  const tileX = Math.floor(lonToPx(longitude, zoom) / TILE_SIZE);
+  const tileY = Math.floor(latToPx(latitude, zoom) / TILE_SIZE);
+  const covering = await findCoveringDemTile(getDemTile, zoom, tileX, tileY, POINT_ANCESTOR_DEPTH);
+  if (covering === undefined) return null;
+  if (covering === null) return 0;
+  // 見つかった段のズームで画素位置を求める（最近傍）
+  const { tile } = covering;
+  const size = tile.size;
+  const col = Math.min(size - 1, Math.max(0, Math.floor(lonToPx(longitude, tile.z) - tile.x * size)));
+  const row = Math.min(size - 1, Math.max(0, Math.floor(latToPx(latitude, tile.z) - tile.y * size)));
+  const e = tile.elev[row * size + col];
+  return isNaN(e) ? null : e;
 };
 
 /**
@@ -110,7 +124,7 @@ export const getDemElevation = async (latitude: number, longitude: number): Prom
 export const fetchDemGrid = async (
   center: LocationType,
   radiusMeters: number,
-  tileLoader: typeof fetchDemTile = fetchDemTile
+  tileLoader: DemTileLoader = loadViewshedDemTile
 ): Promise<DemGrid | null> => {
   const zoom = selectDemZoom(center.latitude, radiusMeters);
   const cosLat = Math.cos((center.latitude * Math.PI) / 180);

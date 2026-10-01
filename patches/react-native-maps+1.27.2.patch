@@ -357,10 +357,10 @@ index e4010de..e9a07ad 100644
 \ No newline at end of file
 diff --git a/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapDEMTileProvider.java b/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapDEMTileProvider.java
 new file mode 100644
-index 0000000..f3852ef
+index 0000000..b5fbe3c
 --- /dev/null
 +++ b/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapDEMTileProvider.java
-@@ -0,0 +1,757 @@
+@@ -0,0 +1,857 @@
 +package com.rnmaps.maps;
 +
 +import android.content.Context;
@@ -370,6 +370,12 @@ index 0000000..f3852ef
 +import android.util.LruCache;
 +import com.google.android.gms.maps.model.Tile;
 +import java.io.ByteArrayOutputStream;
++import java.util.ArrayList;
++import java.util.List;
++import java.util.concurrent.ConcurrentHashMap;
++import java.util.concurrent.ExecutorService;
++import java.util.concurrent.Executors;
++import java.util.concurrent.Future;
 +
 +/**
 + * 標高タイルから全方向陰影（立体図）を計算するタイルプロバイダー。
@@ -406,6 +412,12 @@ index 0000000..f3852ef
 +  private static final double LIGHT_UP = Math.sin(Math.toRadians(45));
 +  /** 標高タイルが無いとき、何段まで粗いズームへ降りるか（z15→海域データの上限z10に届く段数） */
 +  private static final int MAX_ZOOM_FALLBACK = 5;
++  /**
++   * terrarium（Mapterhorn 512px）の標高タイルを地図タイルより何段粗いズームで取るか。
++   * 512pxのzNは256pxのz(N+1)と画素密度が同じなので、1段粗く取れば従来（GSI 256px）と同じ細かさで描ける。
++   * Web版 terrainShading.ts の TERRARIUM_DEM_ZOOM_OFFSET と対応
++   */
++  private static final int TERRARIUM_DEM_ZOOM_OFFSET = 1;
 +
 +  // --- 陰影段彩（relief://）のテーブル。src/utils/colorRelief.ts と同値にすること ---
 +  // （一致はcolorRelief.test.tsのパッチ整合テストで機械検証される）
@@ -497,12 +509,25 @@ index 0000000..f3852ef
 +  private final LruCache<String, byte[]> shadingCache;
 +  /** デコード済み標高のキャッシュ（キー: "x,y,zoom"）。袖のために隣接タイルを何度も引くため */
 +  private final LruCache<String, float[]> elevationCache;
++  /**
++   * 同じ標高タイルの同時取得をまとめるためのキー別ロック。
++   * 地図SDKは複数スレッドから並行にgetTileを呼ぶため、隣り合う地図タイルが同じ標高タイルを
++   * 同時に取りに行き、同じダウンロードが重複していた
++   */
++  private final ConcurrentHashMap<String, Object> loadLocks = new ConcurrentHashMap<>();
++  /** 袖に要る隣接タイルを並列に取得するためのスレッド（順番に取ると通信の往復が積み重なる） */
++  private static final ExecutorService NEIGHBOR_EXECUTOR = Executors.newFixedThreadPool(4);
 +  /** 標高配列の一辺。全タイル同じ前提で最初に見たタイルから決まる */
 +  private volatile int demTileSize = 0;
 +  /** relief://（陰影段彩＋等深線）モード。URLプレフィックスから自己判定する */
 +  private volatile boolean reliefMode = false;
 +  /** GEBCO配色（URLフラグメントの #style=gebco から自己判定する） */
 +  private volatile boolean gebcoStyle = false;
++  /**
++   * 標高タイルがterrarium形式（Mapterhorn 512px）か。GEBCO段彩だけはGSI形式（産総研）を読み、
++   * それ以外（陰影起伏・汎用段彩）はterrarium専用（Web版 terrainShading.isTerrariumDemUrl と同じ規則）
++   */
++  private volatile boolean terrarium = true;
 +
 +  public MapDEMTileProvider(
 +    int tileSizet,
@@ -525,10 +550,11 @@ index 0000000..f3852ef
 +
 +    this.reliefMode = urlTemplate != null && urlTemplate.startsWith("relief://");
 +    this.gebcoStyle = urlTemplate != null && urlTemplate.contains("#style=gebco");
++    this.terrarium = !(this.reliefMode && this.gebcoStyle);
 +
 +    final int maxMemoryKb = (int) (Runtime.getRuntime().maxMemory() / 1024);
 +    final int shadingCacheKb = Math.min(maxMemoryKb / 8, 50 * 1024);
-+    // 標高1枚は 256*256*4 = 256KB。袖のために周囲8枚を参照するので少し多めに持つ
++    // 標高1枚は 256px=256KB、512px（terrarium）=1MB。袖のために周囲8枚を参照するので少し多めに持つ
 +    final int elevationCacheKb = Math.min(maxMemoryKb / 8, 32 * 1024);
 +
 +    this.shadingCache = new LruCache<String, byte[]>(shadingCacheKb) {
@@ -572,8 +598,9 @@ index 0000000..f3852ef
 +      return new Tile(outTileSize(), outTileSize(), cached);
 +    }
 +
-+    // まずオーバーズーム分を落とす
++    // まずオーバーズーム分を落とす。terrariumは1段粗いズームの512pxタイルから切り出す
 +    int startZoom = zoom > maximumNativeZ ? (int) maximumNativeZ : zoom;
++    if (terrarium) startZoom = Math.max(0, startZoom - TERRARIUM_DEM_ZOOM_OFFSET);
 +
 +    // 標高タイルの提供範囲はズームによって地域差がある（例えば産総研の陸域統合DEMは
 +    // z14は全国にあるがz15は佐渡島・知床・屋久島などで欠ける）。取れなければ粗い
@@ -604,6 +631,7 @@ index 0000000..f3852ef
 +  /**
 +   * 標高タイル1枚を取得してデコードする。取得できなければ null。
 +   * 隣接タイルは周囲のタイルを描くときにも使うのでキャッシュする。
++   * 同じタイルを複数スレッドが同時に要求したら、1つが取得して残りはその結果を使う。
 +   */
 +  private float[] loadElevation(int x, int y, int zoom) {
 +    String key = x + "," + y + "," + zoom;
@@ -611,13 +639,36 @@ index 0000000..f3852ef
 +    if (cached != null) {
 +      return cached;
 +    }
++    Object lock = loadLocks.computeIfAbsent(key, k -> new Object());
++    synchronized (lock) {
++      cached = elevationCache.get(key);
++      if (cached != null) {
++        return cached;
++      }
++      try {
++        return loadElevationUncached(key, x, y, zoom);
++      } finally {
++        loadLocks.remove(key);
++      }
++    }
++  }
++
++  private float[] loadElevationUncached(String key, int x, int y, int zoom) {
 +
 +    Tile demTile = super.getTile(x, y, zoom);
 +    if (demTile == null || demTile.data == null) {
 +      return null;
 +    }
 +
-+    Bitmap bitmap = BitmapFactory.decodeByteArray(demTile.data, 0, demTile.data.length);
++    // 標高をRGBに詰めた画像なので、アルファ乗算・色空間変換で値が変わらないようにする
++    BitmapFactory.Options options = new BitmapFactory.Options();
++    options.inPremultiplied = false;
++    options.inScaled = false;
++    options.inPreferredConfig = Bitmap.Config.ARGB_8888;
++    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
++      options.inPreferredColorSpace = android.graphics.ColorSpace.get(android.graphics.ColorSpace.Named.SRGB);
++    }
++    Bitmap bitmap = BitmapFactory.decodeByteArray(demTile.data, 0, demTile.data.length, options);
 +    if (bitmap == null) {
 +      Log.e(TAG, "Failed to decode DEM tile: " + key);
 +      return null;
@@ -630,9 +681,13 @@ index 0000000..f3852ef
 +    bitmap.recycle();
 +
 +    float[] elevation = new float[width * height];
++    final boolean isTerrarium = terrarium;
 +    for (int i = 0; i < pixels.length; i++) {
 +      int p = pixels[i];
-+      elevation[i] = decodeElevation((p >> 16) & 0xff, (p >> 8) & 0xff, p & 0xff);
++      int r = (p >> 16) & 0xff;
++      int g = (p >> 8) & 0xff;
++      int b = p & 0xff;
++      elevation[i] = isTerrarium ? decodeTerrarium(r, g, b) : decodeElevation(r, g, b);
 +    }
 +
 +    if (demTileSize == 0) {
@@ -654,6 +709,11 @@ index 0000000..f3852ef
 +    return x < 8388608.0f ? x / 100.0f : (x - 16777216.0f) / 100.0f;
 +  }
 +
++  /** terrarium形式の標高デコード（Mapterhorn）。標高 = R*256 + G + B/256 - 32768 */
++  private static float decodeTerrarium(int r, int g, int b) {
++    return r * 256.0f + g + b / 256.0f - 32768.0f;
++  }
++
 +  /** タイル中心緯度における1画素あたりのメートル数 */
 +  private static double metersPerPixel(int zoom, int tileY, int tileSize) {
 +    double normalizedTileY = (tileY + 0.5) / Math.pow(2, zoom);
@@ -662,43 +722,78 @@ index 0000000..f3852ef
 +  }
 +
 +  /**
-+   * 中央タイルと周囲8タイルから袖付きの標高バッファを組み立てる。
++   * 中央タイルと周囲のタイルから袖付きの標高バッファを組み立てる。
 +   * 袖はHALO画素分だけあればよいので、隣接タイルは必要な帯だけ写す。
++   * 計算する区画（regionX0/regionY0/region、タイル内の画素位置）の袖が届く隣接タイルだけを、
++   * 並列に取得する（512pxタイルの1/4の区画なら隣接は最大3枚。残りはNaNのまま使われない）。
 +   */
-+  private float[] assembleWithHalo(int x, int y, int zoom, int size) {
++  private float[] assembleWithHalo(int x, int y, int zoom, int size, int regionX0, int regionY0, int region) {
 +    int bufferSize = size + 2 * HALO;
 +    float[] buffer = new float[bufferSize * bufferSize];
 +    java.util.Arrays.fill(buffer, Float.NaN);
 +
++    boolean needLeft = regionX0 < HALO;
++    boolean needRight = regionX0 + region > size - HALO;
++    boolean needTop = regionY0 < HALO;
++    boolean needBottom = regionY0 + region > size - HALO;
++
 +    int max = 1 << zoom;
++    List<int[]> targets = new ArrayList<>();
 +    for (int ty = -1; ty <= 1; ty++) {
++      if ((ty == -1 && !needTop) || (ty == 1 && !needBottom)) continue;
 +      int ny = y + ty;
 +      if (ny < 0 || ny >= max) continue;
 +      for (int tx = -1; tx <= 1; tx++) {
-+        int nx = ((x + tx) % max + max) % max; // 経度方向は巻き戻す
-+        float[] tile = loadElevation(nx, ny, zoom);
-+        if (tile == null || tile.length != size * size) continue;
++        if ((tx == -1 && !needLeft) || (tx == 1 && !needRight)) continue;
++        targets.add(new int[] {tx, ty, ((x + tx) % max + max) % max, ny}); // 経度方向は巻き戻す
++      }
++    }
 +
-+        // このタイルのうちバッファに入る範囲をタイル内座標で求める
-+        int srcX0 = tx == -1 ? size - HALO : 0;
-+        int srcX1 = tx == 1 ? HALO : size;
-+        int srcY0 = ty == -1 ? size - HALO : 0;
-+        int srcY1 = ty == 1 ? HALO : size;
-+        int dstX = HALO + tx * size + srcX0;
-+        int dstY = HALO + ty * size + srcY0;
-+        int runLength = srcX1 - srcX0;
++    // 中央以外はまとめて並列に取得する（中央は呼び出し側で取得済みでキャッシュに載っている）
++    List<Future<float[]>> futures = new ArrayList<>();
++    for (int[] t : targets) {
++      final int nx = t[2];
++      final int ny = t[3];
++      if (t[0] == 0 && t[1] == 0) {
++        futures.add(null);
++      } else {
++        futures.add(NEIGHBOR_EXECUTOR.submit(() -> loadElevation(nx, ny, zoom)));
++      }
++    }
 +
-+        for (int row = srcY0; row < srcY1; row++) {
-+          System.arraycopy(tile, row * size + srcX0,
-+                           buffer, (dstY + (row - srcY0)) * bufferSize + dstX, runLength);
-+        }
++    for (int i = 0; i < targets.size(); i++) {
++      int[] t = targets.get(i);
++      int tx = t[0];
++      int ty = t[1];
++      float[] tile;
++      try {
++        Future<float[]> future = futures.get(i);
++        tile = future == null ? loadElevation(t[2], t[3], zoom) : future.get();
++      } catch (Exception e) {
++        tile = null;
++      }
++      if (tile == null || tile.length != size * size) continue;
++
++      // このタイルのうちバッファに入る範囲をタイル内座標で求める
++      int srcX0 = tx == -1 ? size - HALO : 0;
++      int srcX1 = tx == 1 ? HALO : size;
++      int srcY0 = ty == -1 ? size - HALO : 0;
++      int srcY1 = ty == 1 ? HALO : size;
++      int dstX = HALO + tx * size + srcX0;
++      int dstY = HALO + ty * size + srcY0;
++      int runLength = srcX1 - srcX0;
++
++      for (int row = srcY0; row < srcY1; row++) {
++        System.arraycopy(tile, row * size + srcX0,
++                         buffer, (dstY + (row - srcY0)) * bufferSize + dstX, runLength);
 +      }
 +    }
 +    return buffer;
 +  }
 +
 +  /**
-+   * 陰影を計算してPNGを返す。オーバーズーム時は該当部分を切り出して拡大する。
++   * 陰影を計算してPNGを返す。地図タイルが占める区画（標高タイルの1/scaleFactor）だけを計算し、
++   * 地図タイルの寸法へ拡大・縮小する（terrariumの512pxタイルは常に1段粗いので区画は256px）。
 +   */
 +  private byte[] createShading(int x, int y, int zoom, int scaleFactor, int offsetX, int offsetY) {
 +    try {
@@ -706,7 +801,11 @@ index 0000000..f3852ef
 +      if (size <= 0) return null;
 +
 +      int bufferSize = size + 2 * HALO;
-+      float[] buffer = assembleWithHalo(x, y, zoom, size);
++      // 計算する区画（標高タイル内の画素位置）
++      final int region = Math.max(1, size / scaleFactor);
++      final int regionX0 = offsetX * region;
++      final int regionY0 = offsetY * region;
++      float[] buffer = assembleWithHalo(x, y, zoom, size, regionX0, regionY0, region);
 +      double metersPerPx = metersPerPixel(zoom, y, size);
 +
 +      // レイキャストの標本位置は全画素で共通なので、添字差分と距離の逆数を先に作る
@@ -726,13 +825,14 @@ index 0000000..f3852ef
 +
 +      final float toDeg = (float) (180.0 / Math.PI);
 +      final float slopeInv = (float) (1.0 / (2.0 * metersPerPx));
-+      int[] pixels = new int[size * size];
++      int[] pixels = new int[region * region];
 +
 +      // 陰影段彩用: 等深線の間隔（zoomは計算を実行したsourceZoom）と色の作業領域
 +      int contourMinor = 0;
 +      int contourMajor = 0;
 +      if (reliefMode) {
-+        int[] intervals = contourIntervalsForZoom(zoom);
++        // 等深線の間隔は画素密度で決まるので、terrarium（512px）は256px換算のズームで引く
++        int[] intervals = contourIntervalsForZoom(terrarium ? zoom + TERRARIUM_DEM_ZOOM_OFFSET : zoom);
 +        if (intervals != null) {
 +          contourMinor = intervals[0];
 +          contourMajor = intervals[1];
@@ -740,13 +840,14 @@ index 0000000..f3852ef
 +      }
 +      double[] rgbScratch = new double[3];
 +
-+      for (int py = 0; py < size; py++) {
-+        int rowBase = (HALO + py) * bufferSize + HALO;
-+        for (int px = 0; px < size; px++) {
++      for (int py = 0; py < region; py++) {
++        int rowBase = (HALO + regionY0 + py) * bufferSize + HALO + regionX0;
++        for (int px = 0; px < region; px++) {
 +          int center = rowBase + px;
++          int out = py * region + px;
 +          float z0 = buffer[center];
 +          if (Float.isNaN(z0)) {
-+            pixels[py * size + px] = 0; // 透明
++            pixels[out] = 0; // 透明
 +            continue;
 +          }
 +
@@ -772,7 +873,7 @@ index 0000000..f3852ef
 +          float gy = (buffer[center + bufferSize] - buffer[center - bufferSize]) * slopeInv;
 +          float slope = (float) Math.atan(Math.sqrt(gx * gx + gy * gy)) * toDeg;
 +          if (Float.isNaN(slope)) {
-+            pixels[py * size + px] = 0; // 透明
++            pixels[out] = 0; // 透明
 +            continue;
 +          }
 +
@@ -784,7 +885,7 @@ index 0000000..f3852ef
 +            // 海岸優先: 海に接する陸画素は透明にして下のベース地図の海岸線を見せる。
 +            // 海陸統合DEMは境界画素で陸のデータが優先され、近海を陸として塗ってしまうため
 +            if (z0 >= 0.0f && hasSeaNeighbor(buffer, center, bufferSize)) {
-+              pixels[py * size + px] = 0; // 透明
++              pixels[out] = 0; // 透明
 +              continue;
 +            }
 +            // 段彩色×陰影係数（下限付きで緩和）、海域には等深線を焼き込む
@@ -803,7 +904,7 @@ index 0000000..f3852ef
 +            int r = clamp255((int) Math.round(rgbScratch[0] * factor));
 +            int g = clamp255((int) Math.round(rgbScratch[1] * factor));
 +            int b = clamp255((int) Math.round(rgbScratch[2] * factor));
-+            pixels[py * size + px] = 0xff000000 | (r << 16) | (g << 8) | b;
++            pixels[out] = 0xff000000 | (r << 16) | (g << 8) | b;
 +            continue;
 +          }
 +
@@ -816,7 +917,7 @@ index 0000000..f3852ef
 +          double dzdy = (nw + 2 * n + ne - (sw + 2 * so + se)) / (8.0 * metersPerPx);
 +          double dot = (-dzdx * LIGHT_EAST - dzdy * LIGHT_NORTH + LIGHT_UP) / Math.sqrt(dzdx * dzdx + dzdy * dzdy + 1.0);
 +          if (Double.isNaN(dot)) {
-+            pixels[py * size + px] = 0; // 透明
++            pixels[out] = 0; // 透明
 +            continue;
 +          }
 +          double h = dot < 0 ? 0 : dot;
@@ -829,20 +930,18 @@ index 0000000..f3852ef
 +          int gray = clamp255((int) Math.round(255.0 * (1.0 - a2) * a1 * h / alpha));
 +          int a = clamp255((int) Math.round(255.0 * alpha));
 +
-+          pixels[py * size + px] = (a << 24) | (gray << 16) | (gray << 8) | gray;
++          pixels[out] = (a << 24) | (gray << 16) | (gray << 8) | gray;
 +        }
 +      }
 +
-+      Bitmap result = Bitmap.createBitmap(pixels, size, size, Bitmap.Config.ARGB_8888);
++      Bitmap result = Bitmap.createBitmap(pixels, region, region, Bitmap.Config.ARGB_8888);
 +
-+      // オーバーズーム時は該当部分を切り出して拡大する
-+      if (scaleFactor > 1) {
-+        int cropSize = Math.max(1, size / scaleFactor);
-+        Bitmap cropped = Bitmap.createBitmap(result, offsetX * cropSize, offsetY * cropSize, cropSize, cropSize);
-+        Bitmap scaled = Bitmap.createScaledBitmap(cropped, (int) this.tileSize, (int) this.tileSize, true);
++      // 区画が地図タイルの寸法と違えば（オーバーズーム・z0）拡大・縮小する
++      int outSize = (int) this.tileSize;
++      if (region != outSize) {
++        Bitmap scaled = Bitmap.createScaledBitmap(result, outSize, outSize, true);
 +        byte[] bytes = toPng(scaled);
 +        result.recycle();
-+        cropped.recycle();
 +        scaled.recycle();
 +        return bytes;
 +      }
@@ -914,7 +1013,7 @@ index 0000000..f3852ef
 +      if (size <= 0) return null;
 +
 +      int bufferSize = size + 2 * HALO;
-+      float[] buffer = assembleWithHalo(x, y, zoom, size);
++      float[] buffer = assembleWithHalo(x, y, zoom, size, 0, 0, size);
 +
 +      int contourMinor = 0;
 +      int contourMajor = 0;
@@ -1114,6 +1213,7 @@ index 0000000..f3852ef
 +    super.setUrlTemplate(cleanUrlTemplate(urlTemplate));
 +    this.reliefMode = urlTemplate != null && urlTemplate.startsWith("relief://");
 +    this.gebcoStyle = urlTemplate != null && urlTemplate.contains("#style=gebco");
++    this.terrarium = !(this.reliefMode && this.gebcoStyle);
 +    shadingCache.evictAll();
 +    elevationCache.evictAll();
 +  }
@@ -10240,10 +10340,10 @@ index 0000000..c9f56f2
 +#endif
 diff --git a/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapDEMTileOverlay.m b/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapDEMTileOverlay.m
 new file mode 100644
-index 0000000..36c63ca
+index 0000000..fbcaaab
 --- /dev/null
 +++ b/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapDEMTileOverlay.m
-@@ -0,0 +1,736 @@
+@@ -0,0 +1,857 @@
 +//
 +//  AIRGoogleMapDEMTileOverlay.m
 +//  AirGoogleMaps
@@ -10266,6 +10366,18 @@ index 0000000..36c63ca
 +
 +#import "AIRGoogleMapDEMTileOverlay.h"
 +
++// terrarium（Mapterhorn）のWebPはlibwebpで直接展開する（UIImage経由は色管理でRGB値が変わる恐れがある）
++#if __has_include("webp/decode.h")
++#import "webp/decode.h"
++#elif __has_include(<libwebp/decode.h>)
++#import <libwebp/decode.h>
++#endif
++
++/** 親クラス（.m内）のタイル取得メソッド。ディスクキャッシュ・オフライン・ネット取得を担う */
++@interface AIRGoogleMapUrlTileOverlay (DEMTileData)
++- (NSData *)getTile:(NSUInteger)zoom x:(NSUInteger)x y:(NSUInteger)y transient:(BOOL *)transient;
++@end
++
 +// --- 陰影のパラメータ（Web版の DEFAULT_SHADING_OPTIONS と対応）---
 +static const NSInteger kNumDirections = 8;
 +static const NSInteger kSearchRadius = 16;
@@ -10282,6 +10394,12 @@ index 0000000..36c63ca
 +static const double kLightAltitudeDeg = 45;
 +/** 標高タイルが無いとき、何段まで粗いズームへ降りるか（z15→海域データの上限z10に届く段数） */
 +static const NSInteger kMaxZoomFallback = 5;
++/**
++ * terrarium（Mapterhorn 512px）の標高タイルを地図タイルより何段粗いズームで取るか。
++ * 512pxのzNは256pxのz(N+1)と画素密度が同じなので、1段粗く取れば従来（GSI 256px）と同じ細かさで描ける。
++ * Web版 terrainShading.ts の TERRARIUM_DEM_ZOOM_OFFSET と対応
++ */
++static const NSInteger kTerrariumDemZoomOffset = 1;
 +
 +// --- 陰影段彩（relief://）のテーブル。src/utils/colorRelief.ts と同値にすること ---
 +// （一致はcolorRelief.test.tsのパッチ整合テストで機械検証される）
@@ -10409,6 +10527,11 @@ index 0000000..36c63ca
 +    return x < 8388608.0f ? x / 100.0f : (x - 16777216.0f) / 100.0f;
 +}
 +
++/** terrarium形式の標高デコード（Mapterhorn）。標高 = R*256 + G + B/256 - 32768 */
++static inline float DecodeTerrarium(uint8_t r, uint8_t g, uint8_t b) {
++    return (float)r * 256.0f + (float)g + (float)b / 256.0f - 32768.0f;
++}
++
 +/** タイル中心緯度における1画素あたりのメートル数 */
 +static double MetersPerPixel(NSUInteger zoom, NSUInteger tileY, NSInteger tileSize) {
 +    double normalizedTileY = ((double)tileY + 0.5) / pow(2.0, (double)zoom);
@@ -10497,6 +10620,38 @@ index 0000000..36c63ca
 +        return cached;
 +    }
 +
++    // 陰影起伏・汎用段彩はterrarium専用、GEBCO段彩だけGSI形式（Web版 terrainShading.isTerrariumDemUrl と同じ規則）
++    const BOOL terrarium = [self isTerrarium];
++    if (terrarium) {
++        BOOL transient = NO;
++        NSData *data = [self getTile:zoom x:x y:y transient:&transient];
++        if (data.length > 12 && memcmp(data.bytes, "RIFF", 4) == 0) {
++            int width = 0;
++            int height = 0;
++            uint8_t *rgbaWebp = WebPDecodeRGBA((const uint8_t *)data.bytes, data.length, &width, &height);
++            if (!rgbaWebp) {
++                return nil;
++            }
++            if (width <= 0 || width != height) {
++                WebPFree(rgbaWebp);
++                return nil;
++            }
++            NSMutableData *elevation = [NSMutableData dataWithLength:(NSUInteger)(width * height) * sizeof(float)];
++            float *dst = (float *)elevation.mutableBytes;
++            for (NSInteger i = 0; i < (NSInteger)width * height; i++) {
++                dst[i] = DecodeTerrarium(rgbaWebp[i * 4], rgbaWebp[i * 4 + 1], rgbaWebp[i * 4 + 2]);
++            }
++            WebPFree(rgbaWebp);
++            [_elevationCache setObject:elevation forKey:key cost:(NSUInteger)elevation.length];
++            *sizeOut = width;
++            return elevation;
++        }
++        if (!data) {
++            return nil;
++        }
++        // WebP以外（terrariumのPNG）は下の汎用経路でデコードする
++    }
++
 +    UIImage *image = [super tileForX:x y:y zoom:zoom];
 +    if (!image || image == kGMSTileLayerNoTile) {
 +        return nil;
@@ -10529,7 +10684,8 @@ index 0000000..36c63ca
 +    const uint8_t *src = (const uint8_t *)rgba.bytes;
 +    float *dst = (float *)elevation.mutableBytes;
 +    for (NSInteger i = 0; i < width * height; i++) {
-+        dst[i] = DecodeElevation(src[i * 4], src[i * 4 + 1], src[i * 4 + 2]);
++        dst[i] = terrarium ? DecodeTerrarium(src[i * 4], src[i * 4 + 1], src[i * 4 + 2])
++                           : DecodeElevation(src[i * 4], src[i * 4 + 1], src[i * 4 + 2]);
 +    }
 +
 +    [_elevationCache setObject:elevation forKey:key cost:(NSUInteger)elevation.length];
@@ -10539,11 +10695,18 @@ index 0000000..36c63ca
 +
 +#pragma mark - 陰影の計算
 +
++/** 標高タイルがterrarium形式（Mapterhorn 512px）か。GEBCO段彩だけGSI形式 */
++- (BOOL)isTerrarium {
++    return !(self.reliefMode && self.reliefGebcoStyle);
++}
++
 +/**
-+ * 中央タイルと周囲8タイルから袖付きの標高バッファを組み立てる。
++ * 中央タイルと周囲のタイルから袖付きの標高バッファを組み立てる。
 + * 袖はkHalo画素分だけあればよいので、隣接タイルは必要な帯だけ写す。
++ * 計算する区画（regionX0/regionY0/region、タイル内の画素位置）の袖が届く隣接タイルだけを使う。
 + */
-+- (NSMutableData *)assembleWithHaloX:(NSUInteger)x y:(NSUInteger)y zoom:(NSUInteger)zoom size:(NSInteger)size {
++- (NSMutableData *)assembleWithHaloX:(NSUInteger)x y:(NSUInteger)y zoom:(NSUInteger)zoom size:(NSInteger)size
++                             regionX0:(NSInteger)regionX0 regionY0:(NSInteger)regionY0 region:(NSInteger)region {
 +    NSInteger bufferSize = size + 2 * kHalo;
 +    NSMutableData *buffer = [NSMutableData dataWithLength:(NSUInteger)(bufferSize * bufferSize * (NSInteger)sizeof(float))];
 +    float *dst = (float *)buffer.mutableBytes;
@@ -10551,39 +10714,73 @@ index 0000000..36c63ca
 +        dst[i] = NAN;
 +    }
 +
++    // 計算する区画の袖が届く隣接タイルだけを使う（512pxタイルの1/4の区画なら隣接は最大3枚）
++    const BOOL needLeft = regionX0 < kHalo;
++    const BOOL needRight = regionX0 + region > size - kHalo;
++    const BOOL needTop = regionY0 < kHalo;
++    const BOOL needBottom = regionY0 + region > size - kHalo;
++
 +    NSInteger max = 1 << zoom;
++    NSInteger targets[9][4];
++    NSInteger targetCount = 0;
 +    for (NSInteger ty = -1; ty <= 1; ty++) {
++        if ((ty == -1 && !needTop) || (ty == 1 && !needBottom)) continue;
 +        NSInteger ny = (NSInteger)y + ty;
 +        if (ny < 0 || ny >= max) continue;
 +        for (NSInteger tx = -1; tx <= 1; tx++) {
-+            NSInteger nx = (((NSInteger)x + tx) % max + max) % max; // 経度方向は巻き戻す
-+            NSInteger tileSize = 0;
-+            NSData *tile = [self elevationForX:(NSUInteger)nx y:(NSUInteger)ny zoom:zoom size:&tileSize];
-+            if (!tile || tileSize != size) continue;
-+            const float *src = (const float *)tile.bytes;
++            if ((tx == -1 && !needLeft) || (tx == 1 && !needRight)) continue;
++            targets[targetCount][0] = tx;
++            targets[targetCount][1] = ty;
++            targets[targetCount][2] = (((NSInteger)x + tx) % max + max) % max; // 経度方向は巻き戻す
++            targets[targetCount][3] = ny;
++            targetCount++;
++        }
++    }
 +
-+            // このタイルのうちバッファに入る範囲をタイル内座標で求める
-+            NSInteger srcX0 = (tx == -1) ? size - kHalo : 0;
-+            NSInteger srcX1 = (tx == 1) ? kHalo : size;
-+            NSInteger srcY0 = (ty == -1) ? size - kHalo : 0;
-+            NSInteger srcY1 = (ty == 1) ? kHalo : size;
-+            NSInteger dstX = kHalo + tx * size + srcX0;
-+            NSInteger dstY = kHalo + ty * size + srcY0;
-+            size_t runBytes = (size_t)(srcX1 - srcX0) * sizeof(float);
++    // 隣接タイルは並列に取得してキャッシュへ載せる（順番に取ると通信の往復が積み重なる）
++    dispatch_apply((size_t)targetCount, dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0), ^(size_t i) {
++        NSInteger ignored = 0;
++        [self elevationForX:(NSUInteger)targets[i][2] y:(NSUInteger)targets[i][3] zoom:zoom size:&ignored];
++    });
 +
-+            for (NSInteger row = srcY0; row < srcY1; row++) {
-+                memcpy(&dst[(dstY + (row - srcY0)) * bufferSize + dstX],
-+                       &src[row * size + srcX0], runBytes);
-+            }
++    for (NSInteger i = 0; i < targetCount; i++) {
++        NSInteger tx = targets[i][0];
++        NSInteger ty = targets[i][1];
++        NSInteger tileSize = 0;
++        NSData *tile = [self elevationForX:(NSUInteger)targets[i][2] y:(NSUInteger)targets[i][3] zoom:zoom size:&tileSize];
++        if (!tile || tileSize != size) continue;
++        const float *src = (const float *)tile.bytes;
++
++        // このタイルのうちバッファに入る範囲をタイル内座標で求める
++        NSInteger srcX0 = (tx == -1) ? size - kHalo : 0;
++        NSInteger srcX1 = (tx == 1) ? kHalo : size;
++        NSInteger srcY0 = (ty == -1) ? size - kHalo : 0;
++        NSInteger srcY1 = (ty == 1) ? kHalo : size;
++        NSInteger dstX = kHalo + tx * size + srcX0;
++        NSInteger dstY = kHalo + ty * size + srcY0;
++        size_t runBytes = (size_t)(srcX1 - srcX0) * sizeof(float);
++
++        for (NSInteger row = srcY0; row < srcY1; row++) {
++            memcpy(&dst[(dstY + (row - srcY0)) * bufferSize + dstX],
++                   &src[row * size + srcX0], runBytes);
 +        }
 +    }
 +    return buffer;
 +}
 +
-+/** 袖付きバッファから陰影画像を作る */
-+- (UIImage *)shadingImageForX:(NSUInteger)x y:(NSUInteger)y zoom:(NSUInteger)zoom size:(NSInteger)size {
++/**
++ * 袖付きバッファから陰影画像を作る。地図タイルが占める区画（標高タイルの1/scaleFactor）だけを計算する
++ * （terrariumの512pxタイルは常に1段粗いので区画は256px）。
++ */
++- (UIImage *)shadingImageForX:(NSUInteger)x y:(NSUInteger)y zoom:(NSUInteger)zoom size:(NSInteger)size
++                  scaleFactor:(NSInteger)scaleFactor offsetX:(NSUInteger)offsetX offsetY:(NSUInteger)offsetY {
 +    NSInteger bufferSize = size + 2 * kHalo;
-+    NSMutableData *bufferData = [self assembleWithHaloX:x y:y zoom:zoom size:size];
++    // 計算する区画（標高タイル内の画素位置）
++    const NSInteger region = MAX(1, size / scaleFactor);
++    const NSInteger regionX0 = (NSInteger)offsetX * region;
++    const NSInteger regionY0 = (NSInteger)offsetY * region;
++    NSMutableData *bufferData = [self assembleWithHaloX:x y:y zoom:zoom size:size
++                                               regionX0:regionX0 regionY0:regionY0 region:region];
 +    const float *buffer = (const float *)bufferData.bytes;
 +    double metersPerPx = MetersPerPixel(zoom, y, size);
 +
@@ -10607,7 +10804,7 @@ index 0000000..36c63ca
 +        }
 +    }
 +
-+    NSMutableData *rgbaData = [NSMutableData dataWithLength:(NSUInteger)(size * size * 4)];
++    NSMutableData *rgbaData = [NSMutableData dataWithLength:(NSUInteger)(region * region * 4)];
 +    uint8_t *rgba = (uint8_t *)rgbaData.mutableBytes;
 +    const float toDeg = (float)(180.0 / M_PI);
 +    const float slopeInv = (float)(1.0 / (2.0 * metersPerPx));
@@ -10621,14 +10818,16 @@ index 0000000..36c63ca
 +    int contourMajor = 0;
 +    BOOL hasContour = NO;
 +    if (reliefMode) {
-+        hasContour = ContourIntervalsForZoom((NSInteger)zoom, &contourMinor, &contourMajor);
++        // 等深線の間隔は画素密度で決まるので、terrarium（512px）は256px換算のズームで引く
++        NSInteger contourZoom = [self isTerrarium] ? (NSInteger)zoom + kTerrariumDemZoomOffset : (NSInteger)zoom;
++        hasContour = ContourIntervalsForZoom(contourZoom, &contourMinor, &contourMajor);
 +    }
 +
-+    for (NSInteger py = 0; py < size; py++) {
-+        NSInteger rowBase = (kHalo + py) * bufferSize + kHalo;
-+        for (NSInteger px = 0; px < size; px++) {
++    for (NSInteger py = 0; py < region; py++) {
++        NSInteger rowBase = (kHalo + regionY0 + py) * bufferSize + kHalo + regionX0;
++        for (NSInteger px = 0; px < region; px++) {
 +            NSInteger center = rowBase + px;
-+            NSInteger out = (py * size + px) * 4;
++            NSInteger out = (py * region + px) * 4;
 +            float z0 = buffer[center];
 +            if (isnan(z0)) {
 +                rgba[out] = rgba[out + 1] = rgba[out + 2] = rgba[out + 3] = 0; // 透明
@@ -10724,7 +10923,7 @@ index 0000000..36c63ca
 +    free(invDistances);
 +
 +    CGColorSpaceRef colorSpace = CGColorSpaceCreateDeviceRGB();
-+    CGContextRef ctx = CGBitmapContextCreate(rgba, (size_t)size, (size_t)size, 8, (size_t)(size * 4), colorSpace,
++    CGContextRef ctx = CGBitmapContextCreate(rgba, (size_t)region, (size_t)region, 8, (size_t)(region * 4), colorSpace,
 +                                             kCGImageAlphaPremultipliedLast | kCGBitmapByteOrder32Big);
 +    CGColorSpaceRelease(colorSpace);
 +    if (!ctx) {
@@ -10790,7 +10989,7 @@ index 0000000..36c63ca
 + */
 +- (UIImage *)gebcoImageForX:(NSUInteger)x y:(NSUInteger)y zoom:(NSUInteger)zoom size:(NSInteger)size {
 +    NSInteger bufferSize = size + 2 * kHalo;
-+    NSMutableData *bufferData = [self assembleWithHaloX:x y:y zoom:zoom size:size];
++    NSMutableData *bufferData = [self assembleWithHaloX:x y:y zoom:zoom size:size regionX0:0 regionY0:0 region:size];
 +    const float *buffer = (const float *)bufferData.bytes;
 +
 +    int contourMinor = 0;
@@ -10916,6 +11115,15 @@ index 0000000..36c63ca
 +    return result;
 +}
 +
++/** 画像を指定寸法へ拡大・縮小する（NoDataの透明を保つため不透明コンテキストは使わない） */
++- (UIImage *)resizeImage:(UIImage *)source toSize:(CGFloat)size {
++    UIGraphicsBeginImageContextWithOptions(CGSizeMake(size, size), NO, 1.0);
++    [source drawInRect:CGRectMake(0, 0, size, size)];
++    UIImage *result = UIGraphicsGetImageFromCurrentImageContext();
++    UIGraphicsEndImageContext();
++    return result;
++}
++
 +#pragma mark - タイル要求
 +
 +- (UIImage *)tileForX:(NSUInteger)x y:(NSUInteger)y zoom:(NSUInteger)zoom {
@@ -10925,9 +11133,12 @@ index 0000000..36c63ca
 +        return cached;
 +    }
 +
-+    // まずオーバーズーム分を落とす
++    // まずオーバーズーム分を落とす。terrariumは1段粗いズームの512pxタイルから切り出す
 +    NSInteger maximumNativeZ = self.maximumNativeZ;
 +    NSInteger startZoom = ((NSInteger)zoom > maximumNativeZ) ? maximumNativeZ : (NSInteger)zoom;
++    if ([self isTerrarium]) {
++        startZoom = MAX(0, startZoom - kTerrariumDemZoomOffset);
++    }
 +    NSInteger lowestZoom = MAX(0, startZoom - kMaxZoomFallback);
 +
 +    // 標高タイルの提供範囲はズームによって地域差がある（例えば産総研の陸域統合DEMは
@@ -10946,14 +11157,24 @@ index 0000000..36c63ca
 +        }
 +
 +        BOOL isGebco = self.reliefMode && self.reliefGebcoStyle;
-+        UIImage *image = isGebco
-+            ? [self gebcoImageForX:sx y:sy zoom:(NSUInteger)sourceZoom size:size]
-+            : [self shadingImageForX:sx y:sy zoom:(NSUInteger)sourceZoom size:size];
-+        if (image && shift > 0) {
-+            image = [self cropImage:image
-+                        scaleFactor:(1 << shift)
-+                            offsetX:(x - (sx << shift))
-+                            offsetY:(y - (sy << shift))];
++        UIImage *image;
++        if (isGebco) {
++            image = [self gebcoImageForX:sx y:sy zoom:(NSUInteger)sourceZoom size:size];
++            if (image && shift > 0) {
++                image = [self cropImage:image
++                            scaleFactor:(1 << shift)
++                                offsetX:(x - (sx << shift))
++                                offsetY:(y - (sy << shift))];
++            }
++        } else {
++            image = [self shadingImageForX:sx y:sy zoom:(NSUInteger)sourceZoom size:size
++                               scaleFactor:(1 << shift)
++                                   offsetX:(x - (sx << shift))
++                                   offsetY:(y - (sy << shift))];
++            // 区画が256pxと違えば（オーバーズーム・z0）256pxへ拡大・縮小する
++            if (image && image.CGImage && CGImageGetWidth(image.CGImage) != 256) {
++                image = [self resizeImage:image toSize:256];
++            }
 +        }
 +        if (image && isGebco && size > 256 && image.CGImage) {
 +            // GMSのタイルは256pt前提。512pxソース（elev2）はscale=2のretinaタイルとして返し詳細を保つ
@@ -16691,7 +16912,7 @@ index 0000000..5595147
 +
 +// clang-format on
 diff --git a/node_modules/react-native-maps/react-native-maps.podspec b/node_modules/react-native-maps/react-native-maps.podspec
-index 7be245f..f3af2cb 100644
+index 7be245f..1d68e43 100644
 --- a/node_modules/react-native-maps/react-native-maps.podspec
 +++ b/node_modules/react-native-maps/react-native-maps.podspec
 @@ -107,6 +107,8 @@ Pod::Spec.new do |s|
@@ -16703,11 +16924,13 @@ index 7be245f..f3af2cb 100644
      ss.resource_bundles = {
        'GoogleMapsPrivacy' => ['ios/AirGoogleMaps/Resources/GoogleMapsPrivacy.bundle']
      }
-@@ -116,7 +118,14 @@ Pod::Spec.new do |s|
+@@ -116,7 +118,16 @@ Pod::Spec.new do |s|
      ss.dependency 'Google-Maps-iOS-Utils', '6.1.0'
      ss.dependency 'react-native-maps/Generated'
      ss.dependency 'react-native-maps/Maps'
 +    ss.dependency 'Protobuf'
++    # EcorisMap: 陰影起伏（terrarium WebP）をlibwebpで直接展開する（AIRGoogleMapDEMTileOverlay.m）
++    ss.dependency 'libwebp'
      install_modules_dependencies(ss)
 +
 +    ss.subspec 'NonARCFiles' do |sss|

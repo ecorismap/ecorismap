@@ -10,7 +10,7 @@
  *  - リング毎の状態差（分割数・fillBase・レイヤ不透明度）はタイルuniformへ畳み込み、
  *    パイプラインとバインドグループの切り替えをフレーム内で起こさない
  *  - タイルのテクスチャバインドグループはTileDrawPassにキャッシュする（毎フレーム生成しない）
- *  - DEMは rgba8uint で上げ、シェーダ側は整数演算でデコードする（UNORM往復の丸め誤差を持ち込まない）
+ *  - DEMは標高[m]そのものをr32floatで上げる（復元はネイティブで済んでいる。terrainDem参照）
  */
 import { RNCanvasContext } from 'react-native-webgpu';
 import { MAX_TERRAIN_LAYERS } from './constants';
@@ -24,9 +24,6 @@ import { buildSharedGridMesh } from './sharedGridMesh';
  *
  * 頂点属性は全タイル共有の正規化グリッド（u, v, スカートフラグ）だけで、
  * 標高はDEMテクスチャからtextureLoadして読む（頂点テクスチャフェッチ）。
- *
- * 精度: GSI方式のデコード R*65536+G*256+B は rgba8uint の整数演算で厳密に求まる。
- * f32の仮数は24bitあるので2^24-1までは誤差なく表せる。
  *
  * レイヤ合成はプリマルチプライドのsrc-overで1パス。WGSLもテクスチャを可変添字で
  * 引けないためif連鎖で選ぶ。textureSampleLevelを使うのは、if連鎖が非一様制御フローと
@@ -48,9 +45,9 @@ struct Frame {
 struct Tile {
   /** x=タイル西端のローカルX, y=タイル北端のローカルZ, z=タイル一辺[m], w=スカート底のローカルY(スケール済み) */
   tileParams: vec4<f32>,
-  /** xy=DEM画素内のタイル原点, z=タイルが占める画素幅, w=エンコード(0=GSI, 1=terrarium) */
+  /** xy=DEM画素内のタイル原点, z=タイルが占める画素幅, w=未使用 */
   demParams: vec4<f32>,
-  /** x=NoData標高[m], y=fillBase, z=メッシュ分割数, w=レイヤ数 */
+  /** x=未使用, y=fillBase, z=メッシュ分割数, w=レイヤ数 */
   misc: vec4<f32>,
   /** レイヤ毎の不透明度（vec4×2に詰める。uniform配列のstrideが16バイトのため） */
   layerOpacity: array<vec4<f32>, 2>,
@@ -64,7 +61,7 @@ struct Tile {
 @group(0) @binding(0) var<uniform> frame: Frame;
 @group(0) @binding(1) var samp: sampler;
 @group(1) @binding(0) var<uniform> tile: Tile;
-@group(2) @binding(0) var demTex: texture_2d<u32>;
+@group(2) @binding(0) var demTex: texture_2d<f32>;
 @group(2) @binding(1) var tex0: texture_2d<f32>;
 @group(2) @binding(2) var tex1: texture_2d<f32>;
 @group(2) @binding(3) var tex2: texture_2d<f32>;
@@ -82,18 +79,10 @@ struct VSOut {
 };
 
 fn decodeElev(px: vec2<f32>) -> f32 {
+  // 最近傍（JS側のsampleNearestと同じ読み方）。r32floatはフィルタできないのでtextureLoadで読む
   let dim = vec2<i32>(textureDimensions(demTex));
   let p = clamp(vec2<i32>(px + 0.5), vec2<i32>(0), dim - vec2<i32>(1));
-  let t = textureLoad(demTex, p, 0);
-  if (tile.demParams.w > 0.5) {
-    // terrarium: 海洋のバスメトリ（負値）は海面0mへクランプ
-    return max(f32(t.r) * 256.0 + f32(t.g) + f32(t.b) / 256.0 - 32768.0, 0.0);
-  }
-  let x = t.r * 65536u + t.g * 256u + t.b;
-  // NoData（内陸の欠測・海域）はタイル最低標高へ丸める
-  if (x == 8388608u) { return tile.misc.x; }
-  if (x < 8388608u) { return f32(x) * 0.01; }
-  return (f32(x) - 16777216.0) * 0.01;
+  return textureLoad(demTex, p, 0).r;
 }
 
 @vertex
@@ -260,10 +249,8 @@ export interface TileGpuResources {
 export interface TileDrawPass {
   /** uTileParams: [originX, originZ, tileSize, skirtDrop] */
   tileParams: Float32Array;
-  /** uDemParams: [demPx, demPy, spanPx, encoding] */
+  /** uDemParams: [demPx, demPy, spanPx, 未使用] */
   demParams: Float32Array;
-  /** NoData画素に与える標高[m]（タイル範囲の最低標高。旧実装のNoData→minElev丸めと同じ） */
-  noDataElev: number;
   /** DEM標高テクスチャ（データなしのタイルは0mのゼロテクスチャ） */
   demTexture: GPUTexture;
   /** レイヤスロット（未取得・範囲外はnull→透明ダミーを割り当てる） */
@@ -492,7 +479,7 @@ export class TerrainRenderer {
       ],
     });
     const textureEntries: GPUBindGroupLayoutEntry[] = [
-      { binding: 0, visibility: flags.shader.VERTEX, texture: { sampleType: 'uint' } },
+      { binding: 0, visibility: flags.shader.VERTEX, texture: { sampleType: 'unfilterable-float' } },
     ];
     for (let i = 0; i < MAX_TERRAIN_LAYERS; i++) {
       textureEntries.push({ binding: i + 1, visibility: flags.shader.FRAGMENT, texture: { sampleType: 'float' } });
@@ -595,7 +582,7 @@ export class TerrainRenderer {
       entries: [{ binding: 0, resource: { buffer: this.tileBuffer, size: TILE_UNIFORM_FLOATS * 4 } }],
     });
 
-    this.zeroDemTexture = this.createSolidTexture(new Uint8Array([0, 0, 0, 255]), 'rgba8uint');
+    this.zeroDemTexture = this.createDemTexture(new Float32Array(1), 1);
     this.emptyLayerTexture = this.createSolidTexture(new Uint8Array([0, 0, 0, 0]), 'rgba8unorm');
   }
 
@@ -689,18 +676,18 @@ export class TerrainRenderer {
   }
 
   /**
-   * 標高タイルをテクスチャ化する。
-   *
-   * 値は「色」ではなくRGBに詰めた数値なので、rgba8uintで上げてシェーダ側は整数のまま扱う
-   * （UNORM正規化の往復や補間でエンコード値が壊れるのを避ける）。
+   * 標高タイル（標高[m]のFloat32、size×size）をr32floatテクスチャにする。
    */
-  createDemTexture(data: Uint8Array, width: number, height: number): GPUTexture {
+  createDemTexture(elev: Float32Array, size: number): GPUTexture {
     const texture = this.device.createTexture({
-      size: [width, height],
-      format: 'rgba8uint',
+      size: [size, size],
+      format: 'r32float',
       usage: this.flags.texture.TEXTURE_BINDING | this.flags.texture.COPY_DST,
     });
-    this.device.queue.writeTexture({ texture }, data, { bytesPerRow: width * 4 }, [width, height]);
+    // ネイティブデコーダの結果はヘッダの後ろを指すビューなので、先頭から始まる配列にしてから渡す
+    // （writeTextureの実装がbyteOffsetを見落としても値がずれないように）
+    const data = elev.byteOffset === 0 && elev.byteLength === elev.buffer.byteLength ? elev : elev.slice();
+    this.device.queue.writeTexture({ texture }, data, { bytesPerRow: size * 4 }, [size, size]);
     return texture;
   }
 
@@ -946,7 +933,7 @@ export class TerrainRenderer {
         const base = slot * stridePerTile;
         this.tileData.set(tile.tileParams, base);
         this.tileData.set(tile.demParams, base + 4);
-        this.tileData[base + 8] = tile.noDataElev;
+        this.tileData[base + 8] = 0;
         // 自前の画像も親タイルも無いタイルだけ、灰色地形として不透明に描く
         // （透過させると背後に何も無い起動直後に地形が消えてしまう）
         this.tileData[base + 9] = ring.fillBase || !tile.hasTexture ? 1 : 0;

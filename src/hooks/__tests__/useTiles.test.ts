@@ -1,7 +1,7 @@
 import { renderHook, act } from '@testing-library/react-hooks';
 import { TileMapType, TileRegionType } from '../../types';
 import { useTiles } from '../useTiles';
-import { getDemViewshedTileMap } from '../../utils/demTileDownload';
+import { getDemTileMap } from '../../utils/demTileDownload';
 import * as FileSystem from 'expo-file-system/legacy';
 import { ResumeDownloadConfirmAsync, StopDownloadConfirmAsync } from '../../components/molecules/AlertAsync';
 
@@ -311,7 +311,7 @@ describe('useTiles', () => {
       expect(result.current.downloadProgress).toContain('progress=83');
     });
 
-    describe('可視領域用DEM（疑似地図）', () => {
+    describe('標高タイル（疑似地図）', () => {
       afterEach(() => {
         // 後続テストのためにdownloadAsyncのデフォルト実装（status 200）へ戻す
         (FileSystem.downloadAsync as jest.Mock).mockImplementation(() =>
@@ -319,23 +319,24 @@ describe('useTiles', () => {
         );
       });
 
-      test('GSIが404のタイルはterrariumへフォールバックし0バイトマーカーを書く', async () => {
-        (FileSystem.downloadAsync as jest.Mock).mockImplementation(async (url: string, uri: string) =>
-          url.includes('cyberjapandata') ? { uri, status: 404 } : { uri, status: 200 }
+      test('Mapterhornのタイルを.webpで保存し、404は0バイトマーカーを書く', async () => {
+        let count = 0;
+        (FileSystem.downloadAsync as jest.Mock).mockImplementation(async (_url: string, uri: string) =>
+          count++ === 0 ? { uri, status: 404 } : { uri, status: 200 }
         );
-        const demMap = getDemViewshedTileMap();
+        const demMap = getDemTileMap();
         const { result } = renderHook(() => useTiles(undefined, [demMap.id], tileMaps));
 
         await act(async () => {
           await result.current.downloadMultipleTiles(11, [demMap]);
         });
 
-        const urls = (FileSystem.downloadAsync as jest.Mock).mock.calls.map((call) => call[0]);
-        expect(urls.some((url) => url.includes('cyberjapandata'))).toBe(true);
-        expect(urls.some((url) => url.includes('elevation-tiles-prod'))).toBe(true);
-        expect(FileSystem.writeAsStringAsync).toHaveBeenCalledWith(expect.stringContaining('dem_viewshed/gsi/'), '');
+        const calls = (FileSystem.downloadAsync as jest.Mock).mock.calls;
+        expect(calls.every(([url]) => url.startsWith('https://tiles.mapterhorn.com/'))).toBe(true);
+        expect(calls.every(([, uri]) => /tiles\/dem_mapterhorn\/\d+\/\d+\/\d+\.webp$/.test(uri))).toBe(true);
+        expect(FileSystem.writeAsStringAsync).toHaveBeenCalledWith(expect.stringContaining('dem_mapterhorn/'), '');
 
-        // 完了記録がdem_viewshed名義で保存される
+        // 完了記録がdem_mapterhorn名義で保存される
         const dispatched = getDispatchedTileRegions();
         const finalTileRegions = dispatched[dispatched.length - 1];
         const demRegion = finalTileRegions.find((r) => r.tileMapId === demMap.id);
@@ -343,10 +344,10 @@ describe('useTiles', () => {
         expect(demRegion?.status).toBeUndefined();
       });
 
-      test('再開時にdem_viewshedのregionがorphan破棄されず再開される', async () => {
+      test('再開時に標高タイルのregionがorphan破棄されず再開される', async () => {
         const demRegion: TileRegionType = {
           id: 'RD',
-          tileMapId: 'dem_viewshed',
+          tileMapId: 'dem_mapterhorn',
           coords: [
             { latitude: 34.0, longitude: 134.0 },
             { latitude: 34.1, longitude: 134.0 },
@@ -370,7 +371,7 @@ describe('useTiles', () => {
         expect(FileSystem.downloadAsync).toHaveBeenCalled();
         const dispatched = getDispatchedTileRegions();
         const finalTileRegions = dispatched[dispatched.length - 1];
-        const resumed = finalTileRegions.find((r) => r.tileMapId === 'dem_viewshed');
+        const resumed = finalTileRegions.find((r) => r.tileMapId === 'dem_mapterhorn');
         expect(resumed).toBeDefined();
         expect(resumed?.status).toBeUndefined();
       });

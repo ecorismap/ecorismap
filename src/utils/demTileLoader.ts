@@ -1,174 +1,98 @@
 /**
- * 標高タイルのPNGバイト列を取得する（ネイティブ版）。
+ * 任意の標高タイルURL（産総研GEBCO・陰影起伏のソース等）の取得とデコード（ネイティブ版）。
  *
- * cacheDirectory（OSがストレージ逼迫時に自動削除できる領域）にディスクキャッシュする。
- * 地図タイルのTILE_FOLDER（documentDirectory・ユーザーの明示ダウンロード）とは用途が違うため分けている。
+ * Mapterhorn本体はdemSource.tsが担う。ここはレイヤごとにURLが違うもの
+ * （3Dの段彩テクスチャ・海底値・等深線ラベル）のための汎用の取得口。
+ * ファイルはcacheDirectory（OSがストレージ逼迫時に自動削除できる領域）にキャッシュし、
+ * デコードはネイティブ（modules/dem-decoder）でJSスレッドの外で行う。
  * 0バイトのファイルは404（海上・提供範囲外）のマーカー。
- *
- * @returns PNGバイト列。404はnull。ネットワークエラーはthrow（呼び出し側でキャッシュさせないため）
  */
 import * as FileSystem from 'expo-file-system/legacy';
 import { File } from 'expo-file-system';
-import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
-import { TILE_FOLDER } from '../constants/AppConstants';
-import { DEM_VIEWSHED_MAP_ID } from '../constants/DemSources';
+import { decodeDemFile, DemDecodeEncoding } from '../../modules/dem-decoder/src';
 
-const CACHE_DIR = `${FileSystem.cacheDirectory}dem_png`;
+const CACHE_DIR = `${FileSystem.cacheDirectory}dem_tiles`;
 let dirEnsured = false;
 
-const cacheFileUri = (key: string) => `${CACHE_DIR}/${key.replace(/\//g, '_')}.png`;
+const cacheFileUri = (key: string) => `${CACHE_DIR}/${encodeURIComponent(key)}`;
 
-/** atobに依存しない素朴なbase64デコード */
-const BASE64_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
-const BASE64_LOOKUP = new Uint8Array(128);
-for (let i = 0; i < BASE64_CHARS.length; i++) {
-  BASE64_LOOKUP[BASE64_CHARS.charCodeAt(i)] = i;
-}
+/** デコード済み標高（行優先・一辺size）。GSI形式のNoData・透明画素はNaN */
+export type DecodedDemTile = { size: number; elev: Float32Array };
 
-const base64ToArrayBuffer = (base64: string): ArrayBuffer => {
-  let length = base64.length;
-  while (length > 0 && base64[length - 1] === '=') length--;
-  const byteLength = Math.floor((length * 3) / 4);
-  const bytes = new Uint8Array(byteLength);
-  let p = 0;
-  for (let i = 0; i < length; i += 4) {
-    const a = BASE64_LOOKUP[base64.charCodeAt(i)];
-    const b = BASE64_LOOKUP[base64.charCodeAt(i + 1)];
-    const c = i + 2 < length ? BASE64_LOOKUP[base64.charCodeAt(i + 2)] : 0;
-    const d = i + 3 < length ? BASE64_LOOKUP[base64.charCodeAt(i + 3)] : 0;
-    bytes[p++] = (a << 2) | (b >> 4);
-    if (p < byteLength) bytes[p++] = ((b & 15) << 4) | (c >> 2);
-    if (p < byteLength) bytes[p++] = ((c & 3) << 6) | d;
+/**
+ * ファイルを標高へデコードする。壊れたファイル・正方形でないタイルはnull
+ */
+export const decodeDemTileFile = async (
+  fileUri: string,
+  encoding: DemDecodeEncoding
+): Promise<DecodedDemTile | null> => {
+  try {
+    const result = await decodeDemFile(fileUri, encoding);
+    if (result.width !== result.height) return null;
+    return { size: result.width, elev: result.elevation };
+  } catch {
+    return null;
   }
-  return bytes.buffer;
 };
 
 /**
- * タイルファイルをバイト列として読む。
- * base64文字列を経由せずネイティブから直接バイトを受け取る（タイル1枚あたり
- * 数万文字のデコードが消えるため、大量のタイルを読む3D地形・viewshedで効く）。
- * 新APIが使えない環境（旧OS等）ではbase64経由へフォールバックする。
+ * 標高タイルを取得してキャッシュファイルのパスを返す。
+ * @returns ファイルのパス。404はnull。ネットワークエラーはthrow（呼び出し側でキャッシュさせないため）
  */
-const readTileFile = async (fileUri: string): Promise<ArrayBuffer> => {
-  try {
-    const bytes = await new File(fileUri).bytes();
-    // Uint8Arrayのviewがバッファ全体とは限らないため、必要ならコピーして切り出す
-    return bytes.byteOffset === 0 && bytes.byteLength === bytes.buffer.byteLength
-      ? bytes.buffer
-      : bytes.slice().buffer;
-  } catch {
-    const base64 = await FileSystem.readAsStringAsync(fileUri, { encoding: FileSystem.EncodingType.Base64 });
-    return base64ToArrayBuffer(base64);
-  }
-};
-
-export const loadDemTilePng = async (url: string, key: string): Promise<ArrayBuffer | null> => {
+export const fetchDemTileFile = async (url: string, key: string): Promise<string | null> => {
   const fileUri = cacheFileUri(key);
-
-  // ディスクキャッシュを確認
   try {
     const info = await FileSystem.getInfoAsync(fileUri);
-    if (info.exists) {
-      if ((info.size ?? 0) === 0) return null; // 404マーカー
-      return await readTileFile(fileUri);
-    }
+    if (info.exists) return (info.size ?? 0) === 0 ? null : fileUri;
   } catch {
     // 読めなければネットワークから取得し直す
   }
-
   if (!dirEnsured) {
     await FileSystem.makeDirectoryAsync(CACHE_DIR, { intermediates: true }).catch(() => {});
     dirEnsured = true;
   }
-
   // ネットワークエラー時はdownloadAsyncがthrowし、呼び出し側でキャッシュされない
   const res = await FileSystem.downloadAsync(url, fileUri);
-  if (res.status !== 200) {
+  if (res.status === 200) return fileUri;
+  if (res.status === 404) {
     // 404はエラーページ等が書かれている可能性があるので0バイトのマーカーで上書き
     await FileSystem.writeAsStringAsync(fileUri, '').catch(() => {});
     return null;
   }
-  return await readTileFile(fileUri);
+  // 5xx等は一時的とみなし、キャッシュに残さない
+  await FileSystem.deleteAsync(fileUri, { idempotent: true }).catch(() => {});
+  throw new Error(`DEM tile download failed: ${res.status}`);
 };
 
+/** ローカルファイル（オフラインダウンロード済みタイル等）があればそのパス。無い・空ならnull */
+export const localDemTileFile = async (fileUri: string): Promise<string | null> => {
+  try {
+    const info = await FileSystem.getInfoAsync(fileUri);
+    return info.exists && (info.size ?? 0) > 0 ? fileUri : null;
+  } catch {
+    return null;
+  }
+};
 
 /**
- * ローカルファイル（オフラインダウンロード済みタイル等）のPNGバイト列を読む。
- * 存在しない・空・読めない場合はnull。
+ * ローカルファイルをバイト列として読む（地図タイル画像のJSデコード用）。
+ * 存在しない・空・読めない場合はnull。base64を経由せずネイティブから直接受け取る
  */
-export const loadLocalDemTilePng = async (fileUri: string): Promise<ArrayBuffer | null> => {
+export const readLocalFileBytes = async (fileUri: string): Promise<ArrayBuffer | null> => {
   try {
     const info = await FileSystem.getInfoAsync(fileUri);
     if (!info.exists || (info.size ?? 0) === 0) return null;
-    return await readTileFile(fileUri);
+    const bytes = await new File(fileUri).bytes();
+    // Uint8Arrayのviewがバッファ全体とは限らないため、必要ならコピーして切り出す
+    return bytes.byteOffset === 0 && bytes.byteLength === bytes.buffer.byteLength
+      ? (bytes.buffer as ArrayBuffer)
+      : (bytes.slice().buffer as ArrayBuffer);
   } catch {
     return null;
   }
 };
 
-/**
- * ダウンロード済み可視領域用DEMタイル（TILE_FOLDER/dem_viewshed/{source}/{z}/{x}/{y}）の読み取り結果。
- * noData（0バイト）は「GSIが404＝提供範囲外」の確定マーカーで、missing（未ダウンロード）と
- * 区別することでオフライン時にterrarium側ローカルへ正しくフォールバックできる。
- */
-export type LocalDemTileResult = { kind: 'data'; bytes: ArrayBuffer } | { kind: 'noData' } | { kind: 'missing' };
-
-export const loadDownloadedDemTile = async (
-  source: 'gsi' | 'terrarium',
-  zoom: number,
-  x: number,
-  y: number
-): Promise<LocalDemTileResult> => {
-  try {
-    const fileUri = `${TILE_FOLDER}/${DEM_VIEWSHED_MAP_ID}/${source}/${zoom}/${x}/${y}`;
-    const info = await FileSystem.getInfoAsync(fileUri);
-    if (!info.exists) return { kind: 'missing' };
-    if ((info.size ?? 0) === 0) return { kind: 'noData' };
-    return { kind: 'data', bytes: await readTileFile(fileUri) };
-  } catch {
-    return { kind: 'missing' };
-  }
-};
-
-/** バイト列がWebP（RIFFコンテナ）か */
-const isWebp = (buffer: ArrayBuffer): boolean => {
-  const bytes = new Uint8Array(buffer);
-  return bytes.length > 12 && bytes[0] === 0x52 && bytes[1] === 0x49 && bytes[2] === 0x46 && bytes[3] === 0x46;
-};
-
-/**
- * WebPファイルをPNGへ変換してバイト列を返す。
- * HermesのJS側デコーダ（pngLite）はWebPを読めないため、ネイティブのデコーダを
- * expo-image-manipulator経由で借りる（無変換・可逆PNG出力なので標高値は保たれる）。
- */
-const convertWebpFileToPng = async (fileUri: string): Promise<ArrayBuffer | null> => {
-  try {
-    const result = await manipulateAsync(fileUri, [], { format: SaveFormat.PNG, base64: true });
-    if (!result.base64) return null;
-    return base64ToArrayBuffer(result.base64);
-  } catch {
-    return null;
-  }
-};
-
-/**
- * 標高タイルをPNGバイト列として取得する（WebP配信のelev2用）。
- * 取得はloadDemTilePngと同じキャッシュを使い、WebPならPNGへ変換して返す。
- */
-export const loadDemTileAsPngBytes = async (url: string, key: string): Promise<ArrayBuffer | null> => {
-  const bytes = await loadDemTilePng(url, key);
-  if (bytes === null || !isWebp(bytes)) return bytes;
-  return await convertWebpFileToPng(cacheFileUri(key));
-};
-
-/** ローカルファイル版。WebPならPNGへ変換して返す */
-export const loadLocalDemTileAsPngBytes = async (fileUri: string): Promise<ArrayBuffer | null> => {
-  const bytes = await loadLocalDemTilePng(fileUri);
-  if (bytes === null || !isWebp(bytes)) return bytes;
-  return await convertWebpFileToPng(fileUri);
-};
-
-/** ディスクキャッシュを削除する（設定画面等からの利用を想定） */
+/** ディスクキャッシュを削除する */
 export const clearDemTileDiskCache = async (): Promise<void> => {
   await FileSystem.deleteAsync(CACHE_DIR, { idempotent: true }).catch(() => {});
   dirEnsured = false;

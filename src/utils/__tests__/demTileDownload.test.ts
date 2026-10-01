@@ -1,14 +1,15 @@
 import * as FileSystem from 'expo-file-system/legacy';
-import { downloadDemTilePair, getDemViewshedTileMap } from '../demTileDownload';
-import { GSI_DEM_URL, TERRARIUM_URL } from '../../constants/DemSources';
+import { downloadDemTile, getDemTileMap } from '../demTileDownload';
 
 jest.mock('expo-file-system/legacy', () => ({
   documentDirectory: 'file:///test/',
+  cacheDirectory: 'file:///cache/',
   downloadAsync: jest.fn(),
   deleteAsync: jest.fn(() => Promise.resolve()),
-  makeDirectoryAsync: jest.fn(() => Promise.resolve()),
   writeAsStringAsync: jest.fn(() => Promise.resolve()),
 }));
+
+jest.mock('../../../modules/dem-decoder/src', () => ({ decodeDemFile: jest.fn() }));
 
 jest.mock('../../i18n/config', () => ({
   t: jest.fn((key: string) => key),
@@ -18,77 +19,49 @@ const mockDownload = FileSystem.downloadAsync as jest.Mock;
 const mockDelete = FileSystem.deleteAsync as jest.Mock;
 const mockWrite = FileSystem.writeAsStringAsync as jest.Mock;
 
-const TILE = { z: 14, x: 100, y: 200 };
-const GSI_PATH = 'file:///test/tiles/dem_viewshed/gsi/14/100/200';
-const TERRA_PATH = 'file:///test/tiles/dem_viewshed/terrarium/14/100/200';
-const GSI_URL = GSI_DEM_URL.replace('{z}', '14').replace('{x}', '100').replace('{y}', '200');
-const TERRA_URL = TERRARIUM_URL.replace('{z}', '14').replace('{x}', '100').replace('{y}', '200');
+const TILE = { z: 13, x: 100, y: 200 };
+const PATH = 'file:///test/tiles/dem_mapterhorn/13/100/200.webp';
+const URL = 'https://tiles.mapterhorn.com/13/100/200.webp';
 
-describe('getDemViewshedTileMap', () => {
-  it('疑似地図はdem_viewshed IDで非表示・z8-14', () => {
-    const map = getDemViewshedTileMap();
-    expect(map.id).toBe('dem_viewshed');
+describe('getDemTileMap', () => {
+  it('疑似地図はdem_mapterhorn IDで非表示・z7-13', () => {
+    const map = getDemTileMap();
+    expect(map.id).toBe('dem_mapterhorn');
     expect(map.visible).toBe(false);
-    expect(map.minimumZ).toBe(8);
-    expect(map.overzoomThreshold).toBe(14);
+    expect(map.minimumZ).toBe(7);
+    expect(map.overzoomThreshold).toBe(13);
   });
 });
 
-describe('downloadDemTilePair', () => {
+describe('downloadDemTile', () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
 
-  it('GSIが200ならgsi側のみ保存しterrariumへ行かない', async () => {
-    mockDownload.mockResolvedValue({ uri: GSI_PATH, status: 200 });
-    await downloadDemTilePair(TILE);
-    expect(mockDownload).toHaveBeenCalledTimes(1);
-    expect(mockDownload).toHaveBeenCalledWith(GSI_URL, GSI_PATH);
+  it('200ならそのまま保存する', async () => {
+    mockDownload.mockResolvedValue({ uri: PATH, status: 200 });
+    await downloadDemTile(TILE);
+    expect(mockDownload).toHaveBeenCalledWith(URL, PATH);
     expect(mockWrite).not.toHaveBeenCalled();
     expect(mockDelete).not.toHaveBeenCalled();
   });
 
-  it('GSIが404ならterrariumを保存し、最後にgsi側へ0バイトマーカーを書く', async () => {
-    mockDownload.mockImplementation(async (url: string) =>
-      url === GSI_URL ? { uri: GSI_PATH, status: 404 } : { uri: TERRA_PATH, status: 200 }
-    );
-    await downloadDemTilePair(TILE);
-    expect(mockDownload).toHaveBeenCalledWith(GSI_URL, GSI_PATH);
-    expect(mockDownload).toHaveBeenCalledWith(TERRA_URL, TERRA_PATH);
-    expect(mockWrite).toHaveBeenCalledWith(GSI_PATH, '');
-    // マーカーはterrarium保存の後（=ペア完了の印になる順序保証）
-    expect(mockWrite.mock.invocationCallOrder[0]).toBeGreaterThan(mockDownload.mock.invocationCallOrder[1]);
+  it('404（外洋）は0バイトマーカーで上書きし、エラーにしない', async () => {
+    mockDownload.mockResolvedValue({ uri: PATH, status: 404 });
+    await expect(downloadDemTile(TILE)).resolves.toBeUndefined();
+    expect(mockWrite).toHaveBeenCalledWith(PATH, '');
   });
 
-  it('両方404なら恒久欠損としてマーカーのみ書き、エラーにしない', async () => {
-    mockDownload.mockImplementation(async (url: string) =>
-      url === GSI_URL ? { uri: GSI_PATH, status: 404 } : { uri: TERRA_PATH, status: 404 }
-    );
-    await expect(downloadDemTilePair(TILE)).resolves.toBeUndefined();
-    expect(mockDelete).toHaveBeenCalledWith(TERRA_PATH, { idempotent: true });
-    expect(mockWrite).toHaveBeenCalledWith(GSI_PATH, '');
-  });
-
-  it('GSIが5xxならgsi側を削除してthrow（再開時に再試行される）', async () => {
-    mockDownload.mockResolvedValue({ uri: GSI_PATH, status: 500 });
-    await expect(downloadDemTilePair(TILE)).rejects.toThrow();
-    expect(mockDelete).toHaveBeenCalledWith(GSI_PATH, { idempotent: true });
+  it('5xxはファイルを削除してthrow（再開時に再試行される）', async () => {
+    mockDownload.mockResolvedValue({ uri: PATH, status: 503 });
+    await expect(downloadDemTile(TILE)).rejects.toThrow();
+    expect(mockDelete).toHaveBeenCalledWith(PATH, { idempotent: true });
     expect(mockWrite).not.toHaveBeenCalled();
   });
 
-  it('terrariumが5xxなら両ファイルを削除してthrow（未完了に戻す）', async () => {
-    mockDownload.mockImplementation(async (url: string) =>
-      url === GSI_URL ? { uri: GSI_PATH, status: 404 } : { uri: TERRA_PATH, status: 500 }
-    );
-    await expect(downloadDemTilePair(TILE)).rejects.toThrow();
-    expect(mockDelete).toHaveBeenCalledWith(TERRA_PATH, { idempotent: true });
-    expect(mockDelete).toHaveBeenCalledWith(GSI_PATH, { idempotent: true });
-    expect(mockWrite).not.toHaveBeenCalled();
-  });
-
-  it('GSIの通信エラーはgsi側を削除してthrow', async () => {
+  it('通信エラーはファイルを削除してthrow', async () => {
     mockDownload.mockRejectedValue(new Error('network'));
-    await expect(downloadDemTilePair(TILE)).rejects.toThrow('network');
-    expect(mockDelete).toHaveBeenCalledWith(GSI_PATH, { idempotent: true });
+    await expect(downloadDemTile(TILE)).rejects.toThrow('network');
+    expect(mockDelete).toHaveBeenCalledWith(PATH, { idempotent: true });
   });
 });

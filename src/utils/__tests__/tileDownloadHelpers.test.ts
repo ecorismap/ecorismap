@@ -70,8 +70,8 @@ describe('getTileType', () => {
     expect(getTileType({ ...baseMap, url: 'relief://https://example.com/{z}/{x}/{y}.png' })).toBe('hillshade');
   });
 
-  it('可視領域用の疑似地図ID(dem_viewshed)はdem', () => {
-    expect(getTileType({ ...baseMap, id: 'dem_viewshed', url: 'https://example.com/{z}/{x}/{y}.png' })).toBe('dem');
+  it('標高タイルの疑似地図ID(dem_mapterhorn)はdem', () => {
+    expect(getTileType({ ...baseMap, id: 'dem_mapterhorn', url: 'https://example.com/{z}/{x}/{y}.webp' })).toBe('dem');
   });
 
   it('それ以外はpng', () => {
@@ -93,8 +93,15 @@ describe('getZoomRange', () => {
     expect(getZoomRange('pmtiles', baseMap, 11)).toEqual({ minZoom: 11, maxZoom: 16 });
   });
 
-  it('可視領域用demはselectDemZoomの返域と同じz8-14固定', () => {
-    expect(getZoomRange('dem', baseMap, 11)).toEqual({ minZoom: 8, maxZoom: 14 });
+  it('terrariumの陰影起伏は1段粗い標高タイルから描くので最も細かい段は取らない', () => {
+    const relief = { ...baseMap, url: 'hillshade://https://tiles.mapterhorn.com/{z}/{x}/{y}.webp', overzoomThreshold: 15 };
+    expect(getZoomRange('hillshade', relief, 11)).toEqual({ minZoom: 0, maxZoom: 14 });
+    const gebco = { ...baseMap, url: 'relief://https://example.com/{z}/{y}/{x}.png#style=gebco', overzoomThreshold: 9 };
+    expect(getZoomRange('hillshade', gebco, 11)).toEqual({ minZoom: 0, maxZoom: 9 });
+  });
+
+  it('標高タイルは可視領域・3Dの参照範囲と同じz7-13固定（512px）', () => {
+    expect(getZoomRange('dem', baseMap, 11)).toEqual({ minZoom: 7, maxZoom: 13 });
   });
 });
 
@@ -143,17 +150,17 @@ describe('DEMダウンロードの3D遠景用周辺幅', () => {
   // 蔵王付近の約2km四方
   const small = { minLon: 140.43, minLat: 38.13, maxLon: 140.45, maxLat: 38.15 };
 
-  it('z8は指定範囲の外側150km前後まで広げる', () => {
-    const b = downloadBoundsForZoom('dem', small, 8);
+  it('z7は指定範囲の外側150km前後まで広げる', () => {
+    const b = downloadBoundsForZoom('dem', small, 7);
     expect(small.minLat - b.minLat).toBeCloseTo(150 / 111.32, 3);
     expect(b.maxLon - small.maxLon).toBeGreaterThan(150 / 111.32);
   });
 
-  it('周辺幅はズーム1段ごとに半分になり、z12以上は広げない', () => {
-    const w8 = small.minLat - downloadBoundsForZoom('dem', small, 8).minLat;
-    const w11 = small.minLat - downloadBoundsForZoom('dem', small, 11).minLat;
-    expect(w11).toBeCloseTo(w8 / 8, 6);
-    expect(downloadBoundsForZoom('dem', small, 12)).toBe(small);
+  it('周辺幅はズーム1段ごとに半分になり、z11以上は広げない', () => {
+    const w7 = small.minLat - downloadBoundsForZoom('dem', small, 7).minLat;
+    const w10 = small.minLat - downloadBoundsForZoom('dem', small, 10).minLat;
+    expect(w10).toBeCloseTo(w7 / 8, 6);
+    expect(downloadBoundsForZoom('dem', small, 11)).toBe(small);
   });
 
   it('dem以外の地図は広げない', () => {
@@ -161,22 +168,22 @@ describe('DEMダウンロードの3D遠景用周辺幅', () => {
   });
 
   it('追加は各段数十枚に収まり、指定範囲のタイルはすべて含む', () => {
-    const tiles = downloadTileGrid('dem', small, 8, 14);
+    const tiles = downloadTileGrid('dem', small, 7, 13);
     const keys = new Set(tiles.map((t) => `${t.z}/${t.x}/${t.y}`));
-    for (const t of tileGridForRegion(small, 8, 14)) expect(keys.has(`${t.z}/${t.x}/${t.y}`)).toBe(true);
-    for (let z = 8; z <= 11; z++) {
+    for (const t of tileGridForRegion(small, 7, 13)) expect(keys.has(`${t.z}/${t.x}/${t.y}`)).toBe(true);
+    for (let z = 7; z <= 10; z++) {
       expect(tiles.filter((t) => t.z === z).length).toBeLessThanOrEqual(36);
     }
   });
 
   it('枚数の見積もりは実列挙と一致する', () => {
-    expect(countDownloadTiles('dem', small, 8, 14)).toBe(downloadTileGrid('dem', small, 8, 14).length);
-    const dem = { ...baseMap, id: 'dem_viewshed' };
-    expect(estimateDownloadTileCount(small, [dem], 14)).toBe(downloadTileGrid('dem', small, 8, 14).length);
+    expect(countDownloadTiles('dem', small, 7, 13)).toBe(downloadTileGrid('dem', small, 7, 13).length);
+    const dem = { ...baseMap, id: 'dem_mapterhorn' };
+    expect(estimateDownloadTileCount(small, [dem], 14)).toBe(downloadTileGrid('dem', small, 7, 13).length);
   });
 
   it('日付変更線・高緯度でも範囲外に出ない', () => {
-    const b = downloadBoundsForZoom('dem', { minLon: 179.5, minLat: 84, maxLon: 179.9, maxLat: 84.5 }, 8);
+    const b = downloadBoundsForZoom('dem', { minLon: 179.5, minLat: 84, maxLon: 179.9, maxLat: 84.5 }, 7);
     expect(b.maxLon).toBeLessThan(180);
     expect(b.maxLat).toBeLessThanOrEqual(85);
   });

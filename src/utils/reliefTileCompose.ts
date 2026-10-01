@@ -141,3 +141,45 @@ export function upsampleHaloBuffer(
   }
   return out;
 }
+
+/**
+ * 袖付き標高バッファから、指定した区画（袖込み）を切り出す。
+ * 512pxの標高タイル1枚から地図タイル（256px）分の区画だけ陰影を計算するために使う。
+ * @param bufferWidth 元バッファの一辺（タイル寸法+2*halo）
+ * @param originX 区画の左上（タイル内の画素位置。袖は含まない）
+ * @param regionSize 区画の一辺（袖は含まない）
+ */
+export function extractHaloRegion(
+  buffer: Float32Array,
+  bufferWidth: number,
+  halo: number,
+  originX: number,
+  originY: number,
+  regionSize: number
+): Float32Array {
+  const width = regionSize + 2 * halo;
+  const out = new Float32Array(width * width);
+  for (let y = 0; y < width; y++) {
+    const src = (originY + y) * bufferWidth + originX;
+    out.set(buffer.subarray(src, src + width), y * width);
+  }
+  return out;
+}
+
+/** RGBA画像をニアレストネイバーで拡大・縮小する（陰影は連続的なので補間しなくても目立たない） */
+export function resizeRgbaNearest(rgba: Uint8ClampedArray, srcSize: number, dstSize: number): Uint8ClampedArray {
+  if (srcSize === dstSize) return rgba;
+  const out = new Uint8ClampedArray(dstSize * dstSize * 4);
+  for (let y = 0; y < dstSize; y++) {
+    const sy = Math.floor((y * srcSize) / dstSize);
+    for (let x = 0; x < dstSize; x++) {
+      const src = (sy * srcSize + Math.floor((x * srcSize) / dstSize)) * 4;
+      const dst = (y * dstSize + x) * 4;
+      out[dst] = rgba[src];
+      out[dst + 1] = rgba[src + 1];
+      out[dst + 2] = rgba[src + 2];
+      out[dst + 3] = rgba[src + 3];
+    }
+  }
+  return out;
+}

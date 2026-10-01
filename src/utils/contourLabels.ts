@@ -5,16 +5,13 @@
  * タイル境界切れなし）。焼き込みと同じDEM（GSJのGEBCOタイル）・同じ横断判定・
  * 同じsourceZoomで計算するため、ラベルは描かれた線の上に正確に乗る。
  *
- * DEMタイルの取得・デコードは可視領域計算と同じ仕組み（loadDemTilePng + decodeDemTile）を使う。
+ * DEMタイルの取得はdemTileLoader（ディスクキャッシュ付き）、デコードはネイティブ（modules/dem-decoder）。
  */
 import { contourIntervalsForZoom } from './colorRelief';
-import { decodeElevation } from './terrainShading';
-import { decodePngLite } from './pngLite';
 import {
-  loadDemTileAsPngBytes,
-  loadDemTilePng,
-  loadLocalDemTileAsPngBytes,
-  loadLocalDemTilePng,
+  decodeDemTileFile,
+  fetchDemTileFile,
+  localDemTileFile,
 } from './demTileLoader';
 import { ViewportBounds } from './ViewportCulling';
 
@@ -42,28 +39,6 @@ const MAX_TILES = 12;
  */
 const maxSourceZoomOf = (urlTemplate: string): number => (urlTemplate.includes('/elev2/') ? 11 : 9);
 
-/** PNGバイト列を標高タイルへデコードする（サイズ非依存。NoData=透明はNaN） */
-const decodeTile = (png: ArrayBuffer): ElevationTile | null => {
-  const decoded = decodePngLite(png);
-  if (decoded === null || decoded.width !== decoded.height) return null;
-  const { width, data, channels, palette } = decoded;
-  const elev = new Float32Array(width * width);
-  if (palette !== undefined && channels === 1) {
-    for (let i = 0; i < elev.length; i++) {
-      const p = data[i] * 3;
-      elev[i] = decodeElevation(palette[p], palette[p + 1], palette[p + 2]);
-    }
-  } else if (channels >= 3) {
-    for (let i = 0; i < elev.length; i++) {
-      const p = i * channels;
-      elev[i] = channels === 4 && data[p + 3] === 0 ? NaN : decodeElevation(data[p], data[p + 1], data[p + 2]);
-    }
-  } else {
-    return null;
-  }
-  return { width, data: elev };
-};
-
 // デコード済みタイルの小さなLRU（elev2の512pxは1枚1MB。PNG自体はネイティブのディスクキャッシュにも載る）
 const decodedCache = new Map<string, ElevationTile | null>();
 const DECODED_CACHE_MAX = 24;
@@ -83,27 +58,24 @@ const fetchGebcoTile = async (
     return cached;
   }
 
-  // elev2はWebP配信なのでPNGへ変換して受け取る（HermesのpngLiteはWebP不可）
-  const isWebpSource = urlTemplate.includes('/elev2/');
-  const loadLocal = isWebpSource ? loadLocalDemTileAsPngBytes : loadLocalDemTilePng;
-  const loadRemote = isWebpSource ? loadDemTileAsPngBytes : loadDemTilePng;
-
   // オフラインダウンロード済みの生DEMタイル（TILE_FOLDER/{地図id}/z/x/y）を優先する。
   // 機内モードでもダウンロード範囲ならラベルが出る
-  let png: ArrayBuffer | null = null;
+  let file: string | null = null;
   if (offlineTileFolder !== null) {
-    png = await loadLocal(`${offlineTileFolder}/${zoom}/${x}/${y}`);
+    file = await localDemTileFile(`${offlineTileFolder}/${zoom}/${x}/${y}`);
   }
-  if (png === null) {
+  if (file === null) {
     try {
       const url = urlTemplate.replace('{z}', String(zoom)).replace('{x}', String(x)).replace('{y}', String(y));
-      png = await loadRemote(url, key);
+      file = await fetchDemTileFile(url, key);
     } catch {
       // ネットワークエラーは一時的な可能性があるためキャッシュしない
       return null;
     }
   }
-  const decoded = png === null ? null : decodeTile(png);
+  // GEBCO（産総研）はGSI形式。PNGもWebP（elev2）もネイティブで読める。NoData・透明はNaN
+  const tile = file === null ? null : await decodeDemTileFile(file, 'gsi');
+  const decoded: ElevationTile | null = tile === null ? null : { width: tile.size, data: tile.elev };
   decodedCache.set(key, decoded);
   while (decodedCache.size > DECODED_CACHE_MAX) {
     const oldest = decodedCache.keys().next().value;

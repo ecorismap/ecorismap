@@ -13,6 +13,7 @@ import { ExportDestinationModal } from './components/organisms/ExportDestination
 import { StyledDialog } from './components/molecules/StyledDialog';
 import { TileSignatureSync } from './components/atoms/TileSignatureSync';
 import { checkAsyncStorageData, isMigrationCompleted, isMigrationSkipped, StorageInfo } from './utils/storageMigration';
+import { runDemSourceMigration } from './utils/demSourceMigration';
 
 const StorageMigrationDialog =
   Platform.OS !== 'web' ? require('./components/organisms/StorageMigrationDialog').StorageMigrationDialog : null;
@@ -61,7 +62,7 @@ export default function App() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
         <Provider store={store}>
-          <PersistGate loading={null} persistor={persistor}>
+          <PersistGate loading={null} persistor={persistor} onBeforeLift={() => runDemSourceMigration(store)}>
             <>
               <Routes />
               <TileSignatureSync />

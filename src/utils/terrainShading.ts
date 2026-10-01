@@ -100,6 +100,29 @@ export function isDemProtocolUrl(url: string | undefined): boolean {
 }
 
 /**
+ * terrarium形式・512pxの標高タイル（Mapterhorn）を読む地図か判定する。
+ *
+ * hillshade://と汎用のrelief://はterrarium専用（GSI形式は読まない）。
+ * GEBCO段彩（relief://…#style=gebco）だけは海底値が要るので産総研のGSI形式256pxを読む。
+ * ネイティブのパッチ（MapDEMTileProvider.java / AIRGoogleMapDEMTileOverlay.m）も同じ規則
+ */
+export function isTerrariumDemUrl(url: string | undefined): boolean {
+  return isDemProtocolUrl(url) && !url!.includes('#style=gebco');
+}
+
+/**
+ * terrarium（512px）の標高タイルを、地図タイル（256px）より何段粗いズームで取るか。
+ * 512pxのzNは256pxのz(N+1)と画素密度が同じなので、1段粗く取れば従来（GSI 256px）と同じ細かさ・
+ * 同じ計算量で陰影が作れる（1枚の標高タイルから地図タイル4枚分を切り出す）
+ */
+export const TERRARIUM_DEM_ZOOM_OFFSET = 1;
+
+/** terrarium形式のRGB→標高[m]（負値もそのまま） */
+export function decodeTerrarium(r: number, g: number, b: number): number {
+  return r * 256 + g + b / 256 - 32768;
+}
+
+/**
  * 地図URLから標高タイルのURLテンプレートを取り出す。
  * プレフィックスと、動作確認時に付けた方式指定などのフラグメントを落とす。
  */

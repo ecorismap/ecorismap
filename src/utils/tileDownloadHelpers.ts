@@ -6,18 +6,18 @@ import {
   DEM_DOWNLOAD_MIN_ZOOM,
   DEM_FAR_MARGIN_KM_AT_MIN_ZOOM,
   DEM_FAR_MARGIN_MAX_ZOOM,
-  DEM_VIEWSHED_MAP_ID,
+  DEM_MAPTERHORN_MAP_ID,
 } from '../constants/DemSources';
 import { getExt } from './General';
-import { isDemProtocolUrl } from './terrainShading';
+import { isDemProtocolUrl, isTerrariumDemUrl, TERRARIUM_DEM_ZOOM_OFFSET } from './terrainShading';
 import { lonToTileX, latToTileY, tilesForZoom } from './Tile';
 
 // hillshadeはrelief://（陰影段彩）も含む。どちらも生のDEMタイルを保存する点で同じ扱い。
-// demは可視領域用の疑似地図（GSI→terrariumフォールバック保存、demTileDownload.ts）
+// demは標高タイル（Mapterhorn）の疑似地図（demTileDownload.ts）
 export type TileType = 'pbf' | 'pmtiles' | 'hillshade' | 'png' | 'dem';
 
 export const getTileType = (tileMap: TileMapType): TileType =>
-  tileMap.id === DEM_VIEWSHED_MAP_ID
+  tileMap.id === DEM_MAPTERHORN_MAP_ID
     ? 'dem'
     : getExt(tileMap.url) === 'pbf'
     ? 'pbf'
@@ -28,11 +28,15 @@ export const getTileType = (tileMap: TileMapType): TileType =>
     : 'png';
 
 export const getZoomRange = (tileType: TileType, tileMap: TileMapType, zoom: number) => {
-  // 可視領域の計算が使うのはselectDemZoomの返域(z8-14)のみなのでz0-7は取らない
+  // 可視領域・3Dが参照するのはz7〜13（512px）のみなのでそれより粗い段は取らない
   if (tileType === 'dem') return { minZoom: DEM_DOWNLOAD_MIN_ZOOM, maxZoom: DEM_DOWNLOAD_MAX_ZOOM };
   const minZoom = tileType === 'png' || tileType === 'hillshade' ? 0 : zoom;
   const maxZoom =
     tileType === 'png' || tileType === 'hillshade' || !tileMap.isVector ? Math.min(tileMap.overzoomThreshold, 16) : 18;
+  // terrarium（512px）の陰影・段彩は1段粗いズームの標高タイルから描くので、最も細かい段は要らない
+  if (tileType === 'hillshade' && isTerrariumDemUrl(tileMap.url)) {
+    return { minZoom, maxZoom: Math.max(0, maxZoom - TERRARIUM_DEM_ZOOM_OFFSET) };
+  }
   return { minZoom, maxZoom };
 };
 
@@ -137,7 +141,7 @@ export const listExistingTiles = async (tileMapId: string): Promise<Set<string>>
         if (!/^\d+$/.test(x)) continue;
         const files = await FileSystem.readDirectoryAsync(`${TILE_FOLDER}/${tileMapId}/${z}/${x}`);
         for (const file of files) {
-          const y = file.replace(/\.(pbf|png)$/, '');
+          const y = file.replace(/\.(pbf|png|webp)$/, '');
           if (!/^\d+$/.test(y)) continue;
           existing.add(`${z}/${x}/${y}`);
         }

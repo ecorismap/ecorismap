@@ -41,7 +41,7 @@ import { BottomSheetContent } from '../organisms/BottomSheetContent';
 import { Loading } from '../molecules/Loading';
 import { useModalYieldingToDialog } from '../molecules/StyledDialog';
 import { t } from '../../i18n/config';
-import { DEM_VIEWSHED_MAP_ID } from '../../constants/DemSources';
+import { DEM_MAPTERHORN_MAP_ID } from '../../constants/DemSources';
 import { useWindow } from '../../hooks/useWindow';
 import { useTerrain3dSupport } from '../../hooks/useTerrain3dSupport';
 import { useSelector } from 'react-redux';
@@ -459,7 +459,7 @@ export default function HomeScreen() {
             {selectedTileMapIds.length === 0
               ? t('Home.download.allMaps')
               : selectedTileMapIds.length === 1
-              ? selectedTileMapIds[0] === DEM_VIEWSHED_MAP_ID
+              ? selectedTileMapIds[0] === DEM_MAPTERHORN_MAP_ID
                 ? t('Home.download.demViewshed')
                 : tileMaps?.find((m) => m.id === selectedTileMapIds[0])?.name || t('Home.download.allMaps')
               : `${selectedTileMapIds.length} ${t('Home.download.mapsSelected', '個の地図')}`}

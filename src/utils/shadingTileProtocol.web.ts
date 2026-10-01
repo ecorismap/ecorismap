@@ -12,21 +12,23 @@ import type { RequestParameters } from 'maplibre-gl';
 import {
   computeShading,
   decodeElevation,
+  decodeTerrarium,
   metersPerPixel,
   requiredHalo,
   DEFAULT_SHADING_OPTIONS,
   ShadingOptions,
+  TERRARIUM_DEM_ZOOM_OFFSET,
 } from './terrainShading';
 import { computeColorRelief, computeGebcoRelief, ReliefStyle } from './colorRelief';
-import { assembleWithHalo, cropAndScale } from './reliefTileCompose';
+import { assembleWithHalo, cropAndScale, extractHaloRegion, resizeRgbaNearest } from './reliefTileCompose';
 
 export const SHADING_PROTOCOL = 'terrainshade';
 
 const TILE_SIZE = 256;
 /** 標高タイルが無いとき、何段まで粗いズームへ降りるか（z15→海域データの上限z10に届く段数） */
 const MAX_ZOOM_FALLBACK = 5;
-/** デコード済み標高のキャッシュ枚数。1枚あたり 256×256×4B = 256KB */
-const MAX_CACHED_TILES = 128;
+/** デコード済み標高のキャッシュ枚数。1枚あたり 256px=256KB、512px（terrarium）=1MB */
+const MAX_CACHED_TILES = 64;
 
 type ShadingTileConfig = {
   /** 標高タイルのURLテンプレート。{z}/{x}/{y} を含む */
@@ -37,6 +39,8 @@ type ShadingTileConfig = {
   m?: 1;
   /** 段彩の配色バリアント（省略時はdefault） */
   s?: ReliefStyle;
+  /** 1ならterrarium形式512px（Mapterhorn）。省略時はGSI形式256px（GEBCO段彩） */
+  t?: 1;
 };
 
 /** タイルURLの先頭部分を作る。maplibre側で {z}/{x}/{y} が置換される */
@@ -50,6 +54,8 @@ export function buildShadingTileUrl(
   if (flipY) config.f = true;
   if (relief) config.m = 1;
   if (relief && style && style !== 'default') config.s = style;
+  // GEBCO段彩以外はterrarium専用（terrainShading.isTerrariumDemUrlと同じ規則）
+  if (!(relief && style === 'gebco')) config.t = 1;
   return `${SHADING_PROTOCOL}://${encodeURIComponent(JSON.stringify(config))}/{z}/{x}/{y}`;
 }
 
@@ -105,17 +111,21 @@ async function loadElevationTile(
       const response = await fetch(resolveDemUrl(config, z, x, y), { signal });
       if (!response.ok) return null;
       const blob = await response.blob();
-      const bitmap = await createImageBitmap(blob);
-      const canvas = new OffscreenCanvas(TILE_SIZE, TILE_SIZE);
+      // 標高をRGBに詰めた画像なので、色空間変換・アルファ乗算で値が変わらないようにする
+      const bitmap = await createImageBitmap(blob, { colorSpaceConversion: 'none', premultiplyAlpha: 'none' });
+      // terrariumは実寸（512px）のまま、GSI形式は従来どおり256pxで読む
+      const size = config.t ? bitmap.width : TILE_SIZE;
+      const canvas = new OffscreenCanvas(size, size);
       const ctx = canvas.getContext('2d', { willReadFrequently: true });
       if (!ctx) return null;
-      ctx.drawImage(bitmap, 0, 0, TILE_SIZE, TILE_SIZE);
+      ctx.drawImage(bitmap, 0, 0, size, size);
       bitmap.close();
-      const { data } = ctx.getImageData(0, 0, TILE_SIZE, TILE_SIZE);
-      const elevation = new Float32Array(TILE_SIZE * TILE_SIZE);
+      const { data } = ctx.getImageData(0, 0, size, size);
+      const decode = config.t ? decodeTerrarium : decodeElevation;
+      const elevation = new Float32Array(size * size);
       for (let i = 0; i < elevation.length; i++) {
         const p = i * 4;
-        elevation[i] = decodeElevation(data[p], data[p + 1], data[p + 2]);
+        elevation[i] = decode(data[p], data[p + 1], data[p + 2]);
       }
       return elevation;
     } catch {
@@ -157,7 +167,9 @@ export function createShadingProtocolHandler(baseOptions: ShadingOptions = DEFAU
       // 標高タイルの提供範囲はズームによって地域差がある（例えば産総研の陸域統合DEMは
       // z14は全国にあるがz15は佐渡島・知床・屋久島などで欠ける）。要求されたズームで
       // 取れなければ粗いズームへ降り、該当部分を切り出して拡大する。
-      for (let sourceZ = z; sourceZ >= Math.max(0, z - MAX_ZOOM_FALLBACK); sourceZ--) {
+      // terrarium（512px）は1段粗いズームのタイルから地図タイル分の区画を切り出して計算する
+      const startZ = config.t ? Math.max(0, z - TERRARIUM_DEM_ZOOM_OFFSET) : z;
+      for (let sourceZ = startZ; sourceZ >= Math.max(0, startZ - MAX_ZOOM_FALLBACK); sourceZ--) {
         const shift = z - sourceZ;
         const sx = x >> shift;
         const sy = y >> shift;
@@ -176,7 +188,30 @@ export function createShadingProtocolHandler(baseOptions: ShadingOptions = DEFAU
         );
         if (signal.aborted) return { data: null };
         // 中央タイルが取れなければ、さらに粗いズームを試す
-        if (!tiles[4]) continue;
+        const center = tiles[4];
+        if (!center) continue;
+
+        if (config.t) {
+          // terrarium: 地図タイルが占める区画（512px>>shift）だけ計算して256pxにする
+          const demSize = Math.round(Math.sqrt(center.length));
+          const buffer = assembleWithHalo(tiles, halo, demSize);
+          const region = demSize >> shift || 1;
+          const sub = extractHaloRegion(
+            buffer,
+            demSize + 2 * halo,
+            halo,
+            (x - (sx << shift)) * region,
+            (y - (sy << shift)) * region,
+            region
+          );
+          const mpp = metersPerPixel(sourceZ, sy, demSize);
+          // 等深線の間隔は画素密度で決まるので、256px換算のズームを渡す
+          const rgba = config.m
+            ? computeColorRelief(sub, region + 2 * halo, halo, region, mpp, sourceZ + TERRARIUM_DEM_ZOOM_OFFSET, baseOptions)
+            : computeShading(sub, region + 2 * halo, halo, region, mpp, baseOptions);
+          const output = resizeRgbaNearest(rgba, region, TILE_SIZE);
+          return { data: fastPngEncode({ width: TILE_SIZE, height: TILE_SIZE, data: output, channels: 4, depth: 8 }) };
+        }
 
         const buffer = assembleWithHalo(tiles, halo);
         // gebcoスタイルはHome.web.tsxがmaplibreの実レイヤを使うためここには来ないが、

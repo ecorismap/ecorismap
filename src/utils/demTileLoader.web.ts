@@ -1,42 +1,22 @@
 /**
- * 標高タイルのPNGバイト列を取得する（Web版）。
- * ブラウザ自身のHTTPキャッシュがディスク層を担うため、ここでは素朴にfetchするだけ。
+ * 任意の標高タイルURLの取得とデコード（Web版）。
  *
- * @returns PNGバイト列。404はnull。ネットワークエラーはthrow（呼び出し側でキャッシュさせないため）
+ * ネイティブ版の利用元（3Dの段彩テクスチャ・等深線ラベル）はWebでは使われない
+ * （Webはmaplibreの3D地形・maplibre-contourが担う）。型を揃えるための最小実装。
  */
-export const loadDemTilePng = async (url: string, _key: string): Promise<ArrayBuffer | null> => {
-  const response = await fetch(url);
-  if (!response.ok) return null;
-  return await response.arrayBuffer();
-};
+import type { DemDecodeEncoding } from '../../modules/dem-decoder/src';
 
-/** Webにはオフラインダウンロード機能がないため常にnull */
-export const loadLocalDemTilePng = async (_fileUri: string): Promise<ArrayBuffer | null> => null;
+export type DecodedDemTile = { size: number; elev: Float32Array };
 
+export const decodeDemTileFile = async (
+  _fileUri: string,
+  _encoding: DemDecodeEncoding
+): Promise<DecodedDemTile | null> => null;
 
-export type LocalDemTileResult = { kind: 'data'; bytes: ArrayBuffer } | { kind: 'noData' } | { kind: 'missing' };
+export const fetchDemTileFile = async (_url: string, _key: string): Promise<string | null> => null;
 
-/** Webにはオフラインダウンロード機能がないため常にmissing */
-export const loadDownloadedDemTile = async (
-  _source: 'gsi' | 'terrarium',
-  _zoom: number,
-  _x: number,
-  _y: number
-): Promise<LocalDemTileResult> => ({ kind: 'missing' });
+export const localDemTileFile = async (_fileUri: string): Promise<string | null> => null;
 
-/**
- * Web版の等値線数値ラベル（contourLabels）はmaplibre-contourが担うため未使用。
- * PNGならそのまま返し、WebPはnull（呼ばれない前提の簡易実装）。
- */
-export const loadDemTileAsPngBytes = async (url: string, key: string): Promise<ArrayBuffer | null> => {
-  const bytes = await loadDemTilePng(url, key);
-  if (bytes === null) return null;
-  const head = new Uint8Array(bytes);
-  const isWebp = head.length > 12 && head[0] === 0x52 && head[1] === 0x49 && head[2] === 0x46 && head[3] === 0x46;
-  return isWebp ? null : bytes;
-};
+export const readLocalFileBytes = async (_fileUri: string): Promise<ArrayBuffer | null> => null;
 
-export const loadLocalDemTileAsPngBytes = async (_fileUri: string): Promise<ArrayBuffer | null> => null;
-
-/** Webはブラウザキャッシュ任せなので何もしない */
 export const clearDemTileDiskCache = async (): Promise<void> => {};

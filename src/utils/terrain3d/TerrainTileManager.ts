@@ -8,7 +8,6 @@
  * （テクスチャ待ちで地形の初表示を遅らせない）。
  * ズーム切替時は新ズームのタイルが揃うまで旧ズームのタイルを残して段差を隠す。
  */
-import { DEM_RANGE_BLOCKS, DEM_TILE_SIZE } from '../demTileProvider';
 import {
   MAX_PARENT_TILE_LEVELS,
   MAX_TERRAIN_LAYERS,
@@ -28,7 +27,8 @@ import {
   tileSizeMeters,
   tileToMercator,
 } from './coords';
-import { clampDemZoom, sampleNearest } from './demProvider';
+import { sampleNearest } from './demProvider';
+import { clampDemZoom, DEM_RANGE_BLOCKS } from './terrainDem';
 import { DemTextureCache, DemTextureEntry } from './demTextureCache';
 import { createLayerTextureRef, LayerTextureRef, releaseLayerTexture, retainLayerTexture } from './layerTextureRef';
 import { parentTileKey, parentTileUv } from './parentTile';
@@ -73,8 +73,9 @@ const tileElevRange = (
   originPy: number,
   spanPx: number
 ): { minElev: number; maxElev: number } => {
+  if (dem.size === 0) return { minElev: 0, maxElev: 0 };
   const n = DEM_RANGE_BLOCKS;
-  const blockPx = DEM_TILE_SIZE / n;
+  const blockPx = dem.size / n;
   const bx0 = Math.max(0, Math.min(n - 1, Math.floor(originPx / blockPx)));
   const by0 = Math.max(0, Math.min(n - 1, Math.floor(originPy / blockPx)));
   const bx1 = Math.max(bx0, Math.min(n - 1, Math.ceil((originPx + spanPx) / blockPx) - 1));
@@ -338,6 +339,7 @@ export class TerrainTileManager {
     // ソース（GSI/terrarium）の取り違えも構造的に起きない
     const elev = entry.dem?.elev;
     if (elev === undefined || elev === null) return null;
+    const demSize = entry.dem?.size ?? 0;
 
     if (__DEV__) {
       const demZoom = clampDemZoom(z - this.demZoomOffset);
@@ -351,11 +353,7 @@ export class TerrainTileManager {
     const fu = gu - i;
     const fv = gv - j;
     const vertexElev = (gi: number, gj: number): number => {
-      const v = sampleNearest(elev, originPx + (gi / seg) * spanPx, originPy + (gj / seg) * spanPx);
-      // NoDataはシェーダと同じくタイル最低標高へ丸める（decodeElevの x == 8388608u と同じ扱い）。
-      // ここを0mにすると、内陸の欠測を含む山地タイルで標高が丸ごと落ち、
-      // ドットだけが数百m沈んで別の場所に見える
-      return Number.isNaN(v) ? pass.noDataElev : v;
+      return sampleNearest(elev, demSize, originPx + (gi / seg) * spanPx, originPy + (gj / seg) * spanPx);
     };
     return interpolateGridCell(
       vertexElev(i, j),
@@ -478,9 +476,10 @@ export class TerrainTileManager {
   ): TileDrawPass {
     const { mx: tileMx, my: tileMy } = tileToMercator(key.z, key.x, key.y);
     const size = tileSizeMeters(key.z);
-    // オーバーズーム時は親DEMの部分矩形を参照する（z15はDEMの1/2、z16は1/4）
+    // 親DEMの部分矩形を参照する（dz段下のタイルはDEMの1/2^dz）。
+    // データなし（state=missing）はsize=0で、下のdemParamsが全0になるので値は使われない
     const scale = Math.pow(2, dz);
-    const span = DEM_TILE_SIZE / scale;
+    const span = dem.size / scale;
     const originPx = (key.x - demX * scale) * span;
     const originPy = (key.y - demY * scale) * span;
     // ローカル座標: x=東（メルカトルX差）、z=南（メルカトルY差の符号反転）。
@@ -495,20 +494,12 @@ export class TerrainTileManager {
     ]);
     const demParams =
       dem.state === 'ready'
-        ? new Float32Array([
-            originPx,
-            originPy,
-            span,
-            dem.encoding === 'terrarium' ? 1 : 0,
-          ])
+        ? new Float32Array([originPx, originPy, span, 0])
         : // データなし（海上・提供範囲外）は1x1のゼロテクスチャを幅0で参照して標高0mの平面にする
           new Float32Array([0, 0, 0, 0]);
     return {
       tileParams,
       demParams,
-      // NoData画素はタイル範囲の最低標高へ丸める（旧実装と同じ。0mにすると内陸の欠測が
-      // 深い縦穴になり、遠景で壁のテクスチャが縦縞として見える）
-      noDataElev: minElev,
       demTexture: dem.texture ?? this.renderer.zeroDem,
       layerTextures: new Array<LayerTextureRef | null>(this.layers.length).fill(null),
       layerUv: identityLayerUv(),
