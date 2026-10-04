@@ -13,7 +13,7 @@
  * 保存後のトラック（trackレイヤのLINEレコード）はレイヤデータとして
  * HomeTerrain3D側で既に描かれるので、ここでは扱わない。
  */
-import React, { useContext, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useContext, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { COLOR } from '../../constants/AppConstants';
 import { TrackSegmentType } from '../../types';
 import { LocationTrackingContext } from '../../contexts/LocationTracking';
@@ -22,6 +22,7 @@ import { getDisplayBufferSimplified, getTrackChunkForDisplay, splitTrackByAccura
 import { parseColorToRgba } from '../../utils/terrain3d/colorUtils';
 import { TerrainScene } from '../../utils/terrain3d/TerrainScene';
 import { buildTrackOverlaySpecs, trackWidthMeters } from '../../utils/terrain3d/trackOverlay';
+import { terrain3dVistaStore } from '../../utils/terrain3d/vistaStore';
 
 interface Props {
   scene: TerrainScene | null;
@@ -31,6 +32,8 @@ interface Props {
 const SAVED_CHUNK_POINTS = 320;
 /** 記録中チャンクの表示点数（2DのCurrentTrackLogと同じ） */
 const CURRENT_CHUNK_POINTS = 400;
+
+const getVistaActive = () => terrain3dVistaStore.getSnapshot().active;
 
 export const HomeTerrain3DTrack = React.memo(({ scene }: Props) => {
   const { trackMetadata } = useContext(LocationTrackingContext);
@@ -44,17 +47,24 @@ export const HomeTerrain3DTrack = React.memo(({ scene }: Props) => {
   // 線幅はメルカトルmでジオメトリへ焼き込まれるので、ズームが変わると作り直しになる
   const widthMeters = useMemo(() => trackWidthMeters(zoom), [zoom]);
   const color = useMemo(() => parseColorToRgba(COLOR.TRACK), []);
+  // 眺望中は描かない。地上1.7mの視点では足元の軌跡が地形に貼られた太い帯として
+  // 視界を塞ぐうえ、立ち位置が現在地なら軌跡の終端が真下に来るため
+  const vistaActive = useSyncExternalStore(terrain3dVistaStore.subscribe, getVistaActive);
 
   // 記録中チャンク（小さい・約1Hz）。trackMetadataは元から1秒スロットル済み
   useEffect(() => {
     if (scene === null) return;
+    if (vistaActive) {
+      scene.setOverlays('trackLive', []);
+      return;
+    }
     const points = getDisplayBufferSimplified(CURRENT_CHUNK_POINTS);
     const specs =
       points.length === 0
         ? []
         : buildTrackOverlaySpecs(splitTrackByAccuracy(points), 'track-live', widthMeters, color);
     scene.setOverlays('trackLive', specs);
-  }, [scene, widthMeters, color, totalPoints]);
+  }, [scene, widthMeters, color, totalPoints, vistaActive]);
 
   // 保存済みチャンク（大きい・500点ごとに1つ増える）。
   // MMKVの読み出しとJSONパースは1チャンクあたり数ms。まとめて読むと3D切替直後に
@@ -97,9 +107,9 @@ export const HomeTerrain3DTrack = React.memo(({ scene }: Props) => {
     if (scene === null) return;
     scene.setOverlays(
       'trackSaved',
-      buildTrackOverlaySpecs(savedSegmentsRef.current, 'track-saved', widthMeters, color)
+      vistaActive ? [] : buildTrackOverlaySpecs(savedSegmentsRef.current, 'track-saved', widthMeters, color)
     );
-  }, [scene, savedVersion, widthMeters, color]);
+  }, [scene, savedVersion, widthMeters, color, vistaActive]);
 
   // 2Dへ戻る・3Dを閉じるときに軌跡を残さない
   useEffect(() => {
