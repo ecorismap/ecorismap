@@ -34,3 +34,22 @@ export const terrain3dVistaStore = {
     terrain3dVistaStore.set(INACTIVE);
   },
 };
+
+/**
+ * 2Dの長押しメニューから「ここからの眺望」を選んだ地点。
+ *
+ * 2Dでは3Dシーンがまだ無いので、地点だけ預けて3Dへ切り替え、
+ * シーンの初期化後にHomeTerrain3Dが受け取って眺望へ移す。
+ */
+let pendingVista: { latitude: number; longitude: number } | null = null;
+
+export const requestVistaOnEnter = (latitude: number, longitude: number): void => {
+  pendingVista = { latitude, longitude };
+};
+
+/** 預けられた地点を取り出す（一度取り出したら消える） */
+export const takePendingVista = (): { latitude: number; longitude: number } | null => {
+  const value = pendingVista;
+  pendingVista = null;
+  return value;
+};

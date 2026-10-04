@@ -49,6 +49,7 @@ import { deltaToZoom } from '../../utils/Coords';
 import { useWindow } from '../../hooks/useWindow';
 import { MapViewStableContext } from '../../contexts/MapViewStable';
 import { terrain3dHeadingStore } from '../../utils/terrain3d/headingStore';
+import { takePendingVista } from '../../utils/terrain3d/vistaStore';
 import { requestTrackReplayPause } from '../../utils/trackReplayStore';
 import { replayEyeDistanceM } from '../../utils/terrain3d/replayCamera';
 import { getTerrainDevice } from '../../utils/terrain3d/webgpuSupport';
@@ -76,6 +77,9 @@ const DEBUG_PERF_HUD = false;
 const MAX_OVERLAY_FEATURES = 200;
 /** ポリゴン塗りの不透明度（2Dの塗りに近い控えめな値） */
 const POLYGON_FILL_ALPHA = 0.35;
+/** 2Dから眺望で来たとき、足元の標高が取れるまで待つ間隔と上限 */
+const VISTA_WAIT_INTERVAL_MS = 200;
+const VISTA_WAIT_TIMEOUT_MS = 15000;
 
 /** 表示中tileMapsから3Dで描けるレイヤを抽出する（配列末尾が最下層） */
 export const selectTerrainLayers = (
@@ -375,6 +379,7 @@ export const HomeTerrain3D = React.memo(() => {
           if (moved) setTimeout(() => syncRegionRef.current(true), VISTA_DURATION_MS + 80);
           return moved;
         },
+        projectToScreen: (latitude, longitude) => scene.projectToScreen(latitude, longitude),
         changeVistaHeight: (step) => {
           if (scene.changeVistaHeight(step)) syncRegionRef.current(true);
         },
@@ -490,6 +495,23 @@ export const HomeTerrain3D = React.memo(() => {
     };
     emit(true);
     return sceneState.addFrameListener(() => emit());
+  }, [sceneState]);
+
+  // 2Dの長押しメニューから眺望を選んで3Dへ来た場合は、その地点の眺望へ移す。
+  // 立ち位置の標高は足元のDEMタイルが届くまで取れないので、先に注視点を寄せて待つ
+  useEffect(() => {
+    if (sceneState === null) return;
+    const pending = takePendingVista();
+    const handle = handleRef.current;
+    if (pending === null || handle === null) return;
+    handle.setCamera({ center: pending });
+    const startMs = Date.now();
+    const timer = setInterval(() => {
+      if (handle.moveToVista(pending.latitude, pending.longitude) || Date.now() - startMs > VISTA_WAIT_TIMEOUT_MS) {
+        clearInterval(timer);
+      }
+    }, VISTA_WAIT_INTERVAL_MS);
+    return () => clearInterval(timer);
   }, [sceneState]);
 
   // レイヤ構成の変化を反映
