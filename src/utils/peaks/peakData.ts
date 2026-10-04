@@ -25,6 +25,8 @@ export interface PeakDataFile {
 
 export interface PeakIndex {
   attribution: string;
+  /** 全件（2Dの山名で画面内を拾うのに使う。8千件程度なので線形に回して足りる） */
+  all: Peak[];
   /** 中心から半径radiusM以内の山 */
   query: (latitude: number, longitude: number, radiusM: number) => Peak[];
 }
@@ -45,9 +47,11 @@ const CELL_DEG = 0.1;
 
 export const buildPeakIndex = (data: PeakDataFile): PeakIndex => {
   const cells = new Map<string, Peak[]>();
+  const all: Peak[] = [];
   for (const [lon, lat, ele, name, rank] of data.rows) {
     const key = `${Math.floor(lon / CELL_DEG)},${Math.floor(lat / CELL_DEG)}`;
     const peak: Peak = { latitude: lat, longitude: lon, ele, name, rank };
+    all.push(peak);
     const list = cells.get(key);
     if (list) list.push(peak);
     else cells.set(key, [peak]);
@@ -69,7 +73,7 @@ export const buildPeakIndex = (data: PeakDataFile): PeakIndex => {
     }
     return result;
   };
-  return { attribution: data.attribution, query };
+  return { attribution: data.attribution, all, query };
 };
 
 let indexPromise: Promise<PeakIndex> | null = null;

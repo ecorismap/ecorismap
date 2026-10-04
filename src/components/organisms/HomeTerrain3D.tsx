@@ -17,6 +17,7 @@ import { TileMapType } from '../../types';
 import { withTileSignature } from '../../utils/TileSignature';
 import { getPmtileMaximumNativeZ } from '../../utils/pmtileProps';
 import { isDemProtocolUrl, isReliefUrl, toDemUrl } from '../../utils/terrainShading';
+import { isPeaksUrl } from '../../utils/peaks/peak2dLabels';
 import { reliefStyleFromUrl } from '../../utils/colorRelief';
 import { DataOverlaySpec, TerrainScene } from '../../utils/terrain3d/TerrainScene';
 import { parseColorToRgba } from '../../utils/terrain3d/colorUtils';
@@ -97,6 +98,8 @@ export const selectTerrainLayers = (
     // PMTiles・pbf（ベクタ含む）は2Dと同じネイティブラスタライザで描画する
     if (url.endsWith('.pdf') || url.startsWith('pdf://')) return false;
     if (isDemProtocolUrl(url) && !isReliefUrl(url)) return false;
+    // 山名（peaks://）はタイルではない（3Dでは眺望の山名ラベルが代わりになる）
+    if (isPeaksUrl(url)) return false;
     return true;
   });
   // tileMapsは先頭ほど上に表示される。上位MAX_TERRAIN_LAYERS枚を採用し、下層から並べる

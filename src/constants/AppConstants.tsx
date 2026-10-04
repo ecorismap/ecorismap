@@ -73,6 +73,8 @@ export const COLOR = {
   PROGRESS_BAR_FILL: '#0066CC',
   TEXT_DARK: '#333',
   CONTOUR_LABEL: 'rgba(60, 75, 90, 0.85)',
+  // 2D地図の山名（▲＋山名＋標高）。地形図の山名に近い焦げ茶で、調査データのラベルと見分ける
+  PEAK_LABEL: '#4a2f1b',
   CONTOUR_HALO: 'rgba(255, 255, 255, 0.7)',
 };
 

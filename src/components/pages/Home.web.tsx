@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useContext, useSyncExternalStore } from 'react';
+import React, { useCallback, useEffect, useMemo, useContext, useState, useSyncExternalStore } from 'react';
 import { StyleSheet, View, Text } from 'react-native';
 import type { PointRecordType, LineRecordType, PolygonRecordType } from '../../types';
 
@@ -40,6 +40,9 @@ import { VISTA_MAX_PITCH_DEG } from '../../utils/terrain3d/constants';
 import { HomeTerrain3DVistaBanner } from '../organisms/HomeTerrain3DVistaBanner';
 import { HomeTerrain3DButtons } from '../organisms/HomeTerrain3DButtons';
 import { HomeVistaPeakLabels } from '../organisms/HomeVistaPeakLabels';
+import { loadPeakIndex } from '../../utils/peaks/peakData';
+import { isPeaksUrl } from '../../utils/peaks/peak2dLabels';
+import { EMPTY_PEAKS, getPeakLayers, PeakFeatureCollection, toPeakGeoJSON } from '../../utils/peaks/peakLayers.web';
 
 // 3D表示用の標高タイル（Mapterhorn、terrarium形式をmaplibreが内蔵デコード）。
 // 日本は基盤地図情報DEM(1m/5m/10m)、国外はCopernicus GLO-30ほか。詳細はdocs/DEM_SOURCES.md
@@ -466,6 +469,11 @@ export default function HomeScreen() {
         return null;
       }
 
+      // 地図一覧の「山名」（peaks://）は同梱の山頂データのラベル（タイルではない）
+      if (isPeaksUrl(tileMap.url)) {
+        return getPeakLayers(tileMap);
+      }
+
       // GEBCO海底地形図はデモ再現のmaplibreネイティブレイヤ（段彩・陰影・等深線・数値ラベル）
       if (isReliefUrl(tileMap.url) && reliefStyleFromUrl(tileMap.url) === 'gebco') {
         return getGebcoLayers(tileMap);
@@ -640,6 +648,25 @@ export default function HomeScreen() {
     [isTerrainActive, addDynamicLayers, mapViewRef]
   );
 
+  // 地図一覧の「山名」を表示したときだけ、同梱の山頂データを読み込む（初期バンドルを太らせない）
+  const [peaksGeoJSON, setPeaksGeoJSON] = useState<PeakFeatureCollection | null>(null);
+  const hasVisiblePeaks = useMemo(
+    () => tileMaps.some((tileMap) => tileMap.visible && !tileMap.isGroup && isPeaksUrl(tileMap.url)),
+    [tileMaps]
+  );
+  useEffect(() => {
+    if (!hasVisiblePeaks || peaksGeoJSON !== null) return;
+    let cancelled = false;
+    loadPeakIndex()
+      .then((index) => {
+        if (!cancelled) setPeaksGeoJSON(toPeakGeoJSON(index));
+      })
+      .catch((e) => console.warn('山頂データの読み込みに失敗', e));
+    return () => {
+      cancelled = true;
+    };
+  }, [hasVisiblePeaks, peaksGeoJSON]);
+
   // ========== マップスタイル定義 ==========
 
   /**
@@ -713,6 +740,12 @@ export default function HomeScreen() {
                 attribution: tileMap.attribution,
               },
             };
+          } else if (isPeaksUrl(tileMap.url)) {
+            // 山名は同梱データをGeoJSONで重ねる。読み込みが終わるまでは空で置いておく
+            return {
+              ...result,
+              [tileMap.id]: { type: 'geojson', data: peaksGeoJSON ?? EMPTY_PEAKS, attribution: tileMap.attribution },
+            };
           } else if (tileMap.url) {
             return {
               ...result,
@@ -777,7 +810,7 @@ export default function HomeScreen() {
       sky: skyStyle,
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tileMaps, tileSignatures]);
+  }, [tileMaps, tileSignatures, peaksGeoJSON]);
   //console.log(mapRegion);
   return !restored ? null : (
     <GestureHandlerRootView style={{ flex: 1 }}>

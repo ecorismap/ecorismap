@@ -19,6 +19,8 @@ import { HomeViewshedBanner } from '../organisms/HomeViewshedBanner';
 import { HomeTerrain3DVistaBanner } from '../organisms/HomeTerrain3DVistaBanner';
 import { HomeViewshedPreview } from '../organisms/HomeViewshedPreview';
 import { HomeSeaLabels } from '../organisms/HomeSeaLabels';
+import { HomePeakLabels } from '../organisms/HomePeakLabels';
+import { isPeaksUrl } from '../../utils/peaks/peak2dLabels';
 import { Point } from '../organisms/HomePoint';
 import { Line } from '../organisms/HomeLine';
 import { Polygon } from '../organisms/HomePolygon';
@@ -100,7 +102,8 @@ const TileMaps = React.memo(({ tileMaps, isOffline }: TileMapsProps) => {
         .slice(0)
         .reverse()
         .map((tileMap: TileMapType, mapIndex: number) =>
-          tileMap.visible && !tileMap.isGroup && tileMap.url ? (
+          // 山名（peaks://）はタイルではないので描かない（HomePeakLabelsがMarkerで重ねる）
+          tileMap.visible && !tileMap.isGroup && tileMap.url && !isPeaksUrl(tileMap.url) ? (
             tileMap.url.startsWith('pmtiles://') ||
             tileMap.url.includes('.pmtiles') ||
             tileMap.url.includes('.pbf') ? (
@@ -619,6 +622,8 @@ export default function HomeScreen() {
             <TileMaps tileMaps={tileMaps} isOffline={isOffline} />
             {/* GEBCO海底地形図の島名・海底地形名（焼き込みではなくMarkerで鮮明に表示） */}
             <HomeSeaLabels tileMaps={tileMaps} bounds={bounds} zoom={zoom} />
+            {/* 地図一覧の「山名」（▲＋山名＋標高） */}
+            <HomePeakLabels tileMaps={tileMaps} bounds={bounds} zoom={zoom} />
             {/************** Point Line Polygon ****************** */}
             {pointDataSet.map((d) => {
               const layer = layers.find((v) => v.id === d.layerId);

@@ -1037,7 +1037,8 @@
     "pdfUnprintable": {
       "basemap": "standard and satellite maps cannot be exported",
       "terrain": "hillshade and relief maps cannot be exported",
-      "local": "on-device maps cannot be exported on the web"
+      "local": "on-device maps cannot be exported on the web",
+      "peaks": "peak names cannot be exported"
     }
   },
   "LayerEditFeatureStyle": {

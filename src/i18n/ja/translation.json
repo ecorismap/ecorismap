@@ -404,7 +404,8 @@
     "pdfUnprintable": {
       "basemap": "標準地図・衛星写真は出力できません",
       "terrain": "陰影起伏・段彩は出力できません",
-      "local": "Web版では端末内の地図は出力できません"
+      "local": "Web版では端末内の地図は出力できません",
+      "peaks": "山名は出力できません"
     }
   },
   "AccountSettings": {

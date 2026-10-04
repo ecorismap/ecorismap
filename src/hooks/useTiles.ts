@@ -27,6 +27,7 @@ import {
 } from '../utils/tileDownloadHelpers';
 import { downloadDemTile, getDemTileMap } from '../utils/demTileDownload';
 import { DEM_MAPTERHORN_MAP_ID } from '../constants/DemSources';
+import { isPeaksUrl } from '../utils/peaks/peak2dLabels';
 
 export type UseTilesReturnType = {
   isDownloading: boolean;
@@ -111,7 +112,7 @@ export const useTiles = (
     // tileMapsが渡されている場合（ダウンロードモード）は、ダウンロード可能な地図のsavedAreaのみ返す
     if (tileMaps && tileMaps.length > 0) {
       const downloadableMapIds = tileMaps
-        .filter((map) => !map.isGroup && map.id !== 'standard' && map.id !== 'hybrid')
+        .filter((map) => !map.isGroup && map.id !== 'standard' && map.id !== 'hybrid' && !isPeaksUrl(map.url))
         .map((map) => map.id);
       // 標高タイル（疑似地図）は「すべての地図」に常に含める
       downloadableMapIds.push(DEM_MAPTERHORN_MAP_ID);
