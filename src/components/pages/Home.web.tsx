@@ -289,6 +289,15 @@ export default function HomeScreen() {
     'fog-color': '#034580',
     'fog-ground-blend': 0.85,
   };
+  // 眺望中の空。通常のフォグは「注視点〜地平線の85%から先」を濃い青で塗るが、眺望は注視点が
+  // 足元のすぐ先なので遠くの山並みがほぼ全部フォグに沈み、山名だけ出て山が見えなかった。
+  // 眺望では地形にフォグを掛けず（fog-ground-blend=1）、地平線際の空だけ明るい霞にする
+  const VISTA_SKY_STYLE = {
+    ...skyStyle,
+    'fog-color': '#dbe8f5',
+    'fog-ground-blend': 1,
+    'horizon-fog-blend': 0.15,
+  };
   const protocol = new pmtiles.Protocol();
   maplibregl.addProtocol('pmtiles', protocol.tile);
 
@@ -767,7 +776,9 @@ export default function HomeScreen() {
                 type: 'raster',
                 tiles: ['https://api.maptiler.com/maps/hybrid/{z}/{x}/{y}.jpg?key=' + maptilerKey],
                 minzoom: 0,
-                maxzoom: 24,
+                // MapTilerの衛星写真はz22まで。24にしていると、眺望など大きく拡大したときに
+                // 存在しないz23・z24を取りに行って400エラーが出続けた（それより先はz22の拡大表示）
+                maxzoom: 22,
                 scheme: 'xyz',
                 tileSize: 512,
                 attribution:
@@ -869,7 +880,7 @@ export default function HomeScreen() {
                 touchPitch={isTerrainActive && mapGesturesEnabled && !vistaActive}
                 scrollZoom={!vistaActive}
                 keyboard={!vistaActive}
-                sky={skyStyle}
+                sky={vistaActive ? VISTA_SKY_STYLE : skyStyle}
               >
                 <HomeZoomLevel zoom={zoom} top={20} left={10} />
 

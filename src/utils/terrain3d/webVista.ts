@@ -41,6 +41,8 @@ export const WEB_NORMAL_MAX_PITCH_DEG = 85;
  * 40mならニア面は約1m（ネイティブのVISTA_NEAR_Mと同程度）。ズームは約z20.5で上限22に収まる
  */
 const LOOK_AHEAD_M = 40;
+/** 眺望で地形を描く最遠距離[m]。山名の表示距離（主要峰150km）より少し先まで */
+const VISTA_FAR_M = 200000;
 /** 眺望を抜けたときの俯瞰（立っていた地点を注視点にする） */
 const EXIT_PITCH_DEG = 60;
 const EXIT_ZOOM = 15;
@@ -118,7 +120,28 @@ const applyCamera = (state: WebVistaState) => {
   );
   // 逆算した方位・俯角は丸め誤差を含むので、持っている値で上書きする
   state.map.jumpTo({ ...options, bearing: state.bearing, pitch: state.pitch });
+  extendFarPlane(state.map);
 };
+
+/**
+ * 描画する最遠距離（ファー面）を眺望用に伸ばす。
+ *
+ * maplibreはファー面をカメラの海抜高度から決めるので、平地（海抜数十m）に立つと
+ * 数km先までしか地形を描かず、山名は出るのに山が見えなかった（山頂からは高度があるので届いていた）。
+ * ニア面はmaplibreの既定（画面高さ/50）のまま。単位はmaplibreのZ単位（中心での1px）
+ */
+const extendFarPlane = (map: MaplibreMap) => {
+  const transform = map.transform as unknown as WritableTransform;
+  transform.overrideNearFarZ(transform.height / 50, VISTA_FAR_M * transform.pixelsPerMeter);
+};
+
+/** ファー面を上書きする操作（型定義では読み取り専用のtransformにしか出ていない） */
+interface WritableTransform {
+  height: number;
+  pixelsPerMeter: number;
+  overrideNearFarZ: (nearZ: number, farZ: number) => void;
+  clearNearFarZOverride: () => void;
+}
 
 /** 足元の標高（誇張込み）。地形タイルが未着ならnull */
 const queryGround = (map: MaplibreMap, latitude: number, longitude: number): number | null => {
@@ -287,6 +310,8 @@ export const clearWebVista = (restoreCamera = true): void => {
   vista = null;
   state.detach();
   state.map.setCenterClampedToGround(true);
+  // ファー面の上書きをやめ、maplibreの自動計算に戻す
+  (state.map.transform as unknown as WritableTransform).clearNearFarZOverride();
   state.map.setVerticalFieldOfView(state.previousFovDeg);
   // 3Dを抜けるとき（restoreCamera=false）は2D側が俯角0の表示範囲を流し込むので、カメラは触らない。
   // ここで俯角を戻すと、その2Dの値を上書きしてしまう（俯角が上限を超えていれば下のsetMaxPitchが丸める）
