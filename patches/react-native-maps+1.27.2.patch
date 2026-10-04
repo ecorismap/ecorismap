@@ -10343,7 +10343,7 @@ new file mode 100644
 index 0000000..fbcaaab
 --- /dev/null
 +++ b/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapDEMTileOverlay.m
-@@ -0,0 +1,857 @@
+@@ -0,0 +1,859 @@
 +//
 +//  AIRGoogleMapDEMTileOverlay.m
 +//  AirGoogleMaps
@@ -10721,7 +10721,9 @@ index 0000000..fbcaaab
 +    const BOOL needBottom = regionY0 + region > size - kHalo;
 +
 +    NSInteger max = 1 << zoom;
-+    NSInteger targets[9][4];
++    // ブロック（dispatch_apply）は配列型の変数を参照できないので、ポインタ経由で使う
++    NSInteger targetsStorage[9][4];
++    NSInteger (*targets)[4] = targetsStorage;
 +    NSInteger targetCount = 0;
 +    for (NSInteger ty = -1; ty <= 1; ty++) {
 +        if ((ty == -1 && !needTop) || (ty == 1 && !needBottom)) continue;
