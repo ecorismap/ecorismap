@@ -21,6 +21,14 @@ export const HomeMeasure = React.memo(() => {
     };
   }, [measureA, measureB]);
 
+  const lineCoordinates = useMemo(() => {
+    if (!measureA || !measureB) return null;
+    return [
+      { latitude: measureA.latitude, longitude: measureA.longitude },
+      { latitude: measureB.latitude, longitude: measureB.longitude },
+    ];
+  }, [measureA, measureB]);
+
   const distanceLabel = useMemo(() => {
     if (!measureA || !measureB) return '';
     return formatDistanceKm(haversineKm(measureA, measureB));
@@ -30,15 +38,16 @@ export const HomeMeasure = React.memo(() => {
 
   return (
     <>
-      {measureB && (
+      {/* 白い縁取りを下に敷き、その上にオレンジの破線を重ねる（どの背景地図でも線が埋もれないように） */}
+      {lineCoordinates && (
+        <Polyline coordinates={lineCoordinates} strokeColor={COLOR.WHITE} strokeWidth={6} zIndex={999} />
+      )}
+      {lineCoordinates && (
         <Polyline
-          coordinates={[
-            { latitude: measureA.latitude, longitude: measureA.longitude },
-            { latitude: measureB.latitude, longitude: measureB.longitude },
-          ]}
+          coordinates={lineCoordinates}
           strokeColor={COLOR.ORANGE}
-          strokeWidth={2}
-          lineDashPattern={[5, 5]}
+          strokeWidth={3}
+          lineDashPattern={[8, 6]}
           zIndex={1000}
         />
       )}
