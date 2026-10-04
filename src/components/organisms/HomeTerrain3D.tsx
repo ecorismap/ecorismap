@@ -26,6 +26,7 @@ import { getColor, getLineWidthAtZoom, getLineWidth } from '../../utils/Layer';
 import { LineRecordType, PointRecordType, PolygonRecordType } from '../../types';
 import { HomeTerrain3DPoints } from './HomeTerrain3DPoints';
 import { HomeVistaPeakLabels } from './HomeVistaPeakLabels';
+import { HomeTerrain3DPeakLabels } from './HomeTerrain3DPeakLabels';
 import { createScenePeakProjector } from '../../utils/peaks/peakProjector';
 import { HomeTerrain3DTrack } from './HomeTerrain3DTrack';
 import { HomeTerrain3DCurrentMarker } from './HomeTerrain3DCurrentMarker';
@@ -740,6 +741,8 @@ export const HomeTerrain3D = React.memo(() => {
       </GestureDetector>
       {/* 眺望中の山名。調査データのポイントを隠さないよう、ポイントより奥に置く */}
       <HomeVistaPeakLabels projector={peakProjector} />
+      {/* 通常の3Dの山名（地図一覧の「山名」表示中・眺望でないとき） */}
+      <HomeTerrain3DPeakLabels scene={sceneState} />
       <HomeTerrain3DPoints scene={sceneState} />
       {/* 軌跡はGPU（シーンのオーバーレイ系統）へ指定を流すだけで、画面出力は持たない */}
       <HomeTerrain3DTrack scene={sceneState} />

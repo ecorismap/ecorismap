@@ -7,7 +7,7 @@
  * Web版はmaplibreのsymbolレイヤで描く（Home.web.tsx）。
  */
 import React, { useEffect, useMemo, useState } from 'react';
-import { Platform, StyleSheet, Text, View } from 'react-native';
+import { Platform, StyleSheet, View } from 'react-native';
 import { Marker } from 'react-native-maps';
 import { TileMapType } from '../../types';
 import { ViewportBounds } from '../../utils/ViewportCulling';
@@ -66,9 +66,8 @@ export const HomePeakLabels = React.memo((props: Props) => {
         >
           {/* New ArchのAndroidは先頭子のサイズで切り出すため、単一Viewにまとめる */}
           <View style={[styles.container, { opacity }]}>
-            <Text style={styles.triangle} allowFontScaling={false}>
-              ▲
-            </Text>
+            {/* ▲にも白フチを付ける（航空写真など暗い地図では焦げ茶だけだと沈んで見えない） */}
+            <HaloText text="▲" textStyle={styles.triangle} haloStyle={styles.triangleHalo} />
             <HaloText text={label.text} textStyle={styles.label} haloStyle={styles.halo} />
           </View>
         </Marker>
@@ -96,5 +95,11 @@ const styles = StyleSheet.create({
     color: COLOR.PEAK_LABEL,
     fontSize: 10,
     lineHeight: 12,
+  },
+  triangleHalo: {
+    color: COLOR.WHITE,
+    fontSize: 10,
+    lineHeight: 12,
+    position: 'absolute',
   },
 });
