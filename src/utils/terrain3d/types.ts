@@ -84,6 +84,8 @@ export interface Terrain3DHandle {
   projectToScreen: (latitude: number, longitude: number) => { x: number; y: number } | null;
   /** 眺望の視点の高さを1段上げ下げする（+1で高く、-1で低く） */
   changeVistaHeight: (step: number) => void;
+  /** 眺望の画角を1段変える（+1で望遠、-1で広角）。眺望中のズームボタン用 */
+  changeVistaFov: (step: number) => void;
   /** 眺望モードを解除して通常の俯瞰へ戻す */
   clearVista: () => void;
   /**

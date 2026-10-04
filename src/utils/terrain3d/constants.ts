@@ -93,6 +93,34 @@ export const VISTA_EYE_HEIGHTS_M = [VISTA_EYE_HEIGHT_M, 5, 10, 20, 50, 100, 200,
  * 通常の操作はMAX_PITCH_DEGのままで、ここを使うのは眺望中だけ
  */
 export const VISTA_MAX_PITCH_DEG = 120;
+/**
+ * 眺望中のズーム＝画角（縦の視野角[度]）の段階。広角→望遠の順。
+ *
+ * 眺望は「その場に立って見る」ので、ズームで視点を動かすと立ち位置が変わってしまう。
+ * 代わりに双眼鏡・カメラのように画角を狭めて遠くを大きく見る。標準はCAMERA_FOV_DEG
+ */
+export const VISTA_FOV_STEPS_DEG = [75, 60, 45, 30, 20, 12, 8];
+export const VISTA_MIN_FOV_DEG = VISTA_FOV_STEPS_DEG[VISTA_FOV_STEPS_DEG.length - 1];
+export const VISTA_MAX_FOV_DEG = VISTA_FOV_STEPS_DEG[0];
+
+/**
+ * 画角を1段狭める（step>0＝望遠）／広げる（step<0＝広角）。
+ * ピンチなどで段の途中にあるときは、その向きの次の段へ寄せる
+ */
+export const stepVistaFov = (currentDeg: number, step: number): number => {
+  if (step > 0) {
+    const next = VISTA_FOV_STEPS_DEG.find((deg) => deg < currentDeg - 0.01);
+    return next ?? VISTA_MIN_FOV_DEG;
+  }
+  const wider = [...VISTA_FOV_STEPS_DEG].reverse().find((deg) => deg > currentDeg + 0.01);
+  return wider ?? VISTA_MAX_FOV_DEG;
+};
+
+export const clampVistaFov = (deg: number): number => Math.min(VISTA_MAX_FOV_DEG, Math.max(VISTA_MIN_FOV_DEG, deg));
+
+/** 標準の画角（CAMERA_FOV_DEG）に対する見かけの倍率 */
+export const vistaMagnification = (fovDeg: number): number =>
+  Math.tan((CAMERA_FOV_DEG * Math.PI) / 360) / Math.tan((fovDeg * Math.PI) / 360);
 export const VISTA_DURATION_MS = 600;
 /**
  * 軌跡リプレイ（三人称追従カメラ）の設定。

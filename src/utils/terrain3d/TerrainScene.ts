@@ -39,6 +39,8 @@ import {
   SUN_ALTITUDE_DEG,
   SUN_AZIMUTH_DEG,
   VISTA_EYE_HEIGHTS_M,
+  clampVistaFov,
+  stepVistaFov,
   VISTA_MAX_PITCH_DEG,
   VISTA_NEAR_M,
   VISTA_PITCH_DEG,
@@ -258,6 +260,8 @@ export class TerrainScene {
     groundElevation: number;
     /** 地上からの視点の高さ[m] */
     heightM: number;
+    /** 画角（縦の視野角[度]）。眺望中のズームはこれを変える（VISTA_FOV_STEPS_DEG） */
+    fovDeg: number;
   } | null = null;
   /**
    * 軌跡リプレイ（三人称追従カメラ）の状態。通常はnull。
@@ -453,7 +457,13 @@ export class TerrainScene {
     const ground = this.sampleElevation(latitude, longitude);
     if (ground === null) return false;
     // 海底モードの海上では地面が海底なので、海面に立つ（視点が海中へ沈まないように）
-    this.vista = { latitude, longitude, groundElevation: Math.max(0, ground), heightM: eyeHeightM };
+    this.vista = {
+      latitude,
+      longitude,
+      groundElevation: Math.max(0, ground),
+      heightM: eyeHeightM,
+      fovDeg: CAMERA_FOV_DEG,
+    };
     this.lastTileUpdateMs = 0; // 足元中心でタイルを取り直す
     this.controller.animateTo({ heading: 0, pitch: VISTA_PITCH_DEG }, durationMs, nowMs, VISTA_MAX_PITCH_DEG);
     this.applyVistaCamera();
@@ -465,6 +475,20 @@ export class TerrainScene {
   /** 眺望中か（ボタンの出し分け・回転の向きの判断に使う） */
   get isVistaActive(): boolean {
     return this.vista !== null;
+  }
+
+  /**
+   * 眺望の目の位置（緯度経度と標高[m]）。眺望中でなければnull。
+   * 山名表示が周辺の山を選び、視線が地形に遮られるかを調べるのに使う
+   */
+  get vistaEye(): { latitude: number; longitude: number; altitude: number } | null {
+    const vista = this.vista;
+    if (vista === null) return null;
+    return {
+      latitude: vista.latitude,
+      longitude: vista.longitude,
+      altitude: vista.groundElevation + vista.heightM,
+    };
   }
 
   /**
@@ -561,7 +585,7 @@ export class TerrainScene {
    */
   lookByScreenDelta(dxDp: number, dyDp: number): void {
     if (this.vista === null || this.viewportHeightDp <= 0) return;
-    const degPerDp = CAMERA_FOV_DEG / this.viewportHeightDp;
+    const degPerDp = this.fovDeg / this.viewportHeightDp;
     // 右へドラッグ＝景色が右へ動く＝自分は左を向く（headingは減る）
     this.controller.rotateBy(-dxDp * degPerDp);
     // 下へドラッグ＝景色が下へ動く＝見上げる（pitchは90=水平から増える）
@@ -589,10 +613,47 @@ export class TerrainScene {
     return true;
   }
 
+  /**
+   * 描画に使う画角（縦の視野角[度]）。眺望中だけズームで変わり、それ以外は既定値。
+   * 投影・レイの復元・見回しの角度換算はすべてこれを使うこと（食い違うとドットや吸着がずれる）
+   */
+  private get fovDeg(): number {
+    return this.vista?.fovDeg ?? CAMERA_FOV_DEG;
+  }
+
+  /**
+   * 眺望中のズーム。画角を1段狭める（step>0＝望遠）／広げる（step<0＝広角）。
+   * 眺望は立ち位置を動かさないので、視点を寄せる代わりに画角を変える
+   * @returns 眺望中でない・端に達しているなど、変わらなかった場合はfalse
+   */
+  changeVistaFov(step: number): boolean {
+    const vista = this.vista;
+    if (vista === null) return false;
+    return this.setVistaFov(stepVistaFov(vista.fovDeg, step));
+  }
+
+  /** 眺望中のピンチ。指を広げる（scale>1）ほど望遠にする。scaleは前フレームからの倍率 */
+  zoomVistaByScale(scale: number): boolean {
+    const vista = this.vista;
+    if (vista === null || scale <= 0) return false;
+    return this.setVistaFov(vista.fovDeg / scale);
+  }
+
+  private setVistaFov(fovDeg: number): boolean {
+    const vista = this.vista;
+    if (vista === null) return false;
+    const next = clampVistaFov(fovDeg);
+    if (Math.abs(next - vista.fovDeg) < 1e-6) return false;
+    vista.fovDeg = next;
+    this.publishVista();
+    this.markDirty();
+    return true;
+  }
+
   private publishVista(): void {
     const vista = this.vista;
     if (vista === null) terrain3dVistaStore.clear();
-    else terrain3dVistaStore.set({ active: true, heightM: vista.heightM });
+    else terrain3dVistaStore.set({ active: true, heightM: vista.heightM, fovDeg: vista.fovDeg });
   }
 
   /** 指定地点の表示中標高[m]（同期・なければnull）。近景→遠景（内側→外側）の順に参照する */
@@ -709,7 +770,7 @@ export class TerrainScene {
     // 視線基底（forward/right/upv）から画面位置方向のレイを作る
     const basis = rayBasisFromCamera(eye, target, up);
     const aspect = viewportWidthDp / viewportHeightDp;
-    const tanHalf = Math.tan((CAMERA_FOV_DEG * Math.PI) / 360);
+    const tanHalf = Math.tan((this.fovDeg * Math.PI) / 360);
     const ndcX = (xDp / viewportWidthDp) * 2 - 1;
     const ndcY = 1 - (yDp / viewportHeightDp) * 2;
     const dir = normalize3(rayDirForNdc(basis, ndcX, ndcY, tanHalf, aspect));
@@ -785,7 +846,7 @@ export class TerrainScene {
     // 眺望モードは視点が地面から1.7mしかないので、通常のニア面（注視点距離の2%＝数十m）では
     // 足元から数十m手前までが切り取られ、画面下半分に地形の穴が開く
     const near = this.vista === null ? Math.max(1, distance * 0.02) : VISTA_NEAR_M;
-    const proj = mat4Perspective((CAMERA_FOV_DEG * Math.PI) / 180, aspect, near, far);
+    const proj = mat4Perspective((this.fovDeg * Math.PI) / 180, aspect, near, far);
     const viewProj = mat4Multiply(proj, mat4LookAt(eye, target, up));
     this.lastViewProj = viewProj;
     this.lastRayBasis = { basis: rayBasisFromCamera(eye, target, up), aspect };
@@ -823,7 +884,7 @@ export class TerrainScene {
     ) {
       return { y: initialY };
     }
-    const tanHalf = Math.tan((CAMERA_FOV_DEG * Math.PI) / 360);
+    const tanHalf = Math.tan((this.fovDeg * Math.PI) / 360);
     let y = initialY;
     for (let i = 0; i < TERRAIN_PLACE_ITERATIONS; i++) {
       const w = m[3] * x + m[7] * y + m[11] * z + m[15];
@@ -953,6 +1014,31 @@ export class TerrainScene {
         `${this.tileManager.lastSampleInfo} ${depthInfo} ${surf}`;
     }
     return screen;
+  }
+
+  /**
+   * 標高を指定して緯度経度をスクリーン座標(dp)へ投影する。カメラの後ろや画面外はnull。
+   *
+   * projectToScreenと違い、描画された地形への吸着も距離バッファによる遮蔽判定もしない。
+   * 山名ラベルは、遠くの山頂が粗いDEMで丸く描かれたときに自分の山体の陰と判定されて
+   * 消えるのを避けるため、遮蔽を視線上の標高で別に調べる（utils/peaks/sightline.ts）
+   */
+  projectWithElevation(latitude: number, longitude: number, elevationM: number): { x: number; y: number } | null {
+    const m = this.lastViewProj;
+    if (m === null || this.viewportWidthDp <= 0 || this.viewportHeightDp <= 0) return null;
+    const merc = lonLatToMercator(longitude, latitude);
+    const x = merc.mx - this.origin.mx;
+    const z = this.origin.my - merc.my;
+    const y = elevationM * this.elevScale;
+    const clipW = m[3] * x + m[7] * y + m[11] * z + m[15];
+    if (clipW <= 0) return null;
+    const clipX = (m[0] * x + m[4] * y + m[8] * z + m[12]) / clipW;
+    const clipY = (m[1] * x + m[5] * y + m[9] * z + m[13]) / clipW;
+    if (clipX < -1.1 || clipX > 1.1 || clipY < -1.1 || clipY > 1.1) return null;
+    return {
+      x: (clipX * 0.5 + 0.5) * this.viewportWidthDp,
+      y: (1 - (clipY * 0.5 + 0.5)) * this.viewportHeightDp,
+    };
   }
 
   /**

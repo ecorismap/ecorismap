@@ -390,7 +390,12 @@
       "previewCount": "可視領域 {{count}}件"
     },
     "vista": {
-      "banner": "眺望モード"
+      "banner": "眺望モード",
+      "peakNames": "山名",
+      "showPeakNames": "山名を表示",
+      "hidePeakNames": "山名を隠す",
+      "peakAttribution": "山名: 国土地理院",
+      "peakDetail": "標高 {{elevation}} m ・ {{distance}} km"
     },
     "layerSelect": {
       "title": "編集するレイヤを選択",

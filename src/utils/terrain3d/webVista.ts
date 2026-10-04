@@ -23,8 +23,13 @@ import {
   VISTA_EYE_HEIGHTS_M,
   VISTA_MAX_PITCH_DEG,
   VISTA_PITCH_DEG,
+  clampVistaFov,
+  stepVistaFov,
 } from './constants';
 import { terrain3dVistaStore } from './vistaStore';
+import type { PeakProjector } from '../peaks/peakProjector';
+import { isSightBlocked } from '../peaks/sightline';
+import { createTerrainSampler } from './webCamera';
 
 /** 通常時のmaxPitch（Home.web.tsxのMapと同じ値） */
 export const WEB_NORMAL_MAX_PITCH_DEG = 85;
@@ -45,6 +50,8 @@ const ELEVATION_WAIT_MS = 5000;
 const GROUND_UPDATE_THRESHOLD_M = 0.5;
 
 const EARTH_RADIUS_M = 6378137;
+/** ホイール1ノッチ（deltaY≒100）で画角を約1割変える */
+const WHEEL_FOV_RATE = 0.001;
 
 interface WebVistaState {
   map: MaplibreMap;
@@ -57,10 +64,14 @@ interface WebVistaState {
   pitch: number;
   /** 眺望に入る前の縦の視野角（解除時に戻す） */
   previousFovDeg: number;
+  /** 眺望中の画角（縦の視野角[度]）。ズームはこれを変える（VISTA_FOV_STEPS_DEG） */
+  fovDeg: number;
   detach: () => void;
 }
 
 let vista: WebVistaState | null = null;
+/** 眺望中にドラッグで見回している最中か（山名ラベルはその間隠す） */
+let lookingAround = false;
 /** 開始処理の世代（標高待ちの間に解除・再開始されたら古い処理を捨てる） */
 let generation = 0;
 
@@ -68,7 +79,7 @@ export const isWebVistaActive = (): boolean => vista !== null;
 
 const publish = () => {
   if (vista === null) terrain3dVistaStore.clear();
-  else terrain3dVistaStore.set({ active: true, heightM: vista.heightM });
+  else terrain3dVistaStore.set({ active: true, heightM: vista.heightM, fovDeg: vista.fovDeg });
 };
 
 /** 視点から方位bearing・俯角pitchへdistanceM進んだ点（球面近似、短い距離なので十分） */
@@ -89,7 +100,14 @@ const lookTarget = (state: WebVistaState, distanceM: number) => {
 const eyeAltitude = (state: WebVistaState) => state.ground + state.heightM;
 
 const applyCamera = (state: WebVistaState) => {
-  const target = lookTarget(state, LOOK_AHEAD_M);
+  // 画角を狭めると、同じ距離の注視点を写すのにmaplibreのズームが上がり、望遠側で
+  // 上限（z25）を超えて地図ごと落ちた。狭めた分だけ注視点を遠くへ置き、ズームを保つ。
+  // なお望遠に合わせてズームを上げれば遠景のタイルが細かくなるが、眺望は注視点が足元の
+  // すぐ先にあるため、ズームを1段上げただけで足元のタイルが上限を超えて落ちた（実測）。
+  // Webの望遠はタイルの細かさを上げない
+  const lookAhead =
+    (LOOK_AHEAD_M * Math.tan((CAMERA_FOV_DEG * Math.PI) / 360)) / Math.tan((state.fovDeg * Math.PI) / 360);
+  const target = lookTarget(state, lookAhead);
   // 型定義はfrom/toをLngLatに限るが、実装はLngLat.convertを通すので配列でよい
   // （LngLatクラスを使うにはmaplibre-glを実行時importする必要があり、ネイティブのバンドルに入ってしまう）
   const options = state.map.calculateCameraOptionsFromTo(
@@ -130,6 +148,7 @@ const attachLookAround = (map: MaplibreMap): (() => void) => {
   const onDown = (e: PointerEvent) => {
     if (last !== null) return;
     last = { id: e.pointerId, x: e.clientX, y: e.clientY };
+    lookingAround = true;
   };
   const onMove = (e: PointerEvent) => {
     if (last === null || e.pointerId !== last.id || vista === null) return;
@@ -139,7 +158,12 @@ const attachLookAround = (map: MaplibreMap): (() => void) => {
     last = { id: e.pointerId, x: e.clientX, y: e.clientY };
   };
   const onUp = (e: PointerEvent) => {
-    if (last !== null && e.pointerId === last.id) last = null;
+    if (last !== null && e.pointerId === last.id) {
+      last = null;
+      lookingAround = false;
+      // 指を離した時点の向きで山名を出し直させる（カメラが止まると描画が来ない）
+      map.triggerRepaint();
+    }
   };
   // より細かい標高タイルが届いたら足元の高さを取り直す
   const onIdle = () => {
@@ -150,12 +174,21 @@ const attachLookAround = (map: MaplibreMap): (() => void) => {
       applyCamera(vista);
     }
   };
+  // ホイール＝画角のズーム（眺望中は地図のスクロールズームを止めているので、こちらで受ける）
+  const onWheel = (e: WheelEvent) => {
+    if (vista === null) return;
+    e.preventDefault();
+    setFov(vista, vista.fovDeg * Math.exp(e.deltaY * WHEEL_FOV_RATE));
+  };
+  container.addEventListener('wheel', onWheel, { passive: false });
   container.addEventListener('pointerdown', onDown);
   window.addEventListener('pointermove', onMove);
   window.addEventListener('pointerup', onUp);
   window.addEventListener('pointercancel', onUp);
   map.on('idle', onIdle);
   return () => {
+    lookingAround = false;
+    container.removeEventListener('wheel', onWheel);
     container.removeEventListener('pointerdown', onDown);
     window.removeEventListener('pointermove', onMove);
     window.removeEventListener('pointerup', onUp);
@@ -190,6 +223,7 @@ export const startWebVista = async (map: MaplibreMap, latitude: number, longitud
     bearing: 0,
     pitch: VISTA_PITCH_DEG,
     previousFovDeg,
+    fovDeg: CAMERA_FOV_DEG,
     detach: () => undefined,
   };
   applyCamera(vista);
@@ -209,6 +243,25 @@ export const lookBy = (deltaBearingDeg: number, deltaPitchDeg: number): void => 
   vista.bearing = (((vista.bearing + deltaBearingDeg) % 360) + 360) % 360;
   vista.pitch = Math.min(VISTA_MAX_PITCH_DEG, Math.max(0, vista.pitch + deltaPitchDeg));
   applyCamera(vista);
+};
+
+/**
+ * 画角を変える。maplibreは画角を変えると注視点とズームを保ってカメラを前後させるので、
+ * 立ち位置から注視点を逆算し直して視点を元の位置に戻す
+ */
+const setFov = (state: WebVistaState, fovDeg: number) => {
+  const next = clampVistaFov(fovDeg);
+  if (Math.abs(next - state.fovDeg) < 1e-6) return;
+  state.fovDeg = next;
+  state.map.setVerticalFieldOfView(next);
+  applyCamera(state);
+  publish();
+};
+
+/** 眺望中のズーム。画角を1段狭める（step>0＝望遠）／広げる（step<0＝広角） */
+export const changeWebVistaFov = (step: number): void => {
+  if (vista === null) return;
+  setFov(vista, stepVistaFov(vista.fovDeg, step));
 };
 
 /** 視点の高さを1段上げ下げする（VISTA_EYE_HEIGHTS_M） */
@@ -249,3 +302,55 @@ export const clearWebVista = (restoreCamera = true): void => {
   state.map.setMaxPitch(WEB_NORMAL_MAX_PITCH_DEG);
   publish();
 };
+
+/**
+ * 山頂を画面へ投影する。カメラの後ろ・画面外・地形の陰ならnull。
+ *
+ * maplibreは地形に隠れた点も投影してしまうので、視線上の標高をqueryTerrainElevationで
+ * 調べて隠れているかを判定する（utils/peaks/sightline.ts。描画と同じ誇張込みの標高で比べる）
+ */
+const projectPeak = (
+  map: MaplibreMap,
+  latitude: number,
+  longitude: number,
+  ele: number
+): { x: number; y: number } | null => {
+  const state = vista;
+  if (state === null) return null;
+  const summit = queryGround(map, latitude, longitude);
+  if (summit === null) return null;
+  // 後ろ半分の点はprojectが画面内の座標を返すことがあるので、方位で先に落とす
+  const north = (latitude - state.latitude) * (Math.PI / 180) * EARTH_RADIUS_M;
+  const east =
+    (longitude - state.longitude) * (Math.PI / 180) * EARTH_RADIUS_M * Math.cos((state.latitude * Math.PI) / 180);
+  const azimuth = (Math.atan2(east, north) * 180) / Math.PI;
+  const offAxis = Math.abs(((azimuth - state.bearing + 540) % 360) - 180);
+  if (offAxis > 90) return null;
+  const point = map.project([longitude, latitude]);
+  const container = map.getContainer();
+  if (point.x < 0 || point.y < 0 || point.x > container.clientWidth || point.y > container.clientHeight) return null;
+
+  const distance = Math.hypot(north, east);
+  const eye = { latitude: state.latitude, longitude: state.longitude, altitude: eyeAltitude(state) };
+  const sample = createTerrainSampler(map);
+  if (sample === null) return null;
+  // 視線は描かれた山頂と山頂データの標高の高い方へ引く（peakProjector.tsのPEAK_SIGHT_NOTE）
+  const target = { latitude, longitude, altitude: Math.max(summit, ele * TERRAIN_EXAGGERATION) };
+  if (isSightBlocked(sample, eye, target, distance, TERRAIN_EXAGGERATION)) {
+    return null;
+  }
+  return { x: point.x, y: point.y };
+};
+
+/** Web版の山名ラベルの投影（HomeVistaPeakLabelsへ渡す） */
+export const createWebPeakProjector = (map: MaplibreMap): PeakProjector => ({
+  project: (latitude, longitude, ele) => projectPeak(map, latitude, longitude, ele),
+  subscribe: (listener) => {
+    map.on('render', listener);
+    return () => {
+      map.off('render', listener);
+    };
+  },
+  isReady: () => vista !== null && !lookingAround,
+  getViewpoint: () => (vista === null ? null : { latitude: vista.latitude, longitude: vista.longitude }),
+});

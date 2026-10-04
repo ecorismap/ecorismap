@@ -9,6 +9,8 @@ import { RegionType } from '../types';
 import { editSettingsAction } from '../modules/settings';
 import { deltaToZoom, zoomToDelta } from '../utils/Coords';
 import { isTerrain3DHandle } from '../utils/terrain3d/types';
+import { changeWebVistaFov, isWebVistaActive } from '../utils/terrain3d/webVista';
+import { terrain3dVistaStore } from '../utils/terrain3d/vistaStore';
 import { useDispatch } from 'react-redux';
 
 export type UseMapViewReturnType = {
@@ -45,6 +47,15 @@ export const useMapView = (mapViewRefObj: React.RefObject<MapView | MapRef | nul
   const zoomIn = useCallback(() => {
     // 3D切替などでrefの中身が差し替わるため、呼び出し時点のcurrentを解決する
     const mapViewRef = mapViewRefObj.current;
+    // 眺望中は立ち位置を動かさず、画角を狭めて（望遠）遠くを大きく見る
+    if (isTerrain3DHandle(mapViewRef) && terrain3dVistaStore.getSnapshot().active) {
+      mapViewRef.changeVistaFov(1);
+      return;
+    }
+    if (isWebVistaActive()) {
+      changeWebVistaFov(1);
+      return;
+    }
     // 3Dはカメラ側の値を基準にする（mapRegionはカメラ同期の間引きで遅れるため、
     // 連続で押すと同じズームを指し続けて効かなくなる）
     if (isTerrain3DHandle(mapViewRef)) {
@@ -68,6 +79,15 @@ export const useMapView = (mapViewRefObj: React.RefObject<MapView | MapRef | nul
 
   const zoomOut = useCallback(() => {
     const mapViewRef = mapViewRefObj.current;
+    // 眺望中は画角を広げる（広角）
+    if (isTerrain3DHandle(mapViewRef) && terrain3dVistaStore.getSnapshot().active) {
+      mapViewRef.changeVistaFov(-1);
+      return;
+    }
+    if (isWebVistaActive()) {
+      changeWebVistaFov(-1);
+      return;
+    }
     if (isTerrain3DHandle(mapViewRef)) {
       mapViewRef.zoomBy(-1);
       return;

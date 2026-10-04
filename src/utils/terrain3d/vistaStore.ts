@@ -10,9 +10,11 @@ export interface Terrain3DVistaState {
   active: boolean;
   /** 地上からの視点の高さ[m] */
   heightM: number;
+  /** 画角（縦の視野角[度]）。眺望中のズームはこれを変える */
+  fovDeg: number;
 }
 
-const INACTIVE: Terrain3DVistaState = { active: false, heightM: 0 };
+const INACTIVE: Terrain3DVistaState = { active: false, heightM: 0, fovDeg: 0 };
 
 let state: Terrain3DVistaState = INACTIVE;
 const listeners = new Set<() => void>();
@@ -26,7 +28,7 @@ export const terrain3dVistaStore = {
   },
   getSnapshot: (): Terrain3DVistaState => state,
   set: (value: Terrain3DVistaState): void => {
-    if (value.active === state.active && value.heightM === state.heightM) return;
+    if (value.active === state.active && value.heightM === state.heightM && value.fovDeg === state.fovDeg) return;
     state = value;
     listeners.forEach((listener) => listener());
   },

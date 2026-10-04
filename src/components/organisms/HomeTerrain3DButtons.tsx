@@ -5,22 +5,24 @@
  * 見た目はズームボタンと同じ半透明の青い縦長パネルにまとめ、左側のボタン群と揃える。
  */
 import React, { useCallback, useContext, useSyncExternalStore } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Platform, StyleSheet, Text, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Pressable } from '../atoms/Pressable';
 import { COLOR } from '../../constants/AppConstants';
 import { MapViewContext } from '../../contexts/MapView';
 import { isTerrain3DHandle, Terrain3DHandle } from '../../utils/terrain3d/types';
 import { terrain3dVistaStore } from '../../utils/terrain3d/vistaStore';
-import { changeWebVistaHeight, isWebVistaActive, lookBy } from '../../utils/terrain3d/webVista';
+import { changeWebVistaFov, changeWebVistaHeight, isWebVistaActive, lookBy } from '../../utils/terrain3d/webVista';
+import { vistaMagnification } from '../../utils/terrain3d/constants';
 
 /** ボタンが使うカメラ操作（ネイティブはTerrain3DHandle、Webの眺望はwebVista） */
-type ButtonHandle = Pick<Terrain3DHandle, 'rotateBy' | 'pitchBy' | 'changeVistaHeight'>;
+type ButtonHandle = Pick<Terrain3DHandle, 'rotateBy' | 'pitchBy' | 'changeVistaHeight' | 'changeVistaFov'>;
 
 const WEB_VISTA_HANDLE: ButtonHandle = {
   rotateBy: (deltaDeg) => lookBy(deltaDeg, 0),
   pitchBy: (deltaDeg) => lookBy(0, deltaDeg),
   changeVistaHeight: changeWebVistaHeight,
+  changeVistaFov: changeWebVistaFov,
 };
 
 interface Props {
@@ -85,11 +87,29 @@ export const HomeTerrain3DButtons = React.memo((props: Props) => {
           <Pressable style={styles.button} onPress={() => withHandle((h) => h.changeVistaHeight(-1))}>
             <MaterialCommunityIcons name="arrow-down" size={20} color={COLOR.WHITE} pointerEvents="none" />
           </Pressable>
+          {/* 画角（望遠・広角）。ネイティブは左上のズームボタンが眺望中はこれになるので、
+              ボタンはWebだけ（Webのズームボタンはmaplibre標準で、眺望中は隠している） */}
+          {Platform.OS === 'web' && (
+            <Pressable style={styles.button} onPress={() => withHandle((h) => h.changeVistaFov(1))}>
+              <MaterialCommunityIcons name="magnify-plus-outline" size={20} color={COLOR.WHITE} pointerEvents="none" />
+            </Pressable>
+          )}
+          <View style={styles.height}>
+            <Text style={styles.heightText}>{formatMagnification(vista.fovDeg)}</Text>
+          </View>
+          {Platform.OS === 'web' && (
+            <Pressable style={styles.button} onPress={() => withHandle((h) => h.changeVistaFov(-1))}>
+              <MaterialCommunityIcons name="magnify-minus-outline" size={20} color={COLOR.WHITE} pointerEvents="none" />
+            </Pressable>
+          )}
         </>
       )}
     </View>
   );
 });
+
+/** 標準の画角に対する倍率（広角は×0.8など1未満になる） */
+const formatMagnification = (fovDeg: number): string => `×${vistaMagnification(fovDeg).toFixed(1)}`;
 
 /** 1.7mは小数、それ以上は整数で表示する */
 const formatHeight = (heightM: number): string =>

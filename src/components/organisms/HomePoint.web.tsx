@@ -1,11 +1,16 @@
-import React, { useMemo } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef } from 'react';
 import { View } from 'react-native';
 import { COLOR } from '../../constants/AppConstants';
 import { RecordType, LayerType, PointRecordType } from '../../types';
 import { PointView, PointLabel } from '../atoms';
-import { Marker, MarkerDragEvent } from 'react-map-gl/maplibre';
+import { Marker, MarkerDragEvent, useMap } from 'react-map-gl/maplibre';
+import type { Marker as MaplibreMarker } from 'maplibre-gl';
 import { generateLabel, getColor } from '../../utils/Layer';
 import { ViewportBounds, cullPoints } from '../../utils/ViewportCulling';
+import { createBehindCameraTest, createTerrainOcclusionTest } from '../../utils/terrain3d/webCamera';
+
+/** 地形による遮蔽の判定間隔[ms]（カメラが動いている間の間引き） */
+const OCCLUSION_INTERVAL_MS = 200;
 
 interface Props {
   data: PointRecordType[];
@@ -47,6 +52,79 @@ export const Point = React.memo(
       });
     }, [data, bounds, zoom]);
 
+    // 傾けた3Dでは、カメラの後ろの地点と地形に隠れた地点を隠す。
+    // ・maplibreのマーカーは後ろの地点も投影してしまい、眺望のように水平に見ると
+    //   背後の地点が空に浮いて見える
+    // ・地形に隠れた地点はmaplibreが薄く（20%）表示するが、その判定は眺望の遠方で甘く、
+    //   尾根の向こうの地点が見えてしまう。山名と同じ視線判定に置き換え、隠れた地点は消す
+    //   （maplibreの薄くする処理は止める）。詳しくはwebCamera.ts
+    // 後ろかどうかは描画のたびに判定する（位置はmaplibreが描画ごとに動かす）。
+    // 視線判定は重いので間引き、カメラが止まったら最後に必ずやり直す。
+    // 真上から見ているとき（判定関数がnull）はmaplibreの既定の見せ方のまま
+    const { current: mapRef } = useMap();
+    const markersRef = useRef(new Map<string, MaplibreMarker>());
+    const occludedRef = useRef(new Set<string>());
+    const lastOcclusionRef = useRef(0);
+    const pitchedRef = useRef(false);
+    const updateMarkerVisibility = useCallback(
+      (forceOcclusion = false) => {
+        const map = mapRef?.getMap();
+        if (!map) return;
+        const isBehind = createBehindCameraTest(map);
+        const pitched = isBehind !== null;
+        if (pitched !== pitchedRef.current) {
+          pitchedRef.current = pitched;
+          // 傾けている間は自前の判定で消すので、maplibreの「隠れたら薄く」は止める
+          markersRef.current.forEach((marker) => (pitched ? marker.setOpacity('1', '1') : marker.setOpacity()));
+          forceOcclusion = true;
+        }
+        const now = Date.now();
+        if (pitched && (forceOcclusion || now - lastOcclusionRef.current >= OCCLUSION_INTERVAL_MS)) {
+          lastOcclusionRef.current = now;
+          const isOccluded = createTerrainOcclusionTest(map);
+          const occluded = new Set<string>();
+          if (isOccluded !== null) {
+            markersRef.current.forEach((marker, key) => {
+              const lngLat = marker.getLngLat();
+              if (!isBehind(lngLat) && isOccluded(lngLat)) occluded.add(key);
+            });
+          }
+          occludedRef.current = occluded;
+        }
+        markersRef.current.forEach((marker, key) => {
+          const hidden = pitched && (occludedRef.current.has(key) || isBehind(marker.getLngLat()));
+          const element = marker.getElement();
+          const visibility = hidden ? 'hidden' : '';
+          if (element.style.visibility !== visibility) element.style.visibility = visibility;
+        });
+      },
+      [mapRef]
+    );
+    useEffect(() => {
+      const map = mapRef?.getMap();
+      if (!map) return;
+      const onRender = () => updateMarkerVisibility();
+      // 止まった時点の視線で判定し直す（間引きで最後の位置を取りこぼさないように）
+      const onIdle = () => updateMarkerVisibility(true);
+      map.on('render', onRender);
+      map.on('idle', onIdle);
+      return () => {
+        map.off('render', onRender);
+        map.off('idle', onIdle);
+      };
+    }, [mapRef, updateMarkerVisibility]);
+    // マーカーが作り直されたら、次の描画を待たずに判定する
+    useEffect(() => updateMarkerVisibility(true), [culledData, updateMarkerVisibility]);
+    const setMarkerRef = useCallback((key: string, marker: MaplibreMarker | null) => {
+      if (marker) {
+        // 新しいマーカーにも、いまの見せ方（傾けている間は薄くしない）を揃える
+        if (pitchedRef.current && !markersRef.current.has(key)) marker.setOpacity('1', '1');
+        markersRef.current.set(key, marker);
+      } else {
+        markersRef.current.delete(key);
+      }
+    }, []);
+
     if (data === undefined) return null;
 
     return (
@@ -71,6 +149,7 @@ export const Point = React.memo(
             // @ts-ignore */
             <Marker
               key={`${feature.id}-${feature.redraw}`}
+              ref={(marker: MaplibreMarker | null) => setMarkerRef(`${feature.id}-${feature.redraw}`, marker)}
               {...feature.coords}
               offset={[-15 / 2, -15 / 2]}
               anchor={'top-left'}

@@ -31,6 +31,7 @@ import { MAPTERHORN_URL, TERRAIN_EXAGGERATION } from '../../constants/DemSources
 import { takePendingVista, terrain3dVistaStore } from '../../utils/terrain3d/vistaStore';
 import {
   clearWebVista,
+  createWebPeakProjector,
   reapplyWebVista,
   startWebVista,
   WEB_NORMAL_MAX_PITCH_DEG,
@@ -38,6 +39,7 @@ import {
 import { VISTA_MAX_PITCH_DEG } from '../../utils/terrain3d/constants';
 import { HomeTerrain3DVistaBanner } from '../organisms/HomeTerrain3DVistaBanner';
 import { HomeTerrain3DButtons } from '../organisms/HomeTerrain3DButtons';
+import { HomeVistaPeakLabels } from '../organisms/HomeVistaPeakLabels';
 
 // 3D表示用の標高タイル（Mapterhorn、terrarium形式をmaplibreが内蔵デコード）。
 // 日本は基盤地図情報DEM(1m/5m/10m)、国外はCopernicus GLO-30ほか。詳細はdocs/DEM_SOURCES.md
@@ -195,6 +197,11 @@ export default function HomeScreen() {
   useEffect(() => {
     if (vistaActive) reapplyWebVista();
   }, [vistaActive]);
+  // 眺望中の山名ラベルの投影。眺望に入った時点の地図インスタンスで作る
+  const peakProjector = useMemo(() => {
+    const mapRef = mapViewRef.current as MapRef | null;
+    return vistaActive && mapRef !== null ? createWebPeakProjector(mapRef.getMap()) : null;
+  }, [vistaActive, mapViewRef]);
 
   //地図ジェスチャーの許可判定（nativeのscrollEnabledと同じルール）。Webにはペンロックが無い
   const mapGesturesEnabled = useMemo(
@@ -798,6 +805,7 @@ export default function HomeScreen() {
           <HomeMeasureBanner />
           <HomeViewshedBanner />
           <HomeTerrain3DVistaBanner />
+          <HomeVistaPeakLabels projector={peakProjector} />
           {/* Webは通常の回転・傾きを地図のコントロールで行うので、眺望中（高さ変更が要る）だけ出す */}
           {vistaActive && <HomeTerrain3DButtons top={230} left={10} />}
           <HomeTrackPointPopup />
@@ -833,9 +841,13 @@ export default function HomeScreen() {
                 <HomeZoomLevel zoom={zoom} top={20} left={10} />
 
                 <NavigationControl
+                  // showZoomは作成時にしか効かないので、眺望の出入りで作り直す
+                  key={vistaActive ? 'nav-vista' : 'nav'}
                   style={{ position: 'absolute', top: 50, left: 0 }}
                   position="top-left"
                   visualizePitch={true}
+                  // 眺望中の地図のズームは視点を動かしてしまう。代わりに眺望のボタン列で画角を変える
+                  showZoom={!vistaActive}
                 />
                 <HomeTerrainControl
                   top={150}
@@ -872,7 +884,10 @@ export default function HomeScreen() {
                       data={d.data as PointRecordType[]}
                       layer={layer!}
                       zoom={zoom}
-                      bounds={bounds}
+                      // 地形表示（傾けた3D・眺望）では表示範囲で間引かない。boundsはmapRegion由来の
+                      // 「注視点のまわりの矩形」で、傾けると奥の見えている範囲を含まない
+                      // （眺望では注視点が40m先・z20になり、数百m四方に縮んで全ポイントが消えた）
+                      bounds={isTerrainActive ? null : bounds}
                       selectedRecord={selectedRecord}
                       onDragEndPoint={onDragEndPoint}
                       currentDrawTool={currentDrawTool}
