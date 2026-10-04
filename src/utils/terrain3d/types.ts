@@ -80,6 +80,8 @@ export interface Terrain3DHandle {
    * @returns 標高が取れず移動できなかった場合はfalse
    */
   moveToVista: (latitude: number, longitude: number) => boolean;
+  /** 緯度経度→キャンバス上のdp座標（2DのlatLonToXY相当）。カメラの後ろ・画面外・未描画はnull */
+  projectToScreen: (latitude: number, longitude: number) => { x: number; y: number } | null;
   /** 眺望の視点の高さを1段上げ下げする（+1で高く、-1で低く） */
   changeVistaHeight: (step: number) => void;
   /** 眺望モードを解除して通常の俯瞰へ戻す */

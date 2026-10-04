@@ -995,13 +995,15 @@
     },
     "poi": {
       "openInGoogleMaps": "To Google Maps",
+      "currentLocation": "Current location",
       "distanceFromCurrentLocation": "{{distance}} from here",
       "elevation": "Elevation {{elevation}} m",
       "elevationUnavailable": "Elevation unavailable",
       "copied": "Copied",
       "createViewshed": "Create Viewshed",
       "measureDistance": "Measure Distance",
-      "vista": "View from here"
+      "vista": "View from here",
+      "vistaFromCurrentLocation": "View from my spot"
     },
     "measure": {
       "tapToSetPoint": "Tap the map to set a point",

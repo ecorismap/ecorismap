@@ -1,4 +1,4 @@
-import React, { useContext, useCallback, useMemo, useState, useEffect } from 'react';
+import React, { useContext, useCallback, useMemo, useState, useEffect, useRef } from 'react';
 import { View, Text, Linking, Platform } from 'react-native';
 import { Pressable } from '../atoms/Pressable';
 import { MapViewContext } from '../../contexts/MapView';
@@ -9,8 +9,16 @@ import { getDemElevation } from '../../utils/viewshed';
 import { copyToClipboard } from '../../utils/Clipboard';
 import { useWindow } from '../../hooks/useWindow';
 import { MeasureContext } from '../../contexts/Measure';
+import { DrawingToolsContext } from '../../contexts/DrawingTools';
 import { isTerrain3DHandle } from '../../utils/terrain3d/types';
+import { requestVistaOnEnter } from '../../utils/terrain3d/vistaStore';
+import { startWebVista } from '../../utils/terrain3d/webVista';
+import type { MapRef } from 'react-map-gl/maplibre';
+import { useTerrain3dSupport } from '../../hooks/useTerrain3dSupport';
 import { t } from '../../i18n/config';
+
+/** 長押し位置を現在地へスナップする距離[px]（既存ポイントへのスナップと同じ） */
+const CURRENT_LOCATION_SNAP_RADIUS_PX = 40;
 
 export const HomePoiPopup = React.memo(() => {
   const {
@@ -23,27 +31,63 @@ export const HomePoiPopup = React.memo(() => {
     gpsState,
     pressCreateViewshed,
     isTerrainActive,
+    toggleTerrain,
   } = useContext(MapViewContext);
   const { startMeasure } = useContext(MeasureContext);
   const { mapRegion, mapSize } = useWindow();
+  const { featureButton } = useContext(DrawingToolsContext);
+  const terrain3dSupported = useTerrain3dSupport();
+  // 2Dからは3Dボタンが出ている状態（作図パネルを開いていない）に限る。3Dから戻れなくなるため
+  const canVista =
+    terrain3dSupported &&
+    toggleTerrain !== undefined &&
+    (isTerrainActive || featureButton === 'NONE');
   const WIDTH = 150;
 
   // POIまたは通常の地図位置のいずれかを取得
   const locationInfo = poiInfo || mapLocationInfo;
   const isPOI = !!poiInfo;
 
-  // GPSがONのとき、長押し位置までの現在地からの直線距離を表示する
+  // GPSがONで長押し位置が現在地の近く（画面上40px以内）なら、長押し位置を現在地へスナップする。
+  // 現在地のマーカーを正確に長押しするのは難しく、「今いる場所」の標高・眺望等を見たい場面が多いため。
+  // 判定は長押しした時点の1回だけ（GPS更新のたびに位置が動くと標高の取り直し等が走るため、現在地はrefで読む）
+  const snapSourceRef = useRef({ gpsState, currentLocation, mapRegion, mapSize });
+  snapSourceRef.current = { gpsState, currentLocation, mapRegion, mapSize };
+  const snappedLocation = useMemo(() => {
+    const source = snapSourceRef.current;
+    const current = source.currentLocation;
+    if (source.gpsState === 'off' || !current || !mapLocationInfo?.position) return null;
+    const handle = mapViewRef.current;
+    let xy: { x: number; y: number } | null;
+    if (isTerrain3DHandle(handle)) {
+      xy = handle.projectToScreen(current.latitude, current.longitude);
+    } else {
+      if (!source.mapRegion || !source.mapSize) return null;
+      const p = latLonToXY([current.longitude, current.latitude], source.mapRegion, source.mapSize, handle);
+      xy = { x: p[0], y: p[1] };
+    }
+    if (xy === null) return null;
+    const { x, y } = mapLocationInfo.position;
+    if (Math.hypot(xy.x - x, xy.y - y) > CURRENT_LOCATION_SNAP_RADIUS_PX) return null;
+    return { latitude: current.latitude, longitude: current.longitude };
+  }, [mapLocationInfo, mapViewRef]);
+  const isSnapped = !isPOI && snappedLocation !== null;
+  // メニュー・表示が対象とする地点
+  const coordinate = isSnapped ? snappedLocation : locationInfo?.coordinate;
+
+  // GPSがONのとき、長押し位置までの現在地からの直線距離を表示する（現在地へスナップしたら「現在地」と出す）
   const distanceText = useMemo(() => {
-    if (isPOI || !locationInfo || gpsState === 'off' || !currentLocation) return null;
-    const km = haversineKm(currentLocation, locationInfo.coordinate);
+    if (isPOI || !coordinate || gpsState === 'off' || !currentLocation) return null;
+    if (isSnapped) return t('Home.poi.currentLocation');
+    const km = haversineKm(currentLocation, coordinate);
     const distance = formatDistanceKm(km);
     return t('Home.poi.distanceFromCurrentLocation', { distance });
-  }, [isPOI, locationInfo, gpsState, currentLocation]);
+  }, [isPOI, isSnapped, coordinate, gpsState, currentLocation]);
 
   // 長押し/POI位置の標高を標高タイル（Mapterhorn）から取得する
   // undefined: 取得中, null: 取得失敗（通信エラー等）, number: 標高(m)
-  const lat = locationInfo?.coordinate.latitude;
-  const lon = locationInfo?.coordinate.longitude;
+  const lat = coordinate?.latitude;
+  const lon = coordinate?.longitude;
   const [elevation, setElevation] = useState<number | null | undefined>(undefined);
   useEffect(() => {
     if (lat == null || lon == null) {
@@ -88,43 +132,56 @@ export const HomePoiPopup = React.memo(() => {
     if (success) setCopied(true);
   }, [coordinateText]);
 
-  // 3Dでは可視領域・距離測定（2Dの地図操作が前提）を出さず、代わりに眺望を出す
-  const menuItemCount = isPOI ? 0 : isTerrainActive ? 1 : 2;
+  // 3Dでは可視領域・距離測定（2Dの地図操作が前提）を出さず、眺望だけを出す
+  const menuItemCount = isPOI ? 0 : (canVista ? 1 : 0) + (isTerrainActive ? 0 : 2);
   const HEIGHT = 40 + (distanceText ? 20 : 0) + 20 + (coordinateText ? 20 : 0) + menuItemCount * 30;
 
-  // その地点に立って真北を水平に見る視点へ3Dカメラを移す
+  // その地点に立って真北を水平に見る視点へ3Dカメラを移す。
+  // 2Dからは地点を預けて3Dへ切り替え、シーンの初期化後に眺望へ移してもらう
   const handleVista = useCallback(() => {
-    if (!locationInfo) return;
-    const { latitude, longitude } = locationInfo.coordinate;
+    if (!coordinate) return;
+    const { latitude, longitude } = coordinate;
     const handle = mapViewRef.current;
     setPoiInfo(null);
     setMapLocationInfo(null);
-    if (isTerrain3DHandle(handle)) handle.moveToVista(latitude, longitude);
-  }, [locationInfo, mapViewRef, setPoiInfo, setMapLocationInfo]);
+    if (isTerrainActive) {
+      if (isTerrain3DHandle(handle)) handle.moveToVista(latitude, longitude);
+      else if (Platform.OS === 'web' && handle !== null) startWebVista((handle as MapRef).getMap(), latitude, longitude);
+      return;
+    }
+    requestVistaOnEnter(latitude, longitude);
+    toggleTerrain?.();
+  }, [
+    coordinate,
+    mapViewRef,
+    setPoiInfo,
+    setMapLocationInfo,
+    isTerrainActive,
+    toggleTerrain,
+  ]);
 
   // 長押し位置の可視領域作成ダイアログを開く（近くの既存ポイントがあればスナップ候補として渡す）
   const handleCreateViewshed = useCallback(() => {
-    if (!locationInfo) return;
-    const coordinate = locationInfo.coordinate;
-    const snapPoint = mapLocationInfo?.snapPoint;
+    if (!coordinate) return;
+    // 現在地へスナップしたときは、近くの既存ポイントへのスナップ候補は出さない
+    const snapPoint = isSnapped ? undefined : mapLocationInfo?.snapPoint;
     setPoiInfo(null);
     setMapLocationInfo(null);
     pressCreateViewshed(coordinate, snapPoint);
-  }, [locationInfo, mapLocationInfo?.snapPoint, setPoiInfo, setMapLocationInfo, pressCreateViewshed]);
+  }, [coordinate, isSnapped, mapLocationInfo?.snapPoint, setPoiInfo, setMapLocationInfo, pressCreateViewshed]);
 
   // 長押し位置をA点として距離測定モードを開始する
   const handleMeasureDistance = useCallback(() => {
-    if (!locationInfo) return;
-    const coordinate = locationInfo.coordinate;
+    if (!coordinate) return;
     setPoiInfo(null);
     setMapLocationInfo(null);
     startMeasure(coordinate);
-  }, [locationInfo, setPoiInfo, setMapLocationInfo, startMeasure]);
+  }, [coordinate, setPoiInfo, setMapLocationInfo, startMeasure]);
 
   const openGoogleMaps = useCallback(() => {
-    if (!locationInfo) return;
+    if (!coordinate) return;
     
-    const { latitude, longitude } = locationInfo.coordinate;
+    const { latitude, longitude } = coordinate;
     const encodedName = isPOI && poiInfo ? encodeURIComponent(poiInfo.name) : '';
     
     let url: string;
@@ -177,7 +234,7 @@ export const HomePoiPopup = React.memo(() => {
     
     setPoiInfo(null); // POIポップアップを閉じる
     setMapLocationInfo(null); // 地図位置ポップアップを閉じる
-  }, [locationInfo, isPOI, poiInfo, setPoiInfo, setMapLocationInfo]);
+  }, [coordinate, isPOI, poiInfo, setPoiInfo, setMapLocationInfo]);
   
   // 画面座標を計算
   const position = useMemo(() => {
@@ -231,7 +288,7 @@ export const HomePoiPopup = React.memo(() => {
               {t('Home.poi.openInGoogleMaps')}
             </Text>
           </Pressable>
-          {!isPOI && isTerrainActive && (
+          {!isPOI && canVista && (
             <Pressable
               onPress={handleVista}
               style={{
@@ -239,7 +296,9 @@ export const HomePoiPopup = React.memo(() => {
                 paddingVertical: 6,
               }}
             >
-              <Text style={{ color: COLOR.BLUE, fontSize: 14, fontWeight: 'bold' }}>{t('Home.poi.vista')}</Text>
+              <Text style={{ color: COLOR.BLUE, fontSize: 14, fontWeight: 'bold' }}>
+                {isSnapped ? t('Home.poi.vistaFromCurrentLocation') : t('Home.poi.vista')}
+              </Text>
             </Pressable>
           )}
           {!isPOI && !isTerrainActive && (
