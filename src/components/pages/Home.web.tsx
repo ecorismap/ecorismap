@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useContext } from 'react';
+import React, { useCallback, useEffect, useMemo, useContext, useSyncExternalStore } from 'react';
 import { StyleSheet, View, Text } from 'react-native';
 import type { PointRecordType, LineRecordType, PolygonRecordType } from '../../types';
 
@@ -28,6 +28,16 @@ import { Loading } from '../molecules/Loading';
 import { t } from '../../i18n/config';
 import { maptilerKey } from '../../constants/APIKeys';
 import { MAPTERHORN_URL, TERRAIN_EXAGGERATION } from '../../constants/DemSources';
+import { takePendingVista, terrain3dVistaStore } from '../../utils/terrain3d/vistaStore';
+import {
+  clearWebVista,
+  reapplyWebVista,
+  startWebVista,
+  WEB_NORMAL_MAX_PITCH_DEG,
+} from '../../utils/terrain3d/webVista';
+import { VISTA_MAX_PITCH_DEG } from '../../utils/terrain3d/constants';
+import { HomeTerrain3DVistaBanner } from '../organisms/HomeTerrain3DVistaBanner';
+import { HomeTerrain3DButtons } from '../organisms/HomeTerrain3DButtons';
 
 // 3D表示用の標高タイル（Mapterhorn、terrarium形式をmaplibreが内蔵デコード）。
 // 日本は基盤地図情報DEM(1m/5m/10m)、国外はCopernicus GLO-30ほか。詳細はdocs/DEM_SOURCES.md
@@ -160,6 +170,31 @@ export default function HomeScreen() {
 
   // DrawingToolsContext
   const { featureButton, currentDrawTool, onDragEndPoint } = useContext(DrawingToolsContext);
+
+  // 眺望中は地図の標準操作（パン・回転・ズーム）を止める。ドラッグは見回しになる（webVista）
+  const vistaActive = useSyncExternalStore(
+    terrain3dVistaStore.subscribe,
+    () => terrain3dVistaStore.getSnapshot().active
+  );
+
+  // 2Dの長押しメニューから眺望を選んで3Dへ来たら、その地点の眺望へ移す。
+  // 3Dを抜けたら眺望も解除する（2Dへ戻る側が俯角を0へ戻すので、ここではカメラを動かさない）
+  useEffect(() => {
+    const mapRef = mapViewRef.current as MapRef | null;
+    if (mapRef === null) return;
+    if (isTerrainActive) {
+      const pending = takePendingVista();
+      if (pending !== null) startWebVista(mapRef.getMap(), pending.latitude, pending.longitude);
+    } else {
+      clearWebVista(false);
+    }
+  }, [isTerrainActive, mapViewRef]);
+  useEffect(() => () => clearWebVista(false), []);
+  // 眺望に入ると地図を非制御にする（webVista.tsの注意書き参照）。
+  // 非制御になる前の視点はpropsで戻されているので、切り替わった後に置き直す
+  useEffect(() => {
+    if (vistaActive) reapplyWebVista();
+  }, [vistaActive]);
 
   //地図ジェスチャーの許可判定（nativeのscrollEnabledと同じルール）。Webにはペンロックが無い
   const mapGesturesEnabled = useMemo(
@@ -762,6 +797,9 @@ export default function HomeScreen() {
           <HomePoiPopup />
           <HomeMeasureBanner />
           <HomeViewshedBanner />
+          <HomeTerrain3DVistaBanner />
+          {/* Webは通常の回転・傾きを地図のコントロールで行うので、眺望中（高さ変更が要る）だけ出す */}
+          {vistaActive && <HomeTerrain3DButtons top={230} left={10} />}
           <HomeTrackPointPopup />
           {isDrawLineVisible && <SvgView />}
 
@@ -773,21 +811,23 @@ export default function HomeScreen() {
                 //@ts-ignore
                 mapLib={maplibregl}
                 ref={mapViewRef as React.RefObject<MapRef>}
-                {...mapRegion}
+                {...(vistaActive ? {} : mapRegion)}
                 style={{ width: '100%', height: '100%' }}
                 //@ts-ignore
                 mapStyle={mapStyle}
-                maxPitch={85}
+                maxPitch={vistaActive ? VISTA_MAX_PITCH_DEG : WEB_NORMAL_MAX_PITCH_DEG}
                 onMove={(e) => onRegionChangeMapView(e.viewState)}
                 onLoad={onMapLoad}
                 cursor={currentDrawTool === 'PLOT_POINT' ? 'crosshair' : 'auto'}
                 //interactiveLayerIds={interactiveLayerIds} //ラインだけに限定する場合
                 //onMouseMove={onMouseMove}
-                dragPan={mapGesturesEnabled}
-                touchZoomRotate={mapGesturesEnabled}
-                doubleClickZoom={mapGesturesEnabled}
-                dragRotate={mapGesturesEnabled && featureButton === 'NONE'}
-                touchPitch={isTerrainActive && mapGesturesEnabled}
+                dragPan={mapGesturesEnabled && !vistaActive}
+                touchZoomRotate={mapGesturesEnabled && !vistaActive}
+                doubleClickZoom={mapGesturesEnabled && !vistaActive}
+                dragRotate={mapGesturesEnabled && featureButton === 'NONE' && !vistaActive}
+                touchPitch={isTerrainActive && mapGesturesEnabled && !vistaActive}
+                scrollZoom={!vistaActive}
+                keyboard={!vistaActive}
                 sky={skyStyle}
               >
                 <HomeZoomLevel zoom={zoom} top={20} left={10} />

@@ -13,6 +13,7 @@ import { COLOR } from '../../constants/AppConstants';
 import { MapViewContext } from '../../contexts/MapView';
 import { isTerrain3DHandle } from '../../utils/terrain3d/types';
 import { terrain3dVistaStore } from '../../utils/terrain3d/vistaStore';
+import { clearWebVista, isWebVistaActive } from '../../utils/terrain3d/webVista';
 import { t } from '../../i18n/config';
 import { useHomeTopLayout } from '../../hooks/useHomeTopLayout';
 
@@ -24,6 +25,7 @@ export const HomeTerrain3DVistaBanner = React.memo(() => {
   const pressClear = useCallback(() => {
     const handle = mapViewRef.current;
     if (isTerrain3DHandle(handle)) handle.clearVista();
+    else if (isWebVistaActive()) clearWebVista();
   }, [mapViewRef]);
 
   if (!vista.active) return null;

@@ -12,6 +12,16 @@ import { COLOR } from '../../constants/AppConstants';
 import { MapViewContext } from '../../contexts/MapView';
 import { isTerrain3DHandle, Terrain3DHandle } from '../../utils/terrain3d/types';
 import { terrain3dVistaStore } from '../../utils/terrain3d/vistaStore';
+import { changeWebVistaHeight, isWebVistaActive, lookBy } from '../../utils/terrain3d/webVista';
+
+/** ボタンが使うカメラ操作（ネイティブはTerrain3DHandle、Webの眺望はwebVista） */
+type ButtonHandle = Pick<Terrain3DHandle, 'rotateBy' | 'pitchBy' | 'changeVistaHeight'>;
+
+const WEB_VISTA_HANDLE: ButtonHandle = {
+  rotateBy: (deltaDeg) => lookBy(deltaDeg, 0),
+  pitchBy: (deltaDeg) => lookBy(0, deltaDeg),
+  changeVistaHeight: changeWebVistaHeight,
+};
 
 interface Props {
   top: number;
@@ -29,10 +39,11 @@ export const HomeTerrain3DButtons = React.memo((props: Props) => {
   const vista = useSyncExternalStore(terrain3dVistaStore.subscribe, terrain3dVistaStore.getSnapshot);
 
   const withHandle = useCallback(
-    (run: (handle: Terrain3DHandle) => void) => {
+    (run: (handle: ButtonHandle) => void) => {
       const handle = mapViewRef.current;
-      if (!isTerrain3DHandle(handle)) return;
-      run(handle);
+      if (isTerrain3DHandle(handle)) run(handle);
+      // Web（maplibre）は眺望中だけこのボタンを出す。操作はwebVistaへ向ける
+      else if (isWebVistaActive()) run(WEB_VISTA_HANDLE);
     },
     [mapViewRef]
   );
@@ -42,7 +53,7 @@ export const HomeTerrain3DButtons = React.memo((props: Props) => {
   // headingを増やす＝視線が東へ振れる＝画面上の地図は反時計回りに回る。
   // 傾きも同じ考え方で、pitchを増やす（視線を寝かせる）と地面は
   // axis-x-rotate-counterclockwiseの矢印の向きに回って見える（実機で逆だったため入れ替えた）
-  const buttons: { key: string; icon: string; run: (handle: Terrain3DHandle) => void }[] = [
+  const buttons: { key: string; icon: string; run: (handle: ButtonHandle) => void }[] = [
     { key: 'rotateCcw', icon: 'axis-z-rotate-counterclockwise', run: (h) => h.rotateBy(ROTATE_STEP_DEG) },
     { key: 'rotateCw', icon: 'axis-z-rotate-clockwise', run: (h) => h.rotateBy(-ROTATE_STEP_DEG) },
     { key: 'pitchCcw', icon: 'axis-x-rotate-counterclockwise', run: (h) => h.pitchBy(PITCH_STEP_DEG) },

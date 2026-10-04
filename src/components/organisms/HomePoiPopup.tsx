@@ -12,6 +12,8 @@ import { MeasureContext } from '../../contexts/Measure';
 import { DrawingToolsContext } from '../../contexts/DrawingTools';
 import { isTerrain3DHandle } from '../../utils/terrain3d/types';
 import { requestVistaOnEnter } from '../../utils/terrain3d/vistaStore';
+import { startWebVista } from '../../utils/terrain3d/webVista';
+import type { MapRef } from 'react-map-gl/maplibre';
 import { useTerrain3dSupport } from '../../hooks/useTerrain3dSupport';
 import { t } from '../../i18n/config';
 
@@ -35,10 +37,8 @@ export const HomePoiPopup = React.memo(() => {
   const { mapRegion, mapSize } = useWindow();
   const { featureButton } = useContext(DrawingToolsContext);
   const terrain3dSupported = useTerrain3dSupport();
-  // 眺望はネイティブの3Dエンジンだけが持つ（Webのmaplibre地形には無い）。
   // 2Dからは3Dボタンが出ている状態（作図パネルを開いていない）に限る。3Dから戻れなくなるため
   const canVista =
-    Platform.OS !== 'web' &&
     terrain3dSupported &&
     toggleTerrain !== undefined &&
     (isTerrainActive || featureButton === 'NONE');
@@ -146,6 +146,7 @@ export const HomePoiPopup = React.memo(() => {
     setMapLocationInfo(null);
     if (isTerrainActive) {
       if (isTerrain3DHandle(handle)) handle.moveToVista(latitude, longitude);
+      else if (Platform.OS === 'web' && handle !== null) startWebVista((handle as MapRef).getMap(), latitude, longitude);
       return;
     }
     requestVistaOnEnter(latitude, longitude);
