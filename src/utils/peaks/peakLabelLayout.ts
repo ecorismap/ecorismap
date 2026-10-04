@@ -55,8 +55,9 @@ export interface PlacedPeakLabel extends ProjectedPeak {
 }
 
 export interface PeakLayoutOptions {
-  /** 画面幅[dp] */
+  /** 画面幅・高さ[dp] */
   width: number;
+  height: number;
   /** 左端の操作ボタン列の幅[dp]。ここに山名を置くとボタンに重なる */
   leftInset: number;
   /** 山名の帯の上端[dp]（バナーなどの下） */
@@ -91,10 +92,12 @@ export const nearBonus = (distance: number): number =>
 export const verticalLength = (name: string): number => Array.from(name).length;
 
 export const layoutPeakLabels = (peaks: ProjectedPeak[], options: PeakLayoutOptions): PlacedPeakLabel[] => {
-  const { width, leftInset, bandTop, columnWidth, charHeight, minStem, maxLabels, previous } = options;
+  const { width, height, leftInset, bandTop, columnWidth, charHeight, minStem, maxLabels, previous } = options;
   const score = (p: ProjectedPeak) => p.rank - nearBonus(p.distance) - (previous.has(p.key) ? PREVIOUS_BONUS : 0);
   const ordered = peaks
-    .filter((p) => p.x >= leftInset + columnWidth / 2 && p.x <= width - columnWidth / 2)
+    // 山頂が画面の下に外れた山は出さない（上空から見下ろすと近くの山がそうなり、
+    // 引き出し線が画面の外へ伸びるだけになる）
+    .filter((p) => p.x >= leftInset + columnWidth / 2 && p.x <= width - columnWidth / 2 && p.y <= height)
     .sort((a, b) => score(a) - score(b) || a.distance - b.distance || b.ele - a.ele);
 
   const placed: PlacedPeakLabel[] = [];

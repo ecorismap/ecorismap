@@ -40,6 +40,8 @@ const MAX_LABELS = 40;
 const SUMMIT_DOT = 5;
 /** 左端の操作ボタン列（ズーム・回転・高さ）を避ける幅 */
 const LEFT_INSET = 56;
+/** 下端のツールバー（地図・レイヤ・ドロー・設定）の高さ。この裏に山頂がある山は画面外とみなす */
+const BOTTOM_INSET = 90;
 /** 詳細の吹き出しのおおよその最大幅（右端で左側へ出すかの判定用） */
 const DETAIL_MAX_WIDTH = 180;
 const STEM_COLOR = 'rgba(255,255,255,0.85)';
@@ -52,7 +54,7 @@ export const HomeVistaPeakLabels = React.memo(({ projector }: Props) => {
   );
   const enabled = useSyncExternalStore(peakLabelsStore.subscribe, peakLabelsStore.getSnapshot);
   const active = vistaActive && enabled && projector !== null;
-  const { windowWidth } = useWindow();
+  const { windowWidth, windowHeight } = useWindow();
   const { editControlTop } = useHomeTopLayout();
   const [index, setIndex] = useState<PeakIndex | null>(null);
   const [labels, setLabels] = useState<PlacedPeakLabel[]>([]);
@@ -71,8 +73,8 @@ export const HomeVistaPeakLabels = React.memo(({ projector }: Props) => {
     };
   }, [active, index]);
 
-  const layoutRef = useRef({ width: windowWidth, bandTop: editControlTop });
-  layoutRef.current = { width: windowWidth, bandTop: editControlTop };
+  const layoutRef = useRef({ width: windowWidth, height: windowHeight - BOTTOM_INSET, bandTop: editControlTop });
+  layoutRef.current = { width: windowWidth, height: windowHeight - BOTTOM_INSET, bandTop: editControlTop };
 
   useEffect(() => {
     if (!active || projector === null || index === null) {
@@ -108,9 +110,10 @@ export const HomeVistaPeakLabels = React.memo(({ projector }: Props) => {
         const screen = projector.project(peak.latitude, peak.longitude, peak.ele);
         if (screen !== null) projected.push({ ...peak, x: screen.x, y: screen.y });
       }
-      const { width, bandTop } = layoutRef.current;
+      const { width, height, bandTop } = layoutRef.current;
       const placed = layoutPeakLabels(projected, {
         width,
+        height,
         leftInset: LEFT_INSET,
         bandTop,
         columnWidth: COLUMN_WIDTH,

@@ -27,6 +27,7 @@ const peak = (name: string, x: number, rank: number, extra: Partial<ProjectedPea
 
 const options: PeakLayoutOptions = {
   width: 400,
+  height: 700,
   leftInset: 0,
   bandTop: 100,
   columnWidth: 20,
@@ -133,8 +134,11 @@ describe('layoutPeakLabels', () => {
     expect(high.labelTop).toBe(150 - 12 - 45);
   });
 
-  it('画面の上に収まらない山と画面外の山は出さない', () => {
-    const placed = layoutPeakLabels([peak('見上げすぎ', 100, 1, { y: 30 }), peak('画面外', 500, 1)], options);
+  it('画面の上に収まらない山・左右の画面外・山頂が画面の下に外れた山は出さない', () => {
+    const placed = layoutPeakLabels(
+      [peak('見上げすぎ', 100, 1, { y: 30 }), peak('画面外', 500, 1), peak('足元すぎ', 200, 1, { y: 750 })],
+      options
+    );
     expect(placed).toHaveLength(0);
   });
 
