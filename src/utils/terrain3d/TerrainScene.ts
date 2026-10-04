@@ -38,9 +38,19 @@ import {
   SKY_COLOR,
   SUN_ALTITUDE_DEG,
   SUN_AZIMUTH_DEG,
+  TELEPHOTO_CONE_EXTRA_DEG,
+  TELEPHOTO_CONE_MARGIN,
+  TELEPHOTO_LOAD_CONCURRENCY,
+  TELEPHOTO_MAX_HALF_ANGLE_DEG,
+  TELEPHOTO_MAX_RINGS,
+  TELEPHOTO_MIN_MAGNIFICATION,
+  TELEPHOTO_RING_DEM_ZOOM_OFFSET,
+  TELEPHOTO_RING_MAX_TILES,
+  TELEPHOTO_RING_MESH_SEGMENTS,
   VISTA_EYE_HEIGHTS_M,
   clampVistaFov,
   stepVistaFov,
+  vistaMagnification,
   VISTA_MAX_PITCH_DEG,
   VISTA_NEAR_M,
   VISTA_PITCH_DEG,
@@ -70,7 +80,7 @@ import {
   rayDirForNdc,
 } from './matrices';
 import { TerrainDepthMap, TerrainRenderer, TerrainRingDraw, TileGpuResources } from './TerrainRenderer';
-import { TerrainTileManager } from './TerrainTileManager';
+import { TerrainTileManager, TileCone } from './TerrainTileManager';
 import { DemTextureCache } from './demTextureCache';
 import { buildPolygonFill, buildRibbon, OverlayBatchBuilder } from './overlayGeometry';
 import { Rgba } from './colorUtils';
@@ -175,6 +185,24 @@ const TERRAIN_PLACE_EPSILON_M = 0.5;
  * 許容差は、縮小解像度の1画素が代表する範囲の広さと、点が地表に乗っている
  * （＝地形と同じ距離になる）ことを踏まえた余裕。迷ったら表示する側に倒す
  */
+/** 描画するリング1本（粗い順に並べて重ね描きする） */
+interface RingSpec {
+  manager: TerrainTileManager;
+  zoom: number;
+  segments: number;
+  /** 同じズームでの順（0=全方位の円、1=望遠の扇形、2=近景） */
+  order: number;
+}
+
+/** 眺望の望遠で追加する扇形リング（telephotoRings参照） */
+interface TelephotoRing {
+  manager: TerrainTileManager;
+  zoom: number;
+  radius: number;
+  cone: TileCone;
+  segments: number;
+}
+
 const OCCLUSION_DEPTH_SCALE = 4;
 const OCCLUSION_TOLERANCE_M = 20;
 const OCCLUSION_TOLERANCE_RATIO = 0.01;
@@ -216,6 +244,20 @@ export class TerrainScene {
   private tileManager: TerrainTileManager;
   /** FAR_RING_DELTASと同じ並び（内側→外側） */
   private farTileManagers: TerrainTileManager[];
+  /**
+   * 眺望の望遠で使う扇形リング（constants.tsのTELEPHOTO_*参照）。
+   * 必要になったときに作り、望遠を解いたらタイルだけ捨てて使い回す（1本目が最も細かい）
+   */
+  private telephotoManagers: TerrainTileManager[] = [];
+  /**
+   * 全リングを細かい順に並べたもの（毎フレームの描画リストから更新）。
+   * 標高のサンプリングと親タイルの探索は、描かれている中で最も細かいリングを優先したい
+   */
+  private managerOrder: TerrainTileManager[] = [];
+  /** 現在のレイヤ指定（後から作る扇形リングにも同じものを渡す） */
+  private currentLayers: LayerSpec[] = [];
+  /** リングをまたいで親タイルを探す関数（後から作るリングにも付ける） */
+  private parentTextureLookup: ((key: TileKey, layerIndex: number) => LayerTextureRef | null) | null = null;
   private origin: MercatorPoint;
   private elevScale: number;
   /** dp単位のビューポート（2Dズームとの整合はdpで取る） */
@@ -369,6 +411,8 @@ export class TerrainScene {
       }
       return null;
     };
+    this.managerOrder = [this.tileManager, ...this.farTileManagers];
+    this.parentTextureLookup = lookup;
     for (const manager of this.allTileManagers()) manager.findLayerTexture = lookup;
     // 操作中はDEMの展開を始めない（1枚数十msの同期処理で、始めると指が止まる）
     setDemDecodeDeferPredicate(() => this.interacting);
@@ -378,9 +422,67 @@ export class TerrainScene {
     this.dirty = true;
   }
 
-  /** 近景＋遠景の全リング（近景を先頭に。親タイルは細かい方から探したい） */
+  /** 全リング（細かい順。親タイルも標高も細かい方から探したい） */
   private allTileManagers(): TerrainTileManager[] {
-    return [this.tileManager, ...this.farTileManagers];
+    return this.managerOrder;
+  }
+
+  /** i本目の扇形リングを返す（無ければ作る）。レイヤと親タイル探索を他のリングと揃える */
+  private telephotoManager(index: number): TerrainTileManager {
+    while (this.telephotoManagers.length <= index) {
+      const manager = new TerrainTileManager(
+        this.origin,
+        this.elevScale,
+        this.renderer,
+        this.demCache,
+        () => this.markDirty(),
+        TELEPHOTO_RING_DEM_ZOOM_OFFSET,
+        FAR_RING_FORWARD_BIAS,
+        TELEPHOTO_RING_MESH_SEGMENTS[this.telephotoManagers.length] ?? MESH_SEGMENTS,
+        TELEPHOTO_LOAD_CONCURRENCY
+      );
+      manager.setLayers(this.currentLayers);
+      if (this.parentTextureLookup !== null) manager.findLayerTexture = this.parentTextureLookup;
+      this.telephotoManagers.push(manager);
+    }
+    return this.telephotoManagers[index];
+  }
+
+  /**
+   * 眺望の望遠で追加する扇形リングの構成（constants.tsのTELEPHOTO_*参照）。
+   *
+   * 最大ズーム（z16）から、遠景リングの最外ズームより細かいズームまで1段ずつ。
+   * 各リングの半径は「枚数で扇形を埋められる距離」から決める（扇形の面積=半角×2×R²）。
+   * 要の付近はタイルを向きに関係なく取るので、その分を差し引いて少し短くする。
+   * 望遠でない（画角が標準以上）・画角が広すぎて扇形にならないときは空
+   */
+  private telephotoRings(headingDeg: number, outerZoom: number, outerRadius: number): TelephotoRing[] {
+    const vista = this.vista;
+    if (vista === null || this.viewportHeightDp <= 0) return [];
+    if (vistaMagnification(vista.fovDeg) < TELEPHOTO_MIN_MAGNIFICATION) return [];
+    const aspect = this.viewportWidthDp / this.viewportHeightDp;
+    const halfHorizontalDeg = (Math.atan(Math.tan((vista.fovDeg * Math.PI) / 360) * aspect) * 180) / Math.PI;
+    const halfAngleDeg = halfHorizontalDeg * TELEPHOTO_CONE_MARGIN + TELEPHOTO_CONE_EXTRA_DEG;
+    if (halfAngleDeg > TELEPHOTO_MAX_HALF_ANGLE_DEG) return [];
+    const cone: TileCone = { headingDeg, halfAngleDeg };
+    const wedgeTiles = TELEPHOTO_RING_MAX_TILES * 0.75;
+    const rings: TelephotoRing[] = [];
+    for (let i = 0; i < TELEPHOTO_MAX_RINGS; i++) {
+      const zoom = MAX_TEX_ZOOM - i;
+      if (zoom <= outerZoom || zoom < MIN_TEX_ZOOM) break;
+      const radius = Math.min(
+        outerRadius,
+        Math.sqrt(wedgeTiles / ((2 * halfAngleDeg * Math.PI) / 180)) * tileSizeMeters(zoom)
+      );
+      rings.push({
+        manager: this.telephotoManager(i),
+        zoom,
+        radius,
+        cone,
+        segments: TELEPHOTO_RING_MESH_SEGMENTS[i] ?? MESH_SEGMENTS,
+      });
+    }
+    return rings;
   }
 
   /**
@@ -436,8 +538,10 @@ export class TerrainScene {
     // GEBCO海底地形図の表示中は、海域を海底の深さで埋めたDEMで地形を作る。
     // 切り替えはレイヤ差し替え（全タイル再構築）と同時なので、ここで立てれば全タイルに効く
     this.demCache.setBathymetry(layers.find((layer) => layer.relief?.style === 'gebco') ?? null);
+    this.currentLayers = layers;
     this.tileManager.setLayers(layers);
     this.farTileManagers.forEach((manager) => manager.setLayers(layers));
+    this.telephotoManagers.forEach((manager) => manager.setLayers(layers));
     this.lastTileUpdateMs = 0;
     this.markDirty();
   }
@@ -711,11 +815,9 @@ export class TerrainScene {
     return this.sampleElevationAtMercator(merc.mx, merc.my);
   }
 
-  /** メルカトル座標で引く版（遮蔽判定のレイマーチ用）。近景→遠景の順に探す */
+  /** メルカトル座標で引く版（遮蔽判定のレイマーチ用）。細かいリングから順に探す */
   private sampleElevationAtMercator(mx: number, my: number): number | null {
-    const near = this.tileManager.sampleElevationAtMercator(mx, my);
-    if (near !== null) return near;
-    for (const manager of this.farTileManagers) {
+    for (const manager of this.allTileManagers()) {
       const elev = manager.sampleElevationAtMercator(mx, my);
       if (elev !== null) return elev;
     }
@@ -1075,23 +1177,19 @@ export class TerrainScene {
    * （手前のリングは透過させ、NODATA部分から奥のリングを見せる）。
    * テクスチャ未着のタイルは奥のリングの有無に関わらず不透明に描く（TerrainRenderer側で判定）
    */
-  private collectRings(farRings: { manager: TerrainTileManager; index: number }[]): TerrainRingDraw[] {
+  private collectRings(drawRings: RingSpec[]): TerrainRingDraw[] {
     this.ringDraws.length = 0;
-    const push = (manager: TerrainTileManager, segments: number) => {
+    // drawRingsは粗い順（遠景ほど粗いメッシュ。DEMも粗いので形は変わらず、頂点数だけ減る）
+    for (const ring of drawRings) {
       this.ringDraws.push({
-        tiles: manager.buildDrawPasses(),
-        segments,
+        tiles: ring.manager.buildDrawPasses(),
+        segments: ring.segments,
         // 最背面のリング、および重ねるレイヤが無い（灰色地形だけの）ときは不透明で描く
-        fillBase: this.ringDraws.length === 0 || manager.layerCount === 0,
-        layerCount: manager.layerCount,
-        layerOpacity: manager.layerOpacities,
+        fillBase: this.ringDraws.length === 0 || ring.manager.layerCount === 0,
+        layerCount: ring.manager.layerCount,
+        layerOpacity: ring.manager.layerOpacities,
       });
-    };
-    // 遠景ほど粗いメッシュにする（DEMも粗いので形は変わらず、頂点数だけ減る）
-    for (let i = farRings.length - 1; i >= 0; i--) {
-      push(farRings[i].manager, FAR_RING_MESH_SEGMENTS[farRings[i].index] ?? MESH_SEGMENTS);
     }
-    push(this.tileManager, MESH_SEGMENTS);
     return this.ringDraws;
   }
 
@@ -1294,6 +1392,26 @@ export class TerrainScene {
     }
     const hasFar = farRings.length > 0;
     const outerRadius = hasFar ? farRings[farRings.length - 1].radius : ringRadius;
+    const outerZoom = hasFar ? farRings[farRings.length - 1].zoom : this.texZoom;
+    // 眺望の望遠では、見ている扇形に沿って1段ずつズームの違うリングを足す（telephotoRings参照）
+    const telephotoRings = this.telephotoRings(state.heading, outerZoom, outerRadius);
+    // 描く順: ズームの粗い順（後に描くリングが前のリングを上書きするため、細かいものを後に）。
+    // 同じズームなら全方位の円→扇形→近景の順。近景より細かい扇形があれば近景の後に描かれる
+    const drawRings: RingSpec[] = [
+      ...farRings.map((ring) => ({
+        manager: ring.manager,
+        zoom: ring.zoom,
+        segments: FAR_RING_MESH_SEGMENTS[ring.index] ?? MESH_SEGMENTS,
+        order: 0,
+      })),
+      ...telephotoRings.map((ring) => ({ manager: ring.manager, zoom: ring.zoom, segments: ring.segments, order: 1 })),
+      { manager: this.tileManager, zoom: this.texZoom, segments: MESH_SEGMENTS, order: 2 },
+    ].sort((a, b) => a.zoom - b.zoom || a.order - b.order);
+    // 標高サンプリングと親タイル探索の優先順（細かい順）。使っていない扇形リングは末尾
+    this.managerOrder = [
+      ...drawRings.map((ring) => ring.manager).reverse(),
+      ...this.telephotoManagers.slice(telephotoRings.length),
+    ];
     // フォグはカメラからの視深度に対して掛かるため、注視点までの距離を底上げした上で
     // 視界（最外リング）の半径に連動させる（リング端のタイル欠けがフォグに隠れるように）
     const fogNear = distance + outerRadius * FOG_NEAR_RATIO;
@@ -1333,8 +1451,32 @@ export class TerrainScene {
             ring.maxTiles
           );
         }
+        for (const ring of telephotoRings) {
+          ring.manager.updateVisibleTiles(
+            tileCenter.latitude,
+            tileCenter.longitude,
+            state.heading,
+            ring.zoom,
+            ring.radius,
+            TELEPHOTO_RING_MAX_TILES,
+            ring.cone
+          );
+        }
       }
-      // 眺望モード中は視点の高さを固定する（見晴らす先の地形に引きずられない）。
+      // 望遠を解いた（または本数が減った）リングはタイルを捨てる（描画リストにも入らない）
+      for (let i = telephotoRings.length; i < this.telephotoManagers.length; i++) {
+        this.telephotoManagers[i].clearTiles();
+      }
+      // 眺望中は足元の標高だけ追い直す（見晴らす先の地形には引きずられない）。
+      // より細かいタイルが届くと足元の地形が高く描かれ、元の粗い標高のままだと
+      // 目が地面の下に潜って灰色の裏面が見える（望遠の扇形リングで実際に起きた）
+      if (this.vista !== null) {
+        const ground = this.sampleElevation(this.vista.latitude, this.vista.longitude);
+        if (ground !== null && Math.abs(Math.max(0, ground) - this.vista.groundElevation) > 1) {
+          this.vista.groundElevation = Math.max(0, ground);
+          this.dirty = true;
+        }
+      }
       // リプレイ中はapplyReplayCameraが毎フレーム更新するので、ここでは触らない
       // （1m閾値の飛び飛びな更新が混ざると視点の高さがカクつく）
       if (this.vista === null && this.replay === null) {
@@ -1354,7 +1496,7 @@ export class TerrainScene {
 
     const { viewProj } = this.updateCameraMatrix(state, distance, fogFar);
     // 遠景（粗ズーム）を外側のリングから描き、リング毎にデプスをクリアして内側→近景を重ねる
-    const rings = this.collectRings(farRings);
+    const rings = this.collectRings(drawRings);
     // 距離バッファは表示描画より先に撮る。
     // present()のあとに別のパスを投げると、環境によっては描画結果が入らない
     this.maybeCaptureDepth(rings, viewProj, fogNear, fogFar, distance);
@@ -1511,6 +1653,7 @@ export class TerrainScene {
     this.overlayDrawList.length = 0;
     this.tileManager.dispose();
     this.farTileManagers.forEach((manager) => manager.dispose());
+    this.telephotoManagers.forEach((manager) => manager.dispose());
     this.demCache.dispose();
     this.renderer.dispose();
   }

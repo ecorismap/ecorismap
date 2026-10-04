@@ -45,11 +45,12 @@ export const MAX_FAR_TILES = [24, 16];
  */
 export const MAX_TERRAIN_LAYERS = 8;
 /**
- * DEMテクスチャLRUの上限枚数（256px RGBA≒256KB/枚 → 約16MB）。
+ * DEMテクスチャLRUの上限枚数（256px RGBA≒256KB/枚 → 約24MB）。
+ * 望遠の扇形リング（最大6本）が加わると参照するDEMが増えるので、64から広げた。
  * 近景・遠景の全リングで共有する。z15/16のテクスチャタイルは親のz14 DEMを
  * 共有するため、タイル枚数(最大128)よりずっと少なくて足りる
  */
-export const MAX_DEM_TEXTURES = 64;
+export const MAX_DEM_TEXTURES = 96;
 /** ズーム切替のヒステリシス。擬似ズームがこの幅を超えて変わったらタイルズームを変更 */
 export const ZOOM_HYSTERESIS = 0.5;
 /** タイル取得の同時実行数 */
@@ -122,6 +123,37 @@ export const clampVistaFov = (deg: number): number => Math.min(VISTA_MAX_FOV_DEG
 export const vistaMagnification = (fovDeg: number): number =>
   Math.tan((CAMERA_FOV_DEG * Math.PI) / 360) / Math.tan((fovDeg * Math.PI) / 360);
 export const VISTA_DURATION_MS = 600;
+/**
+ * 眺望の望遠（画角を狭めたとき）に追加する扇形リング。
+ *
+ * 通常の3リング（全方位の同心円）だけでは、望遠で拡大しても遠くの山は中景・遠景リングの
+ * 粗いタイル（z12/z9、DEMはさらに3段粗い）のままぼやける。望遠で見えるのは細い扇形だけ
+ * なので、その扇形に沿って「1段ずつズームの違うリング」を近景のすぐ下から重ねる。
+ * 各リングは少ない枚数で視点から連続して覆い、近いほど細かく遠いほど粗い（maplibreなど
+ * 一般的な地形エンジンの距離別LODと同じ考え方）。全方位の3リングは見回し用に残す。
+ * 扇形リングは最大ズーム（z16）から1段ずつ下げる。近景リングのズームは眺望に入る前の
+ * 地図の縮尺で決まる（z12から入るとz13）ので、それより細かい扇形が近景の上に重なることもある。
+ *
+ * 枚数24・半角5.6°（画角12°）なら z15が約13km、z14が約26km、z13が約52km まで届き、
+ * 画面1画素あたり地図1画素程度になる（画角12°・高さ874ptで、16km先の1画素≒3.9m）
+ */
+export const TELEPHOTO_MAX_RINGS = 6;
+/** 扇形リングを足し始める倍率（これ未満の軽い望遠は通常のリングで足りる） */
+export const TELEPHOTO_MIN_MAGNIFICATION = 2;
+export const TELEPHOTO_RING_MAX_TILES = 24;
+/** 扇形リングのDEMはタイルより2段粗いだけにする（3段だと遠くの山が丸い台地になる） */
+export const TELEPHOTO_RING_DEM_ZOOM_OFFSET = 2;
+/** 扇形リングのメッシュ分割（細かい3本は近景と同じ64、残りは32） */
+export const TELEPHOTO_RING_MESH_SEGMENTS = [64, 64, 64, 32, 32, 32];
+/** 扇形リング1本あたりの同時取得数（本数が多いので近景・遠景より絞る） */
+export const TELEPHOTO_LOAD_CONCURRENCY = 2;
+/**
+ * 扇形の広さ。見えている横幅の半角×MARGIN＋EXTRA[度]。少し首を振っても端が欠けないようにする
+ * （取り直しはカメラが止まってから）。扇形がこれ以上広いと枚数の節約にならないので使わない
+ */
+export const TELEPHOTO_CONE_MARGIN = 1.3;
+export const TELEPHOTO_CONE_EXTRA_DEG = 2;
+export const TELEPHOTO_MAX_HALF_ANGLE_DEG = 40;
 /**
  * 軌跡リプレイ（三人称追従カメラ）の設定。
  *
