@@ -14,7 +14,7 @@
  * 貼り直す（elevationはmapRegionに無い）。これでは逆算した視点が崩れるので、
  * 眺望中はmapRegionを渡さない（非制御にする）。非制御になった後でreapplyWebVistaを呼ぶこと
  */
-import type { LngLat, Map as MaplibreMap } from 'maplibre-gl';
+import type { LngLat, Map as MaplibreMap, Source } from 'maplibre-gl';
 import { TERRAIN_EXAGGERATION } from '../../constants/DemSources';
 import { getDemElevation } from '../viewshed';
 import {
@@ -118,9 +118,56 @@ const applyCamera = (state: WebVistaState) => {
     [target.longitude, target.latitude] as unknown as LngLat,
     target.altitude
   );
+  // ファー面の上書きはjumpToの前にいったん外す。上書きしたままjumpToすると、呼ぶたびに
+  // 注視点のズームと標高が下がり（実測: 1回で z19.95→19.39、標高2777→2634）、
+  // 高さ変更を数回押しただけで視点が地面の下に潜って空か灰色しか見えなくなった
+  const transform = state.map.transform as unknown as WritableTransform;
+  transform.clearNearFarZOverride();
   // 逆算した方位・俯角は丸め誤差を含むので、持っている値で上書きする
   state.map.jumpTo({ ...options, bearing: state.bearing, pitch: state.pitch });
   extendFarPlane(state.map);
+  applyVistaTileZoom(state.map);
+};
+
+/**
+ * 眺望中のタイルの細かさの決め方（maplibreのcalculateTileZoomを差し替える）。
+ *
+ * maplibre既定の規則は「地平線が画面の上端付近にある地図の見下ろし」を前提に、地平線に
+ * 近いタイルほど強く粗くし、さらに枚数が増えすぎないよう全体を一律に粗くする。
+ * 眺望は水平に見るので遠くの山はすべて地平線際にあり、既定の規則では望遠にしても
+ * 20km先の山がz8（1画素600m）のままだった（実測）。
+ * ここでは画面1画素あたりの地上距離が揃うよう、カメラからの距離だけで決める
+ * （注視点と同じ距離でzoom、距離が2倍ごとに1段粗く）。水平に見る場合、距離ごとの
+ * 枚数は距離によらずほぼ一定で、総数は距離の対数でしか増えないので破綻しない
+ * （実測: 画角12°で約370枚、60°で約160枚）。
+ * 上限は22。足元の至近のタイルで上限（z25）を超えると地図ごと落ちる
+ */
+const VISTA_MAX_TILE_ZOOM = 22;
+const vistaTileZoom = (
+  requestedCenterZoom: number,
+  distanceToTile2D: number,
+  distanceToTileZ: number,
+  distanceToCenter3D: number
+): number =>
+  Math.min(
+    VISTA_MAX_TILE_ZOOM,
+    requestedCenterZoom + Math.log2(distanceToCenter3D / Math.max(1e-6, Math.hypot(distanceToTile2D, distanceToTileZ)))
+  );
+
+/** 全ソースに眺望用の規則を付ける（地図一覧の変更でソースが作り直されても追従するよう、カメラ更新のたびに呼ぶ） */
+const applyVistaTileZoom = (map: MaplibreMap) => {
+  for (const id of Object.keys(map.getStyle()?.sources ?? {})) {
+    const source = map.getSource(id) as (Source & { calculateTileZoom?: unknown }) | undefined;
+    if (source && source.calculateTileZoom !== vistaTileZoom) source.calculateTileZoom = vistaTileZoom;
+  }
+};
+
+/** 眺望用の規則を外して既定に戻す */
+const clearVistaTileZoom = (map: MaplibreMap) => {
+  for (const id of Object.keys(map.getStyle()?.sources ?? {})) {
+    const source = map.getSource(id) as (Source & { calculateTileZoom?: unknown }) | undefined;
+    if (source && source.calculateTileZoom === vistaTileZoom) source.calculateTileZoom = undefined;
+  }
 };
 
 /**
@@ -128,17 +175,27 @@ const applyCamera = (state: WebVistaState) => {
  *
  * maplibreはファー面をカメラの海抜高度から決めるので、平地（海抜数十m）に立つと
  * 数km先までしか地形を描かず、山名は出るのに山が見えなかった（山頂からは高度があるので届いていた）。
- * ニア面はmaplibreの既定（画面高さ/50）のまま。単位はmaplibreのZ単位（中心での1px）
+ * ニア面はmaplibreの既定（画面高さ/50）のまま。単位はmaplibreのZ単位（中心での1px）。
+ *
+ * 自動計算より短くはしない。maplibreのフォグ行列は「カメラから海面までの視線距離」を
+ * ニア面にしており、高所から水平に見るとそれが約200kmを超える（海抜2777m（誇張込み）で約212km）。
+ * ファー面がそれより手前だと行列が壊れ、地形全体が地平線の色に塗られて真っ白になった（実測）。
+ * 自動計算のファー面は必ずその距離より先にあるので、それを下限にすれば起きない。
+ * jumpToの直後に呼ぶこと（そのときのtransform.farZが自動計算値）
  */
 const extendFarPlane = (map: MaplibreMap) => {
   const transform = map.transform as unknown as WritableTransform;
-  transform.overrideNearFarZ(transform.height / 50, VISTA_FAR_M * transform.pixelsPerMeter);
+  transform.overrideNearFarZ(
+    transform.height / 50,
+    Math.max(transform.farZ, VISTA_FAR_M * transform.pixelsPerMeter)
+  );
 };
 
 /** ファー面を上書きする操作（型定義では読み取り専用のtransformにしか出ていない） */
 interface WritableTransform {
   height: number;
   pixelsPerMeter: number;
+  farZ: number;
   overrideNearFarZ: (nearZ: number, farZ: number) => void;
   clearNearFarZOverride: () => void;
 }
@@ -191,6 +248,7 @@ const attachLookAround = (map: MaplibreMap): (() => void) => {
   // より細かい標高タイルが届いたら足元の高さを取り直す
   const onIdle = () => {
     if (vista === null) return;
+    applyVistaTileZoom(map);
     const ground = queryGround(map, vista.latitude, vista.longitude);
     if (ground !== null && Math.abs(ground - vista.ground) > GROUND_UPDATE_THRESHOLD_M) {
       vista.ground = ground;
@@ -312,6 +370,7 @@ export const clearWebVista = (restoreCamera = true): void => {
   state.map.setCenterClampedToGround(true);
   // ファー面の上書きをやめ、maplibreの自動計算に戻す
   (state.map.transform as unknown as WritableTransform).clearNearFarZOverride();
+  clearVistaTileZoom(state.map);
   state.map.setVerticalFieldOfView(state.previousFovDeg);
   // 3Dを抜けるとき（restoreCamera=false）は2D側が俯角0の表示範囲を流し込むので、カメラは触らない。
   // ここで俯角を戻すと、その2Dの値を上書きしてしまう（俯角が上限を超えていれば下のsetMaxPitchが丸める）
