@@ -1,4 +1,4 @@
-import React, { useCallback, useContext, useMemo, useState } from 'react';
+import React, { useCallback, useContext, useMemo, useState, useSyncExternalStore } from 'react';
 import { StyleSheet, View, Platform, Text, Modal, TouchableOpacity } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import type { PointRecordType, LineRecordType, PolygonRecordType } from '../../types';
@@ -28,6 +28,7 @@ import { DownloadArea } from '../organisms/HomeDownloadArea';
 import { HomeZoomButton } from '../organisms/HomeZoomButton';
 import { HomeTerrain3D } from '../organisms/HomeTerrain3D';
 import { HomeTerrain3DButtons } from '../organisms/HomeTerrain3DButtons';
+import { terrain3dVistaStore } from '../../utils/terrain3d/vistaStore';
 import { HomeTerrainControl } from '../organisms/HomeTerrainControl';
 import { HomeAttributionText } from '../organisms/HomeAttributionText';
 import { HomeDrawTools } from '../organisms/HomeDrawTools';
@@ -290,6 +291,11 @@ export default function HomeScreen() {
   const { mapRegion, windowHeight, isLandscape, windowWidth } = useWindow();
   // WebGPU非対応端末（Vulkanのない古いAndroid等）では3Dボタンを出さない
   const terrain3dSupported = useTerrain3dSupport();
+  // 眺望中か。activeだけを見て、高さ・画角の変更でページ全体が再レンダリングされないようにする
+  const vistaActive = useSyncExternalStore(
+    terrain3dVistaStore.subscribe,
+    () => terrain3dVistaStore.getSnapshot().active
+  );
   const { bounds } = useViewportBounds(mapRegion);
 
   const navigationHeaderHeight = useMemo(
@@ -705,13 +711,16 @@ export default function HomeScreen() {
             </View>
           )}
 
-          <HomeZoomButton
-            zoom={zoom}
-            left={10}
-            zoomIn={pressZoomIn}
-            zoomOut={pressZoomOut}
-            showHeader={downloadMode || exportPDFMode}
-          />
+          {/* 眺望中は地図のズームを隠し、ズーム（望遠・広角）は眺望のボタン列で行う（Webと同じ） */}
+          {!vistaActive && (
+            <HomeZoomButton
+              zoom={zoom}
+              left={10}
+              zoomIn={pressZoomIn}
+              zoomOut={pressZoomOut}
+              showHeader={downloadMode || exportPDFMode}
+            />
+          )}
           {!(downloadMode || exportPDFMode) && featureButton === 'NONE' && toggleTerrain !== undefined && terrain3dSupported && (
             <HomeTerrainControl
               // GPSボタン（top=190、横向き180）の直下に同じ丸ボタンとして並べる

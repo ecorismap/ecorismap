@@ -84,9 +84,10 @@ export const VISTA_PITCH_DEG = 90;
 export const VISTA_NEAR_M = 1;
 /**
  * 眺望の視点の高さ[m]の段階（ボタンで上下する）。
- * 立った目線から、丘や木立の上・上空へと見晴らしを上げていける刻みにする
+ * 立った目線から、丘や木立の上・上空へと見晴らしを上げていける刻みにする。
+ * 上限は5000m（航空機の窓くらい。山脈の向こう側まで見渡せる高さ）
  */
-export const VISTA_EYE_HEIGHTS_M = [VISTA_EYE_HEIGHT_M, 5, 10, 20, 50, 100, 200, 500, 1000];
+export const VISTA_EYE_HEIGHTS_M = [VISTA_EYE_HEIGHT_M, 5, 10, 20, 50, 100, 200, 500, 1000, 2000, 5000];
 /**
  * 眺望中のピッチ上限[度]（90=水平）。
  *

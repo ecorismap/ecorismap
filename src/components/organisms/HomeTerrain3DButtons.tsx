@@ -5,7 +5,7 @@
  * 見た目はズームボタンと同じ半透明の青い縦長パネルにまとめ、左側のボタン群と揃える。
  */
 import React, { useCallback, useContext, useSyncExternalStore } from 'react';
-import { Platform, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Pressable } from '../atoms/Pressable';
 import { COLOR } from '../../constants/AppConstants';
@@ -30,7 +30,7 @@ interface Props {
   left: number;
 }
 
-/** 1回の押下で回す角度。眺望中は「その場で首を振る」操作になるので細かく刻む */
+/** 1回の押下で回す角度（通常の3D表示用。眺望中はボタンを出さず、見回しはドラッグで行う） */
 const ROTATE_STEP_DEG = 15;
 const PITCH_STEP_DEG = 20;
 
@@ -55,12 +55,15 @@ export const HomeTerrain3DButtons = React.memo((props: Props) => {
   // headingを増やす＝視線が東へ振れる＝画面上の地図は反時計回りに回る。
   // 傾きも同じ考え方で、pitchを増やす（視線を寝かせる）と地面は
   // axis-x-rotate-counterclockwiseの矢印の向きに回って見える（実機で逆だったため入れ替えた）
-  const buttons: { key: string; icon: string; run: (handle: ButtonHandle) => void }[] = [
-    { key: 'rotateCcw', icon: 'axis-z-rotate-counterclockwise', run: (h) => h.rotateBy(ROTATE_STEP_DEG) },
-    { key: 'rotateCw', icon: 'axis-z-rotate-clockwise', run: (h) => h.rotateBy(-ROTATE_STEP_DEG) },
-    { key: 'pitchCcw', icon: 'axis-x-rotate-counterclockwise', run: (h) => h.pitchBy(PITCH_STEP_DEG) },
-    { key: 'pitchCw', icon: 'axis-x-rotate-clockwise', run: (h) => h.pitchBy(-PITCH_STEP_DEG) },
-  ];
+  // 回転・傾きのボタンは眺望中は出さない（見回しはドラッグで行い、ボタン列は高さ・望遠だけにする）
+  const buttons: { key: string; icon: string; run: (handle: ButtonHandle) => void }[] = vista.active
+    ? []
+    : [
+        { key: 'rotateCcw', icon: 'axis-z-rotate-counterclockwise', run: (h) => h.rotateBy(ROTATE_STEP_DEG) },
+        { key: 'rotateCw', icon: 'axis-z-rotate-clockwise', run: (h) => h.rotateBy(-ROTATE_STEP_DEG) },
+        { key: 'pitchCcw', icon: 'axis-x-rotate-counterclockwise', run: (h) => h.pitchBy(PITCH_STEP_DEG) },
+        { key: 'pitchCw', icon: 'axis-x-rotate-clockwise', run: (h) => h.pitchBy(-PITCH_STEP_DEG) },
+      ];
 
   return (
     <View style={[styles.container, { top, left }]}>
@@ -87,21 +90,17 @@ export const HomeTerrain3DButtons = React.memo((props: Props) => {
           <Pressable style={styles.button} onPress={() => withHandle((h) => h.changeVistaHeight(-1))}>
             <MaterialCommunityIcons name="arrow-down" size={20} color={COLOR.WHITE} pointerEvents="none" />
           </Pressable>
-          {/* 画角（望遠・広角）。ネイティブは左上のズームボタンが眺望中はこれになるので、
-              ボタンはWebだけ（Webのズームボタンはmaplibre標準で、眺望中は隠している） */}
-          {Platform.OS === 'web' && (
-            <Pressable style={styles.button} onPress={() => withHandle((h) => h.changeVistaFov(1))}>
-              <MaterialCommunityIcons name="magnify-plus-outline" size={20} color={COLOR.WHITE} pointerEvents="none" />
-            </Pressable>
-          )}
+          {/* 画角（望遠・広角）。眺望中は地図のズームボタンを隠し、ズームはこのボタンで行う
+              （ネイティブ・Webとも同じ並び） */}
+          <Pressable style={styles.button} onPress={() => withHandle((h) => h.changeVistaFov(1))}>
+            <MaterialCommunityIcons name="magnify-plus-outline" size={20} color={COLOR.WHITE} pointerEvents="none" />
+          </Pressable>
           <View style={styles.height}>
             <Text style={styles.heightText}>{formatMagnification(vista.fovDeg)}</Text>
           </View>
-          {Platform.OS === 'web' && (
-            <Pressable style={styles.button} onPress={() => withHandle((h) => h.changeVistaFov(-1))}>
-              <MaterialCommunityIcons name="magnify-minus-outline" size={20} color={COLOR.WHITE} pointerEvents="none" />
-            </Pressable>
-          )}
+          <Pressable style={styles.button} onPress={() => withHandle((h) => h.changeVistaFov(-1))}>
+            <MaterialCommunityIcons name="magnify-minus-outline" size={20} color={COLOR.WHITE} pointerEvents="none" />
+          </Pressable>
         </>
       )}
     </View>
