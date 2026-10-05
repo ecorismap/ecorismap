@@ -3,7 +3,8 @@ import { selectPeak3DCandidates, thinPeak3DLabels, ProjectedPeak3D } from '../pe
 
 const peaks: Peak[] = [
   { latitude: 35.36064, longitude: 138.72733, ele: 3776, name: '富士山', rank: 1 },
-  { latitude: 35.3455, longitude: 138.751, ele: 2693, name: '宝永山', rank: 4 },
+  // 2693mの宝永山は標高の上限が効いてしまうので、同じ場所に小さな山を置く
+  { latitude: 35.3455, longitude: 138.751, ele: 900, name: '裾野の山', rank: 4 },
   { latitude: 35.62517, longitude: 139.24361, ele: 599, name: '高尾山', rank: 2 },
 ];
 const center = { latitude: 35.5, longitude: 138.76 };
@@ -11,11 +12,16 @@ const center = { latitude: 35.5, longitude: 138.76 };
 describe('selectPeak3DCandidates', () => {
   it('縮尺の規則（小さな山はz10から）と距離上限（小さな山は15km）で選ぶ', () => {
     expect(selectPeak3DCandidates(peaks, center, 8).map((p) => p.name)).toEqual(['富士山', '高尾山']);
-    // z12でも宝永山（ランク4）は約18km先なので距離上限で外れる
+    // z12でも裾野の山（ランク4）は約18km先なので距離上限で外れる
     expect(selectPeak3DCandidates(peaks, center, 12).map((p) => p.name)).toEqual(['富士山', '高尾山']);
     expect(selectPeak3DCandidates(peaks, { latitude: 35.4, longitude: 138.76 }, 12).map((p) => p.name)).toContain(
-      '宝永山'
+      '裾野の山'
     );
+  });
+
+  it('高い山はランクの上限より遠くまで出す', () => {
+    // 那須あたりから約226km先の富士山（上限約278km）
+    expect(selectPeak3DCandidates(peaks, { latitude: 37.12, longitude: 140.0 }, 8).map((p) => p.name)).toEqual(['富士山']);
   });
 });
 

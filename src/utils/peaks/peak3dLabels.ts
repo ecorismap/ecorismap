@@ -8,11 +8,11 @@
  */
 import { Peak, distanceM } from './peakData';
 import { PEAK_2D_MIN_ZOOM, Peak2DLabel, peakLabelText } from './peak2dLabels';
-import { RANK_MAX_DISTANCE_M } from './peakLabelLayout';
+import { PEAK_SEARCH_RADIUS_M, peakMaxDistanceM } from './peakLabelLayout';
 
 const DEFAULT_MIN_ZOOM = 11;
-/** 注視点から候補を探す半径[m]（RANK_MAX_DISTANCE_Mの最大値） */
-export const PEAK_3D_SEARCH_RADIUS_M = 150000;
+/** 注視点から候補を探す半径[m]（眺望と同じ距離上限の最大値） */
+export const PEAK_3D_SEARCH_RADIUS_M = PEAK_SEARCH_RADIUS_M;
 
 /** 注視点のまわりの山から、縮尺と距離の規則に合うものを選ぶ */
 export const selectPeak3DCandidates = (
@@ -24,7 +24,7 @@ export const selectPeak3DCandidates = (
   for (const peak of peaks) {
     if (Math.floor(zoom) < (PEAK_2D_MIN_ZOOM[peak.rank] ?? DEFAULT_MIN_ZOOM)) continue;
     const distance = distanceM(center.latitude, center.longitude, peak.latitude, peak.longitude);
-    if (distance > (RANK_MAX_DISTANCE_M[peak.rank] ?? RANK_MAX_DISTANCE_M[5])) continue;
+    if (distance > peakMaxDistanceM(peak)) continue;
     result.push({ ...peak, key: `${peak.name}@${peak.latitude},${peak.longitude}`, text: peakLabelText(peak) });
   }
   return result;

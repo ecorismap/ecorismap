@@ -41,8 +41,8 @@ export const WEB_NORMAL_MAX_PITCH_DEG = 85;
  * 40mならニア面は約1m（ネイティブのVISTA_NEAR_Mと同程度）。ズームは約z20.5で上限22に収まる
  */
 const LOOK_AHEAD_M = 40;
-/** 眺望で地形を描く最遠距離[m]。山名の表示距離（主要峰150km）より少し先まで */
-const VISTA_FAR_M = 200000;
+/** 眺望で地形を描く最遠距離[m]。山名の表示距離（富士山で約278km）より少し先まで */
+const VISTA_FAR_M = 300000;
 /** 眺望を抜けたときの俯瞰（立っていた地点を注視点にする） */
 const EXIT_PITCH_DEG = 60;
 const EXIT_ZOOM = 15;
