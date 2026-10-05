@@ -6,6 +6,7 @@ import { Pressable } from '../atoms/Pressable';
 import { COLOR } from '../../constants/AppConstants';
 import { DEM_MAPTERHORN_MAP_ID } from '../../constants/DemSources';
 import { t } from '../../i18n/config';
+import { isPeaksUrl } from '../../utils/peaks/peak2dLabels';
 
 interface Props {
   onConfirm: () => void;
@@ -29,7 +30,9 @@ export const HomeTileMapSelector = React.memo((props: Props) => {
       !tileMap.url.endsWith('.pdf') &&
       !tileMap.url.startsWith('pdf://') &&
       !tileMap.url.includes('file://') &&
-      !tileMap.url.includes('blob:')
+      !tileMap.url.includes('blob:') &&
+      // 山名（peaks://）は同梱データなのでダウンロード対象にしない
+      !isPeaksUrl(tileMap.url)
   );
 
   // 「すべての地図」が選択されているか（selectedTileMapIdsが空 = すべて選択状態）

@@ -2,6 +2,7 @@ import { getTileRegion } from '../Tile';
 import { TileMapType } from '../../types';
 import { TileSignaturesType } from '../TileSignature';
 import { CancelToken } from './runTasks';
+import { isPeaksUrl } from '../peaks/peak2dLabels';
 
 //タイル画像を用意するときの指定。署名はPMTiles等の署名付き配信、isOfflineはモバイルのPMTiles描画、
 //renderWindowはWebのベクタ描画（前面にある印刷用ウィンドウで描く）に使う
@@ -14,7 +15,7 @@ export type PdfTileMapOptions = {
 };
 
 //PDFに載せられない理由。出力前の通知で地図名と一緒に示す
-export type UnprintableReason = 'basemap' | 'terrain' | 'local';
+export type UnprintableReason = 'basemap' | 'terrain' | 'local' | 'peaks';
 
 //PMTiles・pbfの地図。地図表示（Home.tsxのPMTile / HomeTerrain3D）と同じ判定
 export const isPmtilesMap = (map: Pick<TileMapType, 'url'>) =>
@@ -30,6 +31,8 @@ export const getUnprintableReason = (map: TileMapType, isWeb: boolean): Unprinta
   if (map.id === 'standard' || map.id === 'hybrid') return 'basemap';
   //hillshade://やrelief://はローカルに生DEMタイルしか持たずPDFに描画できない
   if (map.url.startsWith('hillshade://') || map.url.startsWith('relief://')) return 'terrain';
+  //山名（peaks://）はタイルではなく、画面に重ねるラベルなのでPDFのタイルとして描けない
+  if (isPeaksUrl(map.url)) return 'peaks';
   //Webは端末内の地図（取り込んだPDF/GeoTIFF等）のタイルを取り出せない。
   //取り込んだPMTiles（IndexedDBのblob:）はpmtilesライブラリで読めるので載せられる
   if (

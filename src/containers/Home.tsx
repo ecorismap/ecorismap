@@ -144,6 +144,7 @@ import { TrackPhotoProvider, TrackPhotoContext } from '../contexts/TrackPhoto';
 import { MeasureContext, MeasureProvider } from '../contexts/Measure';
 import { ViewshedContext, ViewshedProvider } from '../contexts/Viewshed';
 import { useLayers } from '../hooks/useLayers';
+import { isPeaksUrl } from '../utils/peaks/peak2dLabels';
 
 //タッチ開始からこの時間内に2本目の指が着いたらピンチ意図とみなす（2本指の着地ずれの許容時間）
 const PINCH_INTENT_DURATION_MS = 300;
@@ -1751,14 +1752,17 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
   // 可視領域用DEM（疑似地図・Redux tileMaps非登録）は、明示選択時と「すべての地図」時に合成して含める
   const downloadTargetMaps = useMemo(() => {
     if (selectedTileMapIds.length > 0) {
-      const maps = tileMaps.filter((map) => selectedTileMapIds.includes(map.id));
+      const maps = tileMaps.filter((map) => selectedTileMapIds.includes(map.id) && !isPeaksUrl(map.url));
       if (selectedTileMapIds.includes(DEM_MAPTERHORN_MAP_ID)) maps.push(getDemTileMap());
       return maps;
     }
     if (route.params?.mode === 'download') {
       // 「すべての地図」が選択されている場合、ダウンロード可能な全ての地図
       return [
-        ...tileMaps.filter((map) => !map.isGroup && map.id !== 'standard' && map.id !== 'hybrid'),
+        // 山名（peaks://）はアプリに同梱のデータなのでダウンロードするものがない
+        ...tileMaps.filter(
+          (map) => !map.isGroup && map.id !== 'standard' && map.id !== 'hybrid' && !isPeaksUrl(map.url)
+        ),
         getDemTileMap(),
       ];
     }

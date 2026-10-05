@@ -12,6 +12,7 @@ import Slider from '../atoms/Slider';
 import { useWindow } from '../../hooks/useWindow';
 import { useFeatureFlags } from '../../hooks/useFeatureFlags';
 import { BottomSheetHeader } from '../molecules/BottomSheetHeader';
+import { isPeaksUrl } from '../../utils/peaks/peak2dLabels';
 
 export default function MapEditScreen() {
   const {
@@ -117,7 +118,8 @@ export default function MapEditScreen() {
                 onSlidingComplete={changeTransparency}
               />
 
-              {!map.url?.includes('pdf') && (
+              {/* 山名（peaks://）はタイルではないので、タイル向けの設定は出さない */}
+              {!map.url?.includes('pdf') && !isPeaksUrl(map.url) && (
                 <Slider
                   label={t('common.fixZoom')}
                   labelColor={COLOR.GRAY4}
@@ -130,7 +132,10 @@ export default function MapEditScreen() {
                 />
               )}
 
-              {!map.url?.includes('pmtiles') && !map.url?.includes('.pbf') && !map.url?.includes('pdf') && (
+              {!map.url?.includes('pmtiles') &&
+                !map.url?.includes('.pbf') &&
+                !map.url?.includes('pdf') &&
+                !isPeaksUrl(map.url) && (
                 <>
                   <View style={{ width: '101%', alignItems: 'flex-start', marginTop: 10 }}>
                     <CheckBox

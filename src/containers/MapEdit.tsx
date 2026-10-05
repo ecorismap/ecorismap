@@ -13,6 +13,7 @@ import { getExt } from '../utils/General';
 import * as FileSystem from 'expo-file-system/legacy';
 import { db } from '../utils/db';
 import { TILE_FOLDER } from '../constants/AppConstants';
+import { isPeaksUrl } from '../utils/peaks/peak2dLabels';
 
 export default function MapEditContainer() {
   const { goBack: navigationGoBack } = useBottomSheetNavigation();
@@ -42,6 +43,8 @@ export default function MapEditContainer() {
   const pressSaveMap = useCallback(async () => {
     const checkInputs = () => {
       if (map.isGroup) return map.name !== '';
+      // 山名（peaks://）はタイルURLではない（同梱の山頂データを重ねる印）ので、URL形式の検査をしない
+      if (isPeaksUrl(map.url)) return true;
       const { isOK } = formattedInputs(map.url, 'url');
       return isOK;
     };

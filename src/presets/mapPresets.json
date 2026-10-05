@@ -138,5 +138,25 @@
       "isVector": false,
       "isGroup": false
     }
+  },
+  {
+    "presetId": "preset-map-peaks",
+    "presetName": "山名（国土地理院）",
+    "map": {
+      "name": "山名（国土地理院）",
+      "url": "peaks://gsi",
+      "styleURL": "",
+      "attribution": "山名: 国土地理院",
+      "maptype": "none",
+      "visible": true,
+      "transparency": 0,
+      "overzoomThreshold": 22,
+      "highResolutionEnabled": false,
+      "minimumZ": 0,
+      "maximumZ": 22,
+      "flipY": false,
+      "isVector": false,
+      "isGroup": false
+    }
   }
 ]

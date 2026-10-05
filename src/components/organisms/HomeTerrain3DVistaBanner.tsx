@@ -14,12 +14,14 @@ import { MapViewContext } from '../../contexts/MapView';
 import { isTerrain3DHandle } from '../../utils/terrain3d/types';
 import { terrain3dVistaStore } from '../../utils/terrain3d/vistaStore';
 import { clearWebVista, isWebVistaActive } from '../../utils/terrain3d/webVista';
+import { peakLabelsStore } from '../../utils/peaks/peakLabelsStore';
 import { t } from '../../i18n/config';
 import { useHomeTopLayout } from '../../hooks/useHomeTopLayout';
 
 export const HomeTerrain3DVistaBanner = React.memo(() => {
   const { mapViewRef } = useContext(MapViewContext);
   const vista = useSyncExternalStore(terrain3dVistaStore.subscribe, terrain3dVistaStore.getSnapshot);
+  const peakLabels = useSyncExternalStore(peakLabelsStore.subscribe, peakLabelsStore.getSnapshot);
   const { vistaBannerTop } = useHomeTopLayout();
 
   const pressClear = useCallback(() => {
@@ -32,16 +34,33 @@ export const HomeTerrain3DVistaBanner = React.memo(() => {
 
   return (
     <View style={[styles.container, { top: vistaBannerTop }]} pointerEvents="box-none">
-      <Pressable onPress={pressClear} style={styles.banner}>
-        <MaterialCommunityIcons name="binoculars" size={18} color={COLOR.WHITE} />
-        <Text style={styles.text}>{t('Home.vista.banner')}</Text>
-        <MaterialCommunityIcons name="close" size={18} color={COLOR.WHITE} style={styles.close} />
-      </Pressable>
+      <View style={styles.row} pointerEvents="box-none">
+        <Pressable onPress={pressClear} style={styles.banner}>
+          <MaterialCommunityIcons name="binoculars" size={18} color={COLOR.WHITE} />
+          <Text style={styles.text}>{t('Home.vista.banner')}</Text>
+          <MaterialCommunityIcons name="close" size={18} color={COLOR.WHITE} style={styles.close} />
+        </Pressable>
+        {/* 山名の表示切替。景色だけを見たいときに消せるようにする */}
+        <Pressable
+          onPress={peakLabelsStore.toggle}
+          style={[styles.banner, styles.toggle, !peakLabels && styles.toggleOff]}
+          accessibilityLabel={t(peakLabels ? 'Home.vista.hidePeakNames' : 'Home.vista.showPeakNames')}
+        >
+          <MaterialCommunityIcons name="image-filter-hdr" size={18} color={COLOR.WHITE} />
+          <Text style={styles.text}>{t('Home.vista.peakNames')}</Text>
+        </Pressable>
+      </View>
     </View>
   );
 });
 
 const styles = StyleSheet.create({
+  toggle: {
+    marginLeft: 8,
+  },
+  toggleOff: {
+    opacity: 0.5,
+  },
   banner: {
     alignItems: 'center',
     backgroundColor: COLOR.BANNER_BACKGROUND,
@@ -60,6 +79,9 @@ const styles = StyleSheet.create({
     position: 'absolute',
     right: 0,
     zIndex: 1001,
+  },
+  row: {
+    flexDirection: 'row',
   },
   text: {
     color: COLOR.WHITE,

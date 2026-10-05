@@ -26,9 +26,12 @@ export const MAX_TILES = 48;
  * 遠景リング（近景よりΔ段粗いズームのタイル）のLODチェーン。
  * タイル一辺が2^Δ倍になるため、少ないタイル数で大きな半径をカバーする。
  * 外側のリングから順に描き、間でデプスをクリアして内側を重ねる。
- * z16基準: Δ3=半径約17km、Δ6=約150km（蔵王・船形クラスの遠山まで入る）
+ * z16基準（半径はメルカトル上の値。緯度35°では約0.82倍）: Δ3=約11km、Δ6=約88km、Δ8=約350km。
+ * Δ8はテクスチャの下限z8で、富士山クラス（山名を約278km先まで出す）を描くために足した
+ * （Δ6までだと眺望で遠くの山名だけ出て山が無い）。ズームを引くとΔ6がz8に張り付いて
+ * Δ8と同じになるので、そのときはΔ8は省かれる（TerrainScene.updateVisibleTiles）
  */
-export const FAR_RING_DELTAS = [3, 6];
+export const FAR_RING_DELTAS = [3, 6, 8];
 /**
  * 遠景リングのタイル数上限（FAR_RING_DELTASと同じ並び）。半径もこの枚数から逆算する。
  *
@@ -36,7 +39,7 @@ export const FAR_RING_DELTAS = [3, 6];
  * 共有させることができなくなる（1タイル＝1DEM）。z8のタイルは一辺150km以上あり
  * 40枚だと半径550km＝日本列島が丸ごと入る過剰な範囲なので、枚数自体を絞る
  */
-export const MAX_FAR_TILES = [24, 16];
+export const MAX_FAR_TILES = [24, 16, 16];
 /**
  * 1タイルに同時に重ねられるレイヤ数の上限。
  * フラグメントシェーダのサンプラ本数（uTex0..7）と対応するため、変更時はシェーダも直すこと。
@@ -45,11 +48,12 @@ export const MAX_FAR_TILES = [24, 16];
  */
 export const MAX_TERRAIN_LAYERS = 8;
 /**
- * DEMテクスチャLRUの上限枚数（256px RGBA≒256KB/枚 → 約16MB）。
+ * DEMテクスチャLRUの上限枚数（256px RGBA≒256KB/枚 → 約24MB）。
+ * 望遠の扇形リング（最大6本）が加わると参照するDEMが増えるので、64から広げた。
  * 近景・遠景の全リングで共有する。z15/16のテクスチャタイルは親のz14 DEMを
  * 共有するため、タイル枚数(最大128)よりずっと少なくて足りる
  */
-export const MAX_DEM_TEXTURES = 64;
+export const MAX_DEM_TEXTURES = 96;
 /** ズーム切替のヒステリシス。擬似ズームがこの幅を超えて変わったらタイルズームを変更 */
 export const ZOOM_HYSTERESIS = 0.5;
 /** タイル取得の同時実行数 */
@@ -83,9 +87,10 @@ export const VISTA_PITCH_DEG = 90;
 export const VISTA_NEAR_M = 1;
 /**
  * 眺望の視点の高さ[m]の段階（ボタンで上下する）。
- * 立った目線から、丘や木立の上・上空へと見晴らしを上げていける刻みにする
+ * 立った目線から、丘や木立の上・上空へと見晴らしを上げていける刻みにする。
+ * 上限は5000m（航空機の窓くらい。山脈の向こう側まで見渡せる高さ）
  */
-export const VISTA_EYE_HEIGHTS_M = [VISTA_EYE_HEIGHT_M, 5, 10, 20, 50, 100, 200, 500, 1000];
+export const VISTA_EYE_HEIGHTS_M = [VISTA_EYE_HEIGHT_M, 5, 10, 20, 50, 100, 200, 500, 1000, 2000, 5000];
 /**
  * 眺望中のピッチ上限[度]（90=水平）。
  *
@@ -93,7 +98,66 @@ export const VISTA_EYE_HEIGHTS_M = [VISTA_EYE_HEIGHT_M, 5, 10, 20, 50, 100, 200,
  * 通常の操作はMAX_PITCH_DEGのままで、ここを使うのは眺望中だけ
  */
 export const VISTA_MAX_PITCH_DEG = 120;
+/**
+ * 眺望中のズーム＝画角（縦の視野角[度]）の段階。広角→望遠の順。
+ *
+ * 眺望は「その場に立って見る」ので、ズームで視点を動かすと立ち位置が変わってしまう。
+ * 代わりに双眼鏡・カメラのように画角を狭めて遠くを大きく見る。標準はCAMERA_FOV_DEG
+ */
+export const VISTA_FOV_STEPS_DEG = [75, 60, 45, 30, 20, 12, 8];
+export const VISTA_MIN_FOV_DEG = VISTA_FOV_STEPS_DEG[VISTA_FOV_STEPS_DEG.length - 1];
+export const VISTA_MAX_FOV_DEG = VISTA_FOV_STEPS_DEG[0];
+
+/**
+ * 画角を1段狭める（step>0＝望遠）／広げる（step<0＝広角）。
+ * ピンチなどで段の途中にあるときは、その向きの次の段へ寄せる
+ */
+export const stepVistaFov = (currentDeg: number, step: number): number => {
+  if (step > 0) {
+    const next = VISTA_FOV_STEPS_DEG.find((deg) => deg < currentDeg - 0.01);
+    return next ?? VISTA_MIN_FOV_DEG;
+  }
+  const wider = [...VISTA_FOV_STEPS_DEG].reverse().find((deg) => deg > currentDeg + 0.01);
+  return wider ?? VISTA_MAX_FOV_DEG;
+};
+
+export const clampVistaFov = (deg: number): number => Math.min(VISTA_MAX_FOV_DEG, Math.max(VISTA_MIN_FOV_DEG, deg));
+
+/** 標準の画角（CAMERA_FOV_DEG）に対する見かけの倍率 */
+export const vistaMagnification = (fovDeg: number): number =>
+  Math.tan((CAMERA_FOV_DEG * Math.PI) / 360) / Math.tan((fovDeg * Math.PI) / 360);
 export const VISTA_DURATION_MS = 600;
+/**
+ * 眺望の望遠（画角を狭めたとき）に追加する扇形リング。
+ *
+ * 通常の3リング（全方位の同心円）だけでは、望遠で拡大しても遠くの山は中景・遠景リングの
+ * 粗いタイル（z12/z9、DEMはさらに3段粗い）のままぼやける。望遠で見えるのは細い扇形だけ
+ * なので、その扇形に沿って「1段ずつズームの違うリング」を近景のすぐ下から重ねる。
+ * 各リングは少ない枚数で視点から連続して覆い、近いほど細かく遠いほど粗い（maplibreなど
+ * 一般的な地形エンジンの距離別LODと同じ考え方）。全方位の3リングは見回し用に残す。
+ * 扇形リングは最大ズーム（z16）から1段ずつ下げる。近景リングのズームは眺望に入る前の
+ * 地図の縮尺で決まる（z12から入るとz13）ので、それより細かい扇形が近景の上に重なることもある。
+ *
+ * 枚数24・半角5.6°（画角12°）なら z15が約13km、z14が約26km、z13が約52km まで届き、
+ * 画面1画素あたり地図1画素程度になる（画角12°・高さ874ptで、16km先の1画素≒3.9m）
+ */
+export const TELEPHOTO_MAX_RINGS = 6;
+/** 扇形リングを足し始める倍率（これ未満の軽い望遠は通常のリングで足りる） */
+export const TELEPHOTO_MIN_MAGNIFICATION = 2;
+export const TELEPHOTO_RING_MAX_TILES = 24;
+/** 扇形リングのDEMはタイルより2段粗いだけにする（3段だと遠くの山が丸い台地になる） */
+export const TELEPHOTO_RING_DEM_ZOOM_OFFSET = 2;
+/** 扇形リングのメッシュ分割（細かい3本は近景と同じ64、残りは32） */
+export const TELEPHOTO_RING_MESH_SEGMENTS = [64, 64, 64, 32, 32, 32];
+/** 扇形リング1本あたりの同時取得数（本数が多いので近景・遠景より絞る） */
+export const TELEPHOTO_LOAD_CONCURRENCY = 2;
+/**
+ * 扇形の広さ。見えている横幅の半角×MARGIN＋EXTRA[度]。少し首を振っても端が欠けないようにする
+ * （取り直しはカメラが止まってから）。扇形がこれ以上広いと枚数の節約にならないので使わない
+ */
+export const TELEPHOTO_CONE_MARGIN = 1.3;
+export const TELEPHOTO_CONE_EXTRA_DEG = 2;
+export const TELEPHOTO_MAX_HALF_ANGLE_DEG = 40;
 /**
  * 軌跡リプレイ（三人称追従カメラ）の設定。
  *
@@ -141,9 +205,11 @@ export const MESH_SEGMENTS = 64;
  * 遠景は画面上で小さくフォグにも隠れるため、近景と同じ密度は要らない。
  * 64→24/12で遠景の頂点数が約9割減る（頂点数はそのままフレーム時間に効く）。
  * 注意: expo-gl時代は間引くと地平線付近にスカートの縦縞が出た（原因未特定・2026-09実測）。
- * WebGPU移行後に再評価した結果がこの値。縦縞が再発したら[64, 64]へ戻すこと
+ * WebGPU移行後に再評価した結果がこの値。縦縞が再発したら[64, 64]へ戻すこと。
+ * Δ8のz8タイルは一辺156kmあり、12分割だと1頂点13kmで富士山が1〜2頂点の盛り上がりに
+ * しかならないので32分割（約5km）にする。16枚×33²でも頂点数は近景1枚分ほど
  */
-export const FAR_RING_MESH_SEGMENTS = [24, 12];
+export const FAR_RING_MESH_SEGMENTS = [24, 12, 32];
 /**
  * 参照するDEMをタイルズームから何段粗くするか（近景／遠景）。
  *

@@ -17,6 +17,7 @@ import { TileMapType } from '../../types';
 import { withTileSignature } from '../../utils/TileSignature';
 import { getPmtileMaximumNativeZ } from '../../utils/pmtileProps';
 import { isDemProtocolUrl, isReliefUrl, toDemUrl } from '../../utils/terrainShading';
+import { isPeaksUrl } from '../../utils/peaks/peak2dLabels';
 import { reliefStyleFromUrl } from '../../utils/colorRelief';
 import { DataOverlaySpec, TerrainScene } from '../../utils/terrain3d/TerrainScene';
 import { parseColorToRgba } from '../../utils/terrain3d/colorUtils';
@@ -24,6 +25,9 @@ import { MERCATOR_CIRCUMFERENCE } from '../../utils/terrain3d/coords';
 import { getColor, getLineWidthAtZoom, getLineWidth } from '../../utils/Layer';
 import { LineRecordType, PointRecordType, PolygonRecordType } from '../../types';
 import { HomeTerrain3DPoints } from './HomeTerrain3DPoints';
+import { HomeVistaPeakLabels } from './HomeVistaPeakLabels';
+import { HomeTerrain3DPeakLabels } from './HomeTerrain3DPeakLabels';
+import { createScenePeakProjector } from '../../utils/peaks/peakProjector';
 import { HomeTerrain3DTrack } from './HomeTerrain3DTrack';
 import { HomeTerrain3DCurrentMarker } from './HomeTerrain3DCurrentMarker';
 import { HomeTerrain3DFocusMarker } from './HomeTerrain3DFocusMarker';
@@ -95,6 +99,8 @@ export const selectTerrainLayers = (
     // PMTiles・pbf（ベクタ含む）は2Dと同じネイティブラスタライザで描画する
     if (url.endsWith('.pdf') || url.startsWith('pdf://')) return false;
     if (isDemProtocolUrl(url) && !isReliefUrl(url)) return false;
+    // 山名（peaks://）はタイルではない（3Dでは眺望の山名ラベルが代わりになる）
+    if (isPeaksUrl(url)) return false;
     return true;
   });
   // tileMapsは先頭ほど上に表示される。上位MAX_TERRAIN_LAYERS枚を採用し、下層から並べる
@@ -151,6 +157,10 @@ export const HomeTerrain3D = React.memo(() => {
   const sceneRef = useRef<TerrainScene | null>(null);
   // ポイントオーバーレイへ渡す用（初期化は非同期のためrefでは購読開始が間に合わない）
   const [sceneState, setSceneState] = useState<TerrainScene | null>(null);
+  const peakProjector = useMemo(
+    () => (sceneState === null ? null : createScenePeakProjector(sceneState)),
+    [sceneState]
+  );
   const canvasRef = useRef<CanvasRef>(null);
   /** getContextはビューのレイアウト確定後でないとサイズが取れない */
   const [canvasLaidOut, setCanvasLaidOut] = useState(false);
@@ -380,6 +390,9 @@ export const HomeTerrain3D = React.memo(() => {
           return moved;
         },
         projectToScreen: (latitude, longitude) => scene.projectToScreen(latitude, longitude),
+        changeVistaFov: (step) => {
+          scene.changeVistaFov(step);
+        },
         changeVistaHeight: (step) => {
           if (scene.changeVistaHeight(step)) syncRegionRef.current(true);
         },
@@ -681,7 +694,9 @@ export const HomeTerrain3D = React.memo(() => {
       .onChange((e) => {
         const scene = sceneRef.current;
         if (!scene) return;
-        scene.controller.zoomByScale(e.scaleChange);
+        // 眺望中は立ち位置を動かさず、画角を変える（双眼鏡のように遠くを大きく見る）
+        if (scene.isVistaActive) scene.zoomVistaByScale(e.scaleChange);
+        else scene.controller.zoomByScale(e.scaleChange);
         scene.markDirty();
       })
       .onEnd(() => syncRegion(true));
@@ -724,6 +739,10 @@ export const HomeTerrain3D = React.memo(() => {
           <Canvas ref={canvasRef} style={styles.gl} />
         </View>
       </GestureDetector>
+      {/* 眺望中の山名。調査データのポイントを隠さないよう、ポイントより奥に置く */}
+      <HomeVistaPeakLabels projector={peakProjector} />
+      {/* 通常の3Dの山名（地図一覧の「山名」表示中・眺望でないとき） */}
+      <HomeTerrain3DPeakLabels scene={sceneState} />
       <HomeTerrain3DPoints scene={sceneState} />
       {/* 軌跡はGPU（シーンのオーバーレイ系統）へ指定を流すだけで、画面出力は持たない */}
       <HomeTerrain3DTrack scene={sceneState} />

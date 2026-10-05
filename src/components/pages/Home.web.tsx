@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useContext, useSyncExternalStore } from 'react';
+import React, { useCallback, useEffect, useMemo, useContext, useState, useSyncExternalStore } from 'react';
 import { StyleSheet, View, Text } from 'react-native';
 import type { PointRecordType, LineRecordType, PolygonRecordType } from '../../types';
 
@@ -31,6 +31,7 @@ import { MAPTERHORN_URL, TERRAIN_EXAGGERATION } from '../../constants/DemSources
 import { takePendingVista, terrain3dVistaStore } from '../../utils/terrain3d/vistaStore';
 import {
   clearWebVista,
+  createWebPeakProjector,
   reapplyWebVista,
   startWebVista,
   WEB_NORMAL_MAX_PITCH_DEG,
@@ -38,6 +39,10 @@ import {
 import { VISTA_MAX_PITCH_DEG } from '../../utils/terrain3d/constants';
 import { HomeTerrain3DVistaBanner } from '../organisms/HomeTerrain3DVistaBanner';
 import { HomeTerrain3DButtons } from '../organisms/HomeTerrain3DButtons';
+import { HomeVistaPeakLabels } from '../organisms/HomeVistaPeakLabels';
+import { loadPeakIndex } from '../../utils/peaks/peakData';
+import { isPeaksUrl } from '../../utils/peaks/peak2dLabels';
+import { EMPTY_PEAKS, getPeakLayers, PeakFeatureCollection, toPeakGeoJSON } from '../../utils/peaks/peakLayers.web';
 
 // 3D表示用の標高タイル（Mapterhorn、terrarium形式をmaplibreが内蔵デコード）。
 // 日本は基盤地図情報DEM(1m/5m/10m)、国外はCopernicus GLO-30ほか。詳細はdocs/DEM_SOURCES.md
@@ -195,6 +200,11 @@ export default function HomeScreen() {
   useEffect(() => {
     if (vistaActive) reapplyWebVista();
   }, [vistaActive]);
+  // 眺望中の山名ラベルの投影。眺望に入った時点の地図インスタンスで作る
+  const peakProjector = useMemo(() => {
+    const mapRef = mapViewRef.current as MapRef | null;
+    return vistaActive && mapRef !== null ? createWebPeakProjector(mapRef.getMap()) : null;
+  }, [vistaActive, mapViewRef]);
 
   //地図ジェスチャーの許可判定（nativeのscrollEnabledと同じルール）。Webにはペンロックが無い
   const mapGesturesEnabled = useMemo(
@@ -278,6 +288,15 @@ export default function HomeScreen() {
     'horizon-fog-blend': 1,
     'fog-color': '#034580',
     'fog-ground-blend': 0.85,
+  };
+  // 眺望中の空。通常のフォグは「注視点〜地平線の85%から先」を濃い青で塗るが、眺望は注視点が
+  // 足元のすぐ先なので遠くの山並みがほぼ全部フォグに沈み、山名だけ出て山が見えなかった。
+  // 眺望では地形にフォグを掛けず（fog-ground-blend=1）、地平線際の空だけ明るい霞にする
+  const VISTA_SKY_STYLE = {
+    ...skyStyle,
+    'fog-color': '#dbe8f5',
+    'fog-ground-blend': 1,
+    'horizon-fog-blend': 0.15,
   };
   const protocol = new pmtiles.Protocol();
   maplibregl.addProtocol('pmtiles', protocol.tile);
@@ -459,6 +478,11 @@ export default function HomeScreen() {
         return null;
       }
 
+      // 地図一覧の「山名」（peaks://）は同梱の山頂データのラベル（タイルではない）
+      if (isPeaksUrl(tileMap.url)) {
+        return getPeakLayers(tileMap);
+      }
+
       // GEBCO海底地形図はデモ再現のmaplibreネイティブレイヤ（段彩・陰影・等深線・数値ラベル）
       if (isReliefUrl(tileMap.url) && reliefStyleFromUrl(tileMap.url) === 'gebco') {
         return getGebcoLayers(tileMap);
@@ -633,6 +657,25 @@ export default function HomeScreen() {
     [isTerrainActive, addDynamicLayers, mapViewRef]
   );
 
+  // 地図一覧の「山名」を表示したときだけ、同梱の山頂データを読み込む（初期バンドルを太らせない）
+  const [peaksGeoJSON, setPeaksGeoJSON] = useState<PeakFeatureCollection | null>(null);
+  const hasVisiblePeaks = useMemo(
+    () => tileMaps.some((tileMap) => tileMap.visible && !tileMap.isGroup && isPeaksUrl(tileMap.url)),
+    [tileMaps]
+  );
+  useEffect(() => {
+    if (!hasVisiblePeaks || peaksGeoJSON !== null) return;
+    let cancelled = false;
+    loadPeakIndex()
+      .then((index) => {
+        if (!cancelled) setPeaksGeoJSON(toPeakGeoJSON(index));
+      })
+      .catch((e) => console.warn('山頂データの読み込みに失敗', e));
+    return () => {
+      cancelled = true;
+    };
+  }, [hasVisiblePeaks, peaksGeoJSON]);
+
   // ========== マップスタイル定義 ==========
 
   /**
@@ -706,6 +749,12 @@ export default function HomeScreen() {
                 attribution: tileMap.attribution,
               },
             };
+          } else if (isPeaksUrl(tileMap.url)) {
+            // 山名は同梱データをGeoJSONで重ねる。読み込みが終わるまでは空で置いておく
+            return {
+              ...result,
+              [tileMap.id]: { type: 'geojson', data: peaksGeoJSON ?? EMPTY_PEAKS, attribution: tileMap.attribution },
+            };
           } else if (tileMap.url) {
             return {
               ...result,
@@ -727,7 +776,9 @@ export default function HomeScreen() {
                 type: 'raster',
                 tiles: ['https://api.maptiler.com/maps/hybrid/{z}/{x}/{y}.jpg?key=' + maptilerKey],
                 minzoom: 0,
-                maxzoom: 24,
+                // MapTilerの衛星写真はz22まで。24にしていると、眺望など大きく拡大したときに
+                // 存在しないz23・z24を取りに行って400エラーが出続けた（それより先はz22の拡大表示）
+                maxzoom: 22,
                 scheme: 'xyz',
                 tileSize: 512,
                 attribution:
@@ -770,7 +821,7 @@ export default function HomeScreen() {
       sky: skyStyle,
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tileMaps, tileSignatures]);
+  }, [tileMaps, tileSignatures, peaksGeoJSON]);
   //console.log(mapRegion);
   return !restored ? null : (
     <GestureHandlerRootView style={{ flex: 1 }}>
@@ -798,6 +849,7 @@ export default function HomeScreen() {
           <HomeMeasureBanner />
           <HomeViewshedBanner />
           <HomeTerrain3DVistaBanner />
+          <HomeVistaPeakLabels projector={peakProjector} />
           {/* Webは通常の回転・傾きを地図のコントロールで行うので、眺望中（高さ変更が要る）だけ出す */}
           {vistaActive && <HomeTerrain3DButtons top={230} left={10} />}
           <HomeTrackPointPopup />
@@ -828,14 +880,18 @@ export default function HomeScreen() {
                 touchPitch={isTerrainActive && mapGesturesEnabled && !vistaActive}
                 scrollZoom={!vistaActive}
                 keyboard={!vistaActive}
-                sky={skyStyle}
+                sky={vistaActive ? VISTA_SKY_STYLE : skyStyle}
               >
                 <HomeZoomLevel zoom={zoom} top={20} left={10} />
 
                 <NavigationControl
+                  // showZoomは作成時にしか効かないので、眺望の出入りで作り直す
+                  key={vistaActive ? 'nav-vista' : 'nav'}
                   style={{ position: 'absolute', top: 50, left: 0 }}
                   position="top-left"
                   visualizePitch={true}
+                  // 眺望中の地図のズームは視点を動かしてしまう。代わりに眺望のボタン列で画角を変える
+                  showZoom={!vistaActive}
                 />
                 <HomeTerrainControl
                   top={150}
@@ -872,7 +928,10 @@ export default function HomeScreen() {
                       data={d.data as PointRecordType[]}
                       layer={layer!}
                       zoom={zoom}
-                      bounds={bounds}
+                      // 地形表示（傾けた3D・眺望）では表示範囲で間引かない。boundsはmapRegion由来の
+                      // 「注視点のまわりの矩形」で、傾けると奥の見えている範囲を含まない
+                      // （眺望では注視点が40m先・z20になり、数百m四方に縮んで全ポイントが消えた）
+                      bounds={isTerrainActive ? null : bounds}
                       selectedRecord={selectedRecord}
                       onDragEndPoint={onDragEndPoint}
                       currentDrawTool={currentDrawTool}

@@ -98,8 +98,8 @@ export const HomeSeaLabels = React.memo((props: Props) => {
   );
 });
 
-/** RNのtextShadowでは縁取りが弱いので、白文字を8方向にずらして重ねてフチにする */
-const HaloText = React.memo(
+/** RNのtextShadowでは縁取りが弱いので、白文字を8方向にずらして重ねてフチにする（山名でも使う） */
+export const HaloText = React.memo(
   (props: { text: string; textStyle: object; haloStyle: object }) => (
     <View>
       {HALO_OFFSETS.map((offset, index) => (

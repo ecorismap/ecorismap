@@ -347,6 +347,18 @@ const DEPTH_RANGES: [number, number][][] = [
   ],
 ];
 
+/**
+ * ringIndex番目（0=最外）のリングの深度レンジ。
+ * 3本までは従来の表（近景に半分を割く）。眺望の望遠で扇形リングが加わり4本以上になったら
+ * 等分する（本数ぶん半分ずつ狭めると、外側のリングのレンジが細くなりすぎて
+ * 遠くの山どうしの前後が深度で区別できなくなる）
+ */
+const ringDepthRange = (ringIndex: number, ringCount: number): [number, number] => {
+  if (ringCount <= DEPTH_RANGES.length) return DEPTH_RANGES[ringCount - 1][ringIndex];
+  const inner = ringCount - 1 - ringIndex;
+  return [inner / ringCount, (inner + 1) / ringCount];
+};
+
 /** タイルuniform内でレイヤ毎のUV矩形が始まるfloat位置（vec4×3＋不透明度vec4×2の後ろ） */
 const TILE_LAYER_UV_OFFSET = 20;
 /**
@@ -755,7 +767,6 @@ export class TerrainRenderer {
       if (__DEV__) device.pushErrorScope('validation');
       const encoder = device.createCommandEncoder();
       const ringCount = Math.max(1, rings.length);
-      const depthRanges = DEPTH_RANGES[Math.min(ringCount, DEPTH_RANGES.length) - 1];
       const pass = encoder.beginRenderPass({
         // 地形が無い画素は距離が最大（＝何にも遮られない）になるよう白でクリアする
         colorAttachments: [
@@ -771,7 +782,7 @@ export class TerrainRenderer {
       for (let r = 0; r < ringCount; r++) {
         const ringVisible = visible[r] ?? [];
         if (ringVisible.length === 0) continue;
-        const [minDepth, maxDepth] = depthRanges[r];
+        const [minDepth, maxDepth] = ringDepthRange(r, ringCount);
         pass.setViewport(0, 0, width, height, minDepth, maxDepth);
         const grid = this.sharedGrid(rings[r].segments);
         pass.setPipeline(pipeline);
@@ -979,7 +990,6 @@ export class TerrainRenderer {
     // メッシュの高さが食い違うため深度を切り離す必要があるが、レンジで分ければ
     // 内側が必ず手前に来るので、パスを分けて深度をクリアし直さなくて済む
     // （パスを分けるとタイルGPUでフルスクリーンのload/storeがリング数ぶん往復する）
-    const depthRanges = DEPTH_RANGES[Math.min(ringCount, DEPTH_RANGES.length) - 1];
     const pass = encoder.beginRenderPass({
       colorAttachments: [
         {
@@ -999,7 +1009,7 @@ export class TerrainRenderer {
     for (let r = 0; r < ringCount; r++) {
       const ringVisible = visible[r] ?? [];
       if (ringVisible.length === 0) continue;
-      const [minDepth, maxDepth] = depthRanges[r];
+      const [minDepth, maxDepth] = ringDepthRange(r, ringCount);
       pass.setViewport(0, 0, width, height, minDepth, maxDepth);
       const grid = this.sharedGrid(rings[r].segments);
       pass.setPipeline(this.pipeline);
@@ -1020,7 +1030,7 @@ export class TerrainRenderer {
         batch !== null && batch.indexCount > 0 && batch.colorBuffer !== null
     );
     if (drawableBatches.length > 0) {
-      const [minDepth, maxDepth] = depthRanges[ringCount - 1];
+      const [minDepth, maxDepth] = ringDepthRange(ringCount - 1, ringCount);
       pass.setViewport(0, 0, width, height, minDepth, maxDepth);
       pass.setPipeline(this.overlayPipeline);
       pass.setBindGroup(0, this.frameBindGroup);

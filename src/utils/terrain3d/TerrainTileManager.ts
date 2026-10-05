@@ -124,6 +124,8 @@ export class TerrainTileManager {
   private lastTexZoom: number | null = null;
   private inFlight = 0;
   private queue: (() => Promise<void>)[] = [];
+  /** 同時に取りに行くタイル数。扇形リングは本数が多いので1本あたりを絞る */
+  private loadConcurrency: number;
   private generation = 0;
   private disposed = false;
   /**
@@ -173,7 +175,8 @@ export class TerrainTileManager {
     onDirty: () => void,
     demZoomOffset = 0,
     forwardBias = NEAR_RING_FORWARD_BIAS,
-    meshSegments = MESH_SEGMENTS
+    meshSegments = MESH_SEGMENTS,
+    loadConcurrency = TILE_LOAD_CONCURRENCY
   ) {
     this.origin = origin;
     this.elevScale = elevScale;
@@ -183,6 +186,18 @@ export class TerrainTileManager {
     this.demZoomOffset = demZoomOffset;
     this.forwardBias = forwardBias;
     this.meshSegments = meshSegments;
+    this.loadConcurrency = loadConcurrency;
+  }
+
+  /** 保持タイルをすべて捨てて空にする（破棄はしない。望遠の扇形リングを解く時に使う） */
+  clearTiles(): void {
+    if (this.tiles.size === 0 && this.queue.length === 0) return;
+    this.generation++;
+    this.queue = [];
+    this.disposeAllTiles();
+    this.activeZoom = null;
+    this.lastTexZoom = null;
+    this.onDirty();
   }
 
   setLayers(layers: LayerSpec[]): void {
@@ -212,14 +227,18 @@ export class TerrainTileManager {
     return this.readyGen;
   }
 
-  /** カメラ状態から必要タイルを判定し、取得をスケジュールする */
+  /**
+   * カメラ状態から必要タイルを判定し、取得をスケジュールする。
+   * coneを渡すと、円ではなく見ている方向の扇形だけを取る（眺望の望遠用。computeTileRing参照）
+   */
   updateVisibleTiles(
     latitude: number,
     longitude: number,
     headingDeg: number,
     texZoom: number,
     radiusMeters: number,
-    maxTiles: number = MAX_TILES
+    maxTiles: number = MAX_TILES,
+    cone?: TileCone
   ): void {
     if (this.disposed) return;
     this.lastTexZoom = texZoom;
@@ -230,7 +249,8 @@ export class TerrainTileManager {
       texZoom,
       radiusMeters,
       maxTiles,
-      this.forwardBias
+      this.forwardBias,
+      cone
     );
     const neededKeys = new Set(needed.map(keyString));
 
@@ -399,7 +419,7 @@ export class TerrainTileManager {
   }
 
   private pump(): void {
-    while (this.inFlight < TILE_LOAD_CONCURRENCY && this.queue.length > 0) {
+    while (this.inFlight < this.loadConcurrency && this.queue.length > 0) {
       const job = this.queue.shift()!;
       this.inFlight++;
       job()
@@ -593,7 +613,21 @@ export class TerrainTileManager {
 }
 
 /**
+ * 扇形のタイル選択（眺望の望遠用）。視点（latitude/longitude）を要に、
+ * 方位headingDegから左右halfAngleDegの範囲だけを取る
+ */
+export interface TileCone {
+  headingDeg: number;
+  halfAngleDeg: number;
+}
+
+/**
  * 注視点を中心にheading方向（画面奥）へ30%偏らせた円内のタイルを近い順に返す（上限MAX_TILES）。
+ *
+ * coneを渡すと、視点を要にした扇形の中だけを近い順に返す。望遠で見えるのは細い扇形だけなので、
+ * 同じ枚数でも細かいズームで遠くまで覆える。近い順なので、枚数が足りなくても視点から
+ * 途切れなく覆う（リングの重ね描きは「各リングが視点から連続して覆う」ことを前提にしている）。
+ * 足元のタイルは扇形の外でも必ず含める（要の付近で隙間ができないように）。
  * 純関数としてexport（ユニットテスト用）。
  */
 export const computeTileRing = (
@@ -603,8 +637,10 @@ export const computeTileRing = (
   texZoom: number,
   radiusMeters: number,
   maxTiles: number = MAX_TILES,
-  forwardBias: number = NEAR_RING_FORWARD_BIAS
+  forwardBias: number = NEAR_RING_FORWARD_BIAS,
+  cone?: TileCone
 ): TileKey[] => {
+  if (cone) return computeTileCone(latitude, longitude, texZoom, radiusMeters, maxTiles, cone);
   const size = tileSizeMeters(texZoom);
   const h = (headingDeg * Math.PI) / 180;
   // 前方（北=タイルY負方向が基準。headingで回転）へリング中心をずらす。
@@ -627,6 +663,53 @@ export const computeTileRing = (
       if (x < 0 || y < 0 || x >= max || y >= max) continue;
       const dist = Math.hypot(x + 0.5 - centerTileX, y + 0.5 - centerTileY);
       if (dist > radiusTiles + 0.5) continue;
+      candidates.push({ key: { z: texZoom, x, y }, dist });
+    }
+  }
+  candidates.sort((a, b) => a.dist - b.dist);
+  return candidates.slice(0, maxTiles).map((c) => c.key);
+};
+
+/** 扇形の要の付近は向きに関係なく取る範囲（タイル枚数） */
+const CONE_FOOT_TILES = 1.5;
+
+const computeTileCone = (
+  latitude: number,
+  longitude: number,
+  texZoom: number,
+  radiusMeters: number,
+  maxTiles: number,
+  cone: TileCone
+): TileKey[] => {
+  const size = tileSizeMeters(texZoom);
+  const centerX = lonToTileXFloat(longitude, texZoom);
+  const centerY = latToTileYFloat(latitude, texZoom);
+  const radiusTiles = radiusMeters / size;
+  const max = Math.pow(2, texZoom);
+  const h = (cone.headingDeg * Math.PI) / 180;
+  // 視線の向き（タイル座標。北=Y負方向）
+  const dirX = Math.sin(h);
+  const dirY = -Math.cos(h);
+  const halfAngle = (cone.halfAngleDeg * Math.PI) / 180;
+
+  const candidates: { key: TileKey; dist: number }[] = [];
+  const range = Math.ceil(radiusTiles) + 1;
+  const baseX = Math.floor(centerX);
+  const baseY = Math.floor(centerY);
+  for (let dy = -range; dy <= range; dy++) {
+    for (let dx = -range; dx <= range; dx++) {
+      const x = baseX + dx;
+      const y = baseY + dy;
+      if (x < 0 || y < 0 || x >= max || y >= max) continue;
+      const vx = x + 0.5 - centerX;
+      const vy = y + 0.5 - centerY;
+      const dist = Math.hypot(vx, vy);
+      if (dist > radiusTiles + 0.5) continue;
+      if (dist > CONE_FOOT_TILES) {
+        // タイルの見かけの半幅（対角の半分）だけ扇形を広げて判定する（縁のタイルを落とさない）
+        const angle = Math.acos(Math.max(-1, Math.min(1, (vx * dirX + vy * dirY) / dist)));
+        if (angle - Math.atan(0.71 / dist) > halfAngle) continue;
+      }
       candidates.push({ key: { z: texZoom, x, y }, dist });
     }
   }
