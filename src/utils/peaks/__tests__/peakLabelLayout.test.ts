@@ -1,5 +1,12 @@
 import { buildPeakIndex, distanceM, PeakDataFile } from '../peakData';
-import { layoutPeakLabels, nearBonus, ProjectedPeak, selectPeakCandidates, PeakLayoutOptions } from '../peakLabelLayout';
+import {
+  layoutPeakLabels,
+  nearBonus,
+  peakMaxDistanceM,
+  ProjectedPeak,
+  selectPeakCandidates,
+  PeakLayoutOptions,
+} from '../peakLabelLayout';
 
 const data: PeakDataFile = {
   attribution: 'test',
@@ -7,7 +14,8 @@ const data: PeakDataFile = {
   rows: [
     [138.72733, 35.36064, 3776, '富士山', 1],
     [138.23883, 35.67431, 3193, '北岳', 1],
-    [138.751, 35.3455, 2693, '宝永山', 4],
+    // 2693mの宝永山は標高の上限が効いてしまうので、同じ場所に小さな山を置く
+    [138.751, 35.3455, 900, '裾野の山', 4],
     [139.24361, 35.62517, 599, '高尾山', 2],
   ],
 };
@@ -46,12 +54,12 @@ describe('distanceM', () => {
 describe('buildPeakIndex', () => {
   it('半径内の山だけを返す', () => {
     const index = buildPeakIndex(data);
-    // 富士山の山頂から10km以内には富士山と宝永山だけ
+    // 富士山の山頂から10km以内には富士山と裾野の山だけ
     const names = index
       .query(35.36064, 138.72733, 10000)
       .map((p) => p.name)
       .sort();
-    expect(names).toEqual(['宝永山', '富士山']);
+    expect(names).toEqual(['富士山', '裾野の山']);
     // 100kmに広げると北岳・高尾山も入る
     expect(index.query(35.36064, 138.72733, 100000)).toHaveLength(4);
   });
@@ -60,14 +68,40 @@ describe('buildPeakIndex', () => {
 describe('selectPeakCandidates', () => {
   it('ランクごとの距離上限を超える小さな山は外す', () => {
     const index = buildPeakIndex(data);
-    // 河口湖あたりから。宝永山（ランク4、上限15km）は約18km先なので外れる
+    // 河口湖あたりから。裾野の山（ランク4、上限15km）は約18km先なので外れる
     const viewpoint = { latitude: 35.5, longitude: 138.76 };
     const names = selectPeakCandidates(index.query(viewpoint.latitude, viewpoint.longitude, 150000), viewpoint).map(
       (p) => p.name
     );
     expect(names).toContain('富士山');
     expect(names).toContain('北岳');
-    expect(names).not.toContain('宝永山');
+    expect(names).not.toContain('裾野の山');
+  });
+
+  it('望遠の倍率ぶん距離上限を伸ばす（上限は300km）', () => {
+    const index = buildPeakIndex(data);
+    const viewpoint = { latitude: 35.5, longitude: 138.76 };
+    const around = index.query(viewpoint.latitude, viewpoint.longitude, 150000);
+    // 裾野の山（ランク4、15km）は約18km先。×2なら入る
+    expect(selectPeakCandidates(around, viewpoint, 2).map((p) => p.name)).toContain('裾野の山');
+    // 高尾山（ランク2、80km）は約52km先。×1でも入り、×10でも上限300kmで頭打ちになるだけ
+    expect(selectPeakCandidates(around, viewpoint, 10).map((p) => p.name)).toContain('高尾山');
+  });
+
+  it('高い山はランクの上限より遠くまで出す（富士山は約278km、北岳は約219km）', () => {
+    expect(peakMaxDistanceM({ rank: 1, ele: 3776 })).toBeCloseTo(277600, -2);
+    expect(peakMaxDistanceM({ rank: 1, ele: 3193 })).toBeCloseTo(219300, -2);
+    // 低い山はランクの上限のまま
+    expect(peakMaxDistanceM({ rank: 2, ele: 599 })).toBe(80000);
+    expect(peakMaxDistanceM({ rank: 4, ele: 900 })).toBe(15000);
+    const index = buildPeakIndex(data);
+    // 那須あたりから。富士山（約226km）は入り、北岳（約225km）は標高の上限219kmを超えるので外れる
+    const viewpoint = { latitude: 37.12, longitude: 140.0 };
+    const names = selectPeakCandidates(index.query(viewpoint.latitude, viewpoint.longitude, 300000), viewpoint).map(
+      (p) => p.name
+    );
+    expect(names).toContain('富士山');
+    expect(names).not.toContain('北岳');
   });
 
   it('立っている山自体は出さない', () => {

@@ -14,6 +14,7 @@ import { useWindow } from '../../hooks/useWindow';
 import { useHomeTopLayout } from '../../hooks/useHomeTopLayout';
 import { t } from '../../i18n/config';
 import { terrain3dVistaStore } from '../../utils/terrain3d/vistaStore';
+import { CAMERA_FOV_DEG, vistaMagnification } from '../../utils/terrain3d/constants';
 import { loadPeakIndex, PeakIndex } from '../../utils/peaks/peakData';
 import {
   layoutPeakLabels,
@@ -82,7 +83,7 @@ export const HomeVistaPeakLabels = React.memo(({ projector }: Props) => {
       setSelectedKey(null);
       return;
     }
-    // 候補は立ち位置が変わったときだけ選び直す（毎回15万mの範囲を引かない）
+    // 候補は立ち位置か望遠の倍率が変わったときだけ選び直す（毎回15万mの範囲を引かない）
     let candidates: PeakCandidate[] = [];
     let viewpointKey = '';
     let previous = new Set<string>();
@@ -96,12 +97,15 @@ export const HomeVistaPeakLabels = React.memo(({ projector }: Props) => {
         setLabels([]);
         return;
       }
-      const key = `${viewpoint.latitude},${viewpoint.longitude}`;
+      // 望遠では遠くの小さな山も見えるので、山名を出す距離を倍率ぶん伸ばす
+      const magnification = vistaMagnification(terrain3dVistaStore.getSnapshot().fovDeg || CAMERA_FOV_DEG);
+      const key = `${viewpoint.latitude},${viewpoint.longitude},${magnification.toFixed(2)}`;
       if (key !== viewpointKey) {
         viewpointKey = key;
         candidates = selectPeakCandidates(
           index.query(viewpoint.latitude, viewpoint.longitude, PEAK_SEARCH_RADIUS_M),
-          viewpoint
+          viewpoint,
+          Math.max(1, magnification)
         );
         previous = new Set();
       }

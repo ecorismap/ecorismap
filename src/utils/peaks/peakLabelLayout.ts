@@ -16,25 +16,45 @@ export const RANK_MAX_DISTANCE_M: Record<number, number> = {
   4: 15000,
   5: 6000,
 };
-/** 候補を探す半径。RANK_MAX_DISTANCE_Mの最大値 */
-export const PEAK_SEARCH_RADIUS_M = 150000;
+/**
+ * 標高による距離上限。高い山はランクに関係なく遠くからでも見えるので、ランクの上限より
+ * 遠くまで出す（白山2702m・旭岳2867mはランク2で80kmどまりだった）。
+ * 1000mを超えた1mにつき100m（2000m→100km、2500m→150km、3000m→200km、富士山→約278km）。
+ * 地球の丸みは考えない（描画も平面なので、描かれている山には名前を付ける）
+ */
+const ELE_DISTANCE_BASE_M = 1000;
+const ELE_DISTANCE_PER_M = 100;
+/** 候補を探す半径＝距離上限の最大値 */
+export const PEAK_SEARCH_RADIUS_M = 300000;
 /** 立ち位置のすぐそばの山は「いま居る山」なので出さない */
 const MIN_DISTANCE_M = 50;
+
+/** その山の名前を出す距離の上限[m]（ランクと標高の大きい方、PEAK_SEARCH_RADIUS_Mまで） */
+export const peakMaxDistanceM = (peak: Pick<Peak, 'rank' | 'ele'>): number =>
+  Math.min(
+    PEAK_SEARCH_RADIUS_M,
+    Math.max(RANK_MAX_DISTANCE_M[peak.rank] ?? RANK_MAX_DISTANCE_M[5], (peak.ele - ELE_DISTANCE_BASE_M) * ELE_DISTANCE_PER_M)
+  );
 
 export interface PeakCandidate extends Peak {
   key: string;
   distance: number;
 }
 
-/** 立ち位置の周辺から、ランクごとの距離上限に収まる山を選ぶ */
+/**
+ * 立ち位置の周辺から、距離上限（peakMaxDistanceM）に収まる山を選ぶ。
+ * @param distanceScale 距離上限に掛ける倍率。望遠では遠くの小さな山も見えるので、倍率ぶん伸ばす
+ *   （上限はPEAK_SEARCH_RADIUS_M）
+ */
 export const selectPeakCandidates = (
   peaks: Peak[],
-  viewpoint: { latitude: number; longitude: number }
+  viewpoint: { latitude: number; longitude: number },
+  distanceScale = 1
 ): PeakCandidate[] => {
   const result: PeakCandidate[] = [];
   for (const peak of peaks) {
     const distance = distanceM(viewpoint.latitude, viewpoint.longitude, peak.latitude, peak.longitude);
-    const limit = RANK_MAX_DISTANCE_M[peak.rank] ?? RANK_MAX_DISTANCE_M[5];
+    const limit = Math.min(PEAK_SEARCH_RADIUS_M, peakMaxDistanceM(peak) * distanceScale);
     if (distance < MIN_DISTANCE_M || distance > limit) continue;
     result.push({ ...peak, key: `${peak.name}@${peak.latitude},${peak.longitude}`, distance });
   }
