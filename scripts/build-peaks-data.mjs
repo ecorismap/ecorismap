@@ -70,6 +70,12 @@ const DEM_SNAP_RADIUS_M = 300;
 const DEDUPE_RADIUS_M = 2000;
 /** 1003山と山名を照合する距離[m] */
 const MATCH_1003_RADIUS_M = 3000;
+/**
+ * ベクトルタイル側で文字化けしている山名の補正（z11の注記にU+FFFDが入っている。z14では正しい）。
+ * ここに無い化け名（U+FFFDや?を含む）は除外する
+ */
+const TILE_NAME_FIXUP = { '\uFFFD\uFFFD\uFFFD\uFFFD岨森': 'けん岨森' };
+const isGarbled = (name) => /[?\uFFFD]/.test(name);
 
 const args = process.argv.slice(2);
 const argValue = (name) => {
@@ -335,6 +341,14 @@ async function snapToSummits(peaks, elevIndex) {
 
 // ---------- 1003山 ----------
 
+/** 名前の照合。CSV側（name）の?はShift_JISに無い1文字の代わりなので、任意の1文字として比べる */
+function nameMatches(candidate, name) {
+  if (!name.includes('?')) return candidate === name;
+  if ([...candidate].length !== [...name].length) return false;
+  const a = [...candidate];
+  return [...name].every((ch, i) => ch === '?' || ch === a[i]);
+}
+
 /**
  * 「山名＜山頂名＞」「山名（別名）」を分解する。
  * 表示名は、同じ山名の山頂が複数あるとき（大雪山＜旭岳＞＜黒岳＞…）は山頂名、
@@ -401,9 +415,19 @@ async function main() {
 
   const elevIndex = new GridIndex();
   const rawNames = [];
-  for (const t of z10) for (const n of t.data.names) rawNames.push({ ...n, zoom: 10 });
+  // 文字化けした名前の補正と除外（キャッシュ済みのタイルにも効くよう、抽出後にここで行う）
+  let garbledTiles = 0;
+  const pushName = (n, zoom) => {
+    const text = TILE_NAME_FIXUP[n.text] ?? n.text;
+    if (isGarbled(text)) {
+      garbledTiles++;
+      return; // 元データの文字化け。出すと「?」が地図に載る
+    }
+    rawNames.push({ ...n, text, zoom });
+  };
+  for (const t of z10) for (const n of t.data.names) pushName(n, 10);
   for (const t of z11) {
-    for (const n of t.data.names) rawNames.push({ ...n, zoom: 11 });
+    for (const n of t.data.names) pushName(n, 11);
     for (const e of t.data.elevs) elevIndex.add(e);
   }
 
@@ -412,11 +436,11 @@ async function main() {
     const mountainous = z11.filter((t) => t.data.names.length > 0 || t.data.elevs.some((e) => e.ele >= 500));
     const z14 = await scanZoom(14, childTiles(mountainous, 3));
     for (const t of z14) {
-      for (const n of t.data.names) rawNames.push({ ...n, zoom: 14 });
+      for (const n of t.data.names) pushName(n, 14);
       for (const e of t.data.elevs) elevIndex.add(e);
     }
   }
-  console.log(`山名(重複込み): ${rawNames.length}`);
+  console.log(`山名(重複込み): ${rawNames.length}（文字化けで除外 ${garbledTiles}）`);
 
   // 同じ山名をまとめる。ランクは最も重要なもの、位置は最も詳細なズームのもの
   const nameIndex = new GridIndex();
@@ -445,15 +469,17 @@ async function main() {
   const mountains = await load1003();
   const errors = [];
   let added = 0;
+  const garbledUnmatched = [];
   for (const m of mountains) {
     const match = nameIndex
       .near(m.lon, m.lat, MATCH_1003_RADIUS_M)
-      .filter((p) => m.aliases.includes(p.name) || p.name === m.display)
+      .filter((p) => m.aliases.some((a) => nameMatches(p.name, a)) || nameMatches(p.name, m.display))
       .sort((a, b) => distanceM(m.lon, m.lat, a.lon, a.lat) - distanceM(m.lon, m.lat, b.lon, b.lat))[0];
     if (match) {
       errors.push({ name: m.display, d: distanceM(m.lon, m.lat, match.lon, match.lat) });
       Object.assign(match, {
-        name: m.display,
+        // CSVはShift_JISで、無い字（屏の異体字・朳・萊など）が?になっている。その場合はタイル側の名前を使う
+        name: isGarbled(m.display) ? match.name : m.display,
         lon: m.lon,
         lat: m.lat,
         ele: m.ele,
@@ -461,6 +487,10 @@ async function main() {
         source: '1003',
       });
     } else {
+      if (isGarbled(m.display)) {
+        garbledUnmatched.push(m.display);
+        continue; // 正しい名前が分からない山を「?」付きで出すよりは出さない
+      }
       const peak = { name: m.display, lon: m.lon, lat: m.lat, ele: m.ele, rank: m.ele >= 3000 ? 1 : 2, source: '1003' };
       peaks.push(peak);
       nameIndex.add(peak);
@@ -468,6 +498,7 @@ async function main() {
     }
   }
   reportErrors(errors, mountains.length, added);
+  if (garbledUnmatched.length > 0) console.log(`  CSVの名前が?付きでタイルと照合できず除外: ${garbledUnmatched.join(' ')}`);
 
   // 標高が取れなかった山（DEMの範囲外など）は落とす。眺望では高さが無いと置けない。
   // 寄せた結果、同じ山名が近くに重なったもの（総称と山頂名がどちらも「富士山」など）は1つにする
