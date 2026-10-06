@@ -24,6 +24,7 @@ jest.mock('../../utils/Coords', () => ({
   selectPointFeatureByLatLon: jest.fn(() => undefined),
   selectLineFeatureByLatLon: jest.fn(() => undefined),
   selectPolygonFeatureByLatLon: jest.fn(() => undefined),
+  selectSmallestPolygonFeature: jest.fn((features: { id: string }[]) => features[0]),
   selectPointFeaturesByArea: jest.fn(() => []),
   selectLineFeaturesByArea: jest.fn(() => []),
   selectPolygonFeaturesByArea: jest.fn(() => []),

@@ -17,6 +17,7 @@ import {
   selectLineFeaturesByArea,
   selectPolygonFeaturesByArea,
   selectPolygonFeatureByLatLon,
+  selectSmallestPolygonFeature,
   reprojectCoordsOnModifiedLine,
 } from '../Coords';
 import { LocationType, PointRecordType, LineRecordType, PolygonRecordType } from '../../types';
@@ -722,6 +723,86 @@ describe('selectPolygonFeatureByLatLon', () => {
   it('枠だけの指定でも枠線付近のタップでは選択できる', () => {
     const selected = selectPolygonFeatureByLatLon([square], [9.9995, 5], 0.1, true);
     expect(selected?.id).toBe('p1');
+  });
+
+  //大きいポリゴンの中にある小さいポリゴン（登録順は大きいほうが先）
+  const innerSquare = {
+    ...square,
+    id: 'p2',
+    coords: [
+      { latitude: 4, longitude: 4 },
+      { latitude: 4, longitude: 6 },
+      { latitude: 6, longitude: 6 },
+      { latitude: 6, longitude: 4 },
+      { latitude: 4, longitude: 4 },
+    ],
+  } as unknown as PolygonRecordType;
+
+  it('入れ子のポリゴンは内側の小さいほうをタップすると小さいほうを選ぶ', () => {
+    const selected = selectPolygonFeatureByLatLon([square, innerSquare], [5, 5], 0.1);
+    expect(selected?.id).toBe('p2');
+  });
+
+  it('入れ子のポリゴンで大きいほうだけの場所をタップすると大きいほうを選ぶ', () => {
+    const selected = selectPolygonFeatureByLatLon([square, innerSquare], [2, 2], 0.1);
+    expect(selected?.id).toBe('p1');
+  });
+
+  it('枠だけの指定で入れ子の小さいほうの枠線をタップすると小さいほうを選ぶ', () => {
+    const selected = selectPolygonFeatureByLatLon([square, innerSquare], [5.9995, 5], 0.1, true);
+    expect(selected?.id).toBe('p2');
+  });
+
+  it('枠だけの指定で大小の枠線が両方タップ範囲に入ると小さいほうを選ぶ', () => {
+    //大きい枠線（x=10）の内側に接する小さいポリゴン
+    const edgeSquare = {
+      ...innerSquare,
+      id: 'p3',
+      coords: [
+        { latitude: 4, longitude: 9 },
+        { latitude: 4, longitude: 10 },
+        { latitude: 6, longitude: 10 },
+        { latitude: 6, longitude: 9 },
+        { latitude: 4, longitude: 9 },
+      ],
+    } as unknown as PolygonRecordType;
+    const selected = selectPolygonFeatureByLatLon([square, edgeSquare], [10.0005, 5], 0.1, true);
+    expect(selected?.id).toBe('p3');
+  });
+
+  it('非表示の大きいポリゴンは候補にしない', () => {
+    const hidden = { ...square, visible: false } as unknown as PolygonRecordType;
+    const selected = selectPolygonFeatureByLatLon([hidden, innerSquare], [2, 2], 0.1);
+    expect(selected).toBeUndefined();
+  });
+});
+
+describe('selectSmallestPolygonFeature', () => {
+  const makeSquare = (id: string, size: number) =>
+    ({
+      id,
+      visible: true,
+      coords: [
+        { latitude: 0, longitude: 0 },
+        { latitude: 0, longitude: size },
+        { latitude: size, longitude: size },
+        { latitude: size, longitude: 0 },
+        { latitude: 0, longitude: 0 },
+      ],
+    } as unknown as PolygonRecordType);
+
+  it('面積が最小のポリゴンを返す', () => {
+    const selected = selectSmallestPolygonFeature([makeSquare('big', 10), makeSquare('small', 1), makeSquare('mid', 5)]);
+    expect(selected?.id).toBe('small');
+  });
+
+  it('同じ面積なら先頭を返す', () => {
+    const selected = selectSmallestPolygonFeature([makeSquare('a', 3), makeSquare('b', 3)]);
+    expect(selected?.id).toBe('a');
+  });
+
+  it('空なら undefined', () => {
+    expect(selectSmallestPolygonFeature([])).toBeUndefined();
   });
 });
 

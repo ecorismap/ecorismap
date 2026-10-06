@@ -35,6 +35,7 @@ import {
   xyToLatLon,
   selectLineFeatureByLatLon,
   selectPolygonFeatureByLatLon,
+  selectSmallestPolygonFeature,
   selectPointFeatureByLatLon,
   selectPointFeaturesByArea,
   selectLineFeaturesByArea,
@@ -1352,23 +1353,26 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
 
       if (feature === undefined && (currentInfoTool === 'ALL_INFO' || currentInfoTool === 'POLYGON_INFO')) {
         const radius = calcDegreeRadius(2000, mapRegion, mapSize);
+        const latlon = xyToLatLon(pXY, mapRegion, mapSize, mapViewRef);
+        //レイヤ順で最初に当たったものを返すと、別レイヤの大きいポリゴンの中にある
+        //小さいポリゴンが選べない。全レイヤの候補を集めてから最小面積を選ぶ
+        const candidates: { layer: LayerType; recordSet: PolygonRecordType[]; feature: PolygonRecordType }[] = [];
         for (const { layerId, data } of polygonDataSet) {
           const selectedLayer = findLayer(layerId);
           if (!selectedLayer?.visible) continue;
           const edgeOnly = Boolean(selectedLayer.colorStyle.transparency);
-          const selectedFeature = selectPolygonFeatureByLatLon(
-            data,
-            xyToLatLon(pXY, mapRegion, mapSize, mapViewRef),
-            radius,
-            edgeOnly
-          );
+          const selectedFeature = selectPolygonFeatureByLatLon(data, latlon, radius, edgeOnly);
           if (selectedFeature !== undefined) {
-            layer = selectedLayer;
-            recordSet = data;
-            recordIndex = data.findIndex((d) => d.id === selectedFeature.id);
-            feature = selectedFeature;
-            break;
+            candidates.push({ layer: selectedLayer, recordSet: data, feature: selectedFeature });
           }
+        }
+        const smallest = selectSmallestPolygonFeature(candidates.map((c) => c.feature));
+        const selected = candidates.find((c) => c.feature === smallest);
+        if (selected !== undefined) {
+          layer = selected.layer;
+          recordSet = selected.recordSet;
+          recordIndex = selected.recordSet.findIndex((d) => d.id === selected.feature.id);
+          feature = selected.feature;
         }
       }
 
