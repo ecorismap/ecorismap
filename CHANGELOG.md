@@ -1,6 +1,12 @@
 # Change Log
 
-## [0.6.4]　- Unreleased
+## [0.6.5]　- Unreleased
+
+- Fixed smaller polygons inside or overlapping larger ones not being selectable by tap since 0.6.0. When several polygons contain the tapped point, the smallest one is now selected (editing, info tool and 3D view, across layers)
+
+- 0.6.0以降、大きいポリゴンの中にある（または重なる）小さいポリゴンをタップで選択できなかった問題を修正。複数のポリゴンがタップ位置に当たるときは面積が最小のものを選ぶようにしました（編集選択・情報ツール・3D表示、レイヤをまたぐ場合も含む）
+
+## [0.6.4]　- 2026-09-29
 
 - Improved PDF export to match what is shown on the map: hidden records and layers are no longer drawn, line widths and stamp sizes follow the map zoom, labels and the drawing order are corrected, and an error message is now shown when export fails
 - Improved PDF export on iOS/Android to download map tiles in parallel, with a progress indicator and a cancel button. Temporary files are now deleted after export
