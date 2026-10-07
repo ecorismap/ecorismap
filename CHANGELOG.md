@@ -1,6 +1,6 @@
 # Change Log
 
-## [0.6.5]　- Unreleased
+## [0.6.5]　- 2026-10-07
 
 - Fixed smaller polygons inside or overlapping larger ones not being selectable by tap since 0.6.0. When several polygons contain the tapped point, the smallest one is now selected (editing, info tool and 3D view, across layers)
 
