@@ -831,11 +831,39 @@ export const selectPolygonFeatureByLatLon = (
       .filter((d): d is PolygonRecordType => d !== undefined);
 
     if (features.length === 0) return undefined;
-    return features[0];
+    //入れ子や重なりで複数当たったときは最小面積を選ぶ。
+    //登録順の先頭を返すと、大きいポリゴンの中にある小さいポリゴンが一切選べなくなる
+    return selectSmallestPolygonFeature(features);
   } catch (e) {
     console.log(e);
     return undefined;
   }
+};
+
+export const polygonFeatureArea = (feature: PolygonRecordType) => {
+  if (!feature.coords) return Infinity;
+  try {
+    return turf.area(turf.multiPolygon([[feature.coords.map((c) => [c.longitude, c.latitude])]]));
+  } catch (e) {
+    return Infinity;
+  }
+};
+
+/**
+ * 複数のポリゴンが候補になったとき、面積が最小のものを返す。
+ * 同じ面積なら先頭（登録順）を優先する
+ */
+export const selectSmallestPolygonFeature = <T extends PolygonRecordType>(features: T[]): T | undefined => {
+  let smallest: T | undefined;
+  let smallestArea = Infinity;
+  for (const feature of features) {
+    const area = polygonFeatureArea(feature);
+    if (smallest === undefined || area < smallestArea) {
+      smallest = feature;
+      smallestArea = area;
+    }
+  }
+  return smallest;
 };
 
 /**
