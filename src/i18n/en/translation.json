@@ -913,7 +913,7 @@
       "improvements": "Improvements",
       "bugFixes": "Bug Fixes",
       "feature1": "Added a group creation button to the map and layer lists",
-      "feature2": "Fixed issues with the drawing tools and improved their stability",
+      "feature2": "Fixed features being selected unintentionally after dragging the map, and improved the stability of the drawing tools",
       "feature3": "Overlapping polygons now select the smaller one first, and outline-only polygons (transparent fill) respond only to taps near their outline",
       "feature4": "Improved PDF export to match the map display, with a progress indicator and cancel button while creating",
       "improvement1": "Improved logout process",
