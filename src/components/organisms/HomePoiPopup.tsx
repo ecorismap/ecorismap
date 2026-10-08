@@ -170,13 +170,16 @@ export const HomePoiPopup = React.memo(() => {
     pressCreateViewshed(coordinate, snapPoint);
   }, [coordinate, isSnapped, mapLocationInfo?.snapPoint, setPoiInfo, setMapLocationInfo, pressCreateViewshed]);
 
-  // 長押し位置をA点として距離測定モードを開始する
+  // 長押し位置をA点として距離測定モードを開始する。
+  // 近く（40px以内）に表示中の既存ポイントがあればそのポイントを起点にする（ポイントからの距離を測る場面が多く、
+  // マーカーを正確に長押しするのは難しいため）。現在地へのスナップはそれより優先する
   const handleMeasureDistance = useCallback(() => {
     if (!coordinate) return;
+    const snapPoint = isPOI || isSnapped ? undefined : mapLocationInfo?.snapPoint;
     setPoiInfo(null);
     setMapLocationInfo(null);
-    startMeasure(coordinate);
-  }, [coordinate, setPoiInfo, setMapLocationInfo, startMeasure]);
+    startMeasure(snapPoint?.coordinate ?? coordinate);
+  }, [coordinate, isPOI, isSnapped, mapLocationInfo?.snapPoint, setPoiInfo, setMapLocationInfo, startMeasure]);
 
   const openGoogleMaps = useCallback(() => {
     if (!coordinate) return;
