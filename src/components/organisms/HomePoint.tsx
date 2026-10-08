@@ -173,7 +173,7 @@ const PointComponent = React.memo((props: PointComponentProps) => {
       {/*label表示で縦位置ずれるため、anchorで調整。sizeを変更すると調整必要 */}
       {/*Markerの直接の子は単一のViewにまとめる（New ArchのAndroidで
          先頭の子のサイズでビットマップが切り出され、他の子がクリップされるため）*/}
-      <View style={{ alignItems: 'center' }}>
+      <View style={{ alignItems: 'center' }} collapsable={false}>
         <PointLabel label={zoom > 8 ? label : ''} size={15} color={color} borderColor={COLOR.WHITE} />
         <PointView size={15} color={pointColor} borderColor={borderColor} />
       </View>

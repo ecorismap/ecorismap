@@ -60,7 +60,9 @@ const MeasurePointMarker = React.memo(({ coordinate }: { coordinate: LocationTyp
     zIndex={Platform.OS === 'ios' ? SELECTED_MARKER_ZINDEX : undefined}
     style={{ zIndex: 1001 }}
   >
-    <View style={styles.outer}>
+    {/* Androidでは外枠Viewが平坦化（view flattening）されて内側の丸がマーカー直下に来ると、
+        ビットマップが内側基準で切り出されてアンカー（中央）が右下へずれる。collapsable=falseで外枠を残す */}
+    <View style={styles.outer} collapsable={false}>
       <View style={styles.inner} />
     </View>
   </Marker>

@@ -20,7 +20,8 @@ export const HomeTrackFocusMarker = React.memo(() => {
       zIndex={Platform.OS === 'ios' ? TRACK_FOCUS_MARKER_ZINDEX : undefined}
       style={{ zIndex: 1001 }}
     >
-      <View style={styles.outer}>
+      {/* 外枠の平坦化でアンカーがずれるため残す（HomeMeasure参照） */}
+      <View style={styles.outer} collapsable={false}>
         <View style={styles.inner} />
       </View>
     </Marker>

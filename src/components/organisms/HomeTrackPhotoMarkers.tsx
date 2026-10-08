@@ -87,7 +87,7 @@ const TrackPhotoClusterMarker = React.memo(({ photos, expanded }: ClusterMarkerP
       style={{ zIndex }}
     >
       {expanded ? (
-        <View style={{ width: size, height: size }}>
+        <View style={{ width: size, height: size }} collapsable={false}>
           <Svg width={size} height={size} style={StyleSheet.absoluteFill}>
             {offsets.map((offset, i) => (
               <React.Fragment key={photos[i].assetId}>
@@ -126,7 +126,8 @@ const TrackPhotoClusterMarker = React.memo(({ photos, expanded }: ClusterMarkerP
           ))}
         </View>
       ) : (
-        <View style={styles.container}>
+        // 外枠の平坦化でアンカーがずれるため残す（HomeMeasure参照）
+        <View style={styles.container} collapsable={false}>
           <PhotoThumbnail photo={representative} onLoadEnd={handleThumbnailLoadEnd} />
           {photos.length > 1 && (
             <View style={styles.badge}>

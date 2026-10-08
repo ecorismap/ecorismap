@@ -54,7 +54,8 @@ const ObserverMarker = React.memo(({ coordinate, no }: { coordinate: LocationTyp
     zIndex={Platform.OS === 'ios' ? SELECTED_MARKER_ZINDEX : undefined}
     style={{ zIndex: 1001 }}
   >
-    <View style={styles.outer}>
+    {/* 外枠の平坦化でアンカーがずれるため残す（HomeMeasure参照） */}
+    <View style={styles.outer} collapsable={false}>
       <View style={styles.inner}>
         <Text style={styles.no}>{no}</Text>
       </View>
