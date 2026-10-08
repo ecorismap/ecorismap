@@ -2848,10 +2848,16 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
         //地図を動かしておらず、長押しポップアップも出しておらず、2本指ジェスチャーの直後でもない
         //純粋なタップのみ情報取得する（ピンチで遅れて離れた指が単発タップとして再認識される対策）
         if (isMeasuring) {
-          // 測定モード中はタップ位置をB点に設定（再タップで置換）。情報取得ポップアップは抑制する
-          const latLonArray = xyArrayToLatLonObjects([pXY], mapRegion, mapSize, mapViewRef.current);
-          if (latLonArray && latLonArray.length > 0) {
-            setMeasureB({ latitude: latLonArray[0].latitude, longitude: latLonArray[0].longitude });
+          // 測定モード中はタップ位置をB点に設定（再タップで置換）。情報取得ポップアップは抑制する。
+          // 近く（40px以内）に表示中の既存ポイントがあればそのポイントへスナップする（起点と同じ規則）
+          const snapPoint = findNearestVisiblePoint(pXY);
+          if (snapPoint !== undefined) {
+            setMeasureB(snapPoint.coordinate);
+          } else {
+            const latLonArray = xyArrayToLatLonObjects([pXY], mapRegion, mapSize, mapViewRef.current);
+            if (latLonArray && latLonArray.length > 0) {
+              setMeasureB({ latitude: latLonArray[0].latitude, longitude: latLonArray[0].longitude });
+            }
           }
         } else {
           // 地図をドラッグしておらず、長押しポップアップを表示していない場合のみ情報取得
@@ -2903,6 +2909,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       showDrawLine,
       isMeasuring,
       setMeasureB,
+      findNearestVisiblePoint,
     ]
   );
 
