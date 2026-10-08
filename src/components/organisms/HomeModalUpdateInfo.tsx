@@ -133,6 +133,9 @@ export const HomeModalUpdateInfo = React.memo(() => {
                 {t('Home.updateInfo.feature4') && (
                   <Text style={styles.updateInfoItem}>• {t('Home.updateInfo.feature4')}</Text>
                 )}
+                {t('Home.updateInfo.feature5') && (
+                  <Text style={styles.updateInfoItem}>• {t('Home.updateInfo.feature5')}</Text>
+                )}
               </View>
 
               {/* <View style={styles.updateInfoSection}>
