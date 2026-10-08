@@ -140,6 +140,7 @@ import { TrackPhotoProvider, TrackPhotoContext } from '../contexts/TrackPhoto';
 import { MeasureContext, MeasureProvider } from '../contexts/Measure';
 import { ViewshedContext, ViewshedProvider } from '../contexts/Viewshed';
 import { useLayers } from '../hooks/useLayers';
+import { createTapDragTracker, isDragDistance, shouldHandleAsTap } from '../utils/tapDragTracker';
 
 //タッチ開始からこの時間内に2本目の指が着いたらピンチ意図とみなす（2本指の着地ずれの許容時間）
 const PINCH_INTENT_DURATION_MS = 300;
@@ -244,9 +245,11 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       if (openSheetRetryRef.current !== null) clearTimeout(openSheetRetryRef.current);
     };
   }, []);
-  const isMapDragging = useRef(false);
-  const dragTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const dragStartPosition = useRef<{ x: number; y: number } | null>(null);
+  //タッチ中の最大変位でタップ/ドラッグを判定する（時間で解除されるフラグは使わない。
+  //地図を動かして指を止めてから離すとタップ扱いになり、指の真下の地物が選択される不具合の原因だった）
+  const tapDragTrackerRef = useRef(createTapDragTracker());
+  //直近の2本指ジェスチャーが終わった時刻（Date.now）。直後の単発タップを抑止する
+  const lastMultiTouchEndRef = useRef(0);
   // タッチ開始時刻。直後に2本目の指が着いた場合はピンチ意図とみなしGrantで加えた点を取り消す
   const touchStartTimeRef = useRef(0);
   // このタッチに2本目の指が関与したか。指が動かないズーム系ジェスチャー（2本指タップ・その場ピンチ）は
@@ -2537,7 +2540,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       const pXY = getPXY(event);
 
       // ドラッグ開始位置とタッチ開始時刻を記録
-      dragStartPosition.current = { x: pXY[0], y: pXY[1] };
+      tapDragTrackerRef.current.start(pXY[0], pXY[1]);
       touchStartTimeRef.current = getEventTimestamp(event);
 
       // 新しいタッチの開始時に長押し発火フラグをリセット
@@ -2637,39 +2640,19 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       if (!event.nativeEvent.touches.length) return;
       const pXY = getPXY(event);
 
-      // 地図をドラッグしていることを検出
+      // 地図をドラッグしていることを検出（閾値を一度超えたら離すまでドラッグのまま）
       if (currentDrawTool === 'NONE' && currentMapMemoTool === 'NONE' && !isPlotTool(currentDrawTool)) {
-        // ドラッグ開始位置からの移動距離を計算
-        if (dragStartPosition.current) {
-          const dx = pXY[0] - dragStartPosition.current.x;
-          const dy = pXY[1] - dragStartPosition.current.y;
-          const distance = Math.sqrt(dx * dx + dy * dy);
+        const becameDrag = tapDragTrackerRef.current.move(pXY[0], pXY[1]);
+        if (becameDrag) {
+          // ドラッグ開始時にGPS追従モードを解除（iOS Google MapsのonPanDrag不発火対策）
+          if (gpsStateRef.current === 'follow') {
+            toggleGPSRef.current?.('show');
+          }
 
-          // 移動距離が閾値（5ピクセル）を超えた場合のみドラッグと判定
-          if (distance > 5) {
-            const isNewDrag = !isMapDragging.current;
-            isMapDragging.current = true;
-
-            // ドラッグ開始時にGPS追従モードを解除（iOS Google MapsのonPanDrag不発火対策）
-            if (isNewDrag && gpsStateRef.current === 'follow') {
-              toggleGPSRef.current?.('show');
-            }
-
-            // 長押しタイマーをクリア（移動が検出されたため）
-            if (longPressTimerRef.current) {
-              clearTimeout(longPressTimerRef.current);
-              longPressTimerRef.current = null;
-            }
-
-            // 既存のタイムアウトをクリア
-            if (dragTimeoutRef.current) {
-              clearTimeout(dragTimeoutRef.current);
-            }
-
-            // 300ms後にドラッグ状態をリセット
-            dragTimeoutRef.current = setTimeout(() => {
-              isMapDragging.current = false;
-            }, 300);
+          // 長押しタイマーをクリア（移動が検出されたため）
+          if (longPressTimerRef.current) {
+            clearTimeout(longPressTimerRef.current);
+            longPressTimerRef.current = null;
           }
         }
       }
@@ -2767,12 +2750,10 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
 
       const pXY = getPXY(event);
 
-      //ドラッグ距離（タップかドラッグかの判定用）。リセット前に計算しておく
-      const dragDistance = dragStartPosition.current
-        ? Math.hypot(pXY[0] - dragStartPosition.current.x, pXY[1] - dragStartPosition.current.y)
-        : 0;
-      // ドラッグ開始位置をリセット
-      dragStartPosition.current = null;
+      //ドラッグ距離（タップかドラッグかの判定用）。離した位置ではなくタッチ中の最大変位なので、
+      //動かして戻した場合や、動かして止めてから離した場合もドラッグとして扱う
+      const dragDistance = tapDragTrackerRef.current.release(pXY[0], pXY[1]);
+      const isDragGesture = isDragDistance(dragDistance);
 
       // 長押しタイマーをクリア
       if (longPressTimerRef.current) {
@@ -2801,14 +2782,14 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
         selectLine.current = [];
         //描きかけを再表示する（地図が動いた場合はmapRegion更新時に位置を再計算して表示される）
         showDrawLine({ immediate: true });
-        isMapDragging.current = false;
+        lastMultiTouchEndRef.current = Date.now();
         longPressFiredRef.current = false;
         return;
       } else if (currentDrawTool === 'MOVE') {
         //タップだけ（地図が動いていない）ならregion変化イベントが来ず再計算が発火しないため即時再表示する。
         //ドラッグ時に即時表示すると旧位置のxyのまま再計算フラグが消費され、パン後にずれて固着するため、
         //従来どおりregion変化後の再計算で表示する
-        showDrawLine(dragDistance <= 5 ? { immediate: true } : undefined);
+        showDrawLine(isDragGesture ? undefined : { immediate: true });
         return;
       } else if (currentDrawTool === 'SELECT') {
         handleReleaseSelect(pXY);
@@ -2856,7 +2837,16 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
         return;
       } else if (currentMapMemoTool !== 'NONE') {
         handleReleaseMapMemo(event);
-      } else if (!isMapDragging.current && !longPressFiredRef.current) {
+      } else if (
+        shouldHandleAsTap({
+          dragDistance,
+          longPressFired: longPressFiredRef.current,
+          lastMultiTouchEnd: lastMultiTouchEndRef.current,
+          now: Date.now(),
+        })
+      ) {
+        //地図を動かしておらず、長押しポップアップも出しておらず、2本指ジェスチャーの直後でもない
+        //純粋なタップのみ情報取得する（ピンチで遅れて離れた指が単発タップとして再認識される対策）
         if (isMeasuring) {
           // 測定モード中はタップ位置をB点に設定（再タップで置換）。情報取得ポップアップは抑制する
           const latLonArray = xyArrayToLatLonObjects([pXY], mapRegion, mapSize, mapViewRef.current);
@@ -2880,8 +2870,6 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
           }
         }
       }
-      // ドラッグ状態をリセット
-      isMapDragging.current = false;
       // 長押し発火フラグをリセット
       longPressFiredRef.current = false;
     },
@@ -2928,14 +2916,14 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     //（地図がジェスチャーを取った後はmapRegionが更新されるので、再計算後に表示される）
     showDrawLine();
     isPencilTouch.current = undefined;
-    dragStartPosition.current = null;
+    tapDragTrackerRef.current.cancel();
+    if (multiTouchSeenRef.current) lastMultiTouchEndRef.current = Date.now();
     multiTouchSeenRef.current = false;
     multiTouchHandledRef.current = false;
     if (longPressTimerRef.current) {
       clearTimeout(longPressTimerRef.current);
       longPressTimerRef.current = null;
     }
-    isMapDragging.current = false;
     longPressFiredRef.current = false;
   }, [cancelPlotGrant, commitHandwritingStroke, isPencilTouch, pauseMapMemoDrawing, showDrawLine]);
 
@@ -3250,9 +3238,6 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
   // クリーンアップ処理: タイマーをクリア
   useEffect(() => {
     return () => {
-      if (dragTimeoutRef.current) {
-        clearTimeout(dragTimeoutRef.current);
-      }
       if (longPressTimerRef.current) {
         clearTimeout(longPressTimerRef.current);
       }
