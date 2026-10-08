@@ -2509,12 +2509,18 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     ]
   );
 
-  // 描画・メモツールの起動や位置編集モードへの遷移時は距離測定を自動終了する
+  // 描画・メモツールの起動や位置編集モードへの遷移時は距離測定を自動終了する。
+  // 作図パネルを開いただけ（ツール未選択）では長押しメニューから測定を始められるので終了しない。
+  // 条件は長押しメニューの表示条件（handlePanResponderGrant）と揃える
   useEffect(() => {
-    if (isMeasuring && (featureButton !== 'NONE' || currentMapMemoTool !== 'NONE' || route.params?.mode === 'editPosition')) {
+    const isToolActive =
+      (featureButton !== 'NONE' && currentDrawTool !== 'NONE') ||
+      featureButton === 'MEMO' ||
+      currentMapMemoTool !== 'NONE';
+    if (isMeasuring && (isToolActive || route.params?.mode === 'editPosition')) {
       endMeasure();
     }
-  }, [isMeasuring, featureButton, currentMapMemoTool, route.params?.mode, endMeasure]);
+  }, [isMeasuring, featureButton, currentDrawTool, currentMapMemoTool, route.params?.mode, endMeasure]);
 
   const handlePanResponderGrant = useCallback(
     async (event: GestureResponderEvent) => {
