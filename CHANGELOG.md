@@ -4,9 +4,11 @@
 
 - Fixed tracks and features being selected unintentionally when you drag the map, stop, and then lift your finger. A touch is now treated as a tap only when the finger has not moved since it touched down, and a single tap right after a two-finger gesture is ignored
 - Fixed distance measurement not starting from the long-press menu while the drawing panel is open with no tool selected
+- Distance measurement now snaps the start and end points to a nearby visible point feature (within 40px), so distances between points can be measured directly
 
 - 地図をドラッグして指を止めてから離すと、指の真下の軌跡や地物が選択されてしまう問題を修正。指が触れてから動いていない場合だけタップとして扱い、2本指操作の直後の単発タップは無視するようにしました
 - 作図パネルを開いたまま（ツール未選択）で長押しメニューから距離測定を始められなかった問題を修正
+- 距離測定の起点・終点を、近く（40px以内）にある表示中のポイントへスナップするようにしました。ポイント間の距離をそのまま測れます
 
 ## [0.6.5]　- 2026-10-07
 

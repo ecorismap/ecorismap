@@ -100,7 +100,7 @@ export const HomePoiPopup = React.memo(() => {
 
   // 長押し位置をA点として距離測定モードを開始する。
   // 近く（40px以内）に表示中の既存ポイントがあればそのポイントを起点にする（ポイントからの距離を測る場面が多く、
-  // マーカーを正確に長押しするのは難しいため）。現在地へのスナップはそれより優先する
+  // マーカーを正確に長押しするのは難しいため）
   const handleMeasureDistance = useCallback(() => {
     if (!locationInfo) return;
     const coordinate = locationInfo.coordinate;
