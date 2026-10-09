@@ -4,22 +4,11 @@ import { Marker, Polyline } from 'react-native-maps';
 import { COLOR } from '../../constants/AppConstants';
 import { MeasureContext } from '../../contexts/Measure';
 import { SELECTED_MARKER_ZINDEX } from '../../utils/markerZIndex';
-import { haversineKm, formatDistanceKm } from '../../utils/Location';
-import LineLabel from '../atoms/LineLabel';
 import { LocationType } from '../../types';
 
-// 二点間距離測定の線・端点マーカー・距離ラベル（native版）
+// 二点間距離測定の線・端点マーカー（native版）。距離の数値は上部のバナー（HomeMeasureBanner）に出す
 export const HomeMeasure = React.memo(() => {
   const { measureA, measureB } = useContext(MeasureContext);
-
-  // 中点ラベル座標。経度180度跨ぎでは単純平均が反対側に出るが実用上許容
-  const midPoint: LocationType | null = useMemo(() => {
-    if (!measureA || !measureB) return null;
-    return {
-      latitude: (measureA.latitude + measureB.latitude) / 2,
-      longitude: (measureA.longitude + measureB.longitude) / 2,
-    };
-  }, [measureA, measureB]);
 
   const lineCoordinates = useMemo(() => {
     if (!measureA || !measureB) return null;
@@ -27,11 +16,6 @@ export const HomeMeasure = React.memo(() => {
       { latitude: measureA.latitude, longitude: measureA.longitude },
       { latitude: measureB.latitude, longitude: measureB.longitude },
     ];
-  }, [measureA, measureB]);
-
-  const distanceLabel = useMemo(() => {
-    if (!measureA || !measureB) return '';
-    return formatDistanceKm(haversineKm(measureA, measureB));
   }, [measureA, measureB]);
 
   if (!measureA) return null;
@@ -53,9 +37,6 @@ export const HomeMeasure = React.memo(() => {
       )}
       <MeasurePointMarker coordinate={measureA} />
       {measureB && <MeasurePointMarker coordinate={measureB} />}
-      {midPoint && (
-        <LineLabel coordinate={midPoint} label={distanceLabel} size={16} color={COLOR.BLACK} borderColor={COLOR.WHITE} />
-      )}
     </>
   );
 });
