@@ -2,10 +2,9 @@ import React, { useContext, useMemo } from 'react';
 import { Layer, Marker, Source } from 'react-map-gl/maplibre';
 import { COLOR } from '../../constants/AppConstants';
 import { MeasureContext } from '../../contexts/Measure';
-import { haversineKm, formatDistanceKm } from '../../utils/Location';
 import { LocationType } from '../../types';
 
-// 二点間距離測定の線・端点マーカー・距離ラベル（Web版）
+// 二点間距離測定の線・端点マーカー（Web版）。距離の数値は上部のバナー（HomeMeasureBanner）に出す
 export const HomeMeasure = React.memo(() => {
   const { measureA, measureB } = useContext(MeasureContext);
 
@@ -22,20 +21,6 @@ export const HomeMeasure = React.memo(() => {
         ],
       },
     };
-  }, [measureA, measureB]);
-
-  // 中点ラベル座標。経度180度跨ぎでは単純平均が反対側に出るが実用上許容
-  const midPoint: LocationType | null = useMemo(() => {
-    if (!measureA || !measureB) return null;
-    return {
-      latitude: (measureA.latitude + measureB.latitude) / 2,
-      longitude: (measureA.longitude + measureB.longitude) / 2,
-    };
-  }, [measureA, measureB]);
-
-  const distanceLabel = useMemo(() => {
-    if (!measureA || !measureB) return '';
-    return formatDistanceKm(haversineKm(measureA, measureB));
   }, [measureA, measureB]);
 
   if (!measureA) return null;
@@ -60,21 +45,6 @@ export const HomeMeasure = React.memo(() => {
       )}
       <MeasurePointMarker coordinate={measureA} />
       {measureB && <MeasurePointMarker coordinate={measureB} />}
-      {midPoint && (
-        <Marker longitude={midPoint.longitude} latitude={midPoint.latitude} anchor="bottom" offset={[0, -10]}>
-          <div
-            style={{
-              color: COLOR.BLACK,
-              fontSize: 16,
-              fontWeight: 'bold',
-              textShadow: `1px 1px 1px ${COLOR.WHITE}, -1px -1px 1px ${COLOR.WHITE}`,
-              whiteSpace: 'nowrap',
-            }}
-          >
-            {distanceLabel}
-          </div>
-        </Marker>
-      )}
     </>
   );
 });

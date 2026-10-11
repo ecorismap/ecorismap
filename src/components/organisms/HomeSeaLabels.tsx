@@ -88,7 +88,7 @@ export const HomeSeaLabels = React.memo((props: Props) => {
           zIndex={Platform.OS === 'ios' ? markerZIndex(MARKER_BAND.SEA_LABEL, label.key) : undefined}
         >
           {/* New ArchのAndroidは先頭子のサイズで切り出すため、単一Viewにまとめる */}
-          <View style={styles.container}>
+          <View style={styles.container} collapsable={false}>
             <View style={styles.dot} />
             <HaloText text={label.name} textStyle={styles.label} haloStyle={styles.halo} />
           </View>
