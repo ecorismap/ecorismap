@@ -1,6 +1,6 @@
 # Change Log
 
-## [0.6.6]　- Unreleased
+## [0.6.6]　- 2026-10-11
 
 - Fixed tracks and features being selected unintentionally when you drag the map, stop, and then lift your finger. A touch is now treated as a tap only when the finger has not moved since it touched down, and a single tap right after a two-finger gesture is ignored
 - Fixed distance measurement not starting from the long-press menu while the drawing panel is open with no tool selected
