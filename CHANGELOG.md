@@ -1,5 +1,11 @@
 # Change Log
 
+## [0.6.7]　- 2026-10-14
+
+- Point labels no longer overlap. Labels of points at the same place or close together are placed around the point with leader lines (all points at the same place get a leader line), labels are drawn on a single line without wrapping (very long labels are truncated with an ellipsis), and overlapping labels are thinned out when zoomed out
+
+- ポイントのラベルが重ならないようにしました。同じ場所や近くにあるポイントのラベルは引き出し線で周囲に配置し（同じ地点のポイントは全て引き出し線）、ラベルは折り返さず1行で表示（長すぎる場合は末尾を…で省略）、縮小時は重なるラベルを間引きます
+
 ## [0.6.6]　- Unreleased
 
 - Fixed tracks and features being selected unintentionally when you drag the map, stop, and then lift your finger. A touch is now treated as a tap only when the finger has not moved since it touched down, and a single tap right after a two-finger gesture is ignored
