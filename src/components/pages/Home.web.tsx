@@ -1010,6 +1010,7 @@ export default function HomeScreen() {
                       data={d.data as PointRecordType[]}
                       layer={layer!}
                       zoom={zoom}
+                      zoomDecimal={zoomDecimal}
                       bounds={bounds}
                       selectedRecord={selectedRecord}
                       onDragEndPoint={onDragEndPoint}

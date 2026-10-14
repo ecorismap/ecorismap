@@ -182,7 +182,7 @@ const PolygonMarkerComponent = React.memo((props: PolygonMarkerComponentProps) =
       zIndex={Platform.OS === 'ios' ? markerZIndex(MARKER_BAND.POLYGON_LABEL, feature.id) : undefined}
     >
       <View style={{ alignItems: 'center' }}>
-        <PointLabel label={label} size={15} color={strokeColor} borderColor={COLOR.WHITE} />
+        <PointLabel label={label} size={15} color={strokeColor} borderColor={COLOR.WHITE} maxCharsPerLine={15} />
         <PointView size={10} color={pointColor} borderColor={borderColor} style={{ borderRadius: 0 }} />
       </View>
     </Marker>

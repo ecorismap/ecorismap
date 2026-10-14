@@ -10,6 +10,7 @@ export { default as LineView } from './LineView';
 export { default as PointView } from './PointView';
 export { default as PolygonView } from './PolygonView';
 export { default as PointLabel } from './PointLabel';
+export { default as PointMarkerContent, getMarkerContentLayout, getMaxLabelWidth } from './PointMarkerContent';
 export { default as LineLabel } from './LineLabel';
 export { default as LineArrow } from './LineArrow';
 export { default as PolygonLabel } from './PolygonLabel';
