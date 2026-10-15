@@ -1,5 +1,11 @@
 # Change Log
 
+## [0.7.0]　- Unreleased
+
+- Improved the project edit screen to show the progress indicator immediately after pressing Save. Previously it appeared only after the member lookup (Functions/Virgil) had finished, so the screen looked frozen for several seconds
+
+- プロジェクト編集で保存ボタンを押した直後にインジケータを出すようにしました。これまではメンバーの照会（Functions/Virgil）が終わるまで表示されず、数秒間固まったように見えていました
+
 ## [0.6.8]　- 2026-10-15
 
 - Fixed photos taken with the camera button in a photo field not being attached to the record (since 0.6.0). Saving to the camera roll could fail silently and the captured photo was discarded; the photo is now kept even if the camera roll copy fails
