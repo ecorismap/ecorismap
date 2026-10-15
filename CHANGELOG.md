@@ -1,5 +1,11 @@
 # Change Log
 
+## [0.6.8]　- Unreleased
+
+- Fixed photos taken with the camera button in a photo field not being attached to the record (since 0.6.0). Saving to the camera roll could fail silently and the captured photo was discarded; the photo is now kept even if the camera roll copy fails
+
+- 写真フィールドのカメラボタンで撮影した写真がレコードに保存されない問題を修正しました（0.6.0以降）。カメラロールへのコピーに失敗すると撮影した写真ごと破棄されていたため、コピーに失敗しても写真を残すようにしました
+
 ## [0.6.7]　- 2026-10-14
 
 - Point labels no longer overlap. Labels of points at the same place or close together are placed around the point with leader lines (all points at the same place get a leader line), labels are drawn on a single line without wrapping (very long labels are truncated with an ellipsis), and overlapping labels are thinned out when zoomed out
