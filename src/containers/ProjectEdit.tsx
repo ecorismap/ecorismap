@@ -328,14 +328,17 @@ export default function ProjectEditContainer({ navigation, route }: Props_Projec
         const ret = await ConfirmAsync(t('ProjectEdit.confirm.singleAdmin'));
         if (!ret) return;
       }
-      // checkedProject内で確認ダイアログを出すことがあるため、ローディング開始は結果確定後にする
+      // メンバーのuid照会(Functions)と登録確認(Virgil)は数秒かかることがあるので、
+      // 照会中からインジケータを出す。checkedProject内の確認ダイアログが出ている間は
+      // Loadingが自動で引っ込む（useModalYieldingToDialog）ため重ならない
+      setIsLoading(true);
       const checkedProjectResult = await checkedProject();
       if (!checkedProjectResult.isOK || !checkedProjectResult.project) {
+        setIsLoading(false);
         // message空文字はユーザーによるキャンセル（エラー表示しない）
         if (checkedProjectResult.message !== '') await AlertAsync(checkedProjectResult.message);
         return;
       }
-      setIsLoading(true);
 
       if (isNew) {
         await saveNewProject(checkedProjectResult.project);
