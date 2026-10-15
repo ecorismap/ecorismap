@@ -614,6 +614,7 @@ jest.mock('expo-image-picker', () => ({
     canceled: false, 
     assets: [{ uri: 'test://image.jpg', width: 100, height: 100 }]
   })),
+  getPendingResultAsync: jest.fn(() => Promise.resolve(null)),
   requestCameraPermissionsAsync: jest.fn(() => Promise.resolve({ status: 'granted' })),
   requestMediaLibraryPermissionsAsync: jest.fn(() => Promise.resolve({ status: 'granted' })),
   MediaTypeOptions: {
@@ -634,10 +635,54 @@ jest.mock('expo-audio', () => ({
 }));
 
 // SDK 56: expo-media-library's redesigned API extends native classes at module load,
-// which throws in jest ("Super expression must ..."). Mock the methods we use.
-jest.mock('expo-media-library', () => ({
-  requestPermissionsAsync: jest.fn(() => Promise.resolve({ status: 'granted' })),
+// which throws in jest ("Super expression must ...").
+// 実機ではルートの旧関数API(createAssetAsync等)は「deprecated」例外を投げるスタブになっている
+// (build/legacyWarnings.js)。モックも同じ挙動にして、ルートを呼ぶコードがテストで必ず落ちるようにする。
+// 従来APIは 'expo-media-library/legacy' から読む（0.6.8の写真保存不具合の再発防止）
+const mediaLibraryLegacyMethodNames = [
+  'isAvailableAsync',
+  'presentPermissionsPickerAsync',
+  'createAssetAsync',
+  'saveToLibraryAsync',
+  'addAssetsToAlbumAsync',
+  'removeAssetsFromAlbumAsync',
+  'deleteAssetsAsync',
+  'getAssetInfoAsync',
+  'getAlbumsAsync',
+  'getAlbumAsync',
+  'createAlbumAsync',
+  'deleteAlbumsAsync',
+  'getAssetsAsync',
+  'removeSubscription',
+  'getMomentsAsync',
+  'migrateAlbumIfNeededAsync',
+  'albumNeedsMigrationAsync',
+  'setAssetFavoriteAsync',
+];
+jest.mock('expo-media-library', () =>
+  Object.fromEntries(
+    mediaLibraryLegacyMethodNames.map((name) => [
+      name,
+      jest.fn(() =>
+        Promise.reject(
+          new Error(
+            `Method ${name} imported from "expo-media-library" is deprecated.\nImport the legacy API from "expo-media-library/legacy" or migrate to the new class-based API from "expo-media-library".`
+          )
+        )
+      ),
+    ])
+  )
+);
+jest.mock('expo-media-library/legacy', () => ({
+  isAvailableAsync: jest.fn(() => Promise.resolve(true)),
+  requestPermissionsAsync: jest.fn(() => Promise.resolve({ status: 'granted', granted: true, accessPrivileges: 'all' })),
+  getPermissionsAsync: jest.fn(() => Promise.resolve({ status: 'granted', granted: true, accessPrivileges: 'all' })),
   createAssetAsync: jest.fn(() => Promise.resolve({ id: 'test-asset', uri: 'test://asset.jpg' })),
+  saveToLibraryAsync: jest.fn(() => Promise.resolve()),
+  getAssetsAsync: jest.fn(() => Promise.resolve({ assets: [], endCursor: '', hasNextPage: false, totalCount: 0 })),
+  getAssetInfoAsync: jest.fn((asset) => Promise.resolve({ ...asset, localUri: asset && asset.uri })),
+  MediaType: { photo: 'photo', video: 'video', audio: 'audio', unknown: 'unknown' },
+  SortBy: { creationTime: 'creationTime', modificationTime: 'modificationTime' },
 }));
 
 //jest.mock('expo', () => require.requireMock('expo'));

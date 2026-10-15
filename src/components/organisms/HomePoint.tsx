@@ -1,17 +1,20 @@
 import React, { useMemo } from 'react';
-import { Platform, View } from 'react-native';
+import { Platform } from 'react-native';
 import { Marker, MarkerDragStartEndEvent } from 'react-native-maps';
 import { COLOR } from '../../constants/AppConstants';
 import { LayerType, PointRecordType, RecordType } from '../../types';
-import { PointView, PointLabel } from '../atoms';
+import { PointMarkerContent, getMarkerContentLayout, getMaxLabelWidth } from '../atoms';
 import { generateLabel, getColor } from '../../utils/Layer';
 import { ViewportBounds, cullPoints } from '../../utils/ViewportCulling';
+import { DEFAULT_LABEL_LAYOUT_OPTIONS, LabelPlacement, layoutPointLabels } from '../../utils/pointLabelGroups';
 import { MARKER_BAND, SELECTED_MARKER_ZINDEX, markerZIndex } from '../../utils/markerZIndex';
 
 interface Props {
   data: PointRecordType[];
   layer: LayerType;
   zoom: number;
+  /** グループ化の距離計算用。整数のzoomだと最大2倍過小評価するため端数込みの値を使う */
+  zoomDecimal: number;
   selectedRecord: { layerId: string; record: RecordType } | undefined;
   editPositionMode: boolean;
   editPositionRecord: RecordType | undefined;
@@ -22,6 +25,10 @@ interface Props {
   onDragEndPoint: (e: MarkerDragStartEndEvent, layer: LayerType, feature: RecordType) => void;
 }
 
+const POINT_SIZE = 15;
+// マーカー画像の大きさ上限（iOS Google Maps SDK）に収まるラベル幅。超える分は…で省略される
+const MAX_LABEL_WIDTH = getMaxLabelWidth(POINT_SIZE, Math.max(...DEFAULT_LABEL_LAYOUT_OPTIONS.leaderRadii));
+
 export const Point = React.memo(
   (props: Props) => {
     //console.log('render Point');
@@ -29,6 +36,7 @@ export const Point = React.memo(
       data,
       layer,
       zoom,
+      zoomDecimal,
       selectedRecord,
       editPositionMode,
       editPositionLayer,
@@ -47,12 +55,34 @@ export const Point = React.memo(
       });
     }, [data, bounds, zoom]);
 
+    // ラベルの置き場所を決める。重なるものは通常位置→引き出し線→非表示の順で解決する。
+    // 選択中のポイントのラベルは優先して残す。zoom<=8はラベル自体を出さない
+    const selectedId = selectedRecord?.layerId === layer.id ? selectedRecord.record?.id : undefined;
+    const labelById = useMemo(() => {
+      const result = new Map<string, { label: string; placement: LabelPlacement }>();
+      if (zoom <= 8) return result;
+      const labeled = culledData.map((f) => ({ id: f.id, coords: f.coords, label: generateLabel(layer, f) }));
+      const placements = layoutPointLabels(labeled, zoomDecimal, {
+        tileSize: 256,
+        labelPosition: 'above',
+        pointSize: POINT_SIZE,
+        maxLabelWidth: MAX_LABEL_WIDTH,
+        priorityIds: selectedId ? [selectedId] : undefined,
+      });
+      for (const item of labeled) {
+        const placement = placements.get(item.id);
+        if (placement) result.set(item.id, { label: item.label, placement });
+      }
+      return result;
+    }, [culledData, layer, zoom, zoomDecimal, selectedId]);
+
     return (
       <>
         {culledData.map((feature) => (
           <PointComponent
             key={`point-${feature.id}-${feature.redraw}-${selectedRecord?.record?.id === feature.id}`}
             feature={feature}
+            labelPlacement={labelById.get(feature.id)}
             selectedRecord={selectedRecord}
             editPositionMode={editPositionMode}
             editPositionRecord={editPositionRecord}
@@ -60,7 +90,6 @@ export const Point = React.memo(
             currentDrawTool={currentDrawTool}
             onDragEndPoint={onDragEndPoint}
             layer={layer}
-            zoom={zoom}
           />
         ))}
       </>
@@ -71,6 +100,7 @@ export const Point = React.memo(
     if (prevProps.data !== nextProps.data) return false;
     if (prevProps.layer !== nextProps.layer) return false;
     if (prevProps.zoom !== nextProps.zoom) return false;
+    if (prevProps.zoomDecimal !== nextProps.zoomDecimal) return false;
     if (prevProps.bounds !== nextProps.bounds) return false;
     if (prevProps.editPositionMode !== nextProps.editPositionMode) return false;
     if (prevProps.editPositionRecord !== nextProps.editPositionRecord) return false;
@@ -103,6 +133,8 @@ export const Point = React.memo(
 
 interface PointComponentProps {
   feature: PointRecordType;
+  /** このマーカーに描くラベルと置き場所（間引かれたらundefined） */
+  labelPlacement: { label: string; placement: LabelPlacement } | undefined;
   selectedRecord: { layerId: string; record: RecordType } | undefined;
   editPositionMode: boolean;
   editPositionRecord: RecordType | undefined;
@@ -110,24 +142,21 @@ interface PointComponentProps {
   currentDrawTool: string;
   onDragEndPoint: (e: MarkerDragStartEndEvent, layer: LayerType, feature: RecordType) => void;
   layer: LayerType;
-  zoom: number;
 }
 
 const PointComponent = React.memo((props: PointComponentProps) => {
   const {
     feature,
+    labelPlacement,
     selectedRecord,
     onDragEndPoint,
     layer,
-    zoom,
     editPositionMode,
     currentDrawTool,
   } = props;
   //console.log(feature.field[layer.label]);
 
   const selected = useMemo(() => feature.id === selectedRecord?.record?.id, [feature.id, selectedRecord?.record?.id]);
-  const label = useMemo(() => generateLabel(layer, feature), [feature, layer]);
-
   const color = useMemo(() => getColor(layer, feature), [feature, layer]);
 
   const pointColor = useMemo(() => (selected ? COLOR.YELLOW : color), [color, selected]);
@@ -139,14 +168,25 @@ const PointComponent = React.memo((props: PointComponentProps) => {
     [currentDrawTool, editPositionMode]
   );
 
-  if (!feature.coords) return null;
   // tracksViewChangesは両OSでfalse固定。
   // - iOS(Google Maps)はtrueだとGMSMarkerのiconViewが毎フレーム再描画され、
   //   同一座標のマーカー同士でz順が入れ替わって点滅する（rnmaps#1159）上、CPU/電池を消費し続ける
   // - AndroidはGoogle Maps SDKのIllegalStateException回避のためfalseが必須
   // falseだとラベル・色の変更がアイコンに反映されないため、見た目に影響する値を
-  // keyに含めてremountで再ラスタライズさせる（選択変化は親のkeyでもremountされる）
-  const markerContentKey = `${zoom > 8 ? label : ''}|${color}|${pointColor}|${borderColor}`;
+  // keyに含めてremountで再ラスタライズさせる（選択変化は親のkeyでもremountされる）。
+  // iOSはFabricでマーカー挿入後に子のレイアウトが確定するため、撮影がレイアウト前になり
+  // ラベル欠け・偽ポイント（格子）が出る。AIRGoogleMapMarkerのpatchでレイアウト後に撮り直している。
+  // 一時的にtrueにして戻す方法は、ライブ描画用ビューが取り残されて二重表示になるので使わない
+  const pl = labelPlacement?.placement;
+  const placementKey = pl
+    ? `${labelPlacement!.label}@${pl.dx.toFixed(1)},${pl.dy.toFixed(1)}${pl.leader ? `L${pl.leader.angle.toFixed(2)}` : ''}`
+    : '';
+  const markerContentKey = `${placementKey}|${color}|${pointColor}|${borderColor}`;
+  // コンテナは記号＋ラベルの外接矩形なので、記号中心の位置をanchorで伝える
+  const contentLayout = getMarkerContentLayout(pl, POINT_SIZE);
+  const anchor = { x: contentLayout.cx / contentLayout.width, y: contentLayout.cy / contentLayout.height };
+
+  if (!feature.coords) return null;
   return (
     <Marker
       key={markerContentKey}
@@ -155,7 +195,7 @@ const PointComponent = React.memo((props: PointComponentProps) => {
       onDragEnd={(e) => onDragEndPoint(e, layer, feature)}
       coordinate={feature.coords}
       opacity={0.8}
-      anchor={{ x: 0.5, y: 0.8 }}
+      anchor={anchor}
       style={{ zIndex: selected ? 1000 : 1, alignItems: 'center' }}
       // style.zIndexはGMSMarkerに届かないため、iOSはネイティブのzIndexプロップも指定する。
       // Google Maps SDKは同一zIndexのマーカーの描画順を保証せず、再描画のたびに入れ替わって
@@ -169,14 +209,18 @@ const PointComponent = React.memo((props: PointComponentProps) => {
       }
     >
       {/*Textのcolorにcolorを適用しないとなぜかマーカーの色も変わらない*/}
-      {/*labelの表示非表示でanchorがずれないようにzoom<=8でラベルを空白にする*/}
-      {/*label表示で縦位置ずれるため、anchorで調整。sizeを変更すると調整必要 */}
-      {/*Markerの直接の子は単一のViewにまとめる（New ArchのAndroidで
+      {/*記号＋ラベル＋引き出し線の外接矩形をコンテナにし、記号中心をanchorで合わせる。
+         Markerの直接の子は単一のViewにまとめる（New ArchのAndroidで
          先頭の子のサイズでビットマップが切り出され、他の子がクリップされるため）*/}
-      <View style={{ alignItems: 'center' }} collapsable={false}>
-        <PointLabel label={zoom > 8 ? label : ''} size={15} color={color} borderColor={COLOR.WHITE} />
-        <PointView size={15} color={pointColor} borderColor={borderColor} />
-      </View>
+      <PointMarkerContent
+        label={labelPlacement?.label ?? ''}
+        placement={pl}
+        size={POINT_SIZE}
+        color={color}
+        pointColor={pointColor}
+        borderColor={borderColor}
+        labelBorderColor={COLOR.WHITE}
+      />
     </Marker>
   );
 });

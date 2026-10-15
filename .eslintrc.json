@@ -31,7 +31,31 @@
       "error",
       { "caughtErrors": "none", "argsIgnorePattern": "^_", "varsIgnorePattern": "^_" }
     ],
-    "react-native/sort-styles": "off"
+    "react-native/sort-styles": "off",
+    // SDK 56: ルートの"expo-media-library"が返す旧関数API(createAssetAsync等)は実行時に例外を投げるスタブ。
+    // 従来APIは必ず"expo-media-library/legacy"から読み込む（0.6.8の写真保存不具合の再発防止）
+    "no-restricted-imports": [
+      "error",
+      {
+        "paths": [
+          {
+            "name": "expo-media-library",
+            "message": "ルートの旧関数APIは実行時に例外を投げます。'expo-media-library/legacy' から読み込んでください"
+          }
+        ]
+      }
+    ],
+    "no-restricted-syntax": [
+      "error",
+      {
+        "selector": "CallExpression[callee.name='require'] > Literal[value='expo-media-library']",
+        "message": "ルートの旧関数APIは実行時に例外を投げます。require('expo-media-library/legacy') を使ってください"
+      },
+      {
+        "selector": "CallExpression[callee.object.name='jest'][callee.property.name='mock'] > Literal[value='expo-media-library']",
+        "message": "テストではルートではなく 'expo-media-library/legacy' をモックしてください（ルートのモックは実挙動を隠します）"
+      }
+    ]
     //"complexity": ["error", 10]
   }
 }

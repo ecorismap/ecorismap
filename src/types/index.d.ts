@@ -447,6 +447,15 @@ export interface SettingsType {
   dataFilterPerLayer?: { [layerId: string]: { text: string; fieldName: string } };
   //軌跡上に端末ライブラリの写真を表示するか。既存ユーザーの永続化済みsettingsにはキーがないためoptional（未定義=ON）
   isTrackPhotoVisible?: boolean;
+  //写真フィールドのカメラ撮影中（Android）。カメラ起動中にActivityが破棄されReactツリーが作り直されても
+  //撮影結果を回収して同じレコードに付けられるよう、どこで撮影中かを残す。撮影が戻ってきたら消す
+  pendingPhotoCapture?: PendingPhotoCaptureType;
+}
+
+export interface PendingPhotoCaptureType {
+  layerId: string;
+  recordId: string;
+  fieldName: string;
 }
 
 export interface RegionType {

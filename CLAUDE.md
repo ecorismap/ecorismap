@@ -36,7 +36,7 @@ yarn keys:apply    # keys/ディレクトリのAPIキー類を一括反映
 
 3. **型安全性**: コミット前に`npx tsc --noEmit`必須。strictモード、implicit any禁止。
 
-4. **プラットフォームテスト**: iOS/Android/Web全てで動作確認。
+4. **プラットフォームテスト**: iOS/Android/Web全てで動作確認。ストア提出前は`docs/RELEASE_CHECKLIST.md`のネイティブ経路（写真撮影など）を実機で通す（ユニットテストはネイティブモジュールをモックしているため検出不可）。
 
 5. **Patch Packages**: `/patches`ディレクトリにパッチあり。`yarn install`で自動適用。
 

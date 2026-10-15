@@ -1,12 +1,12 @@
 import React, { useCallback, useEffect, useMemo, useRef } from 'react';
-import { View } from 'react-native';
 import { COLOR } from '../../constants/AppConstants';
 import { RecordType, LayerType, PointRecordType } from '../../types';
-import { PointView, PointLabel } from '../atoms';
+import { PointMarkerContent, getMarkerContentLayout } from '../atoms';
 import { Marker, MarkerDragEvent, useMap } from 'react-map-gl/maplibre';
 import type { Marker as MaplibreMarker } from 'maplibre-gl';
 import { generateLabel, getColor } from '../../utils/Layer';
 import { ViewportBounds, cullPoints } from '../../utils/ViewportCulling';
+import { LabelPlacement, layoutPointLabels } from '../../utils/pointLabelGroups';
 import { createBehindCameraTest, createTerrainOcclusionTest } from '../../utils/terrain3d/webCamera';
 
 /** 地形による遮蔽の判定間隔[ms]（カメラが動いている間の間引き） */
@@ -16,6 +16,8 @@ interface Props {
   data: PointRecordType[];
   layer: LayerType;
   zoom: number;
+  /** グループ化の距離計算用。整数のzoomだと最大2倍過小評価するため端数込みの値を使う */
+  zoomDecimal: number;
   selectedRecord: { layerId: string; record: RecordType } | undefined;
 
   editPositionMode: boolean;
@@ -35,6 +37,7 @@ export const Point = React.memo(
       onDragEndPoint,
       layer,
       zoom,
+      zoomDecimal,
       editPositionLayer,
       editPositionMode,
       editPositionRecord,
@@ -125,13 +128,35 @@ export const Point = React.memo(
       }
     }, []);
 
+    // ラベルの置き場所を決める。重なるものは通常位置→引き出し線→非表示の順で解決する。
+    // 選択中のポイントのラベルは優先して残す。zoom<=8はラベル自体を出さない
+    // （maplibreのズームは512pxタイル基準）
+    const selectedId = selectedRecord?.layerId === layer.id ? selectedRecord.record?.id : undefined;
+    const labelById = useMemo(() => {
+      const result = new Map<string, { label: string; placement: LabelPlacement }>();
+      if (zoom <= 8) return result;
+      const labeled = culledData.map((f) => ({ id: f.id, coords: f.coords, label: generateLabel(layer, f) }));
+      const placements = layoutPointLabels(labeled, zoomDecimal, {
+        tileSize: 512,
+        labelPosition: 'below',
+        priorityIds: selectedId ? [selectedId] : undefined,
+      });
+      for (const item of labeled) {
+        const placement = placements.get(item.id);
+        if (placement) result.set(item.id, { label: item.label, placement });
+      }
+      return result;
+    }, [culledData, layer, zoom, zoomDecimal, selectedId]);
+
     if (data === undefined) return null;
 
     return (
       <>
         {culledData.map((feature) => {
           if (!feature.coords) return null;
-          const label = generateLabel(layer, feature);
+          const labelPlacement = labelById.get(feature.id);
+          // コンテナは記号＋ラベルの外接矩形。左上を座標に置き、記号中心ぶんoffsetで戻す
+          const contentLayout = getMarkerContentLayout(labelPlacement?.placement, 15);
 
           const labelColor = getColor(layer, feature);
           const selected = selectedRecord !== undefined && feature.id === selectedRecord.record?.id;
@@ -151,16 +176,22 @@ export const Point = React.memo(
               key={`${feature.id}-${feature.redraw}`}
               ref={(marker: MaplibreMarker | null) => setMarkerRef(`${feature.id}-${feature.redraw}`, marker)}
               {...feature.coords}
-              offset={[-15 / 2, -15 / 2]}
               anchor={'top-left'}
+              offset={[-contentLayout.cx, -contentLayout.cy]}
               draggable={draggable}
               onDragEnd={(e) => onDragEndPoint(e, layer, feature)}
             >
+              {/*コンテナはpointer-events noneで、記号とラベル以外は地図のクリックを遮らない*/}
               <div>
-                <View style={{ alignItems: 'flex-start' }}>
-                  <PointView size={15} color={color} borderColor={borderColor} />
-                  <PointLabel label={zoom > 8 ? label : ''} size={15} color={labelColor} borderColor={COLOR.WHITE} />
-                </View>
+                <PointMarkerContent
+                  label={labelPlacement?.label ?? ''}
+                  placement={labelPlacement?.placement}
+                  size={15}
+                  color={labelColor}
+                  pointColor={color}
+                  borderColor={borderColor}
+                  labelBorderColor={COLOR.WHITE}
+                />
               </div>
             </Marker>
           );
@@ -172,6 +203,7 @@ export const Point = React.memo(
     if (prevProps.data !== nextProps.data) return false;
     if (prevProps.layer !== nextProps.layer) return false;
     if (prevProps.zoom !== nextProps.zoom) return false;
+    if (prevProps.zoomDecimal !== nextProps.zoomDecimal) return false;
     if (prevProps.bounds !== nextProps.bounds) return false;
     if (prevProps.editPositionMode !== nextProps.editPositionMode) return false;
     if (prevProps.editPositionRecord !== nextProps.editPositionRecord) return false;

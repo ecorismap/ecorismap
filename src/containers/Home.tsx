@@ -145,6 +145,7 @@ import { MeasureContext, MeasureProvider } from '../contexts/Measure';
 import { ViewshedContext, ViewshedProvider } from '../contexts/Viewshed';
 import { useLayers } from '../hooks/useLayers';
 import { isPeaksUrl } from '../utils/peaks/peak2dLabels';
+import { usePendingPhotoCapture } from '../hooks/usePendingPhotoCapture';
 import { createTapDragTracker, isDragDistance, shouldHandleAsTap } from '../utils/tapDragTracker';
 
 //タッチ開始からこの時間内に2本目の指が着いたらピンチ意図とみなす（2本指の着地ずれの許容時間）
@@ -312,6 +313,9 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     },
     [bottomSheetNavigate]
   );
+
+  //Androidでカメラ起動中にActivityが破棄された場合の撮影結果の回収とデータ編集画面の復帰
+  usePendingPhotoCapture({ navigateToSplit, openSheet });
 
   const { importGeoFile } = useGeoFile();
   const { runTutrial } = useTutrial();

@@ -9,7 +9,7 @@ import { Alert } from '../components/atoms/Alert';
 import { t } from '../i18n/config';
 import { useRecord } from '../hooks/useRecord';
 import { DataEditContext } from '../contexts/DataEdit';
-import { shallowEqual, useSelector } from 'react-redux';
+import { shallowEqual, useDispatch, useSelector } from 'react-redux';
 import { RootState } from '../store';
 import { useKeyboard } from '@react-native-community/hooks';
 import { checkCoordsInput, checkFieldInput, isLatLonEmpty } from '../utils/Data';
@@ -22,6 +22,7 @@ import { isLocationType, isLocationTypeArray } from '../utils/General';
 import { DataEditModalPhotoView } from '../components/organisms/DataEditModalPhotoView';
 import { useLayers } from '../hooks/useLayers';
 import { addToDynamicDictionary } from '../hooks/useDynamicDictionaryInput';
+import { editSettingsAction } from '../modules/settings';
 
 export default function DataEditContainer() {
   const { navigate, navigateToHome } = useBottomSheetNavigation();
@@ -55,6 +56,7 @@ export default function DataEditContainer() {
     cancelUpdate,
   } = useDataEdit(params!.targetData, params!.targetLayer);
   const { changeActiveLayer } = useLayers();
+  const dispatch = useDispatch();
   const projectId = useSelector((state: RootState) => state.settings.projectId, shallowEqual);
   const user = useSelector((state: RootState) => state.user);
   const { checkRecordEditable, unselectRecord } = useRecord();
@@ -265,12 +267,20 @@ export default function DataEditContainer() {
         projectId !== undefined
           ? `${PHOTO_FOLDER}/${projectId}/${targetLayer.id}/${user.uid}`
           : `${PHOTO_FOLDER}/LOCAL/${targetLayer.id}/OWNER`;
+      //Androidでカメラ起動中にActivityが破棄されると、ここには戻ってこない。
+      //復帰後にusePendingPhotoCaptureが撮影結果を回収できるよう、撮影先を残しておく
+      dispatch(
+        editSettingsAction({
+          pendingPhotoCapture: { layerId: targetLayer.id, recordId: targetRecord.id, fieldName },
+        })
+      );
       const photo = await takePhoto(folder);
+      dispatch(editSettingsAction({ pendingPhotoCapture: undefined }));
 
       if (photo === undefined) return;
       addPhoto(fieldName, photo);
     },
-    [addPhoto, projectId, targetLayer.id, user.uid]
+    [addPhoto, dispatch, projectId, targetLayer.id, targetRecord.id, user.uid]
   );
 
   const pressPhoto = useCallback(

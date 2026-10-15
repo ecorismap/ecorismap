@@ -928,6 +928,7 @@ export default function HomeScreen() {
                       data={d.data as PointRecordType[]}
                       layer={layer!}
                       zoom={zoom}
+                      zoomDecimal={zoomDecimal}
                       // 地形表示（傾けた3D・眺望）では表示範囲で間引かない。boundsはmapRegion由来の
                       // 「注視点のまわりの矩形」で、傾けると奥の見えている範囲を含まない
                       // （眺望では注視点が40m先・z20になり、数百m四方に縮んで全ポイントが消えた）

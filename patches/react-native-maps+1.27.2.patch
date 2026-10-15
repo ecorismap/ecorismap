@@ -11204,10 +11204,90 @@ index 0000000..fbcaaab
 +
 +#endif
 diff --git a/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapMarker.m b/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapMarker.m
-index b3f8da6..e962ce2 100644
+index b3f8da6..9b66f13 100644
 --- a/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapMarker.m
 +++ b/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapMarker.m
-@@ -517,11 +517,17 @@ - (BOOL)flat {
+@@ -38,6 +38,7 @@ @implementation AIRGoogleMapMarker {
+     CLLocationDegrees _rotation;
+     BOOL _tracksInfoWindowChanges;
+     BOOL _tracksViewChanges;
++    BOOL _staticIconRefreshScheduled;
+     BOOL _draggable;
+     BOOL _tappable;
+     BOOL _flat;
+@@ -73,6 +74,43 @@ - (void)layoutSubviews {
+     }
+ 
+     [_iconView setFrame:CGRectMake(0, 0, width, height)];
++    // EcorisMap: 子ビューのレイアウトが確定したあとに静止アイコンを撮り直す
++    [self scheduleStaticIconRefresh];
++}
++
++// EcorisMap: tracksViewChanges=NO のマーカーは、SDKが iconView を設定した時点の見た目を
++// 1回だけ撮って使い回す。Fabric では子ビュー（ラベル等）の挿入・レイアウトがその後に来るため、
++// 撮影がレイアウト確定前になり、ラベルが欠けたり、古い枠サイズに小さな画像が敷き詰められて
++// 偽のポイントが並ぶ。レイアウトが確定するたびに iconView を設定し直して撮り直させる。
++// （tracksViewChanges を YES/NO とトグルする方法は、ライブ描画用ビューが取り残されるので使わない）
++- (void)refreshStaticIcon {
++    if (!_realMarker || !_iconView || _tracksViewChanges) return;
++    // このビューは地図の画面階層に入らないので layoutSubviews が走らないことがある。
++    // 撮る前に子ビューの外接矩形から iconView の枠を決め直す
++    CGFloat width = 0, height = 0;
++    for (UIView *v in [_iconView subviews]) {
++        width = MAX(width, v.frame.origin.x + v.frame.size.width);
++        height = MAX(height, v.frame.origin.y + v.frame.size.height);
++    }
++    if (width <= 0 || height <= 0) return;
++    if (!CGSizeEqualToSize(_iconView.frame.size, CGSizeMake(width, height))) {
++        [_iconView setFrame:CGRectMake(0, 0, width, height)];
++    }
++    _realMarker.iconView = nil;
++    _realMarker.iconView = _iconView;
++}
++
++// 同じ実行ループ内の複数の変更（挿入・子の追加・レイアウト）をまとめ、すべて適用された後に1回撮る
++- (void)scheduleStaticIconRefresh {
++    if (_staticIconRefreshScheduled) return;
++    _staticIconRefreshScheduled = YES;
++    __weak typeof(self) weakSelf = self;
++    dispatch_async(dispatch_get_main_queue(), ^{
++        __strong typeof(weakSelf) strongSelf = weakSelf;
++        if (!strongSelf) return;
++        strongSelf->_staticIconRefreshScheduled = NO;
++        [strongSelf refreshStaticIcon];
++    });
+ }
+ 
+ 
+@@ -85,7 +123,9 @@ - (void) didUpdateReactSubviews
+ {
+     [super didUpdateReactSubviews];
+     if (_iconView){
+-        [_iconView setFrame:self.frame];
++        // EcorisMap: frame だと親内の位置（origin）まで iconView に写るので bounds を使う
++        [_iconView setFrame:self.bounds];
++        [self scheduleStaticIconRefresh];
+     }
+ }
+ 
+@@ -100,6 +140,8 @@ - (void) didInsertInMap:(AIRGoogleMap *) map
+     if (_iconView){
+         [_realMarker setIconView:_iconView];
+     }
++    // EcorisMap: 挿入時点では子のレイアウトが未確定なことがあるので、後で撮り直す
++    [self scheduleStaticIconRefresh];
+     if (_rotation != 0){
+         [_realMarker setRotation:_rotation];
+     }
+@@ -154,6 +196,7 @@ - (void)iconViewInsertSubview:(UIView*)subview atIndex:(NSInteger)atIndex {
+         _realMarker.iconView = _iconView;
+     }
+     [_iconView insertSubview:subview atIndex:atIndex];
++    [self scheduleStaticIconRefresh];
+ }
+ 
+ - (void)insertReactSubview:(id<RCTComponent>)subview atIndex:(NSInteger)atIndex {
+@@ -517,11 +560,19 @@ - (BOOL)flat {
  }
  
  - (void)setTracksViewChanges:(BOOL)tracksViewChanges {
@@ -11218,6 +11298,8 @@ index b3f8da6..e962ce2 100644
 +    // the icon view every frame.
 +    _tracksViewChanges = tracksViewChanges;
      _realMarker.tracksViewChanges = tracksViewChanges;
++    // EcorisMap: YES→NO の切り替え時点の撮影もレイアウト前になり得るので撮り直す
++    if (!tracksViewChanges) [self scheduleStaticIconRefresh];
  }
  
  - (BOOL)tracksViewChanges {

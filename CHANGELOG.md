@@ -1,5 +1,19 @@
 # Change Log
 
+## [0.6.8]　- 2026-10-15
+
+- Fixed photos taken with the camera button in a photo field not being attached to the record (since 0.6.0). Saving to the camera roll could fail silently and the captured photo was discarded; the photo is now kept even if the camera roll copy fails
+- Fixed the bottom sheet closing instead of returning to the data edit screen after taking a photo on Android, which also lost the photo. This happens when the system destroys the app's activity while the camera is open (low memory, or "Don't keep activities"); the captured photo is now recovered, attached to the record and the edit screen is reopened (includes a patch to expo-modules-core so pending activity results are delivered after in-process activity recreation)
+
+- 写真フィールドのカメラボタンで撮影した写真がレコードに保存されない問題を修正しました（0.6.0以降）。カメラロールへのコピーに失敗すると撮影した写真ごと破棄されていたため、コピーに失敗しても写真を残すようにしました
+- Androidで撮影後にデータ編集画面へ戻らずボトムシートが閉じ、写真も失われる問題を修正しました。カメラ起動中にシステムがアプリの画面を破棄した場合（メモリ不足や「アクティビティを保持しない」）に起きていたもので、撮影結果を回収してレコードに保存し、編集画面を開き直すようにしました（同一プロセス内の画面再生成後に結果が届くようexpo-modules-coreへのパッチを含む）
+
+## [0.6.7]　- 2026-10-14
+
+- Point labels no longer overlap. Labels of points at the same place or close together are placed around the point with leader lines (all points at the same place get a leader line), labels are drawn on a single line without wrapping (very long labels are truncated with an ellipsis), and overlapping labels are thinned out when zoomed out
+
+- ポイントのラベルが重ならないようにしました。同じ場所や近くにあるポイントのラベルは引き出し線で周囲に配置し（同じ地点のポイントは全て引き出し線）、ラベルは折り返さず1行で表示（長すぎる場合は末尾を…で省略）、縮小時は重なるラベルを間引きます
+
 ## [0.6.6]　- 2026-10-11
 
 - Fixed tracks and features being selected unintentionally when you drag the map, stop, and then lift your finger. A touch is now treated as a tap only when the finger has not moved since it touched down, and a single tap right after a two-finger gesture is ignored
