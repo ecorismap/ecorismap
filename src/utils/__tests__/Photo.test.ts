@@ -143,6 +143,48 @@ describe('Photo', () => {
     });
   });
 
+  describe('takePendingPhoto', () => {
+    const ImagePicker = require('expo-image-picker');
+    const originalOS = Platform.OS;
+    afterEach(() => {
+      (Platform as { OS: string }).OS = originalOS;
+    });
+
+    it('returns undefined on iOS without asking the picker', async () => {
+      (Platform as { OS: string }).OS = 'ios';
+      const result = await Photo.takePendingPhoto('mock://folder');
+      expect(result).toBeUndefined();
+      expect(ImagePicker.getPendingResultAsync).not.toHaveBeenCalled();
+    });
+
+    it('returns undefined when the picker has no pending result', async () => {
+      (Platform as { OS: string }).OS = 'android';
+      ImagePicker.getPendingResultAsync.mockResolvedValue(null);
+      const result = await Photo.takePendingPhoto('mock://folder');
+      expect(result).toBeUndefined();
+    });
+
+    it('saves the pending camera result like a normal capture', async () => {
+      (Platform as { OS: string }).OS = 'android';
+      ImagePicker.getPendingResultAsync.mockResolvedValue({
+        canceled: false,
+        assets: [{ uri: 'mock://cache/img.jpg', width: 640, height: 480 }],
+      });
+      mockFileSystem.makeDirectoryAsync.mockResolvedValue(undefined);
+      mockFileSystem.copyAsync.mockResolvedValue(undefined);
+      mockMediaLibrary.requestPermissionsAsync.mockResolvedValue({ status: 'granted' } as any);
+      mockMediaLibrary.createAssetAsync.mockResolvedValue({} as any);
+      mockManipulateAsync.mockResolvedValue({ uri: 'mock://thumb.jpg', width: 150, height: 100, base64: 'abc' });
+
+      const result = await Photo.takePendingPhoto('mock://folder');
+
+      expect(result).toMatchObject({ width: 640, height: 480, thumbnail: 'data:image/jpeg;base64,abc' });
+      expect(result?.name).toMatch(/^EMAP_\d{8}_\d{6}\.jpg$/);
+      expect(result?.uri).toBe(`mock://folder/${result?.name}`);
+      expect(mockMediaLibrary.createAssetAsync).toHaveBeenCalledWith(result?.uri);
+    });
+  });
+
   describe('deleteLocalPhoto', () => {
     it('should delete local photo on mobile', async () => {
       mockFileSystem.deleteAsync.mockResolvedValue(undefined);

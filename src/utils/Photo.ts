@@ -140,6 +140,17 @@ export const pickImage = async (photoFolder: string) => {
   }
 };
 
+// カメラが返した画像をアプリ内フォルダへ保存し、カメラロールにもコピーしてサムネイルを作る。
+// takePhoto（通常の流れ）と、Androidでカメラ起動中にActivityが破棄された後に
+// getPendingResultAsyncで回収した結果の両方から使う
+export const saveCapturedPhoto = async (asset: ImagePicker.ImagePickerAsset, photoFolder: string) => {
+  const extension = asset.uri.split('.').pop();
+  const name = `EMAP_${dayjs().format('YYYYMMDD_HHmmss')}.${extension}`;
+  const uri = await saveToStorage(asset.uri, name, photoFolder, { copy: true });
+  const thumbnail = await createThumbnail(uri);
+  return { uri, thumbnail, name, width: asset.width, height: asset.height };
+};
+
 export const takePhoto = async (photoFolder: string) => {
   try {
     let res = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -151,14 +162,22 @@ export const takePhoto = async (photoFolder: string) => {
       exif: true,
     });
     if (result.canceled) return;
-    let uri = result.assets[0].uri;
-    const extension = uri.split('.').pop();
-    const name = `EMAP_${dayjs().format('YYYYMMDD_HHmmss')}.${extension}`;
-    uri = await saveToStorage(uri, name, photoFolder, { copy: true });
-    const width = result.assets[0].width;
-    const height = result.assets[0].height;
-    const thumbnail = await createThumbnail(uri);
-    return { uri, thumbnail, name, width, height };
+    return await saveCapturedPhoto(result.assets[0], photoFolder);
+  } catch (e) {
+    console.log(e);
+  }
+};
+
+// Androidでは、カメラ起動中にシステムがMainActivityを破棄することがある（メモリ不足や
+// 開発者オプション「アクティビティを保持しない」）。この場合、launchCameraAsyncのPromiseは
+// 戻ってこず、結果はexpo-image-picker側に保留される。復帰後にここで回収する。
+// 結果がない（未発生・キャンセル・プロセス終了）場合はundefinedを返す
+export const takePendingPhoto = async (photoFolder: string) => {
+  if (Platform.OS !== 'android') return;
+  try {
+    const result = await ImagePicker.getPendingResultAsync();
+    if (result === null || !('assets' in result) || result.canceled || result.assets.length === 0) return;
+    return await saveCapturedPhoto(result.assets[0], photoFolder);
   } catch (e) {
     console.log(e);
   }

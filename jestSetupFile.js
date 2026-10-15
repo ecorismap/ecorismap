@@ -610,6 +610,7 @@ jest.mock('expo-image-picker', () => ({
     canceled: false, 
     assets: [{ uri: 'test://image.jpg', width: 100, height: 100 }]
   })),
+  getPendingResultAsync: jest.fn(() => Promise.resolve(null)),
   requestCameraPermissionsAsync: jest.fn(() => Promise.resolve({ status: 'granted' })),
   requestMediaLibraryPermissionsAsync: jest.fn(() => Promise.resolve({ status: 'granted' })),
   MediaTypeOptions: {

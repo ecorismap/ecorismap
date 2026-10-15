@@ -1,0 +1,34 @@
+diff --git a/node_modules/expo-modules-core/android/src/main/java/expo/modules/kotlin/activityresult/ActivityResultsManager.kt b/node_modules/expo-modules-core/android/src/main/java/expo/modules/kotlin/activityresult/ActivityResultsManager.kt
+--- a/node_modules/expo-modules-core/android/src/main/java/expo/modules/kotlin/activityresult/ActivityResultsManager.kt
++++ b/node_modules/expo-modules-core/android/src/main/java/expo/modules/kotlin/activityresult/ActivityResultsManager.kt
+@@ -67,6 +67,17 @@
+ 
+   // endregion
+ 
++  /**
++   * Registration keys are generated from [nextLocalRequestCode]. When the Activity is destroyed and
++   * recreated while the process (and this registry) survives, modules re-register their contracts and
++   * would otherwise receive fresh keys, so results that arrived for the old keys are never delivered
++   * (and [AppContextActivityResultFallbackCallback] never runs). Resetting the counter before the
++   * re-registration makes the keys match again, exactly like after a process restart.
++   */
++  fun resetRequestCodeCounter() {
++    nextLocalRequestCode.set(0)
++  }
++
+   // region AppContextActivityResultCaller
+ 
+   override suspend fun <I : Serializable, O> registerForActivityResult(
+diff --git a/node_modules/expo-modules-core/android/src/main/java/expo/modules/kotlin/AppContext.kt b/node_modules/expo-modules-core/android/src/main/java/expo/modules/kotlin/AppContext.kt
+--- a/node_modules/expo-modules-core/android/src/main/java/expo/modules/kotlin/AppContext.kt
++++ b/node_modules/expo-modules-core/android/src/main/java/expo/modules/kotlin/AppContext.kt
+@@ -310,6 +310,9 @@
+     // We need to re-register activity contracts when reusing AppContext with new Activity after host destruction.
+     if (hostWasDestroyed) {
+       hostWasDestroyed = false
++      // Reuse the registration keys of the destroyed host so that results delivered for an
++      // in-flight launch (e.g. the camera) reach the modules' fallback callbacks.
++      activityResultsManager.resetRequestCodeCounter()
+       registry.registerActivityContracts()
+     }
+ 
