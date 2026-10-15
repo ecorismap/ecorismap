@@ -3,7 +3,7 @@ jest.mock('expo-image-manipulator', () => ({
   manipulateAsync: jest.fn(),
   SaveFormat: { JPEG: 1 },
 }));
-jest.mock('expo-media-library', () => ({
+jest.mock('expo-media-library/legacy', () => ({
   requestPermissionsAsync: jest.fn(),
   createAssetAsync: jest.fn(),
   MediaTypeValue: { photo: 'photo' },
@@ -23,7 +23,7 @@ jest.mock('../Layer', () => ({
 
 import * as Photo from '../Photo';
 import { manipulateAsync } from 'expo-image-manipulator';
-import * as MediaLibrary from 'expo-media-library';
+import * as MediaLibrary from 'expo-media-library/legacy';
 import * as FileSystem from 'expo-file-system/legacy';
 import { Platform } from 'react-native';
 import { LayerType, PhotoType, RecordType } from '../../types';
@@ -112,6 +112,18 @@ describe('Photo', () => {
 
       expect(mockMediaLibrary.requestPermissionsAsync).toHaveBeenCalled();
       expect(mockMediaLibrary.createAssetAsync).toHaveBeenCalledWith('mock://folder/photo.jpg');
+      expect(result).toBe('mock://folder/photo.jpg');
+    });
+
+    it('should keep the app-side copy even when saving to the camera roll fails', async () => {
+      mockFileSystem.makeDirectoryAsync.mockResolvedValue(undefined);
+      mockFileSystem.copyAsync.mockResolvedValue(undefined);
+      mockMediaLibrary.requestPermissionsAsync.mockResolvedValue({ status: 'granted' } as any);
+      mockMediaLibrary.createAssetAsync.mockRejectedValue(new Error('deprecated'));
+
+      const result = await Photo.saveToStorage('mock://source.jpg', 'photo.jpg', 'mock://folder', { copy: true });
+
+      expect(mockFileSystem.copyAsync).toHaveBeenCalledWith({ from: 'mock://source.jpg', to: 'mock://folder/photo.jpg' });
       expect(result).toBe('mock://folder/photo.jpg');
     });
 

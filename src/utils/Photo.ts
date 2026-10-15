@@ -69,11 +69,17 @@ export const saveToStorage = async (fileUri: string, fileName: string, folder: s
     // SDK 56: expo-media-library eagerly requires the native ExpoMediaLibraryNext module at
     // import time, which throws on web. Require it lazily and only on native (camera-roll save
     // is native-only anyway); the module factory then never runs in the web bundle.
-
-    const MediaLibrary = require('expo-media-library');
-    const res = await MediaLibrary.requestPermissionsAsync();
-    if (res.status === 'granted') {
-      await MediaLibrary.createAssetAsync(newUri);
+    // ルートの"expo-media-library"が返すcreateAssetAsync等は非推奨スタブで、呼ぶと例外を投げる
+    // （SDK 56）。従来の関数APIは"/legacy"から読み込む。
+    // カメラロールへのコピーは付加的な処理なので、失敗してもアプリ内保存した写真は捨てない
+    try {
+      const MediaLibrary = require('expo-media-library/legacy') as typeof import('expo-media-library/legacy');
+      const res = await MediaLibrary.requestPermissionsAsync();
+      if (res.status === 'granted') {
+        await MediaLibrary.createAssetAsync(newUri);
+      }
+    } catch (e) {
+      console.log('saveToStorage: failed to save to camera roll', e);
     }
   }
 
