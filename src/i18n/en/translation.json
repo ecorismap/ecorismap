@@ -916,6 +916,7 @@
       "feature2": "Point labels no longer overlap: points at the same place or close together get leader lines, labels stay on a single line, and overlapping labels are thinned out when zoomed out",
       "feature3": "Fixed tracks and features being selected unintentionally when you drag the map, stop, and then lift your finger",
       "feature4": "Distance measurement now snaps the start and end points to a nearby point feature, so distances between points can be measured directly",
+      "feature5": "Fixed the photo viewer's delete and close buttons overlapping the status bar on iPhone. You can now also swipe between the photos of the same field",
       "improvement1": "Improved logout process",
       "improvement2": "Updated dependencies",
       "bugFix1": "Fixed PMTiles numeric attribute errors on iOS",

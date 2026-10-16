@@ -4,9 +4,11 @@
 
 - Fixed photos taken with the camera button in a photo field not being attached to the record (since 0.6.0). Saving to the camera roll could fail silently and the captured photo was discarded; the photo is now kept even if the camera roll copy fails
 - Fixed the bottom sheet closing instead of returning to the data edit screen after taking a photo on Android, which also lost the photo. This happens when the system destroys the app's activity while the camera is open (low memory, or "Don't keep activities"); the captured photo is now recovered, attached to the record and the edit screen is reopened (includes a patch to expo-modules-core so pending activity results are delivered after in-process activity recreation)
+- Fixed the delete and close buttons of the photo viewer in the data edit screen overlapping the status bar on iPhone, which made them impossible to tap. The photo viewer now also lets you swipe between the photos of the same field, with a counter at the top
 
 - 写真フィールドのカメラボタンで撮影した写真がレコードに保存されない問題を修正しました（0.6.0以降）。カメラロールへのコピーに失敗すると撮影した写真ごと破棄されていたため、コピーに失敗しても写真を残すようにしました
 - Androidで撮影後にデータ編集画面へ戻らずボトムシートが閉じ、写真も失われる問題を修正しました。カメラ起動中にシステムがアプリの画面を破棄した場合（メモリ不足や「アクティビティを保持しない」）に起きていたもので、撮影結果を回収してレコードに保存し、編集画面を開き直すようにしました（同一プロセス内の画面再生成後に結果が届くようexpo-modules-coreへのパッチを含む）
+- データ編集の写真表示で、削除・閉じるボタンがiPhoneのステータスバーと重なって押せない問題を修正しました。あわせて、同じフィールドの写真を左右スワイプで切り替えられるようにし、上部に枚数を表示するようにしました
 
 ## [0.6.7]　- 2026-10-14
 
