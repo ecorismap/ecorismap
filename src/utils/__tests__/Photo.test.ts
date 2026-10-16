@@ -12,6 +12,7 @@ jest.mock('expo-file-system/legacy', () => ({
   makeDirectoryAsync: jest.fn(),
   copyAsync: jest.fn(),
   deleteAsync: jest.fn(),
+  getInfoAsync: jest.fn(),
   EncodingType: { UTF8: 'UTF8' },
 }));
 jest.mock('react-native', () => ({
@@ -310,6 +311,26 @@ describe('Photo', () => {
       Photo.deleteRecordPhotos(mockLayer, mockRecord);
 
       expect(mockFileSystem.deleteAsync).not.toHaveBeenCalled();
+    });
+  });
+  describe('hasLocalPhotoFile', () => {
+    it('uriが無ければfalse', async () => {
+      expect(await Photo.hasLocalPhotoFile(null)).toBe(false);
+      expect(await Photo.hasLocalPhotoFile(undefined)).toBe(false);
+      expect(mockFileSystem.getInfoAsync).not.toHaveBeenCalled();
+    });
+
+    it('ファイルが存在すればtrue', async () => {
+      mockFileSystem.getInfoAsync.mockResolvedValue({ exists: true } as any);
+      expect(await Photo.hasLocalPhotoFile('file:///photos/a.jpg')).toBe(true);
+      expect(mockFileSystem.getInfoAsync).toHaveBeenCalledWith('file:///photos/a.jpg');
+    });
+
+    it('ファイルが無い・確認に失敗した場合はfalse', async () => {
+      mockFileSystem.getInfoAsync.mockResolvedValueOnce({ exists: false } as any);
+      expect(await Photo.hasLocalPhotoFile('file:///photos/gone.jpg')).toBe(false);
+      mockFileSystem.getInfoAsync.mockRejectedValueOnce(new Error('boom'));
+      expect(await Photo.hasLocalPhotoFile('file:///photos/err.jpg')).toBe(false);
     });
   });
 });

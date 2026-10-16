@@ -6,6 +6,28 @@ import dayjs from '../i18n/dayjs';
 import { getPhotoFields } from './Layer';
 import { LayerType, PhotoType, RecordType } from '../types';
 
+// 写真の実ファイルが端末（Webではブラウザ）に存在するか。
+// クラウドから取得したレコードは未ダウンロードだとuriがnull、ダウンロード済みでも
+// 端末を変えるとファイルが無いことがあるため、表示前に確認する
+export const hasLocalPhotoFile = async (uri: string | null | undefined): Promise<boolean> => {
+  if (!uri) return false;
+  if (Platform.OS === 'web') {
+    if (!uri.startsWith('blob:')) return false;
+    try {
+      const response = await fetch(uri);
+      return response.ok;
+    } catch (error) {
+      return false;
+    }
+  }
+  try {
+    const fileInfo = await FileSystem.getInfoAsync(uri);
+    return fileInfo.exists;
+  } catch (error) {
+    return false;
+  }
+};
+
 export const createThumbnail = async (uri: string) => {
   const thumbnail = await manipulateAsync(uri, [{ resize: { height: 150 } }], {
     compress: 0.7,

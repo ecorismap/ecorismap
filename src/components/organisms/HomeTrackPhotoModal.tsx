@@ -7,6 +7,7 @@ import { TrackPhotoContext } from '../../contexts/TrackPhoto';
 import { TrackPhotoType } from '../../types';
 import { Button } from '../atoms';
 import { createPreviewImage } from '../../utils/Photo';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 // 実ファイル（file://）を持たない写真（iOSのLive Photo・iCloud未ダウンロード等はph://）は
 // RNのImageで表示できないため、拡大表示用の画像を書き出して差し替える。
@@ -36,6 +37,8 @@ const getPreviewUri = (photo: TrackPhotoType): Promise<string | null> => {
 // 写真は端末ライブラリから都度読み出すため、削除・ダウンロード等の操作は持たない
 export const HomeTrackPhotoModal = () => {
   const { trackPhotos, selectedPhoto, setSelectedPhoto } = useContext(TrackPhotoContext);
+  // Modalは画面最上端から描かれるため、ノッチ・ステータスバーの下に閉じるボタンが隠れないよう余白を入れる
+  const insets = useSafeAreaInsets();
 
   // モーダルを開いた時点の照合結果をスナップショットして表示する。
   // 記録中のライブ更新でリストが差し替わっても、スワイプ位置や表示中の写真が飛ばないようにする
@@ -95,7 +98,7 @@ export const HomeTrackPhotoModal = () => {
   return (
     <Modal visible={true} transparent={true} animationType="fade">
       <View style={{ flex: 1, backgroundColor: COLOR.BLACK }}>
-        <View style={{ flexDirection: 'row' }}>
+        <View style={{ flexDirection: 'row', paddingTop: insets.top }}>
           <View style={styles.headerCenter}>
             <Text style={styles.timestamp}>{dayjs(currentPhoto.timestamp).format('L HH:mm:ss')}</Text>
             {viewerPhotos.length > 1 && (
