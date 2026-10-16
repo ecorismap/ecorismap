@@ -20,6 +20,7 @@ interface DataEditContextType {
   pressSaveData: () => void;
   pressCopyData: () => void;
   pressPhoto: (fieldName: string, photo: PhotoType, index: number) => void;
+  swipePhoto: (fieldName: string, photo: PhotoType, index: number) => void;
   pressTakePhoto: (name: string) => void;
   pressPickPhoto: (name: string) => void;
   pressClosePhoto: () => void;

@@ -284,9 +284,18 @@ export default function DataEditContainer() {
   );
 
   const pressPhoto = useCallback(
+    async (fieldName: string, photo: PhotoType, index: number) => {
+      //選択（ファイル確認を含む）が終わってから開く。先に開くと前回表示していた写真の位置で開いてしまう
+      await selectPhoto(fieldName, photo, index);
+      setPhotoEditorOpen(true);
+    },
+    [selectPhoto]
+  );
+
+  //写真表示中にスワイプで隣の写真へ移ったとき。削除・ダウンロードの対象を移った先の写真にする
+  const swipePhoto = useCallback(
     (fieldName: string, photo: PhotoType, index: number) => {
       selectPhoto(fieldName, photo, index);
-      setPhotoEditorOpen(true);
     },
     [selectPhoto]
   );
@@ -610,6 +619,7 @@ export default function DataEditContainer() {
       submitField,
       onChangeRecord,
       pressPhoto,
+      swipePhoto,
       pressTakePhoto,
       pressPickPhoto,
       pressClosePhoto,
@@ -656,6 +666,7 @@ export default function DataEditContainer() {
       recordNumber,
       selectedPhoto,
       submitField,
+      swipePhoto,
       targetLayer,
       targetRecord,
     ]

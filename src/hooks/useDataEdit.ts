@@ -4,15 +4,13 @@ import { RootState } from '../store';
 import { addRecordsAction, deleteRecordsAction, updateRecordsAction } from '../modules/dataSet';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { LatLonDMSEmptyTemplate, LatLonDMSTemplate, PHOTO_FOLDER, SelectedPhotoTemplate } from '../constants/AppConstants';
-import { Platform } from 'react-native';
 import { cloneDeep } from 'lodash';
 import { latLonDMS, toLatLonDMS } from '../utils/Coords';
 import { formattedInputs } from '../utils/Format';
-import * as FileSystem from 'expo-file-system/legacy';
 import { updateRecordCoords, updateReferenceFieldValue } from '../utils/Data';
 import { useRecord } from './useRecord';
 import { ulid } from 'ulid';
-import { deleteLocalPhoto, deleteRecordPhotos } from '../utils/Photo';
+import { deleteLocalPhoto, deleteRecordPhotos, hasLocalPhotoFile } from '../utils/Photo';
 import { useBottomSheetNavigation } from '../contexts/BottomSheetNavigationContext';
 import { isLocationType } from '../utils/General';
 import { resolveCodeField, toCodeFieldValue } from '../utils/Layer';
@@ -48,7 +46,7 @@ export type UseDataEditReturnType = {
   ) => void;
   updatePhoto: (fieldName: string, index: number, uri: string) => void;
   removePhoto: (photo: SelectedPhotoType) => void;
-  selectPhoto: (fieldName: string, photo: PhotoType, index: number) => void;
+  selectPhoto: (fieldName: string, photo: PhotoType, index: number) => Promise<void>;
   deleteRecord: () => void;
   copyRecord: (originalRecord: RecordType) => RecordType;
   changeLatLonType: () => void;
@@ -211,28 +209,7 @@ export const useDataEdit = (record: RecordType, layer: LayerType): UseDataEditRe
   );
 
   const selectPhoto = useCallback(async (fieldName: string, photo: PhotoType, index: number) => {
-    let hasLocal = false;
-    if (photo.uri) {
-      if (Platform.OS === 'web') {
-        // Web版: URIの有効性を確認
-        if (photo.uri.startsWith('blob:')) {
-          // Blob URIの場合、fetchでアクセス試行
-          try {
-            const response = await fetch(photo.uri);
-            if (response.ok) hasLocal = true;
-          } catch (error) {
-            hasLocal = false;
-          }
-        }
-      } else {
-        try {
-          const fileInfo = await FileSystem.getInfoAsync(photo.uri);
-          hasLocal = fileInfo.exists;
-        } catch (error) {
-          hasLocal = false;
-        }
-      }
-    }
+    const hasLocal = await hasLocalPhotoFile(photo.uri);
     setSelectedPhoto({ ...photo, hasLocal, index: index, fieldName: fieldName });
   }, []);
 
