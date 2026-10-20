@@ -3665,7 +3665,7 @@ PODS:
     - ReactNativeDependencies
     - TSBackgroundFetch (~> 4.1.0)
     - Yoga
-  - RNBackgroundGeolocation (5.1.1):
+  - RNBackgroundGeolocation (5.8.0):
     - hermes-engine
     - RCTRequired
     - RCTTypeSafety
@@ -3685,7 +3685,7 @@ PODS:
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
     - ReactNativeDependencies
-    - TSLocationManager (~> 4.1.0)
+    - TSLocationManager (~> 4.8.0)
     - Yoga
   - RNCAsyncStorage (2.2.0):
     - hermes-engine
@@ -4239,7 +4239,7 @@ PODS:
     - SDWebImage/Core (~> 5.17)
   - SSZipArchive (2.5.5)
   - TSBackgroundFetch (4.1.1)
-  - TSLocationManager (4.1.10):
+  - TSLocationManager (4.8.1):
     - TSBackgroundFetch (~> 4.1.0)
   - UMAppLoader (56.0.1)
   - VirgilCrypto (5.3.0):
@@ -4897,7 +4897,7 @@ SPEC CHECKSUMS:
   ReactNativeDependencies: 1d6e5bc9eb16a13860fd7ce2d959fb21f0d78774
   RecaptchaInterop: 11e0b637842dfb48308d242afc3f448062325aba
   RNBackgroundFetch: cbc3004dbdc6f462eafa7304fd93ee518ea741eb
-  RNBackgroundGeolocation: c1d14272436e9cf5860c310606d42a68c37a170a
+  RNBackgroundGeolocation: 37c918ed8dec591c9dd77c1e3dde39acf8ecf454
   RNCAsyncStorage: a455ed0edb854f0c8471b3049935680d5868796a
   RNCPicker: 47d8598233e5858a65f6d91a80505d5ca86bd5f0
   RNDeviceInfo: 4c852998208b60dc192ae3529e5867817719ad1e
@@ -4923,7 +4923,7 @@ SPEC CHECKSUMS:
   SDWebImageWebPCoder: 0e06e365080397465cc73a7a9b472d8a3bd0f377
   SSZipArchive: c69881e8ac5521f0e622291387add5f60f30f3c4
   TSBackgroundFetch: 18918b6449a1e3f01eb0f5b44d6d79ce6160a5a5
-  TSLocationManager: f05045b578deedcd2144a5fda03dce1188360adb
+  TSLocationManager: 6a5850dd17ca47e08f203791747f2fef0ecefcd4
   UMAppLoader: b7d22886a244871c20b5a8f2fcea13c18534e677
   VirgilCrypto: c2831582c5230eeb2adba2365336c768cd6d8c59
   VirgilCryptoFoundation: 79f23a7ab6db642268d31bc63b0cf54db416f089
