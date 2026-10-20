@@ -1619,3 +1619,151 @@ describe('GPSオン直後のキャッシュ位置表示', () => {
     expect(result.current.isLocationStale).toBe(false);
   });
 });
+
+describe('changePace拒否時の記録継続（GPS圏外・サービス起動直後の競合）', () => {
+  let store: any;
+  let wrapper: any;
+  const originalPlatformOS = Platform.OS;
+  const flushPromises = () => new Promise((resolve) => setImmediate(resolve));
+  const { trackLogMMKV } = jest.requireMock('../../utils/mmkvStorage');
+  const { SERVICE_OP_TIMEOUT_MS, CHANGE_PACE_RETRY_DELAY_MS } = jest.requireActual('../useLocation');
+
+  beforeEach(() => {
+    store = createTestStore();
+    wrapper = createWrapper(store);
+    jest.clearAllMocks();
+    Platform.OS = 'android';
+    (ConfirmAsync as jest.Mock).mockResolvedValue(false);
+    mockBackgroundGeolocation.ready.mockResolvedValue({ enabled: false } as any);
+    mockBackgroundGeolocation.getState.mockResolvedValue({ enabled: false } as any);
+    mockBackgroundGeolocation.removeListeners.mockResolvedValue(undefined);
+    mockBackgroundGeolocation.requestPermission.mockResolvedValue(BackgroundGeolocation.AuthorizationStatus.Always);
+    mockBackgroundGeolocation.getCurrentPosition.mockResolvedValue({
+      coords: { latitude: 35.0, longitude: 135.0, altitude: 0, accuracy: 10, altitudeAccuracy: 5, heading: 0, speed: 0 },
+      timestamp: Date.now(),
+    } as any);
+    mockBackgroundGeolocation.setConfig.mockResolvedValue(undefined);
+    mockBackgroundGeolocation.start.mockResolvedValue(undefined);
+    mockBackgroundGeolocation.stop.mockResolvedValue(undefined);
+    mockBackgroundGeolocation.changePace.mockResolvedValue(undefined);
+    mockBackgroundGeolocation.onLocation.mockReturnValue({ remove: jest.fn() } as any);
+    mockLocation.watchHeadingAsync.mockResolvedValue({ remove: jest.fn() });
+    trackLogMMKV.getTrackingState.mockReturnValue('off');
+    trackLogMMKV.getGpsState.mockReturnValue('off');
+    trackLogMMKV.getCurrentLocation.mockReturnValue(null);
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+    Platform.OS = originalPlatformOS;
+  });
+
+  const renderReady = async () => {
+    const rendered = renderHook(() => useLocation(createMockMapRef() as any), { wrapper });
+    await act(async () => {
+      await flushPromises();
+    });
+    return rendered;
+  };
+
+  it('軌跡ON時にchangePace(true)が408で拒否されてもMMKVのトラッキング状態はonになり、例外にならない', async () => {
+    jest.useFakeTimers({ doNotFake: ['setImmediate', 'nextTick'] });
+    const { result } = await renderReady();
+    // GPS未捕捉: changePace(true)の内部ワンショットがlocationTimeoutで408
+    mockBackgroundGeolocation.changePace.mockRejectedValue(new Error('408'));
+    const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+
+    let onPromise!: Promise<void>;
+    await act(async () => {
+      onPromise = result.current.toggleTracking('on');
+      await flushPromises();
+      jest.advanceTimersByTime(CHANGE_PACE_RETRY_DELAY_MS);
+      await flushPromises();
+      await onPromise;
+    });
+
+    expect(trackLogMMKV.setTrackingState).toHaveBeenCalledWith('on');
+    // 意図の確定（MMKV書き込み）はサービス遷移（changePace）より前に行われる
+    const setOnOrder = trackLogMMKV.setTrackingState.mock.invocationCallOrder[
+      trackLogMMKV.setTrackingState.mock.calls.findIndex((c: unknown[]) => c[0] === 'on')
+    ];
+    expect(setOnOrder).toBeLessThan(mockBackgroundGeolocation.changePace.mock.invocationCallOrder[0]);
+    expect(result.current.trackingState).toBe('on');
+    expect(mockBackgroundGeolocation.start).toHaveBeenCalled();
+    expect(errorSpy).not.toHaveBeenCalledWith('Error in startTracking:', expect.anything());
+    errorSpy.mockRestore();
+  });
+
+  it('changePace(true)が499で拒否され静止のままなら、待機後に1回だけやり直す', async () => {
+    jest.useFakeTimers({ doNotFake: ['setImmediate', 'nextTick'] });
+    const { result } = await renderReady();
+    mockBackgroundGeolocation.changePace.mockRejectedValueOnce(new Error('499')).mockResolvedValue(undefined);
+    mockBackgroundGeolocation.getState.mockResolvedValue({ enabled: true, isMoving: false } as any);
+
+    let onPromise!: Promise<void>;
+    await act(async () => {
+      onPromise = result.current.toggleTracking('on');
+      await flushPromises();
+    });
+    expect(mockBackgroundGeolocation.changePace).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      jest.advanceTimersByTime(CHANGE_PACE_RETRY_DELAY_MS);
+      await flushPromises();
+      await onPromise;
+    });
+
+    expect(mockBackgroundGeolocation.changePace).toHaveBeenCalledTimes(2);
+    expect(mockBackgroundGeolocation.changePace).toHaveBeenLastCalledWith(true);
+    expect(trackLogMMKV.setTrackingState).toHaveBeenCalledWith('on');
+  });
+
+  it('changePace(true)が499で拒否されても既に移動モードならやり直さない', async () => {
+    jest.useFakeTimers({ doNotFake: ['setImmediate', 'nextTick'] });
+    const { result } = await renderReady();
+    mockBackgroundGeolocation.changePace.mockRejectedValue(new Error('499'));
+    mockBackgroundGeolocation.getState.mockResolvedValue({ enabled: true, isMoving: true } as any);
+
+    let onPromise!: Promise<void>;
+    await act(async () => {
+      onPromise = result.current.toggleGPS('show');
+      await flushPromises();
+      jest.advanceTimersByTime(CHANGE_PACE_RETRY_DELAY_MS);
+      await flushPromises();
+      await onPromise;
+    });
+
+    expect(mockBackgroundGeolocation.changePace).toHaveBeenCalledTimes(1);
+    expect(result.current.gpsState).toBe('show');
+  });
+
+  it('ネイティブのstart()が返ってこなくてもタイムアウト後にキューが進み、次のOFF操作でstopが実行される', async () => {
+    jest.useFakeTimers({ doNotFake: ['setImmediate', 'nextTick'] });
+    const { result } = await renderReady();
+    const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    // start()が永久に解決しない（ネイティブ側のコールバック欠落を再現）
+    mockBackgroundGeolocation.start.mockImplementation(() => new Promise(() => {}));
+
+    let onPromise!: Promise<void>;
+    let offPromise!: Promise<void>;
+    await act(async () => {
+      onPromise = result.current.toggleGPS('show');
+      await flushPromises();
+      offPromise = result.current.toggleGPS('off');
+      await flushPromises();
+    });
+    // タイムアウト前はOFFのstopは実行されない（直列化）
+    expect(mockBackgroundGeolocation.stop).not.toHaveBeenCalled();
+
+    await act(async () => {
+      jest.advanceTimersByTime(SERVICE_OP_TIMEOUT_MS);
+      await flushPromises();
+      await Promise.allSettled([onPromise, offPromise]);
+      await flushPromises();
+    });
+
+    expect(mockBackgroundGeolocation.stop).toHaveBeenCalled();
+    expect(result.current.gpsState).toBe('off');
+    errorSpy.mockRestore();
+  });
+});

@@ -82,6 +82,67 @@ const makeNotification = (text: string): NotificationConfig => ({
 // 軌跡ライン（trailing polyline）の再描画を約1秒ごとにスロットルするための間隔
 const TRACK_META_UPDATE_INTERVAL_MS = 1000;
 
+// サービス遷移キュー内の1操作に許す最大時間。changePace(true)は内部の位置ワンショットが
+// locationTimeout（既定60秒）まで待ち得るため、それより長く取る。ネイティブ側のPromiseが
+// 返ってこない場合にキューが永久に詰まり、以後のGPS/軌跡トグルが一切効かなくなる
+// （アプリをキルするまで復旧しない）のを防ぐための安全弁。
+export const SERVICE_OP_TIMEOUT_MS = 90_000;
+
+// changePace(true)が一時的エラーで失敗したあと、静止のままか確認してやり直すまでの待ち時間。
+// サービス起動直後は位置リクエストが競合しやすいため少し間を置く（ヘッドレスタスクと同じ値）。
+export const CHANGE_PACE_RETRY_DELAY_MS = 3000;
+
+// 499(Location request cancelled)/408(timeout)は一時的・非致命的な位置エラー。
+// ブリッジ経由ではErrorのmessageにコードが入った形で届くため文字列で判定する。
+const isTransientLocationError = (error: unknown): boolean => {
+  const code = error instanceof Error ? error.message : String(error);
+  return code === '499' || code === '408';
+};
+
+const delay = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+
+// Promiseにタイムアウトを付ける。元のPromiseは打ち切れないが、呼び出し側（キュー）の待ちを解放する。
+const withTimeout = <T,>(promise: Promise<T>, ms: number, label: string): Promise<T> =>
+  new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error(`[gps] ${label} timed out after ${ms}ms`)), ms);
+    promise.then(
+      (value) => {
+        clearTimeout(timer);
+        resolve(value);
+      },
+      (error) => {
+        clearTimeout(timer);
+        reject(error);
+      }
+    );
+  });
+
+// 移動モードへ切り替える。changePace(true)はネイティブで位置ワンショット（motionchange）を伴うため、
+// GPS未捕捉（圏外・捕捉前）ではlocationTimeout後に408、start()直後は競合で499として「拒否」される。
+// 切替自体は適用されていることが多いので、拒否を致命扱いにせず、状態を確認して静止のままなら
+// 1回だけやり直す。それでも失敗した場合も例外にはしない（サービスは稼働しており、位置が届けば
+// 記録は続くため）。以前はここで例外になるとstartTrackingが途中で抜け、MMKVのトラッキング状態が
+// 'on'にならず、GPS復帰後に届いた位置がすべて破棄される不具合があった。
+const ensureMovingState = async (): Promise<void> => {
+  try {
+    await BackgroundGeolocation.changePace(true);
+    return;
+  } catch (error) {
+    if (!isTransientLocationError(error)) {
+      console.warn('[gps] changePace(true) failed', error);
+      return;
+    }
+  }
+  try {
+    await delay(CHANGE_PACE_RETRY_DELAY_MS);
+    const state = await BackgroundGeolocation.getState();
+    if (!state.enabled || state.isMoving) return;
+    await BackgroundGeolocation.changePace(true);
+  } catch (error) {
+    console.warn('[gps] changePace(true) retry failed', error);
+  }
+};
+
 // iOSのCLLocationManagerは位置サービス開始時にキャッシュ済みの古い位置を即配信する。
 // transistorsoft/react-native-background-geolocation の getCurrentPosition はこれを
 // maximumAge を無視して返す既知のiOS不具合（issue #113、iOSは未修正）があるため、
@@ -526,7 +587,8 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
   // start/stopの効果は非同期適用のため、直列化しないとスナップショットが処理中の操作を反映しない。
   const serviceOpChain = useRef<Promise<void>>(Promise.resolve());
   const runExclusive = useCallback((op: () => Promise<void>): Promise<void> => {
-    const result = serviceOpChain.current.then(op);
+    // 1操作にタイムアウトを付け、ネイティブPromiseが返らない場合でもキューが詰まり続けないようにする
+    const result = serviceOpChain.current.then(() => withTimeout(op(), SERVICE_OP_TIMEOUT_MS, 'service op'));
     // チェーン自体は失敗を飲み込んで継続（エラーは呼び出し元のresultへ伝播）
     serviceOpChain.current = result.then(
       () => undefined,
@@ -560,7 +622,8 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
             await BackgroundGeolocation.start();
           }
           // 静止モードで開始される/kill復帰で静止モードの可能性があるため常に移動モードへ
-          await BackgroundGeolocation.changePace(true);
+          // （GPS未捕捉時の408/競合時の499は非致命。ensureMovingState参照）
+          await ensureMovingState();
         } else {
           // enabledガードは実体と乖離し得るため無条件stop（冪等）。通知残留対策を維持
           await BackgroundGeolocation.stop();
@@ -572,7 +635,13 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
   const startGPS = useCallback(
     async (mode: LocationStateType) => {
       if (mode === 'off') return;
-      await syncBackgroundService();
+      try {
+        await syncBackgroundService();
+      } catch (error) {
+        // ネイティブ呼び出しの失敗/タイムアウトはログに留め、UI側の意図（gpsState）は維持する。
+        // 例外を伝播させるとtoggleGPSが未処理拒否になり、heading購読も開始されない。
+        console.error('[gps] start error', error);
+      }
       // sync完了までにOFFへ変わっていたらheading購読は開始しない
       if (isGpsOffIntended()) return;
       await ensureHeadingSubscription();
@@ -621,12 +690,15 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
       // チャンクシステムを初期化
       clearStoredLocations();
 
+      // トラッキング状態を先にMMKVへ確定する（kill後の復帰での復元と、checkAndStoreLocationsの
+      // 記録ガードの両方がこの値を見る）。stopTrackingと同じく「意図を先に確定→サービス遷移」の順にする。
+      // sync側のネイティブ呼び出しが例外になった場合でも、サービスが稼働していれば届いた位置を
+      // 取りこぼさないため、syncの後置きにしてはならない。
+      trackLogMMKV.setTrackingState('on');
+
       // サービス開始（通知テキストinTracking・start・changePaceはsyncが意図から導出して実行。
       // 呼び出し前にtoggleTrackingがtrackingStateRef='on'を同期設定済みであることが前提）
       await syncBackgroundService();
-
-      // トラッキング状態をMMKVに保存（kill後の復帰で正しく復元するため）
-      trackLogMMKV.setTrackingState('on');
 
       await ensureHeadingSubscription();
     } catch (error) {
