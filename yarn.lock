@@ -7942,10 +7942,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@transistorsoft/background-geolocation-types@npm:^5.1.0":
-  version: 5.1.1
-  resolution: "@transistorsoft/background-geolocation-types@npm:5.1.1"
-  checksum: e6d07f8a4fd45f2ada199853a085bf33380d84fe5bd162ed3fdc21be3b28ff2b88cdaa0d631864741290153cfb21249c6aa2a5b4c5ccf9e84549b449c28c110a
+"@transistorsoft/background-geolocation-types@npm:^5.3.8, @transistorsoft/background-geolocation-types@npm:^5.3.9":
+  version: 5.3.9
+  resolution: "@transistorsoft/background-geolocation-types@npm:5.3.9"
+  checksum: d34758c7936aa2f9752169d472e82245eac87085fe66cccbdf83045c1ea296475b76a54fb0c77aeb67a2cd9ecc359880c4322e26a4a4601713b94b6e1e3d244d
   languageName: node
   linkType: hard
 
@@ -14537,6 +14537,7 @@ __metadata:
     "@testing-library/react-native": ^14.0.0
     "@testing-library/user-event": ^14.5.2
     "@tmcw/togeojson": ^7.1.2
+    "@transistorsoft/background-geolocation-types": ^5.3.9
     "@tsconfig/react-native": ^3.0.0
     "@turf/turf": ^7.1.0
     "@types/d3-scale-chromatic": ^3.0.0
@@ -14634,7 +14635,7 @@ __metadata:
     react-map-gl: ^8.1.1
     react-native: 0.85.3
     react-native-background-fetch: 4.4.2
-    react-native-background-geolocation: ^5.1.1
+    react-native-background-geolocation: 5.8.0
     react-native-date-picker: ^4.4.2
     react-native-device-info: ^15.0.2
     react-native-draggable-flatlist: 4.0.3
@@ -24454,14 +24455,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-native-background-geolocation@npm:^5.1.1":
-  version: 5.1.1
-  resolution: "react-native-background-geolocation@npm:5.1.1"
+"react-native-background-geolocation@npm:5.8.0":
+  version: 5.8.0
+  resolution: "react-native-background-geolocation@npm:5.8.0"
   dependencies:
     "@babel/runtime": ^7.26.0
-    "@transistorsoft/background-geolocation-types": ^5.1.0
+    "@transistorsoft/background-geolocation-types": ^5.3.8
     tslib: ^2.6.3
-  checksum: a23cf5299e757df1826cde114caa3b5cc483cb4d1eb4d8737d28db72680cb3aa6cbbeea4c8dc624257819c1a0a3534c553d78dd8d6c63b3ec9eb2fa613d62809
+  checksum: 8c16ae353a37f485645db222420d463723c8767f1c8b502bd9deea192c0649eb99fdbc70194c48c63c4d8de4b1209b25c80bd3ef08a9831121ffa22051508de8
   languageName: node
   linkType: hard
 

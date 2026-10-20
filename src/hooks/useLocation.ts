@@ -410,7 +410,9 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
         }
       }
 
-      const authStatus = await BackgroundGeolocation.requestPermission();
+      // 位置権限だけを要求する。引数なしだと5.6.0以降のiOSはモーション（Motion & Fitness）許可も
+      // 続けて要求するが、本アプリはdisableMotionActivityUpdates:trueで使っておらず不要なダイアログになる。
+      const authStatus = await BackgroundGeolocation.requestPermission('location');
       if (
         authStatus === BackgroundGeolocation.AuthorizationStatus.Always ||
         authStatus === BackgroundGeolocation.AuthorizationStatus.WhenInUse
