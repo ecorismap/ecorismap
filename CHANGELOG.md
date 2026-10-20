@@ -6,6 +6,12 @@
 
 - プロジェクト編集で保存ボタンを押した直後にインジケータを出すようにしました。これまではメンバーの照会（Functions/Virgil）が終わるまで表示されず、数秒間固まったように見えていました
 
+## [0.6.9]　- Unreleased
+
+- Fixed track recording not resuming after a long GPS outage (no satellite fix) and track recording never starting when tracking was turned on without a GPS fix, even after turning it off and on again; only killing the app recovered it. The location service's switch to moving mode was failing with a timeout while no fix was available, which left the recording flag off so every later position was discarded. The recording flag is now set before the service transition, the timeout is retried once and no longer treated as fatal, and a stuck service call can no longer block all later GPS/track toggles
+
+- 衛星を捕捉できない状態が続いたあとGPSが復帰しても軌跡の記録が再開されず、軌跡をオフ・オンし直しても記録されない（アプリを終了するまで直らない）問題を修正しました。位置を捕捉できない間に位置情報サービスの移動モード切替がタイムアウトで失敗すると記録フラグがオフのまま残り、その後に届いた位置がすべて破棄されていました。記録フラグをサービス切替より先に確定し、タイムアウトは1回やり直して致命扱いにせず、サービス呼び出しが返らない場合でも以後のGPS・軌跡の切替が止まらないようにしました
+
 ## [0.6.8]　- 2026-10-15
 
 - Fixed photos taken with the camera button in a photo field not being attached to the record (since 0.6.0). Saving to the camera roll could fail silently and the captured photo was discarded; the photo is now kept even if the camera roll copy fails
