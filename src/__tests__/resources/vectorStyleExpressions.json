@@ -1,0 +1,10476 @@
+{
+ "generatedWith": {
+  "@maplibre/maplibre-gl-style-spec": "24.10.0"
+ },
+ "generator": "scripts/gen-style-fixtures.mjs",
+ "cases": [
+  {
+   "id": "expr-001",
+   "kind": "expression",
+   "expression": [
+    "match",
+    [
+     "get",
+     "区分"
+    ],
+    "早瀬",
+    "#005ce6",
+    "淵",
+    "#ff73df",
+    "ワンド・たまり",
+    "#c500ff",
+    "干潟",
+    "#b2fdb7",
+    "湛水域",
+    "#cd6666",
+    "湧水",
+    "#ff0000",
+    "樋門・樋管等",
+    "#ff7f00",
+    "#000000"
+   ],
+   "properties": {
+    "区分": "早瀬",
+    "水域区分C": "1010",
+    "表示名": "早"
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": "#005ce6"
+  },
+  {
+   "id": "expr-002",
+   "kind": "expression",
+   "expression": [
+    "match",
+    [
+     "get",
+     "区分"
+    ],
+    "樋門・樋管等",
+    1.3,
+    2.7
+   ],
+   "properties": {
+    "区分": "早瀬",
+    "水域区分C": "1010",
+    "表示名": "早"
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": 2.7
+  },
+  {
+   "id": "expr-003",
+   "kind": "expression",
+   "expression": [
+    "match",
+    [
+     "get",
+     "区分"
+    ],
+    "早瀬",
+    "#005ce6",
+    "淵",
+    "#ff73df",
+    "ワンド・たまり",
+    "#c500ff",
+    "干潟",
+    "#b2fdb7",
+    "湛水域",
+    "#cd6666",
+    "湧水",
+    "#ff0000",
+    "樋門・樋管等",
+    "#ff7f00",
+    "#000000"
+   ],
+   "properties": {
+    "区分": "淵",
+    "水域区分C": "1010",
+    "表示名": "淵"
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": "#ff73df"
+  },
+  {
+   "id": "expr-004",
+   "kind": "expression",
+   "expression": [
+    "match",
+    [
+     "get",
+     "区分"
+    ],
+    "樋門・樋管等",
+    1.3,
+    2.7
+   ],
+   "properties": {
+    "区分": "淵",
+    "水域区分C": "1010",
+    "表示名": "淵"
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": 2.7
+  },
+  {
+   "id": "expr-005",
+   "kind": "expression",
+   "expression": [
+    "match",
+    [
+     "get",
+     "区分"
+    ],
+    "早瀬",
+    "#005ce6",
+    "淵",
+    "#ff73df",
+    "ワンド・たまり",
+    "#c500ff",
+    "干潟",
+    "#b2fdb7",
+    "湛水域",
+    "#cd6666",
+    "湧水",
+    "#ff0000",
+    "樋門・樋管等",
+    "#ff7f00",
+    "#000000"
+   ],
+   "properties": {
+    "区分": "ワンド・たまり",
+    "水域区分C": "1010",
+    "表示名": "ワ"
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": "#c500ff"
+  },
+  {
+   "id": "expr-006",
+   "kind": "expression",
+   "expression": [
+    "match",
+    [
+     "get",
+     "区分"
+    ],
+    "樋門・樋管等",
+    1.3,
+    2.7
+   ],
+   "properties": {
+    "区分": "ワンド・たまり",
+    "水域区分C": "1010",
+    "表示名": "ワ"
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": 2.7
+  },
+  {
+   "id": "expr-007",
+   "kind": "expression",
+   "expression": [
+    "match",
+    [
+     "get",
+     "区分"
+    ],
+    "早瀬",
+    "#005ce6",
+    "淵",
+    "#ff73df",
+    "ワンド・たまり",
+    "#c500ff",
+    "干潟",
+    "#b2fdb7",
+    "湛水域",
+    "#cd6666",
+    "湧水",
+    "#ff0000",
+    "樋門・樋管等",
+    "#ff7f00",
+    "#000000"
+   ],
+   "properties": {
+    "区分": "干潟",
+    "水域区分C": "1010",
+    "表示名": "干"
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": "#b2fdb7"
+  },
+  {
+   "id": "expr-008",
+   "kind": "expression",
+   "expression": [
+    "match",
+    [
+     "get",
+     "区分"
+    ],
+    "樋門・樋管等",
+    1.3,
+    2.7
+   ],
+   "properties": {
+    "区分": "干潟",
+    "水域区分C": "1010",
+    "表示名": "干"
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": 2.7
+  },
+  {
+   "id": "expr-009",
+   "kind": "expression",
+   "expression": [
+    "match",
+    [
+     "get",
+     "区分"
+    ],
+    "早瀬",
+    "#005ce6",
+    "淵",
+    "#ff73df",
+    "ワンド・たまり",
+    "#c500ff",
+    "干潟",
+    "#b2fdb7",
+    "湛水域",
+    "#cd6666",
+    "湧水",
+    "#ff0000",
+    "樋門・樋管等",
+    "#ff7f00",
+    "#000000"
+   ],
+   "properties": {
+    "区分": "湛水域",
+    "水域区分C": "1010",
+    "表示名": "湛"
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": "#cd6666"
+  },
+  {
+   "id": "expr-010",
+   "kind": "expression",
+   "expression": [
+    "match",
+    [
+     "get",
+     "区分"
+    ],
+    "樋門・樋管等",
+    1.3,
+    2.7
+   ],
+   "properties": {
+    "区分": "湛水域",
+    "水域区分C": "1010",
+    "表示名": "湛"
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": 2.7
+  },
+  {
+   "id": "expr-011",
+   "kind": "expression",
+   "expression": [
+    "match",
+    [
+     "get",
+     "区分"
+    ],
+    "早瀬",
+    "#005ce6",
+    "淵",
+    "#ff73df",
+    "ワンド・たまり",
+    "#c500ff",
+    "干潟",
+    "#b2fdb7",
+    "湛水域",
+    "#cd6666",
+    "湧水",
+    "#ff0000",
+    "樋門・樋管等",
+    "#ff7f00",
+    "#000000"
+   ],
+   "properties": {
+    "区分": "湧水",
+    "水域区分C": "1010",
+    "表示名": "湧"
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": "#ff0000"
+  },
+  {
+   "id": "expr-012",
+   "kind": "expression",
+   "expression": [
+    "match",
+    [
+     "get",
+     "区分"
+    ],
+    "樋門・樋管等",
+    1.3,
+    2.7
+   ],
+   "properties": {
+    "区分": "湧水",
+    "水域区分C": "1010",
+    "表示名": "湧"
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": 2.7
+  },
+  {
+   "id": "expr-013",
+   "kind": "expression",
+   "expression": [
+    "match",
+    [
+     "get",
+     "区分"
+    ],
+    "早瀬",
+    "#005ce6",
+    "淵",
+    "#ff73df",
+    "ワンド・たまり",
+    "#c500ff",
+    "干潟",
+    "#b2fdb7",
+    "湛水域",
+    "#cd6666",
+    "湧水",
+    "#ff0000",
+    "樋門・樋管等",
+    "#ff7f00",
+    "#000000"
+   ],
+   "properties": {
+    "区分": "樋門・樋管等",
+    "水域区分C": "1010",
+    "表示名": "樋"
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": "#ff7f00"
+  },
+  {
+   "id": "expr-014",
+   "kind": "expression",
+   "expression": [
+    "match",
+    [
+     "get",
+     "区分"
+    ],
+    "樋門・樋管等",
+    1.3,
+    2.7
+   ],
+   "properties": {
+    "区分": "樋門・樋管等",
+    "水域区分C": "1010",
+    "表示名": "樋"
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": 1.3
+  },
+  {
+   "id": "expr-015",
+   "kind": "expression",
+   "expression": [
+    "match",
+    [
+     "get",
+     "区分"
+    ],
+    "早瀬",
+    "#005ce6",
+    "淵",
+    "#ff73df",
+    "ワンド・たまり",
+    "#c500ff",
+    "干潟",
+    "#b2fdb7",
+    "湛水域",
+    "#cd6666",
+    "湧水",
+    "#ff0000",
+    "樋門・樋管等",
+    "#ff7f00",
+    "#000000"
+   ],
+   "properties": {
+    "区分": "不明",
+    "水域区分C": "1010",
+    "表示名": "不"
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": "#000000"
+  },
+  {
+   "id": "expr-016",
+   "kind": "expression",
+   "expression": [
+    "match",
+    [
+     "get",
+     "区分"
+    ],
+    "樋門・樋管等",
+    1.3,
+    2.7
+   ],
+   "properties": {
+    "区分": "不明",
+    "水域区分C": "1010",
+    "表示名": "不"
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": 2.7
+  },
+  {
+   "id": "expr-017",
+   "kind": "expression",
+   "expression": [
+    "match",
+    [
+     "get",
+     "区分"
+    ],
+    "樋門・樋管等",
+    1.3,
+    2.7
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": 2.7
+  },
+  {
+   "id": "expr-018",
+   "kind": "expression",
+   "expression": [
+    "get",
+    "name"
+   ],
+   "properties": {
+    "name": "river",
+    "pop": 1200,
+    "flag": true,
+    "zero": 0,
+    "empty": "",
+    "neg": -3.5,
+    "big": 10000000,
+    "num-str": "42"
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": "river"
+  },
+  {
+   "id": "expr-019",
+   "kind": "expression",
+   "expression": [
+    "get",
+    "pop"
+   ],
+   "properties": {
+    "name": "river",
+    "pop": 1200,
+    "flag": true,
+    "zero": 0,
+    "empty": "",
+    "neg": -3.5,
+    "big": 10000000,
+    "num-str": "42"
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": 1200
+  },
+  {
+   "id": "expr-020",
+   "kind": "expression",
+   "expression": [
+    "get",
+    "flag"
+   ],
+   "properties": {
+    "name": "river",
+    "pop": 1200,
+    "flag": true,
+    "zero": 0,
+    "empty": "",
+    "neg": -3.5,
+    "big": 10000000,
+    "num-str": "42"
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": true
+  },
+  {
+   "id": "expr-021",
+   "kind": "expression",
+   "expression": [
+    "get",
+    "missing"
+   ],
+   "properties": {
+    "name": "river",
+    "pop": 1200,
+    "flag": true,
+    "zero": 0,
+    "empty": "",
+    "neg": -3.5,
+    "big": 10000000,
+    "num-str": "42"
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": null
+  },
+  {
+   "id": "expr-022",
+   "kind": "expression",
+   "expression": [
+    "get",
+    "k",
+    [
+     "literal",
+     {
+      "k": "v"
+     }
+    ]
+   ],
+   "properties": {
+    "name": "river",
+    "pop": 1200,
+    "flag": true,
+    "zero": 0,
+    "empty": "",
+    "neg": -3.5,
+    "big": 10000000,
+    "num-str": "42"
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": "v"
+  },
+  {
+   "id": "expr-023",
+   "kind": "expression",
+   "expression": [
+    "has",
+    "name"
+   ],
+   "properties": {
+    "name": "river",
+    "pop": 1200,
+    "flag": true,
+    "zero": 0,
+    "empty": "",
+    "neg": -3.5,
+    "big": 10000000,
+    "num-str": "42"
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": true
+  },
+  {
+   "id": "expr-024",
+   "kind": "expression",
+   "expression": [
+    "has",
+    "missing"
+   ],
+   "properties": {
+    "name": "river",
+    "pop": 1200,
+    "flag": true,
+    "zero": 0,
+    "empty": "",
+    "neg": -3.5,
+    "big": 10000000,
+    "num-str": "42"
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": false
+  },
+  {
+   "id": "expr-025",
+   "kind": "expression",
+   "expression": [
+    "has",
+    "k",
+    [
+     "literal",
+     {
+      "k": 1
+     }
+    ]
+   ],
+   "properties": {
+    "name": "river",
+    "pop": 1200,
+    "flag": true,
+    "zero": 0,
+    "empty": "",
+    "neg": -3.5,
+    "big": 10000000,
+    "num-str": "42"
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": true
+  },
+  {
+   "id": "expr-026",
+   "kind": "expression",
+   "expression": [
+    "literal",
+    [
+     1,
+     "a",
+     true,
+     null
+    ]
+   ],
+   "properties": {
+    "name": "river",
+    "pop": 1200,
+    "flag": true,
+    "zero": 0,
+    "empty": "",
+    "neg": -3.5,
+    "big": 10000000,
+    "num-str": "42"
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": [
+    1,
+    "a",
+    true,
+    null
+   ]
+  },
+  {
+   "id": "expr-027",
+   "kind": "expression",
+   "expression": [
+    "literal",
+    {
+     "a": 1
+    }
+   ],
+   "properties": {
+    "name": "river",
+    "pop": 1200,
+    "flag": true,
+    "zero": 0,
+    "empty": "",
+    "neg": -3.5,
+    "big": 10000000,
+    "num-str": "42"
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "a": 1
+   }
+  },
+  {
+   "id": "expr-028",
+   "kind": "expression",
+   "expression": [
+    "typeof",
+    [
+     "get",
+     "name"
+    ]
+   ],
+   "properties": {
+    "name": "river",
+    "pop": 1200,
+    "flag": true,
+    "zero": 0,
+    "empty": "",
+    "neg": -3.5,
+    "big": 10000000,
+    "num-str": "42"
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": "string"
+  },
+  {
+   "id": "expr-029",
+   "kind": "expression",
+   "expression": [
+    "typeof",
+    [
+     "get",
+     "pop"
+    ]
+   ],
+   "properties": {
+    "name": "river",
+    "pop": 1200,
+    "flag": true,
+    "zero": 0,
+    "empty": "",
+    "neg": -3.5,
+    "big": 10000000,
+    "num-str": "42"
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": "number"
+  },
+  {
+   "id": "expr-030",
+   "kind": "expression",
+   "expression": [
+    "typeof",
+    [
+     "get",
+     "flag"
+    ]
+   ],
+   "properties": {
+    "name": "river",
+    "pop": 1200,
+    "flag": true,
+    "zero": 0,
+    "empty": "",
+    "neg": -3.5,
+    "big": 10000000,
+    "num-str": "42"
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": "boolean"
+  },
+  {
+   "id": "expr-031",
+   "kind": "expression",
+   "expression": [
+    "typeof",
+    [
+     "get",
+     "missing"
+    ]
+   ],
+   "properties": {
+    "name": "river",
+    "pop": 1200,
+    "flag": true,
+    "zero": 0,
+    "empty": "",
+    "neg": -3.5,
+    "big": 10000000,
+    "num-str": "42"
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": "null"
+  },
+  {
+   "id": "expr-032",
+   "kind": "expression",
+   "expression": [
+    "typeof",
+    [
+     "literal",
+     [
+      1,
+      2
+     ]
+    ]
+   ],
+   "properties": {
+    "name": "river",
+    "pop": 1200,
+    "flag": true,
+    "zero": 0,
+    "empty": "",
+    "neg": -3.5,
+    "big": 10000000,
+    "num-str": "42"
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": "array<number, 2>"
+  },
+  {
+   "id": "expr-033",
+   "kind": "expression",
+   "expression": [
+    "typeof",
+    [
+     "literal",
+     {
+      "a": 1
+     }
+    ]
+   ],
+   "properties": {
+    "name": "river",
+    "pop": 1200,
+    "flag": true,
+    "zero": 0,
+    "empty": "",
+    "neg": -3.5,
+    "big": 10000000,
+    "num-str": "42"
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": "object"
+  },
+  {
+   "id": "expr-034",
+   "kind": "expression",
+   "expression": [
+    "typeof",
+    "rgba(1,2,3,1)"
+   ],
+   "properties": {
+    "name": "river",
+    "pop": 1200,
+    "flag": true,
+    "zero": 0,
+    "empty": "",
+    "neg": -3.5,
+    "big": 10000000,
+    "num-str": "42"
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": "string"
+  },
+  {
+   "id": "expr-035",
+   "kind": "expression",
+   "expression": [
+    "typeof",
+    [
+     "to-color",
+     "red"
+    ]
+   ],
+   "properties": {
+    "name": "river",
+    "pop": 1200,
+    "flag": true,
+    "zero": 0,
+    "empty": "",
+    "neg": -3.5,
+    "big": 10000000,
+    "num-str": "42"
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": "color"
+  },
+  {
+   "id": "expr-036",
+   "kind": "expression",
+   "expression": [
+    "properties"
+   ],
+   "properties": {
+    "a": 1,
+    "b": "x"
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "a": 1,
+    "b": "x"
+   }
+  },
+  {
+   "id": "expr-037",
+   "kind": "expression",
+   "expression": [
+    "geometry-type"
+   ],
+   "properties": {},
+   "geometryType": "Point",
+   "zoom": 12,
+   "expected": "Point"
+  },
+  {
+   "id": "expr-038",
+   "kind": "expression",
+   "expression": [
+    "geometry-type"
+   ],
+   "properties": {},
+   "geometryType": "LineString",
+   "zoom": 12,
+   "expected": "LineString"
+  },
+  {
+   "id": "expr-039",
+   "kind": "expression",
+   "expression": [
+    "geometry-type"
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": "Polygon"
+  },
+  {
+   "id": "expr-040",
+   "kind": "expression",
+   "expression": [
+    "id"
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "featureId": 7,
+   "expected": 7
+  },
+  {
+   "id": "expr-041",
+   "kind": "expression",
+   "expression": [
+    "id"
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "featureId": "abc",
+   "expected": "abc"
+  },
+  {
+   "id": "expr-042",
+   "kind": "expression",
+   "expression": [
+    "id"
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": null
+  },
+  {
+   "id": "expr-043",
+   "kind": "expression",
+   "expression": [
+    "zoom"
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 14,
+   "expected": 14
+  },
+  {
+   "id": "expr-044",
+   "kind": "expression",
+   "expression": [
+    "zoom"
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 9.5,
+   "expected": 9.5
+  },
+  {
+   "id": "expr-045",
+   "kind": "expression",
+   "expression": [
+    "match",
+    [
+     "get",
+     "x"
+    ],
+    1,
+    "one",
+    2,
+    "two",
+    "other"
+   ],
+   "properties": {
+    "x": 2
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": "two"
+  },
+  {
+   "id": "expr-046",
+   "kind": "expression",
+   "expression": [
+    "match",
+    [
+     "get",
+     "x"
+    ],
+    1,
+    "one",
+    2,
+    "two",
+    "other"
+   ],
+   "properties": {
+    "x": "2"
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": "other"
+  },
+  {
+   "id": "expr-047",
+   "kind": "expression",
+   "expression": [
+    "match",
+    [
+     "get",
+     "x"
+    ],
+    "a",
+    "A",
+    "b",
+    "B",
+    "Z"
+   ],
+   "properties": {
+    "x": "b"
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": "B"
+  },
+  {
+   "id": "expr-048",
+   "kind": "expression",
+   "expression": [
+    "match",
+    [
+     "get",
+     "x"
+    ],
+    [
+     "a",
+     "b"
+    ],
+    "AB",
+    [
+     "c"
+    ],
+    "C",
+    "Z"
+   ],
+   "properties": {
+    "x": "b"
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": "AB"
+  },
+  {
+   "id": "expr-049",
+   "kind": "expression",
+   "expression": [
+    "match",
+    [
+     "get",
+     "x"
+    ],
+    [
+     "a",
+     "b"
+    ],
+    "AB",
+    [
+     "c"
+    ],
+    "C",
+    "Z"
+   ],
+   "properties": {
+    "x": "c"
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": "C"
+  },
+  {
+   "id": "expr-050",
+   "kind": "expression",
+   "expression": [
+    "match",
+    [
+     "get",
+     "x"
+    ],
+    [
+     "a",
+     "b"
+    ],
+    "AB",
+    [
+     "c"
+    ],
+    "C",
+    "Z"
+   ],
+   "properties": {
+    "x": "d"
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": "Z"
+  },
+  {
+   "id": "expr-051",
+   "kind": "expression",
+   "expression": [
+    "match",
+    [
+     "get",
+     "x"
+    ],
+    [
+     1,
+     2,
+     3
+    ],
+    "low",
+    [
+     4,
+     5
+    ],
+    "high",
+    "none"
+   ],
+   "properties": {
+    "x": 5
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": "high"
+  },
+  {
+   "id": "expr-052",
+   "kind": "expression",
+   "expression": [
+    "match",
+    [
+     "get",
+     "x"
+    ],
+    "a",
+    "A",
+    "Z"
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": "Z"
+  },
+  {
+   "id": "expr-053",
+   "kind": "expression",
+   "expression": [
+    "match",
+    [
+     "get",
+     "x"
+    ],
+    "a",
+    "A",
+    "Z"
+   ],
+   "properties": {
+    "x": true
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": "Z"
+  },
+  {
+   "id": "expr-054",
+   "kind": "expression",
+   "expression": [
+    "match",
+    [
+     "get",
+     "x"
+    ],
+    "a",
+    [
+     "get",
+     "y"
+    ],
+    [
+     "get",
+     "z"
+    ]
+   ],
+   "properties": {
+    "x": "a",
+    "y": "Y",
+    "z": "Z"
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": "Y"
+  },
+  {
+   "id": "expr-055",
+   "kind": "expression",
+   "expression": [
+    "match",
+    [
+     "get",
+     "x"
+    ],
+    "a",
+    [
+     "get",
+     "y"
+    ],
+    [
+     "get",
+     "z"
+    ]
+   ],
+   "properties": {
+    "x": "q",
+    "y": "Y",
+    "z": "Z"
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": "Z"
+  },
+  {
+   "id": "expr-056",
+   "kind": "expression",
+   "expression": [
+    "match",
+    [
+     "get",
+     "x"
+    ],
+    1.5,
+    "half",
+    "none"
+   ],
+   "properties": {
+    "x": 1.5
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expectedError": true,
+   "errorMessage": "Numeric branch labels must be integer values."
+  },
+  {
+   "id": "expr-057",
+   "kind": "expression",
+   "expression": [
+    "match",
+    [
+     "get",
+     "x"
+    ],
+    1,
+    "one"
+   ],
+   "properties": {
+    "x": 1
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expectedError": true,
+   "errorMessage": "Expected at least 4 arguments, but found only 3."
+  },
+  {
+   "id": "expr-058",
+   "kind": "expression",
+   "expression": [
+    "match",
+    [
+     "get",
+     "x"
+    ],
+    "a",
+    "A",
+    1,
+    "B",
+    "Z"
+   ],
+   "properties": {
+    "x": 1
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expectedError": true,
+   "errorMessage": "Expected string but found number instead."
+  },
+  {
+   "id": "expr-059",
+   "kind": "expression",
+   "expression": [
+    "case",
+    [
+     "==",
+     [
+      "get",
+      "x"
+     ],
+     1
+    ],
+    "one",
+    [
+     "==",
+     [
+      "get",
+      "x"
+     ],
+     2
+    ],
+    "two",
+    "other"
+   ],
+   "properties": {
+    "x": 2
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": "two"
+  },
+  {
+   "id": "expr-060",
+   "kind": "expression",
+   "expression": [
+    "case",
+    [
+     "==",
+     [
+      "get",
+      "x"
+     ],
+     1
+    ],
+    "one",
+    [
+     "==",
+     [
+      "get",
+      "x"
+     ],
+     2
+    ],
+    "two",
+    "other"
+   ],
+   "properties": {
+    "x": 9
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": "other"
+  },
+  {
+   "id": "expr-061",
+   "kind": "expression",
+   "expression": [
+    "case",
+    [
+     "get",
+     "flag"
+    ],
+    "yes",
+    "no"
+   ],
+   "properties": {
+    "flag": true
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": "yes"
+  },
+  {
+   "id": "expr-062",
+   "kind": "expression",
+   "expression": [
+    "case",
+    [
+     "get",
+     "flag"
+    ],
+    "yes",
+    "no"
+   ],
+   "properties": {
+    "flag": false
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": "no"
+  },
+  {
+   "id": "expr-063",
+   "kind": "expression",
+   "expression": [
+    "case",
+    [
+     "get",
+     "flag"
+    ],
+    "yes",
+    "no"
+   ],
+   "properties": {
+    "flag": "true"
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expectedError": true,
+   "errorMessage": "Expected value to be of type boolean, but found string instead."
+  },
+  {
+   "id": "expr-064",
+   "kind": "expression",
+   "expression": [
+    "case",
+    [
+     "get",
+     "flag"
+    ],
+    "yes",
+    "no"
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expectedError": true,
+   "errorMessage": "Expected value to be of type boolean, but found null instead."
+  },
+  {
+   "id": "expr-065",
+   "kind": "expression",
+   "expression": [
+    "case",
+    true,
+    "a"
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expectedError": true,
+   "errorMessage": "Expected at least 3 arguments, but found only 2."
+  },
+  {
+   "id": "expr-066",
+   "kind": "expression",
+   "expression": [
+    "coalesce",
+    [
+     "get",
+     "a"
+    ],
+    [
+     "get",
+     "b"
+    ],
+    "dflt"
+   ],
+   "properties": {
+    "b": "B"
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": "B"
+  },
+  {
+   "id": "expr-067",
+   "kind": "expression",
+   "expression": [
+    "coalesce",
+    [
+     "get",
+     "a"
+    ],
+    [
+     "get",
+     "b"
+    ],
+    "dflt"
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": "dflt"
+  },
+  {
+   "id": "expr-068",
+   "kind": "expression",
+   "expression": [
+    "coalesce",
+    [
+     "get",
+     "a"
+    ],
+    [
+     "get",
+     "b"
+    ]
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": null
+  },
+  {
+   "id": "expr-069",
+   "kind": "expression",
+   "expression": [
+    "coalesce",
+    [
+     "get",
+     "a"
+    ],
+    0
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": 0
+  },
+  {
+   "id": "expr-070",
+   "kind": "expression",
+   "expression": [
+    "coalesce",
+    [
+     "get",
+     "a"
+    ],
+    false
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": false
+  },
+  {
+   "id": "expr-071",
+   "kind": "expression",
+   "expression": [
+    "coalesce",
+    [
+     "get",
+     "a"
+    ],
+    ""
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": ""
+  },
+  {
+   "id": "expr-072",
+   "kind": "expression",
+   "expression": [
+    "==",
+    [
+     "get",
+     "n"
+    ],
+    5
+   ],
+   "properties": {
+    "s": "abc",
+    "n": 5,
+    "b": true,
+    "s5": "5",
+    "f": 5,
+    "z": 0
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": true
+  },
+  {
+   "id": "expr-073",
+   "kind": "expression",
+   "expression": [
+    "==",
+    [
+     "get",
+     "n"
+    ],
+    "5"
+   ],
+   "properties": {
+    "s": "abc",
+    "n": 5,
+    "b": true,
+    "s5": "5",
+    "f": 5,
+    "z": 0
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": false
+  },
+  {
+   "id": "expr-074",
+   "kind": "expression",
+   "expression": [
+    "==",
+    [
+     "get",
+     "s5"
+    ],
+    [
+     "get",
+     "n"
+    ]
+   ],
+   "properties": {
+    "s": "abc",
+    "n": 5,
+    "b": true,
+    "s5": "5",
+    "f": 5,
+    "z": 0
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": false
+  },
+  {
+   "id": "expr-075",
+   "kind": "expression",
+   "expression": [
+    "==",
+    [
+     "get",
+     "n"
+    ],
+    [
+     "get",
+     "f"
+    ]
+   ],
+   "properties": {
+    "s": "abc",
+    "n": 5,
+    "b": true,
+    "s5": "5",
+    "f": 5,
+    "z": 0
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": true
+  },
+  {
+   "id": "expr-076",
+   "kind": "expression",
+   "expression": [
+    "==",
+    [
+     "get",
+     "s"
+    ],
+    "abc"
+   ],
+   "properties": {
+    "s": "abc",
+    "n": 5,
+    "b": true,
+    "s5": "5",
+    "f": 5,
+    "z": 0
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": true
+  },
+  {
+   "id": "expr-077",
+   "kind": "expression",
+   "expression": [
+    "==",
+    [
+     "get",
+     "b"
+    ],
+    true
+   ],
+   "properties": {
+    "s": "abc",
+    "n": 5,
+    "b": true,
+    "s5": "5",
+    "f": 5,
+    "z": 0
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": true
+  },
+  {
+   "id": "expr-078",
+   "kind": "expression",
+   "expression": [
+    "==",
+    [
+     "get",
+     "missing"
+    ],
+    null
+   ],
+   "properties": {
+    "s": "abc",
+    "n": 5,
+    "b": true,
+    "s5": "5",
+    "f": 5,
+    "z": 0
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": true
+  },
+  {
+   "id": "expr-079",
+   "kind": "expression",
+   "expression": [
+    "==",
+    [
+     "get",
+     "n"
+    ],
+    null
+   ],
+   "properties": {
+    "s": "abc",
+    "n": 5,
+    "b": true,
+    "s5": "5",
+    "f": 5,
+    "z": 0
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": false
+  },
+  {
+   "id": "expr-080",
+   "kind": "expression",
+   "expression": [
+    "!=",
+    [
+     "get",
+     "n"
+    ],
+    "5"
+   ],
+   "properties": {
+    "s": "abc",
+    "n": 5,
+    "b": true,
+    "s5": "5",
+    "f": 5,
+    "z": 0
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": true
+  },
+  {
+   "id": "expr-081",
+   "kind": "expression",
+   "expression": [
+    "!=",
+    [
+     "get",
+     "n"
+    ],
+    5
+   ],
+   "properties": {
+    "s": "abc",
+    "n": 5,
+    "b": true,
+    "s5": "5",
+    "f": 5,
+    "z": 0
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": false
+  },
+  {
+   "id": "expr-082",
+   "kind": "expression",
+   "expression": [
+    "!=",
+    [
+     "get",
+     "missing"
+    ],
+    null
+   ],
+   "properties": {
+    "s": "abc",
+    "n": 5,
+    "b": true,
+    "s5": "5",
+    "f": 5,
+    "z": 0
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": false
+  },
+  {
+   "id": "expr-083",
+   "kind": "expression",
+   "expression": [
+    "<",
+    [
+     "get",
+     "n"
+    ],
+    10
+   ],
+   "properties": {
+    "s": "abc",
+    "n": 5,
+    "b": true,
+    "s5": "5",
+    "f": 5,
+    "z": 0
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": true
+  },
+  {
+   "id": "expr-084",
+   "kind": "expression",
+   "expression": [
+    "<",
+    [
+     "get",
+     "n"
+    ],
+    5
+   ],
+   "properties": {
+    "s": "abc",
+    "n": 5,
+    "b": true,
+    "s5": "5",
+    "f": 5,
+    "z": 0
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": false
+  },
+  {
+   "id": "expr-085",
+   "kind": "expression",
+   "expression": [
+    "<=",
+    [
+     "get",
+     "n"
+    ],
+    5
+   ],
+   "properties": {
+    "s": "abc",
+    "n": 5,
+    "b": true,
+    "s5": "5",
+    "f": 5,
+    "z": 0
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": true
+  },
+  {
+   "id": "expr-086",
+   "kind": "expression",
+   "expression": [
+    ">",
+    [
+     "get",
+     "n"
+    ],
+    4.9
+   ],
+   "properties": {
+    "s": "abc",
+    "n": 5,
+    "b": true,
+    "s5": "5",
+    "f": 5,
+    "z": 0
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": true
+  },
+  {
+   "id": "expr-087",
+   "kind": "expression",
+   "expression": [
+    ">=",
+    [
+     "get",
+     "n"
+    ],
+    5.1
+   ],
+   "properties": {
+    "s": "abc",
+    "n": 5,
+    "b": true,
+    "s5": "5",
+    "f": 5,
+    "z": 0
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": false
+  },
+  {
+   "id": "expr-088",
+   "kind": "expression",
+   "expression": [
+    "<",
+    [
+     "get",
+     "s"
+    ],
+    "abd"
+   ],
+   "properties": {
+    "s": "abc",
+    "n": 5,
+    "b": true,
+    "s5": "5",
+    "f": 5,
+    "z": 0
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": true
+  },
+  {
+   "id": "expr-089",
+   "kind": "expression",
+   "expression": [
+    "<",
+    [
+     "get",
+     "s"
+    ],
+    "ab"
+   ],
+   "properties": {
+    "s": "abc",
+    "n": 5,
+    "b": true,
+    "s5": "5",
+    "f": 5,
+    "z": 0
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": false
+  },
+  {
+   "id": "expr-090",
+   "kind": "expression",
+   "expression": [
+    ">",
+    [
+     "get",
+     "s"
+    ],
+    "ab"
+   ],
+   "properties": {
+    "s": "abc",
+    "n": 5,
+    "b": true,
+    "s5": "5",
+    "f": 5,
+    "z": 0
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": true
+  },
+  {
+   "id": "expr-091",
+   "kind": "expression",
+   "expression": [
+    "<",
+    [
+     "get",
+     "n"
+    ],
+    "10"
+   ],
+   "properties": {
+    "s": "abc",
+    "n": 5,
+    "b": true,
+    "s5": "5",
+    "f": 5,
+    "z": 0
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expectedError": true,
+   "errorMessage": "Expected value to be of type string, but found number instead."
+  },
+  {
+   "id": "expr-092",
+   "kind": "expression",
+   "expression": [
+    "<",
+    [
+     "get",
+     "missing"
+    ],
+    10
+   ],
+   "properties": {
+    "s": "abc",
+    "n": 5,
+    "b": true,
+    "s5": "5",
+    "f": 5,
+    "z": 0
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expectedError": true,
+   "errorMessage": "Expected value to be of type number, but found null instead."
+  },
+  {
+   "id": "expr-093",
+   "kind": "expression",
+   "expression": [
+    "<",
+    [
+     "get",
+     "b"
+    ],
+    true
+   ],
+   "properties": {
+    "s": "abc",
+    "n": 5,
+    "b": true,
+    "s5": "5",
+    "f": 5,
+    "z": 0
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expectedError": true,
+   "errorMessage": "\"<\" comparisons are not supported for type 'boolean'."
+  },
+  {
+   "id": "expr-094",
+   "kind": "expression",
+   "expression": [
+    "!",
+    [
+     "get",
+     "b"
+    ]
+   ],
+   "properties": {
+    "s": "abc",
+    "n": 5,
+    "b": true,
+    "s5": "5",
+    "f": 5,
+    "z": 0
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": false
+  },
+  {
+   "id": "expr-095",
+   "kind": "expression",
+   "expression": [
+    "!",
+    [
+     "get",
+     "s"
+    ]
+   ],
+   "properties": {
+    "s": "abc",
+    "n": 5,
+    "b": true,
+    "s5": "5",
+    "f": 5,
+    "z": 0
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expectedError": true,
+   "errorMessage": "Expected value to be of type boolean, but found string instead."
+  },
+  {
+   "id": "expr-096",
+   "kind": "expression",
+   "expression": [
+    "all",
+    [
+     "==",
+     [
+      "get",
+      "n"
+     ],
+     5
+    ],
+    [
+     "==",
+     [
+      "get",
+      "s"
+     ],
+     "abc"
+    ]
+   ],
+   "properties": {
+    "s": "abc",
+    "n": 5,
+    "b": true,
+    "s5": "5",
+    "f": 5,
+    "z": 0
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": true
+  },
+  {
+   "id": "expr-097",
+   "kind": "expression",
+   "expression": [
+    "all",
+    [
+     "==",
+     [
+      "get",
+      "n"
+     ],
+     5
+    ],
+    [
+     "==",
+     [
+      "get",
+      "s"
+     ],
+     "x"
+    ]
+   ],
+   "properties": {
+    "s": "abc",
+    "n": 5,
+    "b": true,
+    "s5": "5",
+    "f": 5,
+    "z": 0
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": false
+  },
+  {
+   "id": "expr-098",
+   "kind": "expression",
+   "expression": [
+    "all"
+   ],
+   "properties": {
+    "s": "abc",
+    "n": 5,
+    "b": true,
+    "s5": "5",
+    "f": 5,
+    "z": 0
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": true
+  },
+  {
+   "id": "expr-099",
+   "kind": "expression",
+   "expression": [
+    "any",
+    [
+     "==",
+     [
+      "get",
+      "n"
+     ],
+     1
+    ],
+    [
+     "==",
+     [
+      "get",
+      "s"
+     ],
+     "abc"
+    ]
+   ],
+   "properties": {
+    "s": "abc",
+    "n": 5,
+    "b": true,
+    "s5": "5",
+    "f": 5,
+    "z": 0
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": true
+  },
+  {
+   "id": "expr-100",
+   "kind": "expression",
+   "expression": [
+    "any",
+    [
+     "==",
+     [
+      "get",
+      "n"
+     ],
+     1
+    ],
+    [
+     "==",
+     [
+      "get",
+      "s"
+     ],
+     "x"
+    ]
+   ],
+   "properties": {
+    "s": "abc",
+    "n": 5,
+    "b": true,
+    "s5": "5",
+    "f": 5,
+    "z": 0
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": false
+  },
+  {
+   "id": "expr-101",
+   "kind": "expression",
+   "expression": [
+    "any"
+   ],
+   "properties": {
+    "s": "abc",
+    "n": 5,
+    "b": true,
+    "s5": "5",
+    "f": 5,
+    "z": 0
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": false
+  },
+  {
+   "id": "expr-102",
+   "kind": "expression",
+   "expression": [
+    "all",
+    [
+     "get",
+     "b"
+    ],
+    [
+     "get",
+     "n"
+    ]
+   ],
+   "properties": {
+    "s": "abc",
+    "n": 5,
+    "b": true,
+    "s5": "5",
+    "f": 5,
+    "z": 0
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expectedError": true,
+   "errorMessage": "Expected value to be of type boolean, but found number instead."
+  },
+  {
+   "id": "expr-103",
+   "kind": "expression",
+   "expression": [
+    "in",
+    "a",
+    "banana"
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": true
+  },
+  {
+   "id": "expr-104",
+   "kind": "expression",
+   "expression": [
+    "in",
+    "x",
+    "banana"
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": false
+  },
+  {
+   "id": "expr-105",
+   "kind": "expression",
+   "expression": [
+    "in",
+    [
+     "get",
+     "k"
+    ],
+    [
+     "literal",
+     [
+      "a",
+      "b",
+      "c"
+     ]
+    ]
+   ],
+   "properties": {
+    "k": "b"
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": true
+  },
+  {
+   "id": "expr-106",
+   "kind": "expression",
+   "expression": [
+    "in",
+    [
+     "get",
+     "k"
+    ],
+    [
+     "literal",
+     [
+      "a",
+      "b",
+      "c"
+     ]
+    ]
+   ],
+   "properties": {
+    "k": "z"
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": false
+  },
+  {
+   "id": "expr-107",
+   "kind": "expression",
+   "expression": [
+    "in",
+    1,
+    [
+     "literal",
+     [
+      1,
+      2
+     ]
+    ]
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": true
+  },
+  {
+   "id": "expr-108",
+   "kind": "expression",
+   "expression": [
+    "in",
+    "1",
+    [
+     "literal",
+     [
+      1,
+      2
+     ]
+    ]
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": false
+  },
+  {
+   "id": "expr-109",
+   "kind": "expression",
+   "expression": [
+    "in",
+    "a",
+    [
+     "get",
+     "missing"
+    ]
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": false
+  },
+  {
+   "id": "expr-110",
+   "kind": "expression",
+   "expression": [
+    "in",
+    "a",
+    ""
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": false
+  },
+  {
+   "id": "expr-111",
+   "kind": "expression",
+   "expression": [
+    "in",
+    "な",
+    "さかな"
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": true
+  },
+  {
+   "id": "expr-112",
+   "kind": "expression",
+   "expression": [
+    "index-of",
+    "na",
+    "banana"
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": 2
+  },
+  {
+   "id": "expr-113",
+   "kind": "expression",
+   "expression": [
+    "index-of",
+    "na",
+    "banana",
+    3
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": 4
+  },
+  {
+   "id": "expr-114",
+   "kind": "expression",
+   "expression": [
+    "index-of",
+    "zz",
+    "banana"
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": -1
+  },
+  {
+   "id": "expr-115",
+   "kind": "expression",
+   "expression": [
+    "index-of",
+    2,
+    [
+     "literal",
+     [
+      1,
+      2,
+      3
+     ]
+    ]
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": 1
+  },
+  {
+   "id": "expr-116",
+   "kind": "expression",
+   "expression": [
+    "index-of",
+    "な",
+    "さかな"
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": 2
+  },
+  {
+   "id": "expr-117",
+   "kind": "expression",
+   "expression": [
+    "slice",
+    "banana",
+    1,
+    3
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": "an"
+  },
+  {
+   "id": "expr-118",
+   "kind": "expression",
+   "expression": [
+    "slice",
+    "banana",
+    2
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": "nana"
+  },
+  {
+   "id": "expr-119",
+   "kind": "expression",
+   "expression": [
+    "slice",
+    "banana",
+    -3
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": "ana"
+  },
+  {
+   "id": "expr-120",
+   "kind": "expression",
+   "expression": [
+    "slice",
+    "さかな",
+    1,
+    2
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": "か"
+  },
+  {
+   "id": "expr-121",
+   "kind": "expression",
+   "expression": [
+    "slice",
+    [
+     "literal",
+     [
+      1,
+      2,
+      3,
+      4
+     ]
+    ],
+    1,
+    3
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": [
+    2,
+    3
+   ]
+  },
+  {
+   "id": "expr-122",
+   "kind": "expression",
+   "expression": [
+    "slice",
+    [
+     "get",
+     "missing"
+    ],
+    0,
+    1
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expectedError": true,
+   "errorMessage": "Expected first argument to be of type array or string, but found null instead."
+  },
+  {
+   "id": "expr-123",
+   "kind": "expression",
+   "expression": [
+    "length",
+    "banana"
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": 6
+  },
+  {
+   "id": "expr-124",
+   "kind": "expression",
+   "expression": [
+    "length",
+    "さかな"
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": 3
+  },
+  {
+   "id": "expr-125",
+   "kind": "expression",
+   "expression": [
+    "length",
+    ""
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": 0
+  },
+  {
+   "id": "expr-126",
+   "kind": "expression",
+   "expression": [
+    "length",
+    [
+     "literal",
+     [
+      1,
+      2,
+      3
+     ]
+    ]
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": 3
+  },
+  {
+   "id": "expr-127",
+   "kind": "expression",
+   "expression": [
+    "length",
+    [
+     "get",
+     "missing"
+    ]
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expectedError": true,
+   "errorMessage": "Expected value to be of type string or array, but found null instead."
+  },
+  {
+   "id": "expr-128",
+   "kind": "expression",
+   "expression": [
+    "at",
+    1,
+    [
+     "literal",
+     [
+      "a",
+      "b",
+      "c"
+     ]
+    ]
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": "b"
+  },
+  {
+   "id": "expr-129",
+   "kind": "expression",
+   "expression": [
+    "at",
+    5,
+    [
+     "literal",
+     [
+      "a",
+      "b",
+      "c"
+     ]
+    ]
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expectedError": true,
+   "errorMessage": "Array index out of bounds: 5 > 2."
+  },
+  {
+   "id": "expr-130",
+   "kind": "expression",
+   "expression": [
+    "upcase",
+    "MixEd 123 さかな"
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": "MIXED 123 さかな"
+  },
+  {
+   "id": "expr-131",
+   "kind": "expression",
+   "expression": [
+    "downcase",
+    "MixEd 123 さかな"
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": "mixed 123 さかな"
+  },
+  {
+   "id": "expr-132",
+   "kind": "expression",
+   "expression": [
+    "concat",
+    "a",
+    "b",
+    "c"
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": "abc"
+  },
+  {
+   "id": "expr-133",
+   "kind": "expression",
+   "expression": [
+    "concat",
+    [
+     "get",
+     "name"
+    ],
+    " (",
+    [
+     "get",
+     "pop"
+    ],
+    ")"
+   ],
+   "properties": {
+    "name": "river",
+    "pop": 1200,
+    "flag": true,
+    "zero": 0,
+    "empty": "",
+    "neg": -3.5,
+    "big": 10000000,
+    "num-str": "42"
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": "river (1200)"
+  },
+  {
+   "id": "expr-134",
+   "kind": "expression",
+   "expression": [
+    "concat",
+    "x",
+    [
+     "get",
+     "missing"
+    ],
+    "y"
+   ],
+   "properties": {
+    "name": "river",
+    "pop": 1200,
+    "flag": true,
+    "zero": 0,
+    "empty": "",
+    "neg": -3.5,
+    "big": 10000000,
+    "num-str": "42"
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": "xy"
+  },
+  {
+   "id": "expr-135",
+   "kind": "expression",
+   "expression": [
+    "concat",
+    "n=",
+    1.5,
+    " b=",
+    true
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": "n=1.5 b=true"
+  },
+  {
+   "id": "expr-136",
+   "kind": "expression",
+   "expression": [
+    "concat",
+    "c=",
+    [
+     "to-color",
+     "#ff0000"
+    ]
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": "c=rgba(255,0,0,1)"
+  },
+  {
+   "id": "expr-137",
+   "kind": "expression",
+   "expression": [
+    "concat",
+    "arr=",
+    [
+     "literal",
+     [
+      1,
+      "a"
+     ]
+    ]
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": "arr=[1,\"a\"]"
+  },
+  {
+   "id": "expr-138",
+   "kind": "expression",
+   "expression": [
+    "concat"
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": ""
+  },
+  {
+   "id": "expr-139",
+   "kind": "expression",
+   "expression": [
+    "to-string",
+    0
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": "0"
+  },
+  {
+   "id": "expr-140",
+   "kind": "expression",
+   "expression": [
+    "to-string",
+    1
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": "1"
+  },
+  {
+   "id": "expr-141",
+   "kind": "expression",
+   "expression": [
+    "to-string",
+    -1
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": "-1"
+  },
+  {
+   "id": "expr-142",
+   "kind": "expression",
+   "expression": [
+    "to-string",
+    1.5
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": "1.5"
+  },
+  {
+   "id": "expr-143",
+   "kind": "expression",
+   "expression": [
+    "to-string",
+    -1.5
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": "-1.5"
+  },
+  {
+   "id": "expr-144",
+   "kind": "expression",
+   "expression": [
+    "to-string",
+    100
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": "100"
+  },
+  {
+   "id": "expr-145",
+   "kind": "expression",
+   "expression": [
+    "to-string",
+    255
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": "255"
+  },
+  {
+   "id": "expr-146",
+   "kind": "expression",
+   "expression": [
+    "to-string",
+    0.5
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": "0.5"
+  },
+  {
+   "id": "expr-147",
+   "kind": "expression",
+   "expression": [
+    "to-string",
+    0.25
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": "0.25"
+  },
+  {
+   "id": "expr-148",
+   "kind": "expression",
+   "expression": [
+    "to-string",
+    0.1
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": "0.1"
+  },
+  {
+   "id": "expr-149",
+   "kind": "expression",
+   "expression": [
+    "to-string",
+    0.30000000000000004
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": "0.30000000000000004"
+  },
+  {
+   "id": "expr-150",
+   "kind": "expression",
+   "expression": [
+    "to-string",
+    0.3333333333333333
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": "0.3333333333333333"
+  },
+  {
+   "id": "expr-151",
+   "kind": "expression",
+   "expression": [
+    "to-string",
+    0.6666666666666666
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": "0.6666666666666666"
+  },
+  {
+   "id": "expr-152",
+   "kind": "expression",
+   "expression": [
+    "to-string",
+    10000000
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": "10000000"
+  },
+  {
+   "id": "expr-153",
+   "kind": "expression",
+   "expression": [
+    "to-string",
+    12345678
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": "12345678"
+  },
+  {
+   "id": "expr-154",
+   "kind": "expression",
+   "expression": [
+    "to-string",
+    1000000000000000
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": "1000000000000000"
+  },
+  {
+   "id": "expr-155",
+   "kind": "expression",
+   "expression": [
+    "to-string",
+    10000000000000000
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": "10000000000000000"
+  },
+  {
+   "id": "expr-156",
+   "kind": "expression",
+   "expression": [
+    "to-string",
+    1234567890123456800
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": "1234567890123456800"
+  },
+  {
+   "id": "expr-157",
+   "kind": "expression",
+   "expression": [
+    "to-string",
+    1e+21
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": "1e+21"
+  },
+  {
+   "id": "expr-158",
+   "kind": "expression",
+   "expression": [
+    "to-string",
+    1.5e+21
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": "1.5e+21"
+  },
+  {
+   "id": "expr-159",
+   "kind": "expression",
+   "expression": [
+    "to-string",
+    0.000001
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": "0.000001"
+  },
+  {
+   "id": "expr-160",
+   "kind": "expression",
+   "expression": [
+    "to-string",
+    1e-7
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": "1e-7"
+  },
+  {
+   "id": "expr-161",
+   "kind": "expression",
+   "expression": [
+    "to-string",
+    0.000025
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": "0.000025"
+  },
+  {
+   "id": "expr-162",
+   "kind": "expression",
+   "expression": [
+    "to-string",
+    1234567.891
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": "1234567.891"
+  },
+  {
+   "id": "expr-163",
+   "kind": "expression",
+   "expression": [
+    "to-string",
+    9007199254740992
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": "9007199254740992"
+  },
+  {
+   "id": "expr-164",
+   "kind": "expression",
+   "expression": [
+    "to-string",
+    1.7976931348623157e+308
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": "1.7976931348623157e+308"
+  },
+  {
+   "id": "expr-165",
+   "kind": "expression",
+   "expression": [
+    "to-string",
+    5e-324
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": "5e-324"
+  },
+  {
+   "id": "expr-166",
+   "kind": "expression",
+   "expression": [
+    "to-string",
+    5e-7
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": "5e-7"
+  },
+  {
+   "id": "expr-167",
+   "kind": "expression",
+   "expression": [
+    "to-string",
+    0.000001
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": "0.000001"
+  },
+  {
+   "id": "expr-168",
+   "kind": "expression",
+   "expression": [
+    "to-string",
+    1e+300
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": "1e+300"
+  },
+  {
+   "id": "expr-169",
+   "kind": "expression",
+   "expression": [
+    "to-string",
+    1.23e-18
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": "1.23e-18"
+  },
+  {
+   "id": "expr-170",
+   "kind": "expression",
+   "expression": [
+    "to-string",
+    [
+     "get",
+     "pop"
+    ]
+   ],
+   "properties": {
+    "name": "river",
+    "pop": 1200,
+    "flag": true,
+    "zero": 0,
+    "empty": "",
+    "neg": -3.5,
+    "big": 10000000,
+    "num-str": "42"
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": "1200"
+  },
+  {
+   "id": "expr-171",
+   "kind": "expression",
+   "expression": [
+    "to-string",
+    [
+     "get",
+     "neg"
+    ]
+   ],
+   "properties": {
+    "name": "river",
+    "pop": 1200,
+    "flag": true,
+    "zero": 0,
+    "empty": "",
+    "neg": -3.5,
+    "big": 10000000,
+    "num-str": "42"
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": "-3.5"
+  },
+  {
+   "id": "expr-172",
+   "kind": "expression",
+   "expression": [
+    "to-string",
+    [
+     "get",
+     "missing"
+    ]
+   ],
+   "properties": {
+    "name": "river",
+    "pop": 1200,
+    "flag": true,
+    "zero": 0,
+    "empty": "",
+    "neg": -3.5,
+    "big": 10000000,
+    "num-str": "42"
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": ""
+  },
+  {
+   "id": "expr-173",
+   "kind": "expression",
+   "expression": [
+    "to-string",
+    [
+     "get",
+     "flag"
+    ]
+   ],
+   "properties": {
+    "name": "river",
+    "pop": 1200,
+    "flag": true,
+    "zero": 0,
+    "empty": "",
+    "neg": -3.5,
+    "big": 10000000,
+    "num-str": "42"
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": "true"
+  },
+  {
+   "id": "expr-174",
+   "kind": "expression",
+   "expression": [
+    "to-string",
+    [
+     "get",
+     "name"
+    ]
+   ],
+   "properties": {
+    "name": "river",
+    "pop": 1200,
+    "flag": true,
+    "zero": 0,
+    "empty": "",
+    "neg": -3.5,
+    "big": 10000000,
+    "num-str": "42"
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": "river"
+  },
+  {
+   "id": "expr-175",
+   "kind": "expression",
+   "expression": [
+    "to-string",
+    [
+     "literal",
+     [
+      1,
+      "a",
+      null,
+      true
+     ]
+    ]
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": "[1,\"a\",null,true]"
+  },
+  {
+   "id": "expr-176",
+   "kind": "expression",
+   "expression": [
+    "to-string",
+    [
+     "to-color",
+     "rgba(10, 20, 30, 0.5)"
+    ]
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": "rgba(10,20,30,0.5)"
+  },
+  {
+   "id": "expr-177",
+   "kind": "expression",
+   "expression": [
+    "to-string",
+    [
+     "to-color",
+     "#abcdef"
+    ]
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": "rgba(171,205,239,1)"
+  },
+  {
+   "id": "expr-178",
+   "kind": "expression",
+   "expression": [
+    "to-string",
+    [
+     "to-color",
+     "rgba(26, 207, 26, .73)"
+    ]
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": "rgba(26,207,26,0.73)"
+  },
+  {
+   "id": "expr-179",
+   "kind": "expression",
+   "expression": [
+    "to-number",
+    "42"
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": 42
+  },
+  {
+   "id": "expr-180",
+   "kind": "expression",
+   "expression": [
+    "to-number",
+    " 12 "
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": 12
+  },
+  {
+   "id": "expr-181",
+   "kind": "expression",
+   "expression": [
+    "to-number",
+    ""
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": 0
+  },
+  {
+   "id": "expr-182",
+   "kind": "expression",
+   "expression": [
+    "to-number",
+    "1e3"
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": 1000
+  },
+  {
+   "id": "expr-183",
+   "kind": "expression",
+   "expression": [
+    "to-number",
+    "-0.5"
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": -0.5
+  },
+  {
+   "id": "expr-184",
+   "kind": "expression",
+   "expression": [
+    "to-number",
+    "abc"
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expectedError": true,
+   "errorMessage": "Could not convert \"abc\" to number."
+  },
+  {
+   "id": "expr-185",
+   "kind": "expression",
+   "expression": [
+    "to-number",
+    "0x10"
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": 16
+  },
+  {
+   "id": "expr-186",
+   "kind": "expression",
+   "expression": [
+    "to-number",
+    "12abc"
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expectedError": true,
+   "errorMessage": "Could not convert \"12abc\" to number."
+  },
+  {
+   "id": "expr-187",
+   "kind": "expression",
+   "expression": [
+    "to-number",
+    ".5"
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": 0.5
+  },
+  {
+   "id": "expr-188",
+   "kind": "expression",
+   "expression": [
+    "to-number",
+    "5."
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": 5
+  },
+  {
+   "id": "expr-189",
+   "kind": "expression",
+   "expression": [
+    "to-number",
+    "+7"
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": 7
+  },
+  {
+   "id": "expr-190",
+   "kind": "expression",
+   "expression": [
+    "to-number",
+    "1_000"
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expectedError": true,
+   "errorMessage": "Could not convert \"1_000\" to number."
+  },
+  {
+   "id": "expr-191",
+   "kind": "expression",
+   "expression": [
+    "to-number",
+    "１２"
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expectedError": true,
+   "errorMessage": "Could not convert \"１２\" to number."
+  },
+  {
+   "id": "expr-192",
+   "kind": "expression",
+   "expression": [
+    "to-number",
+    "\n3\t"
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": 3
+  },
+  {
+   "id": "expr-193",
+   "kind": "expression",
+   "expression": [
+    "to-number",
+    [
+     "get",
+     "num-str"
+    ]
+   ],
+   "properties": {
+    "name": "river",
+    "pop": 1200,
+    "flag": true,
+    "zero": 0,
+    "empty": "",
+    "neg": -3.5,
+    "big": 10000000,
+    "num-str": "42"
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": 42
+  },
+  {
+   "id": "expr-194",
+   "kind": "expression",
+   "expression": [
+    "to-number",
+    [
+     "get",
+     "missing"
+    ]
+   ],
+   "properties": {
+    "name": "river",
+    "pop": 1200,
+    "flag": true,
+    "zero": 0,
+    "empty": "",
+    "neg": -3.5,
+    "big": 10000000,
+    "num-str": "42"
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": 0
+  },
+  {
+   "id": "expr-195",
+   "kind": "expression",
+   "expression": [
+    "to-number",
+    [
+     "get",
+     "flag"
+    ]
+   ],
+   "properties": {
+    "name": "river",
+    "pop": 1200,
+    "flag": true,
+    "zero": 0,
+    "empty": "",
+    "neg": -3.5,
+    "big": 10000000,
+    "num-str": "42"
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": 1
+  },
+  {
+   "id": "expr-196",
+   "kind": "expression",
+   "expression": [
+    "to-number",
+    [
+     "get",
+     "name"
+    ],
+    [
+     "get",
+     "pop"
+    ]
+   ],
+   "properties": {
+    "name": "river",
+    "pop": 1200,
+    "flag": true,
+    "zero": 0,
+    "empty": "",
+    "neg": -3.5,
+    "big": 10000000,
+    "num-str": "42"
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": 1200
+  },
+  {
+   "id": "expr-197",
+   "kind": "expression",
+   "expression": [
+    "to-number",
+    [
+     "get",
+     "name"
+    ]
+   ],
+   "properties": {
+    "name": "river",
+    "pop": 1200,
+    "flag": true,
+    "zero": 0,
+    "empty": "",
+    "neg": -3.5,
+    "big": 10000000,
+    "num-str": "42"
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expectedError": true,
+   "errorMessage": "Could not convert \"river\" to number."
+  },
+  {
+   "id": "expr-198",
+   "kind": "expression",
+   "expression": [
+    "to-boolean",
+    ""
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": false
+  },
+  {
+   "id": "expr-199",
+   "kind": "expression",
+   "expression": [
+    "to-boolean",
+    "a"
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": true
+  },
+  {
+   "id": "expr-200",
+   "kind": "expression",
+   "expression": [
+    "to-boolean",
+    "0"
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": true
+  },
+  {
+   "id": "expr-201",
+   "kind": "expression",
+   "expression": [
+    "to-boolean",
+    "false"
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": true
+  },
+  {
+   "id": "expr-202",
+   "kind": "expression",
+   "expression": [
+    "to-boolean",
+    0
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": false
+  },
+  {
+   "id": "expr-203",
+   "kind": "expression",
+   "expression": [
+    "to-boolean",
+    1
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": true
+  },
+  {
+   "id": "expr-204",
+   "kind": "expression",
+   "expression": [
+    "to-boolean",
+    -1
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": true
+  },
+  {
+   "id": "expr-205",
+   "kind": "expression",
+   "expression": [
+    "to-boolean",
+    true
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": true
+  },
+  {
+   "id": "expr-206",
+   "kind": "expression",
+   "expression": [
+    "to-boolean",
+    false
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": false
+  },
+  {
+   "id": "expr-207",
+   "kind": "expression",
+   "expression": [
+    "to-boolean",
+    [
+     "get",
+     "missing"
+    ]
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": false
+  },
+  {
+   "id": "expr-208",
+   "kind": "expression",
+   "expression": [
+    "to-boolean",
+    [
+     "literal",
+     []
+    ]
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": true
+  },
+  {
+   "id": "expr-209",
+   "kind": "expression",
+   "expression": [
+    "to-boolean",
+    [
+     "literal",
+     {}
+    ]
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": true
+  },
+  {
+   "id": "expr-210",
+   "kind": "expression",
+   "expression": [
+    "+",
+    1,
+    2,
+    3.5
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": 6.5
+  },
+  {
+   "id": "expr-211",
+   "kind": "expression",
+   "expression": [
+    "+",
+    [
+     "get",
+     "pop"
+    ],
+    1
+   ],
+   "properties": {
+    "name": "river",
+    "pop": 1200,
+    "flag": true,
+    "zero": 0,
+    "empty": "",
+    "neg": -3.5,
+    "big": 10000000,
+    "num-str": "42"
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": 1201
+  },
+  {
+   "id": "expr-212",
+   "kind": "expression",
+   "expression": [
+    "+",
+    [
+     "get",
+     "name"
+    ],
+    1
+   ],
+   "properties": {
+    "name": "river",
+    "pop": 1200,
+    "flag": true,
+    "zero": 0,
+    "empty": "",
+    "neg": -3.5,
+    "big": 10000000,
+    "num-str": "42"
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expectedError": true,
+   "errorMessage": "Expected value to be of type number, but found string instead."
+  },
+  {
+   "id": "expr-213",
+   "kind": "expression",
+   "expression": [
+    "-",
+    10,
+    3
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": 7
+  },
+  {
+   "id": "expr-214",
+   "kind": "expression",
+   "expression": [
+    "-",
+    10
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": -10
+  },
+  {
+   "id": "expr-215",
+   "kind": "expression",
+   "expression": [
+    "*",
+    2,
+    3,
+    4
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": 24
+  },
+  {
+   "id": "expr-216",
+   "kind": "expression",
+   "expression": [
+    "/",
+    7,
+    2
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": 3.5
+  },
+  {
+   "id": "expr-217",
+   "kind": "expression",
+   "expression": [
+    "%",
+    7,
+    3
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": 1
+  },
+  {
+   "id": "expr-218",
+   "kind": "expression",
+   "expression": [
+    "%",
+    -7,
+    3
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": -1
+  },
+  {
+   "id": "expr-219",
+   "kind": "expression",
+   "expression": [
+    "%",
+    7.5,
+    2
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": 1.5
+  },
+  {
+   "id": "expr-220",
+   "kind": "expression",
+   "expression": [
+    "^",
+    2,
+    10
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": 1024
+  },
+  {
+   "id": "expr-221",
+   "kind": "expression",
+   "expression": [
+    "^",
+    4,
+    0.5
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": 2
+  },
+  {
+   "id": "expr-222",
+   "kind": "expression",
+   "expression": [
+    "abs",
+    -3.5
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": 3.5
+  },
+  {
+   "id": "expr-223",
+   "kind": "expression",
+   "expression": [
+    "round",
+    2.5
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": 3
+  },
+  {
+   "id": "expr-224",
+   "kind": "expression",
+   "expression": [
+    "round",
+    -2.5
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": -3
+  },
+  {
+   "id": "expr-225",
+   "kind": "expression",
+   "expression": [
+    "round",
+    2.4999
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": 2
+  },
+  {
+   "id": "expr-226",
+   "kind": "expression",
+   "expression": [
+    "round",
+    -0.4
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": 0
+  },
+  {
+   "id": "expr-227",
+   "kind": "expression",
+   "expression": [
+    "floor",
+    -2.5
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": -3
+  },
+  {
+   "id": "expr-228",
+   "kind": "expression",
+   "expression": [
+    "ceil",
+    -2.5
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": -2
+  },
+  {
+   "id": "expr-229",
+   "kind": "expression",
+   "expression": [
+    "min",
+    3,
+    1,
+    2
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": 1
+  },
+  {
+   "id": "expr-230",
+   "kind": "expression",
+   "expression": [
+    "max",
+    3,
+    1,
+    2
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": 3
+  },
+  {
+   "id": "expr-231",
+   "kind": "expression",
+   "expression": [
+    "min",
+    [
+     "get",
+     "pop"
+    ],
+    1000
+   ],
+   "properties": {
+    "name": "river",
+    "pop": 1200,
+    "flag": true,
+    "zero": 0,
+    "empty": "",
+    "neg": -3.5,
+    "big": 10000000,
+    "num-str": "42"
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": 1000
+  },
+  {
+   "id": "expr-232",
+   "kind": "expression",
+   "expression": [
+    "sqrt",
+    16
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": 4
+  },
+  {
+   "id": "expr-233",
+   "kind": "expression",
+   "expression": [
+    "ln",
+    1
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": 0
+  },
+  {
+   "id": "expr-234",
+   "kind": "expression",
+   "expression": [
+    "log10",
+    1000
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": 2.9999999999999996
+  },
+  {
+   "id": "expr-235",
+   "kind": "expression",
+   "expression": [
+    "log2",
+    8
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": 3
+  },
+  {
+   "id": "expr-236",
+   "kind": "expression",
+   "expression": [
+    "pi"
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": 3.141592653589793
+  },
+  {
+   "id": "expr-237",
+   "kind": "expression",
+   "expression": [
+    "e"
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": 2.718281828459045
+  },
+  {
+   "id": "expr-238",
+   "kind": "expression",
+   "expression": [
+    "ln2"
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": 0.6931471805599453
+  },
+  {
+   "id": "expr-239",
+   "kind": "expression",
+   "expression": [
+    "sin",
+    0
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": 0
+  },
+  {
+   "id": "expr-240",
+   "kind": "expression",
+   "expression": [
+    "cos",
+    0
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": 1
+  },
+  {
+   "id": "expr-241",
+   "kind": "expression",
+   "expression": [
+    "atan",
+    1
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": 0.7853981633974483
+  },
+  {
+   "id": "expr-242",
+   "kind": "expression",
+   "expression": [
+    "step",
+    [
+     "get",
+     "pop"
+    ],
+    1,
+    100,
+    2,
+    1000,
+    3
+   ],
+   "properties": {
+    "pop": 0
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": 1
+  },
+  {
+   "id": "expr-243",
+   "kind": "expression",
+   "expression": [
+    "step",
+    [
+     "get",
+     "pop"
+    ],
+    1,
+    100,
+    2,
+    1000,
+    3
+   ],
+   "properties": {
+    "pop": 100
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": 2
+  },
+  {
+   "id": "expr-244",
+   "kind": "expression",
+   "expression": [
+    "step",
+    [
+     "get",
+     "pop"
+    ],
+    1,
+    100,
+    2,
+    1000,
+    3
+   ],
+   "properties": {
+    "pop": 500
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": 2
+  },
+  {
+   "id": "expr-245",
+   "kind": "expression",
+   "expression": [
+    "step",
+    [
+     "get",
+     "pop"
+    ],
+    1,
+    100,
+    2,
+    1000,
+    3
+   ],
+   "properties": {
+    "pop": 1000
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": 3
+  },
+  {
+   "id": "expr-246",
+   "kind": "expression",
+   "expression": [
+    "step",
+    [
+     "get",
+     "pop"
+    ],
+    1,
+    100,
+    2,
+    1000,
+    3
+   ],
+   "properties": {
+    "pop": 5000
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": 3
+  },
+  {
+   "id": "expr-247",
+   "kind": "expression",
+   "expression": [
+    "step",
+    [
+     "zoom"
+    ],
+    "low",
+    10,
+    "mid",
+    14,
+    "high"
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 9,
+   "expected": "low"
+  },
+  {
+   "id": "expr-248",
+   "kind": "expression",
+   "expression": [
+    "step",
+    [
+     "zoom"
+    ],
+    "low",
+    10,
+    "mid",
+    14,
+    "high"
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 10,
+   "expected": "mid"
+  },
+  {
+   "id": "expr-249",
+   "kind": "expression",
+   "expression": [
+    "step",
+    [
+     "zoom"
+    ],
+    "low",
+    10,
+    "mid",
+    14,
+    "high"
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 16,
+   "expected": "high"
+  },
+  {
+   "id": "expr-250",
+   "kind": "expression",
+   "expression": [
+    "step",
+    [
+     "get",
+     "pop"
+    ],
+    1,
+    100,
+    2
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expectedError": true,
+   "errorMessage": "Expected value to be of type number, but found null instead."
+  },
+  {
+   "id": "expr-251",
+   "kind": "expression",
+   "expression": [
+    "interpolate",
+    [
+     "linear"
+    ],
+    [
+     "get",
+     "pop"
+    ],
+    0,
+    1,
+    1000,
+    11
+   ],
+   "properties": {
+    "pop": -10
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": 1
+  },
+  {
+   "id": "expr-252",
+   "kind": "expression",
+   "expression": [
+    "interpolate",
+    [
+     "linear"
+    ],
+    [
+     "get",
+     "pop"
+    ],
+    0,
+    1,
+    1000,
+    11
+   ],
+   "properties": {
+    "pop": 0
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": 1
+  },
+  {
+   "id": "expr-253",
+   "kind": "expression",
+   "expression": [
+    "interpolate",
+    [
+     "linear"
+    ],
+    [
+     "get",
+     "pop"
+    ],
+    0,
+    1,
+    1000,
+    11
+   ],
+   "properties": {
+    "pop": 250
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": 3.5
+  },
+  {
+   "id": "expr-254",
+   "kind": "expression",
+   "expression": [
+    "interpolate",
+    [
+     "linear"
+    ],
+    [
+     "get",
+     "pop"
+    ],
+    0,
+    1,
+    1000,
+    11
+   ],
+   "properties": {
+    "pop": 1000
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": 11
+  },
+  {
+   "id": "expr-255",
+   "kind": "expression",
+   "expression": [
+    "interpolate",
+    [
+     "linear"
+    ],
+    [
+     "get",
+     "pop"
+    ],
+    0,
+    1,
+    1000,
+    11
+   ],
+   "properties": {
+    "pop": 2000
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": 11
+  },
+  {
+   "id": "expr-256",
+   "kind": "expression",
+   "expression": [
+    "interpolate",
+    [
+     "exponential",
+     2
+    ],
+    [
+     "zoom"
+    ],
+    10,
+    1,
+    14,
+    16
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 8,
+   "expected": 1
+  },
+  {
+   "id": "expr-257",
+   "kind": "expression",
+   "expression": [
+    "interpolate",
+    [
+     "exponential",
+     2
+    ],
+    [
+     "zoom"
+    ],
+    10,
+    1,
+    14,
+    16
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 10,
+   "expected": 1
+  },
+  {
+   "id": "expr-258",
+   "kind": "expression",
+   "expression": [
+    "interpolate",
+    [
+     "exponential",
+     2
+    ],
+    [
+     "zoom"
+    ],
+    10,
+    1,
+    14,
+    16
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 11,
+   "expected": 2
+  },
+  {
+   "id": "expr-259",
+   "kind": "expression",
+   "expression": [
+    "interpolate",
+    [
+     "exponential",
+     2
+    ],
+    [
+     "zoom"
+    ],
+    10,
+    1,
+    14,
+    16
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": 4
+  },
+  {
+   "id": "expr-260",
+   "kind": "expression",
+   "expression": [
+    "interpolate",
+    [
+     "exponential",
+     2
+    ],
+    [
+     "zoom"
+    ],
+    10,
+    1,
+    14,
+    16
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 13.5,
+   "expected": 11.31370849898476
+  },
+  {
+   "id": "expr-261",
+   "kind": "expression",
+   "expression": [
+    "interpolate",
+    [
+     "exponential",
+     2
+    ],
+    [
+     "zoom"
+    ],
+    10,
+    1,
+    14,
+    16
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 14,
+   "expected": 16
+  },
+  {
+   "id": "expr-262",
+   "kind": "expression",
+   "expression": [
+    "interpolate",
+    [
+     "exponential",
+     2
+    ],
+    [
+     "zoom"
+    ],
+    10,
+    1,
+    14,
+    16
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 20,
+   "expected": 16
+  },
+  {
+   "id": "expr-263",
+   "kind": "expression",
+   "expression": [
+    "interpolate",
+    [
+     "linear"
+    ],
+    [
+     "zoom"
+    ],
+    10,
+    1
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 20,
+   "expected": 1
+  },
+  {
+   "id": "expr-264",
+   "kind": "expression",
+   "expression": [
+    "interpolate",
+    [
+     "linear"
+    ],
+    [
+     "zoom"
+    ],
+    10,
+    [
+     "number",
+     [
+      "get",
+      "a"
+     ]
+    ],
+    20,
+    [
+     "number",
+     [
+      "get",
+      "b"
+     ]
+    ]
+   ],
+   "properties": {
+    "a": 2,
+    "b": 4
+   },
+   "geometryType": "Polygon",
+   "zoom": 15,
+   "expected": 3
+  },
+  {
+   "id": "expr-265",
+   "kind": "expression",
+   "expression": [
+    "interpolate",
+    [
+     "linear"
+    ],
+    [
+     "get",
+     "pop"
+    ],
+    0,
+    "a",
+    10,
+    "b"
+   ],
+   "properties": {
+    "pop": 5
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expectedError": true,
+   "errorMessage": "Type string is not interpolatable."
+  },
+  {
+   "id": "expr-266",
+   "kind": "expression",
+   "expression": [
+    "interpolate",
+    [
+     "cubic-bezier",
+     0.42,
+     0,
+     0.58,
+     1
+    ],
+    [
+     "get",
+     "pop"
+    ],
+    0,
+    0,
+    10,
+    100
+   ],
+   "properties": {
+    "pop": 5
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": 50
+  },
+  {
+   "id": "expr-267",
+   "kind": "expression",
+   "expression": [
+    "interpolate",
+    [
+     "linear"
+    ],
+    [
+     "get",
+     "pop"
+    ],
+    0,
+    [
+     "to-color",
+     "red"
+    ],
+    10,
+    [
+     "to-color",
+     "blue"
+    ]
+   ],
+   "properties": {
+    "pop": 5
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     127.5,
+     0,
+     127.5,
+     1
+    ]
+   }
+  },
+  {
+   "id": "expr-268",
+   "kind": "expression",
+   "expression": [
+    "number",
+    [
+     "get",
+     "pop"
+    ]
+   ],
+   "properties": {
+    "name": "river",
+    "pop": 1200,
+    "flag": true,
+    "zero": 0,
+    "empty": "",
+    "neg": -3.5,
+    "big": 10000000,
+    "num-str": "42"
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": 1200
+  },
+  {
+   "id": "expr-269",
+   "kind": "expression",
+   "expression": [
+    "number",
+    [
+     "get",
+     "name"
+    ],
+    [
+     "get",
+     "pop"
+    ]
+   ],
+   "properties": {
+    "name": "river",
+    "pop": 1200,
+    "flag": true,
+    "zero": 0,
+    "empty": "",
+    "neg": -3.5,
+    "big": 10000000,
+    "num-str": "42"
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": 1200
+  },
+  {
+   "id": "expr-270",
+   "kind": "expression",
+   "expression": [
+    "number",
+    [
+     "get",
+     "name"
+    ]
+   ],
+   "properties": {
+    "name": "river",
+    "pop": 1200,
+    "flag": true,
+    "zero": 0,
+    "empty": "",
+    "neg": -3.5,
+    "big": 10000000,
+    "num-str": "42"
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expectedError": true,
+   "errorMessage": "Expected value to be of type number, but found string instead."
+  },
+  {
+   "id": "expr-271",
+   "kind": "expression",
+   "expression": [
+    "string",
+    [
+     "get",
+     "name"
+    ]
+   ],
+   "properties": {
+    "name": "river",
+    "pop": 1200,
+    "flag": true,
+    "zero": 0,
+    "empty": "",
+    "neg": -3.5,
+    "big": 10000000,
+    "num-str": "42"
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": "river"
+  },
+  {
+   "id": "expr-272",
+   "kind": "expression",
+   "expression": [
+    "string",
+    [
+     "get",
+     "pop"
+    ]
+   ],
+   "properties": {
+    "name": "river",
+    "pop": 1200,
+    "flag": true,
+    "zero": 0,
+    "empty": "",
+    "neg": -3.5,
+    "big": 10000000,
+    "num-str": "42"
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expectedError": true,
+   "errorMessage": "Expected value to be of type string, but found number instead."
+  },
+  {
+   "id": "expr-273",
+   "kind": "expression",
+   "expression": [
+    "boolean",
+    [
+     "get",
+     "flag"
+    ]
+   ],
+   "properties": {
+    "name": "river",
+    "pop": 1200,
+    "flag": true,
+    "zero": 0,
+    "empty": "",
+    "neg": -3.5,
+    "big": 10000000,
+    "num-str": "42"
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": true
+  },
+  {
+   "id": "expr-274",
+   "kind": "expression",
+   "expression": [
+    "array",
+    [
+     "literal",
+     [
+      1,
+      2
+     ]
+    ]
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": [
+    1,
+    2
+   ]
+  },
+  {
+   "id": "expr-275",
+   "kind": "expression",
+   "expression": [
+    "object",
+    [
+     "literal",
+     {
+      "a": 1
+     }
+    ]
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "a": 1
+   }
+  },
+  {
+   "id": "expr-276",
+   "kind": "expression",
+   "expression": [
+    "rgb",
+    255,
+    128,
+    0
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     255,
+     128,
+     0,
+     1
+    ]
+   }
+  },
+  {
+   "id": "expr-277",
+   "kind": "expression",
+   "expression": [
+    "rgba",
+    255,
+    128,
+    0,
+    0.5
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     255,
+     128,
+     0,
+     0.5
+    ]
+   }
+  },
+  {
+   "id": "expr-278",
+   "kind": "expression",
+   "expression": [
+    "rgb",
+    256,
+    0,
+    0
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expectedError": true,
+   "errorMessage": "Invalid rgba value [256, 0, 0, 1]: 'r', 'g', and 'b' must be between 0 and 255."
+  },
+  {
+   "id": "expr-279",
+   "kind": "expression",
+   "expression": [
+    "rgba",
+    0,
+    0,
+    0,
+    2
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expectedError": true,
+   "errorMessage": "Invalid rgba value [0, 0, 0, 2]: 'a' must be between 0 and 1."
+  },
+  {
+   "id": "expr-280",
+   "kind": "expression",
+   "expression": [
+    "to-color",
+    "#ff0000"
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     255,
+     0,
+     0,
+     1
+    ]
+   }
+  },
+  {
+   "id": "expr-281",
+   "kind": "expression",
+   "expression": [
+    "to-color",
+    "not-a-color",
+    "#00ff00"
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     0,
+     255,
+     0,
+     1
+    ]
+   }
+  },
+  {
+   "id": "expr-282",
+   "kind": "expression",
+   "expression": [
+    "to-color",
+    [
+     "literal",
+     [
+      1,
+      2,
+      3
+     ]
+    ]
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     1,
+     2,
+     3,
+     1
+    ]
+   }
+  },
+  {
+   "id": "expr-283",
+   "kind": "expression",
+   "expression": [
+    "to-color",
+    [
+     "literal",
+     [
+      1,
+      2,
+      3,
+      0.5
+     ]
+    ]
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     2,
+     4,
+     6,
+     0.5
+    ]
+   }
+  },
+  {
+   "id": "expr-284",
+   "kind": "expression",
+   "expression": [
+    "to-color",
+    "nope"
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expectedError": true,
+   "errorMessage": "Could not parse color from value 'nope'"
+  },
+  {
+   "id": "expr-285",
+   "kind": "expression",
+   "expression": [
+    "to-rgba",
+    [
+     "to-color",
+     "#336699"
+    ]
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": [
+    51,
+    102,
+    153,
+    1
+   ]
+  },
+  {
+   "id": "expr-286",
+   "kind": "expression",
+   "expression": [
+    "to-color",
+    [
+     "get",
+     "c"
+    ]
+   ],
+   "properties": {
+    "c": "hsl(120, 100%, 50%)"
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     0,
+     255,
+     0,
+     1
+    ]
+   }
+  },
+  {
+   "id": "expr-287",
+   "kind": "expression",
+   "expression": [
+    "format",
+    "Hello ",
+    {
+     "font-scale": 0.8
+    },
+    [
+     "get",
+     "name"
+    ],
+    {}
+   ],
+   "properties": {
+    "name": "river",
+    "pop": 1200,
+    "flag": true,
+    "zero": 0,
+    "empty": "",
+    "neg": -3.5,
+    "big": 10000000,
+    "num-str": "42"
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": "Hello river"
+  },
+  {
+   "id": "expr-288",
+   "kind": "expression",
+   "expression": [
+    "format",
+    [
+     "get",
+     "pop"
+    ],
+    {},
+    " people"
+   ],
+   "properties": {
+    "name": "river",
+    "pop": 1200,
+    "flag": true,
+    "zero": 0,
+    "empty": "",
+    "neg": -3.5,
+    "big": 10000000,
+    "num-str": "42"
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": "1200 people"
+  },
+  {
+   "id": "expr-289",
+   "kind": "expression",
+   "expression": [
+    "format",
+    [
+     "get",
+     "missing"
+    ]
+   ],
+   "properties": {
+    "name": "river",
+    "pop": 1200,
+    "flag": true,
+    "zero": 0,
+    "empty": "",
+    "neg": -3.5,
+    "big": 10000000,
+    "num-str": "42"
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": ""
+  },
+  {
+   "id": "expr-290",
+   "kind": "expression",
+   "expression": [
+    "no-such-op",
+    1
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expectedError": true,
+   "errorMessage": "Unknown expression \"no-such-op\". If you wanted a literal array, use [\"literal\", [...]]."
+  },
+  {
+   "id": "expr-291",
+   "kind": "expression",
+   "expression": [
+    "get"
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expectedError": true,
+   "errorMessage": "Expected arguments of type (string) | (string, object), but found () instead."
+  },
+  {
+   "id": "expr-292",
+   "kind": "expression",
+   "expression": [
+    "get",
+    5
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expectedError": true,
+   "errorMessage": "Expected string but found number instead."
+  },
+  {
+   "id": "expr-293",
+   "kind": "expression",
+   "expression": [],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expectedError": true,
+   "errorMessage": "Expected an array with at least one element. If you wanted a literal array, use [\"literal\", []]."
+  },
+  {
+   "id": "expr-294",
+   "kind": "expression",
+   "expression": [
+    "let",
+    "x",
+    1,
+    [
+     "var",
+     "x"
+    ]
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": 1
+  },
+  {
+   "id": "expr-295",
+   "kind": "expression",
+   "expression": [
+    "let",
+    "x",
+    1,
+    "y",
+    [
+     "get",
+     "name"
+    ],
+    [
+     "concat",
+     [
+      "var",
+      "y"
+     ],
+     [
+      "to-string",
+      [
+       "var",
+       "x"
+      ]
+     ]
+    ]
+   ],
+   "properties": {
+    "name": "river",
+    "pop": 1200,
+    "flag": true,
+    "zero": 0,
+    "empty": "",
+    "neg": -3.5,
+    "big": 10000000,
+    "num-str": "42"
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": "river1"
+  },
+  {
+   "id": "expr-296",
+   "kind": "expression",
+   "expression": [
+    "var",
+    "nope"
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expectedError": true,
+   "errorMessage": "Unknown variable \"nope\". Make sure \"nope\" has been bound in an enclosing \"let\" expression before using it."
+  },
+  {
+   "id": "expr-297",
+   "kind": "expression",
+   "expression": [
+    "feature-state",
+    "hover"
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": null
+  },
+  {
+   "id": "expr-298",
+   "kind": "expression",
+   "expression": [
+    "number-format",
+    1234.5678,
+    {}
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": "1,234.568"
+  },
+  {
+   "id": "expr-299",
+   "kind": "expression",
+   "expression": [
+    "number-format",
+    1234.5678,
+    {
+     "min-fraction-digits": 1,
+     "max-fraction-digits": 2
+    }
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": "1,234.57"
+  },
+  {
+   "id": "expr-300",
+   "kind": "expression",
+   "expression": [
+    "number-format",
+    0.5,
+    {
+     "min-fraction-digits": 2
+    }
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": "0.50"
+  },
+  {
+   "id": "expr-301",
+   "kind": "expression",
+   "expression": [
+    "number-format",
+    1234567,
+    {
+     "max-fraction-digits": 0
+    }
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": "1,234,567"
+  },
+  {
+   "id": "expr-302",
+   "kind": "expression",
+   "expression": "plain string",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": "plain string"
+  },
+  {
+   "id": "expr-303",
+   "kind": "expression",
+   "expression": 42,
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": 42
+  },
+  {
+   "id": "expr-304",
+   "kind": "expression",
+   "expression": true,
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": true
+  },
+  {
+   "id": "expr-305",
+   "kind": "expression",
+   "expression": null,
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": null
+  },
+  {
+   "id": "expr-306",
+   "kind": "expression",
+   "expression": [
+    "literal",
+    "x"
+   ],
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": "x"
+  },
+  {
+   "id": "color-307",
+   "kind": "color",
+   "expression": "aliceblue",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     240,
+     248,
+     255,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-308",
+   "kind": "color",
+   "expression": "antiquewhite",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     250,
+     235,
+     215,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-309",
+   "kind": "color",
+   "expression": "aqua",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     0,
+     255,
+     255,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-310",
+   "kind": "color",
+   "expression": "aquamarine",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     127,
+     255,
+     212,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-311",
+   "kind": "color",
+   "expression": "azure",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     240,
+     255,
+     255,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-312",
+   "kind": "color",
+   "expression": "beige",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     245,
+     245,
+     220,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-313",
+   "kind": "color",
+   "expression": "bisque",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     255,
+     228,
+     196,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-314",
+   "kind": "color",
+   "expression": "black",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     0,
+     0,
+     0,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-315",
+   "kind": "color",
+   "expression": "blanchedalmond",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     255,
+     235,
+     205,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-316",
+   "kind": "color",
+   "expression": "blue",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     0,
+     0,
+     255,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-317",
+   "kind": "color",
+   "expression": "blueviolet",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     138,
+     43,
+     226,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-318",
+   "kind": "color",
+   "expression": "brown",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     165,
+     42,
+     42,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-319",
+   "kind": "color",
+   "expression": "burlywood",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     222,
+     184,
+     135,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-320",
+   "kind": "color",
+   "expression": "cadetblue",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     95,
+     158,
+     160,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-321",
+   "kind": "color",
+   "expression": "chartreuse",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     127,
+     255,
+     0,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-322",
+   "kind": "color",
+   "expression": "chocolate",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     210,
+     105,
+     30,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-323",
+   "kind": "color",
+   "expression": "coral",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     255,
+     127,
+     80,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-324",
+   "kind": "color",
+   "expression": "cornflowerblue",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     100,
+     149,
+     237,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-325",
+   "kind": "color",
+   "expression": "cornsilk",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     255,
+     248,
+     220,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-326",
+   "kind": "color",
+   "expression": "crimson",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     220,
+     20,
+     60,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-327",
+   "kind": "color",
+   "expression": "cyan",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     0,
+     255,
+     255,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-328",
+   "kind": "color",
+   "expression": "darkblue",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     0,
+     0,
+     139,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-329",
+   "kind": "color",
+   "expression": "darkcyan",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     0,
+     139,
+     139,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-330",
+   "kind": "color",
+   "expression": "darkgoldenrod",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     184,
+     134,
+     11,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-331",
+   "kind": "color",
+   "expression": "darkgray",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     169,
+     169,
+     169,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-332",
+   "kind": "color",
+   "expression": "darkgreen",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     0,
+     100,
+     0,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-333",
+   "kind": "color",
+   "expression": "darkgrey",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     169,
+     169,
+     169,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-334",
+   "kind": "color",
+   "expression": "darkkhaki",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     189,
+     183,
+     107,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-335",
+   "kind": "color",
+   "expression": "darkmagenta",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     139,
+     0,
+     139,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-336",
+   "kind": "color",
+   "expression": "darkolivegreen",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     85,
+     107,
+     47,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-337",
+   "kind": "color",
+   "expression": "darkorange",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     255,
+     140,
+     0,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-338",
+   "kind": "color",
+   "expression": "darkorchid",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     153,
+     50,
+     204,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-339",
+   "kind": "color",
+   "expression": "darkred",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     139,
+     0,
+     0,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-340",
+   "kind": "color",
+   "expression": "darksalmon",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     233,
+     150,
+     122,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-341",
+   "kind": "color",
+   "expression": "darkseagreen",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     143,
+     188,
+     143,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-342",
+   "kind": "color",
+   "expression": "darkslateblue",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     72,
+     61,
+     139,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-343",
+   "kind": "color",
+   "expression": "darkslategray",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     47,
+     79,
+     79,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-344",
+   "kind": "color",
+   "expression": "darkslategrey",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     47,
+     79,
+     79,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-345",
+   "kind": "color",
+   "expression": "darkturquoise",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     0,
+     206,
+     209,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-346",
+   "kind": "color",
+   "expression": "darkviolet",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     148,
+     0,
+     211,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-347",
+   "kind": "color",
+   "expression": "deeppink",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     255,
+     20,
+     147,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-348",
+   "kind": "color",
+   "expression": "deepskyblue",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     0,
+     191,
+     255,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-349",
+   "kind": "color",
+   "expression": "dimgray",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     105,
+     105,
+     105,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-350",
+   "kind": "color",
+   "expression": "dimgrey",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     105,
+     105,
+     105,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-351",
+   "kind": "color",
+   "expression": "dodgerblue",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     30,
+     144,
+     255,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-352",
+   "kind": "color",
+   "expression": "firebrick",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     178,
+     34,
+     34,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-353",
+   "kind": "color",
+   "expression": "floralwhite",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     255,
+     250,
+     240,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-354",
+   "kind": "color",
+   "expression": "forestgreen",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     34,
+     139,
+     34,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-355",
+   "kind": "color",
+   "expression": "fuchsia",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     255,
+     0,
+     255,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-356",
+   "kind": "color",
+   "expression": "gainsboro",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     220,
+     220,
+     220,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-357",
+   "kind": "color",
+   "expression": "ghostwhite",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     248,
+     248,
+     255,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-358",
+   "kind": "color",
+   "expression": "gold",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     255,
+     215,
+     0,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-359",
+   "kind": "color",
+   "expression": "goldenrod",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     218,
+     165,
+     32,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-360",
+   "kind": "color",
+   "expression": "gray",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     128,
+     128,
+     128,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-361",
+   "kind": "color",
+   "expression": "green",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     0,
+     128,
+     0,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-362",
+   "kind": "color",
+   "expression": "greenyellow",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     173,
+     255,
+     47,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-363",
+   "kind": "color",
+   "expression": "grey",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     128,
+     128,
+     128,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-364",
+   "kind": "color",
+   "expression": "honeydew",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     240,
+     255,
+     240,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-365",
+   "kind": "color",
+   "expression": "hotpink",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     255,
+     105,
+     180,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-366",
+   "kind": "color",
+   "expression": "indianred",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     205,
+     92,
+     92,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-367",
+   "kind": "color",
+   "expression": "indigo",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     75,
+     0,
+     130,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-368",
+   "kind": "color",
+   "expression": "ivory",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     255,
+     255,
+     240,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-369",
+   "kind": "color",
+   "expression": "khaki",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     240,
+     230,
+     140,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-370",
+   "kind": "color",
+   "expression": "lavender",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     230,
+     230,
+     250,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-371",
+   "kind": "color",
+   "expression": "lavenderblush",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     255,
+     240,
+     245,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-372",
+   "kind": "color",
+   "expression": "lawngreen",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     124,
+     252,
+     0,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-373",
+   "kind": "color",
+   "expression": "lemonchiffon",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     255,
+     250,
+     205,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-374",
+   "kind": "color",
+   "expression": "lightblue",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     173,
+     216,
+     230,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-375",
+   "kind": "color",
+   "expression": "lightcoral",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     240,
+     128,
+     128,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-376",
+   "kind": "color",
+   "expression": "lightcyan",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     224,
+     255,
+     255,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-377",
+   "kind": "color",
+   "expression": "lightgoldenrodyellow",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     250,
+     250,
+     210,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-378",
+   "kind": "color",
+   "expression": "lightgray",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     211,
+     211,
+     211,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-379",
+   "kind": "color",
+   "expression": "lightgreen",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     144,
+     238,
+     144,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-380",
+   "kind": "color",
+   "expression": "lightgrey",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     211,
+     211,
+     211,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-381",
+   "kind": "color",
+   "expression": "lightpink",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     255,
+     182,
+     193,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-382",
+   "kind": "color",
+   "expression": "lightsalmon",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     255,
+     160,
+     122,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-383",
+   "kind": "color",
+   "expression": "lightseagreen",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     32,
+     178,
+     170,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-384",
+   "kind": "color",
+   "expression": "lightskyblue",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     135,
+     206,
+     250,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-385",
+   "kind": "color",
+   "expression": "lightslategray",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     119,
+     136,
+     153,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-386",
+   "kind": "color",
+   "expression": "lightslategrey",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     119,
+     136,
+     153,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-387",
+   "kind": "color",
+   "expression": "lightsteelblue",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     176,
+     196,
+     222,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-388",
+   "kind": "color",
+   "expression": "lightyellow",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     255,
+     255,
+     224,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-389",
+   "kind": "color",
+   "expression": "lime",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     0,
+     255,
+     0,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-390",
+   "kind": "color",
+   "expression": "limegreen",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     50,
+     205,
+     50,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-391",
+   "kind": "color",
+   "expression": "linen",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     250,
+     240,
+     230,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-392",
+   "kind": "color",
+   "expression": "magenta",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     255,
+     0,
+     255,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-393",
+   "kind": "color",
+   "expression": "maroon",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     128,
+     0,
+     0,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-394",
+   "kind": "color",
+   "expression": "mediumaquamarine",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     102,
+     205,
+     170,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-395",
+   "kind": "color",
+   "expression": "mediumblue",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     0,
+     0,
+     205,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-396",
+   "kind": "color",
+   "expression": "mediumorchid",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     186,
+     85,
+     211,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-397",
+   "kind": "color",
+   "expression": "mediumpurple",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     147,
+     112,
+     219,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-398",
+   "kind": "color",
+   "expression": "mediumseagreen",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     60,
+     179,
+     113,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-399",
+   "kind": "color",
+   "expression": "mediumslateblue",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     123,
+     104,
+     238,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-400",
+   "kind": "color",
+   "expression": "mediumspringgreen",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     0,
+     250,
+     154,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-401",
+   "kind": "color",
+   "expression": "mediumturquoise",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     72,
+     209,
+     204,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-402",
+   "kind": "color",
+   "expression": "mediumvioletred",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     199,
+     21,
+     133,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-403",
+   "kind": "color",
+   "expression": "midnightblue",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     25,
+     25,
+     112,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-404",
+   "kind": "color",
+   "expression": "mintcream",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     245,
+     255,
+     250,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-405",
+   "kind": "color",
+   "expression": "mistyrose",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     255,
+     228,
+     225,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-406",
+   "kind": "color",
+   "expression": "moccasin",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     255,
+     228,
+     181,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-407",
+   "kind": "color",
+   "expression": "navajowhite",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     255,
+     222,
+     173,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-408",
+   "kind": "color",
+   "expression": "navy",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     0,
+     0,
+     128,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-409",
+   "kind": "color",
+   "expression": "oldlace",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     253,
+     245,
+     230,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-410",
+   "kind": "color",
+   "expression": "olive",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     128,
+     128,
+     0,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-411",
+   "kind": "color",
+   "expression": "olivedrab",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     107,
+     142,
+     35,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-412",
+   "kind": "color",
+   "expression": "orange",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     255,
+     165,
+     0,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-413",
+   "kind": "color",
+   "expression": "orangered",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     255,
+     69,
+     0,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-414",
+   "kind": "color",
+   "expression": "orchid",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     218,
+     112,
+     214,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-415",
+   "kind": "color",
+   "expression": "palegoldenrod",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     238,
+     232,
+     170,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-416",
+   "kind": "color",
+   "expression": "palegreen",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     152,
+     251,
+     152,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-417",
+   "kind": "color",
+   "expression": "paleturquoise",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     175,
+     238,
+     238,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-418",
+   "kind": "color",
+   "expression": "palevioletred",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     219,
+     112,
+     147,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-419",
+   "kind": "color",
+   "expression": "papayawhip",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     255,
+     239,
+     213,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-420",
+   "kind": "color",
+   "expression": "peachpuff",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     255,
+     218,
+     185,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-421",
+   "kind": "color",
+   "expression": "peru",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     205,
+     133,
+     63,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-422",
+   "kind": "color",
+   "expression": "pink",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     255,
+     192,
+     203,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-423",
+   "kind": "color",
+   "expression": "plum",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     221,
+     160,
+     221,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-424",
+   "kind": "color",
+   "expression": "powderblue",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     176,
+     224,
+     230,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-425",
+   "kind": "color",
+   "expression": "purple",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     128,
+     0,
+     128,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-426",
+   "kind": "color",
+   "expression": "rebeccapurple",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     102,
+     51,
+     153,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-427",
+   "kind": "color",
+   "expression": "red",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     255,
+     0,
+     0,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-428",
+   "kind": "color",
+   "expression": "rosybrown",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     188,
+     143,
+     143,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-429",
+   "kind": "color",
+   "expression": "royalblue",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     65,
+     105,
+     225,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-430",
+   "kind": "color",
+   "expression": "saddlebrown",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     139,
+     69,
+     19,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-431",
+   "kind": "color",
+   "expression": "salmon",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     250,
+     128,
+     114,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-432",
+   "kind": "color",
+   "expression": "sandybrown",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     244,
+     164,
+     96,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-433",
+   "kind": "color",
+   "expression": "seagreen",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     46,
+     139,
+     87,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-434",
+   "kind": "color",
+   "expression": "seashell",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     255,
+     245,
+     238,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-435",
+   "kind": "color",
+   "expression": "sienna",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     160,
+     82,
+     45,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-436",
+   "kind": "color",
+   "expression": "silver",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     192,
+     192,
+     192,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-437",
+   "kind": "color",
+   "expression": "skyblue",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     135,
+     206,
+     235,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-438",
+   "kind": "color",
+   "expression": "slateblue",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     106,
+     90,
+     205,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-439",
+   "kind": "color",
+   "expression": "slategray",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     112,
+     128,
+     144,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-440",
+   "kind": "color",
+   "expression": "slategrey",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     112,
+     128,
+     144,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-441",
+   "kind": "color",
+   "expression": "snow",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     255,
+     250,
+     250,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-442",
+   "kind": "color",
+   "expression": "springgreen",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     0,
+     255,
+     127,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-443",
+   "kind": "color",
+   "expression": "steelblue",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     70,
+     130,
+     180,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-444",
+   "kind": "color",
+   "expression": "tan",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     210,
+     180,
+     140,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-445",
+   "kind": "color",
+   "expression": "teal",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     0,
+     128,
+     128,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-446",
+   "kind": "color",
+   "expression": "thistle",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     216,
+     191,
+     216,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-447",
+   "kind": "color",
+   "expression": "tomato",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     255,
+     99,
+     71,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-448",
+   "kind": "color",
+   "expression": "turquoise",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     64,
+     224,
+     208,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-449",
+   "kind": "color",
+   "expression": "violet",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     238,
+     130,
+     238,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-450",
+   "kind": "color",
+   "expression": "wheat",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     245,
+     222,
+     179,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-451",
+   "kind": "color",
+   "expression": "white",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     255,
+     255,
+     255,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-452",
+   "kind": "color",
+   "expression": "whitesmoke",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     245,
+     245,
+     245,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-453",
+   "kind": "color",
+   "expression": "yellow",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     255,
+     255,
+     0,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-454",
+   "kind": "color",
+   "expression": "yellowgreen",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     154,
+     205,
+     50,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-455",
+   "kind": "color",
+   "expression": "transparent",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     0,
+     0,
+     0,
+     0
+    ]
+   }
+  },
+  {
+   "id": "color-456",
+   "kind": "color",
+   "expression": "#fff",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     255,
+     255,
+     255,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-457",
+   "kind": "color",
+   "expression": "#FFF",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     255,
+     255,
+     255,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-458",
+   "kind": "color",
+   "expression": "#abc",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     170,
+     187,
+     204,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-459",
+   "kind": "color",
+   "expression": "#abcd",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     170,
+     187,
+     204,
+     0.8666666666666667
+    ]
+   }
+  },
+  {
+   "id": "color-460",
+   "kind": "color",
+   "expression": "#ABCD",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     170,
+     187,
+     204,
+     0.8666666666666667
+    ]
+   }
+  },
+  {
+   "id": "color-461",
+   "kind": "color",
+   "expression": "#00ff00",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     0,
+     255,
+     0,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-462",
+   "kind": "color",
+   "expression": "#00FF00",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     0,
+     255,
+     0,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-463",
+   "kind": "color",
+   "expression": "#00ff0080",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     0,
+     255,
+     0,
+     0.5019607843137255
+    ]
+   }
+  },
+  {
+   "id": "color-464",
+   "kind": "color",
+   "expression": "#00ff00ff",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     0,
+     255,
+     0,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-465",
+   "kind": "color",
+   "expression": "#00ff0000",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     0,
+     255,
+     0,
+     0
+    ]
+   }
+  },
+  {
+   "id": "color-466",
+   "kind": "color",
+   "expression": "rgb(10,20,30)",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     10,
+     20,
+     30,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-467",
+   "kind": "color",
+   "expression": "rgb(10, 20, 30)",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     10,
+     20,
+     30,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-468",
+   "kind": "color",
+   "expression": "rgba(10,20,30,0.5)",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     10,
+     20,
+     30,
+     0.5
+    ]
+   }
+  },
+  {
+   "id": "color-469",
+   "kind": "color",
+   "expression": "rgba(10, 20, 30, .5)",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     10,
+     20,
+     30,
+     0.5
+    ]
+   }
+  },
+  {
+   "id": "color-470",
+   "kind": "color",
+   "expression": "rgba(10,20,30,50%)",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     10,
+     20,
+     30,
+     0.5
+    ]
+   }
+  },
+  {
+   "id": "color-471",
+   "kind": "color",
+   "expression": "rgb(10 20 30)",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     10,
+     20,
+     30,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-472",
+   "kind": "color",
+   "expression": "rgb(10 20 30 / 0.5)",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     10,
+     20,
+     30,
+     0.5
+    ]
+   }
+  },
+  {
+   "id": "color-473",
+   "kind": "color",
+   "expression": "rgb(10 20 30 / 50%)",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     10,
+     20,
+     30,
+     0.5
+    ]
+   }
+  },
+  {
+   "id": "color-474",
+   "kind": "color",
+   "expression": "rgb(100%, 0%, 50%)",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     255,
+     0,
+     127.5,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-475",
+   "kind": "color",
+   "expression": "rgb(1.5, 2.5, 3.5)",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     1.5,
+     2.5,
+     3.5,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-476",
+   "kind": "color",
+   "expression": "rgb(300, -10, 0)",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     255,
+     0,
+     0,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-477",
+   "kind": "color",
+   "expression": "rgba(0,0,0,2)",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     0,
+     0,
+     0,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-478",
+   "kind": "color",
+   "expression": "hsl(120, 100%, 50%)",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     0,
+     255,
+     0,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-479",
+   "kind": "color",
+   "expression": "hsl(120,100%,50%)",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     0,
+     255,
+     0,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-480",
+   "kind": "color",
+   "expression": "hsla(120, 100%, 50%, 0.3)",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     0,
+     255,
+     0,
+     0.3
+    ]
+   }
+  },
+  {
+   "id": "color-481",
+   "kind": "color",
+   "expression": "hsl(120 100% 50%)",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     0,
+     255,
+     0,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-482",
+   "kind": "color",
+   "expression": "hsl(120 100% 50% / 0.3)",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     0,
+     255,
+     0,
+     0.3
+    ]
+   }
+  },
+  {
+   "id": "color-483",
+   "kind": "color",
+   "expression": "hsl(0.5turn, 50%, 50%)",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expectedError": true,
+   "errorMessage": "Could not parse color from value 'hsl(0.5turn, 50%, 50%)'"
+  },
+  {
+   "id": "color-484",
+   "kind": "color",
+   "expression": "hsl(200deg, 50%, 50%)",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     63.75,
+     148.74999999999991,
+     191.25,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-485",
+   "kind": "color",
+   "expression": "hsl(3.14rad, 50%, 50%)",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expectedError": true,
+   "errorMessage": "Could not parse color from value 'hsl(3.14rad, 50%, 50%)'"
+  },
+  {
+   "id": "color-486",
+   "kind": "color",
+   "expression": "hsl(-30, 50%, 50%)",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     191.25,
+     63.75,
+     127.5,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-487",
+   "kind": "color",
+   "expression": "hsl(390, 50%, 50%)",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     191.25,
+     127.5,
+     63.75,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-488",
+   "kind": "color",
+   "expression": "HSL(120, 100%, 50%)",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     0,
+     255,
+     0,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-489",
+   "kind": "color",
+   "expression": "RGB(1,2,3)",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     1,
+     2,
+     3,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-490",
+   "kind": "color",
+   "expression": "Red",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     255,
+     0,
+     0,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-491",
+   "kind": "color",
+   "expression": "RED",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     255,
+     0,
+     0,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-492",
+   "kind": "color",
+   "expression": "  red  ",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     255,
+     0,
+     0,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-493",
+   "kind": "color",
+   "expression": "#",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expectedError": true,
+   "errorMessage": "Could not parse color from value '#'"
+  },
+  {
+   "id": "color-494",
+   "kind": "color",
+   "expression": "#12",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expectedError": true,
+   "errorMessage": "Could not parse color from value '#12'"
+  },
+  {
+   "id": "color-495",
+   "kind": "color",
+   "expression": "#12345",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expectedError": true,
+   "errorMessage": "Could not parse color from value '#12345'"
+  },
+  {
+   "id": "color-496",
+   "kind": "color",
+   "expression": "#1234567",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expectedError": true,
+   "errorMessage": "Could not parse color from value '#1234567'"
+  },
+  {
+   "id": "color-497",
+   "kind": "color",
+   "expression": "#gggggg",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expectedError": true,
+   "errorMessage": "Could not parse color from value '#gggggg'"
+  },
+  {
+   "id": "color-498",
+   "kind": "color",
+   "expression": "rgb(1,2)",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expectedError": true,
+   "errorMessage": "Could not parse color from value 'rgb(1,2)'"
+  },
+  {
+   "id": "color-499",
+   "kind": "color",
+   "expression": "rgb(1,2,3,4,5)",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expectedError": true,
+   "errorMessage": "Could not parse color from value 'rgb(1,2,3,4,5)'"
+  },
+  {
+   "id": "color-500",
+   "kind": "color",
+   "expression": "rgb()",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expectedError": true,
+   "errorMessage": "Could not parse color from value 'rgb()'"
+  },
+  {
+   "id": "color-501",
+   "kind": "color",
+   "expression": "rgba(1,2,3)",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     1,
+     2,
+     3,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-502",
+   "kind": "color",
+   "expression": "notacolor",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expectedError": true,
+   "errorMessage": "Could not parse color from value 'notacolor'"
+  },
+  {
+   "id": "color-503",
+   "kind": "color",
+   "expression": "",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expectedError": true,
+   "errorMessage": "Could not parse color from value ''"
+  },
+  {
+   "id": "color-504",
+   "kind": "color",
+   "expression": "0x00ff00",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expectedError": true,
+   "errorMessage": "Could not parse color from value '0x00ff00'"
+  },
+  {
+   "id": "color-505",
+   "kind": "color",
+   "expression": "rgb( 10 , 20 , 30 )",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     10,
+     20,
+     30,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-506",
+   "kind": "color",
+   "expression": "rgb(10,20,30)extra",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expectedError": true,
+   "errorMessage": "Could not parse color from value 'rgb(10,20,30)extra'"
+  },
+  {
+   "id": "color-507",
+   "kind": "color",
+   "expression": "hsl(120, 100, 50)",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expectedError": true,
+   "errorMessage": "Could not parse color from value 'hsl(120, 100, 50)'"
+  },
+  {
+   "id": "color-508",
+   "kind": "color",
+   "expression": "rgb(10%,20%,30%)",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     25.5,
+     51,
+     76.5,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-509",
+   "kind": "color",
+   "expression": "rgba(255,255,255,1.0)",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     255,
+     255,
+     255,
+     1
+    ]
+   }
+  },
+  {
+   "id": "color-510",
+   "kind": "color",
+   "expression": "rgba(255,255,255,0)",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": {
+    "$color": [
+     255,
+     255,
+     255,
+     0
+    ]
+   }
+  },
+  {
+   "id": "color-511",
+   "kind": "color",
+   "expression": "currentColor",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expectedError": true,
+   "errorMessage": "Could not parse color from value 'currentColor'"
+  },
+  {
+   "id": "color-512",
+   "kind": "color",
+   "expression": "inherit",
+   "properties": {},
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expectedError": true,
+   "errorMessage": "Could not parse color from value 'inherit'"
+  },
+  {
+   "id": "filter-513",
+   "kind": "filter",
+   "filter": [
+    "==",
+    "class",
+    "river"
+   ],
+   "properties": {
+    "class": "river",
+    "rank": 3,
+    "name": "A",
+    "flag": true,
+    "s3": "3"
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": true
+  },
+  {
+   "id": "filter-514",
+   "kind": "filter",
+   "filter": [
+    "==",
+    "class",
+    "road"
+   ],
+   "properties": {
+    "class": "river",
+    "rank": 3,
+    "name": "A",
+    "flag": true,
+    "s3": "3"
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": false
+  },
+  {
+   "id": "filter-515",
+   "kind": "filter",
+   "filter": [
+    "==",
+    "rank",
+    3
+   ],
+   "properties": {
+    "class": "river",
+    "rank": 3,
+    "name": "A",
+    "flag": true,
+    "s3": "3"
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": true
+  },
+  {
+   "id": "filter-516",
+   "kind": "filter",
+   "filter": [
+    "==",
+    "rank",
+    "3"
+   ],
+   "properties": {
+    "class": "river",
+    "rank": 3,
+    "name": "A",
+    "flag": true,
+    "s3": "3"
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": false
+  },
+  {
+   "id": "filter-517",
+   "kind": "filter",
+   "filter": [
+    "==",
+    "s3",
+    3
+   ],
+   "properties": {
+    "class": "river",
+    "rank": 3,
+    "name": "A",
+    "flag": true,
+    "s3": "3"
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": false
+  },
+  {
+   "id": "filter-518",
+   "kind": "filter",
+   "filter": [
+    "==",
+    "missing",
+    null
+   ],
+   "properties": {
+    "class": "river",
+    "rank": 3,
+    "name": "A",
+    "flag": true,
+    "s3": "3"
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": false
+  },
+  {
+   "id": "filter-519",
+   "kind": "filter",
+   "filter": [
+    "!=",
+    "class",
+    "road"
+   ],
+   "properties": {
+    "class": "river",
+    "rank": 3,
+    "name": "A",
+    "flag": true,
+    "s3": "3"
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": true
+  },
+  {
+   "id": "filter-520",
+   "kind": "filter",
+   "filter": [
+    "!=",
+    "class",
+    "river"
+   ],
+   "properties": {
+    "class": "river",
+    "rank": 3,
+    "name": "A",
+    "flag": true,
+    "s3": "3"
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": false
+  },
+  {
+   "id": "filter-521",
+   "kind": "filter",
+   "filter": [
+    "<",
+    "rank",
+    5
+   ],
+   "properties": {
+    "class": "river",
+    "rank": 3,
+    "name": "A",
+    "flag": true,
+    "s3": "3"
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": true
+  },
+  {
+   "id": "filter-522",
+   "kind": "filter",
+   "filter": [
+    "<",
+    "rank",
+    3
+   ],
+   "properties": {
+    "class": "river",
+    "rank": 3,
+    "name": "A",
+    "flag": true,
+    "s3": "3"
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": false
+  },
+  {
+   "id": "filter-523",
+   "kind": "filter",
+   "filter": [
+    "<=",
+    "rank",
+    3
+   ],
+   "properties": {
+    "class": "river",
+    "rank": 3,
+    "name": "A",
+    "flag": true,
+    "s3": "3"
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": true
+  },
+  {
+   "id": "filter-524",
+   "kind": "filter",
+   "filter": [
+    ">",
+    "rank",
+    2
+   ],
+   "properties": {
+    "class": "river",
+    "rank": 3,
+    "name": "A",
+    "flag": true,
+    "s3": "3"
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": true
+  },
+  {
+   "id": "filter-525",
+   "kind": "filter",
+   "filter": [
+    ">=",
+    "rank",
+    4
+   ],
+   "properties": {
+    "class": "river",
+    "rank": 3,
+    "name": "A",
+    "flag": true,
+    "s3": "3"
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": false
+  },
+  {
+   "id": "filter-526",
+   "kind": "filter",
+   "filter": [
+    "<",
+    "rank",
+    "5"
+   ],
+   "properties": {
+    "class": "river",
+    "rank": 3,
+    "name": "A",
+    "flag": true,
+    "s3": "3"
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": false
+  },
+  {
+   "id": "filter-527",
+   "kind": "filter",
+   "filter": [
+    "<",
+    "missing",
+    5
+   ],
+   "properties": {
+    "class": "river",
+    "rank": 3,
+    "name": "A",
+    "flag": true,
+    "s3": "3"
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": false
+  },
+  {
+   "id": "filter-528",
+   "kind": "filter",
+   "filter": [
+    "<",
+    "name",
+    "B"
+   ],
+   "properties": {
+    "class": "river",
+    "rank": 3,
+    "name": "A",
+    "flag": true,
+    "s3": "3"
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": true
+  },
+  {
+   "id": "filter-529",
+   "kind": "filter",
+   "filter": [
+    "has",
+    "class"
+   ],
+   "properties": {
+    "class": "river",
+    "rank": 3,
+    "name": "A",
+    "flag": true,
+    "s3": "3"
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": true
+  },
+  {
+   "id": "filter-530",
+   "kind": "filter",
+   "filter": [
+    "has",
+    "missing"
+   ],
+   "properties": {
+    "class": "river",
+    "rank": 3,
+    "name": "A",
+    "flag": true,
+    "s3": "3"
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": false
+  },
+  {
+   "id": "filter-531",
+   "kind": "filter",
+   "filter": [
+    "!has",
+    "class"
+   ],
+   "properties": {
+    "class": "river",
+    "rank": 3,
+    "name": "A",
+    "flag": true,
+    "s3": "3"
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": false
+  },
+  {
+   "id": "filter-532",
+   "kind": "filter",
+   "filter": [
+    "!has",
+    "missing"
+   ],
+   "properties": {
+    "class": "river",
+    "rank": 3,
+    "name": "A",
+    "flag": true,
+    "s3": "3"
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": true
+  },
+  {
+   "id": "filter-533",
+   "kind": "filter",
+   "filter": [
+    "in",
+    "class",
+    "river",
+    "lake"
+   ],
+   "properties": {
+    "class": "river",
+    "rank": 3,
+    "name": "A",
+    "flag": true,
+    "s3": "3"
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": true
+  },
+  {
+   "id": "filter-534",
+   "kind": "filter",
+   "filter": [
+    "in",
+    "class",
+    "road",
+    "lake"
+   ],
+   "properties": {
+    "class": "river",
+    "rank": 3,
+    "name": "A",
+    "flag": true,
+    "s3": "3"
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": false
+  },
+  {
+   "id": "filter-535",
+   "kind": "filter",
+   "filter": [
+    "in",
+    "rank",
+    1,
+    2,
+    3
+   ],
+   "properties": {
+    "class": "river",
+    "rank": 3,
+    "name": "A",
+    "flag": true,
+    "s3": "3"
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": true
+  },
+  {
+   "id": "filter-536",
+   "kind": "filter",
+   "filter": [
+    "in",
+    "rank",
+    "3"
+   ],
+   "properties": {
+    "class": "river",
+    "rank": 3,
+    "name": "A",
+    "flag": true,
+    "s3": "3"
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": false
+  },
+  {
+   "id": "filter-537",
+   "kind": "filter",
+   "filter": [
+    "in",
+    "class"
+   ],
+   "properties": {
+    "class": "river",
+    "rank": 3,
+    "name": "A",
+    "flag": true,
+    "s3": "3"
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": false
+  },
+  {
+   "id": "filter-538",
+   "kind": "filter",
+   "filter": [
+    "!in",
+    "class",
+    "road"
+   ],
+   "properties": {
+    "class": "river",
+    "rank": 3,
+    "name": "A",
+    "flag": true,
+    "s3": "3"
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": true
+  },
+  {
+   "id": "filter-539",
+   "kind": "filter",
+   "filter": [
+    "!in",
+    "class",
+    "river"
+   ],
+   "properties": {
+    "class": "river",
+    "rank": 3,
+    "name": "A",
+    "flag": true,
+    "s3": "3"
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": false
+  },
+  {
+   "id": "filter-540",
+   "kind": "filter",
+   "filter": [
+    "all",
+    [
+     "==",
+     "class",
+     "river"
+    ],
+    [
+     ">",
+     "rank",
+     2
+    ]
+   ],
+   "properties": {
+    "class": "river",
+    "rank": 3,
+    "name": "A",
+    "flag": true,
+    "s3": "3"
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": true
+  },
+  {
+   "id": "filter-541",
+   "kind": "filter",
+   "filter": [
+    "all",
+    [
+     "==",
+     "class",
+     "river"
+    ],
+    [
+     ">",
+     "rank",
+     5
+    ]
+   ],
+   "properties": {
+    "class": "river",
+    "rank": 3,
+    "name": "A",
+    "flag": true,
+    "s3": "3"
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": false
+  },
+  {
+   "id": "filter-542",
+   "kind": "filter",
+   "filter": [
+    "any",
+    [
+     "==",
+     "class",
+     "road"
+    ],
+    [
+     ">",
+     "rank",
+     2
+    ]
+   ],
+   "properties": {
+    "class": "river",
+    "rank": 3,
+    "name": "A",
+    "flag": true,
+    "s3": "3"
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": true
+  },
+  {
+   "id": "filter-543",
+   "kind": "filter",
+   "filter": [
+    "any",
+    [
+     "==",
+     "class",
+     "road"
+    ],
+    [
+     ">",
+     "rank",
+     5
+    ]
+   ],
+   "properties": {
+    "class": "river",
+    "rank": 3,
+    "name": "A",
+    "flag": true,
+    "s3": "3"
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": false
+  },
+  {
+   "id": "filter-544",
+   "kind": "filter",
+   "filter": [
+    "none",
+    [
+     "==",
+     "class",
+     "road"
+    ],
+    [
+     ">",
+     "rank",
+     5
+    ]
+   ],
+   "properties": {
+    "class": "river",
+    "rank": 3,
+    "name": "A",
+    "flag": true,
+    "s3": "3"
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": true
+  },
+  {
+   "id": "filter-545",
+   "kind": "filter",
+   "filter": [
+    "none",
+    [
+     "==",
+     "class",
+     "river"
+    ]
+   ],
+   "properties": {
+    "class": "river",
+    "rank": 3,
+    "name": "A",
+    "flag": true,
+    "s3": "3"
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": false
+  },
+  {
+   "id": "filter-546",
+   "kind": "filter",
+   "filter": [
+    "all"
+   ],
+   "properties": {
+    "class": "river",
+    "rank": 3,
+    "name": "A",
+    "flag": true,
+    "s3": "3"
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": true
+  },
+  {
+   "id": "filter-547",
+   "kind": "filter",
+   "filter": [
+    "any"
+   ],
+   "properties": {
+    "class": "river",
+    "rank": 3,
+    "name": "A",
+    "flag": true,
+    "s3": "3"
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": false
+  },
+  {
+   "id": "filter-548",
+   "kind": "filter",
+   "filter": [
+    "none"
+   ],
+   "properties": {
+    "class": "river",
+    "rank": 3,
+    "name": "A",
+    "flag": true,
+    "s3": "3"
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": true
+  },
+  {
+   "id": "filter-549",
+   "kind": "filter",
+   "filter": [
+    "==",
+    "$type",
+    "Polygon"
+   ],
+   "properties": {
+    "class": "river",
+    "rank": 3,
+    "name": "A",
+    "flag": true,
+    "s3": "3"
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": true
+  },
+  {
+   "id": "filter-550",
+   "kind": "filter",
+   "filter": [
+    "==",
+    "$type",
+    "Polygon"
+   ],
+   "properties": {
+    "class": "river",
+    "rank": 3,
+    "name": "A",
+    "flag": true,
+    "s3": "3"
+   },
+   "geometryType": "Point",
+   "zoom": 12,
+   "expected": false
+  },
+  {
+   "id": "filter-551",
+   "kind": "filter",
+   "filter": [
+    "!=",
+    "$type",
+    "Point"
+   ],
+   "properties": {
+    "class": "river",
+    "rank": 3,
+    "name": "A",
+    "flag": true,
+    "s3": "3"
+   },
+   "geometryType": "LineString",
+   "zoom": 12,
+   "expected": true
+  },
+  {
+   "id": "filter-552",
+   "kind": "filter",
+   "filter": [
+    "in",
+    "$type",
+    "Point",
+    "LineString"
+   ],
+   "properties": {
+    "class": "river",
+    "rank": 3,
+    "name": "A",
+    "flag": true,
+    "s3": "3"
+   },
+   "geometryType": "LineString",
+   "zoom": 12,
+   "expected": true
+  },
+  {
+   "id": "filter-553",
+   "kind": "filter",
+   "filter": [
+    "in",
+    "$type",
+    "Point",
+    "LineString"
+   ],
+   "properties": {
+    "class": "river",
+    "rank": 3,
+    "name": "A",
+    "flag": true,
+    "s3": "3"
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": false
+  },
+  {
+   "id": "filter-554",
+   "kind": "filter",
+   "filter": [
+    "!in",
+    "$type",
+    "Point"
+   ],
+   "properties": {
+    "class": "river",
+    "rank": 3,
+    "name": "A",
+    "flag": true,
+    "s3": "3"
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": true
+  },
+  {
+   "id": "filter-555",
+   "kind": "filter",
+   "filter": [
+    "has",
+    "$type"
+   ],
+   "properties": {
+    "class": "river",
+    "rank": 3,
+    "name": "A",
+    "flag": true,
+    "s3": "3"
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": true
+  },
+  {
+   "id": "filter-556",
+   "kind": "filter",
+   "filter": [
+    "==",
+    "$id",
+    7
+   ],
+   "properties": {
+    "class": "river",
+    "rank": 3,
+    "name": "A",
+    "flag": true,
+    "s3": "3"
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "featureId": 7,
+   "expected": true
+  },
+  {
+   "id": "filter-557",
+   "kind": "filter",
+   "filter": [
+    "==",
+    "$id",
+    7
+   ],
+   "properties": {
+    "class": "river",
+    "rank": 3,
+    "name": "A",
+    "flag": true,
+    "s3": "3"
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "featureId": 8,
+   "expected": false
+  },
+  {
+   "id": "filter-558",
+   "kind": "filter",
+   "filter": [
+    "==",
+    "$id",
+    7
+   ],
+   "properties": {
+    "class": "river",
+    "rank": 3,
+    "name": "A",
+    "flag": true,
+    "s3": "3"
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": false
+  },
+  {
+   "id": "filter-559",
+   "kind": "filter",
+   "filter": [
+    "has",
+    "$id"
+   ],
+   "properties": {
+    "class": "river",
+    "rank": 3,
+    "name": "A",
+    "flag": true,
+    "s3": "3"
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "featureId": 7,
+   "expected": true
+  },
+  {
+   "id": "filter-560",
+   "kind": "filter",
+   "filter": [
+    "has",
+    "$id"
+   ],
+   "properties": {
+    "class": "river",
+    "rank": 3,
+    "name": "A",
+    "flag": true,
+    "s3": "3"
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": false
+  },
+  {
+   "id": "filter-561",
+   "kind": "filter",
+   "filter": [
+    "!has",
+    "$id"
+   ],
+   "properties": {
+    "class": "river",
+    "rank": 3,
+    "name": "A",
+    "flag": true,
+    "s3": "3"
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": true
+  },
+  {
+   "id": "filter-562",
+   "kind": "filter",
+   "filter": [
+    "in",
+    "$id",
+    1,
+    7
+   ],
+   "properties": {
+    "class": "river",
+    "rank": 3,
+    "name": "A",
+    "flag": true,
+    "s3": "3"
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "featureId": 7,
+   "expected": true
+  },
+  {
+   "id": "filter-563",
+   "kind": "filter",
+   "filter": [
+    "<",
+    "$id",
+    10
+   ],
+   "properties": {
+    "class": "river",
+    "rank": 3,
+    "name": "A",
+    "flag": true,
+    "s3": "3"
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "featureId": 7,
+   "expected": true
+  },
+  {
+   "id": "filter-564",
+   "kind": "filter",
+   "filter": [
+    "all",
+    [
+     "in",
+     "class",
+     "river"
+    ],
+    [
+     "none",
+     [
+      "==",
+      "rank",
+      1
+     ]
+    ],
+    [
+     "!has",
+     "x"
+    ]
+   ],
+   "properties": {
+    "class": "river",
+    "rank": 3,
+    "name": "A",
+    "flag": true,
+    "s3": "3"
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": true
+  },
+  {
+   "id": "filter-565",
+   "kind": "filter",
+   "filter": [
+    "==",
+    "解析樹種ID",
+    "01"
+   ],
+   "properties": {
+    "解析樹種ID": "01"
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": true
+  },
+  {
+   "id": "filter-566",
+   "kind": "filter",
+   "filter": [
+    "==",
+    "解析樹種ID",
+    "01"
+   ],
+   "properties": {
+    "解析樹種ID": 1
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": false
+  },
+  {
+   "id": "filter-567",
+   "kind": "filter",
+   "filter": [
+    "==",
+    [
+     "get",
+     "class"
+    ],
+    "river"
+   ],
+   "properties": {
+    "class": "river",
+    "rank": 3,
+    "name": "A",
+    "flag": true,
+    "s3": "3"
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": true
+  },
+  {
+   "id": "filter-568",
+   "kind": "filter",
+   "filter": [
+    "==",
+    [
+     "get",
+     "rank"
+    ],
+    "3"
+   ],
+   "properties": {
+    "class": "river",
+    "rank": 3,
+    "name": "A",
+    "flag": true,
+    "s3": "3"
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": false
+  },
+  {
+   "id": "filter-569",
+   "kind": "filter",
+   "filter": [
+    "all",
+    [
+     "==",
+     [
+      "get",
+      "class"
+     ],
+     "river"
+    ],
+    [
+     ">",
+     [
+      "get",
+      "rank"
+     ],
+     2
+    ]
+   ],
+   "properties": {
+    "class": "river",
+    "rank": 3,
+    "name": "A",
+    "flag": true,
+    "s3": "3"
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": true
+  },
+  {
+   "id": "filter-570",
+   "kind": "filter",
+   "filter": [
+    "any",
+    [
+     "==",
+     [
+      "get",
+      "class"
+     ],
+     "x"
+    ],
+    [
+     "!",
+     [
+      "has",
+      "missing"
+     ]
+    ]
+   ],
+   "properties": {
+    "class": "river",
+    "rank": 3,
+    "name": "A",
+    "flag": true,
+    "s3": "3"
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": true
+  },
+  {
+   "id": "filter-571",
+   "kind": "filter",
+   "filter": [
+    "in",
+    [
+     "get",
+     "class"
+    ],
+    [
+     "literal",
+     [
+      "river",
+      "lake"
+     ]
+    ]
+   ],
+   "properties": {
+    "class": "river",
+    "rank": 3,
+    "name": "A",
+    "flag": true,
+    "s3": "3"
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": true
+  },
+  {
+   "id": "filter-572",
+   "kind": "filter",
+   "filter": [
+    "match",
+    [
+     "get",
+     "class"
+    ],
+    [
+     "river",
+     "lake"
+    ],
+    true,
+    false
+   ],
+   "properties": {
+    "class": "river",
+    "rank": 3,
+    "name": "A",
+    "flag": true,
+    "s3": "3"
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": true
+  },
+  {
+   "id": "filter-573",
+   "kind": "filter",
+   "filter": [
+    "match",
+    [
+     "get",
+     "class"
+    ],
+    [
+     "road"
+    ],
+    true,
+    false
+   ],
+   "properties": {
+    "class": "river",
+    "rank": 3,
+    "name": "A",
+    "flag": true,
+    "s3": "3"
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": false
+  },
+  {
+   "id": "filter-574",
+   "kind": "filter",
+   "filter": [
+    "==",
+    [
+     "geometry-type"
+    ],
+    "Point"
+   ],
+   "properties": {
+    "class": "river",
+    "rank": 3,
+    "name": "A",
+    "flag": true,
+    "s3": "3"
+   },
+   "geometryType": "Point",
+   "zoom": 12,
+   "expected": true
+  },
+  {
+   "id": "filter-575",
+   "kind": "filter",
+   "filter": [
+    "==",
+    [
+     "geometry-type"
+    ],
+    "Point"
+   ],
+   "properties": {
+    "class": "river",
+    "rank": 3,
+    "name": "A",
+    "flag": true,
+    "s3": "3"
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": false
+  },
+  {
+   "id": "filter-576",
+   "kind": "filter",
+   "filter": [
+    "has",
+    "class"
+   ],
+   "properties": {
+    "class": "river",
+    "rank": 3,
+    "name": "A",
+    "flag": true,
+    "s3": "3"
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": true
+  },
+  {
+   "id": "filter-577",
+   "kind": "filter",
+   "filter": [
+    ">",
+    [
+     "get",
+     "rank"
+    ],
+    [
+     "get",
+     "missing"
+    ]
+   ],
+   "properties": {
+    "class": "river",
+    "rank": 3,
+    "name": "A",
+    "flag": true,
+    "s3": "3"
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": false
+  },
+  {
+   "id": "filter-578",
+   "kind": "filter",
+   "filter": [
+    "get",
+    "flag"
+   ],
+   "properties": {
+    "class": "river",
+    "rank": 3,
+    "name": "A",
+    "flag": true,
+    "s3": "3"
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": true
+  },
+  {
+   "id": "filter-579",
+   "kind": "filter",
+   "filter": [
+    "get",
+    "class"
+   ],
+   "properties": {
+    "class": "river",
+    "rank": 3,
+    "name": "A",
+    "flag": true,
+    "s3": "3"
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": false
+  },
+  {
+   "id": "filter-580",
+   "kind": "filter",
+   "filter": [
+    "case",
+    [
+     ">",
+     [
+      "get",
+      "rank"
+     ],
+     2
+    ],
+    true,
+    false
+   ],
+   "properties": {
+    "class": "river",
+    "rank": 3,
+    "name": "A",
+    "flag": true,
+    "s3": "3"
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": true
+  },
+  {
+   "id": "filter-581",
+   "kind": "filter",
+   "filter": [
+    "<",
+    [
+     "zoom"
+    ],
+    14
+   ],
+   "properties": {
+    "class": "river",
+    "rank": 3,
+    "name": "A",
+    "flag": true,
+    "s3": "3"
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": true
+  },
+  {
+   "id": "filter-582",
+   "kind": "filter",
+   "filter": [
+    "<",
+    [
+     "zoom"
+    ],
+    14
+   ],
+   "properties": {
+    "class": "river",
+    "rank": 3,
+    "name": "A",
+    "flag": true,
+    "s3": "3"
+   },
+   "geometryType": "Polygon",
+   "zoom": 15,
+   "expected": false
+  },
+  {
+   "id": "filter-583",
+   "kind": "filter",
+   "filter": true,
+   "properties": {
+    "class": "river",
+    "rank": 3,
+    "name": "A",
+    "flag": true,
+    "s3": "3"
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": true
+  },
+  {
+   "id": "filter-584",
+   "kind": "filter",
+   "filter": false,
+   "properties": {
+    "class": "river",
+    "rank": 3,
+    "name": "A",
+    "flag": true,
+    "s3": "3"
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": false
+  },
+  {
+   "id": "filter-585",
+   "kind": "filter",
+   "filter": null,
+   "properties": {
+    "class": "river",
+    "rank": 3,
+    "name": "A",
+    "flag": true,
+    "s3": "3"
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": true
+  },
+  {
+   "id": "filter-586",
+   "kind": "filter",
+   "filter": [
+    "step",
+    [
+     "zoom"
+    ],
+    false,
+    13,
+    true
+   ],
+   "properties": {
+    "class": "river",
+    "rank": 3,
+    "name": "A",
+    "flag": true,
+    "s3": "3"
+   },
+   "geometryType": "Polygon",
+   "zoom": 12,
+   "expected": false
+  },
+  {
+   "id": "filter-587",
+   "kind": "filter",
+   "filter": [
+    "step",
+    [
+     "zoom"
+    ],
+    false,
+    13,
+    true
+   ],
+   "properties": {
+    "class": "river",
+    "rank": 3,
+    "name": "A",
+    "flag": true,
+    "s3": "3"
+   },
+   "geometryType": "Polygon",
+   "zoom": 13,
+   "expected": true
+  }
+ ]
+}

@@ -113,8 +113,8 @@ Web では maplibre 内蔵の hillshade レイヤは使いません（光源方�
 - 平坦地は白になります。乗算で重ねる前提の図なので、ベースマップに重ねるより
   単体（透過 0）で背景として使う方が本来の姿です
 - ネイティブのパッチを変更したら `npx patch-package react-native-maps
-  --exclude '(^|/)(\.gradle|build|\.cxx)/'` で再生成してください。
-  除外を付けないと `node_modules` に残ったビルド生成物を巻き込みます
+  --exclude '(^|/)(\.gradle|build|\.cxx)/|^package\.json$'` で再生成してください。
+  除外を付けないと `node_modules` に残ったビルド生成物や `package.json` の差分を巻き込みます
 
 ## 陰影段彩図（relief://）
 
