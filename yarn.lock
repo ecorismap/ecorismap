@@ -6509,6 +6509,24 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@maplibre/maplibre-gl-style-spec@npm:24.10.0, @maplibre/maplibre-gl-style-spec@npm:^24.8.1":
+  version: 24.10.0
+  resolution: "@maplibre/maplibre-gl-style-spec@npm:24.10.0"
+  dependencies:
+    "@mapbox/jsonlint-lines-primitives": ~2.0.2
+    "@mapbox/unitbezier": ^1.0.0
+    json-stringify-pretty-compact: ^4.0.0
+    minimist: ^1.2.8
+    quickselect: ^3.0.0
+    tinyqueue: ^3.0.0
+  bin:
+    gl-style-format: dist/gl-style-format.mjs
+    gl-style-migrate: dist/gl-style-migrate.mjs
+    gl-style-validate: dist/gl-style-validate.mjs
+  checksum: 9a82d54f5e4db6ad39d0d083580d8d978e8d78ce957ff981d147cfd5e08f79d36b923a3ec7ae800bc255da6e80645cdf49bcc648eb727997f31d49adf8b7f505
+  languageName: node
+  linkType: hard
+
 "@maplibre/maplibre-gl-style-spec@npm:^19.2.1":
   version: 19.3.3
   resolution: "@maplibre/maplibre-gl-style-spec@npm:19.3.3"
@@ -6524,24 +6542,6 @@ __metadata:
     gl-style-migrate: dist/gl-style-migrate.mjs
     gl-style-validate: dist/gl-style-validate.mjs
   checksum: b83f539f0df6cb6e4b06d78b05a6bc67e17a31d0999a3faf6fe0585e0b934b31ea5932ed1cf9773249a3a557cf5caf35221b7e7ca65e5c74737eff799f80d386
-  languageName: node
-  linkType: hard
-
-"@maplibre/maplibre-gl-style-spec@npm:^24.8.1":
-  version: 24.10.0
-  resolution: "@maplibre/maplibre-gl-style-spec@npm:24.10.0"
-  dependencies:
-    "@mapbox/jsonlint-lines-primitives": ~2.0.2
-    "@mapbox/unitbezier": ^1.0.0
-    json-stringify-pretty-compact: ^4.0.0
-    minimist: ^1.2.8
-    quickselect: ^3.0.0
-    tinyqueue: ^3.0.0
-  bin:
-    gl-style-format: dist/gl-style-format.mjs
-    gl-style-migrate: dist/gl-style-migrate.mjs
-    gl-style-validate: dist/gl-style-validate.mjs
-  checksum: 9a82d54f5e4db6ad39d0d083580d8d978e8d78ce957ff981d147cfd5e08f79d36b923a3ec7ae800bc255da6e80645cdf49bcc648eb727997f31d49adf8b7f505
   languageName: node
   linkType: hard
 
@@ -14503,6 +14503,7 @@ __metadata:
     "@gorhom/bottom-sheet": 5.2.14
     "@mapbox/geojsonhint": ^3.1.1
     "@mapbox/vector-tile": ^3.0.0
+    "@maplibre/maplibre-gl-style-spec": 24.10.0
     "@mui/material": ^9.1.1
     "@mui/x-date-pickers": ^9.5.0
     "@noble/hashes": ^2.3.0

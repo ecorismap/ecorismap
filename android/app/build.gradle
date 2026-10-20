@@ -123,4 +123,8 @@ dependencies {
     } else {
         implementation jscFlavor
     }
+
+    // JVM 単体テスト（ベクタスタイル式評価器の共通フィクスチャ検証）
+    testImplementation 'junit:junit:4.13.2'
+    testImplementation 'com.google.code.gson:gson:2.8.8'
 }
