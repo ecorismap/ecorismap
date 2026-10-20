@@ -1173,9 +1173,11 @@ export class TerrainScene {
   /**
    * 描画リングを外側（粗ズーム）→内側→近景の順に集める。
    * 毎フレーム呼ばれるため配列を使い回す（各リングのパス配列自体はTileManager側でキャッシュ済み）。
-   * 最背面のリングだけfillBase=trueにして、テクスチャの透明部をベース色で埋めて不透明にする
-   * （手前のリングは透過させ、NODATA部分から奥のリングを見せる）。
-   * テクスチャ未着のタイルは奥のリングの有無に関わらず不透明に描く（TerrainRenderer側で判定）
+   * どのリングもfillBase=trueにして、テクスチャの透明部をベース色で埋めて不透明に描く。
+   * 以前は最背面だけ埋めて手前のリングを透過させていたが、ベクタタイルのように大半が透明な
+   * レイヤだと、奥のリング（粗いズームのタイルを数百倍に拡大したもの）の線が滲んで透けてしまい、
+   * 地形全体が線の色（青・マゼンタ）に見えていた。手前のリングは常に奥より高精細なので、
+   * 奥を見せる利点はない。テクスチャ未着のタイルも不透明（TerrainRenderer側で判定）
    */
   private collectRings(drawRings: RingSpec[]): TerrainRingDraw[] {
     this.ringDraws.length = 0;
@@ -1184,8 +1186,7 @@ export class TerrainScene {
       this.ringDraws.push({
         tiles: ring.manager.buildDrawPasses(),
         segments: ring.segments,
-        // 最背面のリング、および重ねるレイヤが無い（灰色地形だけの）ときは不透明で描く
-        fillBase: this.ringDraws.length === 0 || ring.manager.layerCount === 0,
+        fillBase: true,
         layerCount: ring.manager.layerCount,
         layerOpacity: ring.manager.layerOpacities,
       });
