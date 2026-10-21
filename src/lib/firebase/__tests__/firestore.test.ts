@@ -1,7 +1,7 @@
-import { decryptProjectData, clearProjectCryptoCache } from '../firestore';
+import { decryptProjectData, clearProjectCryptoCache, getAllProjects } from '../firestore';
 import { unwrapDEK, decryptEThree } from '../../virgilsecurity/e3kit';
 import { decryptWithDEK } from '../../virgilsecurity/dek';
-import { getDoc } from '../firebase';
+import { getDoc, getDocsFromServer } from '../firebase';
 
 jest.mock('../../../constants/AppConstants', () => ({
   FUNC_ENCRYPTION: true,
@@ -48,6 +48,7 @@ const mockedGetDoc = getDoc as jest.Mock;
 const mockedUnwrapDEK = unwrapDEK as jest.Mock;
 const mockedDecryptWithDEK = decryptWithDEK as jest.Mock;
 const mockedDecGroup = decryptEThree as jest.Mock;
+const mockedGetDocsFromServer = getDocsFromServer as jest.Mock;
 
 const PROJECT_ID = 'project-1';
 const ENCRYPTED_AT = new Date('2026-07-01T00:00:00Z');
@@ -101,5 +102,85 @@ describe('decryptProjectData (DEKプロジェクトの鍵キャッシュ)', () =
     // ログアウトやプロジェクトを開く操作なしで（＝キャッシュクリアなしで）回復すること
     expect(afterReshare).toEqual({ value: 'decrypted' });
     expect(mockedUnwrapDEK).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe('getAllProjects (復号ペイロードによる平文フィールドの上書き防止)', () => {
+  const projectDoc = {
+    id: PROJECT_ID,
+    data: () => ({
+      encdata: ['enc'],
+      ownerUid: 'owner-a',
+      encryptedAt: TS,
+      storage: { count: 3 },
+      adminsUid: ['owner-a'],
+      membersUid: ['owner-a', 'member-b'],
+    }),
+  };
+
+  const loadProjectsWithPayload = async (payload: Record<string, unknown>) => {
+    // 1回目はプロジェクト一覧、以降は設定の更新日時（設定なし）の取得
+    mockedGetDocsFromServer.mockResolvedValueOnce({ docs: [projectDoc] });
+    mockedGetDocsFromServer.mockResolvedValue({ empty: true, docs: [] });
+    mockedDecGroup.mockResolvedValue(payload);
+    const { projects } = await getAllProjects('member-b');
+    return projects;
+  };
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    clearProjectCryptoCache();
+  });
+
+  it('ペイロードに仕込んだ id / ownerUid / storage は無視され、平文の値が使われる', async () => {
+    // 管理者が encdata に別プロジェクトのIDや偽のオーナーを入れても、一覧の項目は本物のdocを指す
+    const projects = await loadProjectsWithPayload({
+      name: 'B（更新）',
+      id: 'victim-project-b',
+      ownerUid: 'attacker',
+      storage: { count: 999 },
+      members: [{ uid: 'attacker', role: 'OWNER' }],
+    });
+
+    expect(projects).toHaveLength(1);
+    expect(projects[0].id).toBe(PROJECT_ID);
+    expect(projects[0].ownerUid).toBe('owner-a');
+    expect(projects[0].storage).toEqual({ count: 3 });
+    // 平文の adminsUid / membersUid もペイロードより優先される
+    expect(projects[0].adminsUid).toEqual(['owner-a']);
+    expect(projects[0].membersUid).toEqual(['owner-a', 'member-b']);
+    // 暗号化されている本来の項目（名前・メンバー一覧）はペイロードから取る
+    expect(projects[0].name).toBe('B（更新）');
+  });
+
+  it('ペイロードの adminsUid / membersUid は平文の値を上書きしない', async () => {
+    const projects = await loadProjectsWithPayload({
+      name: 'P',
+      adminsUid: ['attacker'],
+      membersUid: ['attacker'],
+    });
+
+    expect(projects[0].adminsUid).toEqual(['owner-a']);
+    expect(projects[0].membersUid).toEqual(['owner-a', 'member-b']);
+  });
+
+  it('正規のペイロードでは従来どおりの値になる', async () => {
+    const members = [
+      { uid: 'owner-a', email: 'a@example.com', role: 'OWNER' },
+      { uid: 'member-b', email: 'b@example.com', role: 'MEMBER' },
+    ];
+    const projects = await loadProjectsWithPayload({ name: 'P', members, abstract: 'x' });
+
+    expect(projects[0]).toMatchObject({
+      id: PROJECT_ID,
+      ownerUid: 'owner-a',
+      storage: { count: 3 },
+      name: 'P',
+      members,
+      abstract: 'x',
+      cryptoScheme: 'group',
+      archived: false,
+      settingsEncryptedAt: undefined,
+    });
   });
 });
