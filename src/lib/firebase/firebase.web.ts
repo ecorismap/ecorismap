@@ -73,10 +73,17 @@ const initialize = (isEmulating = false) => {
   const isDebugMode = process.env.NODE_ENV === 'development' || window.location.hostname === 'localhost' || isEmulating;
 
   if (isDebugMode) {
-    // デバッグトークンは.env（EXPO_PUBLIC_APPCHECK_DEBUG_TOKEN）から注入する。
-    // ネイティブ(firebase.ts apple.debugToken)と同じ値を使い、リロードごとの再登録を避ける。
     // 未設定の場合はtrueを設定し、コンソールに表示される新規トークンを登録する標準フロー。
-    (self as any).FIREBASE_APPCHECK_DEBUG_TOKEN = process.env.EXPO_PUBLIC_APPCHECK_DEBUG_TOKEN || true;
+    let debugToken: string | true = true;
+    // 登録済みデバッグトークン（.env の EXPO_PUBLIC_APPCHECK_DEBUG_TOKEN）の参照は __DEV__ ブロック内に限定する。
+    // EXPO_PUBLIC_* は expo export 時に文字列リテラルとしてバンドルへ展開されるため、
+    // isDebugMode のような実行時条件だけで囲むと本番Webバンドルにトークンが残り、誰でも取り出せる。
+    // __DEV__ はビルド時定数で、本番ビルドではこのブロックごと削除されるためトークンは含まれない。
+    // 開発ビルドではネイティブ(firebase.ts debugToken)と同じ値を使い、リロードごとの再登録を避ける。
+    if (__DEV__) {
+      debugToken = process.env.EXPO_PUBLIC_APPCHECK_DEBUG_TOKEN || true;
+    }
+    (self as any).FIREBASE_APPCHECK_DEBUG_TOKEN = debugToken;
     console.log('🔧 Firebase App Check: Debug mode enabled');
   }
 
