@@ -20,6 +20,7 @@ import { setDataSetAction, updateDataAction, updateRecordsAction } from '../modu
 import { setDataSyncTimestampsAction, dataSyncKey } from '../modules/dataSync';
 import { layersInitialState, setLayersAction } from '../modules/layers';
 import { tileMapsInitialState, setTileMapsAction } from '../modules/tileMaps';
+import { dropUnsafeTileMaps } from '../utils/tileMapId';
 import { editSettingsAction } from '../modules/settings';
 import { addProjectAction, deleteProjectAction, updateProjectAction } from '../modules/projects';
 import { cloneDeep } from 'lodash';
@@ -901,7 +902,10 @@ export const useRepository = (): UseRepositoryReturnType & {
         return { isOK: false, message, region: undefined };
       }
       //console.log(Object.keys(settings));
-      const { layers: layersFromSettings, tileMaps: tileMapsFromSettings, ...settings } = projectSettings;
+      const { layers: layersFromSettings, tileMaps: rawTileMapsFromSettings, ...settings } = projectSettings;
+      //地図IDは保存先フォルダ名（TILE_FOLDER/{id}）になる。管理者が書き込める設定から来るため、
+      //フォルダの外を指すIDの地図はスタイル保存・地図一覧への反映より前に取り除く
+      const tileMapsFromSettings = dropUnsafeTileMaps(rawTileMapsFromSettings);
       await downloadDictionaries(project.id, layersFromSettings);
       await downloadStyle(project.id, tileMapsFromSettings);
       //COMMONのactivateをfalseにする。

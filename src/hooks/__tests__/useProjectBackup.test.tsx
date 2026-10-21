@@ -101,6 +101,25 @@ describe('useProjectBackup', () => {
     expect(state.dataSync).toEqual(snapshot.state.dataSync);
   });
 
+  test('保存先フォルダの外を指すIDの地図は復元しない', () => {
+    const store = createTestStore();
+    const snapshot = createSnapshot();
+    const tileMap = { name: 'map', url: 'https://example.com/{z}/{x}/{y}.png', maptype: 'none', visible: true };
+    snapshot.state.tileMaps = [
+      { ...tileMap, id: 'safe1' },
+      { ...tileMap, id: '../SQLite' },
+      { ...tileMap, id: '../projects?' },
+    ] as unknown as BackupSnapshotType['state']['tileMaps'];
+    mockLoadBackup.mockReturnValue(snapshot);
+
+    const { result } = renderHook(() => useProjectBackup(), { wrapper: createWrapper(store) });
+    act(() => {
+      result.current.restoreBackup('backup-id');
+    });
+
+    expect(store.getState().tileMaps.map((m) => m.id)).toEqual(['safe1']);
+  });
+
   test('復元前に現在の状態をbeforeRestoreトリガーでバックアップする', () => {
     const store = createTestStore();
     mockLoadBackup.mockReturnValue(createSnapshot());
