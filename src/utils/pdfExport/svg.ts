@@ -27,6 +27,24 @@ type Pixel = { pixelX: number; pixelY: number };
 
 const px = (ctx: SvgContext, paperPixel: number) => paperPixel / ctx.tileScale;
 
+/**
+ * 色はレコードの個別色（_strokeColor等）やレイヤ設定として他のメンバーが書き、復号しただけの値なので信用できない。
+ * そのまま属性に書くと、引用符やタグで印刷用ウィンドウ（Webではアプリと同一オリジン）にスクリプトを差し込める。
+ * hex・rgb(a)・hsl(a)・色名（英字のみ）だけを通し、それ以外はgetColorの個別色の既定と同じ黒にする。
+ * 空文字は再インポートで色の無いレコードにあり、描かれ方を変えないためそのまま通す
+ */
+const SAFE_COLOR_PATTERNS = [
+  /^#(?:[0-9a-f]{3,4}|[0-9a-f]{6}|[0-9a-f]{8})$/i,
+  /^(?:rgba?|hsla?)\(\s*[\d.]+%?(?:(?:\s*[,/]\s*|\s+)[\d.]+%?){2,3}\s*\)$/i,
+  /^[a-z]+$/i,
+];
+const FALLBACK_COLOR = 'rgba(0,0,0,1)';
+export const toSafeSvgColor = (color: unknown): string => {
+  if (typeof color !== 'string') return FALLBACK_COLOR;
+  if (color === '' || SAFE_COLOR_PATTERNS.some((pattern) => pattern.test(color))) return color;
+  return FALLBACK_COLOR;
+};
+
 //白縁取り付きの文字。フチの太さも用紙上のpxで揃える
 const haloText = (ctx: SvgContext, x: number, y: number, color: string, label: string) =>
   `<text x="${x}" y="${y}" fill="${color}" font-size="${px(ctx, 12)}" font-family="Arial" text-anchor="start" ` +
@@ -224,7 +242,7 @@ export const generatePolyLineSvg = (feature: RecordType, layer: LayerType, ctx: 
 //地図表示（HomeLine）と同じ振り分け: 1点はスタンプ、ブラシ指定は記号の列、それ以外は線
 export const generateLineSvg = (feature: RecordType, layer: LayerType, ctx: SvgContext) => {
   if (!isLocationTypeArray(feature.coords) || feature.coords.length === 0) return '';
-  const color = getColor(layer, feature);
+  const color = toSafeSvgColor(getColor(layer, feature));
   if (feature.coords.length === 1) return generateStampSvg(feature, ctx, color, generateLabel(layer, feature) ?? '');
   if (isBrushTool(feature.field._strokeStyle as string)) return generateBrushSvg(feature, ctx, color);
   return generatePolyLineSvg(feature, layer, ctx, color);
@@ -232,7 +250,7 @@ export const generateLineSvg = (feature: RecordType, layer: LayerType, ctx: SvgC
 
 export const generatePointSvg = (feature: RecordType, layer: LayerType, ctx: SvgContext) => {
   if (!isLocationType(feature.coords)) return '';
-  const color = getColor(layer, feature);
+  const color = toSafeSvgColor(getColor(layer, feature));
   const { pixelX, pixelY } = projectToPixel(feature.coords, ctx.frame);
   return (
     `<circle cx="${pixelX}" cy="${pixelY}" r="${px(ctx, 4)}" style="fill:${color}; stroke:white; stroke-width:${px(
@@ -244,7 +262,7 @@ export const generatePointSvg = (feature: RecordType, layer: LayerType, ctx: Svg
 
 export const generatePolygonSvg = (feature: RecordType, layer: LayerType, ctx: SvgContext) => {
   if (!isLocationTypeArray(feature.coords) || feature.coords.length === 0) return '';
-  const color = getColor(layer, feature);
+  const color = toSafeSvgColor(getColor(layer, feature));
   const strokeWidth = getLineWidth(layer, feature);
   const pixels = projectAllToPixel(feature.coords, ctx.frame);
   const toPath = (ps: Pixel[]) => 'M ' + ps.map((p) => `${p.pixelX},${p.pixelY}`).join(' L ') + ' Z';

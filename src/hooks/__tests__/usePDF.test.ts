@@ -16,6 +16,7 @@ import { renderHook, act } from '@testing-library/react-hooks';
 import { Provider } from 'react-redux';
 import { configureStore, combineReducers } from '@reduxjs/toolkit';
 import React from 'react';
+import { Platform } from 'react-native';
 import { usePDF } from '../usePDF';
 import dataSetReducer from '../../modules/dataSet';
 import layersReducer from '../../modules/layers';
@@ -260,5 +261,29 @@ describe('usePDF', () => {
     });
 
     expect(generateResult).toBe(null);
+  });
+
+  it('Webは印刷用ウィンドウへ、スクリプトを禁じるCSP付きのHTMLを書き込む', async () => {
+    const originalOS = Platform.OS;
+    Platform.OS = 'web';
+    try {
+      const written: string[] = [];
+      const targetWindow = {
+        document: { open: jest.fn(), write: (html: string) => written.push(html), close: jest.fn() },
+      } as unknown as Window;
+      const { result } = renderHook(() => usePDF(), { wrapper });
+
+      let generateResult;
+      await act(async () => {
+        generateResult = await result.current.generatePDF({ dataSet: [], layers: [] }, targetWindow);
+      });
+
+      expect(generateResult).toBe(targetWindow);
+      const html = written.join('');
+      expect(html).toContain('<meta http-equiv="Content-Security-Policy"');
+      expect(html).toContain("script-src 'none'");
+    } finally {
+      Platform.OS = originalOS;
+    }
   });
 });

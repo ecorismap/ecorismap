@@ -1,6 +1,6 @@
 import { DataType, LayerType, RecordType } from '../../../types';
 import { getTileFrame, projectToPixel } from '../geometry';
-import { generateLineSvg, generatePointSvg, generateVectorMapSvg, SvgContext } from '../svg';
+import { generateLineSvg, generatePointSvg, generateVectorMapSvg, SvgContext, toSafeSvgColor } from '../svg';
 
 const center = { latitude: 35, longitude: 135 };
 const region = { minLon: 134.99, minLat: 34.99, maxLon: 135.01, maxLat: 35.01 };
@@ -133,5 +133,55 @@ describe('スタンプ・ブラシ', () => {
     const svg = generateLineSvg(record({ field: { _strokeStyle: 'PLUS' } }), layer({}), ctx);
     expect((svg.match(/<g /g) ?? []).length).toBeGreaterThan(1);
     expect(svg).not.toContain('<polyline');
+  });
+});
+
+describe('色のサニタイズ（復号したレコード・レイヤ設定の色は信用しない）', () => {
+  const individual = layer({
+    colorStyle: { ...layer({}).colorStyle, colorType: 'INDIVIDUAL', fieldName: '_strokeColor' },
+  });
+
+  it.each([
+    '#FFF',
+    '#ff0000',
+    '#0000FFee',
+    'rgba(0,0,0,1)',
+    'rgba(255, 0, 0, 0.5)',
+    'rgb(1 2 3 / 0.5)',
+    'hsl(120, 50%, 50%)',
+    'transparent',
+    '',
+  ])('正しい色はそのまま通す: %s', (color) => {
+    expect(toSafeSvgColor(color)).toBe(color);
+  });
+
+  it.each([
+    '"/><script>alert(1)</script><x a="',
+    'red; fill:url(https://evil/x)',
+    'rgba(0,0,0,1)" onload="x',
+    'url(https://evil)',
+    'expression(1)',
+  ])('属性や宣言を壊せる値は既定色にする: %s', (color) => {
+    expect(toSafeSvgColor(color)).toBe('rgba(0,0,0,1)');
+  });
+
+  it('個別色のレコードに仕込んだタグはSVGに出さない', () => {
+    const payload = '"/><script>alert(1)</script><x a="';
+    const svg = generateLineSvg(record({ field: { name: 'x', _strokeColor: payload } }), individual, ctx);
+    expect(svg).not.toContain('<script');
+    expect(svg).toContain('stroke="rgba(0,0,0,1)"');
+  });
+
+  it('ポイントのstyle属性にCSS宣言を差し込めない', () => {
+    const f = record({ coords: center, field: { name: 'p', _strokeColor: 'red; fill:url(https://evil/x)' } });
+    const svg = generatePointSvg(f, { ...individual, type: 'POINT' }, ctx);
+    expect(svg).not.toContain('url(');
+    expect(svg).not.toContain('evil');
+  });
+
+  it('レイヤ設定の色に仕込んだ属性はSVGに出さない', () => {
+    const single = layer({ colorStyle: { ...layer({}).colorStyle, color: '" onload="alert(1)' } });
+    const svg = generateLineSvg(record({ field: { name: 'x' } }), single, ctx);
+    expect(svg).not.toContain('onload');
   });
 });

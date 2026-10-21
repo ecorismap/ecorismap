@@ -3,6 +3,7 @@ import { TileMapType } from '../../types';
 import { TileSignaturesType } from '../TileSignature';
 import { CancelToken } from './runTasks';
 import { isPeaksUrl } from '../peaks/peak2dLabels';
+import { escapeXml } from '../General';
 
 //タイル画像を用意するときの指定。署名はPMTiles等の署名付き配信、isOfflineはモバイルのPMTiles描画、
 //renderWindowはWebのベクタ描画（前面にある印刷用ウィンドウで描く）に使う
@@ -209,7 +210,8 @@ export const listPdfTiles = (
   });
 };
 
-//地図ごとの重ね順を保ったまま、タイル画像をHTMLにする。srcが無い（取得できなかった）タイルは出さない
+//地図ごとの重ね順を保ったまま、タイル画像をHTMLにする。srcが無い（取得できなかった）タイルは出さない。
+//srcは地図設定のURL（プロジェクトの設定として他のメンバーが書いた値）から作るので、属性から出ないようエスケープする
 export const buildTileMapHTML = (tiles: PdfTileRequest[], srcs: (string | undefined)[]) => {
   let html = '';
   let currentMap: TileMapType | undefined;
@@ -221,7 +223,7 @@ export const buildTileMapHTML = (tiles: PdfTileRequest[], srcs: (string | undefi
     }
     const src = srcs[i];
     if (src === undefined) return;
-    html += `<img src="${src}" style="position: absolute; width: ${tile.width}px; height: ${tile.height}px; left: ${
+    html += `<img src="${escapeXml(src)}" style="position: absolute; width: ${tile.width}px; height: ${tile.height}px; left: ${
       tile.left
     }px; top: ${tile.top}px; margin: 0; padding: 0; opacity:${tile.opacity.toFixed(1)}" />`;
   });
