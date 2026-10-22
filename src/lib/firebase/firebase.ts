@@ -64,7 +64,9 @@ const initialize = async (isEmulating = false) => {
   const rnfbProvider = new ReactNativeFirebaseAppCheckProvider();
   // デバッグトークンは.env（EXPO_PUBLIC_APPCHECK_DEBUG_TOKEN）から注入する。
   // 未設定の場合はRNFBが自動生成したトークンをコンソール登録する運用。
-  const appCheckDebugToken = process.env.EXPO_PUBLIC_APPCHECK_DEBUG_TOKEN;
+  // EXPO_PUBLIC_* はバンドル時に文字列リテラルへ展開されるため、参照は __DEV__ 側に限定し、
+  // .env のある環境でリリースビルドしてもバンドルにトークンが残らないようにする。
+  const appCheckDebugToken = __DEV__ ? process.env.EXPO_PUBLIC_APPCHECK_DEBUG_TOKEN : undefined;
   rnfbProvider.configure({
     android: {
       provider: __DEV__ ? 'debug' : 'playIntegrity',
