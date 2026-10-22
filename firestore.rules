@@ -85,8 +85,15 @@ service cloud.firestore {
           || (request.auth.uid in get(/databases/$(database)/documents/projects/$(project)).data.adminsUid) 
           );
         }
+        // メンバーの現在地共有。読み取りはメンバー全員。
+        // 書き込み(作成/更新/削除)は自分のuid(=ドキュメントID)の位置だけ。
+        // 受信側(useSyncLocation)はドキュメントIDをそのまま発信者uidとして信頼し、DEK方式の暗号化には
+        // 送信者署名が無いため、他人のIDに書けると他メンバーの位置・アイコンをなりすまし/消去できてしまう。
         match /position/{position} {
-          allow read,write: if isSignedIn() && request.auth.uid in get(/databases/$(database)/documents/projects/$(project)).data.membersUid;
+          allow read: if isSignedIn() && request.auth.uid in get(/databases/$(database)/documents/projects/$(project)).data.membersUid;
+          allow write: if isSignedIn()
+          && request.auth.uid == position
+          && request.auth.uid in get(/databases/$(database)/documents/projects/$(project)).data.membersUid;
         }
         // DEK（エンベロープ暗号）の鍵配布。各メンバー宛てにラップされたDEK秘密鍵を格納する。
         match /keys/{uid} {

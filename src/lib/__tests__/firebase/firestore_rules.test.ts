@@ -1264,6 +1264,93 @@ describe('data subcollection', () => {
   });
 });
 
+describe('position subcollection（メンバーの現在地共有）', () => {
+  const ctx = (uid: string, n: string) =>
+    testEnv.authenticatedContext(uid, { email: `${n}@example.com`, email_verified: true });
+  const positionPath = (uid: string) => `projects/${documentId}/position/${uid}`;
+  const positionData = { encdata: ['enc'], encryptedAt: '2022年1月1日' };
+
+  // 受信側はドキュメントIDを発信者uidとして信頼するため、他人のIDへの書き込みはRulesで塞ぐ必要がある
+  const seedProject = async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await setDoc(doc(context.firestore(), `projects/${documentId}`), {
+        ownerUid: uid1,
+        adminsUid: [uid1, uid2],
+        membersUid: [uid1, uid2, uid3],
+        encdata: [''],
+        encryptedAt: '2022年1月1日',
+        cryptoScheme: 'dek',
+        dekPublicKey: 'PUBKEY',
+      });
+    });
+  };
+  const seedPosition = async (uid: string) => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await setDoc(doc(context.firestore(), positionPath(uid)), positionData);
+    });
+  };
+
+  it('read: メンバーは他メンバーの位置を読める（単体取得・コレクション購読とも）', async () => {
+    await seedProject();
+    await seedPosition(uid1);
+    const db = ctx(uid3, 'test3').firestore();
+    await firebase.assertSucceeds(getDoc(doc(db, positionPath(uid1))));
+    await firebase.assertSucceeds(getDocs(collection(db, `projects/${documentId}/position`)));
+  });
+
+  it('read: 非メンバーは読めない', async () => {
+    await seedProject();
+    await seedPosition(uid1);
+    await firebase.assertFails(getDoc(doc(ctx(uid5, 'test5').firestore(), positionPath(uid1))));
+  });
+
+  it('write: メンバーは自分のuidの位置を作成・更新・削除できる', async () => {
+    await seedProject();
+    const db = ctx(uid3, 'test3').firestore();
+    await firebase.assertSucceeds(setDoc(doc(db, positionPath(uid3)), positionData));
+    await firebase.assertSucceeds(setDoc(doc(db, positionPath(uid3)), { ...positionData, encdata: ['enc2'] }));
+    await firebase.assertSucceeds(deleteDoc(doc(db, positionPath(uid3))));
+  });
+
+  it('write: メンバーは他メンバーのuidの位置を作成できない（なりすまし禁止）', async () => {
+    await seedProject();
+    await firebase.assertFails(setDoc(doc(ctx(uid3, 'test3').firestore(), positionPath(uid1)), positionData));
+  });
+
+  it('write: メンバーは他メンバーの既存の位置を上書きできない', async () => {
+    await seedProject();
+    await seedPosition(uid1);
+    await firebase.assertFails(
+      setDoc(doc(ctx(uid3, 'test3').firestore(), positionPath(uid1)), { ...positionData, encdata: ['forged'] })
+    );
+  });
+
+  it('delete: メンバーは他メンバーの位置を削除できない', async () => {
+    await seedProject();
+    await seedPosition(uid1);
+    await firebase.assertFails(deleteDoc(doc(ctx(uid3, 'test3').firestore(), positionPath(uid1))));
+  });
+
+  it('write: 管理者でも他メンバーの位置は書けない・消せない', async () => {
+    await seedProject();
+    await seedPosition(uid3);
+    const db = ctx(uid2, 'test2').firestore();
+    await firebase.assertFails(setDoc(doc(db, positionPath(uid3)), positionData));
+    await firebase.assertFails(deleteDoc(doc(db, positionPath(uid3))));
+  });
+
+  it('write: 非メンバーは自分のuidでも書けない', async () => {
+    await seedProject();
+    await firebase.assertFails(setDoc(doc(ctx(uid5, 'test5').firestore(), positionPath(uid5)), positionData));
+  });
+
+  it('write: メール未承認のメンバーは自分のuidでも書けない', async () => {
+    await seedProject();
+    const unverified = testEnv.authenticatedContext(uid3, { email: 'test3@example.com', email_verified: false });
+    await firebase.assertFails(setDoc(doc(unverified.firestore(), positionPath(uid3)), positionData));
+  });
+});
+
 describe('DEK(エンベロープ暗号): keys サブコレクションと管理者によるメンバー追加', () => {
   const ctx = (uid: string, n: string) => testEnv.authenticatedContext(uid, { email: `${n}@example.com`, email_verified: true });
 
