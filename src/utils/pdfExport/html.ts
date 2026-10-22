@@ -3,6 +3,10 @@ import { isPhotoField } from '../Geometry';
 import { escapeXml } from '../General';
 import { PageLayout } from './geometry';
 
+//印刷用のHTMLはWebでは同一オリジンのウィンドウにdocument.writeで書き込む（usePDF.writeToWindow）。
+//埋め込む値はエスケープ・検証しているが、取りこぼしがあってもスクリプトが動かないよう文書自身で禁じる
+export const PRINT_DOCUMENT_CSP_META = `<meta http-equiv="Content-Security-Policy" content="script-src 'none'">`;
+
 export const generateScaleBar = (layout: PageLayout) => {
   const { margin, page, scale } = layout;
   const width = (96 / 2.54) * 4;
@@ -79,7 +83,7 @@ export const generateHTMLTable = (records: RecordType[], field: LayerType['field
 };
 
 export const generateDataHTML = (dataSet: DataType[], layers: LayerType[]) => {
-  let html = `<html><head><style> @page { size: 297mm 210mm;} </style></head>`;
+  let html = `<html><head>${PRINT_DOCUMENT_CSP_META}<style> @page { size: 297mm 210mm;} </style></head>`;
   html += `<body style="width:1123px;height:794px;padding:30px;">`;
   for (const layer of layers) {
     const records = dataSet.filter((d) => d.layerId === layer.id).flatMap((d) => d.data);

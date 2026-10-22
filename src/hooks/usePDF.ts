@@ -24,6 +24,7 @@ import {
   generateDataHTML,
   generateNorthArrow,
   generateScaleBar,
+  PRINT_DOCUMENT_CSP_META,
 } from '../utils/pdfExport/html';
 import { generateCompositionXML, generateVRT as buildVRT } from '../utils/pdfExport/georef';
 import {
@@ -80,6 +81,8 @@ export type PdfProgressOptions = {
   isOffline?: boolean;
 };
 
+//Webの印刷用ウィンドウはアプリと同一オリジンなので、書き込むHTMLに埋め込む値（色・タイルURL・ラベル等）は
+//生成側でエスケープ・検証し、文書にはスクリプトを禁じるCSP（PRINT_DOCUMENT_CSP_META）を付ける
 const writeToWindow = (html: string, targetWindow: Window | undefined, width: number, height: number) => {
   const pW = targetWindow ?? window.open('', '', `height=${height}px, width=${width}px`);
   if (pW) {
@@ -244,7 +247,7 @@ export const usePDF = (): UseEcorisMapFileReturnType => {
         mapContents += '</div>';
         mapContents += '</div>';
 
-        let html = `<html><head><style> @page { margin:0px;padding:0px;size: ${paper.widthMillimeter}mm ${paper.heightMillimeter}mm;} </style></head>`;
+        let html = `<html><head>${PRINT_DOCUMENT_CSP_META}<style> @page { margin:0px;padding:0px;size: ${paper.widthMillimeter}mm ${paper.heightMillimeter}mm;} </style></head>`;
         html += `<body style="margin:0;width:${paper.widthPixel}px;height:${paper.heightPixel - 2}px;">`; //-2pxはiOSで次ページに行ってしまうのを防ぐため
         html += generateNorthArrow(layout);
         html += generateScaleBar(layout);

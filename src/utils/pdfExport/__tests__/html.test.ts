@@ -1,5 +1,5 @@
 import { LayerType, RecordType } from '../../../types';
-import { generateHTMLTable } from '../html';
+import { generateDataHTML, generateHTMLTable, PRINT_DOCUMENT_CSP_META } from '../html';
 
 const field: LayerType['field'] = [
   { id: 'f1', name: 'name<1>', format: 'STRING' },
@@ -38,5 +38,11 @@ describe('generateHTMLTable', () => {
     );
     expect(html).toContain('parent');
     expect(html).not.toContain('child');
+  });
+});
+
+describe('generateDataHTML', () => {
+  it('印刷用の文書にはスクリプトを禁じるCSPを付ける', () => {
+    expect(generateDataHTML([], [])).toContain(PRINT_DOCUMENT_CSP_META);
   });
 });

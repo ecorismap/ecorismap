@@ -148,6 +148,14 @@ describe('listPdfTiles / buildTileMapHTML', () => {
     expect((html.match(/<div/g) ?? []).length).toBe(2);
     expect(html.indexOf('b-')).toBeLessThan(html.indexOf('a-'));
   });
+
+  it('タイルURLに仕込んだ引用符やタグはエスケープしてsrc属性から出さない', () => {
+    const tiles = listPdfTiles([map({})], region, 16, false);
+    const payload = 'https://example.com/1.png"><script>alert(1)</script><img src="x';
+    const html = buildTileMapHTML(tiles, tiles.map(() => payload));
+    expect(html).not.toContain('<script');
+    expect(html).toContain('src="https://example.com/1.png&quot;&gt;&lt;script&gt;');
+  });
 });
 
 describe('isVectorPmtilesMap', () => {
