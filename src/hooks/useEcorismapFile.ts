@@ -23,6 +23,7 @@ import { Platform } from 'react-native';
 import { setDataSetAction } from '../modules/dataSet';
 import { cloneDeep } from 'lodash';
 import { setTileMapsAction } from '../modules/tileMaps';
+import { dropUnsafeTileMaps } from '../utils/tileMapId';
 import { setSettingsAction } from '../modules/settings';
 import { t } from '../i18n/config';
 import { findDictionaryFileKey, findPhotoFileKey, getExt, truncateMiddle } from '../utils/General';
@@ -373,7 +374,8 @@ export const useEcorisMapFile = (): UseEcorisMapFileReturnType => {
       dispatch(
         setSettingsAction({ ...settings, mapRegion: loaded.settings.mapRegion, mapType: loaded.settings.mapType })
       );
-      dispatch(setTileMapsAction(loaded.maps));
+      //地図IDは保存先フォルダ名（TILE_FOLDER/{id}）になるため、フォルダの外を指すIDの地図は取り込まない
+      dispatch(setTileMapsAction(dropUnsafeTileMaps(loaded.maps)));
 
       return { isOK: true, message: '', region: loaded.settings.mapRegion };
     },

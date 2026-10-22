@@ -1,6 +1,7 @@
 import { MapRef, ViewState } from 'react-map-gl/maplibre';
 import MapView, { Region } from 'react-native-maps';
 import { RegionType, TileMapItemType, TileMapType } from '../types';
+import { isSafeTileMapId } from './tileMapId';
 
 export const isMapView = (map: any): map is MapView => {
   return map && typeof map.animateCamera === 'function';
@@ -107,7 +108,8 @@ export const isTileMapType = (data: any): data is TileMapType => {
   const { id, maptype, visible, boundary, encryptKey, redraw, ...mapItem } = data;
   return (
     isTileMapItem(mapItem) &&
-    typeof id === 'string' &&
+    // idはTILE_FOLDER配下のフォルダ名になるため、フォルダの外を指せる値は受け付けない
+    isSafeTileMapId(id) &&
     typeof maptype === 'string' &&
     typeof visible === 'boolean' &&
     ['standard', 'satellite', 'hybrid', 'terrain', 'none'].includes(maptype) &&

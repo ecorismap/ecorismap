@@ -14,9 +14,21 @@ import { StyledDialog } from './components/molecules/StyledDialog';
 import { TileSignatureSync } from './components/atoms/TileSignatureSync';
 import { checkAsyncStorageData, isMigrationCompleted, isMigrationSkipped, StorageInfo } from './utils/storageMigration';
 import { runDemSourceMigration } from './utils/demSourceMigration';
+import { setTileMapsAction } from './modules/tileMaps';
+import { dropUnsafeTileMaps } from './utils/tileMapId';
+import { TileMapType } from './types';
 
 const StorageMigrationDialog =
   Platform.OS !== 'web' ? require('./components/organisms/StorageMigrationDialog').StorageMigrationDialog : null;
+
+// 検証導入前に取り込まれて永続化された地図にも、保存先フォルダ（TILE_FOLDER/{id}）の外を指すIDが
+// 残っている可能性があるため、復元直後（地図IDでタイルを消す標高データ移行より前）に取り除く
+const dropUnsafePersistedTileMaps = () => {
+  const tileMaps: TileMapType[] | undefined = store.getState().tileMaps;
+  if (!Array.isArray(tileMaps)) return;
+  const safeTileMaps = dropUnsafeTileMaps(tileMaps);
+  if (safeTileMaps.length < tileMaps.length) store.dispatch(setTileMapsAction(safeTileMaps));
+};
 
 export default function App() {
   const [showMigrationDialog, setShowMigrationDialog] = useState(false);
@@ -62,7 +74,14 @@ export default function App() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
         <Provider store={store}>
-          <PersistGate loading={null} persistor={persistor} onBeforeLift={() => runDemSourceMigration(store)}>
+          <PersistGate
+            loading={null}
+            persistor={persistor}
+            onBeforeLift={() => {
+              dropUnsafePersistedTileMaps();
+              runDemSourceMigration(store);
+            }}
+          >
             <>
               <Routes />
               <TileSignatureSync />

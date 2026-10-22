@@ -5,6 +5,7 @@ import { RegionType } from '../types';
 import { setDataSetAction } from '../modules/dataSet';
 import { setLayersAction } from '../modules/layers';
 import { setTileMapsAction } from '../modules/tileMaps';
+import { dropUnsafeTileMaps } from '../utils/tileMapId';
 import { setSettingsAction } from '../modules/settings';
 import { setUserAction } from '../modules/user';
 import { setProjectsAction } from '../modules/projects';
@@ -90,7 +91,9 @@ export const useProjectBackup = (): UseProjectBackupReturnType => {
       const { state } = snapshot;
       dispatch(setSettingsAction(state.settings));
       dispatch(setLayersAction(state.layers));
-      dispatch(setTileMapsAction(state.tileMaps));
+      //スナップショットには検証導入前に取り込んだ地図が残っている可能性があるため、
+      //保存先フォルダ（TILE_FOLDER/{id}）の外を指すIDの地図は復元しない
+      dispatch(setTileMapsAction(dropUnsafeTileMaps(state.tileMaps)));
       dispatch(setDataSetAction(state.dataSet));
       dispatch(setUserAction(state.user));
       dispatch(setProjectsAction(state.projects));
