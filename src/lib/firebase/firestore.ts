@@ -322,12 +322,14 @@ export const getAllProjects = async (uid: string, excludeMember = false, include
       if (data === undefined) {
         return undefined;
       } else {
+        // 復号ペイロード(data)は管理者なら誰でも書けるため、id/ownerUid/storage などの
+        // 平文由来フィールドは必ずスプレッドの後に置き、ペイロード側の同名キーで上書きされないようにする。
         return {
+          ...data,
+          ...others,
           id: docSnapshot.id,
           ownerUid,
           storage: storage ?? { count: 0 },
-          ...data,
-          ...others,
           encryptedAt: toDate(encryptedAt),
           cryptoScheme: cryptoScheme ?? 'group',
           archived: archived ?? false,
