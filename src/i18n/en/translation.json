@@ -434,7 +434,7 @@
     },
     "alert": {
       "activate": "Please check your email and activate.",
-      "resetPassword": "Please check your email and reset your password.",
+      "resetPassword": "If this email address is registered, you will receive an email to reset your password. Please check your inbox.",
       "registEncryptKey": "To log in, please register your encryption key.",
       "updateUserProfile": "Profile updated.",
       "changeUserPassword": "Account password changed.",
@@ -459,7 +459,7 @@
       "inputMail": "Please enter your e-mail address",
       "inputPassword": "Please enter your login password.",
       "signupSent": "A confirmation email has been sent. Click the link in the email, then log in.",
-      "resetPasswordSent": "Check your email to reset your password, then log in."
+      "resetPasswordSent": "Once you receive the email, reset your password and then log in."
     }
   },
   "AccountSettings": {
@@ -764,7 +764,6 @@
       "noActivate": "Your account has not been activated.",
       "noEditMode": "You are not in edit mode.",
       "noLayerToEdit": "There are no layers to edit.",
-      "noUser": "User does not exist.",
       "openProject": "Please open the project.",
       "permitAccessGPS": "To use GPS, please allow access permissions for location information and notifications.",
       "pleaseActivate": "Please check your email and activate.",
