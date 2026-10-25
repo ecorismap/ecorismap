@@ -10,6 +10,7 @@ import {
 } from '../virgilsecurity/e3kit';
 import { db } from '../../utils/db';
 import { blobToBase64 } from '../../utils/blob';
+import { isSafePathSegment } from '../../utils/safePath';
 
 export const uploadDictionary = async (projectId: string, layerId: string, dictionaryData: string) => {
   try {
@@ -268,6 +269,10 @@ export const fetchPhoto = async (url: string, key: string) => {
 
 export const downloadPhoto = async (url: string, key: string, filename: string, folder: string) => {
   let newUri;
+  // 写真名は他メンバーのレコード由来。パス区切りや`..`でフォルダの外に書き込ませない
+  if (!isSafePathSegment(filename)) {
+    return { isOK: false, message: t('firebase.message.failGetPhoto'), uri: null };
+  }
   const localFile = `${folder}/${filename}`;
 
   if (await hasProjectImage(localFile)) {

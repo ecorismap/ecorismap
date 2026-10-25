@@ -21,6 +21,7 @@ import { setDataSyncTimestampsAction, dataSyncKey } from '../modules/dataSync';
 import { layersInitialState, setLayersAction } from '../modules/layers';
 import { tileMapsInitialState, setTileMapsAction } from '../modules/tileMaps';
 import { dropUnsafeTileMaps } from '../utils/tileMapId';
+import { isSafePathSegment } from '../utils/safePath';
 import { editSettingsAction } from '../modules/settings';
 import { addProjectAction, deleteProjectAction, updateProjectAction } from '../modules/projects';
 import { cloneDeep } from 'lodash';
@@ -943,6 +944,8 @@ export const useRepository = (): UseRepositoryReturnType & {
       for (const { name } of photoFields) {
         const photos = (data.field[name] as PhotoType[]).map(async (photo) => {
           if (photo.url !== null && photo.key !== null) {
+            // 写真名・IDは他メンバーのレコードやクラウド設定由来。パス区切りや`..`を含むものは保存しない
+            if (![project_.id, layerId, uid, photo.name].every(isSafePathSegment)) return photo;
             const folder = `${PHOTO_FOLDER}/${project_.id}/${layerId}/${uid}`;
             const { isOK, uri } = await projectStorage.downloadPhoto(photo.url, photo.key, photo.name, folder);
             if (!isOK || uri === null) {

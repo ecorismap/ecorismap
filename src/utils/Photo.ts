@@ -5,6 +5,8 @@ import * as ImagePicker from 'expo-image-picker';
 import dayjs from '../i18n/dayjs';
 import { getPhotoFields } from './Layer';
 import { LayerType, PhotoType, RecordType } from '../types';
+import { PHOTO_FOLDER } from '../constants/AppConstants';
+import { isUriInsideFolder } from './safePath';
 
 // 写真の実ファイルが端末（Webではブラウザ）に存在するか。
 // クラウドから取得したレコードは未ダウンロードだとuriがnull、ダウンロード済みでも
@@ -110,6 +112,8 @@ export const saveToStorage = async (fileUri: string, fileName: string, folder: s
 
 export const deleteLocalPhoto = async (uri: string) => {
   if (Platform.OS === 'web') return;
+  // 他メンバーのレコードのuriは送り手の端末のパスがそのまま届く。写真フォルダの外は消さない
+  if (!isUriInsideFolder(uri, PHOTO_FOLDER)) return;
   await FileSystem.deleteAsync(uri, { idempotent: true });
 };
 

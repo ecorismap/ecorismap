@@ -14,6 +14,7 @@ jest.mock('expo-file-system/legacy', () => ({
   deleteAsync: jest.fn(),
   getInfoAsync: jest.fn(),
   EncodingType: { UTF8: 'UTF8' },
+  documentDirectory: 'file:///docs/',
 }));
 jest.mock('react-native', () => ({
   Platform: { OS: 'ios' },
@@ -190,9 +191,20 @@ describe('Photo', () => {
     it('should delete local photo on mobile', async () => {
       mockFileSystem.deleteAsync.mockResolvedValue(undefined);
 
-      await Photo.deleteLocalPhoto('mock://photo.jpg');
+      await Photo.deleteLocalPhoto('file:///docs/projects/P1/L1/U1/photo.jpg');
 
-      expect(mockFileSystem.deleteAsync).toHaveBeenCalledWith('mock://photo.jpg', { idempotent: true });
+      expect(mockFileSystem.deleteAsync).toHaveBeenCalledWith('file:///docs/projects/P1/L1/U1/photo.jpg', {
+        idempotent: true,
+      });
+    });
+
+    it('写真フォルダの外を指すuri（他メンバーのレコード由来）は削除しない', async () => {
+      await Photo.deleteLocalPhoto('file:///docs/SQLite/dictionary.db');
+      await Photo.deleteLocalPhoto('file:///docs/projects/../mmkv/state');
+      await Photo.deleteLocalPhoto('file:///docs/projects/%2e%2e/mmkv/state');
+      await Photo.deleteLocalPhoto('file:///docs/projects');
+
+      expect(mockFileSystem.deleteAsync).not.toHaveBeenCalled();
     });
 
     it('should not delete photo on web platform', async () => {
@@ -232,7 +244,7 @@ describe('Photo', () => {
       const mockPhotos: PhotoType[] = [
         {
           id: 'photo-1',
-          uri: 'mock://photo1.jpg',
+          uri: 'file:///docs/projects/P1/L1/U1/photo1.jpg',
           url: null,
           key: null,
           thumbnail: 'data:image/jpeg;base64,thumb1',
@@ -242,7 +254,7 @@ describe('Photo', () => {
         },
         {
           id: 'photo-2',
-          uri: 'mock://photo2.jpg',
+          uri: 'file:///docs/projects/P1/L1/U1/photo2.jpg',
           url: null,
           key: null,
           thumbnail: 'data:image/jpeg;base64,thumb2',
@@ -271,8 +283,8 @@ describe('Photo', () => {
 
       expect(mockGetPhotoFields).toHaveBeenCalledWith(mockLayer);
       expect(mockFileSystem.deleteAsync).toHaveBeenCalledTimes(2);
-      expect(mockFileSystem.deleteAsync).toHaveBeenCalledWith('mock://photo1.jpg', { idempotent: true });
-      expect(mockFileSystem.deleteAsync).toHaveBeenCalledWith('mock://photo2.jpg', { idempotent: true });
+      expect(mockFileSystem.deleteAsync).toHaveBeenCalledWith('file:///docs/projects/P1/L1/U1/photo1.jpg', { idempotent: true });
+      expect(mockFileSystem.deleteAsync).toHaveBeenCalledWith('file:///docs/projects/P1/L1/U1/photo2.jpg', { idempotent: true });
     });
 
     it('should handle empty photo fields', () => {

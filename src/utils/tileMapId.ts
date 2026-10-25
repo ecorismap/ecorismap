@@ -1,3 +1,5 @@
+import { isSafePathSegment } from './safePath';
+
 /**
  * 地図IDの検証。
  *
@@ -14,11 +16,7 @@
  * - 空文字・`.`・`..` : TILE_FOLDER自身やその親を指す
  * アプリが採番するID（ULID）や固定ID（standard・hybrid・dem_mapterhorn等）はいずれにも該当しない。
  */
-// eslint-disable-next-line no-control-regex
-const UNSAFE_TILE_MAP_ID_CHARS = /[/\\%?#;\u0000-\u001f\u007f]/;
-
-export const isSafeTileMapId = (id: unknown): id is string =>
-  typeof id === 'string' && id !== '' && id !== '.' && id !== '..' && !UNSAFE_TILE_MAP_ID_CHARS.test(id);
+export const isSafeTileMapId = (id: unknown): id is string => isSafePathSegment(id);
 
 /** 外部から取り込む地図一覧から、IDがフォルダ名として安全でない地図を取り除く（配列でなければそのまま返す） */
 export const dropUnsafeTileMaps = <T extends { id: unknown }>(tileMaps: T[]): T[] =>

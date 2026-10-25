@@ -24,6 +24,7 @@ import type { FeatureCollection } from 'geojson';
 import { importPresetDictionaries } from '../utils/PresetDictionary';
 import sanitize from 'sanitize-filename';
 import { selectDataSet, selectIsNewLayer } from '../modules/selectors';
+import { isSafePathSegment } from '../utils/safePath';
 
 export type UseLayerEditReturnType = {
   targetLayer: LayerType;
@@ -221,6 +222,8 @@ export const useLayerEdit = (
   const deleteLayerPhotos = useCallback(async () => {
     if (Platform.OS === 'web') return;
     if (projectId === undefined) return;
+    // IDはクラウド設定由来。`..`等が入っているとフォルダの外を再帰削除してしまう
+    if (!isSafePathSegment(projectId) || !isSafePathSegment(targetLayer.id)) return;
     const folder = `${PHOTO_FOLDER}/${projectId}/${targetLayer.id}`;
     await FileSystem.deleteAsync(folder, { idempotent: true });
   }, [projectId, targetLayer.id]);
