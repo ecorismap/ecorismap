@@ -1497,6 +1497,89 @@ describe('DEK(エンベロープ暗号): keys サブコレクションと管理�
     );
   });
 
+  // ---- 管理者による更新でもOwner>Adminの階層を守る（オーナー締め出し・乗っ取りの防止） ----
+
+  it('project update: 管理者はオーナーを membersUid から外せない', async () => {
+    await seedDekProject();
+    await firebase.assertFails(
+      updateDoc(doc(ctx(uid2, 'test2').firestore(), `projects/${documentId}`), {
+        membersUid: [uid2, uid3],
+      })
+    );
+  });
+
+  it('project update: 管理者はオーナーを adminsUid から外せない', async () => {
+    await seedDekProject();
+    await firebase.assertFails(
+      updateDoc(doc(ctx(uid2, 'test2').firestore(), `projects/${documentId}`), {
+        adminsUid: [uid2],
+      })
+    );
+  });
+
+  it('project update: 管理者は自分以外を全員外す乗っ取りの更新をできない', async () => {
+    await seedDekProject();
+    await firebase.assertFails(
+      updateDoc(doc(ctx(uid2, 'test2').firestore(), `projects/${documentId}`), {
+        adminsUid: [uid2],
+        membersUid: [uid2],
+      })
+    );
+  });
+
+  it('project update: 管理者はDEK方式プロジェクトの dekPublicKey を差し替えられない', async () => {
+    await seedDekProject();
+    await firebase.assertFails(
+      updateDoc(doc(ctx(uid2, 'test2').firestore(), `projects/${documentId}`), {
+        encdata: ['reenc'],
+        dekPublicKey: 'ATTACKER_PUBKEY',
+      })
+    );
+  });
+
+  it('project update: オーナーはDEK方式プロジェクトの dekPublicKey を変更できる', async () => {
+    await seedDekProject();
+    await firebase.assertSucceeds(
+      updateDoc(doc(ctx(uid1, 'test1').firestore(), `projects/${documentId}`), {
+        encdata: ['reenc'],
+        dekPublicKey: 'NEW_PUBKEY',
+      })
+    );
+  });
+
+  it('project update: 管理者はオーナーを残したまま一般メンバーを外せる・管理者を追加できる', async () => {
+    await seedDekProject();
+    await firebase.assertSucceeds(
+      updateDoc(doc(ctx(uid2, 'test2').firestore(), `projects/${documentId}`), {
+        adminsUid: [uid1, uid2, uid3],
+        membersUid: [uid1, uid2, uid3],
+      })
+    );
+  });
+
+  it('project update: 管理者は自分を管理者から外せる（オーナーは残る）', async () => {
+    await seedDekProject();
+    await firebase.assertSucceeds(
+      updateDoc(doc(ctx(uid2, 'test2').firestore(), `projects/${documentId}`), {
+        adminsUid: [uid1],
+      })
+    );
+  });
+
+  it('migration: 管理者はgroup→dekの移行と同時にオーナーを外すことはできない', async () => {
+    await seedGroupProject();
+    await firebase.assertFails(
+      updateDoc(doc(ctx(uid2, 'test2').firestore(), `projects/${documentId}`), {
+        encdata: ['reenc'],
+        encryptedAt: '2022年2月2日',
+        cryptoScheme: 'dek',
+        dekPublicKey: 'PUBKEY',
+        adminsUid: [uid2],
+        membersUid: [uid2],
+      })
+    );
+  });
+
   it('project update: グループ方式では管理者はメンバーを追加できない（オーナーのみ）', async () => {
     await seedGroupProject();
     await firebase.assertFails(
