@@ -53,5 +53,5 @@ yarn keys:apply    # keys/ディレクトリのAPIキー類を一括反映
 - `virgil-func.ts` - 暗号化鍵管理
 - `generate-virgil-jwt.ts` - JWT生成
 - `auth-guard.ts` - 組織アカウント登録制限（`beforeUserCreated` blocking function、許可リストはSecret Managerの`ORG_ALLOWED_DOMAINS`/`ORG_ALLOWED_EMAILS`）
-- Node 20 runtime
+- Node 22 runtime（2026-10-25に20から更新）
 - デプロイ: `npm run deploy`（functionsディレクトリから）
