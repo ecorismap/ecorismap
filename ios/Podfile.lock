@@ -4239,7 +4239,7 @@ PODS:
     - SDWebImage/Core (~> 5.17)
   - SSZipArchive (2.5.5)
   - TSBackgroundFetch (4.1.1)
-  - TSLocationManager (4.8.1):
+  - TSLocationManager (4.8.2):
     - TSBackgroundFetch (~> 4.1.0)
   - UMAppLoader (56.0.1)
   - VirgilCrypto (5.3.0):
@@ -4923,7 +4923,7 @@ SPEC CHECKSUMS:
   SDWebImageWebPCoder: 0e06e365080397465cc73a7a9b472d8a3bd0f377
   SSZipArchive: c69881e8ac5521f0e622291387add5f60f30f3c4
   TSBackgroundFetch: 18918b6449a1e3f01eb0f5b44d6d79ce6160a5a5
-  TSLocationManager: 6a5850dd17ca47e08f203791747f2fef0ecefcd4
+  TSLocationManager: 0825fd9af9ecb0443b09088d22ec35fdfa89a0cc
   UMAppLoader: b7d22886a244871c20b5a8f2fcea13c18534e677
   VirgilCrypto: c2831582c5230eeb2adba2365336c768cd6d8c59
   VirgilCryptoFoundation: 79f23a7ab6db642268d31bc63b0cf54db416f089
