@@ -283,12 +283,10 @@ export const useAccount = (): UseAccountReturnType => {
 
   const resetUserPassword = useCallback(async (email: string) => {
     setIsLoading(true);
-    const response = await FBsendPasswordResetEmail(email);
+    // 登録の有無で応答を変えない（メールアドレスの列挙対策）。
+    // Authのメール列挙保護を有効にしてあり、未登録でもuser-not-foundは返らない。
+    await FBsendPasswordResetEmail(email);
     setIsLoading(false);
-    if (response === 'auth/user-not-found') {
-      setAccountMessage(t('hooks.message.noUser'));
-      return { isOK: false };
-    }
     return { isOK: true };
   }, []);
 
