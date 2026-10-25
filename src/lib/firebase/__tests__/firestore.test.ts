@@ -1,6 +1,6 @@
 import { decryptProjectData, clearProjectCryptoCache, getAllProjects } from '../firestore';
 import { unwrapDEK, decryptEThree } from '../../virgilsecurity/e3kit';
-import { decryptWithDEK } from '../../virgilsecurity/dek';
+import { decryptWithDEK, isDEKKeyPair } from '../../virgilsecurity/dek';
 import { getDoc, getDocsFromServer } from '../firebase';
 
 jest.mock('../../../constants/AppConstants', () => ({
@@ -19,6 +19,7 @@ jest.mock('../../virgilsecurity/dek', () => ({
   createProjectDEK: jest.fn(),
   encryptWithDEK: jest.fn(),
   decryptWithDEK: jest.fn(),
+  isDEKKeyPair: jest.fn(async () => true),
 }));
 
 jest.mock('../../../i18n/config', () => ({ t: jest.fn((key: string) => key) }));
@@ -47,6 +48,7 @@ jest.mock('../firebase', () => ({
 const mockedGetDoc = getDoc as jest.Mock;
 const mockedUnwrapDEK = unwrapDEK as jest.Mock;
 const mockedDecryptWithDEK = decryptWithDEK as jest.Mock;
+const mockedIsDEKKeyPair = isDEKKeyPair as jest.Mock;
 const mockedDecGroup = decryptEThree as jest.Mock;
 const mockedGetDocsFromServer = getDocsFromServer as jest.Mock;
 
@@ -102,6 +104,23 @@ describe('decryptProjectData (DEKプロジェクトの鍵キャッシュ)', () =
     // ログアウトやプロジェクトを開く操作なしで（＝キャッシュクリアなしで）回復すること
     expect(afterReshare).toEqual({ value: 'decrypted' });
     expect(mockedUnwrapDEK).toHaveBeenCalledTimes(2);
+  });
+
+  it('開封できてもプロジェクトのDEK公開鍵と対でない鍵（メンバーが書いた偽のDEK）は採用もキャッシュもしない', async () => {
+    // 攻撃: メンバーが自分の署名で偽のDEKをオーナー宛て keys/{ownerUid} に書く（unwrap自体は成功する）
+    mockedUnwrapDEK.mockResolvedValue('FORGED_DEK');
+    mockedIsDEKKeyPair.mockImplementation(async (priv: string, pub: string) => priv === 'DEK_PRIV' && pub === 'PUB_KEY');
+
+    const forged = await decryptProjectData(ENCRYPTED_AT, ['enc'], 'member-b', PROJECT_ID);
+    expect(forged).toBeUndefined();
+    expect(mockedIsDEKKeyPair).toHaveBeenCalledWith('FORGED_DEK', 'PUB_KEY');
+    expect(mockedDecryptWithDEK).not.toHaveBeenCalledWith(['enc'], 'FORGED_DEK');
+
+    // 正しいDEKで再共有されれば、キャッシュクリアなしで回復する（偽の鍵がキャッシュに残っていない）
+    mockedUnwrapDEK.mockResolvedValue('DEK_PRIV');
+    const recovered = await decryptProjectData(ENCRYPTED_AT, ['enc'], 'member-b', PROJECT_ID);
+    expect(recovered).toEqual({ value: 'decrypted' });
+    mockedIsDEKKeyPair.mockImplementation(async () => true);
   });
 });
 

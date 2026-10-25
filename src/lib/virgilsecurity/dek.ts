@@ -39,6 +39,21 @@ export const createProjectDEK = async (): Promise<ExportedDEK> => {
 };
 
 /**
+ * DEK秘密鍵が、プロジェクトに平文で公開されているDEK公開鍵と対になっているか。
+ * keys/{uid} はメンバーも書けるため、開封できた（＝署名検証が通った）だけでは中身が本物のDEKとは限らない。
+ */
+export const isDEKKeyPair = async (dekPrivateKeyB64: string, dekPublicKeyB64: string): Promise<boolean> => {
+  try {
+    const privateKey = virgilCrypto.importPrivateKey(Buffer.from(dekPrivateKeyB64, 'base64'));
+    const derived = virgilCrypto.exportPublicKey(virgilCrypto.extractPublicKey(privateKey));
+    // 公開鍵側もデコード→再エンコードして表記揺れ（改行・パディング差）を吸収してから比べる
+    return derived.toString('base64') === Buffer.from(dekPublicKeyB64, 'base64').toString('base64');
+  } catch {
+    return false;
+  }
+};
+
+/**
  * 任意の JSON シリアライズ可能なデータを DEK 公開鍵で暗号化する。
  * 戻り値は base64 文字列の配列（既存 encdata: string[] と同形状）。
  */

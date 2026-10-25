@@ -27,6 +27,7 @@ jest.mock('../../virgilsecurity/dek', () => ({
   createProjectDEK: jest.fn(),
   encryptWithDEK: jest.fn(),
   decryptWithDEK: jest.fn(),
+  isDEKKeyPair: jest.fn(async () => true),
 }));
 
 jest.mock('../../../i18n/config', () => ({ t: jest.fn((key: string) => key) }));

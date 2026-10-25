@@ -21,11 +21,28 @@ service cloud.firestore {
         // 「group→dekへの移行(Phase ii)」の両方を許可する。
         // アーカイブ/復元は平文フラグ archived だけの更新（再暗号化不要）なので、
         // 暗号方式に関わらず管理者にも許可する。
+        // 管理者による更新ではOwner>Adminの階層を守る:
+        //  - オーナーを membersUid/adminsUid から外せない（外すとオーナーが一覧・設定・データを失う）
+        //  - 既にDEK方式のプロジェクトでは dekPublicKey を差し替えられない（オーナーを復号不能にさせない）。
+        //    group→dek の移行(Phase ii)で初めて設定するのは許可する。
+        function keepsOwner() {
+          return resource.data.ownerUid in request.resource.data.membersUid
+            && resource.data.ownerUid in request.resource.data.adminsUid;
+        }
+        function keepsDekPublicKey() {
+          return resource.data.get("cryptoScheme", "") != "dek"
+            || !request.resource.data.diff(resource.data).affectedKeys().hasAny(["dekPublicKey"]);
+        }
         allow update: if isSignedIn()
         && verifyUpdateFields(["adminsUid", "membersUid","encdata","encryptedAt","cryptoScheme","dekPublicKey","archived"])
         && (
              request.auth.uid == resource.data.ownerUid
-          || (request.resource.data.cryptoScheme == "dek" && request.auth.uid in resource.data.adminsUid)
+          || (
+               request.resource.data.cryptoScheme == "dek"
+            && request.auth.uid in resource.data.adminsUid
+            && keepsOwner()
+            && keepsDekPublicKey()
+          )
           || (
                request.resource.data.diff(resource.data).affectedKeys().hasOnly(["archived"])
             && request.auth.uid in resource.data.adminsUid

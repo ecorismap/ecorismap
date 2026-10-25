@@ -20,7 +20,7 @@ import { decryptEThree as decGroup, encryptEThree as encGroup } from '../virgils
 // DEKのラップ/アンラップは脱Virgilファサード経由（ENABLE_KEY_LEDGER で台帳優先、e3kitへフォールバック）
 import { wrapDEKForMember, unwrapDEK } from '../crypto';
 import { getPublicKeyFromLedger } from './publicKeys';
-import { createProjectDEK, encryptWithDEK, decryptWithDEK, ExportedDEK } from '../virgilsecurity/dek';
+import { createProjectDEK, encryptWithDEK, decryptWithDEK, isDEKKeyPair, ExportedDEK } from '../virgilsecurity/dek';
 import { FUNC_ENCRYPTION, CREATE_DEK_PROJECTS, ENABLE_KEY_LEDGER } from '../../constants/AppConstants';
 import {
   auth,
@@ -67,15 +67,24 @@ export const setProjectCryptoCache = (projectId: string, crypto: ProjectCrypto) 
   projectCryptoCache.set(projectId, crypto);
 };
 
-/** 現在ユーザー宛ての keys/{uid} を読み、unwrap してDEK秘密鍵(base64)を得る。無ければ undefined。 */
-const loadProjectDEKForCurrentUser = async (projectId: string): Promise<string | undefined> => {
+/**
+ * 現在ユーザー宛ての keys/{uid} を読み、unwrap してDEK秘密鍵(base64)を得る。無ければ undefined。
+ * dekPublicKey を渡した場合、開封した秘密鍵がそれと対でなければ採用しない（undefined）。
+ * keys/{ownerUid} はメンバーも書けるため、偽のDEKを受け入れてキャッシュ・他メンバーへ再配布しないための照合。
+ */
+const loadProjectDEKForCurrentUser = async (projectId: string, dekPublicKey?: string): Promise<string | undefined> => {
   const uid = auth?.currentUser?.uid;
   if (!uid) return undefined;
   const keyRef = doc(firestore, 'projects', projectId, 'keys', uid);
   const snap = await getDoc(keyRef);
   const keyData = snap.data() as ProjectKeyFS | undefined;
   if (!keyData) return undefined;
-  return unwrapDEK(keyData.encDek, keyData.wrapperUid, toDate(keyData.encryptedAt));
+  const dekPrivateKey = await unwrapDEK(keyData.encDek, keyData.wrapperUid, toDate(keyData.encryptedAt));
+  if (dekPrivateKey !== undefined && dekPublicKey !== undefined && !(await isDEKKeyPair(dekPrivateKey, dekPublicKey))) {
+    console.warn(`DEK in keys/${uid} does not match the project's dekPublicKey: ${projectId}`);
+    return undefined;
+  }
+  return dekPrivateKey;
 };
 
 /** プロジェクトの暗号方式とDEK鍵を取得（キャッシュ付き）。 */
@@ -93,7 +102,7 @@ const getProjectCrypto = async (projectId: string): Promise<ProjectCrypto> => {
   }
   // dek: 公開鍵は平文、秘密鍵は keys/{uid} を unwrap して取得
   // ownerUid は dual-read（旧グループ暗号へのフォールバック復号）の loadGroup 照会に使うため dek でも保持する
-  const dekPrivateKey = await loadProjectDEKForCurrentUser(projectId);
+  const dekPrivateKey = await loadProjectDEKForCurrentUser(projectId, pdata.dekPublicKey);
   const crypto: ProjectCrypto = { scheme: 'dek', ownerUid: pdata.ownerUid, dekPublicKey: pdata.dekPublicKey, dekPrivateKey };
   // 開封失敗（キーリセット後・再共有待ち等）を負キャッシュすると、キャッシュをクリアできるのが
   // ログアウトとプロジェクトを開く操作しかなく、再共有後も一覧再取得で回復できなくなる。
