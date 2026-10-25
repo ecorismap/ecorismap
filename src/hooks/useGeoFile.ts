@@ -22,6 +22,8 @@ import { decodeUri } from '../utils/File.web';
 import { importDictionary, exportDatabase } from '../utils/SQLite';
 import { generateCSV, generateGeoJson, generateGPX, generateKML } from '../utils/Geometry';
 import { DuplicateLayerConfirmAsync } from '../components/molecules/AlertAsync';
+import { isUriInsideFolder } from '../utils/safePath';
+import { PHOTO_FOLDER } from '../constants/AppConstants';
 
 export type UseGeoFileReturnType = {
   isLoading: boolean;
@@ -505,7 +507,9 @@ export const useGeoFile = (): UseGeoFileReturnType => {
                 // ローカルファイルがある場合はそれを使用、ない場合は空文字列
                 // Firebase URLとキーは別途渡す
                 exportData.push({ 
-                  data: photo.uri || '', 
+                  // 他メンバーのレコードのuriは送り手の端末のパスがそのまま届く。ネイティブでは写真フォルダ外の
+                  // ファイル（端末内の任意ファイル）を書き出しに混ぜないよう、空にしてクラウドから取得させる
+                  data: Platform.OS === 'web' || isUriInsideFolder(photo.uri, PHOTO_FOLDER) ? photo.uri || '' : '', 
                   name: photo.name, 
                   type: 'PHOTO', 
                   folder: exportFolder,
