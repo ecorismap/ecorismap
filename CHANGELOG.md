@@ -3,10 +3,10 @@
 ## [0.7.0]　- Unreleased
 
 - Improved the project edit screen to show the progress indicator immediately after pressing Save. Previously it appeared only after the member lookup (Functions/Virgil) had finished, so the screen looked frozen for several seconds
-- Updated the background location library (react-native-background-geolocation 5.1.1 → 5.8.0, native SDK 4.1 → 4.7/4.8). This brings upstream fixes for tracking that could stop on Android (foreground service start/stop races, the activity being recreated being mistaken for app termination, duplicated event listeners, re-registering location subscriptions Play Services had dropped) and on iOS (a future-stamped fix blocking all later locations until restart, tracking stuck stationary after a failed location request). Only the location permission is now requested, so iOS no longer asks for Motion & Fitness
+- Updated the background location library (react-native-background-geolocation 5.1.1 → 5.8.0, native SDK 4.1 → 4.7.6 on Android / 4.8.2 on iOS). This brings upstream fixes for tracking that could stop on Android (foreground service start/stop races, the activity being recreated being mistaken for app termination, duplicated event listeners, re-registering location subscriptions Play Services had dropped, memory growing with every recorded location during long tracking, and locations piling up without limit after the app was reopened while tracking continued in the background) and on iOS (a future-stamped fix blocking all later locations until restart, tracking stuck stationary after a failed location request). Only the location permission is now requested, so iOS no longer asks for Motion & Fitness
 
 - プロジェクト編集で保存ボタンを押した直後にインジケータを出すようにしました。これまではメンバーの照会（Functions/Virgil）が終わるまで表示されず、数秒間固まったように見えていました
-- バックグラウンド位置情報ライブラリを更新しました（react-native-background-geolocation 5.1.1 → 5.8.0、ネイティブSDK 4.1 → 4.7/4.8）。Androidで追跡が止まり得た問題（フォアグラウンドサービスの起動・停止の競合、画面の再生成をアプリ終了と誤判定、イベントリスナーの多重登録、Play Servicesが止めた位置購読の再登録）と、iOSの問題（未来の時刻を持つ位置が以後の全位置を再起動まで止める、位置取得失敗後に静止状態から復帰できない）の上流修正を含みます。権限要求は位置のみにしたため、iOSでモーション（Motion & Fitness）の許可を求めなくなりました
+- バックグラウンド位置情報ライブラリを更新しました（react-native-background-geolocation 5.1.1 → 5.8.0、ネイティブSDK 4.1 → Android 4.7.6／iOS 4.8.2）。Androidで追跡が止まり得た問題（フォアグラウンドサービスの起動・停止の競合、画面の再生成をアプリ終了と誤判定、イベントリスナーの多重登録、Play Servicesが止めた位置購読の再登録、長時間の記録で位置ごとにメモリが増え続ける、バックグラウンドで記録を続けたままアプリを開き直すと位置が際限なく溜まる）と、iOSの問題（未来の時刻を持つ位置が以後の全位置を再起動まで止める、位置取得失敗後に静止状態から復帰できない）の上流修正を含みます。権限要求は位置のみにしたため、iOSでモーション（Motion & Fitness）の許可を求めなくなりました
 
 ## [0.6.9]　- Unreleased
 
