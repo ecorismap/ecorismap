@@ -1082,6 +1082,7 @@
         "inputLayerName": "Please enter a layer name.",
         "inputFieldName": "Please enter a field name.",
         "_id": "_id is not available.",
+        "duplicateFieldName": "The field name \"{{name}}\" is used more than once. Please use a different name.",
         "inputListItem": "Set the items in the list.",
         "inputRadioItem": "Set the radio button item.",
         "inputCheckItem": "Set the checkbox item.",

@@ -19,7 +19,14 @@ import { changeFieldValue, getBlankFieldValue } from '../utils/Data';
 import { LAYER_PRESETS, PRESET_LAYER_DATA } from '../constants/Presets';
 import { createLayerFromPreset, PresetDictionary } from '../utils/Preset';
 import { geoJson2Data } from '../utils/Geometry';
-import { applyColorStyle, hasCodeLink, isCodeTargetFormat, restoreColorStyleFromIndividual } from '../utils/Layer';
+import {
+  applyColorStyle,
+  hasCodeLink,
+  isCodeTargetFormat,
+  renameRecordFields,
+  restoreColorStyleFromIndividual,
+  updateFieldReferences,
+} from '../utils/Layer';
 import type { FeatureCollection } from 'geojson';
 import { importPresetDictionaries } from '../utils/PresetDictionary';
 import sanitize from 'sanitize-filename';
@@ -148,9 +155,21 @@ export const useLayerEdit = (
   }, [isStyleEdited, itemValues, fieldIndex, codeFieldId]);
 
   const updateDataOfTheLayer = useCallback(
-    (initialFields: FieldType[], addedFields: FieldType[], changeFields: FieldType[], deletedFields: FieldType[]) => {
+    (
+      initialFields: FieldType[],
+      addedFields: FieldType[],
+      changeFields: FieldType[],
+      deletedFields: FieldType[],
+      renames: Map<string, string>
+    ) => {
       const updateDataSet = cloneDeep(dataSet);
       updateDataSet.forEach((userData) => {
+        //データのフィールドを削除。削除した名前を別のフィールドへ付け直すこともあるので付け替えより先に行う
+        userData.data.forEach((d) => {
+          deletedFields.forEach(({ name }) => delete d.field[name]);
+        });
+        //値は属性名をキーに持つため、名前を変えたフィールドは値を新しい名前へ移す
+        userData.data.forEach((d) => (d.field = renameRecordFields(d.field, renames)));
         //既存のデータに追加フィールドの値を初期化。既定値を入れると入力済みに見えるため空にする
         userData.data.forEach((d) =>
           addedFields.forEach(({ name, format }) => (d.field[name] = getBlankFieldValue(format)))
@@ -163,10 +182,6 @@ export const useLayerEdit = (
             d.field[name] = changeFieldValue(originalData, originalFormat, changedFormat, list);
           })
         );
-        //データのフィールドを削除
-        userData.data.forEach((d) => {
-          deletedFields.forEach(({ name }) => delete d.field[name]);
-        });
       });
       dispatch(updateDataAction(updateDataSet));
     },
@@ -184,36 +199,40 @@ export const useLayerEdit = (
         (p) => p.id === n.id && (p.format !== n.format || JSON.stringify(p.list) !== JSON.stringify(n.list))
       )
     );
-    //ラベル対象のフィールドが削除されていたらラベルを変更
-    if (deletedFields.some(({ name }) => name === targetLayer.label)) {
-      targetLayer.label = '';
-    }
+    const renames = new Map<string, string>();
+    updateFields.forEach(({ id, name }) => {
+      const initialName = initialFields.find((p) => p.id === id)?.name;
+      if (initialName !== undefined && initialName !== name) renames.set(initialName, name);
+    });
+    //削除した属性を指すラベル・色分けは解除し、名前を変えた属性への参照は付け替える
+    const deletedNames = new Set(deletedFields.map(({ name }) => name));
+    const savedLayer = updateFieldReferences(targetLayer, oldLayer, deletedNames, renames);
 
     //追加されたフィールドのデータを初期化し、削除されたフィールドをデータからも削除
-    updateDataOfTheLayer(initialFields, addedFields, changedFields, deletedFields);
+    updateDataOfTheLayer(initialFields, addedFields, changedFields, deletedFields, renames);
 
     if (isNewLayer) {
-      dispatch(addLayerAction(targetLayer));
+      dispatch(addLayerAction(savedLayer));
       // プリセット同梱データがあれば投入する。フィールド名で対応付けるので、
       // ユーザーが保存前にフィールドを消していてもその項目が空になるだけで壊れない
       const presetGeojson = pendingPresetGeojsonRef.current;
       const presetData =
-        presetGeojson !== undefined && targetLayer.type === 'POINT'
-          ? geoJson2Data(presetGeojson, targetLayer, 'POINT', dataUser.uid, dataUser.displayName)
+        presetGeojson !== undefined && savedLayer.type === 'POINT'
+          ? geoJson2Data(presetGeojson, savedLayer, 'POINT', dataUser.uid, dataUser.displayName)
           : undefined;
       pendingPresetGeojsonRef.current = undefined;
-      dispatch(addDataAction([{ layerId: targetLayer.id, userId: dataUser.uid, data: presetData ?? [] }]));
+      dispatch(addDataAction([{ layerId: savedLayer.id, userId: dataUser.uid, data: presetData ?? [] }]));
     } else {
-      dispatch(updateLayerAction(targetLayer));
+      dispatch(updateLayerAction(savedLayer));
     }
 
     // プリセット適用時の辞書語彙を登録（フィールドが削除されていたら除外）
     const dictionaries = pendingPresetDictionariesRef.current.filter((d) =>
-      targetLayer.field.some((f) => f.id === d.fieldId)
+      savedLayer.field.some((f) => f.id === d.fieldId)
     );
     if (dictionaries.length > 0) {
       pendingPresetDictionariesRef.current = [];
-      importPresetDictionaries(targetLayer.id, dictionaries).catch((e) => console.log(e));
+      importPresetDictionaries(savedLayer.id, dictionaries).catch((e) => console.log(e));
     }
 
     setIsEdited(false);
