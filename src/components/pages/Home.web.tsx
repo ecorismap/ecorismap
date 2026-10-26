@@ -562,7 +562,13 @@ export default function HomeScreen() {
     const layersPromise = tileMaps
       .slice(0)
       .reverse()
-      .map((tileMap: TileMapType) => getTileMapLayers(tileMap));
+      // 1つの地図の失敗でPromise.allごと落ちると全地図が消えて白画面になるため、地図ごとに隔離する
+      .map((tileMap: TileMapType) =>
+        getTileMapLayers(tileMap).catch((e) => {
+          console.warn('地図レイヤの生成に失敗', tileMap.name, e);
+          return [];
+        })
+      );
 
     const layersResult = await Promise.all(layersPromise);
     const dynamicLayers = layersResult.flat().filter((layer): layer is LayerSpecification => !!layer);

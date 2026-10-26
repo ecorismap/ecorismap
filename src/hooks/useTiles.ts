@@ -549,7 +549,11 @@ export const useTiles = (
           if (currentTileMap.styleURL) {
             const localLocation = `${folder}/style.json`;
             await fetch(withTileSignature(currentTileMap.styleURL, tileSignatures))
-              .then((response) => response.text())
+              .then((response) => {
+                // エラー応答の本文（HTML）をstyle.jsonとして保存すると、既存の正しいスタイルを壊す
+                if (!response.ok) throw new Error(`Bad response code: ${response.status}`);
+                return response.text();
+              })
               .then(async (data) => {
                 await FileSystem.writeAsStringAsync(localLocation, data, {
                   encoding: FileSystem.EncodingType.UTF8,
@@ -566,7 +570,11 @@ export const useTiles = (
 
           const localLocation = `${folder}/style.json`;
           await fetch(withTileSignature(currentTileMap.styleURL, tileSignatures))
-            .then((response) => response.text())
+            .then((response) => {
+              // エラー応答の本文（HTML）をstyle.jsonとして保存すると、既存の正しいスタイルを壊す
+              if (!response.ok) throw new Error(`Bad response code: ${response.status}`);
+              return response.text();
+            })
             .then(async (data) => {
               await FileSystem.writeAsStringAsync(localLocation, data, {
                 encoding: FileSystem.EncodingType.UTF8,
