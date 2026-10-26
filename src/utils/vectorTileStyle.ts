@@ -112,13 +112,19 @@ const getStyleFromLocal = async (tileMap: TileMapType) => {
 const getStyleFromURL = async (tileMap: TileMapType, tileSignatures: TileSignaturesType) => {
   const url = tileMap.styleURL;
   if (!url) return [];
-  const response = await fetch(withTileSignature(url, tileSignatures));
-  if (response.ok) {
-    const json = await response.json();
-    if (json) {
-      const layerStyles = json.layers;
-      if (Array.isArray(layerStyles)) return layerStyles as LineLayerSpecification[] | FillLayerSpecification[];
+  // サーバーエラーの応答はCORSヘッダーが無くfetch自体が失敗しやすい。HTMLが返ればjson()も失敗する。
+  // どちらも空を返し、呼び出し元でデフォルトスタイルへフォールバックさせる
+  try {
+    const response = await fetch(withTileSignature(url, tileSignatures));
+    if (response.ok) {
+      const json = await response.json();
+      if (json) {
+        const layerStyles = json.layers;
+        if (Array.isArray(layerStyles)) return layerStyles as LineLayerSpecification[] | FillLayerSpecification[];
+      }
     }
+  } catch (e) {
+    console.warn('スタイルの取得に失敗', url, e);
   }
   return [];
 };
