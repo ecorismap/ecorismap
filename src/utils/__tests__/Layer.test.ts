@@ -1,10 +1,13 @@
 import { COLOR } from '../../constants/AppConstants';
 import { LayerType } from '../../types';
 import { getColor, getColorRule, changeLayerId, applyColorStyle, getLineWidth, getLineWidthAtZoom, toIndividualColorLayer, restoreColorStyleFromIndividual, resolveCodeField, toCodeFieldValue, checkLayerInputs,
+  renameRecordFields,
+  updateFieldReferences,
   getMapMemoSymbolScaleAtZoom,
   SYMBOL_BASE_ZOOM,
 } from '../Layer';
 import { getUserColor } from '../Color';
+import { t } from '../../i18n/config';
 
 describe('getColor', () => {
   const layer: LayerType = {
@@ -748,5 +751,207 @@ describe('複数選択（CHECK）はコード連動の対象外', () => {
       ],
     };
     expect(resolveCodeField(layer, layer.field[0])).toBeUndefined();
+  });
+});
+
+describe('属性名の変更', () => {
+  const layer: LayerType = {
+    id: '1',
+    name: 'kml',
+    type: 'POINT',
+    permission: 'PRIVATE',
+    colorStyle: {
+      colorType: 'CATEGORIZED',
+      color: COLOR.RED,
+      fieldName: '__CUSTOM',
+      colorRamp: 'RANDOM',
+      customFieldValue: 'name|description',
+      colorList: [],
+      transparency: 1,
+    },
+    label: 'name',
+    customLabel: "name|'-'|description",
+    sortedName: 'description',
+    visible: true,
+    active: true,
+    field: [
+      { id: 'a', name: '名前', format: 'STRING' },
+      { id: 'b', name: '説明', format: 'STRING' },
+    ],
+  };
+  const renames = new Map([
+    ['name', '名前'],
+    ['description', '説明'],
+  ]);
+
+  it('レコードの値を新しい名前へ移す', () => {
+    expect(renameRecordFields({ name: '地点A', description: 'メモ', other: 1 }, renames)).toEqual({
+      名前: '地点A',
+      説明: 'メモ',
+      other: 1,
+    });
+  });
+
+  it('名前の入れ替えでも値が入れ替わる', () => {
+    const swap = new Map([
+      ['a', 'b'],
+      ['b', 'a'],
+    ]);
+    expect(renameRecordFields({ a: 1, b: 2 }, swap)).toEqual({ a: 2, b: 1 });
+  });
+
+  it('値の無いレコードに新しいキーを作らない', () => {
+    expect(renameRecordFields({ other: 1 }, renames)).toEqual({ other: 1 });
+  });
+
+  it('ラベル・色分け・並び替えの参照を付け替える', () => {
+    const result = updateFieldReferences(layer, layer, new Set(), renames);
+    expect(result.label).toBe('名前');
+    expect(result.customLabel).toBe("名前|'-'|説明");
+    expect(result.sortedName).toBe('説明');
+    expect(result.colorStyle.fieldName).toBe('__CUSTOM');
+    expect(result.colorStyle.customFieldValue).toBe('名前|説明');
+    expect(layer.label).toBe('name');
+  });
+
+  it('未設定の項目にundefinedのキーを作らない', () => {
+    const { customLabel, sortedName, ...rest } = layer;
+    const result = updateFieldReferences(rest, rest, new Set(), renames);
+    expect('customLabel' in result).toBe(false);
+    expect('sortedName' in result).toBe(false);
+    expect('savedFieldName' in result.colorStyle).toBe(false);
+  });
+});
+
+describe('checkLayerInputs 属性名の重複', () => {
+  const base: LayerType = {
+    id: '1',
+    name: 'kml',
+    type: 'POINT',
+    permission: 'PRIVATE',
+    colorStyle: {
+      colorType: 'SINGLE',
+      color: COLOR.RED,
+      fieldName: '',
+      colorRamp: 'RANDOM',
+      customFieldValue: '',
+      colorList: [],
+      transparency: 1,
+    },
+    label: '',
+    visible: true,
+    active: true,
+    field: [
+      { id: 'a', name: 'name', format: 'STRING' },
+      { id: 'b', name: 'description', format: 'STRING' },
+    ],
+  };
+
+  it('別の属性と同じ名前は保存できない', () => {
+    const layer = { ...base, field: [base.field[0], { ...base.field[1], name: 'name' }] };
+    expect(checkLayerInputs(layer).isOK).toBe(false);
+  });
+
+  it('名前が重ならなければ保存できる', () => {
+    expect(checkLayerInputs(base).isOK).toBe(true);
+  });
+});
+
+describe('updateFieldReferences 属性の削除', () => {
+  const base: LayerType = {
+    id: '1',
+    name: 'kml',
+    type: 'POINT',
+    permission: 'PRIVATE',
+    colorStyle: {
+      colorType: 'CATEGORIZED',
+      color: COLOR.RED,
+      fieldName: 'name',
+      colorRamp: 'RANDOM',
+      customFieldValue: '',
+      colorList: [{ value: '地点A', color: COLOR.BLUE }],
+      transparency: 1,
+    },
+    label: 'name',
+    visible: true,
+    active: true,
+    field: [
+      { id: 'a', name: 'name', format: 'STRING' },
+      { id: 'b', name: 'description', format: 'STRING' },
+    ],
+  };
+  const afterDelete = (layer: LayerType): LayerType => ({ ...layer, field: [layer.field[1]] });
+
+  it('削除した属性で色分けしていたら単色に戻し、ラベルも解除する', () => {
+    const result = updateFieldReferences(afterDelete(base), base, new Set(['name']), new Map());
+    expect(result.colorStyle).toMatchObject({ colorType: 'SINGLE', fieldName: '', customFieldValue: '', colorList: [] });
+    expect(result.label).toBe('');
+  });
+
+  it('組み合わせ（カスタム）の一部を削除しても単色に戻す', () => {
+    const layer = { ...base, colorStyle: { ...base.colorStyle, fieldName: '__CUSTOM', customFieldValue: 'name|description' } };
+    const result = updateFieldReferences(afterDelete(layer), layer, new Set(['name']), new Map());
+    expect(result.colorStyle.colorType).toBe('SINGLE');
+  });
+
+  it('削除した名前を別の属性に付け直しても、元の参照は付け直した属性へ移らない', () => {
+    const edited = { ...base, field: [{ ...base.field[1], name: 'name' }] };
+    const result = updateFieldReferences(edited, base, new Set(['name']), new Map([['description', 'name']]));
+    expect(result.colorStyle.colorType).toBe('SINGLE');
+    expect(result.label).toBe('');
+  });
+
+  it('編集中に付け直した属性を選び直した参照は残す', () => {
+    const edited = {
+      ...base,
+      label: 'name',
+      colorStyle: { ...base.colorStyle, colorType: 'CATEGORIZED' as const, fieldName: 'name', customFieldValue: 'x' },
+      field: [{ ...base.field[1], name: 'name' }],
+    };
+    const original = { ...base, label: 'description', colorStyle: { ...base.colorStyle, fieldName: 'description' } };
+    const result = updateFieldReferences(edited, original, new Set(['name']), new Map([['description', 'name']]));
+    expect(result.label).toBe('name');
+    expect(result.colorStyle).toMatchObject({ colorType: 'CATEGORIZED', fieldName: 'name' });
+  });
+
+  it('編集中にラベルを選んでからその属性を削除したら解除する', () => {
+    const original = { ...base, label: '' };
+    const edited = { ...afterDelete(base), label: 'name' };
+    expect(updateFieldReferences(edited, original, new Set(['name']), new Map()).label).toBe('');
+  });
+
+  it('カスタムラベルの指定は残す', () => {
+    const layer = { ...base, label: t('common.custom') };
+    const result = updateFieldReferences({ ...afterDelete(layer), label: t('common.custom') }, { ...layer, label: '' }, new Set(['name']), new Map());
+    expect(result.label).toBe(t('common.custom'));
+  });
+
+  it('「個別」は解除せず、退避していた色分けだけ解除する', () => {
+    const layer: LayerType = {
+      ...base,
+      colorStyle: {
+        ...base.colorStyle,
+        colorType: 'INDIVIDUAL',
+        fieldName: '__CUSTOM',
+        customFieldValue: '_strokeColor',
+        savedFieldName: 'name',
+        savedCustomFieldValue: '',
+      },
+    };
+    const result = updateFieldReferences(afterDelete(layer), layer, new Set(['name']), new Map());
+    expect(result.colorStyle).toMatchObject({
+      colorType: 'INDIVIDUAL',
+      fieldName: '__CUSTOM',
+      customFieldValue: '_strokeColor',
+      savedFieldName: '',
+      savedCustomFieldValue: '',
+    });
+  });
+
+  it('関係ない属性を削除しても色分けはそのまま', () => {
+    const layer = { ...base, field: [base.field[0]] };
+    const result = updateFieldReferences(layer, base, new Set(['description']), new Map());
+    expect(result.colorStyle).toEqual(base.colorStyle);
+    expect(result.label).toBe('name');
   });
 });

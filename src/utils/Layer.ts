@@ -56,6 +56,115 @@ export const applyColorStyle = (layer: LayerType, colorStyle: ColorStyle): Layer
 };
 
 /**
+ * 属性の削除・名前の変更をレイヤ内の名前参照（ラベル・色分け・並び替え）へ反映する。
+ * - 削除した属性を指すラベルは解除し、色分けは単色に戻す（消えた名前を別の属性へ付け直すと、
+ *   無関係な属性で色分けされてしまうため）
+ * - 名前を変えた属性への参照は新しい名前へ付け替える。入れ替え（A→B, B→A）でも崩れないよう対応表で一度に置き換える
+ * 保存済みのレイヤ（original）から変わっていない参照は変更前の名前で書かれているので対応表で解決し、
+ * 編集中に設定し直した参照はすでに新しい名前なので、今ある属性かどうかだけを見る。
+ * レコードの値は属性名をキーに持つため、データ側の付け替えはrenameRecordFieldsで行う。
+ */
+export const updateFieldReferences = (
+  layer: LayerType,
+  original: LayerType | undefined,
+  deleted: Set<string>,
+  renames: Map<string, string>
+): LayerType => {
+  if (original === undefined || (deleted.size === 0 && renames.size === 0)) return layer;
+  const currentNames = new Set(layer.field.map(({ name }) => name));
+  //参照先の今の名前。消えた属性ならundefined
+  const resolve = (name: string, edited: boolean) =>
+    edited ? (currentNames.has(name) ? name : undefined) : deleted.has(name) ? undefined : renames.get(name) ?? name;
+  //「名前|名前」形式。どれか1つでも消えていればundefined
+  const resolveList = (value: string, edited: boolean) => {
+    const names = value.split('|').map((part) => resolve(part.trim(), edited));
+    return names.some((n) => n === undefined) ? undefined : names.join('|');
+  };
+  //カスタムラベルの引用符付き部分は固定文字なので一致しない。消えた属性は空欄で表示されるだけなので残す
+  const renameList = (value: string) =>
+    value
+      .split('|')
+      .map((part) => {
+        const to = renames.get(part.trim());
+        return to !== undefined ? part.replace(part.trim(), to) : part;
+      })
+      .join('|');
+  //ラベルの''（なし）とカスタムは属性名ではない
+  const resolveLabel = (label: string, edited: boolean) =>
+    label === '' || label === t('common.custom') ? label : resolve(label, edited) ?? '';
+
+  //未設定の項目はundefinedのキーを作らない（Firestoreへの保存で弾かれるため）
+  const newLayer = cloneDeep(layer);
+  const { colorStyle } = newLayer;
+  const originalStyle = original.colorStyle;
+
+  newLayer.label = resolveLabel(layer.label, layer.label !== original.label);
+  if (colorStyle.savedLabel !== undefined)
+    colorStyle.savedLabel = resolveLabel(colorStyle.savedLabel, colorStyle.savedLabel !== originalStyle.savedLabel);
+  if (layer.customLabel !== undefined && layer.customLabel === original.customLabel)
+    newLayer.customLabel = renameList(layer.customLabel);
+  if (layer.sortedName !== undefined && layer.sortedName === original.sortedName)
+    newLayer.sortedName = renames.get(layer.sortedName) ?? layer.sortedName;
+
+  //色分けの参照先。__CUSTOMは複数の属性を「|」でつないだもの
+  const resolveColorField = (fieldName: string, customFieldValue: string, edited: boolean) => {
+    if (fieldName !== '__CUSTOM') {
+      const resolved = resolve(fieldName, edited);
+      return resolved === undefined ? undefined : { fieldName: resolved, customFieldValue };
+    }
+    const resolved = resolveList(customFieldValue, edited);
+    return resolved === undefined ? undefined : { fieldName, customFieldValue: resolved };
+  };
+
+  //「個別」はストローク自身の色（_strokeColor、属性一覧には無い）を参照する固定運用なので対象外
+  if (colorStyle.colorType === 'CATEGORIZED') {
+    const edited =
+      colorStyle.fieldName !== originalStyle.fieldName ||
+      colorStyle.customFieldValue !== originalStyle.customFieldValue;
+    const resolved = resolveColorField(colorStyle.fieldName, colorStyle.customFieldValue, edited);
+    if (resolved === undefined) {
+      colorStyle.colorType = 'SINGLE';
+      colorStyle.fieldName = '';
+      colorStyle.customFieldValue = '';
+      colorStyle.colorList = [];
+    } else {
+      colorStyle.fieldName = resolved.fieldName;
+      colorStyle.customFieldValue = resolved.customFieldValue;
+    }
+  } else if (
+    colorStyle.fieldName === originalStyle.fieldName &&
+    colorStyle.customFieldValue === originalStyle.customFieldValue
+  ) {
+    //単色などでは使わないが、カラータイプを戻したときに備えて名前だけ付け替えておく
+    colorStyle.fieldName = renames.get(colorStyle.fieldName) ?? colorStyle.fieldName;
+    colorStyle.customFieldValue = renameList(colorStyle.customFieldValue);
+  }
+  //「個別」へ切り替える前の色分け。戻したときに消えた属性で色分けされないよう、ここも解除する
+  if (colorStyle.savedFieldName !== undefined) {
+    const edited =
+      colorStyle.savedFieldName !== originalStyle.savedFieldName ||
+      colorStyle.savedCustomFieldValue !== originalStyle.savedCustomFieldValue;
+    const resolved = resolveColorField(colorStyle.savedFieldName, colorStyle.savedCustomFieldValue ?? '', edited);
+    colorStyle.savedFieldName = resolved?.fieldName ?? '';
+    if (colorStyle.savedCustomFieldValue !== undefined)
+      colorStyle.savedCustomFieldValue = resolved?.customFieldValue ?? '';
+  }
+  return newLayer;
+};
+
+/**
+ * 属性名の変更に合わせてレコードの値のキーを付け替える（元の値を読み切ってから書くので入れ替えにも対応）
+ */
+export const renameRecordFields = (field: RecordType['field'], renames: Map<string, string>): RecordType['field'] => {
+  const renamed = { ...field };
+  renames.forEach((_, from) => delete renamed[from]);
+  renames.forEach((to, from) => {
+    if (from in field) renamed[to] = field[from];
+  });
+  return renamed;
+};
+
+/**
  * 線の太さを決める。
  * ストロークごとの太さ（_strokeWidth）は色分けが「個別」のレイヤでのみ使う。
  * それ以外のスタイルではレイヤ一律の太さ（デフォルト）に従う。
@@ -242,6 +351,11 @@ export const checkLayerInputs = (layer: LayerType) => {
   }
   if (layer.field.find(({ name }) => name === '_id')) {
     return { isOK: false, message: t('utils.Layer.message._id') };
+  }
+  //値は属性名をキーに持つので、同じ名前が並ぶと値を取り合って上書きしてしまう
+  const duplicateField = layer.field.find((f, i) => layer.field.findIndex(({ name }) => name === f.name) !== i);
+  if (duplicateField !== undefined) {
+    return { isOK: false, message: t('utils.Layer.message.duplicateFieldName', { name: duplicateField.name }) };
   }
   if (layer.field.find((f) => f.format === 'LIST' && f.list === undefined)) {
     //console.log(layer);
