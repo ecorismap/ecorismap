@@ -815,7 +815,7 @@ describe('属性名の変更', () => {
   });
 
   it('未設定の項目にundefinedのキーを作らない', () => {
-    const { customLabel, sortedName, ...rest } = layer;
+    const { customLabel: _customLabel, sortedName: _sortedName, ...rest } = layer;
     const result = updateFieldReferences(rest, rest, new Set(), renames);
     expect('customLabel' in result).toBe(false);
     expect('sortedName' in result).toBe(false);
