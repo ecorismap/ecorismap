@@ -1,7 +1,7 @@
 name: Android CI and Deploy
 # 配信が走るのはmain・hotfix・releaseだけにする（作業ブランチのpushのたびに
 # テスターの手元が未完成の版に入れ替わってしまうため）。
-# 配信先はブランチで分かれる: main→クローズドテスト、hotfix/release→内部テスト。
+# 配信先はブランチで分かれる: main→内部テスト、hotfix/release→クローズドテスト。
 # 任意のブランチ・任意のトラックへ送りたいときはworkflow_dispatchで手動実行する
 on:
   push:
@@ -12,7 +12,7 @@ on:
   workflow_dispatch:
     inputs:
       track:
-        description: '配信先トラック（auto=ブランチで決定: main→alpha / その他→internal）'
+        description: '配信先トラック（auto=ブランチで決定: hotfix・release→alpha / その他→internal）'
         required: false
         default: auto
         type: choice
@@ -125,17 +125,19 @@ jobs:
         run: |
           # 配信先はブランチで決める。開発中の版と、出荷済みへの修正とで
           # テスターの手元が入れ替わらないよう、トラックを分ける:
-          # - main（次期バージョンの開発）→ クローズドテスト（alpha）
-          # - hotfix/**（出荷済みへの修正）→ 内部テスト（internal）
-          # - release/**（リリース前の仕上げ）→ 内部テスト（最終確認用）
+          # - main（次期バージョンの開発）→ 内部テスト（internal）
+          # - hotfix/**（出荷済みへの修正）→ クローズドテスト（alpha）
+          # - release/**（リリース前の仕上げ）→ クローズドテスト（最終確認用）
+          # - その他（手動実行のみ）→ 内部テスト（未完成の版をクローズドテストへ出さない）
           # 手動実行（workflow_dispatch）で指定があればそちらを優先する
           TRACK_INPUT="${{ github.event.inputs.track }}"
           if [ -n "$TRACK_INPUT" ] && [ "$TRACK_INPUT" != "auto" ]; then
             TRACK="$TRACK_INPUT"
-          elif [ "$GITHUB_REF_NAME" = "main" ]; then
-            TRACK="alpha"
           else
-            TRACK="internal"
+            case "$GITHUB_REF_NAME" in
+              hotfix/*|release/*) TRACK="alpha" ;;
+              *) TRACK="internal" ;;
+            esac
           fi
           echo "PLAY_TRACK=$TRACK" >> $GITHUB_ENV
           echo "Branch: $GITHUB_REF_NAME / Play track: $TRACK"

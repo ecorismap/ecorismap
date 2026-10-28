@@ -22,9 +22,9 @@ pushするとCIがビルドして配信する。**どこへ配信されるかは
 
 | ブランチ | Android（Google Play） | iOS |
 |---|---|---|
-| `main` | クローズドテスト（alpha） | TestFlight |
-| `hotfix/*` | 内部テスト（internal） | TestFlight |
-| `release/*` | 内部テスト（internal） | TestFlight |
+| `main` | 内部テスト（internal） | TestFlight |
+| `hotfix/*` | クローズドテスト（alpha） | TestFlight |
+| `release/*` | クローズドテスト（alpha） | TestFlight |
 | その他 | 配信しない（テストとLintのみ） | 配信しない |
 
 開発中の次期バージョンと、出荷済みへの修正とで、テスターの手元が入れ替わらない
