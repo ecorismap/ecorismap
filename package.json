@@ -291,7 +291,8 @@
     "autolinking": {
       "android": {
         "buildFromSource": [
-          "expo-location"
+          "expo-location",
+          "expo-speech"
         ]
       }
     },
