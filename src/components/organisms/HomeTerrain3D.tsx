@@ -19,6 +19,7 @@ import { getPmtileMaximumNativeZ } from '../../utils/pmtileProps';
 import { isDemProtocolUrl, isReliefUrl, toDemUrl } from '../../utils/terrainShading';
 import { isPeaksUrl } from '../../utils/peaks/peak2dLabels';
 import { reliefStyleFromUrl } from '../../utils/colorRelief';
+import { substituteGoogleBasemaps } from '../../utils/terrain3d/googleBasemapSubstitute';
 import { DataOverlaySpec, TerrainScene } from '../../utils/terrain3d/TerrainScene';
 import { parseColorToRgba } from '../../utils/terrain3d/colorUtils';
 import { MERCATOR_CIRCUMFERENCE } from '../../utils/terrain3d/coords';
@@ -91,7 +92,8 @@ export const selectTerrainLayers = (
   tileSignatures: RootState['tileSignatures'],
   isOffline: boolean
 ): LayerSpec[] => {
-  const drawable = tileMaps.filter((tileMap) => {
+  // Googleの標準地図・衛星写真（URLなし）は地理院タイルに置き換えて描く
+  const drawable = substituteGoogleBasemaps(tileMaps).filter((tileMap) => {
     if (!tileMap.visible || tileMap.isGroup || !tileMap.url) return false;
     const url = tileMap.url;
     // PDF・陰影（hillshade://）は非対応（陰影はライティングで代替）。

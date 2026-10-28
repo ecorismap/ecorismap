@@ -103,6 +103,7 @@ import {
 } from '../utils/Coords';
 import { isTerrain3DHandle } from '../utils/terrain3d/types';
 import { setVistaHeadingFollow, terrain3dVistaStore } from '../utils/terrain3d/vistaStore';
+import { substituteGoogleBasemaps } from '../utils/terrain3d/googleBasemapSubstitute';
 import { generateLabel, resolveCodeField, toCodeFieldValue } from '../utils/Layer';
 import { hex2rgba, hsv2rgbaString } from '../utils/Color';
 import { getAllTrackPoints } from '../utils/Location';
@@ -562,9 +563,11 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
   const [viewshedUseSnap, setViewshedUseSnap] = useState(true);
   const { addViewshedResult, hasViewshedPreview } = useContext(ViewshedContext);
   const attribution = useMemo(() => {
+    // 3D（ネイティブ）ではGoogleの基本地図を地理院タイルに置き換えて描くので、出典もそれに合わせる
+    const shownTileMaps = Platform.OS !== 'web' && isTerrainActive ? substituteGoogleBasemaps(tileMaps) : tileMaps;
     const sources = Array.from(
       new Set(
-        tileMaps
+        shownTileMaps
           .filter((tileMap) => tileMap.visible && tileMap.url && tileMap.attribution)
           .map((tileMap) => tileMap.attribution)
       )
@@ -572,7 +575,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     // 可視領域は標高タイルの加工物なので、表示中は標高データの出典も併記する
     if (hasViewshedPreview) sources.push(t('common.demAttribution'));
     return sources.join(', ');
-  }, [tileMaps, hasViewshedPreview]);
+  }, [tileMaps, hasViewshedPreview, isTerrainActive]);
 
   const downloadMode = useMemo(
     () => route.params?.tileMap !== undefined || route.params?.mode === 'download',
