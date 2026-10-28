@@ -37,6 +37,23 @@ describe('CameraController', () => {
     expect(c.getState().pitch).toBe(0);
   });
 
+  it('keepHeadingTweenを付けたピッチ操作は方位の補間を止めない（眺望の方位追従中）', () => {
+    const c = new CameraController(initial, 800);
+    c.animateTo({ heading: 90 }, 200, 1000);
+    c.pitchBy(5, MAX_PITCH_DEG, true);
+    c.update(1300);
+    expect(c.getState().heading).toBeCloseTo(90);
+    expect(c.getState().pitch).toBeCloseTo(65);
+  });
+
+  it('通常のピッチ操作は方位の補間を止める', () => {
+    const c = new CameraController(initial, 800);
+    c.animateTo({ heading: 90 }, 200, 1000);
+    c.pitchBy(5);
+    c.update(1300);
+    expect(c.getState().heading).toBe(0);
+  });
+
   it('heading=0で下ドラッグすると北へ進む（地図が手前に付いてくる）', () => {
     const c = new CameraController(initial, 800);
     const before = c.getState();

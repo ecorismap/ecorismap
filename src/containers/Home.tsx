@@ -102,6 +102,7 @@ import {
   latLonToXY,
 } from '../utils/Coords';
 import { isTerrain3DHandle } from '../utils/terrain3d/types';
+import { setVistaHeadingFollow, terrain3dVistaStore } from '../utils/terrain3d/vistaStore';
 import { generateLabel, resolveCodeField, toCodeFieldValue } from '../utils/Layer';
 import { hex2rgba, hsv2rgbaString } from '../utils/Color';
 import { getAllTrackPoints } from '../utils/Location';
@@ -1824,6 +1825,18 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     if (featureButton !== 'NONE') return;
     // 3D中はヘディングアップにせず、タップで北が上に戻るだけにする
     if (Platform.OS !== 'web' && isTerrainActive) {
+      // 眺望中だけは、視線の方位を端末の向きに合わせるモードを入切する。
+      // 解除しても北へは戻さない（見ていた方角のまま止める）。
+      // 眺望は選んだ地点に立つ視点で現在地を使わないので、GPSは起動しない
+      if (terrain3dVistaStore.getSnapshot().active) {
+        if (headingUp) {
+          await toggleHeadingUp(false, false);
+          return;
+        }
+        if ((await confirmLocationPermission()) !== 'granted') return;
+        await toggleHeadingUp(true);
+        return;
+      }
       const handle = mapViewRef.current;
       if (isTerrain3DHandle(handle)) handle.animateCamera({ heading: 0 }, { duration: 300 });
       return;
@@ -1850,11 +1863,26 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
   ]);
 
   // 3D表示に入ったらヘディングアップを解除する（3D中は回転をユーザー操作に委ねる。
-  // 3D中はpressCompassが北向きリセットになるため再有効化もされない）
+  // 3D中はpressCompassが北向きリセットになるため再有効化もされない）。
+  // 眺望中にコンパスボタンで入れたものは解除しない
   useEffect(() => {
     if (Platform.OS === 'web') return;
-    if (isTerrainActive && headingUp) toggleHeadingUp(false);
+    if (isTerrainActive && headingUp && !terrain3dVistaStore.getSnapshot().active) toggleHeadingUp(false);
   }, [isTerrainActive, headingUp, toggleHeadingUp]);
+
+  // 眺望の見回しジェスチャへ、方位をセンサーが握っているかを伝える
+  useEffect(() => {
+    setVistaHeadingFollow(headingUp);
+  }, [headingUp]);
+
+  // 眺望を終えたら（3Dを抜けた場合も含む）方位の追従を解除する。
+  // 眺望の状態はストア購読にとどめ、Homeを再レンダリングさせない
+  useEffect(() => {
+    if (Platform.OS === 'web' || !headingUp) return;
+    return terrain3dVistaStore.subscribe(() => {
+      if (!terrain3dVistaStore.getSnapshot().active) toggleHeadingUp(false, false);
+    });
+  }, [headingUp, toggleHeadingUp]);
 
   const pressTracking = useCallback(async () => {
     if (Platform.OS === 'web') {

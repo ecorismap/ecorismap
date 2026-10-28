@@ -304,6 +304,8 @@ export class TerrainScene {
     heightM: number;
     /** 画角（縦の視野角[度]）。眺望中のズームはこれを変える（VISTA_FOV_STEPS_DEG） */
     fovDeg: number;
+    /** 現在地からの眺望。立ち位置をupdateVistaOriginで現在地へ動かす */
+    followCurrent: boolean;
   } | null = null;
   /**
    * 軌跡リプレイ（三人称追従カメラ）の状態。通常はnull。
@@ -553,9 +555,17 @@ export class TerrainScene {
    * 「視点＝立ち位置」になるよう導出する。ここでは向き（方位・俯角）だけを動かすので、
    * 到着してから北・水平へ向き直る動きになる。
    *
+   * @param followCurrent 現在地からの眺望。以後の立ち位置は現在地の更新に付いていく
    * @returns 標高が取れず移動できなかった場合はfalse
    */
-  moveToVista(latitude: number, longitude: number, eyeHeightM: number, nowMs: number, durationMs: number): boolean {
+  moveToVista(
+    latitude: number,
+    longitude: number,
+    eyeHeightM: number,
+    nowMs: number,
+    durationMs: number,
+    followCurrent = false
+  ): boolean {
     // リプレイ中は注視点をリプレイが握っているので受け付けない
     if (this.replay !== null) return false;
     const ground = this.sampleElevation(latitude, longitude);
@@ -567,6 +577,7 @@ export class TerrainScene {
       groundElevation: Math.max(0, ground),
       heightM: eyeHeightM,
       fovDeg: CAMERA_FOV_DEG,
+      followCurrent,
     };
     this.lastTileUpdateMs = 0; // 足元中心でタイルを取り直す
     this.controller.animateTo({ heading: 0, pitch: VISTA_PITCH_DEG }, durationMs, nowMs, VISTA_MAX_PITCH_DEG);
@@ -574,6 +585,23 @@ export class TerrainScene {
     this.publishVista();
     this.markDirty();
     return true;
+  }
+
+  /**
+   * 現在地からの眺望で、立ち位置を新しい現在地へ動かす（現在地が更新されるたびに呼ぶ）。
+   * 向き・高さ・画角はそのまま。現在地からの眺望でなければ何もしない
+   */
+  updateVistaOrigin(latitude: number, longitude: number): void {
+    const vista = this.vista;
+    if (vista === null || !vista.followCurrent) return;
+    if (vista.latitude === latitude && vista.longitude === longitude) return;
+    vista.latitude = latitude;
+    vista.longitude = longitude;
+    // 足元のタイルが未着なら直前の地表標高のまま（タイル更新時に追い直される）
+    const ground = this.sampleElevation(latitude, longitude);
+    if (ground !== null) vista.groundElevation = Math.max(0, ground);
+    this.applyVistaCamera();
+    this.markDirty();
   }
 
   /** 眺望中か（ボタンの出し分け・回転の向きの判断に使う） */
@@ -686,14 +714,17 @@ export class TerrainScene {
    *
    * 画面のdp移動量を視野角へ換算するので、掴んだ景色が指に付いてくる。
    * 1画素あたりの角度は縦横とも画角/高さで足りる（画素は正方形）
+   *
+   * @param headingFollow 方位を端末の向きに合わせている間はtrue。左右は効かせず、
+   *   センサーが進めている方位の補間も止めない
    */
-  lookByScreenDelta(dxDp: number, dyDp: number): void {
+  lookByScreenDelta(dxDp: number, dyDp: number, headingFollow = false): void {
     if (this.vista === null || this.viewportHeightDp <= 0) return;
     const degPerDp = this.fovDeg / this.viewportHeightDp;
     // 右へドラッグ＝景色が右へ動く＝自分は左を向く（headingは減る）
-    this.controller.rotateBy(-dxDp * degPerDp);
+    if (!headingFollow) this.controller.rotateBy(-dxDp * degPerDp);
     // 下へドラッグ＝景色が下へ動く＝見上げる（pitchは90=水平から増える）
-    this.controller.pitchBy(dyDp * degPerDp, VISTA_MAX_PITCH_DEG);
+    this.controller.pitchBy(dyDp * degPerDp, VISTA_MAX_PITCH_DEG, headingFollow);
     this.applyVistaCamera();
     this.markDirty();
   }
@@ -757,7 +788,14 @@ export class TerrainScene {
   private publishVista(): void {
     const vista = this.vista;
     if (vista === null) terrain3dVistaStore.clear();
-    else terrain3dVistaStore.set({ active: true, heightM: vista.heightM, fovDeg: vista.fovDeg });
+    else {
+      terrain3dVistaStore.set({
+        active: true,
+        heightM: vista.heightM,
+        fovDeg: vista.fovDeg,
+        followCurrent: vista.followCurrent,
+      });
+    }
   }
 
   /** 指定地点の表示中標高[m]（同期・なければnull）。近景→遠景（内側→外側）の順に参照する */

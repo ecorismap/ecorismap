@@ -150,9 +150,13 @@ export class CameraController {
 
   /**
    * @param maxPitchDeg ピッチの上限。眺望（水平より上も向ける）だけ広げて渡す
+   * @param keepHeadingTween 方位の補間を止めない。眺望で方位を端末の向きに合わせている間、
+   *   見上げ下ろしのドラッグ中もセンサーの回転を進めるために使う
    */
-  pitchBy(deltaDeg: number, maxPitchDeg: number = MAX_PITCH_DEG): void {
+  pitchBy(deltaDeg: number, maxPitchDeg: number = MAX_PITCH_DEG, keepHeadingTween = false): void {
+    const headingTween = this.tweens.heading;
     this.cancelTweens();
+    if (keepHeadingTween && headingTween) this.tweens.heading = headingTween;
     this.state.pitch = Math.min(maxPitchDeg, Math.max(MIN_PITCH_DEG, this.state.pitch + deltaDeg));
   }
 

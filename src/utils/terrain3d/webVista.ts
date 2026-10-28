@@ -81,7 +81,8 @@ export const isWebVistaActive = (): boolean => vista !== null;
 
 const publish = () => {
   if (vista === null) terrain3dVistaStore.clear();
-  else terrain3dVistaStore.set({ active: true, heightM: vista.heightM, fovDeg: vista.fovDeg });
+  // Webは現在地からの眺望でも立ち位置を固定する（現在地への追従はネイティブのみ）
+  else terrain3dVistaStore.set({ active: true, heightM: vista.heightM, fovDeg: vista.fovDeg, followCurrent: false });
 };
 
 /** 視点から方位bearing・俯角pitchへdistanceM進んだ点（球面近似、短い距離なので十分） */
