@@ -6,16 +6,18 @@
  *
  * 2Dとの違い:
  * - 精度円は出さない（地形に貼る楕円になり、3Dでは読み取りづらいため）
- * - 方角線も出さない（3D中はヘディングアップを使わないのでコンパス長押しの対象外）
+ * - 方角線も出さない（3Dではコンパス長押しの対象外）
+ * - 現在地からの眺望中は出さない（自分の足元にあたり視界に被るため）
  * - 画像は端末の方位からカメラの方位を引いた角度で回す（地図ごと回っているため）
  */
-import React, { useContext, useMemo } from 'react';
+import React, { useContext, useEffect, useMemo, useSyncExternalStore } from 'react';
 import { Image, StyleSheet, View } from 'react-native';
 import { MapViewContext } from '../../contexts/MapView';
 import { LocationTrackingContext } from '../../contexts/LocationTracking';
 import { useTerrain3DProjection } from '../../hooks/useTerrain3DProjection';
 import { TerrainScene } from '../../utils/terrain3d/TerrainScene';
 import { CurrentMarkerKind, currentMarkerKind, screenMarkerAngle } from '../../utils/terrain3d/currentMarker';
+import { terrain3dVistaStore } from '../../utils/terrain3d/vistaStore';
 
 interface Props {
   scene: TerrainScene | null;
@@ -39,8 +41,21 @@ const MARKER_IMAGES: Record<CurrentMarkerKind, number> = {
 export const HomeTerrain3DCurrentMarker = React.memo(({ scene }: Props) => {
   const { currentLocation, azimuth, gpsState, isLocationStale } = useContext(MapViewContext);
   const { trackingState } = useContext(LocationTrackingContext);
-  // 表示条件は2D（Home.tsxのCurrentMarker）と同じ
-  const visible = (gpsState !== 'off' || trackingState !== 'off') && currentLocation !== null;
+  const vistaFollowCurrent = useSyncExternalStore(
+    terrain3dVistaStore.subscribe,
+    () => terrain3dVistaStore.getSnapshot().followCurrent
+  );
+
+  // 現在地からの眺望では、立ち位置を現在地に付いていかせる
+  useEffect(() => {
+    if (scene === null || !vistaFollowCurrent || currentLocation === null) return;
+    scene.updateVistaOrigin(currentLocation.latitude, currentLocation.longitude);
+  }, [scene, vistaFollowCurrent, currentLocation]);
+
+  // 表示条件は2D（Home.tsxのCurrentMarker）と同じ。
+  // ただし現在地からの眺望では自分の足元なので出さない（視界の下端に大きく被る）
+  const visible =
+    (gpsState !== 'off' || trackingState !== 'off') && currentLocation !== null && !vistaFollowCurrent;
   const screen = useTerrain3DProjection(scene, visible ? currentLocation : null, PROJECT_INTERVAL_MS);
 
   // カメラの方位は投影と同じフレームの値を使う

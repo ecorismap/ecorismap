@@ -144,15 +144,17 @@ export const HomePoiPopup = React.memo(() => {
     const handle = mapViewRef.current;
     setPoiInfo(null);
     setMapLocationInfo(null);
+    // 現在地へスナップした眺望は、入った後も立ち位置を現在地に付いていかせる
     if (isTerrainActive) {
-      if (isTerrain3DHandle(handle)) handle.moveToVista(latitude, longitude);
+      if (isTerrain3DHandle(handle)) handle.moveToVista(latitude, longitude, isSnapped);
       else if (Platform.OS === 'web' && handle !== null) startWebVista((handle as MapRef).getMap(), latitude, longitude);
       return;
     }
-    requestVistaOnEnter(latitude, longitude);
+    requestVistaOnEnter(latitude, longitude, isSnapped);
     toggleTerrain?.();
   }, [
     coordinate,
+    isSnapped,
     mapViewRef,
     setPoiInfo,
     setMapLocationInfo,

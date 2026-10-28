@@ -216,7 +216,8 @@ export type UseLocationReturnType = {
     phase: '' | 'merging' | 'filtering' | 'cleaning' | 'saving';
     message: string;
   };
-  toggleHeadingUp: (headingUp_: boolean) => Promise<void>;
+  /** resetHeading=falseなら解除時に北へ戻さない（3Dの眺望で、向いている方角のまま止める） */
+  toggleHeadingUp: (headingUp_: boolean, resetHeading?: boolean) => Promise<void>;
   toggleGPS: (gpsState: LocationStateType) => Promise<void>;
   toggleTracking: (trackingState: TrackingStateType) => Promise<void>;
   checkUnsavedTrackLog: () => Promise<{ isOK: boolean; message: string }>;
@@ -870,8 +871,9 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
   );
 
   const toggleHeadingUp = useCallback(
-    async (headingUp_: boolean) => {
-      if (mapViewRef.current === null) return;
+    async (headingUp_: boolean, resetHeading = true) => {
+      // 北へ戻さない解除はカメラに触れないので、地図が無くても（3Dを抜けた直後でも）進める
+      if (mapViewRef.current === null && (headingUp_ || resetHeading)) return;
 
       if (headingUp_) {
         // 位置情報権限のチェックは呼び出し元（pressCompass）の責務。
@@ -925,12 +927,14 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
           headingSubscriber.current = null;
         }
 
-        (mapViewRef.current as MapView).animateCamera(
-          {
-            heading: 0,
-          },
-          { duration: 500 }
-        );
+        if (resetHeading && mapViewRef.current !== null) {
+          (mapViewRef.current as MapView).animateCamera(
+            {
+              heading: 0,
+            },
+            { duration: 500 }
+          );
+        }
 
         // 通常のheading購読を復元する（マーカーの向き・方位盤の回転に使用。
         // headingUpに入れた時点で位置権限は許可済みなので無条件でよい）

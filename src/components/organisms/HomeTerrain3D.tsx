@@ -53,7 +53,7 @@ import { deltaToZoom } from '../../utils/Coords';
 import { useWindow } from '../../hooks/useWindow';
 import { MapViewStableContext } from '../../contexts/MapViewStable';
 import { terrain3dHeadingStore } from '../../utils/terrain3d/headingStore';
-import { takePendingVista } from '../../utils/terrain3d/vistaStore';
+import { isVistaHeadingFollow, takePendingVista } from '../../utils/terrain3d/vistaStore';
 import { requestTrackReplayPause } from '../../utils/trackReplayStore';
 import { replayEyeDistanceM } from '../../utils/terrain3d/replayCamera';
 import { getTerrainDevice } from '../../utils/terrain3d/webgpuSupport';
@@ -383,8 +383,15 @@ export const HomeTerrain3D = React.memo(() => {
           };
         },
         setCamera: (camera) => animate(camera, 0),
-        moveToVista: (latitude, longitude) => {
-          const moved = scene.moveToVista(latitude, longitude, VISTA_EYE_HEIGHT_M, performance.now(), VISTA_DURATION_MS);
+        moveToVista: (latitude, longitude, followCurrent = false) => {
+          const moved = scene.moveToVista(
+            latitude,
+            longitude,
+            VISTA_EYE_HEIGHT_M,
+            performance.now(),
+            VISTA_DURATION_MS,
+            followCurrent
+          );
           // 移動後の視点をmapRegionへ反映する（ズーム表記や2Dへ戻したときの位置）
           if (moved) setTimeout(() => syncRegionRef.current(true), VISTA_DURATION_MS + 80);
           return moved;
@@ -517,10 +524,13 @@ export const HomeTerrain3D = React.memo(() => {
     const pending = takePendingVista();
     const handle = handleRef.current;
     if (pending === null || handle === null) return;
-    handle.setCamera({ center: pending });
+    handle.setCamera({ center: { latitude: pending.latitude, longitude: pending.longitude } });
     const startMs = Date.now();
     const timer = setInterval(() => {
-      if (handle.moveToVista(pending.latitude, pending.longitude) || Date.now() - startMs > VISTA_WAIT_TIMEOUT_MS) {
+      if (
+        handle.moveToVista(pending.latitude, pending.longitude, pending.followCurrent) ||
+        Date.now() - startMs > VISTA_WAIT_TIMEOUT_MS
+      ) {
         clearInterval(timer);
       }
     }, VISTA_WAIT_INTERVAL_MS);
@@ -673,7 +683,7 @@ export const HomeTerrain3D = React.memo(() => {
         const scene = sceneRef.current;
         if (!scene) return;
         // 眺望中はその場で見回す（立ち位置は動かさない）
-        if (scene.isVistaActive) scene.lookByScreenDelta(e.changeX, e.changeY);
+        if (scene.isVistaActive) scene.lookByScreenDelta(e.changeX, e.changeY, isVistaHeadingFollow());
         else {
           scene.controller.panByScreenDelta(e.changeX, e.changeY);
           scene.markDirty();
@@ -707,6 +717,8 @@ export const HomeTerrain3D = React.memo(() => {
       .onChange((e) => {
         const scene = sceneRef.current;
         if (!scene) return;
+        // 眺望で方位を端末の向きに合わせている間は、方位をセンサーに任せる
+        if (scene.isVistaActive && isVistaHeadingFollow()) return;
         // 2本指を時計回りに回すと地図が反時計回りに回る（2D地図と同じ感覚）
         scene.controller.rotateBy((-e.rotationChange * 180) / Math.PI);
         scene.markDirty();
