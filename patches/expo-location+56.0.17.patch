@@ -1,0 +1,96 @@
+diff --git a/node_modules/expo-location/android/src/main/java/expo/modules/location/LocationModule.kt b/node_modules/expo-location/android/src/main/java/expo/modules/location/LocationModule.kt
+index 04171f2..656d99f 100644
+--- a/node_modules/expo-location/android/src/main/java/expo/modules/location/LocationModule.kt
++++ b/node_modules/expo-location/android/src/main/java/expo/modules/location/LocationModule.kt
+@@ -70,6 +70,8 @@ import kotlin.coroutines.resume
+ import kotlin.coroutines.resumeWithException
+ import kotlin.coroutines.suspendCoroutine
+ import kotlin.math.abs
++import kotlin.math.atan2
++import kotlin.math.sqrt
+ 
+ class LocationModule : Module(), LifecycleEventListener, SensorEventListener, ActivityEventListener {
+   private var mGeofield: GeomagneticField? = null
+@@ -83,6 +85,7 @@ class LocationModule : Module(), LifecycleEventListener, SensorEventListener, Ac
+ 
+   private var mGravity: FloatArray = FloatArray(9)
+   private var mGeomagnetic: FloatArray = FloatArray(9)
++  private var mRotationVector: FloatArray? = null
+   private var mHeadingId = 0
+   private var mLastAzimuth = 0f
+   private var mAccuracy = 0
+@@ -615,6 +618,13 @@ class LocationModule : Module(), LifecycleEventListener, SensorEventListener, Ac
+       }
+       mLocationProvider.requestLocationUpdates(locationRequest, locationCallback, Looper.getMainLooper())
+     }
++    // [ecorismap] 回転ベクトル（ジャイロ融合）を優先する。加速度＋磁気の生値は手の揺れがそのまま方位に出る。
++    // 未搭載端末のみ従来方式へフォールバックする。
++    val rotationSensor = mSensorManager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR)
++    if (rotationSensor != null) {
++      mSensorManager.registerListener(this, rotationSensor, SensorManager.SENSOR_DELAY_UI)
++      return
++    }
+     mSensorManager.registerListener(
+       this,
+       mSensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD),
+@@ -627,20 +637,34 @@ class LocationModule : Module(), LifecycleEventListener, SensorEventListener, Ac
+     )
+   }
+ 
++  // [ecorismap] getOrientationの方位は端末上端(Y軸)の水平成分なので、端末を立てると上端が真上を向いて
++  // 方位が定まらずフラフラする。背面(-Z軸)の水平成分に、上端の水平成分を「寝かせ具合」で重み付けして足す。
++  // 寝かせると上端、立てると背面（カメラの向き）になり、縦持ちの途中姿勢では両者が同じ向きなので滑らかに移る。
++  private fun deviceAzimuth(r: FloatArray): Float? {
++    val flatness = abs(r[8])
++    val east = -r[2] + r[1] * flatness
++    val north = -r[5] + r[4] * flatness
++    if (sqrt(east * east + north * north) < 0.1f) return null
++    return atan2(east, north)
++  }
++
+   private fun sendUpdate() {
+     val rotationMatrix = FloatArray(9)
+-    val inclinationMatrix = FloatArray(9)
+-    val success = SensorManager.getRotationMatrix(rotationMatrix, inclinationMatrix, mGravity, mGeomagnetic)
++    val success = mRotationVector?.let {
++      SensorManager.getRotationMatrixFromVector(rotationMatrix, it)
++      true
++    } ?: SensorManager.getRotationMatrix(rotationMatrix, FloatArray(9), mGravity, mGeomagnetic)
+     if (success) {
+-      val orientation = FloatArray(3)
+-      SensorManager.getOrientation(rotationMatrix, orientation)
++      val azimuth = deviceAzimuth(rotationMatrix) ?: return
+ 
+       // Make sure Delta is big enough to warrant an update
+       // Currently: 50ms and ~2 degrees of change (android has a lot of useless updates block up the sending)
+-      if (abs(orientation[0] - mLastAzimuth) > DEGREE_DELTA && System.currentTimeMillis() - mLastUpdate > TIME_DELTA) {
+-        mLastAzimuth = orientation[0]
++      // [ecorismap] ±πのまたぎで差が大きく見えないよう角度差をラップする
++      val delta = abs(Math.IEEEremainder((azimuth - mLastAzimuth).toDouble(), 2 * Math.PI))
++      if (delta > DEGREE_DELTA && System.currentTimeMillis() - mLastUpdate > TIME_DELTA) {
++        mLastAzimuth = azimuth
+         mLastUpdate = System.currentTimeMillis()
+-        val magneticNorth: Float = calcMagNorth(orientation[0])
++        val magneticNorth: Float = calcMagNorth(azimuth)
+         val trueNorth: Float = calcTrueNorth(magneticNorth)
+ 
+         // Write data to send back to React
+@@ -683,6 +707,7 @@ class LocationModule : Module(), LifecycleEventListener, SensorEventListener, Ac
+     stopHeadingWatch()
+     mGravity = FloatArray(9)
+     mGeomagnetic = FloatArray(9)
++    mRotationVector = null
+     mGeofield = null
+     mHeadingId = 0
+     mLastAzimuth = 0f
+@@ -1074,7 +1099,9 @@ class LocationModule : Module(), LifecycleEventListener, SensorEventListener, Ac
+ 
+   override fun onSensorChanged(event: SensorEvent?) {
+     event ?: return
+-    if (event.sensor.type == Sensor.TYPE_ACCELEROMETER) {
++    if (event.sensor.type == Sensor.TYPE_ROTATION_VECTOR) {
++      mRotationVector = event.values.clone()
++    } else if (event.sensor.type == Sensor.TYPE_ACCELEROMETER) {
+       mGravity = event.values
+     } else if (event.sensor.type == Sensor.TYPE_MAGNETIC_FIELD) {
+       mGeomagnetic = event.values

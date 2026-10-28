@@ -288,6 +288,13 @@
     }
   },
   "expo": {
+    "autolinking": {
+      "android": {
+        "buildFromSource": [
+          "expo-location"
+        ]
+      }
+    },
     "doctor": {
       "reactNativeDirectoryCheck": {
         "listUnknownPackages": false,
