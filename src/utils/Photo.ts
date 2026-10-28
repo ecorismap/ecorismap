@@ -98,7 +98,10 @@ export const saveToStorage = async (fileUri: string, fileName: string, folder: s
     // カメラロールへのコピーは付加的な処理なので、失敗してもアプリ内保存した写真は捨てない
     try {
       const MediaLibrary = require('expo-media-library/legacy') as typeof import('expo-media-library/legacy');
-      const res = await MediaLibrary.requestPermissionsAsync();
+      // Android 13+で読み取り権限まで要求すると、「選択した写真のみ許可」の利用者には撮影の
+      // たびに写真選択画面（完了ボタン付き）が出る。保存は書き込み権限だけで足りるので書き込み
+      // のみを要求する。iOSは軌跡写真の読み取り権限と同じダイアログを共有するため従来どおり
+      const res = await MediaLibrary.requestPermissionsAsync(Platform.OS === 'android');
       if (res.status === 'granted') {
         await MediaLibrary.createAssetAsync(newUri);
       }
