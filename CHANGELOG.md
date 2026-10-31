@@ -2,11 +2,47 @@
 
 ## [0.7.0]　- Unreleased
 
+- Added a 3D terrain view to the iOS/Android app. Layer data and vector PMTiles are drawn on the terrain and can be tapped to show their attributes, and the compass, GPS location marker and the track being recorded are shown in 3D
+- Added track replay and the track summary focus marker to the 3D view
+- Added "View from here": open the 3D view from the eye level of a point chosen in the long-press menu (2D or 3D), snapping to your current location or a nearby point. It shows peak names, supports telephoto and wide angle with sharper tiles in the viewing direction, lets you raise the eye height up to 5000 m, and hides the track being recorded. Also available on the web
+- Added a mode to "View from here" that turns the view with the direction your device faces (tap the compass), and "View from my spot" now also follows your current location
+- Added peak names (▲ name and elevation) to the 3D view and as an option on the 2D map. High peaks such as Mt. Fuji are labeled from far away
+- Added the GEBCO bathymetry map in 3D (color relief with seafloor terrain), on iOS/Android and the web
+- In the 3D view, the Google standard map and satellite imagery are replaced with the GSI standard map and seamless aerial photos, because Google's map imagery cannot be shown in 3D
+- The 2D map can now be rotated with two fingers, as in the 3D view. While rotated, the compass points to the map's north and tapping it returns to north up; the current location marker, line arrows and brush symbols keep their real-world directions. Rotation is disabled while drawing or using tools, and when the 3D view is opened from a rotated map it keeps the direction
+- Added PMTiles maps (vector, raster and pbf) to PDF export
+- Improved elevation data by unifying the source to Mapterhorn and decoding it natively, which makes the 3D view, viewshed and long-press elevation much faster
+- Improved elevation data downloads to also fetch the surrounding area used for the distant view in 3D
 - Improved the project edit screen to show the progress indicator immediately after pressing Save. Previously it appeared only after the member lookup (Functions/Virgil) had finished, so the screen looked frozen for several seconds
 - Updated the background location library (react-native-background-geolocation 5.1.1 → 5.8.0, native SDK 4.1 → 4.7.6 on Android / 4.8.2 on iOS). This brings upstream fixes for tracking that could stop on Android (foreground service start/stop races, the activity being recreated being mistaken for app termination, duplicated event listeners, re-registering location subscriptions Play Services had dropped, memory growing with every recorded location during long tracking, and locations piling up without limit after the app was reopened while tracking continued in the background) and on iOS (a future-stamped fix blocking all later locations until restart, tracking stuck stationary after a failed location request). Only the location permission is now requested, so iOS no longer asks for Motion & Fitness
+- Fixed attribute values becoming blank after renaming an attribute in the layer settings. Labels, color coding and sorting that refer to the attribute are also updated, and duplicate attribute names can no longer be saved
+- Fixed vector tile styles that use expressions such as match for properties other than color: on iOS the layer disappeared and on Android the whole style fell back to the default
+- Fixed the whole screen turning white on the web when a PMTiles style could not be loaded
+- Fixed the PDF export window on the web closing without showing the print dialog
+- Fixed the photo picker appearing after every shot on Android 14+ when only selected photos are allowed
+- Fixed the heading in compass-follow mode wandering on Android when the device is held upright
+- Fixed several security issues found in a security review
 
+- iOS/Androidアプリに3D地形表示を追加しました。レイヤのデータとベクタのPMTilesを地形の上に描き、タップで属性を表示できます。コンパス、GPSの現在地マーカー、記録中の軌跡も3Dで表示します
+- 3D表示に軌跡のリプレイと、軌跡サマリーのフォーカスマーカーを追加しました
+- 「ここからの眺望」を追加しました。2D・3Dの長押しメニューで選んだ地点（現在地や近くのポイントへスナップ）に立った目線で3D表示します。山名の表示、望遠・広角（見ている方向は細かいタイルで描画）、5000mまでの視点の高さ変更に対応し、記録中の軌跡は描きません。Web版でも使えます
+- 眺望で、コンパスをタップすると視線が端末の向きに追従するモードを追加しました。「現在地からの眺望」は立ち位置も現在地に追従します
+- 3D表示に山名（▲＋山名＋標高）を表示し、2Dの地図にも表示できるようにしました。富士山など高い山は遠くからでも山名を出します
+- GEBCO海底地形図を3Dで表示できるようにしました（段彩＋海底の起伏、iOS/Android・Web）
+- 3D表示では、Googleの標準地図・衛星写真を地理院の標準地図・シームレス空中写真に置き換えて表示します（Googleの地図画像は3Dに表示できないため）
+- 2Dの地図も3D表示と同じく2本指で回転できるようにしました。回転中はコンパスが地図の北を指し、タップすると北が上に戻ります。現在地マーカー・線の矢印・ブラシ記号は回転しても実際の方角を向きます。作図やツールの使用中は回転しません。回転した地図から3D表示に切り替えると向きを引き継ぎます
+- PDF出力にPMTiles（ベクタ・ラスタ・pbf）の地図を含めるようにしました
+- 標高データの取得元をMapterhornに統一し、デコードをネイティブ化しました。3D表示・可視領域・長押しの標高表示が大幅に速くなります
+- 標高データのダウンロードで、3Dの遠景に使う周辺の範囲も取得するようにしました
 - プロジェクト編集で保存ボタンを押した直後にインジケータを出すようにしました。これまではメンバーの照会（Functions/Virgil）が終わるまで表示されず、数秒間固まったように見えていました
 - バックグラウンド位置情報ライブラリを更新しました（react-native-background-geolocation 5.1.1 → 5.8.0、ネイティブSDK 4.1 → Android 4.7.6／iOS 4.8.2）。Androidで追跡が止まり得た問題（フォアグラウンドサービスの起動・停止の競合、画面の再生成をアプリ終了と誤判定、イベントリスナーの多重登録、Play Servicesが止めた位置購読の再登録、長時間の記録で位置ごとにメモリが増え続ける、バックグラウンドで記録を続けたままアプリを開き直すと位置が際限なく溜まる）と、iOSの問題（未来の時刻を持つ位置が以後の全位置を再起動まで止める、位置取得失敗後に静止状態から復帰できない）の上流修正を含みます。権限要求は位置のみにしたため、iOSでモーション（Motion & Fitness）の許可を求めなくなりました
+- レイヤ設定で属性名を変更すると、その属性の値が空白になる問題を修正しました。属性を参照するラベル・色分け・並び替えも新しい名前に付け替え、同じ属性名が重複している場合は保存できないようにしました
+- 色以外のプロパティにmatch等の式を使ったベクタタイルのスタイルで、iOSではレイヤが消え、Androidではスタイル全体が既定に戻る問題を修正しました
+- Web版でPMTilesのスタイルを読み込めないと画面全体が白くなる問題を修正しました
+- Web版のPDF出力で、印刷ダイアログが出ずにウィンドウが閉じる問題を修正しました
+- Android 14以降で「選択した写真のみ許可」にしていると、撮影のたびに写真選択画面が出る問題を修正しました
+- Androidで端末を立てると、コンパス追従の方位がふらつく問題を修正しました
+- セキュリティレビューで見つかった複数の問題を修正しました
 
 ## [0.6.9]　- Unreleased
 
