@@ -37,7 +37,9 @@ export const HomeMapMemoBrush = React.memo((props: Props) => {
           coordinate={{ latitude: point.coordinates[1], longitude: point.coordinates[0] }}
           opacity={1}
           anchor={{ x: 0.5, y: 0.5 }}
+          // 角度は北基準の方位。flatにしないとrotationが画面基準になり、地図を回転したときに向きがずれる
           rotation={point.angle}
+          flat
           style={{ zIndex: -1, alignItems: 'center' }}
           // 同一zIndexのマーカーは重なると描画順が不定で点滅するため、idハッシュで一意にする
           zIndex={Platform.OS === 'ios' ? markerZIndex(MARKER_BAND.MAPMEMO, `${feature.id}:${idx}`) : undefined}

@@ -249,6 +249,8 @@ export default function HomeScreen() {
     zoom,
     zoomDecimal,
     onRegionChangeMapView,
+    onRegionChangingMapView,
+    mapRotateEnabled,
     onDragMapView,
     pressZoomIn,
     pressZoomOut,
@@ -578,11 +580,12 @@ export default function HomeScreen() {
             provider={PROVIDER_GOOGLE}
             style={styles.map}
             initialRegion={mapRegion}
+            onRegionChange={onRegionChangingMapView}
             onRegionChangeComplete={onRegionChangeMapView}
             showsUserLocation={false}
             showsMyLocationButton={false}
             showsCompass={false}
-            rotateEnabled={false} //表示スピードに関係ある？
+            rotateEnabled={mapRotateEnabled && scrollEnabled}
             pitchEnabled={false}
             zoomEnabled={scrollEnabled}
             scrollEnabled={scrollEnabled}

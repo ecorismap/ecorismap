@@ -10,6 +10,7 @@ import { editSettingsAction } from '../modules/settings';
 import { deltaToZoom, zoomToDelta } from '../utils/Coords';
 import { isTerrain3DHandle } from '../utils/terrain3d/types';
 import { useDispatch } from 'react-redux';
+import { isMapRotated, mapHeadingStore } from '../utils/mapHeadingStore';
 
 export type UseMapViewReturnType = {
   zoom: number;
@@ -17,12 +18,14 @@ export type UseMapViewReturnType = {
   zoomIn: () => void;
   zoomOut: () => void;
   changeMapRegion: (region: Region | ViewState | undefined, jumpTo?: boolean) => void;
+  syncMapHeading: () => void;
 };
 
 export const useMapView = (mapViewRefObj: React.RefObject<MapView | MapRef | null>): UseMapViewReturnType => {
   const { windowWidth, mapRegion } = useWindow();
   const dispatch = useDispatch();
   const regionChangeSeq = useRef(0);
+  const headingRequestInFlight = useRef(false);
 
   const zoomDecimal = useMemo(() => {
     if (mapRegion) {
@@ -58,7 +61,11 @@ export const useMapView = (mapViewRefObj: React.RefObject<MapView | MapRef | nul
       latitudeDelta: latitudeDelta / 2,
       longitudeDelta: longitudeDelta / 2,
     };
-    if (isMapView(mapViewRef)) {
+    if (isMapView(mapViewRef) && isMapRotated(mapRegion.bearing) && Number.isFinite(mapRegion.zoom)) {
+      // animateToRegionは外接矩形へ合わせるため回転が北へ戻り、回転中のdeltaは外接矩形で膨らんでいる。
+      // 手で回した地図はカメラのズームだけを変える
+      mapViewRef.animateCamera({ zoom: mapRegion.zoom + 1 }, { duration: 200 });
+    } else if (isMapView(mapViewRef)) {
       mapViewRef.animateToRegion(coords, 200);
     } else if (isMapRef(mapViewRef)) {
       const mapRef = mapViewRef.getMap();
@@ -79,7 +86,9 @@ export const useMapView = (mapViewRefObj: React.RefObject<MapView | MapRef | nul
       latitudeDelta: latitudeDelta * 2,
       longitudeDelta: longitudeDelta * 2,
     };
-    if (isMapView(mapViewRef)) {
+    if (isMapView(mapViewRef) && isMapRotated(mapRegion.bearing) && Number.isFinite(mapRegion.zoom)) {
+      mapViewRef.animateCamera({ zoom: mapRegion.zoom - 1 }, { duration: 200 });
+    } else if (isMapView(mapViewRef)) {
       mapViewRef.animateToRegion(coords, 200);
     } else if (isMapRef(mapViewRef)) {
       const mapRef = mapViewRef.getMap();
@@ -118,7 +127,10 @@ export const useMapView = (mapViewRefObj: React.RefObject<MapView | MapRef | nul
               .then((camera) => {
                 if (seq !== regionChangeSeq.current) return;
                 const cameraZoom = Number.isFinite(camera.zoom) ? (camera.zoom as number) : fallbackZoom;
-                dispatch(editSettingsAction({ mapRegion: { ...region, zoom: cameraZoom } }));
+                // 方位は画面座標⇔緯度経度の変換（回転時）と3Dへの引き継ぎに使う
+                const bearing = Number.isFinite(camera.heading) ? camera.heading : 0;
+                mapHeadingStore.set(bearing);
+                dispatch(editSettingsAction({ mapRegion: { ...region, zoom: cameraZoom, bearing } }));
               })
               .catch(() => {
                 if (seq !== regionChangeSeq.current) return;
@@ -141,5 +153,23 @@ export const useMapView = (mapViewRefObj: React.RefObject<MapView | MapRef | nul
     [dispatch, mapViewRefObj, windowWidth]
   );
 
-  return { zoom, zoomDecimal, zoomIn, zoomOut, changeMapRegion } as const;
+  // 回転操作中のカメラ方位をコンパス盤面・現在地マーカーへ流す（ネイティブ2Dのみ）。
+  // regionイベントには方位が含まれないためgetCameraで取得する。問い合わせは同時に1つまでに絞り、
+  // 応答待ちの間に来たイベントは捨てる（次のイベントか移動完了時のchangeMapRegionで追いつく）
+  const syncMapHeading = useCallback(() => {
+    const mapViewRef = mapViewRefObj.current;
+    if (!isMapView(mapViewRef) || headingRequestInFlight.current) return;
+    headingRequestInFlight.current = true;
+    mapViewRef
+      .getCamera()
+      .then((camera) => {
+        if (Number.isFinite(camera.heading)) mapHeadingStore.set(camera.heading);
+      })
+      .catch(() => undefined)
+      .finally(() => {
+        headingRequestInFlight.current = false;
+      });
+  }, [mapViewRefObj]);
+
+  return { zoom, zoomDecimal, zoomIn, zoomOut, changeMapRegion, syncMapHeading } as const;
 };

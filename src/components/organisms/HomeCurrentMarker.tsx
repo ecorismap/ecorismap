@@ -1,9 +1,10 @@
-import React, { useMemo, useRef, useEffect, useState, useCallback } from 'react';
+import React, { useMemo, useRef, useEffect, useState, useCallback, useSyncExternalStore } from 'react';
 import { Image, Platform, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { Marker, Polyline, Circle } from 'react-native-maps';
 import { COLOR } from '../../constants/AppConstants';
 import { LocationType } from '../../types';
 import { CURRENT_MARKER_ZINDEX } from '../../utils/markerZIndex';
+import { mapHeadingStore } from '../../utils/mapHeadingStore';
 
 import { stepAngleToward, SMOOTHING_TAU_MS, SNAP_EPSILON_DEG, MIN_FRAME_INTERVAL_MS } from '../../utils/angle';
 
@@ -143,9 +144,11 @@ const CurrentMarkerComponent = (props: Props) => {
 
   useEffect(() => stopAnimation, [stopAnimation]);
 
+  // マーカーの回転は画面基準なので、手で回した地図では地図の方位ぶん差し引く
+  const mapHeading = useSyncExternalStore(mapHeadingStore.subscribe, mapHeadingStore.getSnapshot);
   const markerAngle = useMemo(() => {
-    return headingUp ? 0 : displayAzimuth;
-  }, [headingUp, displayAzimuth]);
+    return headingUp ? 0 : (displayAzimuth - mapHeading + 360) % 360;
+  }, [headingUp, displayAzimuth, mapHeading]);
 
   // redraw() は使用しない (iOS での初動ちらつき軽減)
 
