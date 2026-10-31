@@ -103,6 +103,8 @@ import {
 } from '../utils/Coords';
 import { isTerrain3DHandle } from '../utils/terrain3d/types';
 import { setVistaHeadingFollow, terrain3dVistaStore } from '../utils/terrain3d/vistaStore';
+import { isMapRotated, mapHeadingStore } from '../utils/mapHeadingStore';
+import { isMapView } from '../utils/Map';
 import { substituteGoogleBasemaps } from '../utils/terrain3d/googleBasemapSubstitute';
 import { generateLabel, resolveCodeField, toCodeFieldValue } from '../utils/Layer';
 import { hex2rgba, hsv2rgbaString } from '../utils/Color';
@@ -321,7 +323,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
 
   const { importGeoFile } = useGeoFile();
   const { runTutrial } = useTutrial();
-  const { zoom, zoomDecimal, zoomIn, zoomOut, changeMapRegion } = useMapView(mapViewRef);
+  const { zoom, zoomDecimal, zoomIn, zoomOut, changeMapRegion, syncMapHeading } = useMapView(mapViewRef);
   const { isConnected } = useNetInfo();
 
   // 複数地図選択状態
@@ -837,6 +839,18 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     },
     [closeVectorTileInfo, getVectorTileInfo, getVectorTileInfoForWeb, openVectorTileInfo, zoom]
   );
+
+  // 移動中のregionイベント。ヘディングアップ中の方位はセンサー側が握っているので、
+  // それ以外（手で回転中・北へ戻すアニメーション中）だけ地図の方位を盤面とマーカーへ流す
+  const onRegionChangingMapView = useCallback(() => {
+    if (Platform.OS === 'web' || headingUp) return;
+    syncMapHeading();
+  }, [headingUp, syncMapHeading]);
+
+  // 2D地図の手動回転。作図・情報ツールやDL範囲・PDF範囲は画面が北が上の前提なので回せない
+  // （それらに入るときはtoggleHeadingUp(false)で北へ戻している）。ヘディングアップ中は方位をセンサーが握る
+  const mapRotateEnabled =
+    featureButton === 'NONE' && !isInfoToolActive && !headingUp && !downloadMode && !exportPDFMode;
 
   const onDragMapView = useCallback(async () => {
     //console.log('onDragMapView');
@@ -1842,6 +1856,12 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       }
       const handle = mapViewRef.current;
       if (isTerrain3DHandle(handle)) handle.animateCamera({ heading: 0 }, { duration: 300 });
+      return;
+    }
+    // 手で回した地図はタップで北へ戻すだけにする（3Dと同じ）。ヘディングアップへは北が上の状態から入る
+    if (!headingUp && isMapRotated(mapHeadingStore.getSnapshot())) {
+      const handle = mapViewRef.current;
+      if (isMapView(handle)) handle.animateCamera({ heading: 0 }, { duration: 300 });
       return;
     }
     if (headingUp) {
@@ -3417,6 +3437,8 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       zoom,
       zoomDecimal,
       onRegionChangeMapView,
+      onRegionChangingMapView,
+      mapRotateEnabled,
       onDragMapView,
       onDrop,
       pressZoomIn,
@@ -3455,6 +3477,8 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       zoom,
       zoomDecimal,
       onRegionChangeMapView,
+      onRegionChangingMapView,
+      mapRotateEnabled,
       onDragMapView,
       onDrop,
       pressZoomIn,

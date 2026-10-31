@@ -9,6 +9,10 @@ export interface MapViewContextType {
   zoom: number;
   zoomDecimal: number;
   onRegionChangeMapView: (region: Region | ViewState, isGestureMove?: boolean) => void;
+  // 移動中（回転操作・アニメーション中）のregionイベント。地図の方位の追従に使う（ネイティブ2Dのみ）
+  onRegionChangingMapView: () => void;
+  // 2D地図を2本指で回転できるか（ネイティブのみ。Webは常にmaplibre側の設定に従う）
+  mapRotateEnabled: boolean;
   onDragMapView: () => void;
   onDrop: (newPoint: any) => void;
   pressZoomIn: () => void;

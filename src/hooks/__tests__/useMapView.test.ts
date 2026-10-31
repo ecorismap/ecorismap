@@ -443,7 +443,28 @@ describe('useMapView', () => {
       expect(state.settings.mapRegion).toEqual({
         ...region,
         zoom: 16.25, // from getCamera mock
+        bearing: 0, // getCamera mockにheadingが無いので北が上
       });
+    });
+
+    it('should save camera heading as bearing on mobile platform', async () => {
+      const { isRegion, isRegionType, isMapView } = require('../../utils/Map');
+      isRegion.mockReturnValue(true);
+      isRegionType.mockReturnValue(false);
+      isMapView.mockReturnValue(true);
+
+      const mockMapView = createMockMapView();
+      mockMapView.getCamera.mockResolvedValue({ zoom: 16.25, heading: 42 });
+      const { result } = renderHook(() => useMapView({ current: mockMapView } as any), { wrapper });
+
+      await act(async () => {
+        result.current.changeMapRegion({ latitude: 36.0, longitude: 136.0, latitudeDelta: 0.02, longitudeDelta: 0.02 });
+      });
+
+      expect(store.getState().settings.mapRegion.bearing).toBe(42);
+      const { mapHeadingStore } = require('../../utils/mapHeadingStore');
+      expect(mapHeadingStore.getSnapshot()).toBe(42);
+      mapHeadingStore.set(0);
     });
 
     it('should fall back to delta-based zoom when getCamera fails', async () => {

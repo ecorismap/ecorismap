@@ -15,6 +15,7 @@ import { MapRef } from 'react-map-gl/maplibre';
 import MapView, { LatLng } from 'react-native-maps';
 import fitCurve from 'fit-curve';
 import { Platform } from 'react-native';
+import { isMapRotated } from './mapHeadingStore';
 import { Feature, GeoJsonProperties, Geometry, MultiPolygon, Point, Polygon, Position } from 'geojson';
 
 export const toLatLonDMS = (location: LocationType): LatLonDMSType => {
@@ -61,6 +62,26 @@ export const pointsToSvg = (points: Position[]) => {
   return path;
 };
 
+// ネイティブ2D地図が回転しているときの画面⇔メルカトルの対応。
+// react-native-mapsのregionは回転した画面の外接矩形（緯度経度の範囲）なので、
+// 外接矩形の幅 = W|cosθ| + H|sinθ| [px] からメルカトル/pxを逆算する。北が上ならundefined（従来の計算を使う）
+const getRotatedFrame = (
+  mapRegion: RegionType,
+  mapSize: { width: number; height: number },
+  left: number,
+  right: number,
+  top: number,
+  bottom: number
+): { cx: number; cy: number; mercPerPx: number; cos: number; sin: number } | undefined => {
+  if (!isMapRotated(mapRegion.bearing)) return undefined;
+  const rad = ((mapRegion.bearing as number) * Math.PI) / 180;
+  const cos = Math.cos(rad);
+  const sin = Math.sin(rad);
+  const boundsWidthPx = mapSize.width * Math.abs(cos) + mapSize.height * Math.abs(sin);
+  if (!(boundsWidthPx > 0)) return undefined;
+  return { cx: (left + right) / 2, cy: (top + bottom) / 2, mercPerPx: (right - left) / boundsWidthPx, cos, sin };
+};
+
 export const xyToLatLon = (
   xy: Position,
   mapRegion: RegionType,
@@ -89,6 +110,17 @@ export const xyToLatLon = (
     const right = bottomRight[0];
     const deltaX = right - left;
     const deltaY = top - bottom;
+
+    const rotated = getRotatedFrame(mapRegion, mapSize, left, right, top, bottom);
+    if (rotated) {
+      const { cx, cy, mercPerPx, cos, sin } = rotated;
+      const screenRight = (x - mapSize.width / 2) * mercPerPx;
+      const screenUp = (mapSize.height / 2 - y) * mercPerPx;
+      return turf.toWgs84([
+        cx + screenRight * cos + screenUp * sin,
+        cy - screenRight * sin + screenUp * cos,
+      ]) as Position;
+    }
 
     return turf.toWgs84([
       left + (x * deltaX) / mapSize.width,
@@ -151,6 +183,16 @@ export const latLonToXY = (
     const right = bottomRight[0];
     const deltaX = right - left;
     const deltaY = top - bottom;
+
+    const rotated = getRotatedFrame(mapRegion, mapSize, left, right, top, bottom);
+    if (rotated) {
+      const { cx, cy, mercPerPx, cos, sin } = rotated;
+      const dx = x - cx;
+      const dy = y - cy;
+      const screenRight = dx * cos - dy * sin;
+      const screenUp = dx * sin + dy * cos;
+      return [mapSize.width / 2 + screenRight / mercPerPx, mapSize.height / 2 - screenUp / mercPerPx];
+    }
 
     return [((x - left) * mapSize.width) / deltaX, ((top - y) * mapSize.height) / deltaY];
   }

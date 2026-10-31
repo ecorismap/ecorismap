@@ -53,7 +53,9 @@ const LineArrow = React.memo((props: Props) => {
         coordinate={endCoord}
         opacity={1}
         anchor={{ x: 0.5, y: 0.5 }}
+        // 角度は北基準の方位。flatにしないとrotationが画面基準になり、地図を回転したときに向きがずれる
         rotation={angleEnd}
+        flat
         style={{ zIndex: -1, alignItems: 'center' }}
         zIndex={
           Platform.OS === 'ios'
@@ -75,6 +77,7 @@ const LineArrow = React.memo((props: Props) => {
           opacity={1}
           anchor={{ x: 0.5, y: 0.5 }}
           rotation={angleStart}
+          flat
           style={{ zIndex: -1, alignItems: 'center' }}
           zIndex={
             Platform.OS === 'ios'
