@@ -177,6 +177,9 @@ export class DemTextureCache {
     for (const [key, entry] of this.entries) {
       if (this.entries.size <= this.maxEntries) return;
       if (entry.refs > 0) continue;
+      // 読み込み直後のエントリは、要求元のacquireが参照を掴む前でrefs=0のまま。
+      // ここで捨てると破棄済みのテクスチャをタイルへ渡してしまう
+      if (this.pending.has(key)) continue;
       if (entry.texture !== null) this.renderer.deleteTexture(entry.texture);
       this.entries.delete(key);
     }
