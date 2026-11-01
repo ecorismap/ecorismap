@@ -735,6 +735,9 @@ export const HomeTerrain3D = React.memo(() => {
       .onChange((e) => {
         const scene = sceneRef.current;
         if (!scene) return;
+        // 眺望中は2本指の傾きを使わない（見上げ・見下ろしは1本指の上下ドラッグ。Webの眺望と同じ）。
+        // ピンチ中の指の上下のぶれでも発火し、通常3Dのピッチ上限で水平の視線が一気に地面へ向いてしまう
+        if (scene.isVistaActive) return;
         // 2本指で上へドラッグ=倒す（maplibreと同じ）
         scene.controller.pitchBy(-e.changeY * 0.3);
         scene.markDirty();
