@@ -82,6 +82,7 @@ import {
 import { TerrainDepthMap, TerrainRenderer, TerrainRingDraw, TileGpuResources } from './TerrainRenderer';
 import { TerrainTileManager, TileCone } from './TerrainTileManager';
 import { DemTextureCache } from './demTextureCache';
+import { ViewshedMask, viewshedMaskLocalRect } from './viewshedMask';
 import { buildPolygonFill, buildRibbon, OverlayBatchBuilder } from './overlayGeometry';
 import { Rgba } from './colorUtils';
 import { LayerSpec, Terrain3DCameraState, TileKey } from './types';
@@ -121,10 +122,10 @@ interface OverlayBuildJob {
  * レイヤデータ（最大200地物）・保存済みの軌跡チャンク（数千〜数万点）・記録中の
  * 軌跡（数百点）は更新の頻度がまるで違う。1系統にまとめると、1秒ごとに伸びる
  * 軌跡のたびに全部を作り直すことになるため、specsからGPUバッファまでを分ける。
- * 配列の順が描画順（後ろほど手前）。軌跡はレイヤの地物より上に出す
+ * 配列の順が描画順（後ろほど手前）。可視領域の範囲円は一番下、軌跡はレイヤの地物より上に出す
  */
-export type OverlayChannelId = 'data' | 'trackSaved' | 'trackLive';
-const OVERLAY_CHANNEL_IDS: readonly OverlayChannelId[] = ['data', 'trackSaved', 'trackLive'];
+export type OverlayChannelId = 'viewshed' | 'data' | 'trackSaved' | 'trackLive';
+const OVERLAY_CHANNEL_IDS: readonly OverlayChannelId[] = ['viewshed', 'data', 'trackSaved', 'trackLive'];
 
 interface OverlayChannel {
   specs: DataOverlaySpec[];
@@ -322,8 +323,9 @@ export class TerrainScene {
     camera: ReplayCameraState;
     lastFrameMs: number;
   } | null = null;
-  /** ドレープオーバーレイ（レイヤデータ・保存済み軌跡・記録中の軌跡） */
+  /** ドレープオーバーレイ（可視領域の範囲円・レイヤデータ・保存済み軌跡・記録中の軌跡） */
   private readonly overlayChannels: Record<OverlayChannelId, OverlayChannel> = {
+    viewshed: createOverlayChannel(),
     data: createOverlayChannel(),
     trackSaved: createOverlayChannel(),
     trackLive: createOverlayChannel(),
@@ -870,6 +872,15 @@ export class TerrainScene {
     const target = this.overlayChannels[channel];
     target.specs = specs;
     target.dirty = true;
+    this.markDirty();
+  }
+
+  /**
+   * 可視領域のマスクを差し替える（nullで消す）。
+   * マスクは地形のフラグメントシェーダが画素ごとに引くので、起伏にぴったり沿って塗られる
+   */
+  setViewshedMask(mask: ViewshedMask | null, color: Rgba): void {
+    this.renderer.setViewshedMask(mask, mask === null ? [0, 0, 1, 1] : viewshedMaskLocalRect(mask, this.origin), color);
     this.markDirty();
   }
 

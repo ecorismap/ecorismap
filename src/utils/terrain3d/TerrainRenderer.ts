@@ -40,6 +40,10 @@ struct Frame {
   base: vec4<f32>,
   /** x=標高スケール */
   misc: vec4<f32>,
+  /** 可視領域マスクの範囲（ローカル座標）: x=西端, y=北端, z=幅, w=高さ */
+  viewshedRect: vec4<f32>,
+  /** 可視領域の色: rgb=色, a=不透明度（0なら塗らない） */
+  viewshedColor: vec4<f32>,
 };
 
 struct Tile {
@@ -60,6 +64,7 @@ struct Tile {
 
 @group(0) @binding(0) var<uniform> frame: Frame;
 @group(0) @binding(1) var samp: sampler;
+@group(0) @binding(2) var viewshedMask: texture_2d<f32>;
 @group(1) @binding(0) var<uniform> tile: Tile;
 @group(2) @binding(0) var demTex: texture_2d<f32>;
 @group(2) @binding(1) var tex0: texture_2d<f32>;
@@ -76,6 +81,8 @@ struct VSOut {
   @location(0) uv: vec2<f32>,
   @location(1) normal: vec3<f32>,
   @location(2) viewDepth: f32,
+  /** ローカル座標のxz（可視領域マスクを引く位置） */
+  @location(3) world: vec2<f32>,
 };
 
 fn decodeElev(px: vec2<f32>) -> f32 {
@@ -113,6 +120,7 @@ fn vs(@location(0) grid: vec3<f32>) -> VSOut {
   out.uv = grid.xy;
   out.normal = normalize(vec3<f32>(-(hr - hl) * inv, 1.0, -(hd - hu) * inv));
   out.viewDepth = clip.w;
+  out.world = pos.xz;
   return out;
 }
 
@@ -150,7 +158,16 @@ fn fs(in: VSOut) -> @location(0) vec4<f32> {
   let alpha = accA + (1.0 - accA) * fillBase;
   let rgb = acc + frame.base.rgb * (1.0 - accA) * fillBase;
   let diffuse = max(dot(normalize(in.normal), frame.light.xyz), 0.0);
-  let lit = rgb * (frame.base.w + (1.0 - frame.base.w) * diffuse);
+  // 可視領域はレイヤの上・陰影の下に塗る（起伏の陰影が透けて地形の形が読めるように）
+  var shaded = rgb;
+  if (frame.viewshedColor.a > 0.0) {
+    let muv = (in.world - frame.viewshedRect.xy) / frame.viewshedRect.zw;
+    if (all(muv >= vec2<f32>(0.0)) && all(muv <= vec2<f32>(1.0))) {
+      let k = textureSampleLevel(viewshedMask, samp, muv, 0.0).r * frame.viewshedColor.a;
+      shaded = mix(rgb, frame.viewshedColor.rgb * alpha, k);
+    }
+  }
+  let lit = shaded * (frame.base.w + (1.0 - frame.base.w) * diffuse);
   let fog = smoothstep(frame.fog.w, frame.light.w, in.viewDepth);
   return vec4<f32>(mix(lit, frame.fog.rgb * alpha, fog), alpha);
 }
@@ -370,8 +387,8 @@ const TILE_LAYER_UV_OFFSET = 20;
 const TILE_UNIFORM_FLOATS = TILE_LAYER_UV_OFFSET + MAX_TERRAIN_LAYERS * 4;
 /** 同時に描けるタイル数の上限（uniformバッファの確保数。近景＋遠景リングの合計に余裕を見る） */
 const MAX_TILE_UNIFORMS = 256;
-/** フレーム共通uniformのfloat数（mat4＋vec4×4） */
-const FRAME_UNIFORM_FLOATS = 32;
+/** フレーム共通uniformのfloat数（mat4＋vec4×6） */
+const FRAME_UNIFORM_FLOATS = 40;
 
 /**
  * viewProjから視錐台の6平面を取り出す（Gribb-Hartmann法）。
@@ -430,6 +447,12 @@ export class TerrainRenderer {
   private textureLayout: GPUBindGroupLayout;
   private frameBuffer: GPUBuffer;
   private frameBindGroup: GPUBindGroup;
+  private sampler: GPUSampler;
+  /** 可視領域マスク（r8unorm、255=見える）。無いときは1x1の0 */
+  private viewshedMask: GPUTexture | null = null;
+  private emptyViewshedMask: GPUTexture;
+  private viewshedRect: [number, number, number, number] = [0, 0, 1, 1];
+  private viewshedColor: [number, number, number, number] = [0, 0, 0, 0];
   private tileBuffer: GPUBuffer;
   private tileBindGroup: GPUBindGroup;
   /** タイルuniformのdynamic offset単位（デバイスのアラインメント制約に合わせる） */
@@ -479,6 +502,7 @@ export class TerrainRenderer {
       entries: [
         { binding: 0, visibility: flags.shader.VERTEX | flags.shader.FRAGMENT, buffer: { type: 'uniform' } },
         { binding: 1, visibility: flags.shader.FRAGMENT, sampler: { type: 'filtering' } },
+        { binding: 2, visibility: flags.shader.FRAGMENT, texture: { sampleType: 'float' } },
       ],
     });
     this.tileLayout = device.createBindGroupLayout({
@@ -566,21 +590,14 @@ export class TerrainRenderer {
       size: FRAME_UNIFORM_FLOATS * 4,
       usage: this.flags.buffer.UNIFORM | this.flags.buffer.COPY_DST,
     });
-    this.frameBindGroup = device.createBindGroup({
-      layout: this.frameLayout,
-      entries: [
-        { binding: 0, resource: { buffer: this.frameBuffer } },
-        {
-          binding: 1,
-          resource: device.createSampler({
-            magFilter: 'linear',
-            minFilter: 'linear',
-            addressModeU: 'clamp-to-edge',
-            addressModeV: 'clamp-to-edge',
-          }),
-        },
-      ],
+    this.sampler = device.createSampler({
+      magFilter: 'linear',
+      minFilter: 'linear',
+      addressModeU: 'clamp-to-edge',
+      addressModeV: 'clamp-to-edge',
     });
+    this.emptyViewshedMask = this.createSolidTexture(new Uint8Array([0]), 'r8unorm');
+    this.frameBindGroup = this.createFrameBindGroup(this.emptyViewshedMask);
 
     const alignment = device.limits.minUniformBufferOffsetAlignment || 256;
     this.tileStride = Math.ceil((TILE_UNIFORM_FLOATS * 4) / alignment) * alignment;
@@ -654,6 +671,46 @@ export class TerrainRenderer {
     });
     this.device.queue.writeTexture({ texture }, rgba, { bytesPerRow: 4 }, [1, 1]);
     return texture;
+  }
+
+  private createFrameBindGroup(viewshedMask: GPUTexture): GPUBindGroup {
+    return this.device.createBindGroup({
+      layout: this.frameLayout,
+      entries: [
+        { binding: 0, resource: { buffer: this.frameBuffer } },
+        { binding: 1, resource: this.sampler },
+        { binding: 2, resource: viewshedMask.createView() },
+      ],
+    });
+  }
+
+  /**
+   * 可視領域マスクを差し替える（nullで消す）。
+   * @param rect マスクの範囲（ローカル座標）: [西端x, 北端z, 幅, 高さ]
+   * @param color 塗る色と不透明度（0〜1）
+   */
+  setViewshedMask(
+    mask: { data: Uint8Array; width: number; height: number } | null,
+    rect: [number, number, number, number],
+    color: [number, number, number, number]
+  ): void {
+    this.viewshedMask?.destroy();
+    this.viewshedMask = null;
+    if (mask === null) {
+      this.viewshedColor = [0, 0, 0, 0];
+      this.frameBindGroup = this.createFrameBindGroup(this.emptyViewshedMask);
+      return;
+    }
+    const texture = this.device.createTexture({
+      size: [mask.width, mask.height],
+      format: 'r8unorm',
+      usage: this.flags.texture.TEXTURE_BINDING | this.flags.texture.COPY_DST,
+    });
+    this.device.queue.writeTexture({ texture }, mask.data, { bytesPerRow: mask.width }, [mask.width, mask.height]);
+    this.viewshedMask = texture;
+    this.viewshedRect = rect;
+    this.viewshedColor = color;
+    this.frameBindGroup = this.createFrameBindGroup(texture);
   }
 
   /** オーバーレイの連結バッチ（座標＋頂点色）をGPUへアップロードする */
@@ -916,6 +973,8 @@ export class TerrainRenderer {
     f[27] = options.ambient;
     f[28] = options.elevScale;
     f[29] = depthRange;
+    f.set(this.viewshedRect, 32);
+    f.set(this.viewshedColor, 36);
     this.device.queue.writeBuffer(this.frameBuffer, 0, f);
   }
 
@@ -1058,6 +1117,8 @@ export class TerrainRenderer {
     this.gridResources.clear();
     this.zeroDemTexture.destroy();
     this.emptyLayerTexture.destroy();
+    this.viewshedMask?.destroy();
+    this.emptyViewshedMask.destroy();
     this.depthTexture?.destroy();
     this.depthTexture = null;
     this.occColor?.destroy();
