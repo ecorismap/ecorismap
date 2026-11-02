@@ -30,6 +30,7 @@ import { HomeVistaPeakLabels } from './HomeVistaPeakLabels';
 import { HomeTerrain3DPeakLabels } from './HomeTerrain3DPeakLabels';
 import { createScenePeakProjector } from '../../utils/peaks/peakProjector';
 import { HomeTerrain3DTrack } from './HomeTerrain3DTrack';
+import { HomeTerrain3DViewshed } from './HomeTerrain3DViewshed';
 import { HomeTerrain3DCurrentMarker } from './HomeTerrain3DCurrentMarker';
 import { HomeTerrain3DFocusMarker } from './HomeTerrain3DFocusMarker';
 import { HomeTerrain3DPerf } from './HomeTerrain3DPerf';
@@ -763,6 +764,7 @@ export const HomeTerrain3D = React.memo(() => {
       <HomeTerrain3DPoints scene={sceneState} />
       {/* 軌跡はGPU（シーンのオーバーレイ系統）へ指定を流すだけで、画面出力は持たない */}
       <HomeTerrain3DTrack scene={sceneState} />
+      <HomeTerrain3DViewshed scene={sceneState} />
       {/* 軌跡サマリーのカーソル位置（グラフをなぞる・リプレイ中の進行位置） */}
       <HomeTerrain3DFocusMarker scene={sceneState} />
       {/* 現在地はポイントより手前に置く（2DのCURRENT_MARKER_ZINDEXと同じ扱い） */}

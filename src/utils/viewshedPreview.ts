@@ -1,6 +1,6 @@
 import { ulid } from 'ulid';
 import { LocationType } from '../types';
-import { calcViewshedPolygons, makeCircleRing, ViewshedPolygon } from './viewshed';
+import { calcViewshedPolygons, makeCircleRing, ViewshedPolygon, ViewshedRaster } from './viewshed';
 import { t } from '../i18n/config';
 
 // 1回の可視領域計算の結果一式。地図への一時表示に必要な情報を持つ
@@ -11,6 +11,8 @@ export interface ViewshedPreviewResult {
   observer: LocationType;
   polygons: ViewshedPolygon[];
   circleRing: LocationType[];
+  // 可視グリッド。3D表示で地形に貼るマスクに使う
+  raster: ViewshedRaster;
 }
 
 /** 可視領域を計算して一時表示用の結果を返す（レイヤ・レコードは作成しない） */
@@ -28,7 +30,7 @@ export const calcViewshedPreview = async (
   if (calcResult === null) {
     return { isOK: false, message: t('hooks.message.failGetDem') };
   }
-  const { polygons } = calcResult;
+  const { polygons, raster } = calcResult;
   if (polygons.length === 0) {
     return { isOK: false, message: t('hooks.message.failCalcViewshed') };
   }
@@ -40,6 +42,7 @@ export const calcViewshedPreview = async (
       observer,
       polygons,
       circleRing: makeCircleRing(observer, distanceKm * 1000),
+      raster,
     },
   };
 };

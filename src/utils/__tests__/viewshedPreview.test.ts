@@ -31,12 +31,15 @@ describe('calcViewshedPreview', () => {
   });
 
   it('計算成功時は一時表示用の結果を返す（永続化しない）', async () => {
+    const raster = { vis: new Uint8Array(9), size: 3, zoom: 13, originPxX: 0, originPxY: 0 };
     (calcViewshedPolygons as jest.Mock).mockResolvedValue({
       polygons: [{ coords: [{ latitude: 35, longitude: 135 }], holes: {} }],
       observerElevation: 100,
+      raster,
     });
     const ret = await calcViewshedPreview({ latitude: 35, longitude: 135 }, 3, 2);
     expect(ret.isOK).toBe(true);
+    expect(ret.result!.raster).toBe(raster);
     expect(ret.result).toBeDefined();
     expect(ret.result!.observer).toEqual({ latitude: 35, longitude: 135 });
     expect(ret.result!.polygons).toHaveLength(1);

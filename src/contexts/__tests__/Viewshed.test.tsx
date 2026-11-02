@@ -11,6 +11,7 @@ const makeResult = (id: string): ViewshedPreviewResult => ({
   observer: { latitude: 35, longitude: 135 },
   polygons: [{ coords: [{ latitude: 35, longitude: 135 }], holes: {} }],
   circleRing: [{ latitude: 35.1, longitude: 135.1 }],
+  raster: { vis: new Uint8Array(1), size: 1, zoom: 13, originPxX: 0, originPxY: 0 },
 });
 
 describe('ViewshedContext', () => {

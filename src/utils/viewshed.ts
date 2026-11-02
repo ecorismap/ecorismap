@@ -58,6 +58,19 @@ export interface ViewshedPolygon {
   holes: { [key: string]: LocationType[] };
 }
 
+/**
+ * 可視グリッドそのもの（1=見える）。3D表示で地形に貼るマスクの元にする。
+ * ポリゴンは頂点でしか地形に沿わないため、起伏のある範囲を塗るにはラスタのほうが正確
+ */
+export interface ViewshedRaster {
+  vis: Uint8Array;
+  size: number;
+  zoom: number;
+  /** グリッド左上のワールドピクセル座標（zoomにおける512pxタイル基準） */
+  originPxX: number;
+  originPxY: number;
+}
+
 /** 経度・緯度→ワールドピクセル座標（zoomにおける512pxタイル基準） */
 const lonToPx = (lon: number, zoom: number) => ((lon + 180) / 360) * TILE_SIZE * Math.pow(2, zoom);
 const latToPx = (lat: number, zoom: number) => {
@@ -497,12 +510,16 @@ export const calcViewshedPolygons = async (
   observer: LocationType,
   radiusMeters: number,
   observerHeight: number
-): Promise<{ polygons: ViewshedPolygon[]; observerElevation: number } | null> => {
+): Promise<{ polygons: ViewshedPolygon[]; observerElevation: number; raster: ViewshedRaster } | null> => {
   const grid = await fetchDemGrid(observer, radiusMeters);
   if (grid === null) return null;
   const radiusPx = (grid.size - 1) / 2;
   const centerElev = grid.elev[radiusPx * grid.size + radiusPx];
   const observerElevation = isNaN(centerElev) ? 0 : centerElev;
   const vis = await computeVisibility(grid.elev, grid.size, grid.mpp, observerHeight, radiusPx);
-  return { polygons: visibilityToPolygons(vis, grid), observerElevation };
+  return {
+    polygons: visibilityToPolygons(vis, grid),
+    observerElevation,
+    raster: { vis, size: grid.size, zoom: grid.zoom, originPxX: grid.originPxX, originPxY: grid.originPxY },
+  };
 };
