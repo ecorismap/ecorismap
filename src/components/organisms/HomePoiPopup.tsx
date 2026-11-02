@@ -132,8 +132,8 @@ export const HomePoiPopup = React.memo(() => {
     if (success) setCopied(true);
   }, [coordinateText]);
 
-  // 3Dでは可視領域・距離測定（2Dの地図操作が前提）を出さず、眺望だけを出す
-  const menuItemCount = isPOI ? 0 : (canVista ? 1 : 0) + (isTerrainActive ? 0 : 2);
+  // 3Dでは距離測定（2Dの地図操作が前提）を出さない。可視領域は3Dでも結果を描けるので出す
+  const menuItemCount = isPOI ? 0 : (canVista ? 1 : 0) + 1 + (isTerrainActive ? 0 : 1);
   const HEIGHT = 40 + (distanceText ? 20 : 0) + 20 + (coordinateText ? 20 : 0) + menuItemCount * 30;
 
   // その地点に立って真北を水平に見る視点へ3Dカメラを移す。
@@ -306,7 +306,7 @@ export const HomePoiPopup = React.memo(() => {
               </Text>
             </Pressable>
           )}
-          {!isPOI && !isTerrainActive && (
+          {!isPOI && (
             <Pressable
               onPress={handleCreateViewshed}
               style={{
