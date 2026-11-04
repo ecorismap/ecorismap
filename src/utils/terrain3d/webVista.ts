@@ -30,6 +30,7 @@ import { terrain3dVistaStore } from './vistaStore';
 import type { PeakProjector } from '../peaks/peakProjector';
 import { isSightBlocked } from '../peaks/sightline';
 import { createTerrainSampler } from './webCamera';
+import { createDistanceTileZoom } from './webTerrainView';
 
 /** 通常時のmaxPitch（Home.web.tsxのMapと同じ値） */
 export const WEB_NORMAL_MAX_PITCH_DEG = 85;
@@ -144,16 +145,7 @@ const applyCamera = (state: WebVistaState) => {
  * 上限は22。足元の至近のタイルで上限（z25）を超えると地図ごと落ちる
  */
 const VISTA_MAX_TILE_ZOOM = 22;
-const vistaTileZoom = (
-  requestedCenterZoom: number,
-  distanceToTile2D: number,
-  distanceToTileZ: number,
-  distanceToCenter3D: number
-): number =>
-  Math.min(
-    VISTA_MAX_TILE_ZOOM,
-    requestedCenterZoom + Math.log2(distanceToCenter3D / Math.max(1e-6, Math.hypot(distanceToTile2D, distanceToTileZ)))
-  );
+const vistaTileZoom = createDistanceTileZoom(VISTA_MAX_TILE_ZOOM);
 
 /** 全ソースに眺望用の規則を付ける（地図一覧の変更でソースが作り直されても追従するよう、カメラ更新のたびに呼ぶ） */
 const applyVistaTileZoom = (map: MaplibreMap) => {

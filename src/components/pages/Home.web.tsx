@@ -37,6 +37,7 @@ import {
   WEB_NORMAL_MAX_PITCH_DEG,
 } from '../../utils/terrain3d/webVista';
 import { VISTA_MAX_PITCH_DEG } from '../../utils/terrain3d/constants';
+import { enableWebDistanceFog, enableWebTerrainFarView } from '../../utils/terrain3d/webTerrainView';
 import { HomeTerrain3DVistaBanner } from '../organisms/HomeTerrain3DVistaBanner';
 import { HomeTerrain3DButtons } from '../organisms/HomeTerrain3DButtons';
 import { HomeVistaPeakLabels } from '../organisms/HomeVistaPeakLabels';
@@ -195,6 +196,18 @@ export default function HomeScreen() {
     }
   }, [isTerrainActive, mapViewRef]);
   useEffect(() => () => clearWebVista(false), []);
+  // 通常の3Dでも遠くの山並みを眺望と同じように描く（webTerrainView.ts）。眺望中は眺望側が受け持つ
+  useEffect(() => {
+    const mapRef = mapViewRef.current as MapRef | null;
+    if (mapRef === null || !isTerrainActive || vistaActive) return;
+    return enableWebTerrainFarView(mapRef.getMap());
+  }, [isTerrainActive, vistaActive, mapViewRef]);
+  // 距離に応じた霞は眺望の中でも外でも掛ける
+  useEffect(() => {
+    const mapRef = mapViewRef.current as MapRef | null;
+    if (mapRef === null || !isTerrainActive) return;
+    return enableWebDistanceFog(mapRef.getMap());
+  }, [isTerrainActive, mapViewRef]);
   // 眺望に入ると地図を非制御にする（webVista.tsの注意書き参照）。
   // 非制御になる前の視点はpropsで戻されているので、切り替わった後に置き直す
   useEffect(() => {
@@ -281,22 +294,17 @@ export default function HomeScreen() {
     [endWebGeolocate]
   );
 
+  // 地形表示の空と霞。以前のフォグは「注視点〜地平線の85%から先」を濃い青で塗っており、眺望では
+  // 遠くの山並みがほぼ全部フォグに沈んで山名だけ出て山が見えず、通常の3Dでも遠くの山が暗く沈んだ。
+  // フォグは距離に応じて掛ける（webTerrainView.tsのenableWebDistanceFog。fog-ground-blend=0が前提）。
+  // 色は以前と同じ濃い青で、地平線の色へは寄せない（horizon-fog-blend=1）
   const skyStyle = {
     'sky-color': '#79bffc',
     'sky-horizon-blend': 0.6,
     'horizon-color': '#f0f8ff',
     'horizon-fog-blend': 1,
     'fog-color': '#034580',
-    'fog-ground-blend': 0.85,
-  };
-  // 眺望中の空。通常のフォグは「注視点〜地平線の85%から先」を濃い青で塗るが、眺望は注視点が
-  // 足元のすぐ先なので遠くの山並みがほぼ全部フォグに沈み、山名だけ出て山が見えなかった。
-  // 眺望では地形にフォグを掛けず（fog-ground-blend=1）、地平線際の空だけ明るい霞にする
-  const VISTA_SKY_STYLE = {
-    ...skyStyle,
-    'fog-color': '#dbe8f5',
-    'fog-ground-blend': 1,
-    'horizon-fog-blend': 0.15,
+    'fog-ground-blend': 0,
   };
   const protocol = new pmtiles.Protocol();
   maplibregl.addProtocol('pmtiles', protocol.tile);
@@ -886,7 +894,7 @@ export default function HomeScreen() {
                 touchPitch={isTerrainActive && mapGesturesEnabled && !vistaActive}
                 scrollZoom={!vistaActive}
                 keyboard={!vistaActive}
-                sky={vistaActive ? VISTA_SKY_STYLE : skyStyle}
+                sky={skyStyle}
               >
                 <HomeZoomLevel zoom={zoom} top={20} left={10} />
 
