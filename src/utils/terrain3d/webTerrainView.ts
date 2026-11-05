@@ -6,7 +6,7 @@
  * - 描画する最遠距離（ファー面）をカメラの海抜から決めるので、平地では数km〜数十km先で地形が切れる
  * - フォグ（Home.web.tsxのsky）が遠くの山を濃い青に沈める
  * タイルとファー面は、眺望中はwebVista.tsが同じ対処を自前で持つので、眺望の外でだけ働かせる。
- * フォグは距離に応じた掛け方（enableWebDistanceFog）に置き換え、眺望の中でも外でも使う
+ * フォグは距離に応じた掛け方（enableWebDistanceFog）に置き換える。眺望では地形にフォグを掛けない
  */
 import type { Map as MaplibreMap, Source } from 'maplibre-gl';
 
@@ -156,7 +156,7 @@ const wrapFogMatrix = (transform: FogTransform) => {
 };
 
 /**
- * 地形表示に距離に応じたフォグを掛ける（眺望の中でも外でも）。戻り値で元に戻す。
+ * 通常の3Dの地形に距離に応じたフォグを掛ける。戻り値で元に戻す。
  * 濃さの上限は設けない（以前のフォグと同じくしっかり沈める）。俯角60度未満で掛けないのはmaplibreのまま。
  * Home.web.tsxのskyはfog-ground-blend=0（ニア面＝開始距離から掛ける）にしておくこと
  */

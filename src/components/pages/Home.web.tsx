@@ -38,6 +38,7 @@ import {
 } from '../../utils/terrain3d/webVista';
 import { VISTA_MAX_PITCH_DEG } from '../../utils/terrain3d/constants';
 import { enableWebDistanceFog, enableWebTerrainFarView } from '../../utils/terrain3d/webTerrainView';
+import { enableWebLowCameraGuard } from '../../utils/terrain3d/webLowCameraGuard';
 import { HomeTerrain3DVistaBanner } from '../organisms/HomeTerrain3DVistaBanner';
 import { HomeTerrain3DButtons } from '../organisms/HomeTerrain3DButtons';
 import { HomeVistaPeakLabels } from '../organisms/HomeVistaPeakLabels';
@@ -202,12 +203,18 @@ export default function HomeScreen() {
     if (mapRef === null || !isTerrainActive || vistaActive) return;
     return enableWebTerrainFarView(mapRef.getMap());
   }, [isTerrainActive, vistaActive, mapViewRef]);
-  // 距離に応じた霞は眺望の中でも外でも掛ける
+  // 地表近くからのドラッグ等でカメラが遠くへ飛ぶのを抑える（webLowCameraGuard.ts）。眺望中は地図の操作自体を切っている
   useEffect(() => {
     const mapRef = mapViewRef.current as MapRef | null;
-    if (mapRef === null || !isTerrainActive) return;
+    if (mapRef === null || !isTerrainActive || vistaActive) return;
+    return enableWebLowCameraGuard(mapRef.getMap());
+  }, [isTerrainActive, vistaActive, mapViewRef]);
+  // 距離に応じた霞は通常の3Dだけ。眺望は地形にフォグを掛けない（VISTA_SKY_STYLE）
+  useEffect(() => {
+    const mapRef = mapViewRef.current as MapRef | null;
+    if (mapRef === null || !isTerrainActive || vistaActive) return;
     return enableWebDistanceFog(mapRef.getMap());
-  }, [isTerrainActive, mapViewRef]);
+  }, [isTerrainActive, vistaActive, mapViewRef]);
   // 眺望に入ると地図を非制御にする（webVista.tsの注意書き参照）。
   // 非制御になる前の視点はpropsで戻されているので、切り替わった後に置き直す
   useEffect(() => {
@@ -305,6 +312,14 @@ export default function HomeScreen() {
     'horizon-fog-blend': 1,
     'fog-color': '#034580',
     'fog-ground-blend': 0,
+  };
+  // 眺望中の空。眺望では遠くの山並みを見たいので地形にフォグを掛けず（fog-ground-blend=1）、
+  // 地平線際の空だけ明るい霞にする
+  const VISTA_SKY_STYLE = {
+    ...skyStyle,
+    'fog-color': '#dbe8f5',
+    'fog-ground-blend': 1,
+    'horizon-fog-blend': 0.15,
   };
   const protocol = new pmtiles.Protocol();
   maplibregl.addProtocol('pmtiles', protocol.tile);
@@ -894,7 +909,7 @@ export default function HomeScreen() {
                 touchPitch={isTerrainActive && mapGesturesEnabled && !vistaActive}
                 scrollZoom={!vistaActive}
                 keyboard={!vistaActive}
-                sky={skyStyle}
+                sky={vistaActive ? VISTA_SKY_STYLE : skyStyle}
               >
                 <HomeZoomLevel zoom={zoom} top={20} left={10} />
 
