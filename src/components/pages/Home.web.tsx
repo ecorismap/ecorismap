@@ -38,6 +38,7 @@ import {
 } from '../../utils/terrain3d/webVista';
 import { VISTA_MAX_PITCH_DEG } from '../../utils/terrain3d/constants';
 import { enableWebDistanceFog, enableWebTerrainFarView } from '../../utils/terrain3d/webTerrainView';
+import { enableWebLowCameraGuard } from '../../utils/terrain3d/webLowCameraGuard';
 import { HomeTerrain3DVistaBanner } from '../organisms/HomeTerrain3DVistaBanner';
 import { HomeTerrain3DButtons } from '../organisms/HomeTerrain3DButtons';
 import { HomeVistaPeakLabels } from '../organisms/HomeVistaPeakLabels';
@@ -201,6 +202,12 @@ export default function HomeScreen() {
     const mapRef = mapViewRef.current as MapRef | null;
     if (mapRef === null || !isTerrainActive || vistaActive) return;
     return enableWebTerrainFarView(mapRef.getMap());
+  }, [isTerrainActive, vistaActive, mapViewRef]);
+  // 地表近くからのドラッグ等でカメラが遠くへ飛ぶのを抑える（webLowCameraGuard.ts）。眺望中は地図の操作自体を切っている
+  useEffect(() => {
+    const mapRef = mapViewRef.current as MapRef | null;
+    if (mapRef === null || !isTerrainActive || vistaActive) return;
+    return enableWebLowCameraGuard(mapRef.getMap());
   }, [isTerrainActive, vistaActive, mapViewRef]);
   // 距離に応じた霞は眺望の中でも外でも掛ける
   useEffect(() => {
