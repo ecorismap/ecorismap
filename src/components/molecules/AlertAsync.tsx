@@ -82,6 +82,27 @@ export const ResumeDownloadConfirmAsync = async (message: string): Promise<Resum
     );
   });
 
+export type AddLocationPointChoice = 'add' | 'average' | 'cancel';
+
+/** 外部GNSS受信機の使用中に現在地ポイントを追加するとき、そのまま追加するか平均化してから追加するかを選ばせる */
+export const AddLocationPointConfirmAsync = async (message: string): Promise<AddLocationPointChoice> =>
+  new Promise((resolve) => {
+    Alert.alert(
+      '',
+      message,
+      [
+        { text: t('GpsSettings.externalGnss.averaging.addOnce'), swalType: 'confirm', onPress: () => resolve('add') },
+        {
+          text: t('GpsSettings.externalGnss.averaging.addAveraged'),
+          swalType: 'deny',
+          onPress: () => resolve('average'),
+        },
+        { text: t('common.cancel'), swalType: 'cancel', style: 'cancel', onPress: () => resolve('cancel') },
+      ],
+      { cancelable: false }
+    );
+  });
+
 export const ConfirmAsync = async (
   message: string,
   text: { true: string; false: string } = { true: 'Yes', false: 'No' }

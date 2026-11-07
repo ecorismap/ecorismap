@@ -32,7 +32,14 @@ import {
 } from '../types';
 import Home from '../components/pages/Home';
 import { Alert } from '../components/atoms/Alert';
-import { AlertAsync, ConfirmAsync } from '../components/molecules/AlertAsync';
+import {
+  AddLocationPointConfirmAsync,
+  AlertAsync,
+  ConfirmAsync,
+  waitForModalTransition,
+} from '../components/molecules/AlertAsync';
+import { isExternalFixActive } from '../lib/gnss/externalGnssStore';
+import { requestGnssAveragingAsync } from '../hooks/useGnssAveraging';
 import { shallowEqual, useSelector, useDispatch } from 'react-redux';
 import { RootState, AppDispatch } from '../store';
 import { useTiles } from '../hooks/useTiles';
@@ -1505,10 +1512,21 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       return;
     }
 
-    // 確認アラートを表示
-    const ret = await ConfirmAsync(t('Home.confirm.addLocationPoint'));
-    if (!ret) {
-      return;
+    // 確認アラートを表示（外部GNSS受信機の使用中は平均化測位も選べる）
+    let averaged: LocationType | undefined;
+    if (isExternalFixActive()) {
+      const choice = await AddLocationPointConfirmAsync(t('Home.confirm.addLocationPoint'));
+      if (choice === 'cancel') return;
+      if (choice === 'average') {
+        await waitForModalTransition();
+        averaged = await requestGnssAveragingAsync();
+        if (averaged === undefined) return;
+      }
+    } else {
+      const ret = await ConfirmAsync(t('Home.confirm.addLocationPoint'));
+      if (!ret) {
+        return;
+      }
     }
 
     // GPS ON（follow/show）または軌跡記録中は、保持済みのライブ現在地を渡す。
@@ -1516,7 +1534,8 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     // 衛星捕捉中（stale=キャッシュ位置表示中）は古い座標を登録しないよう渡さない
     // （従来この時間帯はcurrentLocationがnullだったため挙動維持）。
     const preferred =
-      (gpsState !== 'off' || trackingState === 'on') && !isLocationStale ? currentLocation : undefined;
+      averaged ??
+      ((gpsState !== 'off' || trackingState === 'on') && !isLocationStale ? currentLocation : undefined);
     const { isOK, message, layer, record } = await addCurrentPoint(preferred);
     if (!isOK || layer === undefined || record === undefined) {
       await AlertAsync(message);

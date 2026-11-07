@@ -199,6 +199,27 @@ describe('generateCSV', () => {
     ];
     expect(generateCSV(point_record, layers[0].field, 'POINT').split(String.fromCharCode(10))).toStrictEqual(expected);
   });
+
+  it('外部GNSS受信機で記録した点があれば測位情報の列を足す', () => {
+    const records = [
+      {
+        ...point_record[0],
+        coords: {
+          ...point_record[0].coords,
+          accuracy: 0.0141,
+          altitude: 33.3234,
+          gnss: { fixQuality: 4, satellites: 18, hdop: 0.6, diffAge: 1, averagedCount: 10 },
+        },
+      },
+      point_record[1],
+    ] as typeof point_record;
+    const lines = generateCSV(records, layers[0].field, 'POINT').split(String.fromCharCode(10));
+    expect(lines[0]).toBe(
+      '﻿' + 'displayName,name,time,cmt,photo,_gnssFix,_accuracy,_altitude,_satellites,_hdop,_diffAge,_averaged,geometry'
+    );
+    expect(lines[1]).toContain('"FIX","0.014","33.323","18","0.6","1","10","POINT(');
+    expect(lines[2]).toContain('"","","","","","","","POINT(');
+  });
 });
 
 describe('hasValidCoordinates', () => {

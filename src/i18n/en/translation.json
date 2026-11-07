@@ -1214,6 +1214,70 @@
         "title": "Battery saver",
         "description": "Reduces battery consumption. Location accuracy is lower."
       }
+    },
+    "externalGnss": {
+      "sectionTitle": "External GNSS receiver (RTK)",
+      "description": "Uses the position from a receiver connected via USB or Bluetooth (BLE) for the current location, tracks and points. Falls back to the built-in GPS if positions stop for 5 seconds.",
+      "usbDevices": "USB devices",
+      "noDevices": "No USB devices found. Connect the receiver and tap Refresh.",
+      "bleDevices": "Bluetooth (BLE) devices",
+      "scan": "Scan",
+      "scanning": "Scanning…",
+      "noBleDevices": "Turn on the receiver and tap Scan.",
+      "refresh": "Refresh",
+      "connect": "Connect",
+      "disconnect": "Disconnect",
+      "connectFailed": "Could not connect: {{message}}",
+      "link": {
+        "disconnected": "Not connected",
+        "connecting": "Connecting…",
+        "connected": "Connected"
+      },
+      "fallback": "Built-in GPS",
+      "waitingPosition": "Waiting for position",
+      "satellites": "Sats",
+      "accuracy": "Accuracy",
+      "altitude": "Elevation",
+      "diffAge": "Corr. age",
+      "receiverSettings": "Receiver settings",
+      "antennaHeight": "Antenna height (m)",
+      "antennaHeightNote": "Height from the ground to the antenna. Subtracted from the recorded elevation.",
+      "baudRate": "Baud rate",
+      "edit": "Edit",
+      "averaging": {
+        "title": "Position averaging",
+        "addOnce": "Add now",
+        "addAveraged": "Average and add",
+        "epochs": "Epochs",
+        "fixOnly": "Use RTK FIX only",
+        "collected": "{{count}} / {{target}} epochs",
+        "spread": "Spread (H/V)",
+        "record": "Record",
+        "restart": "Restart"
+      },
+      "ntrip": {
+        "title": "NTRIP corrections",
+        "notConfigured": "Not configured",
+        "state": {
+          "off": "Off",
+          "connecting": "Connecting…",
+          "connected": "Receiving",
+          "error": "Error"
+        },
+        "received": "Received",
+        "host": "Caster (host)",
+        "port": "Port",
+        "mountpoint": "Mountpoint",
+        "fetchMountpoints": "Get list",
+        "fetchFailed": "Could not get mountpoints: {{message}}",
+        "noMountpoints": "No mountpoints",
+        "username": "Username",
+        "password": "Password",
+        "version": "Protocol",
+        "sendGga": "Send position (GGA) to the caster",
+        "sendGgaNote": "Required for VRS services",
+        "ggaInterval": "Interval (s)"
+      }
     }
   },
   "TrackSummary": {

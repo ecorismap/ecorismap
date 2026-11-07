@@ -1,0 +1,10 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+  <uses-feature android:name="android.hardware.usb.host" android:required="false"/>
+  <uses-feature android:name="android.hardware.bluetooth_le" android:required="false"/>
+  <!-- BLE受信機の検索と接続（Android 12以降）。スキャン結果から位置を推定しないことを宣言する -->
+  <uses-permission android:name="android.permission.BLUETOOTH_SCAN" android:usesPermissionFlags="neverForLocation"/>
+  <uses-permission android:name="android.permission.BLUETOOTH_CONNECT"/>
+  <!-- Android 11以前のBLE（スキャンには位置情報の権限も要るが、アプリは元から持っている） -->
+  <uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30"/>
+  <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" android:maxSdkVersion="30"/>
+</manifest>

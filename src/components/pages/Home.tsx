@@ -13,6 +13,7 @@ import { CurrentMarker } from '../organisms/HomeCurrentMarker';
 import { HomeTrackFocusMarker } from '../organisms/HomeTrackFocusMarker';
 import { HomeTrackPhotoMarkers } from '../organisms/HomeTrackPhotoMarkers';
 import { HomeTrackPhotoModal } from '../organisms/HomeTrackPhotoModal';
+import { HomeModalGnssAveraging } from '../organisms/HomeModalGnssAveraging';
 import { HomeMeasure } from '../organisms/HomeMeasure';
 import { HomeMeasureBanner } from '../organisms/HomeMeasureBanner';
 import { HomeViewshedBanner } from '../organisms/HomeViewshedBanner';
@@ -37,6 +38,7 @@ import { HomeCompassRose } from '../organisms/HomeCompassRose';
 import { HomeAccountButton } from '../organisms/HomeAccountButton';
 
 import { HomeGPSButton } from '../organisms/HomeGPSButton';
+import { HomeGnssBadge } from '../organisms/HomeGnssBadge';
 import { MemberMarker } from '../organisms/HomeMemberMarker';
 import { SvgView } from '../organisms/HomeSvgView';
 import { HomeProjectButtons } from '../organisms/HomeProjectButtons';
@@ -570,6 +572,7 @@ export default function HomeScreen() {
           <HomeTerrain3DVistaBanner />
           {!isTerrainActive && <HomeTrackPointPopup />}
           <HomeTrackPhotoModal />
+          <HomeModalGnssAveraging />
           {!isTerrainActive && isDrawLineVisible && <SvgView />}
 
           {/************** 3D地形ビュー（isTerrainActive時はMapViewと差し替え） ****************** */}
@@ -756,6 +759,7 @@ export default function HomeScreen() {
             />
           )}
           {!(downloadMode || exportPDFMode) && <HomeGPSButton gpsState={gpsState} onPressGPS={pressGPS} />}
+          {!(downloadMode || exportPDFMode) && gpsState !== 'off' && <HomeGnssBadge />}
           {<HomeAttributionText bottom={1 + insets.bottom} attribution={attribution} />}
           {/* HomeInfoToolButtonを非表示にする
           {!(downloadMode || exportPDFMode || editPositionMode) && <HomeInfoToolButton />}

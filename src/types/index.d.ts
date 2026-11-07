@@ -39,6 +39,19 @@ export interface LocationType {
   speed?: number | null;
   timestamp?: number;
   zoom?: number;
+  // 外部GNSS受信機で測った位置のときだけ付く。ポイントのcoordsにそのまま残る
+  gnss?: GnssMetaType;
+}
+
+export interface GnssMetaType {
+  // GGAの測位品質（1=単独, 2=DGPS, 4=RTK Fix, 5=RTK Float）
+  fixQuality: number;
+  satellites: number | null;
+  hdop: number | null;
+  // 補正の経過時間[s]
+  diffAge: number | null;
+  // 平均化測位で記録したときのエポック数
+  averagedCount?: number;
 }
 
 // 軌跡上に表示する写真（端末ライブラリを撮影時刻で照合した結果）
@@ -435,6 +448,8 @@ export interface SettingsType {
   mapListURL: string;
   mapList: TileMapItemType[];
   gpsAccuracy: GpsAccuracyType;
+  //外部GNSS受信機とNTRIPの接続設定（端末ローカル）。未設定の既存ユーザーはキーがないためoptional
+  externalGnss?: ExternalGnssSettingsType;
   agreedTermsVersion: string;
   lastSeenVersion: string;
   currentInfoTool: InfoToolType;
@@ -450,6 +465,25 @@ export interface SettingsType {
   //写真フィールドのカメラ撮影中（Android）。カメラ起動中にActivityが破棄されReactツリーが作り直されても
   //撮影結果を回収して同じレコードに付けられるよう、どこで撮影中かを残す。撮影が戻ってきたら消す
   pendingPhotoCapture?: PendingPhotoCaptureType;
+}
+
+export interface ExternalGnssSettingsType {
+  baudRate: number;
+  // ポールの長さ（地面からアンテナ位相中心まで）[m]。受信機の標高から引く
+  antennaHeight: number;
+  ntrip: NtripSettingsType;
+}
+
+export interface NtripSettingsType {
+  enabled: boolean;
+  host: string;
+  port: number;
+  mountpoint: string;
+  username: string;
+  // パスワードはキーチェーンに置く（redux-persistに平文で残さない）
+  version: 'v1' | 'v2';
+  sendGga: boolean;
+  ggaIntervalSec: number;
 }
 
 export interface PendingPhotoCaptureType {

@@ -7,6 +7,8 @@ import { t } from '../../i18n/config';
 import { Pressable } from '../atoms/Pressable';
 import { BottomSheetHeader } from '../molecules/BottomSheetHeader';
 import { GpsAccuracyType } from '../../types';
+import { ScrollView } from 'react-native-gesture-handler';
+import { GpsSettingsExternalGnss } from '../organisms/GpsSettingsExternalGnss';
 
 const ACCURACY_OPTIONS: {
   value: GpsAccuracyType;
@@ -18,12 +20,12 @@ const ACCURACY_OPTIONS: {
 ];
 
 export default function GpsSettings() {
-  const { gpsAccuracy, selectGpsAccuracy, gotoBack } = useContext(GpsSettingsContext);
+  const { gpsAccuracy, selectGpsAccuracy, gotoBack, externalGnss } = useContext(GpsSettingsContext);
 
   return (
     <View style={{ flex: 1 }}>
       <BottomSheetHeader title={t('GpsSettings.navigation.title')} showBackButton onBack={gotoBack} />
-      <View style={styles.contentContainer}>
+      <ScrollView contentContainerStyle={styles.contentContainer}>
         <Text style={styles.sectionTitle}>{`${t('GpsSettings.sectionTitle')}`}</Text>
         {ACCURACY_OPTIONS.map(({ value, icon }) => {
           const selected = value === gpsAccuracy;
@@ -56,7 +58,8 @@ export default function GpsSettings() {
           <MaterialCommunityIcons name="information-outline" size={16} color={COLOR.GRAY3} />
           <Text style={styles.noteText}>{`${t('GpsSettings.note')}`}</Text>
         </View>
-      </View>
+        {externalGnss.isAvailable && <GpsSettingsExternalGnss />}
+      </ScrollView>
     </View>
   );
 }
