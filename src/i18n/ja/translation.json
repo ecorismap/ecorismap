@@ -382,6 +382,7 @@
     "trackPoint": {
       "title": "軌跡ポイント",
       "elevation": "標高 {{elevation}} m",
+      "ellipsoidHeight": "楕円体高 {{height}} m",
       "speed": "速度 {{speed}} km/h",
       "copied": "コピーしました"
     },

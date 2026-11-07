@@ -2570,6 +2570,8 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
               timestamp,
               altitude: nearest.point.altitude,
               speed: nearest.point.speed,
+              fixQuality: nearest.point.fixQuality,
+              ellipsoidHeight: nearest.point.ellipsoidHeight,
             });
             openSheet(isLandscape ? 2 : 1);
             navigateToSplit('TrackSummary', {
@@ -2600,6 +2602,8 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
               timestamp,
               altitude: nearest.point.altitude,
               speed: nearest.point.speed,
+              fixQuality: nearest.point.fixQuality,
+              ellipsoidHeight: nearest.point.ellipsoidHeight,
             });
             // タップと同時にサマリーを開き、タップ地点を初期フォーカスにする
             openSheet(isLandscape ? 2 : 1);

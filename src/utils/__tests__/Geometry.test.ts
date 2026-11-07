@@ -372,6 +372,19 @@ describe('generateTrackGPXWithPhotos', () => {
     expect(generateTrackGPXWithPhotos(coords, 'test track')).toBe(expected);
   });
 
+  it('外部GNSS受信機の点はtimeの後にgeoidheight（楕円体高−標高）を出し、他の点には出さない', () => {
+    const gpx = generateTrackGPXWithPhotos(
+      [{ ...coords[0], ellipsoidHeight: 139.4567, fixQuality: 4 }, coords[1]],
+      'test track'
+    );
+    expect(gpx).toContain(
+      `        <ele>100</ele>
+        <time>2026-08-28T01:00:00.000Z</time>
+        <geoidheight>39.457</geoidheight>`
+    );
+    expect(gpx.match(/<geoidheight>/g)).toHaveLength(1);
+  });
+
   it('写真ありはwptがtrkより先、wptの子はtime→name→link順でhref=ファイル名', () => {
     const photos = [
       { filename: 'IMG_0001.jpg', timestamp: T0 + 5000, latitude: 35.0005, longitude: 135.0 },

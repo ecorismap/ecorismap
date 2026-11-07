@@ -31,6 +31,9 @@ export const HomeTrackPointPopup = React.memo(() => {
         timestamp: trackFocusPoint.timestamp,
         altitude: trackFocusPoint.altitude,
         speed: trackFocusPoint.speed,
+        // 標高グラフのフォーカス点は測位品質・楕円体高を持たない（地図上のタップのみ）
+        fixQuality: undefined as number | undefined,
+        ellipsoidHeight: undefined as number | undefined,
       };
     }
     return trackPointInfo;
@@ -41,10 +44,19 @@ export const HomeTrackPointPopup = React.memo(() => {
     return dayjs(displayInfo.timestamp).format('L HH:mm:ss');
   }, [displayInfo?.timestamp]);
 
+  // 外部GNSS受信機で記録した点は測位標高（cm級なので小数2桁）と楕円体高を出す
+  const isGnssPoint = displayInfo?.fixQuality !== undefined;
   const elevationText = useMemo(() => {
     if (displayInfo?.altitude === undefined || displayInfo?.altitude === null) return null;
-    return t('Home.trackPoint.elevation', { elevation: displayInfo.altitude.toFixed(1) });
-  }, [displayInfo?.altitude]);
+    return isGnssPoint
+      ? t('Home.poi.measuredElevation', { elevation: displayInfo.altitude.toFixed(2) })
+      : t('Home.trackPoint.elevation', { elevation: displayInfo.altitude.toFixed(1) });
+  }, [displayInfo?.altitude, isGnssPoint]);
+
+  const ellipsoidText = useMemo(() => {
+    if (typeof displayInfo?.ellipsoidHeight !== 'number') return null;
+    return t('Home.trackPoint.ellipsoidHeight', { height: displayInfo.ellipsoidHeight.toFixed(2) });
+  }, [displayInfo?.ellipsoidHeight]);
 
   const speedText = useMemo(() => {
     if (displayInfo?.speed === undefined || displayInfo?.speed === null || displayInfo.speed < 0) return null;
@@ -82,7 +94,13 @@ export const HomeTrackPointPopup = React.memo(() => {
     setTrackFocusPoint(null);
   }, [setTrackPointInfo, setTrackFocusPoint]);
 
-  const HEIGHT = 36 + (timeText ? 22 : 0) + (elevationText ? 20 : 0) + (speedText ? 20 : 0) + (coordinateText ? 20 : 0);
+  const HEIGHT =
+    36 +
+    (timeText ? 22 : 0) +
+    (elevationText ? 20 : 0) +
+    (ellipsoidText ? 20 : 0) +
+    (speedText ? 20 : 0) +
+    (coordinateText ? 20 : 0);
 
   // 画面座標を計算。タップ位置のpositionがあればそれを使い、なければ座標から計算
   const position = useMemo(() => {
@@ -138,6 +156,9 @@ export const HomeTrackPointPopup = React.memo(() => {
           <Text style={{ color: COLOR.BLACK, fontSize: 14, fontWeight: 'bold', paddingBottom: 4 }}>{timeText}</Text>
           {elevationText && (
             <Text style={{ color: COLOR.GRAY4, fontSize: 12, paddingBottom: 4 }}>{elevationText}</Text>
+          )}
+          {ellipsoidText && (
+            <Text style={{ color: COLOR.GRAY4, fontSize: 12, paddingBottom: 4 }}>{ellipsoidText}</Text>
           )}
           {speedText && <Text style={{ color: COLOR.GRAY4, fontSize: 12, paddingBottom: 4 }}>{speedText}</Text>}
           {coordinateText && (

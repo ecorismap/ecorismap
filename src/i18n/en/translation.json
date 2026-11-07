@@ -1014,6 +1014,7 @@
     "trackPoint": {
       "title": "Track Point",
       "elevation": "Elevation {{elevation}} m",
+      "ellipsoidHeight": "Ellipsoidal height {{height}} m",
       "speed": "Speed {{speed}} km/h",
       "copied": "Copied"
     },
