@@ -7,7 +7,8 @@
  * GPU非依存の純関数（jestでテスト可能）。
  */
 import { TrackSegmentType } from '../../types';
-import { Rgba } from './colorUtils';
+import { parseColorToRgba, Rgba } from './colorUtils';
+import { trackFixColor } from '../../lib/gnss/toLocation';
 import { DataOverlaySpec } from './TerrainScene';
 import { MERCATOR_CIRCUMFERENCE } from './coords';
 
@@ -39,9 +40,12 @@ export const buildTrackOverlaySpecs = (
   segments.forEach((segment, index) => {
     // 1点だけの区間はリボンにならない（buildRibbonもnullを返す）
     if (segment.coordinates.length < 2) return;
+    // 外部GNSS受信機のFIX/FLOAT区間は2Dと同じ色にする
+    const fixColor = trackFixColor(segment.fixQuality);
+    const base: Rgba = fixColor !== undefined ? parseColorToRgba(fixColor, color) : color;
     const segmentColor: Rgba = segment.isLowAccuracy
-      ? [color[0], color[1], color[2], color[3] * LOW_ACCURACY_ALPHA_RATIO]
-      : color;
+      ? [base[0], base[1], base[2], base[3] * LOW_ACCURACY_ALPHA_RATIO]
+      : base;
     specs.push({
       id: `${idPrefix}-${index}`,
       kind: 'line',

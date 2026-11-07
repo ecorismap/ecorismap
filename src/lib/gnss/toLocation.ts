@@ -80,6 +80,10 @@ export const formatAccuracy = (meters: number | null | undefined): string => {
   return meters < 1 ? `${(meters * 100).toFixed(1)}cm` : `${meters.toFixed(1)}m`;
 };
 
+/** 軌跡の区間の色。RTKのFIX/FLOATだけ色を変え、それ以外（内蔵GPS・単独・DGPS）はundefined＝通常の軌跡色 */
+export const trackFixColor = (fixQuality: number | undefined): string | undefined =>
+  fixQuality === FIX_QUALITY.RTK_FIX || fixQuality === FIX_QUALITY.RTK_FLOAT ? fixQualityColor(fixQuality) : undefined;
+
 /** GPSボタンの文字にする短い略号（ボタン幅に収まる5文字以内） */
 export const fixQualityShortLabel = (fixQuality: number): string => {
   switch (fixQuality) {

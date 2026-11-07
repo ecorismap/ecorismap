@@ -413,6 +413,20 @@ describe('splitTrackByAccuracy', () => {
     expect(splitTrackByAccuracy([])).toEqual([]);
   });
 
+  it('外部GNSS受信機の測位品質が変わるところでも区切り、区間に測位品質を持たせる', () => {
+    const locations: LocationType[] = [
+      { latitude: 35, longitude: 135, accuracy: 0.02, fixQuality: 4 },
+      { latitude: 35.01, longitude: 135.01, accuracy: 0.02, fixQuality: 4 },
+      { latitude: 35.02, longitude: 135.02, accuracy: 0.5, fixQuality: 5 },
+      { latitude: 35.03, longitude: 135.03, accuracy: 5 },
+    ];
+    const result = splitTrackByAccuracy(locations);
+    expect(result.map((s) => s.fixQuality)).toEqual([4, 5, undefined]);
+    // 境界の点は次の区間の先頭にも入る（線がつながる）
+    expect(result[1].coordinates[0]).toBe(locations[1]);
+    expect(result[2].coordinates[0]).toBe(locations[2]);
+  });
+
   it('returns single segment for all high accuracy', () => {
     const locations: LocationType[] = [
       { latitude: 35, longitude: 135, accuracy: 10 },

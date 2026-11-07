@@ -41,6 +41,8 @@ export interface LocationType {
   zoom?: number;
   // 外部GNSS受信機で測った位置のときだけ付く。ポイントのcoordsにそのまま残る
   gnss?: GnssMetaType;
+  // 軌跡の点の測位品質（外部GNSS受信機の点のみ）。軌跡はgnssを丸ごと持たず容量を抑える
+  fixQuality?: number;
 }
 
 export interface GnssMetaType {
@@ -146,6 +148,8 @@ export interface TrackLogType {
 export interface TrackSegmentType {
   coordinates: LocationType[];
   isLowAccuracy: boolean;
+  // 外部GNSS受信機の区間の測位品質（色分け用）。内蔵GPSの区間はundefined
+  fixQuality?: number;
 }
 export interface ProjectDataType extends DataType {
   userId: string;
@@ -473,6 +477,10 @@ export interface ExternalGnssSettingsType {
   baudRate: number;
   // ポールの長さ（地面からアンテナ位相中心まで）[m]。受信機の標高から引く
   antennaHeight: number;
+  // 軌跡の記録方法。all=1秒ごとすべて、adaptive=精度に合わせて間引く、distance=trackDistance[m]で間引く
+  // （追加前の設定にはキーがないためoptional。未定義はadaptive）
+  trackMode?: 'all' | 'adaptive' | 'distance';
+  trackDistance?: number;
   ntrip: NtripSettingsType;
 }
 

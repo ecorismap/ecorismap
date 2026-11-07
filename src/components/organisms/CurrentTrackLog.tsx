@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { Polyline } from 'react-native-maps';
 
 import { COLOR, TRACK_DASH_PATTERN } from '../../constants/AppConstants';
+import { trackFixColor } from '../../lib/gnss/toLocation';
 import { getDisplayBufferSimplified, splitTrackByAccuracy } from '../../utils/Location';
 
 interface Props {
@@ -54,7 +55,7 @@ export const CurrentTrackLog = React.memo((props: Props) => {
           key={`current-track-${index}`}
           tappable={false}
           coordinates={segment.coordinates}
-          strokeColor={COLOR.TRACK}
+          strokeColor={trackFixColor(segment.fixQuality) ?? COLOR.TRACK}
           strokeWidth={4}
           lineCap="butt"
           zIndex={101}

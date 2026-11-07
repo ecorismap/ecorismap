@@ -134,6 +134,7 @@ export type LocationObjectInput = {
     altitudeAccuracy?: number | null;
     heading?: number | null;
     speed?: number | null;
+    fixQuality?: number;
   };
   timestamp: number;
 };
@@ -501,19 +502,26 @@ export const splitTrackByAccuracy = (locations: LocationType[]): TrackSegmentTyp
   const segments: TrackSegmentType[] = [];
   let currentSegment: LocationType[] = [];
   let currentIsLowAccuracy = isLowAccuracy(locations[0]);
+  let currentFixQuality = locations[0].fixQuality;
 
   for (let i = 0; i < locations.length; i++) {
     const location = locations[i];
     const locationIsLowAccuracy = isLowAccuracy(location);
 
-    if (locationIsLowAccuracy !== currentIsLowAccuracy && currentSegment.length > 0) {
+    // 精度に加え、外部GNSS受信機の測位品質（FIX/FLOAT等）が変わるところでも区切って色分けできるようにする
+    if (
+      (locationIsLowAccuracy !== currentIsLowAccuracy || location.fixQuality !== currentFixQuality) &&
+      currentSegment.length > 0
+    ) {
       // セグメントの切り替わり - 最後の点を次のセグメントの先頭にも含める（連続性確保）
       segments.push({
         coordinates: currentSegment,
         isLowAccuracy: currentIsLowAccuracy,
+        ...(currentFixQuality !== undefined && { fixQuality: currentFixQuality }),
       });
       currentSegment = [currentSegment[currentSegment.length - 1]];
       currentIsLowAccuracy = locationIsLowAccuracy;
+      currentFixQuality = location.fixQuality;
     }
 
     currentSegment.push(location);
@@ -524,6 +532,7 @@ export const splitTrackByAccuracy = (locations: LocationType[]): TrackSegmentTyp
     segments.push({
       coordinates: currentSegment,
       isLowAccuracy: currentIsLowAccuracy,
+      ...(currentFixQuality !== undefined && { fixQuality: currentFixQuality }),
     });
   }
 

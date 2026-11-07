@@ -2,6 +2,7 @@ import React, { useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { Polyline } from 'react-native-maps';
 
 import { COLOR, TRACK_DASH_PATTERN } from '../../constants/AppConstants';
+import { trackFixColor } from '../../lib/gnss/toLocation';
 import { TrackSegmentType } from '../../types';
 import { getTrackChunkForDisplay, splitTrackByAccuracy } from '../../utils/Location';
 import { AppStateContext } from '../../contexts/AppState';
@@ -159,7 +160,7 @@ export const SavedTrackLog = React.memo((props: Props) => {
             key={`saved-track-${chunkIndex}-${segmentIndex}`}
             tappable={false}
             coordinates={segment.coordinates}
-            strokeColor={COLOR.TRACK}
+            strokeColor={trackFixColor(segment.fixQuality) ?? COLOR.TRACK}
             strokeWidth={4}
             lineCap="butt"
             zIndex={100}

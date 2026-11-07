@@ -23,6 +23,19 @@ describe('buildTrackOverlaySpecs', () => {
     expect(specs[1].color[3]).toBeCloseTo(color[3] * LOW_ACCURACY_ALPHA_RATIO, 6);
   });
 
+  it('外部GNSS受信機のFIX/FLOAT区間は2Dと同じ色、それ以外は通常の色', () => {
+    const specs = buildTrackOverlaySpecs(
+      [{ ...segment(2), fixQuality: 4 }, { ...segment(2), fixQuality: 5 }, { ...segment(2), fixQuality: 1 }],
+      'cur',
+      10,
+      color
+    );
+    expect(specs[0].color).not.toEqual(color);
+    expect(specs[1].color).not.toEqual(color);
+    expect(specs[0].color).not.toEqual(specs[1].color);
+    expect(specs[2].color).toEqual(color);
+  });
+
   it('idは接頭辞＋連番で一意になる', () => {
     const saved = buildTrackOverlaySpecs([segment(2), segment(2)], 'saved-3', 10, color);
     const current = buildTrackOverlaySpecs([segment(2)], 'cur', 10, color);

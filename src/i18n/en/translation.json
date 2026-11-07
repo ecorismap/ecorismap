@@ -1247,6 +1247,15 @@
       "antennaHeightNote": "Height from the ground to the antenna. Subtracted from the recorded elevation.",
       "baudRate": "Baud rate",
       "edit": "Edit",
+      "track": {
+        "title": "Track recording",
+        "adaptive": "By accuracy",
+        "distance": "By distance",
+        "all": "Every fix",
+        "adaptiveNote": "Records after moving about twice the accuracy (about 10 cm with FIX, 1 m with FLOAT). Keeps one point every 30 s while stopped.",
+        "distanceNote": "Records after moving the selected distance. Fewer points, suited to route logging. Keeps one point every 30 s while stopped.",
+        "allNote": "Records every fix each second. Keeps the time while stopped but produces many points."
+      },
       "averaging": {
         "title": "Position averaging",
         "addOnce": "Add now",

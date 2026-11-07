@@ -22,7 +22,7 @@ export type UseExternalGnssReturnType = {
   scanBle: () => Promise<void>;
   connectBle: (address: string) => Promise<void>;
   disconnect: () => Promise<void>;
-  updateReceiverSettings: (values: Pick<ExternalGnssSettingsType, 'antennaHeight' | 'baudRate'>) => void;
+  updateReceiverSettings: (values: Pick<ExternalGnssSettingsType, 'antennaHeight' | 'baudRate' | 'trackMode' | 'trackDistance'>) => void;
   saveNtripSettings: (ntrip: NtripSettingsType, password: string) => Promise<void>;
   setNtripEnabled: (enabled: boolean) => Promise<void>;
   fetchMountpoints: (ntrip: NtripSettingsType, password: string) => Promise<NtripMountpoint[]>;
@@ -131,7 +131,7 @@ export const useExternalGnss = (): UseExternalGnssReturnType => {
   }, []);
 
   const updateReceiverSettings = useCallback(
-    (values: Pick<ExternalGnssSettingsType, 'antennaHeight' | 'baudRate'>) => saveSettings({ ...settings, ...values }),
+    (values: Pick<ExternalGnssSettingsType, 'antennaHeight' | 'baudRate' | 'trackMode' | 'trackDistance'>) => saveSettings({ ...settings, ...values }),
     [saveSettings, settings]
   );
 
