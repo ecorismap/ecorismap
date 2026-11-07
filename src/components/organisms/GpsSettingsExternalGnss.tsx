@@ -12,6 +12,7 @@ import {
   formatAccuracy,
 } from '../../lib/gnss/toLocation';
 import { Pressable } from '../atoms/Pressable';
+import { DEFAULT_GNSS_TRACK_DISTANCE, DEFAULT_GNSS_TRACK_MODE } from '../../lib/gnss/trackThinning';
 import { GpsSettingsModalNtrip } from './GpsSettingsModalNtrip';
 import { GpsSettingsModalReceiver } from './GpsSettingsModalReceiver';
 
@@ -191,6 +192,15 @@ export const GpsSettingsExternalGnss = React.memo(() => {
                 'GpsSettings.externalGnss.baudRate'
               )} ${settings.baudRate}`}
             </Text>
+            <Text style={styles.note}>
+              {`${t('GpsSettings.externalGnss.track.title')} ${t(
+                `GpsSettings.externalGnss.track.${settings.trackMode ?? DEFAULT_GNSS_TRACK_MODE}`
+              )}${
+                (settings.trackMode ?? DEFAULT_GNSS_TRACK_MODE) === 'distance'
+                  ? ` ${settings.trackDistance ?? DEFAULT_GNSS_TRACK_DISTANCE}m`
+                  : ''
+              }`}
+            </Text>
           </View>
           <Pressable style={styles.smallButton} onPress={() => setReceiverModalVisible(true)}>
             <Text style={styles.smallButtonText}>{`${t('GpsSettings.externalGnss.edit')}`}</Text>
@@ -229,7 +239,12 @@ export const GpsSettingsExternalGnss = React.memo(() => {
 
       <GpsSettingsModalReceiver
         visible={receiverModalVisible}
-        values={{ antennaHeight: settings.antennaHeight, baudRate: settings.baudRate }}
+        values={{
+          antennaHeight: settings.antennaHeight,
+          baudRate: settings.baudRate,
+          trackMode: settings.trackMode,
+          trackDistance: settings.trackDistance,
+        }}
         pressOK={(values) => {
           updateReceiverSettings(values);
           setReceiverModalVisible(false);

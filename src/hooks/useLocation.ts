@@ -31,8 +31,18 @@ import {
   flushTrackLog,
   LocationObjectInput,
 } from '../utils/Location';
-import { getActiveExternalFix, isExternalFixActive, subscribeExternalFix } from '../lib/gnss/externalGnssStore';
+import {
+  getActiveExternalFix,
+  getExternalGnssSnapshot,
+  isExternalFixActive,
+  subscribeExternalFix,
+} from '../lib/gnss/externalGnssStore';
 import { gnssFixToLocation, isUsableFix } from '../lib/gnss/toLocation';
+import {
+  DEFAULT_GNSS_TRACK_DISTANCE,
+  DEFAULT_GNSS_TRACK_MODE,
+  shouldRecordGnssTrackPoint,
+} from '../lib/gnss/trackThinning';
 import { trackLogMMKV } from '../utils/mmkvStorage';
 import { hasOpened } from '../utils/Project';
 import * as projectStore from '../lib/firebase/firestore';
@@ -280,6 +290,15 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
   const bgReadyRef = useRef(false);
   const initializedRef = useRef(false);
   const trackingStateRef = useRef<TrackingStateType>('off');
+  // 軌跡に最後に保存した点（外部GNSS受信機の位置の間引きの基準）。記録していない間はnull
+  const lastTrackPointRef = useRef<LocationType | null>(null);
+  const gnssTrackMode = useSelector((state: RootState) => state.settings.externalGnss?.trackMode);
+  const gnssTrackDistance = useSelector((state: RootState) => state.settings.externalGnss?.trackDistance);
+  const gnssTrackThinningRef = useRef({ mode: DEFAULT_GNSS_TRACK_MODE, distance: DEFAULT_GNSS_TRACK_DISTANCE });
+  gnssTrackThinningRef.current = {
+    mode: gnssTrackMode ?? DEFAULT_GNSS_TRACK_MODE,
+    distance: gnssTrackDistance ?? DEFAULT_GNSS_TRACK_DISTANCE,
+  };
   const gpsStateRef = useRef<LocationStateType>('off');
   const locationSubscription = useRef<BackgroundSubscription | null>(null);
   const gpsAccuracy = useSelector((state: RootState) => state.settings.gpsAccuracy);
@@ -449,6 +468,7 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
     (normalized: LocationObjectInput, isStaleLocation: boolean, gnss?: GnssMetaType) => {
       const isTracking = trackingStateRef.current === 'on';
       const isGpsOn = gpsStateRef.current !== 'off';
+      if (!isTracking) lastTrackPointRef.current = null;
 
       // トラッキング中でもGPSオンでもない場合は何もしない
       if (!isTracking && !isGpsOn) {
@@ -464,10 +484,19 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
         // 'inactive'（iOSのApp Switcher等、画面がまだ見える状態）はUI更新を継続する。
         const isInBackground = RNAppState.currentState === 'background';
 
-        // トラッキング中のみ軌跡を保存
-        if (isTracking) {
-          // checkAndStoreLocationsが更新後のmetadata/現在チャンクを返すため、ここでの再読み込みは不要
-          const result = checkAndStoreLocations([normalized]);
+        // トラッキング中のみ軌跡を保存。外部GNSS受信機の位置は設定に応じて間引く
+        // （表示・現在地・接近通知は毎回更新するので、ポイント記録や平均化には影響しない）
+        const thinning = gnssTrackThinningRef.current;
+        const skipTrackPoint =
+          gnss !== undefined &&
+          !shouldRecordGnssTrackPoint(lastTrackPointRef.current, latest, thinning.mode, thinning.distance);
+        if (isTracking && !skipTrackPoint) {
+          // checkAndStoreLocationsが更新後のmetadata/現在チャンクを返すため、ここでの再読み込みは不要。
+          // 外部GNSS受信機の点には測位品質だけを付けて保存する（軌跡の色分け用）
+          const trackInput =
+            gnss !== undefined ? { ...normalized, coords: { ...normalized.coords, fixQuality: gnss.fixQuality } } : normalized;
+          const result = checkAndStoreLocations([trackInput]);
+          if (result) lastTrackPointRef.current = result.chunk[result.chunk.length - 1] ?? null;
 
           if (result && !isInBackground) {
             // 軌跡ラインの再描画は約1秒にスロットル（rollover=savedChunkCount変化時は即時反映）。
@@ -537,7 +566,13 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
       // 使うと誤った場所へ飛ぶため弾く。軌跡保存（checkAndStoreLocations）は独自のフィルタ
       // （timestamp単調性・accuracy≤100m）に任せるため、ここでは表示系のみ抑止する。
       const isStaleLocation = typeof location.age === 'number' && location.age > STALE_LOCATION_AGE_MS;
-      applyLocation(toLocationObject(location), isStaleLocation);
+      const normalized = toLocationObject(location);
+      // 外部GNSS受信機の接続中に内蔵GPSへ戻った区間は、標高を残さない。
+      // 内蔵GPSの標高はAndroidでは楕円体高（日本で海抜より30〜40m高い）で、受信機の測位標高と混ざると標高グラフが跳ねるため
+      if (getExternalGnssSnapshot().status.link === 'connected') {
+        normalized.coords = { ...normalized.coords, altitude: null, altitudeAccuracy: null };
+      }
+      applyLocation(normalized, isStaleLocation);
     },
     [applyLocation]
   );

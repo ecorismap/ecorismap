@@ -4,8 +4,17 @@ import { COLOR } from '../../constants/AppConstants';
 import { t } from '../../i18n/config';
 import { ExternalGnssSettingsType } from '../../types';
 import { Pressable } from '../atoms/Pressable';
+import {
+  DEFAULT_GNSS_TRACK_DISTANCE,
+  DEFAULT_GNSS_TRACK_MODE,
+  GNSS_TRACK_DISTANCES,
+  GnssTrackMode,
+} from '../../lib/gnss/trackThinning';
 
-type ReceiverValues = Pick<ExternalGnssSettingsType, 'antennaHeight' | 'baudRate'>;
+export type ReceiverValues = Pick<
+  ExternalGnssSettingsType,
+  'antennaHeight' | 'baudRate' | 'trackMode' | 'trackDistance'
+>;
 
 interface Props {
   visible: boolean;
@@ -15,21 +24,31 @@ interface Props {
 }
 
 const BAUD_RATES = [9600, 38400, 115200, 230400, 460800];
+const TRACK_MODES: GnssTrackMode[] = ['adaptive', 'distance', 'all'];
 
 export const GpsSettingsModalReceiver = React.memo((props: Props) => {
   const { visible, values, pressOK, pressCancel } = props;
   const [antennaHeight, setAntennaHeight] = useState('');
   const [baudRate, setBaudRate] = useState(values.baudRate);
+  const [trackMode, setTrackMode] = useState<GnssTrackMode>(DEFAULT_GNSS_TRACK_MODE);
+  const [trackDistance, setTrackDistance] = useState(DEFAULT_GNSS_TRACK_DISTANCE);
 
   useEffect(() => {
     if (!visible) return;
     setAntennaHeight(String(values.antennaHeight));
     setBaudRate(values.baudRate);
+    setTrackMode(values.trackMode ?? DEFAULT_GNSS_TRACK_MODE);
+    setTrackDistance(values.trackDistance ?? DEFAULT_GNSS_TRACK_DISTANCE);
   }, [visible, values]);
 
   const pressSave = () => {
     const height = Number(antennaHeight.replace(',', '.'));
-    pressOK({ antennaHeight: Number.isFinite(height) && height >= 0 ? height : values.antennaHeight, baudRate });
+    pressOK({
+      antennaHeight: Number.isFinite(height) && height >= 0 ? height : values.antennaHeight,
+      baudRate,
+      trackMode,
+      trackDistance,
+    });
   };
 
   return (
@@ -57,6 +76,34 @@ export const GpsSettingsModalReceiver = React.memo((props: Props) => {
               </Pressable>
             ))}
           </View>
+          <Text style={styles.label}>{`${t('GpsSettings.externalGnss.track.title')}`}</Text>
+          <View style={styles.wrapRow}>
+            {TRACK_MODES.map((mode) => (
+              <Pressable
+                key={mode}
+                style={[styles.segment, trackMode === mode && styles.segmentSelected]}
+                onPress={() => setTrackMode(mode)}
+              >
+                <Text style={trackMode === mode ? styles.segmentTextSelected : undefined}>
+                  {`${t(`GpsSettings.externalGnss.track.${mode}`)}`}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+          {trackMode === 'distance' && (
+            <View style={styles.wrapRow}>
+              {GNSS_TRACK_DISTANCES.map((d) => (
+                <Pressable
+                  key={d}
+                  style={[styles.segment, trackDistance === d && styles.segmentSelected]}
+                  onPress={() => setTrackDistance(d)}
+                >
+                  <Text style={trackDistance === d ? styles.segmentTextSelected : undefined}>{`${d}m`}</Text>
+                </Pressable>
+              ))}
+            </View>
+          )}
+          <Text style={styles.note}>{`${t(`GpsSettings.externalGnss.track.${trackMode}Note`)}`}</Text>
           <View style={styles.buttons}>
             <Pressable style={styles.button} onPress={pressSave}>
               <Text>{`${t('common.ok')}`}</Text>
