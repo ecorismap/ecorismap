@@ -492,9 +492,18 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
           !shouldRecordGnssTrackPoint(lastTrackPointRef.current, latest, thinning.mode, thinning.distance);
         if (isTracking && !skipTrackPoint) {
           // checkAndStoreLocationsが更新後のmetadata/現在チャンクを返すため、ここでの再読み込みは不要。
-          // 外部GNSS受信機の点には測位品質だけを付けて保存する（軌跡の色分け用）
+          // 外部GNSS受信機の点には測位品質（軌跡の色分け用）と楕円体高だけを付けて保存する
           const trackInput =
-            gnss !== undefined ? { ...normalized, coords: { ...normalized.coords, fixQuality: gnss.fixQuality } } : normalized;
+            gnss !== undefined
+              ? {
+                  ...normalized,
+                  coords: {
+                    ...normalized.coords,
+                    fixQuality: gnss.fixQuality,
+                    ...(typeof gnss.ellipsoidHeight === 'number' && { ellipsoidHeight: gnss.ellipsoidHeight }),
+                  },
+                }
+              : normalized;
           const result = checkAndStoreLocations([trackInput]);
           if (result) lastTrackPointRef.current = result.chunk[result.chunk.length - 1] ?? null;
 

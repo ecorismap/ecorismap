@@ -41,8 +41,9 @@ export interface LocationType {
   zoom?: number;
   // 外部GNSS受信機で測った位置のときだけ付く。ポイントのcoordsにそのまま残る
   gnss?: GnssMetaType;
-  // 軌跡の点の測位品質（外部GNSS受信機の点のみ）。軌跡はgnssを丸ごと持たず容量を抑える
+  // 軌跡の点の測位品質と楕円体高[m]（外部GNSS受信機の点のみ）。軌跡はgnssを丸ごと持たず容量を抑える
   fixQuality?: number;
+  ellipsoidHeight?: number;
 }
 
 export interface GnssMetaType {
@@ -107,6 +108,9 @@ export interface TrackPointInfoType {
   timestamp?: number;
   altitude?: number | null;
   speed?: number | null;
+  // 外部GNSS受信機で記録した点のみ
+  fixQuality?: number;
+  ellipsoidHeight?: number;
 }
 
 export interface UserType {

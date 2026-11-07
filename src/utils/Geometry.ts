@@ -847,6 +847,11 @@ export const generateTrackGPXWithPhotos = (
     if (coord.timestamp !== undefined) {
       trkpt.ele('time', new Date(coord.timestamp).toISOString());
     }
+    // 外部GNSS受信機の点は、GPX 1.1のgeoidheight（楕円体からのジオイド高。GGAと同じ定義）を残す。
+    // 楕円体高 = ele + geoidheight で復元できる（要素順はele→time→magvar→geoidheight）
+    if (typeof coord.ellipsoidHeight === 'number' && typeof coord.altitude === 'number') {
+      trkpt.ele('geoidheight', Number((coord.ellipsoidHeight - coord.altitude).toFixed(3)));
+    }
   });
 
   return gpx.end({

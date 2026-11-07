@@ -135,6 +135,7 @@ export type LocationObjectInput = {
     heading?: number | null;
     speed?: number | null;
     fixQuality?: number;
+    ellipsoidHeight?: number;
   };
   timestamp: number;
 };
