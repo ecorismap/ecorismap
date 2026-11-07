@@ -1214,6 +1214,70 @@
         "title": "省電力",
         "description": "バッテリー消費を抑えます。位置精度は低くなります。"
       }
+    },
+    "externalGnss": {
+      "sectionTitle": "外部GNSS受信機（RTK）",
+      "description": "USB・Bluetooth（BLE）でつないだ受信機の位置を、現在地・軌跡・ポイント記録に使います。位置が5秒途絶えると内蔵GPSに戻ります。",
+      "usbDevices": "USB機器",
+      "noDevices": "USB機器が見つかりません。受信機をつないで「更新」を押してください。",
+      "bleDevices": "Bluetooth（BLE）機器",
+      "scan": "検索",
+      "scanning": "検索中…",
+      "noBleDevices": "受信機の電源を入れて「検索」を押してください。",
+      "refresh": "更新",
+      "connect": "接続",
+      "disconnect": "切断",
+      "connectFailed": "接続できませんでした: {{message}}",
+      "link": {
+        "disconnected": "未接続",
+        "connecting": "接続中…",
+        "connected": "接続済み"
+      },
+      "fallback": "内蔵GPS",
+      "waitingPosition": "位置を待っています",
+      "satellites": "衛星",
+      "accuracy": "精度",
+      "altitude": "標高",
+      "diffAge": "補正経過",
+      "receiverSettings": "受信機の設定",
+      "antennaHeight": "アンテナ高（m）",
+      "antennaHeightNote": "地面からアンテナまでの高さ。記録する標高から差し引きます。",
+      "baudRate": "ボーレート",
+      "edit": "変更",
+      "averaging": {
+        "title": "平均化測位",
+        "addOnce": "そのまま追加",
+        "addAveraged": "平均化して追加",
+        "epochs": "エポック数",
+        "fixOnly": "FIXのみ採用",
+        "collected": "{{count}} / {{target}} エポック",
+        "spread": "ばらつき（水平/高さ）",
+        "record": "記録",
+        "restart": "やり直し"
+      },
+      "ntrip": {
+        "title": "NTRIP補正",
+        "notConfigured": "未設定",
+        "state": {
+          "off": "停止",
+          "connecting": "接続中…",
+          "connected": "受信中",
+          "error": "エラー"
+        },
+        "received": "受信量",
+        "host": "キャスター（ホスト）",
+        "port": "ポート",
+        "mountpoint": "マウントポイント",
+        "fetchMountpoints": "一覧を取得",
+        "fetchFailed": "マウントポイントを取得できませんでした: {{message}}",
+        "noMountpoints": "マウントポイントがありません",
+        "username": "ユーザー名",
+        "password": "パスワード",
+        "version": "プロトコル",
+        "sendGga": "現在地（GGA）をキャスターへ送る",
+        "sendGgaNote": "VRS方式の配信では必須です",
+        "ggaInterval": "送信間隔（秒）"
+      }
     }
   },
   "TrackSummary": {

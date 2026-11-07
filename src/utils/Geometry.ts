@@ -36,6 +36,7 @@ import { rgbaString2qgis } from './Color';
 import { cloneDeep } from 'lodash';
 import { isLocationType, isLocationTypeArray } from './General';
 import { generateLabel, getColor, getLineWidth } from './Layer';
+import { fixQualityLabel } from '../lib/gnss/toLocation';
 
 export const getGeometryType = (geometryString: string): FeatureType => {
   if (geometryString.includes('POINT')) {
@@ -540,14 +541,41 @@ export const escapeCSVValue = (value: unknown): string => {
   return `"${guarded.replace(/"/g, '""')}"`;
 };
 
+const GNSS_EXPORT_KEYS = ['_gnssFix', '_accuracy', '_altitude', '_satellites', '_hdop', '_diffAge', '_averaged'] as const;
+
+/** 外部GNSS受信機で記録したポイントがあるか（あれば測位情報の列を書き出す） */
+const hasGnssPoints = (dataSet: RecordType[], type: FeatureType | GeoJsonFeatureType) =>
+  type === 'POINT' && dataSet.some((d) => isLocationType(d.coords) && d.coords.gnss !== undefined);
+
+/** 測位品質・精度・標高などの書き出し用の値。受信機で測っていない点は空にする */
+export const gnssExportProperties = (coords: RecordType['coords']): Record<(typeof GNSS_EXPORT_KEYS)[number], string | number> => {
+  const gnss = isLocationType(coords) ? coords.gnss : undefined;
+  if (!isLocationType(coords) || gnss === undefined) {
+    return { _gnssFix: '', _accuracy: '', _altitude: '', _satellites: '', _hdop: '', _diffAge: '', _averaged: '' };
+  }
+  return {
+    _gnssFix: fixQualityLabel(gnss.fixQuality),
+    _accuracy: typeof coords.accuracy === 'number' ? Number(coords.accuracy.toFixed(3)) : '',
+    _altitude: typeof coords.altitude === 'number' ? Number(coords.altitude.toFixed(3)) : '',
+    _satellites: gnss.satellites ?? '',
+    _hdop: gnss.hdop ?? '',
+    _diffAge: gnss.diffAge ?? '',
+    _averaged: gnss.averagedCount ?? '',
+  };
+};
+
 export const generateCSV = (dataSet: RecordType[], field: LayerType['field'], type: FeatureType) => {
   const isMapMemoLayer = dataSet.some((d) => d.field._strokeColor !== undefined);
   const mapMemoHeader = ['_group', '_strokeWidth', '_strokeColor', '_strokeStyle', '_stamp', '_zoom', '_visible'];
+  const withGnss = hasGnssPoints(dataSet, type);
 
   let header = field.map((f) => f.name).join(',');
   header = 'displayName' + ',' + header;
   if (isMapMemoLayer) {
     header = header + ',' + '_id' + ',' + mapMemoHeader.join(',') + ',' + '_qgisColor';
+  }
+  if (withGnss) {
+    header = header + ',' + GNSS_EXPORT_KEYS.join(',');
   }
   header = header + ',' + 'geometry';
 
@@ -572,6 +600,10 @@ export const generateCSV = (dataSet: RecordType[], field: LayerType['field'], ty
         record.field._strokeColor ? rgbaString2qgis(record.field._strokeColor as string) : ''
       );
       fieldCSV = fieldCSV + ',' + id + ',' + mapMemoProperties + ',' + qgisColor;
+    }
+    if (withGnss) {
+      const gnss = gnssExportProperties(record.coords);
+      fieldCSV = fieldCSV + ',' + GNSS_EXPORT_KEYS.map((key) => escapeCSVValue(gnss[key])).join(',');
     }
     return fieldCSV;
   });
@@ -1084,6 +1116,7 @@ export const generateGeoJson = (
   permission?: LayerType['permission']
 ) => {
   const isMapMemoLayer = data.some((d) => d.field._strokeColor !== undefined);
+  const withGnss = hasGnssPoints(data, type);
 
   const geojson = {
     type: 'FeatureCollection',
@@ -1101,7 +1134,12 @@ export const generateGeoJson = (
 
         const feature = {
           type: 'Feature',
-          properties: { ...properties, _visible: record.visible, _id: record.id },
+          properties: {
+            ...properties,
+            _visible: record.visible,
+            _id: record.id,
+            ...(withGnss && gnssExportProperties(record.coords)),
+          },
           geometry: isLocationType(record.coords)
             ? {
                 type: 'Point',

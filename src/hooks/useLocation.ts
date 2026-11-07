@@ -9,7 +9,15 @@ import BackgroundGeolocation, {
 import { watchHeadingAsync, getForegroundPermissionsAsync, LocationSubscription } from 'expo-location';
 import MapView from 'react-native-maps';
 import { MapRef } from 'react-map-gl/maplibre';
-import { LayerType, LocationStateType, LocationType, RecordType, TrackingStateType, TrackMetadataType } from '../types';
+import {
+  GnssMetaType,
+  LayerType,
+  LocationStateType,
+  LocationType,
+  RecordType,
+  TrackingStateType,
+  TrackMetadataType,
+} from '../types';
 import { shallowEqual, useSelector } from 'react-redux';
 import {
   checkAndStoreLocations,
@@ -21,7 +29,10 @@ import {
   getLineLength,
   toLocationObject,
   flushTrackLog,
+  LocationObjectInput,
 } from '../utils/Location';
+import { getActiveExternalFix, isExternalFixActive, subscribeExternalFix } from '../lib/gnss/externalGnssStore';
+import { gnssFixToLocation, isUsableFix } from '../lib/gnss/toLocation';
 import { trackLogMMKV } from '../utils/mmkvStorage';
 import { hasOpened } from '../utils/Project';
 import * as projectStore from '../lib/firebase/firestore';
@@ -81,6 +92,9 @@ const makeNotification = (text: string): NotificationConfig => ({
 
 // 軌跡ライン（trailing polyline）の再描画を約1秒ごとにスロットルするための間隔
 const TRACK_META_UPDATE_INTERVAL_MS = 1000;
+
+// 外部GNSS受信機の位置を表示・軌跡へ反映する最短間隔（1Hz出力の揺らぎを見込んで1秒より少し短く）
+const EXTERNAL_FIX_APPLY_INTERVAL_MS = 900;
 
 // サービス遷移キュー内の1操作に許す最大時間。changePace(true)は内部の位置ワンショットが
 // locationTimeout（既定60秒）まで待ち得るため、それより長く取る。ネイティブ側のPromiseが
@@ -429,8 +443,10 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
     }
   }, []);
 
-  const handleBackgroundLocation = useCallback(
-    (location: BackgroundLocation) => {
+  // 内蔵GPS・外部GNSS受信機の両方の位置がここに合流する。
+  // gnssは外部受信機の位置のときだけ渡され、現在地（ポイント記録に使われる）にだけ載せる。軌跡には残さない。
+  const applyLocation = useCallback(
+    (normalized: LocationObjectInput, isStaleLocation: boolean, gnss?: GnssMetaType) => {
       const isTracking = trackingStateRef.current === 'on';
       const isGpsOn = gpsStateRef.current !== 'off';
 
@@ -440,13 +456,7 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
       }
 
       try {
-        const normalized = toLocationObject(location);
-        const latest = { ...normalized.coords, timestamp: normalized.timestamp };
-
-        // iOSが開始直後に流す古いキャッシュ位置（age が大きい）は、現在地マーカー/カメラ/接近通知に
-        // 使うと誤った場所へ飛ぶため弾く。軌跡保存（checkAndStoreLocations）は独自のフィルタ
-        // （timestamp単調性・accuracy≤100m）に任せるため、ここでは表示系のみ抑止する。
-        const isStaleLocation = typeof location.age === 'number' && location.age > STALE_LOCATION_AGE_MS;
+        const latest: LocationType = { ...normalized.coords, timestamp: normalized.timestamp, ...(gnss && { gnss }) };
 
         // バックグラウンド中は画面が見えないため、React state更新とカメラ移動をスキップして
         // CPU/ブリッジ消費を抑える（MMKVへの保存と接近通知は継続。
@@ -518,6 +528,33 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
     },
     [mapViewRef, setLocationStale]
   );
+
+  const handleBackgroundLocation = useCallback(
+    (location: BackgroundLocation) => {
+      // 外部GNSS受信機が使える位置を出している間は内蔵GPSの位置を使わない（途絶したら自動で戻る）
+      if (isExternalFixActive()) return;
+      // iOSが開始直後に流す古いキャッシュ位置（age が大きい）は、現在地マーカー/カメラ/接近通知に
+      // 使うと誤った場所へ飛ぶため弾く。軌跡保存（checkAndStoreLocations）は独自のフィルタ
+      // （timestamp単調性・accuracy≤100m）に任せるため、ここでは表示系のみ抑止する。
+      const isStaleLocation = typeof location.age === 'number' && location.age > STALE_LOCATION_AGE_MS;
+      applyLocation(toLocationObject(location), isStaleLocation);
+    },
+    [applyLocation]
+  );
+
+  // 外部GNSS受信機の位置を合流させる。10Hz出力でも表示と軌跡は内蔵GPSと同じく約1秒ごとにする
+  const antennaHeight = useSelector((state: RootState) => state.settings.externalGnss?.antennaHeight ?? 0);
+  const antennaHeightRef = useRef(antennaHeight);
+  antennaHeightRef.current = antennaHeight;
+  useEffect(() => {
+    let lastAppliedAt = 0;
+    return subscribeExternalFix((fix) => {
+      if (!isUsableFix(fix) || fix.receivedAt - lastAppliedAt < EXTERNAL_FIX_APPLY_INTERVAL_MS) return;
+      lastAppliedAt = fix.receivedAt;
+      const { timestamp, gnss, ...coords } = gnssFixToLocation(fix, antennaHeightRef.current);
+      applyLocation({ coords, timestamp: timestamp ?? fix.receivedAt }, false, gnss);
+    });
+  }, [applyLocation]);
 
   const ensureBackgroundGeolocation = useCallback(async () => {
     // アプリプロセス再生成時に残るリスナーを初回だけクリアして重複通知を防ぐ
@@ -742,6 +779,19 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
 
   const moveCurrentPosition = useCallback(async () => {
     try {
+      const externalFix = getActiveExternalFix();
+      if (externalFix !== null) {
+        const coords = gnssFixToLocation(externalFix, antennaHeightRef.current);
+        hasFreshFixRef.current = true;
+        setLocationStale(false);
+        setCurrentLocation(coords);
+        if (mapViewRef.current !== null && isMapView(mapViewRef.current)) {
+          mapViewRef.current.animateCamera({ center: { latitude: coords.latitude, longitude: coords.longitude } }, {
+            duration: 5,
+          });
+        }
+        return;
+      }
       const location = await BackgroundGeolocation.getCurrentPosition({
         persist: false,
         samples: 3, // 複数fixを集めて最良を返す（ライブラリ既定）。samples:1だとiOSは最初のキャッシュを返す。
@@ -753,6 +803,8 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
       // iOSは maximumAge を無視して古いキャッシュ位置を返すことがある（issue #113）。
       // 戻り値の age を見て、古ければ最後に取得済みの位置（MMKV・年齢無制限）へ
       // フォールバックし、stale表示（灰色マーカー）で即時フィードバックする。
+      // 待っている間に外部受信機の位置が入り始めたら、内蔵GPSの位置で上書きしない
+      if (isExternalFixActive()) return;
       let coords: LocationType | undefined;
       let stale = false;
       const isFresh = !!location && !(typeof location.age === 'number' && location.age > STALE_LOCATION_AGE_MS);

@@ -9,6 +9,8 @@ import { shallowEqual, useDispatch, useSelector } from 'react-redux';
 import { deleteRecordsAction, updateRecordsAction } from '../modules/dataSet';
 import { LatLng } from 'react-native-maps';
 import { RootState } from '../store';
+import { getActiveExternalFix } from '../lib/gnss/externalGnssStore';
+import { gnssFixToLocation } from '../lib/gnss/toLocation';
 
 // iOSの getCurrentPosition はキャッシュされた古い位置を返すことがある（issue #113）。
 // ライブラリが付与する age(ms) がこの閾値を超える位置は古いキャッシュとみなして採用しない。
@@ -35,8 +37,12 @@ export const usePointTool = (): UsePointToolReturnType => {
     [projectId, user]
   );
   const { addRecordWithCheck } = useRecord();
+  const antennaHeight = useSelector((state: RootState) => state.settings.externalGnss?.antennaHeight ?? 0);
 
   const getCurrentPoint = useCallback(async () => {
+    // 外部GNSS受信機が位置を出していれば、内蔵GPSを測り直さずそれを使う
+    const externalFix = getActiveExternalFix();
+    if (externalFix !== null) return gnssFixToLocation(externalFix, antennaHeight);
     try {
       const location = await BackgroundGeolocation.getCurrentPosition({
         persist: false,
@@ -68,7 +74,7 @@ export const usePointTool = (): UsePointToolReturnType => {
       console.error('Failed to get current point', error);
       return undefined;
     }
-  }, []);
+  }, [antennaHeight]);
 
   const addCurrentPoint = useCallback(
     async (preferredLocation?: LocationType | null) => {

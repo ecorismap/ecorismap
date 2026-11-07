@@ -1,0 +1,28 @@
+plugins {
+  id 'com.android.library'
+  id 'expo-module-gradle-plugin'
+}
+
+group = 'expo.modules.gnssreceiver'
+version = '0.1.0'
+
+android {
+  namespace "expo.modules.gnssreceiver"
+  defaultConfig {
+    versionCode 1
+    versionName "0.1.0"
+    consumerProguardFiles "consumer-rules.pro"
+  }
+}
+
+repositories {
+  // usb-serial-for-androidはJitPackでのみ配布されている。他の依存をJitPackから引かないようグループを限定する
+  exclusiveContent {
+    forRepository { maven { url "https://jitpack.io" } }
+    filter { includeGroup "com.github.mik3y" }
+  }
+}
+
+dependencies {
+  implementation "com.github.mik3y:usb-serial-for-android:3.8.1"
+}
