@@ -1,6 +1,6 @@
 import { LocationType } from '../../types';
 import { FIX_QUALITY, GnssFix } from './nmea';
-import { estimateHorizontalAccuracy, gnssFixToLocation } from './toLocation';
+import { ellipsoidHeightOf, estimateHorizontalAccuracy, gnssFixToLocation } from './toLocation';
 
 const METERS_PER_DEGREE = 111_320;
 
@@ -52,6 +52,7 @@ export const averageFixes = (fixes: GnssFix[], antennaHeight: number): Averaging
   const satellites = nonNull(fixes.map((f) => f.satellites));
   const hdops = nonNull(fixes.map((f) => f.hdop));
   const diffAges = nonNull(fixes.map((f) => f.diffAge));
+  const ellipsoidHeights = nonNull(fixes.map((f) => ellipsoidHeightOf(f, antennaHeight)));
   const last = gnssFixToLocation(fixes[fixes.length - 1], antennaHeight);
 
   return {
@@ -72,6 +73,7 @@ export const averageFixes = (fixes: GnssFix[], antennaHeight: number): Averaging
         satellites: satellites.length > 0 ? Math.min(...satellites) : null,
         hdop: hdops.length > 0 ? Math.max(...hdops) : null,
         diffAge: diffAges.length > 0 ? Math.max(...diffAges) : null,
+        ellipsoidHeight: ellipsoidHeights.length > 0 ? mean(ellipsoidHeights) : null,
         averagedCount: fixes.length,
       },
     },

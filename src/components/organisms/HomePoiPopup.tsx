@@ -16,6 +16,7 @@ import { startWebVista } from '../../utils/terrain3d/webVista';
 import type { MapRef } from 'react-map-gl/maplibre';
 import { useTerrain3dSupport } from '../../hooks/useTerrain3dSupport';
 import { t } from '../../i18n/config';
+import { isExternalFixActive } from '../../lib/gnss/externalGnssStore';
 
 /** 長押し位置を現在地へスナップする距離[px]（既存ポイントへのスナップと同じ） */
 const CURRENT_LOCATION_SNAP_RADIUS_PX = 40;
@@ -69,11 +70,14 @@ export const HomePoiPopup = React.memo(() => {
     if (xy === null) return null;
     const { x, y } = mapLocationInfo.position;
     if (Math.hypot(xy.x - x, xy.y - y) > CURRENT_LOCATION_SNAP_RADIUS_PX) return null;
-    return { latitude: current.latitude, longitude: current.longitude };
+    // 外部GNSS受信機の位置なら、地形データより受信機が測った標高（アンテナ高を引いたもの）の方が確か
+    const measuredAltitude = isExternalFixActive() && typeof current.altitude === 'number' ? current.altitude : null;
+    return { latitude: current.latitude, longitude: current.longitude, measuredAltitude };
   }, [mapLocationInfo, mapViewRef]);
   const isSnapped = !isPOI && snappedLocation !== null;
   // メニュー・表示が対象とする地点
   const coordinate = isSnapped ? snappedLocation : locationInfo?.coordinate;
+  const measuredAltitude = isSnapped ? snappedLocation.measuredAltitude : null;
 
   // GPSがONのとき、長押し位置までの現在地からの直線距離を表示する（現在地へスナップしたら「現在地」と出す）
   const distanceText = useMemo(() => {
@@ -90,7 +94,7 @@ export const HomePoiPopup = React.memo(() => {
   const lon = coordinate?.longitude;
   const [elevation, setElevation] = useState<number | null | undefined>(undefined);
   useEffect(() => {
-    if (lat == null || lon == null) {
+    if (lat == null || lon == null || measuredAltitude !== null) {
       setElevation(undefined);
       return;
     }
@@ -102,19 +106,25 @@ export const HomePoiPopup = React.memo(() => {
     return () => {
       cancelled = true;
     };
-  }, [lat, lon]);
+  }, [lat, lon, measuredAltitude]);
 
   const elevationText = useMemo(() => {
+    if (measuredAltitude !== null) return t('Home.poi.measuredElevation', { elevation: measuredAltitude.toFixed(2) });
     if (elevation === undefined) return t('Home.poi.elevation', { elevation: '…' });
     if (elevation === null) return t('Home.poi.elevationUnavailable');
     return t('Home.poi.elevation', { elevation: elevation.toFixed(1) });
-  }, [elevation]);
+  }, [elevation, measuredAltitude]);
 
-  // 緯度経度を表示（小数5桁 ≒ 1m精度）。タップでクリップボードにコピー
+  // 緯度経度を表示（小数5桁 ≒ 1m精度）。タップでクリップボードにコピー。
+  // 外部GNSS受信機の現在地はcm級なので、精度を落とさないよう小数8桁（≒1mm）にする
   const coordinateText = useMemo(() => {
     if (lat == null || lon == null) return null;
-    return `${lat.toFixed(5)}, ${lon.toFixed(5)}`;
-  }, [lat, lon]);
+    const digits = measuredAltitude !== null ? 8 : 5;
+    return `${lat.toFixed(digits)}, ${lon.toFixed(digits)}`;
+  }, [lat, lon, measuredAltitude]);
+  // 8桁は吹き出しの幅に収まらないので、緯度と経度を2行に分けて表示する（コピーは1行のまま）
+  const isLongCoordinate = measuredAltitude !== null;
+  const coordinateDisplay = isLongCoordinate ? coordinateText?.replace(', ', '\n') : coordinateText;
 
   const [copied, setCopied] = useState(false);
   useEffect(() => {
@@ -134,7 +144,8 @@ export const HomePoiPopup = React.memo(() => {
 
   // 3Dでは距離測定（2Dの地図操作が前提）を出さない。可視領域は3Dでも結果を描けるので出す
   const menuItemCount = isPOI ? 0 : (canVista ? 1 : 0) + 1 + (isTerrainActive ? 0 : 1);
-  const HEIGHT = 40 + (distanceText ? 20 : 0) + 20 + (coordinateText ? 20 : 0) + menuItemCount * 30;
+  const HEIGHT =
+    40 + (distanceText ? 20 : 0) + 20 + (coordinateText ? (isLongCoordinate ? 40 : 20) : 0) + menuItemCount * 30;
 
   // その地点に立って真北を水平に見る視点へ3Dカメラを移す。
   // 2Dからは地点を預けて3Dへ切り替え、シーンの初期化後に眺望へ移してもらう
@@ -339,7 +350,7 @@ export const HomePoiPopup = React.memo(() => {
           {coordinateText && (
             <Pressable onPress={handleCopyCoordinate} style={{ paddingBottom: 4 }}>
               <Text style={{ color: copied ? COLOR.GRAY4 : COLOR.BLUE, fontSize: 12 }}>
-                {copied ? t('Home.poi.copied') : coordinateText}
+                {copied ? t('Home.poi.copied') : coordinateDisplay}
               </Text>
             </Pressable>
           )}

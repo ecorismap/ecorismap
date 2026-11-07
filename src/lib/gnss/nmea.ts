@@ -84,7 +84,13 @@ export const parseNmeaCoordinate = (value: string | undefined, hemisphere: strin
 };
 
 type RmcPart = { time: string; speed: number | null; course: number | null };
-type GstPart = { time: string; stdLat: number | null; stdLon: number | null; stdAlt: number | null; receivedAt: number };
+type GstPart = {
+  time: string;
+  stdLat: number | null;
+  stdLon: number | null;
+  stdAlt: number | null;
+  receivedAt: number;
+};
 
 // GSTは受信機によってGGAの後に出るため、同じ時刻のものが無ければ直前のエポックの値を使う
 const GST_REUSE_MS = 2000;
@@ -110,7 +116,13 @@ export class NmeaFixAssembler {
         };
         return null;
       case 'GST':
-        this.gst = { time: f[1] ?? '', stdLat: toNumber(f[6]), stdLon: toNumber(f[7]), stdAlt: toNumber(f[8]), receivedAt };
+        this.gst = {
+          time: f[1] ?? '',
+          stdLat: toNumber(f[6]),
+          stdLon: toNumber(f[7]),
+          stdAlt: toNumber(f[8]),
+          receivedAt,
+        };
         return null;
       case 'GGA':
         return this.buildFix(f, receivedAt);
@@ -127,7 +139,9 @@ export class NmeaFixAssembler {
     const time = f[1] ?? '';
     const rmc = this.rmc !== null && this.rmc.time === time ? this.rmc : null;
     const gst =
-      this.gst !== null && (this.gst.time === time || receivedAt - this.gst.receivedAt <= GST_REUSE_MS) ? this.gst : null;
+      this.gst !== null && (this.gst.time === time || receivedAt - this.gst.receivedAt <= GST_REUSE_MS)
+        ? this.gst
+        : null;
     return {
       time,
       latitude,

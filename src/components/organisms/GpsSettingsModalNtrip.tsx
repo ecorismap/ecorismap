@@ -48,6 +48,8 @@ export const GpsSettingsModalNtrip = React.memo((props: Props) => {
     setFetchError('');
   }, [visible, ntrip, password]);
 
+  const fetchDisabled = fetching || host.trim() === '';
+
   const current = (): NtripSettingsType => ({
     enabled: ntrip.enabled,
     host: host.trim(),
@@ -66,7 +68,9 @@ export const GpsSettingsModalNtrip = React.memo((props: Props) => {
       setMountpoints(await fetchMountpoints(current(), pass));
     } catch (e) {
       setMountpoints(null);
-      setFetchError(t('GpsSettings.externalGnss.ntrip.fetchFailed', { message: e instanceof Error ? e.message : String(e) }));
+      setFetchError(
+        t('GpsSettings.externalGnss.ntrip.fetchFailed', { message: e instanceof Error ? e.message : String(e) })
+      );
     } finally {
       setFetching(false);
     }
@@ -122,11 +126,17 @@ export const GpsSettingsModalNtrip = React.memo((props: Props) => {
                 autoCapitalize="none"
                 autoCorrect={false}
               />
-              <Pressable style={styles.smallButton} onPress={pressFetch} disabled={fetching || host.trim() === ''}>
+              <Pressable
+                style={[styles.smallButton, fetchDisabled && styles.smallButtonDisabled]}
+                onPress={pressFetch}
+                disabled={fetchDisabled}
+              >
                 {fetching ? (
                   <ActivityIndicator size="small" color={COLOR.GRAY4} />
                 ) : (
-                  <Text style={styles.smallButtonText}>{`${t('GpsSettings.externalGnss.ntrip.fetchMountpoints')}`}</Text>
+                  <Text style={[styles.smallButtonText, fetchDisabled && styles.smallButtonTextDisabled]}>
+                    {`${t('GpsSettings.externalGnss.ntrip.fetchMountpoints')}`}
+                  </Text>
                 )}
               </Pressable>
             </View>
@@ -289,15 +299,26 @@ const styles = StyleSheet.create({
   },
   smallButton: {
     alignItems: 'center',
-    backgroundColor: COLOR.GRAY1,
+    backgroundColor: COLOR.WHITE,
+    borderColor: COLOR.BLUE,
     borderRadius: 5,
+    borderWidth: 1,
     height: 40,
     justifyContent: 'center',
     marginLeft: 8,
     paddingHorizontal: 10,
   },
+  smallButtonDisabled: {
+    backgroundColor: COLOR.GRAY0,
+    borderColor: COLOR.GRAY2,
+  },
   smallButtonText: {
+    color: COLOR.BLUE,
     fontSize: 13,
+    fontWeight: '600',
+  },
+  smallButtonTextDisabled: {
+    color: COLOR.GRAY3,
   },
   switchRow: {
     marginTop: 14,

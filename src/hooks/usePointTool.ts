@@ -24,8 +24,19 @@ export type UsePointToolReturnType = {
     record: RecordType | undefined;
   }>;
   resetPointPosition: (targetLayer: LayerType, feature: RecordType) => void;
-  updatePointPosition: (targetLayer: LayerType, feature: RecordType, coordinate: LatLng | undefined) => void;
+  updatePointPosition: (
+    targetLayer: LayerType,
+    feature: RecordType,
+    coordinate: LatLng | LocationType | undefined
+  ) => void;
   getCurrentPoint: () => Promise<LocationType | undefined>;
+};
+
+const toPointCoords = (coordinate: LatLng | LocationType): LocationType => {
+  const { latitude, longitude } = coordinate;
+  if (!('timestamp' in coordinate) && !('gnss' in coordinate)) return { latitude, longitude };
+  const { altitude, accuracy, altitudeAccuracy, timestamp, gnss } = coordinate;
+  return { latitude, longitude, altitude, accuracy, altitudeAccuracy, timestamp, ...(gnss && { gnss }) };
 };
 
 export const usePointTool = (): UsePointToolReturnType => {
@@ -111,9 +122,11 @@ export const usePointTool = (): UsePointToolReturnType => {
   );
 
   const updatePointPosition = useCallback(
-    (targetLayer: LayerType, feature: RecordType, coordinate: LatLng | undefined) => {
+    (targetLayer: LayerType, feature: RecordType, coordinate: LatLng | LocationType | undefined) => {
       const targetRecord = cloneDeep(feature);
-      targetRecord.coords = coordinate ? { latitude: coordinate.latitude, longitude: coordinate.longitude } : undefined;
+      // 現在地（外部GNSS受信機など）で更新するときは標高・精度・測位品質も残す。
+      // 地図上で動かしたときは緯度経度だけになる（元の標高や測位品質はもう当てはまらないため）
+      targetRecord.coords = coordinate === undefined ? undefined : toPointCoords(coordinate);
       //unixTimeを更新
       targetRecord.updatedAt = Date.now();
       //データの更新。userIdが変更される場合は、元のデータを削除して新しいデータを追加する

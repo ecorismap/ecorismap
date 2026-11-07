@@ -476,7 +476,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     setIsStraightStyle,
   } = useMapMemo(mapViewRef.current);
   const { importPdfFile, importPmtilesFile, updatePmtilesURL } = useMaps();
-  const { addCurrentPoint, resetPointPosition, updatePointPosition } = usePointTool();
+  const { addCurrentPoint, resetPointPosition, updatePointPosition, getCurrentPoint } = usePointTool();
   //現在位置、GPS関連
   const {
     currentLocation,
@@ -1512,10 +1512,17 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       return;
     }
 
+    // データ編集の「位置を編集」から来たときは、新しいポイントを作らず編集中のポイントの位置を現在地にする
+    const editTarget =
+      route.params?.mode === 'editPosition' && route.params.layer !== undefined && route.params.record !== undefined
+        ? { layer: route.params.layer, record: route.params.record }
+        : undefined;
+    const confirmMessage = t(editTarget ? 'Home.confirm.updateLocationPoint' : 'Home.confirm.addLocationPoint');
+
     // 確認アラートを表示（外部GNSS受信機の使用中は平均化測位も選べる）
     let averaged: LocationType | undefined;
     if (isExternalFixActive()) {
-      const choice = await AddLocationPointConfirmAsync(t('Home.confirm.addLocationPoint'));
+      const choice = await AddLocationPointConfirmAsync(confirmMessage, editTarget !== undefined);
       if (choice === 'cancel') return;
       if (choice === 'average') {
         await waitForModalTransition();
@@ -1523,7 +1530,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
         if (averaged === undefined) return;
       }
     } else {
-      const ret = await ConfirmAsync(t('Home.confirm.addLocationPoint'));
+      const ret = await ConfirmAsync(confirmMessage);
       if (!ret) {
         return;
       }
@@ -1536,6 +1543,16 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     const preferred =
       averaged ??
       ((gpsState !== 'off' || trackingState === 'on') && !isLocationStale ? currentLocation : undefined);
+    if (editTarget) {
+      const location = preferred ?? (await getCurrentPoint());
+      if (!location) {
+        await AlertAsync(t('hooks.message.turnOnGPS'));
+        return;
+      }
+      updatePointPosition(editTarget.layer, editTarget.record, location);
+      finishEditPosition(true);
+      return;
+    }
     const { isOK, message, layer, record } = await addCurrentPoint(preferred);
     if (!isOK || layer === undefined || record === undefined) {
       await AlertAsync(message);
@@ -1548,7 +1565,21 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
         targetLayer: layer,
       });
     }
-  }, [openSheet, addCurrentPoint, currentLocation, isLocationStale, gpsState, navigateToSplit, trackingState]);
+  }, [
+    openSheet,
+    addCurrentPoint,
+    currentLocation,
+    isLocationStale,
+    gpsState,
+    navigateToSplit,
+    trackingState,
+    route.params?.mode,
+    route.params?.layer,
+    route.params?.record,
+    getCurrentPoint,
+    updatePointPosition,
+    finishEditPosition,
+  ]);
 
   const handleAddLocationPoint = useCallback(async () => {
     await addLocationPoint();

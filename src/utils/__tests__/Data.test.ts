@@ -591,9 +591,27 @@ describe('updateRecordCoords', () => {
     expect(result.coords).toEqual({ latitude: 35.5, longitude: 135.5 });
   });
 
-  it('位置ありレコードは未編集フラグでも座標欄の値で更新される（既存挙動維持）', () => {
-    const recordWithCoords: RecordType = { ...baseRecord, coords: { latitude: 10, longitude: 20 } };
+  it('位置ありレコードで座標欄が未編集なら、標高や測位品質も含めてcoordsをそのまま残す', () => {
+    const recordWithCoords: RecordType = {
+      ...baseRecord,
+      coords: {
+        latitude: 10,
+        longitude: 20,
+        altitude: 12.3,
+        accuracy: 0.014,
+        gnss: { fixQuality: 4, satellites: 20, hdop: 0.6, diffAge: 1 },
+      },
+    };
     const result = updateRecordCoords(recordWithCoords, latlon, true, false);
+    expect(result).toBe(recordWithCoords);
+  });
+
+  it('位置ありレコードの座標欄を編集したら緯度経度だけになる（元の標高・測位品質は当てはまらない）', () => {
+    const recordWithCoords: RecordType = {
+      ...baseRecord,
+      coords: { latitude: 10, longitude: 20, altitude: 12.3, gnss: { fixQuality: 4, satellites: 20, hdop: 0.6, diffAge: 1 } },
+    };
+    const result = updateRecordCoords(recordWithCoords, latlon, true, true);
     expect(result.coords).toEqual({ latitude: 35.5, longitude: 135.5 });
   });
 

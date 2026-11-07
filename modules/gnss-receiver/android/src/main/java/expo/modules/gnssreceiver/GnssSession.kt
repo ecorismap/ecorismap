@@ -27,6 +27,7 @@ object GnssSession {
   @Volatile private var rtcmBytes = 0L
   @Volatile private var lastCorrectionAt = 0L
   @Volatile private var lastGga: String? = null
+  @Volatile private var lastCorrectionStatusAt = 0L
 
   private val pending = mutableListOf<String>()
   private val flushThread = HandlerThread("GnssSessionFlush").apply { start() }
@@ -125,8 +126,14 @@ object GnssSession {
       }
 
       override fun onCorrection(bytes: ByteArray, length: Int) {
+        val now = System.currentTimeMillis()
         rtcmBytes += length
-        lastCorrectionAt = System.currentTimeMillis()
+        lastCorrectionAt = now
+        // 受信量の表示を更新する（補正は秒間数回届くので、通知は1秒に1回に間引く）
+        if (now - lastCorrectionStatusAt >= CORRECTION_STATUS_INTERVAL_MS) {
+          lastCorrectionStatusAt = now
+          emitStatus()
+        }
         val target = synchronized(lock) { link }
         try {
           target?.write(bytes, length)
@@ -185,4 +192,5 @@ object GnssSession {
   // 10Hz出力でもJSへのイベントは秒間数回に抑える
   private const val FLUSH_INTERVAL_MS = 200L
   private const val MAX_PENDING = 200
+  private const val CORRECTION_STATUS_INTERVAL_MS = 1000L
 }

@@ -97,7 +97,13 @@ describe('gnssFixToLocation', () => {
     expect(loc.accuracy).toBeCloseTo(Math.hypot(0.009, 0.012), 6);
     expect(loc.altitudeAccuracy).toBe(0.02);
     expect(loc.timestamp).toBe(1000);
-    expect(loc.gnss).toEqual({ fixQuality: 4, satellites: 12, hdop: 0.55, diffAge: 1.0 });
+    expect(loc.gnss).toEqual({
+      fixQuality: 4,
+      satellites: 12,
+      hdop: 0.55,
+      diffAge: 1.0,
+      ellipsoidHeight: expect.closeTo(35.123 + 39.456 - 1.8, 6),
+    });
   });
 
   it('GSTがなければ測位品質とHDOPから精度を見積もる', () => {

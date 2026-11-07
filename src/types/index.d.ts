@@ -50,6 +50,8 @@ export interface GnssMetaType {
   hdop: number | null;
   // 補正の経過時間[s]
   diffAge: number | null;
+  // 楕円体高（標高＋ジオイド高、アンテナ高を引いたもの）[m]。受信機がジオイド高を出さなければnull
+  ellipsoidHeight?: number | null;
   // 平均化測位で記録したときのエポック数
   averagedCount?: number;
 }

@@ -30,6 +30,12 @@ export const estimateHorizontalAccuracy = (fix: GnssFix): number | null => {
   }
 };
 
+/** 楕円体高[m]（標高＋ジオイド高からアンテナ高を引く）。どちらかが無ければnull */
+export const ellipsoidHeightOf = (fix: GnssFix, antennaHeight: number): number | null =>
+  fix.altitudeMsl !== null && fix.geoidSeparation !== null
+    ? fix.altitudeMsl + fix.geoidSeparation - antennaHeight
+    : null;
+
 /**
  * 外部受信機の1エポックをアプリの位置に変換する。
  * 標高はポールの先のアンテナ位置なので、アンテナ高を引いて地面の高さにする。
@@ -48,6 +54,7 @@ export const gnssFixToLocation = (fix: GnssFix, antennaHeight: number): Location
     satellites: fix.satellites,
     hdop: fix.hdop,
     diffAge: fix.diffAge,
+    ellipsoidHeight: ellipsoidHeightOf(fix, antennaHeight),
   },
 });
 
@@ -71,6 +78,20 @@ export const fixQualityColor = (fixQuality: number): string => {
 export const formatAccuracy = (meters: number | null | undefined): string => {
   if (meters === null || meters === undefined) return '-';
   return meters < 1 ? `${(meters * 100).toFixed(1)}cm` : `${meters.toFixed(1)}m`;
+};
+
+/** GPSボタンの文字にする短い略号（ボタン幅に収まる5文字以内） */
+export const fixQualityShortLabel = (fixQuality: number): string => {
+  switch (fixQuality) {
+    case FIX_QUALITY.RTK_FIX:
+      return 'FIX';
+    case FIX_QUALITY.RTK_FLOAT:
+      return 'FLOAT';
+    case FIX_QUALITY.DGPS:
+      return 'DGPS';
+    default:
+      return 'SPP';
+  }
 };
 
 /** 画面表示用の測位品質の略号 */
