@@ -4,6 +4,8 @@ import { View, StyleSheet, KeyboardAvoidingView } from 'react-native';
 import { DataEditButtons } from '../organisms/DataEditButtons';
 import { DataEditPhoto } from '../organisms/DataEditPhoto';
 import { DataEditCoords } from '../organisms/DataEditCoords';
+import { isLocationType } from '../../utils/General';
+import { DataEditGnssInfo } from '../organisms/DataEditGnssInfo';
 import { DataEditNumber } from '../organisms/DataEditNumber';
 import { DataEditLayerName } from '../organisms/DataEditLayerName';
 import { DataEditList } from '../organisms/DataEditList';
@@ -342,6 +344,7 @@ export default function DataEditScreen() {
                 changeLatLonType={changeLatLonType}
                 onChangeText={changeLatLon}
               />
+              {isLocationType(data.coords) && <DataEditGnssInfo coords={data.coords} />}
             </>
           )}
         </BottomSheetScrollView>

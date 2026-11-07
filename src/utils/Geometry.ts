@@ -541,7 +541,16 @@ export const escapeCSVValue = (value: unknown): string => {
   return `"${guarded.replace(/"/g, '""')}"`;
 };
 
-const GNSS_EXPORT_KEYS = ['_gnssFix', '_accuracy', '_altitude', '_satellites', '_hdop', '_diffAge', '_averaged'] as const;
+const GNSS_EXPORT_KEYS = [
+  '_gnssFix',
+  '_accuracy',
+  '_altitude',
+  '_ellipsoidHeight',
+  '_satellites',
+  '_hdop',
+  '_diffAge',
+  '_averaged',
+] as const;
 
 /** 外部GNSS受信機で記録したポイントがあるか（あれば測位情報の列を書き出す） */
 const hasGnssPoints = (dataSet: RecordType[], type: FeatureType | GeoJsonFeatureType) =>
@@ -551,12 +560,22 @@ const hasGnssPoints = (dataSet: RecordType[], type: FeatureType | GeoJsonFeature
 export const gnssExportProperties = (coords: RecordType['coords']): Record<(typeof GNSS_EXPORT_KEYS)[number], string | number> => {
   const gnss = isLocationType(coords) ? coords.gnss : undefined;
   if (!isLocationType(coords) || gnss === undefined) {
-    return { _gnssFix: '', _accuracy: '', _altitude: '', _satellites: '', _hdop: '', _diffAge: '', _averaged: '' };
+    return {
+      _gnssFix: '',
+      _accuracy: '',
+      _altitude: '',
+      _ellipsoidHeight: '',
+      _satellites: '',
+      _hdop: '',
+      _diffAge: '',
+      _averaged: '',
+    };
   }
   return {
     _gnssFix: fixQualityLabel(gnss.fixQuality),
     _accuracy: typeof coords.accuracy === 'number' ? Number(coords.accuracy.toFixed(3)) : '',
     _altitude: typeof coords.altitude === 'number' ? Number(coords.altitude.toFixed(3)) : '',
+    _ellipsoidHeight: typeof gnss.ellipsoidHeight === 'number' ? Number(gnss.ellipsoidHeight.toFixed(3)) : '',
     _satellites: gnss.satellites ?? '',
     _hdop: gnss.hdop ?? '',
     _diffAge: gnss.diffAge ?? '',

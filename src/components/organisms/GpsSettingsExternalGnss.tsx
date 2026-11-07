@@ -4,7 +4,13 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { COLOR } from '../../constants/AppConstants';
 import { GpsSettingsContext } from '../../contexts/GpsSettings';
 import { t } from '../../i18n/config';
-import { estimateHorizontalAccuracy, fixQualityColor, fixQualityLabel, formatAccuracy } from '../../lib/gnss/toLocation';
+import {
+  ellipsoidHeightOf,
+  estimateHorizontalAccuracy,
+  fixQualityColor,
+  fixQualityLabel,
+  formatAccuracy,
+} from '../../lib/gnss/toLocation';
 import { Pressable } from '../atoms/Pressable';
 import { GpsSettingsModalNtrip } from './GpsSettingsModalNtrip';
 import { GpsSettingsModalReceiver } from './GpsSettingsModalReceiver';
@@ -73,6 +79,12 @@ export const GpsSettingsExternalGnss = React.memo(() => {
                   fix.altitudeMsl !== null
                     ? `${t('GpsSettings.externalGnss.altitude')} ${(fix.altitudeMsl - settings.antennaHeight).toFixed(2)}m`
                     : null,
+                  ellipsoidHeightOf(fix, settings.antennaHeight) !== null
+                    ? `${t('GpsSettings.externalGnss.ellipsoidHeight')} ${ellipsoidHeightOf(
+                        fix,
+                        settings.antennaHeight
+                      )?.toFixed(2)}m`
+                    : null,
                   fix.diffAge !== null ? `${t('GpsSettings.externalGnss.diffAge')} ${fix.diffAge}s` : null,
                 ]
                   .filter(Boolean)
@@ -98,11 +110,21 @@ export const GpsSettingsExternalGnss = React.memo(() => {
                     {device.name}
                   </Text>
                   <Pressable
-                    style={[styles.smallButton, styles.primaryButton]}
+                    style={[
+                      styles.smallButton,
+                      styles.primaryButton,
+                      status.link === 'connecting' && styles.smallButtonDisabled,
+                    ]}
                     disabled={status.link === 'connecting'}
                     onPress={() => pressConnectUsb(device.deviceId)}
                   >
-                    <Text style={[styles.smallButtonText, styles.primaryButtonText]}>
+                    <Text
+                      style={[
+                        styles.smallButtonText,
+                        styles.primaryButtonText,
+                        status.link === 'connecting' && styles.smallButtonTextDisabled,
+                      ]}
+                    >
                       {`${t('GpsSettings.externalGnss.connect')}`}
                     </Text>
                   </Pressable>
@@ -111,8 +133,12 @@ export const GpsSettingsExternalGnss = React.memo(() => {
             )}
             <View style={[styles.row, styles.bleHeader]}>
               <Text style={[styles.subTitle, styles.flex]}>{`${t('GpsSettings.externalGnss.bleDevices')}`}</Text>
-              <Pressable style={styles.smallButton} disabled={isBleScanning} onPress={pressScanBle}>
-                <Text style={styles.smallButtonText}>
+              <Pressable
+                style={[styles.smallButton, isBleScanning && styles.smallButtonDisabled]}
+                disabled={isBleScanning}
+                onPress={pressScanBle}
+              >
+                <Text style={[styles.smallButtonText, isBleScanning && styles.smallButtonTextDisabled]}>
                   {`${t(isBleScanning ? 'GpsSettings.externalGnss.scanning' : 'GpsSettings.externalGnss.scan')}`}
                 </Text>
               </Pressable>
@@ -131,11 +157,21 @@ export const GpsSettingsExternalGnss = React.memo(() => {
                     {` ${device.name}  (${device.rssi}dBm)`}
                   </Text>
                   <Pressable
-                    style={[styles.smallButton, styles.primaryButton]}
+                    style={[
+                      styles.smallButton,
+                      styles.primaryButton,
+                      status.link === 'connecting' && styles.smallButtonDisabled,
+                    ]}
                     disabled={status.link === 'connecting'}
                     onPress={() => pressConnectBle(device.address)}
                   >
-                    <Text style={[styles.smallButtonText, styles.primaryButtonText]}>
+                    <Text
+                      style={[
+                        styles.smallButtonText,
+                        styles.primaryButtonText,
+                        status.link === 'connecting' && styles.smallButtonTextDisabled,
+                      ]}
+                    >
                       {`${t('GpsSettings.externalGnss.connect')}`}
                     </Text>
                   </Pressable>
@@ -300,15 +336,27 @@ const styles = StyleSheet.create({
     marginBottom: 4,
     marginTop: 20,
   },
+  // グレーは無効の意味で使うので、押せるボタンは青枠にする
   smallButton: {
-    backgroundColor: COLOR.GRAY1,
+    backgroundColor: COLOR.WHITE,
+    borderColor: COLOR.BLUE,
     borderRadius: 5,
+    borderWidth: 1,
     marginHorizontal: 6,
     paddingHorizontal: 12,
     paddingVertical: 6,
   },
+  smallButtonDisabled: {
+    backgroundColor: COLOR.GRAY0,
+    borderColor: COLOR.GRAY2,
+  },
   smallButtonText: {
+    color: COLOR.BLUE,
     fontSize: 13,
+    fontWeight: '600',
+  },
+  smallButtonTextDisabled: {
+    color: COLOR.GRAY3,
   },
   subTitle: {
     color: COLOR.BLACK,

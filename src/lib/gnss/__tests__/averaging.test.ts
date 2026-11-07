@@ -36,6 +36,8 @@ describe('averageFixes', () => {
     expect(result.verticalSpread).toBeCloseTo(1, 9);
     expect(result.location.timestamp).toBe(2000);
     expect(result.location.gnss?.averagedCount).toBe(2);
+    // 楕円体高 = 標高 + ジオイド高(39) − アンテナ高
+    expect(result.location.gnss?.ellipsoidHeight).toBeCloseTo(101 + 39 - 1.5, 9);
   });
 
   it('水平のばらつきをメートルで返し、精度はばらつき以上にする', () => {
@@ -53,9 +55,19 @@ describe('averageFixes', () => {
 
   it('測位品質は混ざったうちで一番悪いもの、衛星数は最小・HDOPと補正経過は最大', () => {
     const result = averageFixes(
-      [fix({ fixQuality: 4, satellites: 20, hdop: 0.5, diffAge: 1 }), fix({ fixQuality: 5, satellites: 15, hdop: 0.9, diffAge: 3 })],
+      [
+        fix({ fixQuality: 4, satellites: 20, hdop: 0.5, diffAge: 1 }),
+        fix({ fixQuality: 5, satellites: 15, hdop: 0.9, diffAge: 3 }),
+      ],
       0
     )!;
-    expect(result.location.gnss).toEqual({ fixQuality: 5, satellites: 15, hdop: 0.9, diffAge: 3, averagedCount: 2 });
+    expect(result.location.gnss).toEqual({
+      fixQuality: 5,
+      satellites: 15,
+      hdop: 0.9,
+      diffAge: 3,
+      ellipsoidHeight: 139,
+      averagedCount: 2,
+    });
   });
 });

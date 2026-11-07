@@ -275,13 +275,14 @@ export const HomeDrawTools = React.memo(() => {
               （非表示にすると編集が終わったように見え、戻り方も分かりにくい） */}
           {/* 現在地ポイントは押すと1件追加して終わる操作。編集中は押せないが、消すと
               編集が終わったように見えるのでグレーで残す */}
-          {featureButton === 'POINT' && (!editPositionMode || editPositionWithoutCoord) && (
+          {/* データ編集の「位置を編集」中は、編集中のポイントの位置を現在地にするボタンになる（位置の有無によらず出す） */}
+          {featureButton === 'POINT' && (
             <View style={styles.button}>
               <Button
                 id={'ADD_LOCATION_POINT'}
                 name={POINTTOOL.ADD_LOCATION_POINT}
-                disabled={isAddLocationDisabled}
-                backgroundColor={isAddLocationDisabled ? COLOR.ALFAGRAY : COLOR.ALFABLUE}
+                disabled={isAddLocationDisabled && !editPositionMode}
+                backgroundColor={isAddLocationDisabled && !editPositionMode ? COLOR.ALFAGRAY : COLOR.ALFABLUE}
                 borderRadius={10}
                 onPress={() => selectDrawTool('ADD_LOCATION_POINT')}
                 labelText={t('Home.label.addLocationPoint')}
