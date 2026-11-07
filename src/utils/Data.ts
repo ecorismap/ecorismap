@@ -402,8 +402,10 @@ export const updateRecordCoords = (
   isDecimal: boolean,
   isLatLonDirty: boolean = true
 ) => {
-  //位置なしレコードは、座標欄が編集されていない限りcoordsを付与しない（テンプレート値(0,0)の書き込み防止）
-  if (record.coords === undefined && !isLatLonDirty) return record;
+  //座標欄が編集されていなければcoordsはそのまま残す。
+  //位置なしレコードにテンプレート値(0,0)を書き込まないため。また位置ありレコードでも、緯度経度だけに
+  //作り直すと現在地で記録した標高・精度・測位品質（外部GNSS受信機）が属性の保存のたびに消えてしまうため
+  if (!isLatLonDirty) return record;
   if (isLocationType(record.coords) || record.coords === undefined) {
     //座標欄をすべて空欄にして保存した場合は位置なしにする（位置ありレコードの位置解除）
     if (isLatLonEmpty(latlon, isDecimal)) {
