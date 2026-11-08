@@ -25,6 +25,8 @@ import { parseColorToRgba } from '../../utils/terrain3d/colorUtils';
 import { MERCATOR_CIRCUMFERENCE } from '../../utils/terrain3d/coords';
 import { getColor, getLineWidthAtZoom, getLineWidth } from '../../utils/Layer';
 import { LineRecordType, PointRecordType, PolygonRecordType } from '../../types';
+import { TRACK_LAYER_ID } from '../../modules/layers';
+import { splitTrackFixSegments } from '../../utils/Location';
 import { HomeTerrain3DPoints } from './HomeTerrain3DPoints';
 import { HomeVistaPeakLabels } from './HomeVistaPeakLabels';
 import { HomeTerrain3DPeakLabels } from './HomeTerrain3DPeakLabels';
@@ -203,13 +205,26 @@ export const HomeTerrain3D = React.memo(() => {
         if (featureCount >= MAX_OVERLAY_FEATURES) break;
         featureCount++;
         const rgba = parseColorToRgba(getColor(layer, record));
+        const widthMeters = Math.max(2, getLineWidthAtZoom(layer, record, zoom)) * pxToMercator;
         specs.push({
           id: `line-${dataSet.layerId}-${record.id}`,
           kind: 'line',
           coords: record.coords,
           color: rgba,
-          widthMeters: Math.max(2, getLineWidthAtZoom(layer, record, zoom)) * pxToMercator,
+          widthMeters,
         });
+        // 保存した軌跡は2Dと同じく外部GNSSのFIX/FLOAT区間を品質色で上に重ねる
+        if (layer.id === TRACK_LAYER_ID) {
+          splitTrackFixSegments(record.coords).forEach((segment, index) => {
+            specs.push({
+              id: `line-fix-${dataSet.layerId}-${record.id}-${index}`,
+              kind: 'line',
+              coords: segment.coordinates,
+              color: parseColorToRgba(segment.color, rgba),
+              widthMeters,
+            });
+          });
+        }
       }
     }
     for (const dataSet of polygonDataSet) {
