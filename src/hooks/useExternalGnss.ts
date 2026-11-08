@@ -5,7 +5,7 @@ import { getExternalGnssSnapshot, subscribeExternalGnss, ExternalGnssSnapshot } 
 import { DEFAULT_EXTERNAL_GNSS_SETTINGS, loadNtripPassword, saveNtripPassword } from '../lib/gnss/settings';
 import { NtripMountpoint, parseSourceTable } from '../lib/gnss/sourceTable';
 import { requestBlePermissions } from '../lib/gnss/blePermissions';
-import { startNtripIfEnabled, toConnectionConfig, usbDeviceToRemember } from '../lib/gnss/connection';
+import { isUsbSupported, startNtripIfEnabled, toConnectionConfig, usbDeviceToRemember } from '../lib/gnss/connection';
 import { editSettingsAction } from '../modules/settings';
 import { RootState } from '../store';
 import { ExternalGnssSettingsType, NtripSettingsType } from '../types';
@@ -45,7 +45,7 @@ export const useExternalGnss = (): UseExternalGnssReturnType => {
   const [isBleScanning, setIsBleScanning] = useState(false);
 
   const refreshUsbDevices = useCallback(() => {
-    if (!isAvailable) return;
+    if (!isAvailable || !isUsbSupported) return;
     setUsbDevices(GnssReceiver.listUsbDevices());
   }, [isAvailable]);
 
@@ -97,7 +97,8 @@ export const useExternalGnss = (): UseExternalGnssReturnType => {
   const scanBle = useCallback(async () => {
     if (!(await requestBlePermissions())) throw new Error('Bluetooth permission denied');
     setBleDevices([]);
-    GnssReceiver.startBleScan();
+    // iOSは初回に権限ダイアログへの応答を待つ（拒否・Bluetoothオフならここで失敗する）
+    await GnssReceiver.startBleScan();
     setIsBleScanning(true);
   }, []);
 

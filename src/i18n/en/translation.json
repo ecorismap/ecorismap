@@ -1222,6 +1222,7 @@
     "externalGnss": {
       "sectionTitle": "External GNSS receiver (RTK)",
       "description": "Uses the position from a receiver connected via USB or Bluetooth (BLE) for the current location, tracks and points. Falls back to the built-in GPS if positions stop for 5 seconds.",
+      "descriptionBleOnly": "Uses the position from a receiver connected via Bluetooth (BLE) for the current location, tracks and points. Falls back to the built-in GPS if positions stop for 5 seconds.",
       "usbDevices": "USB devices",
       "noDevices": "No USB devices found. Connect the receiver and tap Refresh.",
       "bleDevices": "Bluetooth (BLE) devices",

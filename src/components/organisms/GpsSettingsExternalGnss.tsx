@@ -14,6 +14,7 @@ import {
 import { Pressable } from '../atoms/Pressable';
 import { DEFAULT_GNSS_TRACK_DISTANCE, DEFAULT_GNSS_TRACK_MODE } from '../../lib/gnss/trackThinning';
 import { DEFAULT_EXTERNAL_GNSS_SETTINGS } from '../../lib/gnss/settings';
+import { isUsbSupported } from '../../lib/gnss/connection';
 import { GpsSettingsModalNtrip } from './GpsSettingsModalNtrip';
 import { GpsSettingsModalReceiver } from './GpsSettingsModalReceiver';
 
@@ -60,7 +61,9 @@ export const GpsSettingsExternalGnss = React.memo(() => {
   return (
     <View>
       <Text style={styles.sectionTitle}>{`${t('GpsSettings.externalGnss.sectionTitle')}`}</Text>
-      <Text style={styles.description}>{`${t('GpsSettings.externalGnss.description')}`}</Text>
+      <Text style={styles.description}>{`${t(
+        isUsbSupported ? 'GpsSettings.externalGnss.description' : 'GpsSettings.externalGnss.descriptionBleOnly'
+      )}`}</Text>
 
       <View style={styles.card}>
         <View style={styles.row}>
@@ -113,43 +116,47 @@ export const GpsSettingsExternalGnss = React.memo(() => {
 
         {!isConnected && (
           <View style={styles.devices}>
-            <View style={styles.row}>
-              <Text style={[styles.subTitle, styles.flex]}>{`${t('GpsSettings.externalGnss.usbDevices')}`}</Text>
-              <Pressable style={styles.smallButton} onPress={refreshUsbDevices}>
-                <Text style={styles.smallButtonText}>{`${t('GpsSettings.externalGnss.refresh')}`}</Text>
-              </Pressable>
-            </View>
-            {usbDevices.length === 0 ? (
-              <Text style={styles.note}>{`${t('GpsSettings.externalGnss.noDevices')}`}</Text>
-            ) : (
-              usbDevices.map((device) => (
-                <View key={device.deviceId} style={[styles.row, styles.deviceRow]}>
-                  <Text style={[styles.flex, styles.deviceName]} numberOfLines={1}>
-                    {device.name}
-                  </Text>
-                  <Pressable
-                    style={[
-                      styles.smallButton,
-                      styles.primaryButton,
-                      status.link === 'connecting' && styles.smallButtonDisabled,
-                    ]}
-                    disabled={status.link === 'connecting'}
-                    onPress={() => pressConnectUsb(device.deviceId)}
-                  >
-                    <Text
-                      style={[
-                        styles.smallButtonText,
-                        styles.primaryButtonText,
-                        status.link === 'connecting' && styles.smallButtonTextDisabled,
-                      ]}
-                    >
-                      {`${t('GpsSettings.externalGnss.connect')}`}
-                    </Text>
+            {isUsbSupported && (
+              <>
+                <View style={styles.row}>
+                  <Text style={[styles.subTitle, styles.flex]}>{`${t('GpsSettings.externalGnss.usbDevices')}`}</Text>
+                  <Pressable style={styles.smallButton} onPress={refreshUsbDevices}>
+                    <Text style={styles.smallButtonText}>{`${t('GpsSettings.externalGnss.refresh')}`}</Text>
                   </Pressable>
                 </View>
-              ))
+                {usbDevices.length === 0 ? (
+                  <Text style={styles.note}>{`${t('GpsSettings.externalGnss.noDevices')}`}</Text>
+                ) : (
+                  usbDevices.map((device) => (
+                    <View key={device.deviceId} style={[styles.row, styles.deviceRow]}>
+                      <Text style={[styles.flex, styles.deviceName]} numberOfLines={1}>
+                        {device.name}
+                      </Text>
+                      <Pressable
+                        style={[
+                          styles.smallButton,
+                          styles.primaryButton,
+                          status.link === 'connecting' && styles.smallButtonDisabled,
+                        ]}
+                        disabled={status.link === 'connecting'}
+                        onPress={() => pressConnectUsb(device.deviceId)}
+                      >
+                        <Text
+                          style={[
+                            styles.smallButtonText,
+                            styles.primaryButtonText,
+                            status.link === 'connecting' && styles.smallButtonTextDisabled,
+                          ]}
+                        >
+                          {`${t('GpsSettings.externalGnss.connect')}`}
+                        </Text>
+                      </Pressable>
+                    </View>
+                  ))
+                )}
+              </>
             )}
-            <View style={[styles.row, styles.bleHeader]}>
+            <View style={[styles.row, isUsbSupported && styles.bleHeader]}>
               <Text style={[styles.subTitle, styles.flex]}>{`${t('GpsSettings.externalGnss.bleDevices')}`}</Text>
               <Pressable
                 style={[styles.smallButton, isBleScanning && styles.smallButtonDisabled]}
@@ -206,7 +213,7 @@ export const GpsSettingsExternalGnss = React.memo(() => {
             <Text style={styles.subTitle}>{`${t('GpsSettings.externalGnss.receiverSettings')}`}</Text>
             <Text style={styles.note}>
               {`${t('GpsSettings.externalGnss.antennaHeight')} ${settings.antennaHeight}` +
-                (settings.baudRate !== DEFAULT_EXTERNAL_GNSS_SETTINGS.baudRate
+                (isUsbSupported && settings.baudRate !== DEFAULT_EXTERNAL_GNSS_SETTINGS.baudRate
                   ? `  ${t('GpsSettings.externalGnss.baudRate')} ${settings.baudRate}`
                   : '')}
             </Text>
