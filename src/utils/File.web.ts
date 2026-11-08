@@ -4,6 +4,7 @@ import sanitize from 'sanitize-filename';
 import { ExportResultType, ExportType } from '../types';
 import { Buffer } from 'buffer';
 import { fetchPhoto } from '../lib/firebase/storage';
+import { ExportZipOptions } from './zipProgress';
 // //@ts-ignore
 // import Base64 from 'Base64';
 // import jschardet from 'jschardet';
@@ -25,7 +26,8 @@ export const exportFileFromData = async (data: string, fileName: string): Promis
 export const generateKMZFile = async (
   _kml: string,
   _photos: { name: string; uri: string }[],
-  _exportFileName: string
+  _exportFileName: string,
+  _options?: ExportZipOptions
 ): Promise<string | undefined> => undefined;
 
 export const generateZipBlob = async (
@@ -129,7 +131,9 @@ export const exportGeoFile = async (
   exportFileName: string,
   ext: string,
   // Webはブラウザダウンロード固定のため未使用（ネイティブ版とのシグネチャ互換用）
-  _destination?: 'save' | 'share'
+  _destination?: 'save' | 'share',
+  // Webは一括でBlobを作るため進捗・中止は未対応（シグネチャ互換用）
+  _options?: ExportZipOptions
 ): Promise<ExportResultType> => {
   const zipFile = await generateZipBlob(exportData);
   if (zipFile === undefined) return 'error';

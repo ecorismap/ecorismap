@@ -113,6 +113,23 @@ export const AddLocationPointConfirmAsync = async (
     );
   });
 
+export type TrackExportChoice = 'withPhotos' | 'trackOnly' | 'cancel';
+
+/** 軌跡のエクスポート前に、写真も含めるか（写真が多いと時間がかかる）を選ばせる */
+export const TrackExportConfirmAsync = async (message: string): Promise<TrackExportChoice> =>
+  new Promise((resolve) => {
+    Alert.alert(
+      '',
+      message,
+      [
+        { text: t('TrackSummary.label.exportWithPhotos'), swalType: 'confirm', onPress: () => resolve('withPhotos') },
+        { text: t('TrackSummary.label.exportTrackOnly'), swalType: 'deny', onPress: () => resolve('trackOnly') },
+        { text: t('common.cancel'), swalType: 'cancel', style: 'cancel', onPress: () => resolve('cancel') },
+      ],
+      { cancelable: false }
+    );
+  });
+
 export const ConfirmAsync = async (
   message: string,
   text: { true: string; false: string } = { true: 'Yes', false: 'No' }

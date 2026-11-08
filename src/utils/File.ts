@@ -9,6 +9,10 @@ import { AppID } from '../constants/AppConstants';
 import * as FileSystem from 'expo-file-system/legacy';
 import { Platform } from 'react-native';
 import { fetchPhoto } from '../lib/firebase/storage';
+import { ExportCancelledError, ExportZipOptions, generateZipCancellable, throwIfExportCancelled } from './zipProgress';
+
+// 写真（JPEG等）とKMZは圧縮済みで、DEFLATEしてもほぼ縮まずJSでの圧縮に時間だけかかるため無圧縮で格納する
+const isPrecompressed = (type: ExportType) => type === 'PHOTO' || type === 'KMZ';
 
 /**
  * ファイルパスのUnicode正規化を行う関数
@@ -34,12 +38,14 @@ async function createZipWithJSZipDirect(
     type: ExportType;
   }[],
   sourcePath: string,
-  targetPath: string
+  targetPath: string,
+  options?: ExportZipOptions
 ): Promise<string | undefined> {
   try {
     const jszip = new JSZip();
     
     for (const d of exportData) {
+      throwIfExportCancelled(options);
       // フォルダ名を正規化（空の場合は空文字列）
       const folderName = sanitize(d.folder) === '' ? '' : 
                         sanitize(d.folder).normalize('NFC') + '/';
@@ -60,7 +66,10 @@ async function createZipWithJSZipDirect(
           // ファイルが存在する場合のみ追加
           if (await RNFS.exists(filePath)) {
             const fileContent = await RNFS.readFile(filePath, 'base64');
-            jszip.file(fullPath, fileContent, { base64: true });
+            jszip.file(fullPath, fileContent, {
+              base64: true,
+              ...(isPrecompressed(d.type) && { compression: 'STORE' as const }),
+            });
           }
         } catch (e) {
           console.warn(`Failed to read file for ZIP: ${filePath}`, e);
@@ -73,17 +82,18 @@ async function createZipWithJSZipDirect(
     
     // ZIPファイルを生成
     // level 6: 写真(JPEG)は再圧縮がほぼ効かないため、level 9との差は僅少でCPU時間を大幅に削減できる
-    const zipContent = await jszip.generateAsync({
-      type: 'base64',
-      compression: 'DEFLATE',
-      compressionOptions: { level: 6 }
-    });
+    const zipContent = await generateZipCancellable(
+      jszip,
+      { type: 'base64', compression: 'DEFLATE', compressionOptions: { level: 6 } },
+      options
+    );
     
     // ZIPファイルを保存
     await RNFS.writeFile(targetPath, zipContent, 'base64');
     
     return targetPath;
   } catch (error) {
+    if (error instanceof ExportCancelledError) throw error;
     console.error('Error creating ZIP with JSZip:', error);
     return undefined;
   }
@@ -94,7 +104,8 @@ async function createZipWithJSZipDirect(
 export const generateKMZFile = async (
   kml: string,
   photos: { name: string; uri: string }[],
-  exportFileName: string
+  exportFileName: string,
+  options?: ExportZipOptions
 ): Promise<string | undefined> => {
   try {
     const fileName = sanitize(exportFileName.normalize('NFC'));
@@ -105,22 +116,24 @@ export const generateKMZFile = async (
     // KMZのルートに置いたdoc.kmlがGoogle Earthの読み込み対象になる
     jszip.file('doc.kml', kml);
     for (const photo of photos) {
+      throwIfExportCancelled(options);
       // RNFSのreadFileはfile://スキームを解釈しないため実パスに直す
       const photoPath = photo.uri.startsWith('file://')
         ? decodeURIComponent(photo.uri.replace('file://', ''))
         : photo.uri;
       if (!(await RNFS.exists(photoPath))) continue;
       const content = await RNFS.readFile(photoPath, 'base64');
-      jszip.file(sanitize(photo.name).normalize('NFC'), content, { base64: true });
+      jszip.file(sanitize(photo.name).normalize('NFC'), content, { base64: true, compression: 'STORE' });
     }
-    const zipContent = await jszip.generateAsync({
-      type: 'base64',
-      compression: 'DEFLATE',
-      compressionOptions: { level: 6 },
-    });
+    const zipContent = await generateZipCancellable(
+      jszip,
+      { type: 'base64', compression: 'DEFLATE', compressionOptions: { level: 6 } },
+      options
+    );
     await RNFS.writeFile(targetPath, zipContent, 'base64');
     return targetPath;
   } catch (e) {
+    if (e instanceof ExportCancelledError) throw e;
     console.error('Error creating KMZ:', e);
     return undefined;
   }
@@ -137,7 +150,8 @@ export const generateZipFile = async (
   }[],
   exportFileName: string,
   // ecorismap拡張子は廃止済み（読み込みのみ互換維持）
-  ext: 'zip'
+  ext: 'zip',
+  options?: ExportZipOptions
 ): Promise<string | undefined> => {
   const fileName = sanitize(exportFileName.normalize('NFC'));
   const sourcePath = `${RNFS.CachesDirectoryPath}/export/${fileName}`;
@@ -146,6 +160,7 @@ export const generateZipFile = async (
     await RNFS.mkdir(sourcePath);
     //データ、写真を出力フォルダにコピー
     for (const d of exportData) {
+      throwIfExportCancelled(options);
       // フォルダ名もUnicode正規化を適用（空の場合は空文字列のまま）
       const folder = sanitize(d.folder).normalize('NFC');
       if (folder !== '') {
@@ -223,13 +238,18 @@ export const generateZipFile = async (
     //ファイルを出力フォルダに書き出し
 
     // すべてのプラットフォームでJSZipを使用（Web版と同じ方式）
-    const path = await createZipWithJSZipDirect(exportData, sourcePath, targetPath);
+    const path = await createZipWithJSZipDirect(exportData, sourcePath, targetPath, options);
 
     if (path !== undefined) {
       await RNFS.unlink(sourcePath);
     }
     return path;
   } catch (e) {
+    if (e instanceof ExportCancelledError) {
+      // 途中まで書き出した作業フォルダを残さない
+      await RNFS.unlink(sourcePath).catch(() => undefined);
+      throw e;
+    }
     console.log(e);
     return undefined;
   }
@@ -247,17 +267,20 @@ export const exportGeoFile = async (
   exportFileName: string,
   // ecorismap拡張子は廃止済み（読み込みのみ互換維持）
   ext: 'zip',
-  destination?: 'save' | 'share'
+  destination?: 'save' | 'share',
+  // 中止されたらExportCancelledErrorを投げる
+  options?: ExportZipOptions
 ): Promise<ExportResultType> => {
   try {
     const fileName = sanitize(exportFileName.normalize('NFC'));
-    const path = await generateZipFile(exportData, exportFileName, ext);
+    const path = await generateZipFile(exportData, exportFileName, ext, options);
     if (path === undefined) return 'error';
 
     const result = await exportFileFromUri(path, `${fileName}.${ext}`, undefined, destination);
     await RNFS.unlink(path);
     return result;
   } catch (e) {
+    if (e instanceof ExportCancelledError) throw e;
     console.log(e);
     return 'error';
   }
