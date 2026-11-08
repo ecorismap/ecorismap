@@ -1355,7 +1355,34 @@ export function smoothLine(line: LocationType[], windowSize: number): LocationTy
   });
 }
 
+/**
+ * 軌跡を保存する前に整える。内蔵GPSの区間は移動平均で平滑化してから間引く。
+ * 外部GNSS受信機の区間（fixQualityを持つ点）はcm級の位置と測位品質・楕円体高をそのまま残すため手を付けない
+ */
 export const cleanupLine = (line: LocationType[]): LocationType[] => {
+  if (!line.some((point) => point.fixQuality !== undefined)) return cleanupInternalLine(line);
+
+  const result: LocationType[] = [];
+  let run: LocationType[] = [];
+  let runIsExternal = line[0]?.fixQuality !== undefined;
+  const flush = () => {
+    if (run.length === 0) return;
+    result.push(...(runIsExternal ? run : cleanupInternalLine(run)));
+    run = [];
+  };
+  for (const point of line) {
+    const isExternal = point.fixQuality !== undefined;
+    if (isExternal !== runIsExternal) {
+      flush();
+      runIsExternal = isExternal;
+    }
+    run.push(point);
+  }
+  flush();
+  return result;
+};
+
+const cleanupInternalLine = (line: LocationType[]): LocationType[] => {
   if (line.length < 10) return line;
 
   const smoothedLine = smoothLine(line, 3);

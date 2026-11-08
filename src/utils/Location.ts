@@ -3,6 +3,7 @@ import * as turf from '@turf/turf';
 import { trackLogMMKV } from './mmkvStorage';
 import { cleanupLine } from './Coords';
 import { TRACK_ACCURACY, STALE_LOCATION_AGE_MS } from '../constants/AppConstants';
+import { trackFixColor } from '../lib/gnss/toLocation';
 
 // チャンク管理用の定数
 export const CHUNK_SIZE = 500;
@@ -538,4 +539,16 @@ export const splitTrackByAccuracy = (locations: LocationType[]): TrackSegmentTyp
   }
 
   return segments;
+};
+
+/**
+ * 保存した軌跡の上に重ねる、RTKのFIX/FLOAT区間（色付き）だけを取り出す。
+ * 内蔵GPS・単独測位などの区間は含めない（下に敷いたレイヤ色の線がそのまま見える）
+ */
+export const splitTrackFixSegments = (locations: LocationType[]): { coordinates: LocationType[]; color: string }[] => {
+  if (!locations.some((location) => location.fixQuality !== undefined)) return [];
+  return splitTrackByAccuracy(locations).flatMap((segment) => {
+    const color = trackFixColor(segment.fixQuality);
+    return color !== undefined && segment.coordinates.length >= 2 ? [{ coordinates: segment.coordinates, color }] : [];
+  });
 };

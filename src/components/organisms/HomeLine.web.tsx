@@ -10,6 +10,8 @@ import { HomeMapMemoBrush } from './HomeMapMemoBrush';
 import { COLOR } from '../../constants/AppConstants';
 import { generateLabel, getColor, getLineWidthAtZoom, SYMBOL_BASE_SIZE_PX } from '../../utils/Layer';
 import { LineArrow } from '../atoms';
+import { TRACK_LAYER_ID } from '../../modules/layers';
+import { splitTrackFixSegments } from '../../utils/Location';
 
 interface Props {
   data: LineRecordType[];
@@ -115,7 +117,58 @@ export const Line = React.memo((props: Props) => {
         displayName={displayName}
         zoom={zoom}
       />
+      {/* 保存した軌跡は記録中と同じくRTKのFIX/FLOAT区間を色分けする（選択中の軌跡は黄色の強調を優先） */}
+      {layer.id === TRACK_LAYER_ID && (
+        <TrackFixOverlay
+          data={lineRecords}
+          sourceId={`${layer.id}_${userId}_fix`}
+          selectedId={selectedRecord?.layerId === layer.id ? selectedRecord.record?.id : undefined}
+          lineWidth={layer.colorStyle.lineWidth ?? 1.5}
+        />
+      )}
     </>
+  );
+});
+
+interface TrackFixOverlayProps {
+  data: LineRecordType[];
+  sourceId: string;
+  selectedId: string | undefined;
+  lineWidth: number;
+}
+
+const TrackFixOverlay = React.memo((props: TrackFixOverlayProps) => {
+  const { data, sourceId, selectedId, lineWidth } = props;
+  const geojson = useMemo(
+    () => ({
+      type: 'FeatureCollection' as const,
+      features: data
+        .filter((feature) => feature.id !== selectedId)
+        .flatMap((feature) =>
+          splitTrackFixSegments(feature.coords ?? []).map((segment) => ({
+            type: 'Feature' as const,
+            properties: { color: segment.color },
+            geometry: {
+              type: 'LineString' as const,
+              coordinates: segment.coordinates.map((c) => [c.longitude, c.latitude]),
+            },
+          }))
+        ),
+    }),
+    [data, selectedId]
+  );
+  if (geojson.features.length === 0) return null;
+  return (
+    //@ts-ignore
+    <Source id={sourceId} type="geojson" data={geojson}>
+      {/*// @ts-ignore*/}
+      <Layer
+        id={sourceId}
+        type="line"
+        paint={{ 'line-color': ['get', 'color'], 'line-width': lineWidth }}
+        layout={{ 'line-cap': 'butt', 'line-join': 'round' }}
+      />
+    </Source>
   );
 });
 

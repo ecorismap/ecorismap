@@ -2581,6 +2581,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
               timestamp,
               altitude: nearest.point.altitude,
               speed: nearest.point.speed,
+              accuracy: nearest.point.accuracy,
               fixQuality: nearest.point.fixQuality,
               ellipsoidHeight: nearest.point.ellipsoidHeight,
             });
@@ -2613,6 +2614,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
               timestamp,
               altitude: nearest.point.altitude,
               speed: nearest.point.speed,
+              accuracy: nearest.point.accuracy,
               fixQuality: nearest.point.fixQuality,
               ellipsoidHeight: nearest.point.ellipsoidHeight,
             });

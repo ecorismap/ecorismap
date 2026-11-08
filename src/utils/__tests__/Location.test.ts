@@ -8,6 +8,7 @@ import {
   checkLocations,
   isLowAccuracy,
   splitTrackByAccuracy,
+  splitTrackFixSegments,
   addLocationsToChunks,
   checkAndStoreLocations,
   getDisplayBuffer,
@@ -619,5 +620,36 @@ describe('resetTrackLogCache', () => {
     // 別コンテキスト相当: キャッシュを破棄 → 次回アクセスはMMKVから再構築
     resetTrackLogCache();
     expect(getDisplayBuffer()).toHaveLength(3);
+  });
+});
+
+describe('splitTrackFixSegments', () => {
+  const point = (i: number, fixQuality?: number): LocationType => ({
+    latitude: 35 + i * 0.0001,
+    longitude: 135,
+    timestamp: 1_600_000_000_000 + i * 1000,
+    accuracy: 1,
+    ...(fixQuality !== undefined && { fixQuality }),
+  });
+
+  it('測位品質を持たない軌跡（内蔵GPSのみ）は空', () => {
+    expect(splitTrackFixSegments([point(0), point(1), point(2)])).toEqual([]);
+  });
+
+  it('FIX/FLOATの区間だけを色付きで返し、単独測位や内蔵GPSの区間は含めない', () => {
+    const line = [point(0), point(1), point(2, 4), point(3, 4), point(4, 5), point(5, 5), point(6, 1), point(7, 1)];
+    const segments = splitTrackFixSegments(line);
+    expect(segments.map((s) => s.color)).toEqual(['#2E9E44', '#F29C00']);
+    // 記録中の表示と同じく、区間は前の区間の最後の点から始まり線がつながる
+    expect(segments[0].coordinates.map((c) => c.timestamp)).toEqual([
+      line[1].timestamp,
+      line[2].timestamp,
+      line[3].timestamp,
+    ]);
+    expect(segments[1].coordinates.map((c) => c.timestamp)).toEqual([
+      line[3].timestamp,
+      line[4].timestamp,
+      line[5].timestamp,
+    ]);
   });
 });

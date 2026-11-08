@@ -108,6 +108,8 @@ export interface TrackPointInfoType {
   timestamp?: number;
   altitude?: number | null;
   speed?: number | null;
+  // 水平精度[m]
+  accuracy?: number | null;
   // 外部GNSS受信機で記録した点のみ
   fixQuality?: number;
   ellipsoidHeight?: number;
