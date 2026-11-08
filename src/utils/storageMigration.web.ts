@@ -70,6 +70,13 @@ export const migrateToMMKV = async (_options: {
 /**
  * Web版では実装不要
  */
+export const markMigrationExported = (): void => {
+  // No-op
+};
+
+/**
+ * Web版では実装不要
+ */
 export const skipMigration = (): void => {
   // No-op
 };

@@ -326,6 +326,15 @@ export const migrateToMMKV = async (options: {
 };
 
 /**
+ * 以前のデータを書き出したので、次回から確認しないようにする
+ */
+export const markMigrationExported = (): void => {
+  storage.set('migration_completed_v2', 'true');
+  storage.remove('migration_postponed');
+  storage.remove('migration_postpone_date');
+};
+
+/**
  * 移行をスキップする
  */
 export const skipMigration = (): void => {
