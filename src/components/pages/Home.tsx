@@ -257,6 +257,7 @@ export default function HomeScreen() {
     pressZoomOut,
     pressCompass,
     pressGPS,
+    openGpsSettings,
     panResponder,
     isDrawLineVisible,
     setPoiInfo,
@@ -757,7 +758,7 @@ export default function HomeScreen() {
               onLongPressCompass={toggleDirectionLine}
             />
           )}
-          {!(downloadMode || exportPDFMode) && <HomeGPSButton gpsState={gpsState} onPressGPS={pressGPS} />}
+          {!(downloadMode || exportPDFMode) && <HomeGPSButton gpsState={gpsState} onPressGPS={pressGPS} onOpenGpsSettings={openGpsSettings} />}
           {<HomeAttributionText bottom={1 + insets.bottom} attribution={attribution} />}
           {/* HomeInfoToolButtonを非表示にする
           {!(downloadMode || exportPDFMode || editPositionMode) && <HomeInfoToolButton />}

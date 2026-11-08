@@ -36,6 +36,8 @@ export type NtripConnectionConfig = {
 
 export type NmeaEvent = { sentences: string[]; receivedAt: number };
 
+export type UsbAttachedEvent = { deviceId: number; vendorId: number; productId: number };
+
 export type BleDeviceInfo = {
   address: string;
   name: string;
@@ -48,6 +50,7 @@ type GnssReceiverEvents = {
   onNmea: (event: NmeaEvent) => void;
   onStatus: (status: GnssReceiverStatus) => void;
   onBleDevice: (device: BleDeviceInfo) => void;
+  onUsbAttached: (device: UsbAttachedEvent) => void;
 };
 
 declare class GnssReceiverNative extends NativeModule<GnssReceiverEvents> {
@@ -92,3 +95,6 @@ export const addStatusListener = (listener: (status: GnssReceiverStatus) => void
 
 export const addBleDeviceListener = (listener: (device: BleDeviceInfo) => void): EventSubscription =>
   requireNative().addListener('onBleDevice', listener);
+
+export const addUsbAttachedListener = (listener: (device: UsbAttachedEvent) => void): EventSubscription =>
+  requireNative().addListener('onUsbAttached', listener);

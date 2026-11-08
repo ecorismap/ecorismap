@@ -4,6 +4,8 @@ import { COLOR } from '../../constants/AppConstants';
 import { t } from '../../i18n/config';
 import { ExternalGnssSettingsType } from '../../types';
 import { Pressable } from '../atoms/Pressable';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { DEFAULT_EXTERNAL_GNSS_SETTINGS } from '../../lib/gnss/settings';
 import {
   DEFAULT_GNSS_TRACK_DISTANCE,
   DEFAULT_GNSS_TRACK_MODE,
@@ -32,6 +34,7 @@ export const GpsSettingsModalReceiver = React.memo((props: Props) => {
   const [baudRate, setBaudRate] = useState(values.baudRate);
   const [trackMode, setTrackMode] = useState<GnssTrackMode>(DEFAULT_GNSS_TRACK_MODE);
   const [trackDistance, setTrackDistance] = useState(DEFAULT_GNSS_TRACK_DISTANCE);
+  const [showAdvanced, setShowAdvanced] = useState(false);
 
   useEffect(() => {
     if (!visible) return;
@@ -39,6 +42,8 @@ export const GpsSettingsModalReceiver = React.memo((props: Props) => {
     setBaudRate(values.baudRate);
     setTrackMode(values.trackMode ?? DEFAULT_GNSS_TRACK_MODE);
     setTrackDistance(values.trackDistance ?? DEFAULT_GNSS_TRACK_DISTANCE);
+    // 既定値から変えてあるときは、設定していることが分かるよう開いて見せる
+    setShowAdvanced(values.baudRate !== DEFAULT_EXTERNAL_GNSS_SETTINGS.baudRate);
   }, [visible, values]);
 
   const pressSave = () => {
@@ -64,18 +69,6 @@ export const GpsSettingsModalReceiver = React.memo((props: Props) => {
             keyboardType="decimal-pad"
           />
           <Text style={styles.note}>{`${t('GpsSettings.externalGnss.antennaHeightNote')}`}</Text>
-          <Text style={styles.label}>{`${t('GpsSettings.externalGnss.baudRate')}`}</Text>
-          <View style={styles.wrapRow}>
-            {BAUD_RATES.map((rate) => (
-              <Pressable
-                key={rate}
-                style={[styles.segment, baudRate === rate && styles.segmentSelected]}
-                onPress={() => setBaudRate(rate)}
-              >
-                <Text style={baudRate === rate ? styles.segmentTextSelected : undefined}>{rate}</Text>
-              </Pressable>
-            ))}
-          </View>
           <Text style={styles.label}>{`${t('GpsSettings.externalGnss.track.title')}`}</Text>
           <View style={styles.wrapRow}>
             {TRACK_MODES.map((mode) => (
@@ -104,6 +97,32 @@ export const GpsSettingsModalReceiver = React.memo((props: Props) => {
             </View>
           )}
           <Text style={styles.note}>{`${t(`GpsSettings.externalGnss.track.${trackMode}Note`)}`}</Text>
+          {/* ボーレートはUSBシリアル変換を使う受信機だけに要る設定なので、ふだんは畳んでおく */}
+          <Pressable style={styles.advancedToggle} onPress={() => setShowAdvanced((v) => !v)}>
+            <MaterialCommunityIcons
+              name={showAdvanced ? 'chevron-down' : 'chevron-right'}
+              size={18}
+              color={COLOR.GRAY4}
+            />
+            <Text style={styles.advancedToggleText}>{`${t('GpsSettings.externalGnss.advanced')}`}</Text>
+          </Pressable>
+          {showAdvanced && (
+            <>
+              <Text style={styles.label}>{`${t('GpsSettings.externalGnss.baudRate')}`}</Text>
+              <View style={styles.wrapRow}>
+                {BAUD_RATES.map((rate) => (
+                  <Pressable
+                    key={rate}
+                    style={[styles.segment, baudRate === rate && styles.segmentSelected]}
+                    onPress={() => setBaudRate(rate)}
+                  >
+                    <Text style={baudRate === rate ? styles.segmentTextSelected : undefined}>{rate}</Text>
+                  </Pressable>
+                ))}
+              </View>
+              <Text style={styles.note}>{`${t('GpsSettings.externalGnss.baudRateNote')}`}</Text>
+            </>
+          )}
           <View style={styles.buttons}>
             <Pressable style={styles.button} onPress={pressSave}>
               <Text>{`${t('common.ok')}`}</Text>
@@ -119,6 +138,16 @@ export const GpsSettingsModalReceiver = React.memo((props: Props) => {
 });
 
 const styles = StyleSheet.create({
+  advancedToggle: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    marginTop: 14,
+  },
+  advancedToggleText: {
+    color: COLOR.GRAY4,
+    fontSize: 13,
+    marginLeft: 2,
+  },
   button: {
     alignItems: 'center',
     backgroundColor: COLOR.GRAY1,

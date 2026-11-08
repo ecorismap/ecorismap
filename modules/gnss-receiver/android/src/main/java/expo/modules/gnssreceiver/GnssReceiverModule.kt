@@ -53,7 +53,12 @@ class GnssReceiverModule : Module() {
   override fun definition() = ModuleDefinition {
     Name("GnssReceiver")
 
-    Events("onNmea", "onStatus", "onBleDevice")
+    Events("onNmea", "onStatus", "onBleDevice", "onUsbAttached")
+
+    // 受信機のUSBを挿したことを知らせる（前回の受信機への自動再接続に使う）
+    OnCreate {
+      registerUsbAttachReceiver()
+    }
 
     OnStartObserving {
       GnssSession.listener = object : GnssSessionListener {
@@ -73,6 +78,7 @@ class GnssReceiverModule : Module() {
 
     OnDestroy {
       stopBleScan()
+      unregisterUsbAttachReceiver()
     }
 
     Function("getStatus") { GnssSession.status() }
@@ -192,6 +198,38 @@ class GnssReceiverModule : Module() {
     val callback = scanCallback ?: return
     scanCallback = null
     runCatching { bluetoothManager.adapter?.bluetoothLeScanner?.stopScan(callback) }
+  }
+
+  private var usbAttachReceiver: BroadcastReceiver? = null
+
+  private fun registerUsbAttachReceiver() {
+    val ctx = appContext.reactContext ?: return
+    val receiver = object : BroadcastReceiver() {
+      override fun onReceive(c: Context, intent: Intent) {
+        if (intent.action != UsbManager.ACTION_USB_DEVICE_ATTACHED) return
+        @Suppress("DEPRECATION")
+        val device = intent.getParcelableExtra<android.hardware.usb.UsbDevice>(UsbManager.EXTRA_DEVICE) ?: return
+        sendEvent(
+          "onUsbAttached",
+          mapOf("deviceId" to device.deviceId, "vendorId" to device.vendorId, "productId" to device.productId),
+        )
+      }
+    }
+    val filter = IntentFilter(UsbManager.ACTION_USB_DEVICE_ATTACHED)
+    // システムが送るブロードキャストを受けるので公開する（偽の通知が来ても接続を試みるだけ）
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+      ctx.registerReceiver(receiver, filter, Context.RECEIVER_EXPORTED)
+    } else {
+      @Suppress("UnspecifiedRegisterReceiverFlag")
+      ctx.registerReceiver(receiver, filter)
+    }
+    usbAttachReceiver = receiver
+  }
+
+  private fun unregisterUsbAttachReceiver() {
+    val receiver = usbAttachReceiver ?: return
+    usbAttachReceiver = null
+    runCatching { appContext.reactContext?.unregisterReceiver(receiver) }
   }
 
   private fun requestUsbPermission(manager: UsbManager, device: android.hardware.usb.UsbDevice, onResult: (Boolean) -> Unit) {

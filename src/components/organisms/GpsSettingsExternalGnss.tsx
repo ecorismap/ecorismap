@@ -1,4 +1,4 @@
-import React, { useContext, useState } from 'react';
+import React, { useContext, useMemo, useState } from 'react';
 import { StyleSheet, Switch, Text, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { COLOR } from '../../constants/AppConstants';
@@ -13,6 +13,7 @@ import {
 } from '../../lib/gnss/toLocation';
 import { Pressable } from '../atoms/Pressable';
 import { DEFAULT_GNSS_TRACK_DISTANCE, DEFAULT_GNSS_TRACK_MODE } from '../../lib/gnss/trackThinning';
+import { DEFAULT_EXTERNAL_GNSS_SETTINGS } from '../../lib/gnss/settings';
 import { GpsSettingsModalNtrip } from './GpsSettingsModalNtrip';
 import { GpsSettingsModalReceiver } from './GpsSettingsModalReceiver';
 
@@ -44,6 +45,17 @@ export const GpsSettingsExternalGnss = React.memo(() => {
   const { status, fix } = snapshot;
   const isConnected = status.link === 'connected';
   const ntripConfigured = settings.ntrip.host !== '' && settings.ntrip.mountpoint !== '';
+  // モーダルは values が変わると入力を保存値に戻す。受信機の接続中は位置が届くたびにこの画面が
+  // 描き直されるので、毎回新しいオブジェクトを渡すと選んだ値がすぐ元に戻ってしまう
+  const receiverValues = useMemo(
+    () => ({
+      antennaHeight: settings.antennaHeight,
+      baudRate: settings.baudRate,
+      trackMode: settings.trackMode,
+      trackDistance: settings.trackDistance,
+    }),
+    [settings.antennaHeight, settings.baudRate, settings.trackMode, settings.trackDistance]
+  );
 
   return (
     <View>
@@ -63,6 +75,11 @@ export const GpsSettingsExternalGnss = React.memo(() => {
           )}
         </View>
         {status.linkError !== null && <Text style={styles.error}>{status.linkError}</Text>}
+        {settings.autoConnect && settings.lastDevice !== undefined && (
+          <Text style={styles.note}>
+            {`${t('GpsSettings.externalGnss.autoConnectNote', { name: settings.lastDevice.name })}`}
+          </Text>
+        )}
 
         {isConnected &&
           (fix === null ? (
@@ -188,9 +205,10 @@ export const GpsSettingsExternalGnss = React.memo(() => {
           <View style={styles.flex}>
             <Text style={styles.subTitle}>{`${t('GpsSettings.externalGnss.receiverSettings')}`}</Text>
             <Text style={styles.note}>
-              {`${t('GpsSettings.externalGnss.antennaHeight')} ${settings.antennaHeight}  ${t(
-                'GpsSettings.externalGnss.baudRate'
-              )} ${settings.baudRate}`}
+              {`${t('GpsSettings.externalGnss.antennaHeight')} ${settings.antennaHeight}` +
+                (settings.baudRate !== DEFAULT_EXTERNAL_GNSS_SETTINGS.baudRate
+                  ? `  ${t('GpsSettings.externalGnss.baudRate')} ${settings.baudRate}`
+                  : '')}
             </Text>
             <Text style={styles.note}>
               {`${t('GpsSettings.externalGnss.track.title')} ${t(
@@ -239,12 +257,7 @@ export const GpsSettingsExternalGnss = React.memo(() => {
 
       <GpsSettingsModalReceiver
         visible={receiverModalVisible}
-        values={{
-          antennaHeight: settings.antennaHeight,
-          baudRate: settings.baudRate,
-          trackMode: settings.trackMode,
-          trackDistance: settings.trackDistance,
-        }}
+        values={receiverValues}
         pressOK={(values) => {
           updateReceiverSettings(values);
           setReceiverModalVisible(false);

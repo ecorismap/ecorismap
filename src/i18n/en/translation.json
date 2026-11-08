@@ -1238,6 +1238,10 @@
         "connected": "Connected"
       },
       "fallback": "Built-in GPS",
+      "notConnected": "External GNSS receiver: not connected",
+      "autoConnectWaiting": "Connects automatically when {{name}} is available",
+      "openSettings": "Open GPS settings",
+      "autoConnectNote": "Connects automatically to {{name}} from now on",
       "waitingPosition": "Waiting for position",
       "satellites": "Sats",
       "accuracy": "Accuracy",
@@ -1248,6 +1252,8 @@
       "antennaHeight": "Antenna height (m)",
       "antennaHeightNote": "Height from the ground to the antenna. Subtracted from the recorded elevation.",
       "baudRate": "Baud rate",
+      "advanced": "Advanced",
+      "baudRateNote": "Only for receivers that use a USB-serial converter (FTDI, CP210x, CH340, etc.); match the receiver's output speed. Not used for receivers connected directly over USB (such as the ZED-F9P) or over Bluetooth.",
       "edit": "Edit",
       "track": {
         "title": "Track recording",
