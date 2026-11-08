@@ -92,7 +92,13 @@ export const useTrackPhotos = (coords: LocationType[] | undefined, enabled: bool
     (async () => {
       const MediaLibrary = requireMediaLibrary();
 
-      const permission = await MediaLibrary.requestPermissionsAsync(false, ['photo']);
+      // 許可済み（「選択した写真のみ」を含む）なら要求し直さない。Android 13+では要求のたびに
+      // 写真選択画面が出て、軌跡を開くたびに選ばされる（追加の選択はpresentLimitedPickerから）
+      const current = await MediaLibrary.getPermissionsAsync(false, ['photo']);
+      const permission =
+        current.granted || !current.canAskAgain
+          ? current
+          : await MediaLibrary.requestPermissionsAsync(false, ['photo']);
       if (isCancelled) return;
       if (!permission.granted) {
         applyTrackPhotos([]);
