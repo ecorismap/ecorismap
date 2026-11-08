@@ -643,7 +643,9 @@
       "noLocationData": "There are no records with a location."
     },
     "confirm": {
-      "deleteData": "Do you want to delete the data?"
+      "deleteData": "Do you want to delete the data?",
+      "exportData": "Export {{count}} records?",
+      "exportTrackData": "Export {{count}} tracks?\nTo export a single track with photos as GPX or a Google Earth file, use the Track Summary."
     },
     "navigation": {
       "title": "Data list"
@@ -659,6 +661,7 @@
     },
     "message": {
       "exporting": "Exporting data...",
+      "exportingZip": "Creating file {{percent}}%",
       "filterResult": "{{count}} records"
     }
   },
@@ -1288,13 +1291,13 @@
       "titleRecording": "Track Summary (Recording)"
     },
     "label": {
-      "export": "Export track",
+      "export": "Export track (photos / Google Earth)",
       "exportingPhotos": "Preparing photos {{current}}/{{total}}",
       "exportingFile": "Creating file...",
       "exportingKmz": "Creating Google Earth file {{percent}}%",
       "exportingZip": "Creating file {{percent}}%",
-      "confirmExport": "Export the track ({{points}} points)?",
-      "confirmExportWithPhotos": "Export the track ({{points}} points) and {{photos}} photos?\nIncluding photos takes longer.",
+      "confirmExport": "Export the track ({{points}} points)?\nGPX, a Google Earth file and summary charts will be created.",
+      "confirmExportWithPhotos": "Export the track ({{points}} points) and {{photos}} photos?\nGPX, a Google Earth file and summary charts will be created. Including photos takes longer.",
       "exportWithPhotos": "Include photos",
       "exportTrackOnly": "Track only",
       "distance": "Distance",

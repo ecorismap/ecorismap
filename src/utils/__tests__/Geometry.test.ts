@@ -20,7 +20,7 @@ import point_gpx from '../../__tests__/resources/point_gpx';
 import invalid_point_gpx from '../../__tests__/resources/invalid_point_gpx';
 import { layers } from '../../__tests__/resources/layer';
 import { expectedLineGpx, expectedPointGpx, line_record, point_record } from '../../__tests__/resources/record';
-import { LayerType } from '../../types';
+import { LayerType, LocationType } from '../../types';
 //@ts-ignore
 import MockDate from 'mockdate';
 jest.mock('ulid', () => ({ ulid: () => '1234' }));
@@ -312,6 +312,17 @@ describe('generateGPX', () => {
   });
   it('return line gpx from data', () => {
     expect(generateGPX(line_record, 'LINE')).toBe(expectedLineGpx);
+  });
+  it('外部GNSS受信機の点は軌跡サマリーのGPXと同じくgeoidheightを出す', () => {
+    const coords = line_record[0].coords as LocationType[];
+    const record = { ...line_record[0], coords: [{ ...coords[0], ellipsoidHeight: 139.4567 }, ...coords.slice(1)] };
+    const gpx = generateGPX([record], 'LINE');
+    expect(gpx).toContain(
+      `        <ele>100</ele>
+        <time>2021-02-02T00:28:38.000Z</time>
+        <geoidheight>39.457</geoidheight>`
+    );
+    expect(gpx.match(/<geoidheight>/g)).toHaveLength(1);
   });
 });
 

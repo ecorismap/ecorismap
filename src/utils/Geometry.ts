@@ -806,9 +806,28 @@ export const generateKML = (data: RecordType[], layer: LayerType) => {
     pretty: true,
   });
 };
+// 軌跡の点をtrkptとして書き出す。データ一覧（generateGPX）と軌跡サマリー（generateTrackGPXWithPhotos）の
+// 両方から使い、点ごとの属性（標高・時刻・ジオイド高）が出口によって食い違わないようにする
+const appendTrackPoints = (trkseg: xmlBuilder.XMLElement, coords: LocationType[]) => {
+  coords.forEach((coord) => {
+    const trkpt = trkseg.ele('trkpt').att('lat', coord.latitude).att('lon', coord.longitude);
+    // GPX 1.1スキーマの要素順: ele → time → magvar → geoidheight。時刻はUTC（ISO形式）
+    if (coord.altitude !== null && coord.altitude !== undefined) {
+      trkpt.ele('ele', coord.altitude);
+    }
+    if (coord.timestamp) {
+      trkpt.ele('time', new Date(coord.timestamp).toISOString());
+    }
+    // 外部GNSS受信機の点は、GPX 1.1のgeoidheight（楕円体からのジオイド高。GGAと同じ定義）を残す。
+    // 楕円体高 = ele + geoidheight で復元できる
+    if (typeof coord.ellipsoidHeight === 'number' && typeof coord.altitude === 'number') {
+      trkpt.ele('geoidheight', Number((coord.ellipsoidHeight - coord.altitude).toFixed(3)));
+    }
+  });
+};
+
 // TrackSummaryからのエクスポート用: 軌跡(trk)と軌跡上の写真(wpt)を1つのGPXにまとめる。
-// 既存generateGPXとは独立実装とする（要素順をGPX 1.1スキーマの正規順=wpt→trk、
-// trkpt内はele→timeにし、時刻をUTCのISO形式で出力するため。既存関数の出力は変えない）
+// GPX 1.1スキーマの正規順=wpt→trkで出力する
 export interface TrackExportPhoto {
   filename: string; // wptのname・link href（zip内の写真ファイル名と一致させる）
   timestamp: number; // 撮影時刻（ms）
@@ -838,21 +857,7 @@ export const generateTrackGPXWithPhotos = (
 
   const trk = gpx.ele('trk');
   trk.ele('name', trackName);
-  const trkseg = trk.ele('trkseg');
-  coords.forEach((coord) => {
-    const trkpt = trkseg.ele('trkpt').att('lat', coord.latitude).att('lon', coord.longitude);
-    if (coord.altitude !== null && coord.altitude !== undefined) {
-      trkpt.ele('ele', coord.altitude);
-    }
-    if (coord.timestamp !== undefined) {
-      trkpt.ele('time', new Date(coord.timestamp).toISOString());
-    }
-    // 外部GNSS受信機の点は、GPX 1.1のgeoidheight（楕円体からのジオイド高。GGAと同じ定義）を残す。
-    // 楕円体高 = ele + geoidheight で復元できる（要素順はele→time→magvar→geoidheight）
-    if (typeof coord.ellipsoidHeight === 'number' && typeof coord.altitude === 'number') {
-      trkpt.ele('geoidheight', Number((coord.ellipsoidHeight - coord.altitude).toFixed(3)));
-    }
-  });
+  appendTrackPoints(trk.ele('trkseg'), coords);
 
   return gpx.end({
     allowEmpty: true,
@@ -1076,18 +1081,7 @@ export const generateGPX = (data: RecordType[], type: FeatureType) => {
           if (desc) {
             trk.ele('desc', desc);
           }
-          const trkseg = trk.ele('trkseg');
-          line.coords.forEach((coord) => {
-            //console.log(dayjs.unix(coord.timestamp!).toISOString());
-            const trkpt = trkseg.ele('trkpt').att('lat', coord.latitude).att('lon', coord.longitude);
-            // GPX 1.1スキーマの要素順: ele → time。時刻はUTC（ISO形式）で出力する
-            if (coord.altitude !== null && coord.altitude !== undefined) {
-              trkpt.ele('ele', coord.altitude);
-            }
-            if (coord.timestamp) {
-              trkpt.ele('time', dayjs(coord.timestamp).toISOString());
-            }
-          });
+          appendTrackPoints(trk.ele('trkseg'), line.coords);
         }
       });
       break;
