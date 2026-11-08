@@ -217,7 +217,8 @@ struct VSOut {
 
 @vertex
 fn vs(@location(0) pos: vec3<f32>, @location(1) color: vec4<f32>) -> VSOut {
-  let clip = frame.viewProj * vec4<f32>(pos, 1.0);
+  // misc.z=地形から浮かせる高さ（ローカル座標）。カメラ距離で変わるのでジオメトリに焼き込まない
+  let clip = frame.viewProj * vec4<f32>(pos.x, pos.y + frame.misc.z, pos.z, 1.0);
   var out: VSOut;
   out.position = clip;
   out.color = color;
@@ -240,6 +241,8 @@ export interface TerrainFrameOptions {
   lightDir: [number, number, number];
   ambient: number;
   elevScale: number;
+  /** ドレープを地形から浮かせる高さ[m]（exaggeration適用前） */
+  overlayLiftMeters?: number;
 }
 
 /**
@@ -973,6 +976,7 @@ export class TerrainRenderer {
     f[27] = options.ambient;
     f[28] = options.elevScale;
     f[29] = depthRange;
+    f[30] = (options.overlayLiftMeters ?? 0) * options.elevScale;
     f.set(this.viewshedRect, 32);
     f.set(this.viewshedColor, 36);
     this.device.queue.writeBuffer(this.frameBuffer, 0, f);

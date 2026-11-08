@@ -3,7 +3,8 @@
  *
  * ラインは進行方向に直交する帯（リボン）として三角形化し、
  * ポリゴンはearcutで三角形分割する。各頂点の高さは表示中タイルの
- * 標高グリッドからサンプリングし、地形にわずかに浮かせてz-fightingを避ける。
+ * 標高グリッドからサンプリングする。z-fightingを避ける浮かせ量はジオメトリに焼き込まず、
+ * カメラ距離に応じてシェーダで足す（overlayLiftMeters）。
  * GPU非依存の純関数（jestでテスト可能）。
  */
 import earcut from 'earcut';
@@ -66,8 +67,22 @@ export class OverlayBatchBuilder {
 
 export type ElevationSampler = (latitude: number, longitude: number) => number | null;
 
-/** ドレープ時に地形から浮かせる高さ[m]（exaggeration適用前） */
-const LIFT_METERS = 3;
+/** ドレープを地形から浮かせる高さの範囲[m]（exaggeration適用前） */
+const MIN_LIFT_METERS = 0.3;
+const MAX_LIFT_METERS = 3;
+/** カメラ距離に対する浮かせ量の比率 */
+const LIFT_PER_DISTANCE = 0.001;
+
+/**
+ * ドレープを地形から浮かせる高さ[m]（exaggeration適用前）。
+ *
+ * 一律3mだと、近づいて斜めから見たとき幅数mの線が地面から浮いて見える。
+ * 深度バイアスも併用しているので、近距離ではわずかな浮かせ量で足り、
+ * 深度精度が落ちる遠距離ほど大きく浮かせる
+ * @param distance カメラから注視点までの距離[メルカトルm]
+ */
+export const overlayLiftMeters = (distance: number): number =>
+  Math.min(MAX_LIFT_METERS, Math.max(MIN_LIFT_METERS, distance * LIFT_PER_DISTANCE));
 /** ラインの長い区間はこの長さ[m]以下になるよう分割して地形に沿わせる */
 const MAX_SEGMENT_METERS = 150;
 
@@ -88,7 +103,7 @@ const toLocal = (
   return {
     x: merc.mx - origin.mx,
     z: origin.my - merc.my,
-    y: (elev + LIFT_METERS) * elevScale,
+    y: elev * elevScale,
   };
 };
 
