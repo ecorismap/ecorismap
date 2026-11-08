@@ -1520,14 +1520,14 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
         : undefined;
     const confirmMessage = t(editTarget ? 'Home.confirm.updateLocationPoint' : 'Home.confirm.addLocationPoint');
 
-    // 確認アラートを表示（外部GNSS受信機の使用中は平均化測位も選べる）
+    // 確認アラートを表示（スマホでは平均化測位も選べる。外部GNSS受信機の使用中はその位置、それ以外は内蔵GPSを平均する）
     let averaged: LocationType | undefined;
-    if (isExternalFixActive()) {
+    if (Platform.OS !== 'web') {
       const choice = await AddLocationPointConfirmAsync(confirmMessage, editTarget !== undefined);
       if (choice === 'cancel') return;
       if (choice === 'average') {
         await waitForModalTransition();
-        averaged = await requestGnssAveragingAsync();
+        averaged = await requestGnssAveragingAsync(isExternalFixActive() ? 'external' : 'internal');
         if (averaged === undefined) return;
       }
     } else {
