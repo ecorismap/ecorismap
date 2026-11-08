@@ -11,6 +11,7 @@ import { trackReplayStore } from '../../utils/trackReplayStore';
 import { useWindow } from '../../hooks/useWindow';
 import { t } from '../../i18n/config';
 import dayjs from '../../i18n/dayjs';
+import { fixQualityColor, fixQualityLabel, formatAccuracy } from '../../lib/gnss/toLocation';
 
 export const HomeTrackPointPopup = React.memo(() => {
   const { trackPointInfo, setTrackPointInfo, mapViewRef } = useContext(MapViewContext);
@@ -31,7 +32,8 @@ export const HomeTrackPointPopup = React.memo(() => {
         timestamp: trackFocusPoint.timestamp,
         altitude: trackFocusPoint.altitude,
         speed: trackFocusPoint.speed,
-        // 標高グラフのフォーカス点は測位品質・楕円体高を持たない（地図上のタップのみ）
+        // 標高グラフのフォーカス点は精度・測位品質・楕円体高を持たない（地図上のタップのみ）
+        accuracy: undefined as number | null | undefined,
         fixQuality: undefined as number | undefined,
         ellipsoidHeight: undefined as number | undefined,
       };
@@ -52,6 +54,13 @@ export const HomeTrackPointPopup = React.memo(() => {
       ? t('Home.poi.measuredElevation', { elevation: displayInfo.altitude.toFixed(2) })
       : t('Home.trackPoint.elevation', { elevation: displayInfo.altitude.toFixed(1) });
   }, [displayInfo?.altitude, isGnssPoint]);
+
+  // 外部GNSS受信機の点は測位品質（FIX/FLOAT等）のバッジと並べる
+  const accuracyText = useMemo(() => {
+    if (typeof displayInfo?.accuracy !== 'number') return null;
+    return `±${formatAccuracy(displayInfo.accuracy)}`;
+  }, [displayInfo?.accuracy]);
+  const showQualityRow = isGnssPoint || accuracyText !== null;
 
   const ellipsoidText = useMemo(() => {
     if (typeof displayInfo?.ellipsoidHeight !== 'number') return null;
@@ -97,6 +106,7 @@ export const HomeTrackPointPopup = React.memo(() => {
   const HEIGHT =
     36 +
     (timeText ? 22 : 0) +
+    (showQualityRow ? 22 : 0) +
     (elevationText ? 20 : 0) +
     (ellipsoidText ? 20 : 0) +
     (speedText ? 20 : 0) +
@@ -154,6 +164,26 @@ export const HomeTrackPointPopup = React.memo(() => {
         <View style={{ alignItems: 'center' }}>
           <Text style={{ color: COLOR.GRAY4, fontSize: 12, paddingBottom: 4 }}>{t('Home.trackPoint.title')}</Text>
           <Text style={{ color: COLOR.BLACK, fontSize: 14, fontWeight: 'bold', paddingBottom: 4 }}>{timeText}</Text>
+          {showQualityRow && (
+            <View style={{ flexDirection: 'row', alignItems: 'center', paddingBottom: 4 }}>
+              {isGnssPoint && displayInfo.fixQuality !== undefined && (
+                <View
+                  style={{
+                    backgroundColor: fixQualityColor(displayInfo.fixQuality),
+                    borderRadius: 4,
+                    marginRight: accuracyText ? 6 : 0,
+                    paddingHorizontal: 5,
+                    paddingVertical: 1,
+                  }}
+                >
+                  <Text style={{ color: COLOR.WHITE, fontSize: 11, fontWeight: '700' }}>
+                    {fixQualityLabel(displayInfo.fixQuality)}
+                  </Text>
+                </View>
+              )}
+              {accuracyText && <Text style={{ color: COLOR.GRAY4, fontSize: 12 }}>{accuracyText}</Text>}
+            </View>
+          )}
           {elevationText && (
             <Text style={{ color: COLOR.GRAY4, fontSize: 12, paddingBottom: 4 }}>{elevationText}</Text>
           )}

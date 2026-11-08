@@ -115,6 +115,29 @@ describe('cleanupLine', () => {
     expect(cleanupLine(line)).toBe(line);
   });
 
+  it('外部GNSSの区間は平滑化・間引きせず、測位品質と楕円体高を残す', () => {
+    const internalHead = makeWigglyLine(50);
+    const external = makeWigglyLine(50).map((p, i) => ({
+      ...p,
+      timestamp: p.timestamp! + 100_000,
+      latitude: p.latitude + 0.01,
+      fixQuality: i % 2 === 0 ? 4 : 5,
+      ellipsoidHeight: 140 + i,
+    }));
+    const internalTail = makeWigglyLine(50).map((p) => ({ ...p, timestamp: p.timestamp! + 200_000 }));
+
+    const result = cleanupLine([...internalHead, ...external, ...internalTail]);
+
+    // 外部GNSSの点は座標・属性とも元のまま、順序どおりに全点残る
+    const externalOut = result.filter((p) => p.fixQuality !== undefined);
+    expect(externalOut).toEqual(external);
+    // 内蔵GPSの区間はこれまでどおり整えられる（全点より少なくなる）
+    expect(result.length).toBeLessThan(150);
+    for (let i = 1; i < result.length; i++) {
+      expect(result[i].timestamp!).toBeGreaterThan(result[i - 1].timestamp!);
+    }
+  });
+
   it('restores timestamp/properties from original points and preserves order', () => {
     const line = makeWigglyLine(2000);
     const inputTimestamps = new Set(line.map((p) => p.timestamp));

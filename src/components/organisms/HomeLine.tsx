@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { Polyline, LatLng } from 'react-native-maps';
-import { ArrowStyleType, LayerType, LineRecordType, RecordType } from '../../types';
+import { ArrowStyleType, LayerType, LineRecordType, LocationType, RecordType } from '../../types';
 import { LineLabel } from '../atoms';
 import { generateLabel, getColor, getLineWidthAtZoom, SYMBOL_BASE_SIZE_PX } from '../../utils/Layer';
 import { COLOR } from '../../constants/AppConstants';
@@ -9,6 +9,8 @@ import LineArrow from '../atoms/LineArrow';
 import { HomeMapMemoStamp } from './HomeMapMemoStamp';
 import { HomeMapMemoBrush } from './HomeMapMemoBrush';
 import { ViewportBounds, cullLines } from '../../utils/ViewportCulling';
+import { TRACK_LAYER_ID } from '../../modules/layers';
+import { splitTrackFixSegments } from '../../utils/Location';
 
 interface Props {
   data: LineRecordType[];
@@ -76,18 +78,23 @@ export const Line = React.memo(
           } else {
             const strokeWidth = getLineWidthAtZoom(layer, feature, zoomDecimal ?? zoom);
             return (
-              <PolylineComponent
-                key={'line' + feature.id}
-                label={label}
-                color={color}
-                lineColor={lineColor}
-                strokeWidth={strokeWidth}
-                labelPosition={labelPosition}
-                zIndex={zIndex}
-                feature={feature}
-                zoom={zoom}
-                selected={selected}
-              />
+              <React.Fragment key={'line' + feature.id}>
+                <PolylineComponent
+                  label={label}
+                  color={color}
+                  lineColor={lineColor}
+                  strokeWidth={strokeWidth}
+                  labelPosition={labelPosition}
+                  zIndex={zIndex}
+                  feature={feature}
+                  zoom={zoom}
+                  selected={selected}
+                />
+                {/* 保存した軌跡は記録中と同じくRTKのFIX/FLOAT区間を色分けする（選択中は黄色の強調を優先） */}
+                {layer.id === TRACK_LAYER_ID && !selected && (
+                  <TrackFixOverlay coords={feature.coords} strokeWidth={strokeWidth} zIndex={zIndex} />
+                )}
+              </React.Fragment>
             );
           }
         })}
@@ -176,6 +183,32 @@ const PolylineComponent = React.memo((props: PolylineProps) => {
         color={color}
         borderColor={COLOR.WHITE}
       />
+    </>
+  );
+});
+
+interface TrackFixOverlayProps {
+  coords: LocationType[];
+  strokeWidth: number;
+  zIndex: number;
+}
+const TrackFixOverlay = React.memo((props: TrackFixOverlayProps) => {
+  const { coords, strokeWidth, zIndex } = props;
+  const segments = useMemo(() => splitTrackFixSegments(coords), [coords]);
+  return (
+    <>
+      {segments.map((segment, index) => (
+        <Polyline
+          key={`fix-${index}`}
+          tappable={false}
+          coordinates={segment.coordinates}
+          strokeColor={segment.color}
+          strokeWidth={strokeWidth}
+          lineCap="butt"
+          // 同じzIndexだと描画順が不定で下の線に隠れることがあるため1つ上に置く
+          zIndex={zIndex + 1}
+        />
+      ))}
     </>
   );
 });
