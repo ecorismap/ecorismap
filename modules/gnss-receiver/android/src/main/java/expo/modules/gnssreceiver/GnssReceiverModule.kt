@@ -56,11 +56,11 @@ class GnssReceiverModule : Module() {
     Events("onNmea", "onStatus", "onBleDevice", "onUsbAttached")
 
     // 受信機のUSBを挿したことを知らせる（前回の受信機への自動再接続に使う）
+    // NMEA・状態の中継はモジュールの寿命で張る（iOSと同じ）。
+    // 名前なしのOnStopObservingはどのイベントの購読が0件になっても呼ばれるため、
+    // 設定画面を閉じてonBleDeviceの購読が外れただけでNMEAの中継まで止まっていた
     OnCreate {
       registerUsbAttachReceiver()
-    }
-
-    OnStartObserving {
       GnssSession.listener = object : GnssSessionListener {
         override fun onSentences(sentences: List<String>, receivedAt: Long) {
           sendEvent("onNmea", mapOf("sentences" to sentences, "receivedAt" to receivedAt.toDouble()))
@@ -72,11 +72,8 @@ class GnssReceiverModule : Module() {
       }
     }
 
-    OnStopObserving {
-      GnssSession.listener = null
-    }
-
     OnDestroy {
+      GnssSession.listener = null
       stopBleScan()
       unregisterUsbAttachReceiver()
     }
