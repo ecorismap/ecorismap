@@ -1,5 +1,5 @@
 import 'react-native-gesture-handler';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { Platform } from 'react-native';
 import { Provider } from 'react-redux';
 import { PersistGate } from 'redux-persist/integration/react';
@@ -12,14 +12,10 @@ import { StatusBarOverlay } from './components/atoms/StatusBarOverlay';
 import { ExportDestinationModal } from './components/organisms/ExportDestinationModal';
 import { StyledDialog } from './components/molecules/StyledDialog';
 import { TileSignatureSync } from './components/atoms/TileSignatureSync';
-import { checkAsyncStorageData, isMigrationCompleted, isMigrationSkipped, StorageInfo } from './utils/storageMigration';
 import { runDemSourceMigration } from './utils/demSourceMigration';
 import { setTileMapsAction } from './modules/tileMaps';
 import { dropUnsafeTileMaps } from './utils/tileMapId';
 import { TileMapType } from './types';
-
-const StorageMigrationDialog =
-  Platform.OS !== 'web' ? require('./components/organisms/StorageMigrationDialog').StorageMigrationDialog : null;
 
 // 検証導入前に取り込まれて永続化された地図にも、保存先フォルダ（TILE_FOLDER/{id}）の外を指すIDが
 // 残っている可能性があるため、復元直後（地図IDでタイルを消す標高データ移行より前）に取り除く
@@ -31,9 +27,6 @@ const dropUnsafePersistedTileMaps = () => {
 };
 
 export default function App() {
-  const [showMigrationDialog, setShowMigrationDialog] = useState(false);
-  const [storageInfo, setStorageInfo] = useState<StorageInfo | null>(null);
-
   useEffect(() => {
     if (Platform.OS === 'android') {
       // SDK 56: setBackgroundColorAsync/setButtonStyleAsync are removed. With edge-to-edge
@@ -41,34 +34,6 @@ export default function App() {
       NavigationBar.setStyle('light');
     }
   }, []);
-
-  useEffect(() => {
-    const checkMigration = async () => {
-      if (Platform.OS === 'web') {
-        return;
-      }
-
-      try {
-        if (isMigrationCompleted() || isMigrationSkipped()) {
-          return;
-        }
-
-        const info = await checkAsyncStorageData();
-        if (info.hasData) {
-          setStorageInfo(info);
-          setShowMigrationDialog(true);
-        }
-      } catch (error) {
-        // Migration check failed
-      }
-    };
-
-    checkMigration();
-  }, []);
-
-  const handleMigrationComplete = () => {
-    setShowMigrationDialog(false);
-  };
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
@@ -88,14 +53,6 @@ export default function App() {
               <StatusBarOverlay />
               <ExportDestinationModal />
               <StyledDialog />
-              {Platform.OS !== 'web' && storageInfo && StorageMigrationDialog && (
-                <StorageMigrationDialog
-                  visible={showMigrationDialog}
-                  storageInfo={storageInfo}
-                  onClose={() => setShowMigrationDialog(false)}
-                  onMigrationComplete={handleMigrationComplete}
-                />
-              )}
             </>
           </PersistGate>
         </Provider>
