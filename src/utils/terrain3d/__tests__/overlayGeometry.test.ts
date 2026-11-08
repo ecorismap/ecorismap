@@ -1,4 +1,4 @@
-import { buildPolygonFill, buildRibbon, OverlayBatchBuilder } from '../overlayGeometry';
+import { buildPolygonFill, buildRibbon, OverlayBatchBuilder, overlayLiftMeters } from '../overlayGeometry';
 import { lonLatToMercator } from '../coords';
 import { parseColorToRgba } from '../colorUtils';
 
@@ -25,9 +25,9 @@ describe('buildRibbon', () => {
     expect(dz).toBeCloseTo(10, 4);
   });
 
-  it('高さ=標高+リフト（elevScale適用）', () => {
+  it('高さ=標高（elevScale適用）。浮かせ量はシェーダで足す', () => {
     const geo = buildRibbon(path, 10, origin, 2, flatSampler)!;
-    expect(geo.positions[1]).toBeCloseTo((100 + 3) * 2);
+    expect(geo.positions[1]).toBeCloseTo(100 * 2);
   });
 
   it('長い区間は分割される', () => {
@@ -41,7 +41,7 @@ describe('buildRibbon', () => {
 
   it('標高未取得(null)は0m扱い', () => {
     const geo = buildRibbon(path, 10, origin, 1, () => null)!;
-    expect(geo.positions[1]).toBeCloseTo(3);
+    expect(geo.positions[1]).toBeCloseTo(0);
   });
 
   it('1点以下はnull', () => {
@@ -147,5 +147,14 @@ describe('parseColorToRgba', () => {
 
   it('不正値はフォールバック', () => {
     expect(parseColorToRgba('unknown')).toEqual([0.2, 0.4, 1, 1]);
+  });
+});
+
+describe('overlayLiftMeters', () => {
+  it('近距離では小さく、遠距離ほど大きく浮かせる（0.3〜3m）', () => {
+    expect(overlayLiftMeters(50)).toBeCloseTo(0.3);
+    expect(overlayLiftMeters(400)).toBeCloseTo(0.4);
+    expect(overlayLiftMeters(1500)).toBeCloseTo(1.5);
+    expect(overlayLiftMeters(100000)).toBeCloseTo(3);
   });
 });

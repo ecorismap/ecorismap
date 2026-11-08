@@ -83,7 +83,7 @@ import { TerrainDepthMap, TerrainRenderer, TerrainRingDraw, TileGpuResources } f
 import { TerrainTileManager, TileCone } from './TerrainTileManager';
 import { DemTextureCache } from './demTextureCache';
 import { ViewshedMask, viewshedMaskLocalRect } from './viewshedMask';
-import { buildPolygonFill, buildRibbon, OverlayBatchBuilder } from './overlayGeometry';
+import { buildPolygonFill, buildRibbon, OverlayBatchBuilder, overlayLiftMeters } from './overlayGeometry';
 import { Rgba } from './colorUtils';
 import { LayerSpec, Terrain3DCameraState, TileKey } from './types';
 import { LayerTextureRef } from './layerTextureRef';
@@ -1561,6 +1561,7 @@ export class TerrainScene {
         // 環境光を上げて日向と日陰のコントラストを控えめにする（地図の可読性優先）
         ambient: 0.65,
         elevScale: this.elevScale,
+        overlayLiftMeters: overlayLiftMeters(distance),
       },
       // 軌跡はレイヤデータより後に描いて前面に出す（2DのzIndex 100/101と同じ並び）
       this.collectOverlayDraws()
