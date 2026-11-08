@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useContext } from 'react';
+import React, { useState, useCallback, useContext, useRef } from 'react';
 import { LayerType, RecordType } from '../types';
 import Data from '../components/pages/Data';
 import { shallowEqual, useDispatch, useSelector } from 'react-redux';
@@ -21,6 +21,8 @@ import { useRecord } from '../hooks/useRecord';
 import { useLayers } from '../hooks/useLayers';
 import { MapViewContext } from '../contexts/MapView';
 import { useBottomSheetNavigation, useBottomSheetRoute } from '../contexts/BottomSheetNavigationContext';
+import { TRACK_LAYER_ID } from '../modules/layers';
+import { ExportCancelledError } from '../utils/zipProgress';
 import { addToDynamicDictionary } from '../hooks/useDynamicDictionaryInput';
 
 export default function DataContainer() {
@@ -48,6 +50,9 @@ export default function DataContainer() {
     shallowEqual
   );
   const [isExporting, setIsExporting] = useState(false);
+  const [exportProgress, setExportProgress] = useState('');
+  // 中止ボタンで立てる。zipの書き出し途中で見て止める
+  const exportCancelRef = useRef<{ cancelled: boolean } | null>(null);
   //絞り込みモーダル。列ヘッダ長押しとヘッダの絞り込みボタンの両方から開くため、ここで状態を持つ
   const [filterTarget, setFilterTarget] = useState<string | undefined>(undefined);
 
@@ -85,10 +90,25 @@ export default function DataContainer() {
 
   const { generateExportGeoData } = useGeoFile();
 
+  const cancelExportData = useCallback(() => {
+    if (exportCancelRef.current !== null) exportCancelRef.current.cancelled = true;
+  }, []);
+
   const pressExportData = useCallback(async () => {
     if (isExporting || !params?.targetLayer) return;
 
+    // 件数が多いと時間がかかるので始める前に確認する。軌跡は写真付きの書き出しが軌跡サマリーにあることを案内する
+    const confirmKey = params.targetLayer.id === TRACK_LAYER_ID ? 'Data.confirm.exportTrackData' : 'Data.confirm.exportData';
+    const ok = await ConfirmAsync(t(confirmKey, { count: checkedRecords.length }), {
+      true: 'OK',
+      false: t('common.cancel'),
+    });
+    if (!ok) return;
+
+    const cancel = { cancelled: false };
+    exportCancelRef.current = cancel;
     setIsExporting(true);
+    setExportProgress('');
     //Todo : トラブル対応のためしばらくは誰でもエクスポート可能にする
     // if (isMember) {
     //   Alert.alert('', t('Data.alert.exportData'));
@@ -115,15 +135,28 @@ export default function DataContainer() {
       const exportData = await generateExportGeoData(params.targetLayer, exportedRecords, fileNameBase, {
         exportPhoto: true,
       });
-      const result = await exportGeoFile(exportData, `data_${layerNameLabel}_${time}`, 'zip');
+      // zipの進捗は細かく届くので、表示が変わるとき（1%刻み）だけ更新する
+      let lastPercent = -1;
+      const result = await exportGeoFile(exportData, `data_${layerNameLabel}_${time}`, 'zip', undefined, {
+        cancel,
+        onProgress: (percent) => {
+          const rounded = Math.floor(percent);
+          if (rounded === lastPercent) return;
+          lastPercent = rounded;
+          setExportProgress(t('Data.message.exportingZip', { percent: rounded }));
+        },
+      });
       if (result === 'saved') {
         await AlertAsync(t('hooks.message.successExportData'));
       } else if (result === 'error') {
         await AlertAsync(t('hooks.message.failExport'));
       }
     } catch (error) {
-      await AlertAsync(t('hooks.message.failExport'));
+      // 自分で中止したときは失敗のメッセージを出さない
+      if (!(error instanceof ExportCancelledError)) await AlertAsync(t('hooks.message.failExport'));
     } finally {
+      exportCancelRef.current = null;
+      setExportProgress('');
       setIsExporting(false);
     }
   }, [checkedRecords, sortedRecordSet, generateExportGeoData, isExporting, isMapMemoLayer, params?.targetLayer]);
@@ -369,6 +402,7 @@ export default function DataContainer() {
       sortedOrder,
       isEditable,
       isExporting,
+      exportProgress,
       isLocationEnabled,
       isLocationLocked,
       filterText,
@@ -391,6 +425,7 @@ export default function DataContainer() {
       pressAddData,
       pressDeleteData,
       pressExportData,
+      cancelExportData,
       pressToggleLocation,
       pressToggleLocationLock,
       gotoDataEdit,
@@ -409,6 +444,7 @@ export default function DataContainer() {
       sortedOrder,
       isEditable,
       isExporting,
+      exportProgress,
       isLocationEnabled,
       isLocationLocked,
       filterText,
@@ -431,6 +467,7 @@ export default function DataContainer() {
       pressAddData,
       pressDeleteData,
       pressExportData,
+      cancelExportData,
       pressToggleLocation,
       pressToggleLocationLock,
       gotoDataEdit,

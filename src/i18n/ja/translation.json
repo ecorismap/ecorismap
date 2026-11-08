@@ -788,7 +788,9 @@
       "noLocationData": "位置情報のあるデータがありません。"
     },
     "confirm": {
-      "deleteData": "データを削除しますか？"
+      "deleteData": "データを削除しますか？",
+      "exportData": "{{count}}件のデータをエクスポートします。",
+      "exportTrackData": "{{count}}件の軌跡をエクスポートします。\n写真付きのGPXやGoogle Earth用ファイルは、軌跡サマリーから1本ずつ書き出せます。"
     },
     "label": {
       "export": "ｴｸｽﾎﾟｰﾄ",
@@ -801,6 +803,7 @@
     },
     "message": {
       "exporting": "データをエクスポートしています...",
+      "exportingZip": "ファイルを作成中 {{percent}}%",
       "filterResult": "{{count}}件"
     }
   },
@@ -1288,13 +1291,13 @@
       "titleRecording": "軌跡サマリー（記録中）"
     },
     "label": {
-      "export": "軌跡をエクスポート",
+      "export": "軌跡を書き出し（写真・Google Earth用）",
       "exportingPhotos": "写真を準備中 {{current}}/{{total}}",
       "exportingFile": "ファイルを作成中...",
       "exportingKmz": "Google Earth用ファイルを作成中 {{percent}}%",
       "exportingZip": "ファイルを作成中 {{percent}}%",
-      "confirmExport": "軌跡（{{points}}点）をエクスポートします。",
-      "confirmExportWithPhotos": "軌跡（{{points}}点）と写真{{photos}}枚をエクスポートします。\n写真を含めると時間がかかります。",
+      "confirmExport": "軌跡（{{points}}点）をエクスポートします。\nGPX・Google Earth用ファイル・統計グラフをまとめて出力します。",
+      "confirmExportWithPhotos": "軌跡（{{points}}点）と写真{{photos}}枚をエクスポートします。\nGPX・Google Earth用ファイル・統計グラフをまとめて出力します。写真を含めると時間がかかります。",
       "exportWithPhotos": "写真も含める",
       "exportTrackOnly": "軌跡のみ",
       "distance": "総距離",

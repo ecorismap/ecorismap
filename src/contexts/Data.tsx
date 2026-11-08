@@ -14,6 +14,7 @@ interface DataContextType {
   sortedOrder: SortOrderType;
   isEditable: boolean;
   isExporting: boolean;
+  exportProgress: string;
   isLocationEnabled: boolean;
   isLocationLocked: boolean;
   filterText: string;
@@ -34,6 +35,7 @@ interface DataContextType {
   pressToggleLocationLock: () => void;
   pressDeleteData: () => void;
   pressExportData: () => void;
+  cancelExportData: () => void;
   changeOrder: (colname: string, order: SortOrderType) => void;
   changeChecked: (index: number, checked: boolean) => void;
   changeCheckedAll: (checked: boolean) => void;

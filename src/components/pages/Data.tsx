@@ -1,5 +1,5 @@
 import React, { useContext, useMemo } from 'react';
-import { View, StyleSheet, Text, ActivityIndicator, Switch } from 'react-native';
+import { View, StyleSheet, Text, Switch } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 import { DataTable } from '../organisms/DataTable';
@@ -15,6 +15,7 @@ import { t } from '../../i18n/config';
 import { COLOR, DATA_BTN, DATAEDIT_BTN } from '../../constants/AppConstants';
 import { FILTER_BLANK, FILTER_NOT_BLANK, getFilterableFieldNames } from '../../utils/Data';
 import { BottomSheetHeader } from '../molecules/BottomSheetHeader';
+import { Loading } from '../molecules/Loading';
 import { Button } from '../atoms';
 import { Pressable } from '../atoms/Pressable';
 
@@ -27,6 +28,8 @@ export default function DataScreen() {
     gotoBack,
     addDataByDictionary,
     isExporting,
+    exportProgress,
+    cancelExportData,
     isLocationEnabled,
     isLocationLocked,
     pressToggleLocation,
@@ -199,14 +202,11 @@ export default function DataScreen() {
           pressCancel={closeFilterDialog}
         />
       )}
-      {isExporting && (
-        <View style={styles.exportingOverlay}>
-          <View style={styles.exportingOverlayContent}>
-            <ActivityIndicator size="large" color={COLOR.PROGRESS_BAR_FILL} />
-            <Text style={styles.exportingOverlayText}>{t('Data.message.exporting')}</Text>
-          </View>
-        </View>
-      )}
+      <Loading
+        visible={isExporting}
+        text={exportProgress !== '' ? exportProgress : t('Data.message.exporting')}
+        onCancel={cancelExportData}
+      />
     </View>
   );
 }
@@ -283,34 +283,5 @@ const styles = StyleSheet.create({
   },
   tableContainer: {
     flex: 1,
-  },
-  exportingOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: COLOR.SAVING_OVERLAY,
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 10,
-  },
-  exportingOverlayContent: {
-    backgroundColor: COLOR.WHITE,
-    borderRadius: 10,
-    paddingVertical: 20,
-    paddingHorizontal: 24,
-    minWidth: 220,
-    alignItems: 'center',
-    shadowColor: COLOR.BLACK,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
-  },
-  exportingOverlayText: {
-    marginTop: 12,
-    fontSize: 16,
-    color: COLOR.TEXT_DARK,
   },
 });
