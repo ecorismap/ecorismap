@@ -85,7 +85,7 @@ export const ResumeDownloadConfirmAsync = async (message: string): Promise<Resum
 export type AddLocationPointChoice = 'add' | 'average' | 'cancel';
 
 /**
- * 外部GNSS受信機の使用中に現在地ポイントを追加するとき、そのまま追加するか平均化してから追加するかを選ばせる。
+ * 現在地ポイントを追加するとき、そのまま追加するか平均化してから追加するかを選ばせる。
  * isUpdateなら既存ポイントの位置の更新（「位置を編集」から）として文言を変える
  */
 export const AddLocationPointConfirmAsync = async (

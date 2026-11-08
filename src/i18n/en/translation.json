@@ -1252,6 +1252,8 @@
         "fixOnly": "Use RTK FIX only",
         "collected": "{{count}} / {{target}} epochs",
         "spread": "Spread (H/V)",
+        "start": "Start",
+        "stop": "Stop",
         "record": "Record",
         "restart": "Restart"
       },

@@ -8,24 +8,28 @@ import { Pressable } from '../atoms/Pressable';
 
 const TARGET_COUNTS = [5, 10, 30, 60];
 
-/** 外部GNSS受信機の複数エポックを平均して1点を記録する。requestGnssAveragingAsync で開く */
+/** 外部GNSS受信機または内蔵GPSの複数エポックを平均して1点を記録する。requestGnssAveragingAsync で開く */
 export const HomeModalGnssAveraging = React.memo(() => {
   const {
     visible,
+    source,
+    phase,
     targetCount,
     setTargetCount,
     fixOnly,
     setFixOnly,
     latestFix,
     result,
-    isComplete,
-    restart,
+    start,
+    stop,
     finish,
     cancel,
   } = useGnssAveraging();
 
   const count = result?.count ?? 0;
   const progress = Math.min(1, count / targetCount);
+  // 収集中に条件を変えると集めたエポックが混ざるので触らせない
+  const isCollecting = phase === 'collecting';
 
   return (
     <Modal animationType="none" transparent={true} visible={visible} onRequestClose={cancel}>
@@ -37,7 +41,11 @@ export const HomeModalGnssAveraging = React.memo(() => {
             {latestFix !== null ? (
               <>
                 <View style={[styles.badge, { backgroundColor: fixQualityColor(latestFix.fixQuality) }]}>
-                  <Text style={styles.badgeText}>{fixQualityLabel(latestFix.fixQuality)}</Text>
+                  <Text style={styles.badgeText}>
+                    {source === 'external'
+                      ? fixQualityLabel(latestFix.fixQuality)
+                      : `${t('GpsSettings.externalGnss.fallback')}`}
+                  </Text>
                 </View>
                 <Text style={styles.note}>{formatAccuracy(estimateHorizontalAccuracy(latestFix))}</Text>
               </>
@@ -47,11 +55,12 @@ export const HomeModalGnssAveraging = React.memo(() => {
           </View>
 
           <Text style={styles.label}>{`${t('GpsSettings.externalGnss.averaging.epochs')}`}</Text>
-          <View style={styles.row}>
+          <View style={[styles.row, isCollecting && styles.disabled]}>
             {TARGET_COUNTS.map((n) => (
               <Pressable
                 key={n}
                 style={[styles.segment, targetCount === n && styles.segmentSelected]}
+                disabled={isCollecting}
                 onPress={() => setTargetCount(n)}
               >
                 <Text style={targetCount === n ? styles.segmentTextSelected : undefined}>{n}</Text>
@@ -59,10 +68,12 @@ export const HomeModalGnssAveraging = React.memo(() => {
             ))}
           </View>
 
-          <View style={[styles.row, styles.switchRow]}>
-            <Text style={styles.flex}>{`${t('GpsSettings.externalGnss.averaging.fixOnly')}`}</Text>
-            <Switch value={fixOnly} onValueChange={setFixOnly} />
-          </View>
+          {source === 'external' && (
+            <View style={[styles.row, styles.switchRow, isCollecting && styles.disabled]}>
+              <Text style={styles.flex}>{`${t('GpsSettings.externalGnss.averaging.fixOnly')}`}</Text>
+              <Switch value={fixOnly} disabled={isCollecting} onValueChange={setFixOnly} />
+            </View>
+          )}
 
           <View style={styles.progressTrack}>
             <View style={[styles.progressBar, { width: `${progress * 100}%` }]} />
@@ -79,18 +90,26 @@ export const HomeModalGnssAveraging = React.memo(() => {
           )}
 
           <View style={styles.buttons}>
-            <Pressable
-              style={[styles.button, isComplete && styles.primaryButton]}
-              disabled={result === null}
-              onPress={finish}
-            >
-              <Text style={isComplete ? styles.primaryButtonText : undefined}>
-                {`${t('GpsSettings.externalGnss.averaging.record')}`}
-              </Text>
-            </Pressable>
-            <Pressable style={styles.button} onPress={restart}>
-              <Text>{`${t('GpsSettings.externalGnss.averaging.restart')}`}</Text>
-            </Pressable>
+            {phase === 'idle' && (
+              <Pressable style={[styles.button, styles.primaryButton]} onPress={start}>
+                <Text style={styles.primaryButtonText}>{`${t('GpsSettings.externalGnss.averaging.start')}`}</Text>
+              </Pressable>
+            )}
+            {phase === 'collecting' && (
+              <Pressable style={styles.button} onPress={stop}>
+                <Text>{`${t('GpsSettings.externalGnss.averaging.stop')}`}</Text>
+              </Pressable>
+            )}
+            {phase === 'done' && (
+              <>
+                <Pressable style={[styles.button, styles.primaryButton]} onPress={finish}>
+                  <Text style={styles.primaryButtonText}>{`${t('GpsSettings.externalGnss.averaging.record')}`}</Text>
+                </Pressable>
+                <Pressable style={styles.button} onPress={start}>
+                  <Text>{`${t('GpsSettings.externalGnss.averaging.restart')}`}</Text>
+                </Pressable>
+              </>
+            )}
             <Pressable style={styles.button} onPress={cancel}>
               <Text>{`${t('common.cancel')}`}</Text>
             </Pressable>
@@ -132,6 +151,9 @@ const styles = StyleSheet.create({
     backgroundColor: COLOR.ALFAGRAY,
     flex: 1,
     justifyContent: 'center',
+  },
+  disabled: {
+    opacity: 0.4,
   },
   flex: {
     flex: 1,

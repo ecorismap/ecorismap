@@ -1252,6 +1252,8 @@
         "fixOnly": "FIXのみ採用",
         "collected": "{{count}} / {{target}} エポック",
         "spread": "ばらつき（水平/高さ）",
+        "start": "開始",
+        "stop": "中止",
         "record": "記録",
         "restart": "やり直し"
       },
