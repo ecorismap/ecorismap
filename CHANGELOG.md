@@ -10,6 +10,10 @@
 - Added the GEBCO bathymetry map in 3D (color relief with seafloor terrain), on iOS/Android and the web
 - In the 3D view, the Google standard map and satellite imagery are replaced with the GSI standard map and seamless aerial photos, because Google's map imagery cannot be shown in 3D
 - The 2D map can now be rotated with two fingers, as in the 3D view. While rotated, the compass points to the map's north and tapping it returns to north up; the current location marker, line arrows and brush symbols keep their real-world directions. Rotation is disabled while drawing or using tools, and when the 3D view is opened from a rotated map it keeps the direction
+- Added support for external GNSS receivers on Android (USB serial and Bluetooth LE / Nordic UART) with a built-in NTRIP client that relays corrections to the receiver for RTK positioning (NTRIP v1/v2, mountpoint list from the source table, optional GGA for VRS). The receiver's position is used for the current location, tracks and points, falling back to the built-in GPS when it stops for 5 seconds. The GPS button shows the fix type (FIX/FLOAT/DGPS/SPP), and a long press shows accuracy, satellites, HDOP, elevation, ellipsoidal height and the NTRIP status. Long-pressing the current location shows the measured elevation and coordinates to 8 decimal places
+- Added position averaging (5–60 epochs, optionally RTK FIX only) when adding a point at the current location or updating a point's position with "Edit position"
+- Points recorded with an external receiver keep the fix type, accuracy, measured elevation (antenna height subtracted) and ellipsoidal height. They are shown in the data edit screen and exported as extra columns in CSV/GeoJSON
+- Tracks recorded with an external receiver can be thinned by accuracy or by distance, are colored by fix type (FIX green / FLOAT orange) in 2D and 3D, and keep the ellipsoidal height (exported as geoidheight in GPX)
 - Added PMTiles maps (vector, raster and pbf) to PDF export
 - Improved elevation data by unifying the source to Mapterhorn and decoding it natively, which makes the 3D view, viewshed and long-press elevation much faster
 - Improved elevation data downloads to also fetch the surrounding area used for the distant view in 3D
@@ -21,6 +25,8 @@
 - Fixed the PDF export window on the web closing without showing the print dialog
 - Fixed the photo picker appearing after every shot on Android 14+ when only selected photos are allowed
 - Fixed the heading in compass-follow mode wandering on Android when the device is held upright
+- Fixed saving in the data edit screen discarding the elevation and accuracy of points recorded at the current location
+- Fixed "Current location" in "Edit position" adding a new point instead of setting the position of the point being edited
 - Fixed several security issues found in a security review
 
 - iOS/Androidアプリに3D地形表示を追加しました。レイヤのデータとベクタのPMTilesを地形の上に描き、タップで属性を表示できます。コンパス、GPSの現在地マーカー、記録中の軌跡も3Dで表示します
@@ -31,6 +37,10 @@
 - GEBCO海底地形図を3Dで表示できるようにしました（段彩＋海底の起伏、iOS/Android・Web）
 - 3D表示では、Googleの標準地図・衛星写真を地理院の標準地図・シームレス空中写真に置き換えて表示します（Googleの地図画像は3Dに表示できないため）
 - 2Dの地図も3D表示と同じく2本指で回転できるようにしました。回転中はコンパスが地図の北を指し、タップすると北が上に戻ります。現在地マーカー・線の矢印・ブラシ記号は回転しても実際の方角を向きます。作図やツールの使用中は回転しません。回転した地図から3D表示に切り替えると向きを引き継ぎます
+- Androidで外部GNSS受信機（USBシリアル、Bluetooth LE／Nordic UART）に対応し、NTRIPクライアントで補正を受信機へ中継してRTK測位できるようにしました（NTRIP v1/v2、ソーステーブルからのマウントポイント選択、VRS向けのGGA送信）。受信機の位置を現在地・軌跡・ポイント記録に使い、5秒途絶えると内蔵GPSに戻ります。GPSボタンにFix種別（FIX/FLOAT/DGPS/SPP）を表示し、長押しで精度・衛星数・HDOP・標高・楕円体高・NTRIPの状態を確認できます。現在地の長押しでは測位標高と小数8桁の緯度経度を表示します
+- 現在地ポイントの追加と「位置を編集」での位置の更新に、平均化測位（5〜60エポック、RTK FIXのみの採用も可）を追加しました
+- 外部GNSS受信機で記録したポイントに、Fix種別・精度・測位標高（アンテナ高を差し引いた値）・楕円体高を残すようにしました。データ編集画面に表示し、CSV/GeoJSONのエクスポートでは列として出力します
+- 外部GNSS受信機での軌跡は、精度または距離で間引いて記録できるようにし、2D・3DでFix種別ごとに色分け（FIXは緑、FLOATは橙）、楕円体高も残すようにしました（GPXではgeoidheightとして出力）
 - PDF出力にPMTiles（ベクタ・ラスタ・pbf）の地図を含めるようにしました
 - 標高データの取得元をMapterhornに統一し、デコードをネイティブ化しました。3D表示・可視領域・長押しの標高表示が大幅に速くなります
 - 標高データのダウンロードで、3Dの遠景に使う周辺の範囲も取得するようにしました
@@ -42,6 +52,8 @@
 - Web版のPDF出力で、印刷ダイアログが出ずにウィンドウが閉じる問題を修正しました
 - Android 14以降で「選択した写真のみ許可」にしていると、撮影のたびに写真選択画面が出る問題を修正しました
 - Androidで端末を立てると、コンパス追従の方位がふらつく問題を修正しました
+- データ編集画面で保存すると、現在地で記録したポイントの標高や精度が消える問題を修正しました
+- 「位置を編集」の現在地ボタンで、編集中のポイントの位置にならず新しいポイントが追加される問題を修正しました
 - セキュリティレビューで見つかった複数の問題を修正しました
 
 ## [0.6.9]　- Unreleased
