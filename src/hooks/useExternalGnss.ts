@@ -5,6 +5,7 @@ import { getExternalGnssSnapshot, subscribeExternalGnss, ExternalGnssSnapshot } 
 import { DEFAULT_EXTERNAL_GNSS_SETTINGS, loadNtripPassword, saveNtripPassword } from '../lib/gnss/settings';
 import { NtripMountpoint, parseSourceTable } from '../lib/gnss/sourceTable';
 import { requestBlePermissions } from '../lib/gnss/blePermissions';
+import { startNtripIfEnabled, toConnectionConfig, usbDeviceToRemember } from '../lib/gnss/connection';
 import { editSettingsAction } from '../modules/settings';
 import { RootState } from '../store';
 import { ExternalGnssSettingsType, NtripSettingsType } from '../types';
@@ -22,27 +23,16 @@ export type UseExternalGnssReturnType = {
   scanBle: () => Promise<void>;
   connectBle: (address: string) => Promise<void>;
   disconnect: () => Promise<void>;
-  updateReceiverSettings: (values: Pick<ExternalGnssSettingsType, 'antennaHeight' | 'baudRate' | 'trackMode' | 'trackDistance'>) => void;
+  updateReceiverSettings: (
+    values: Pick<ExternalGnssSettingsType, 'antennaHeight' | 'baudRate' | 'trackMode' | 'trackDistance'>
+  ) => void;
   saveNtripSettings: (ntrip: NtripSettingsType, password: string) => Promise<void>;
   setNtripEnabled: (enabled: boolean) => Promise<void>;
   fetchMountpoints: (ntrip: NtripSettingsType, password: string) => Promise<NtripMountpoint[]>;
 };
 
-const toConnectionConfig = (ntrip: NtripSettingsType, password: string): GnssReceiver.NtripConnectionConfig => ({
-  host: ntrip.host,
-  port: ntrip.port,
-  mountpoint: ntrip.mountpoint,
-  username: ntrip.username,
-  password,
-  version: ntrip.version,
-  sendGga: ntrip.sendGga,
-  ggaIntervalSec: ntrip.ggaIntervalSec,
-});
-
 // BLEのスキャンと同じ長さ（ネイティブ側で自動停止する）
 const BLE_SCAN_DURATION_MS = 15_000;
-
-const canStartNtrip = (ntrip: NtripSettingsType) => ntrip.enabled && ntrip.host !== '' && ntrip.mountpoint !== '';
 
 export const useExternalGnss = (): UseExternalGnssReturnType => {
   const dispatch = useDispatch();
@@ -69,22 +59,17 @@ export const useExternalGnss = (): UseExternalGnssReturnType => {
     [dispatch]
   );
 
-  const startNtripIfEnabled = useCallback(async (ntrip: NtripSettingsType, password: string) => {
-    if (canStartNtrip(ntrip)) {
-      await GnssReceiver.startNtrip(toConnectionConfig(ntrip, password));
-    } else {
-      await GnssReceiver.stopNtrip();
-    }
-  }, []);
-
   const connectUsb = useCallback(
     async (deviceId: number) => {
       await GnssReceiver.connectUsb(deviceId, settings.baudRate);
       refreshUsbDevices();
+      // 次回からはこの受信機に自動で接続し直す
+      const device = GnssReceiver.listUsbDevices().find((d) => d.deviceId === deviceId);
+      if (device) saveSettings({ ...settings, lastDevice: usbDeviceToRemember(device), autoConnect: true });
       // 受信機をつなぐたびにNTRIPも張り直す（前回ONなら自動で再開）
       await startNtripIfEnabled(settings.ntrip, ntripPassword);
     },
-    [ntripPassword, refreshUsbDevices, settings.baudRate, settings.ntrip, startNtripIfEnabled]
+    [ntripPassword, refreshUsbDevices, saveSettings, settings]
   );
 
   // 見つかった機器を、NUSを広告しているもの（受信機らしいもの）→電波の強い順に並べる
@@ -120,18 +105,23 @@ export const useExternalGnss = (): UseExternalGnssReturnType => {
     async (address: string) => {
       setIsBleScanning(false);
       await GnssReceiver.connectBle(address);
+      const name = bleDevices.find((d) => d.address === address)?.name ?? address;
+      saveSettings({ ...settings, lastDevice: { type: 'ble', address, name }, autoConnect: true });
       await startNtripIfEnabled(settings.ntrip, ntripPassword);
     },
-    [ntripPassword, settings.ntrip, startNtripIfEnabled]
+    [bleDevices, ntripPassword, saveSettings, settings]
   );
 
+  // 自分で切断したら、次に挿したり起動したりしても自動では接続し直さない
   const disconnect = useCallback(async () => {
+    saveSettings({ ...settings, autoConnect: false });
     await GnssReceiver.stopNtrip();
     await GnssReceiver.disconnect();
-  }, []);
+  }, [saveSettings, settings]);
 
   const updateReceiverSettings = useCallback(
-    (values: Pick<ExternalGnssSettingsType, 'antennaHeight' | 'baudRate' | 'trackMode' | 'trackDistance'>) => saveSettings({ ...settings, ...values }),
+    (values: Pick<ExternalGnssSettingsType, 'antennaHeight' | 'baudRate' | 'trackMode' | 'trackDistance'>) =>
+      saveSettings({ ...settings, ...values }),
     [saveSettings, settings]
   );
 
@@ -144,7 +134,7 @@ export const useExternalGnss = (): UseExternalGnssReturnType => {
         await startNtripIfEnabled(ntrip, password);
       }
     },
-    [saveSettings, settings, snapshot.status.link, snapshot.status.ntrip, startNtripIfEnabled]
+    [saveSettings, settings, snapshot.status.link, snapshot.status.ntrip]
   );
 
   const setNtripEnabled = useCallback(
@@ -153,7 +143,7 @@ export const useExternalGnss = (): UseExternalGnssReturnType => {
       saveSettings({ ...settings, ntrip });
       await startNtripIfEnabled(ntrip, ntripPassword);
     },
-    [ntripPassword, saveSettings, settings, startNtripIfEnabled]
+    [ntripPassword, saveSettings, settings]
   );
 
   const fetchMountpoints = useCallback(async (ntrip: NtripSettingsType, password: string) => {

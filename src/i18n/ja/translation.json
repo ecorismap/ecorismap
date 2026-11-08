@@ -1238,6 +1238,10 @@
         "connected": "接続済み"
       },
       "fallback": "内蔵GPS",
+      "notConnected": "外部GNSS受信機：未接続",
+      "autoConnectWaiting": "{{name}} をつなぐと自動で接続します",
+      "openSettings": "GPSの設定を開く",
+      "autoConnectNote": "次回から {{name}} に自動で接続します",
       "waitingPosition": "位置を待っています",
       "satellites": "衛星",
       "accuracy": "精度",
@@ -1248,6 +1252,8 @@
       "antennaHeight": "アンテナ高（m）",
       "antennaHeightNote": "地面からアンテナまでの高さ。記録する標高から差し引きます。",
       "baudRate": "ボーレート",
+      "advanced": "詳細設定",
+      "baudRateNote": "USBシリアル変換（FTDI・CP210x・CH340など）を使う受信機のみ、受信機の出力の速さに合わせます。受信機に直接USBでつなぐ場合（ZED-F9Pなど）やBluetoothでは関係ありません。",
       "edit": "変更",
       "track": {
         "title": "軌跡の記録",

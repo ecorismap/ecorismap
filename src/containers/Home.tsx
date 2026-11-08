@@ -40,6 +40,7 @@ import {
 } from '../components/molecules/AlertAsync';
 import { isExternalFixActive } from '../lib/gnss/externalGnssStore';
 import { requestGnssAveragingAsync } from '../hooks/useGnssAveraging';
+import { useExternalGnssAutoConnect } from '../hooks/useExternalGnssAutoConnect';
 import { shallowEqual, useSelector, useDispatch } from 'react-redux';
 import { RootState, AppDispatch } from '../store';
 import { useTiles } from '../hooks/useTiles';
@@ -2293,6 +2294,16 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     openSheet(2);
   }, [openSheet, navigateToSplit]);
 
+  // 設定→GPSの設定の順に積み、戻るボタンで設定画面に戻れるようにする
+  const openGpsSettings = useCallback(() => {
+    navigateToSplit?.('Settings', { previous: 'Home' });
+    navigateToSplit?.('GpsSettings', { previous: 'Settings' });
+    openSheet(2);
+  }, [openSheet, navigateToSplit]);
+
+  // 前回の外部GNSS受信機へ自動で接続し直す（Androidのみ）
+  useExternalGnssAutoConnect();
+
   const pressDisconnectDrive = useCallback(async () => {
     const ret = await ConfirmAsync(t('GoogleDriveProjects.confirm.disconnect'));
     if (!ret) return;
@@ -3511,6 +3522,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       isLocationStale,
       gpsState,
       pressGPS,
+      openGpsSettings,
       updateLocationFromWebGeolocate,
       endWebGeolocate,
       panResponder,
@@ -3544,6 +3556,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       isLocationStale,
       gpsState,
       pressGPS,
+      openGpsSettings,
       updateLocationFromWebGeolocate,
       endWebGeolocate,
       panResponder,

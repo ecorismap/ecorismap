@@ -485,8 +485,15 @@ export interface ExternalGnssSettingsType {
   // （追加前の設定にはキーがないためoptional。未定義はadaptive）
   trackMode?: 'all' | 'adaptive' | 'distance';
   trackDistance?: number;
+  // 最後に接続した受信機と、次回から自動で接続し直すか（「切断」を押すとfalse）
+  lastDevice?: ExternalGnssDeviceType;
+  autoConnect?: boolean;
   ntrip: NtripSettingsType;
 }
+
+export type ExternalGnssDeviceType =
+  | { type: 'usb'; vendorId: number; productId: number; name: string }
+  | { type: 'ble'; address: string; name: string };
 
 export interface NtripSettingsType {
   enabled: boolean;

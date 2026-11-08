@@ -30,6 +30,8 @@ export interface MapViewContextType {
   isLocationStale: boolean;
   gpsState: LocationStateType;
   pressGPS: () => void;
+  // GPSボタンの長押しパネルから外部GNSS受信機の設定（GPSの設定画面）を開く
+  openGpsSettings: () => void;
   // Web専用: maplibre GeolocateControl（地図の現在地ボタン）のイベントからアプリのGPS状態を同期する
   updateLocationFromWebGeolocate: (coords: LocationType) => void;
   endWebGeolocate: () => void;
