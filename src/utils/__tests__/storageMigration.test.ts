@@ -31,6 +31,7 @@ import {
   isMigrationPostponed,
   exportAsyncStorageData,
   migrateToMMKV,
+  markMigrationExported,
   skipMigration,
   postponeMigration,
   resetMigrationStatus,
@@ -286,6 +287,14 @@ describe('storageMigration', () => {
   });
 
   describe('skip / postpone / reset', () => {
+    it('markMigrationExported: 完了フラグを保存し、延期フラグを消す', () => {
+      markMigrationExported();
+
+      expect(mockStorageSet).toHaveBeenCalledWith('migration_completed_v2', 'true');
+      expect(mockStorageRemove).toHaveBeenCalledWith('migration_postponed');
+      expect(mockStorageRemove).toHaveBeenCalledWith('migration_postpone_date');
+    });
+
     it('skipMigration: スキップフラグと日時を保存する', () => {
       skipMigration();
 
