@@ -1,3 +1,4 @@
+import { Platform } from 'react-native';
 import * as GnssReceiver from '../../../modules/gnss-receiver/src';
 import { ExternalGnssDeviceType, NtripSettingsType } from '../../types';
 
@@ -15,6 +16,9 @@ export const toConnectionConfig = (ntrip: NtripSettingsType, password: string): 
   sendGga: ntrip.sendGga,
   ggaIntervalSec: ntrip.ggaIntervalSec,
 });
+
+/** iOSはMFi以外のUSB機器を扱えないので、受信機はBLEでだけつなぐ */
+export const isUsbSupported = Platform.OS === 'android';
 
 const canStartNtrip = (ntrip: NtripSettingsType) => ntrip.enabled && ntrip.host !== '' && ntrip.mountpoint !== '';
 

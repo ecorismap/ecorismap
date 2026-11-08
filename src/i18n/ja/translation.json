@@ -1222,6 +1222,7 @@
     "externalGnss": {
       "sectionTitle": "外部GNSS受信機（RTK）",
       "description": "USB・Bluetooth（BLE）でつないだ受信機の位置を、現在地・軌跡・ポイント記録に使います。位置が5秒途絶えると内蔵GPSに戻ります。",
+      "descriptionBleOnly": "Bluetooth（BLE）でつないだ受信機の位置を、現在地・軌跡・ポイント記録に使います。位置が5秒途絶えると内蔵GPSに戻ります。",
       "usbDevices": "USB機器",
       "noDevices": "USB機器が見つかりません。受信機をつないで「更新」を押してください。",
       "bleDevices": "Bluetooth（BLE）機器",

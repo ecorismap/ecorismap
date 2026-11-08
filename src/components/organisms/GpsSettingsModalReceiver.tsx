@@ -6,6 +6,7 @@ import { ExternalGnssSettingsType } from '../../types';
 import { Pressable } from '../atoms/Pressable';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { DEFAULT_EXTERNAL_GNSS_SETTINGS } from '../../lib/gnss/settings';
+import { isUsbSupported } from '../../lib/gnss/connection';
 import {
   DEFAULT_GNSS_TRACK_DISTANCE,
   DEFAULT_GNSS_TRACK_MODE,
@@ -98,15 +99,17 @@ export const GpsSettingsModalReceiver = React.memo((props: Props) => {
           )}
           <Text style={styles.note}>{`${t(`GpsSettings.externalGnss.track.${trackMode}Note`)}`}</Text>
           {/* ボーレートはUSBシリアル変換を使う受信機だけに要る設定なので、ふだんは畳んでおく */}
-          <Pressable style={styles.advancedToggle} onPress={() => setShowAdvanced((v) => !v)}>
-            <MaterialCommunityIcons
-              name={showAdvanced ? 'chevron-down' : 'chevron-right'}
-              size={18}
-              color={COLOR.GRAY4}
-            />
-            <Text style={styles.advancedToggleText}>{`${t('GpsSettings.externalGnss.advanced')}`}</Text>
-          </Pressable>
-          {showAdvanced && (
+          {isUsbSupported && (
+            <Pressable style={styles.advancedToggle} onPress={() => setShowAdvanced((v) => !v)}>
+              <MaterialCommunityIcons
+                name={showAdvanced ? 'chevron-down' : 'chevron-right'}
+                size={18}
+                color={COLOR.GRAY4}
+              />
+              <Text style={styles.advancedToggleText}>{`${t('GpsSettings.externalGnss.advanced')}`}</Text>
+            </Pressable>
+          )}
+          {isUsbSupported && showAdvanced && (
             <>
               <Text style={styles.label}>{`${t('GpsSettings.externalGnss.baudRate')}`}</Text>
               <View style={styles.wrapRow}>
