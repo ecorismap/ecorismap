@@ -33,6 +33,7 @@ export default function TrackSummary() {
     isRecording,
     gotoBack,
     pressExportTrack,
+    cancelExportTrack,
     isExporting,
     exportProgress,
     isTrackPhotoVisible,
@@ -107,7 +108,7 @@ export default function TrackSummary() {
   return (
     <View style={{ flex: 1 }}>
       {/* エクスポートは写真の変換・zip作成で時間がかかるため進捗を全画面表示する */}
-      <Loading visible={isExporting} text={exportProgress} />
+      <Loading visible={isExporting} text={exportProgress} onCancel={cancelExportTrack} />
       <BottomSheetHeader
         title={isRecording ? t('TrackSummary.navigation.titleRecording') : t('TrackSummary.navigation.title')}
         showBackButton

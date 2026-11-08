@@ -4,6 +4,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Pressable } from '../atoms/Pressable';
 import { COLOR } from '../../constants/AppConstants';
 import { t } from '../../i18n/config';
+import { useDialogPresence } from '../molecules/StyledDialog';
 
 export type ExportDestinationChoice = 'save' | 'share' | 'cancel';
 
@@ -28,6 +29,9 @@ export const showExportDestinationModal = (): Promise<ExportDestinationChoice> =
 
 export const ExportDestinationModal = React.memo(() => {
   const [visible, setVisible] = useState(false);
+  // エクスポート中のLoading（全画面）を引っ込ませる。登録しないとLoadingが上に残って選択肢を押せず、
+  // 「ファイルを作成中」のまま終わらないように見えていた
+  const shown = useDialogPresence('exportDestination', visible);
   const resolverRef = useRef<((choice: ExportDestinationChoice) => void) | null>(null);
 
   useEffect(() => {
@@ -50,7 +54,7 @@ export const ExportDestinationModal = React.memo(() => {
   }, []);
 
   return (
-    <Modal animationType="fade" visible={visible} transparent={true} onRequestClose={() => handleSelect('cancel')}>
+    <Modal animationType="fade" visible={shown} transparent={true} onRequestClose={() => handleSelect('cancel')}>
       <Pressable style={styles.modalOverlay} onPress={() => handleSelect('cancel')} disablePressedAnimation>
         <Pressable style={styles.modalCard} onPress={() => null} disablePressedAnimation>
           <View style={styles.headerIconCircle}>

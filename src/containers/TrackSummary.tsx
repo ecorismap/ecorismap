@@ -27,7 +27,8 @@ import { convertPhotoForExport, deletePhotoFile } from '../utils/Photo';
 import { MAX_BACKUP_LABEL_LENGTH, truncateForFileName } from '../utils/General';
 import { resolveTrackPhotoFileUri, useTrackPhotos } from '../hooks/useTrackPhotos';
 import { editSettingsAction } from '../modules/settings';
-import { AlertAsync } from '../components/molecules/AlertAsync';
+import { AlertAsync, ConfirmAsync, TrackExportConfirmAsync } from '../components/molecules/AlertAsync';
+import { ExportCancelledError, throwIfExportCancelled } from '../utils/zipProgress';
 import { t } from '../i18n/config';
 import { Platform } from 'react-native';
 import dayjs from '../i18n/dayjs';
@@ -159,20 +160,54 @@ export default function TrackSummaryContainers() {
   // GPXのlink参照切れを防ぐためwpt・ファイルともスキップする
   const [isExporting, setIsExporting] = useState(false);
   const [exportProgress, setExportProgress] = useState('');
+  // 中止ボタンで立てる。写真1枚ごと・zipの書き出し途中で見て止める
+  const exportCancelRef = useRef<{ cancelled: boolean } | null>(null);
+  const cancelExportTrack = useCallback(() => {
+    if (exportCancelRef.current !== null) exportCancelRef.current.cancelled = true;
+  }, []);
   const pressExportTrack = useCallback(async () => {
     if (isExporting) return;
+    // 記録中は間引き更新前の最新点まで含めるためその場で再取得する
+    const exportCoords = isRecordingTarget ? getAllTrackPoints() : record?.coords;
+    if (exportCoords === undefined || exportCoords.length < 2) {
+      await AlertAsync(t('TrackSummary.notFound'));
+      return;
+    }
+    // 写真の読み込み・変換・zipへの格納に時間がかかるので、始める前に件数を見せて選ばせる
+    const photoCount = Platform.OS !== 'web' && isTrackPhotoVisible ? trackPhotos.length : 0;
+    let includePhotos = false;
+    if (photoCount > 0) {
+      const choice = await TrackExportConfirmAsync(
+        t('TrackSummary.label.confirmExportWithPhotos', { points: exportCoords.length, photos: photoCount })
+      );
+      if (choice === 'cancel') return;
+      includePhotos = choice === 'withPhotos';
+    } else {
+      const ok = await ConfirmAsync(t('TrackSummary.label.confirmExport', { points: exportCoords.length }), {
+        true: 'OK',
+        false: t('common.cancel'),
+      });
+      if (!ok) return;
+    }
+
+    const cancel = { cancelled: false };
+    exportCancelRef.current = cancel;
     setIsExporting(true);
     setExportProgress('');
+    // zipの進捗は細かく届くので、表示が変わるとき（1%刻み）だけ更新する
+    const progressReporter = (key: 'exportingKmz' | 'exportingZip') => {
+      let last = -1;
+      return (percent: number) => {
+        const rounded = Math.floor(percent);
+        if (rounded === last) return;
+        last = rounded;
+        setExportProgress(t(`TrackSummary.label.${key}`, { percent: rounded }));
+      };
+    };
     // HEIC変換で作った一時ファイル。エクスポート後に削除する
     const convertedUris: string[] = [];
     let kmzPath: string | undefined;
     try {
-      // 記録中は間引き更新前の最新点まで含めるためその場で再取得する
-      const exportCoords = isRecordingTarget ? getAllTrackPoints() : record?.coords;
-      if (exportCoords === undefined || exportCoords.length < 2) {
-        await AlertAsync(t('TrackSummary.notFound'));
-        return;
-      }
       const time = dayjs().format('YYYY-MM-DD_HH-mm-ss');
       const recordName =
         !isRecordingTarget && typeof record?.field.name === 'string' && record.field.name !== ''
@@ -182,11 +217,12 @@ export default function TrackSummaryContainers() {
 
       const exportPhotos: { filename: string; timestamp: number; latitude: number; longitude: number; fileUri: string }[] =
         [];
-      if (Platform.OS !== 'web' && isTrackPhotoVisible) {
+      if (includePhotos) {
         // zip内の同名衝突はname_1.jpg形式でリネームし、wptのlinkと一致させる
         const usedNames = new Map<string, number>();
         let processed = 0;
         for (const photo of trackPhotos) {
+          throwIfExportCancelled({ cancel });
           // 写真の解決・変換は1枚ずつ時間がかかるため進捗を出す
           processed += 1;
           setExportProgress(t('TrackSummary.label.exportingPhotos', { current: processed, total: trackPhotos.length }));
@@ -277,22 +313,28 @@ export default function TrackSummaryContainers() {
       kmzPath = await generateKMZFile(
         kml,
         exportPhotos.map((photo) => ({ name: photo.filename, uri: photo.fileUri })),
-        `${label}_${time}`
+        `${label}_${time}`,
+        { cancel, onProgress: progressReporter('exportingKmz') }
       );
       if (kmzPath !== undefined) {
         exportData.push({ data: kmzPath, name: `${label}_${time}.kmz`, folder: '', type: 'KMZ' });
       } else {
         exportData.push({ data: kml, name: `${label}_${time}.kml`, folder: '', type: 'KML' });
       }
-      const result = await exportGeoFile(exportData, `track_${label}_${time}`, 'zip');
+      const result = await exportGeoFile(exportData, `track_${label}_${time}`, 'zip', undefined, {
+        cancel,
+        onProgress: progressReporter('exportingZip'),
+      });
       if (result === 'saved') {
         await AlertAsync(t('hooks.message.successExportData'));
       } else if (result === 'error') {
         await AlertAsync(t('hooks.message.failExport'));
       }
     } catch (e) {
-      await AlertAsync(t('hooks.message.failExport'));
+      // 自分で中止したときは失敗のメッセージを出さない
+      if (!(e instanceof ExportCancelledError)) await AlertAsync(t('hooks.message.failExport'));
     } finally {
+      exportCancelRef.current = null;
       // 一時ファイル（HEIC変換・KMZ）を後片付けする
       for (const uri of convertedUris) await deletePhotoFile(uri);
       if (kmzPath !== undefined) await deletePhotoFile(kmzPath);
@@ -315,6 +357,7 @@ export default function TrackSummaryContainers() {
         isRecording: isRecordingTarget,
         gotoBack,
         pressExportTrack,
+        cancelExportTrack,
         isExporting,
         exportProgress,
         isTrackPhotoVisible,

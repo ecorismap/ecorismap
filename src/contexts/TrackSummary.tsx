@@ -9,6 +9,8 @@ interface TrackSummaryContextType {
   gotoBack: () => void;
   // 軌跡(trk)+写真(wpt)のGPXと写真ファイルをzipでエクスポートする
   pressExportTrack: () => Promise<void>;
+  // エクスポートを途中で中止する（次の区切りで止まる）
+  cancelExportTrack: () => void;
   isExporting: boolean;
   // エクスポート中の進捗メッセージ（ローディング表示用）
   exportProgress: string;
