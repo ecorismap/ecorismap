@@ -14635,7 +14635,7 @@ __metadata:
     react-map-gl: ^8.1.1
     react-native: 0.85.3
     react-native-background-fetch: 4.4.2
-    react-native-background-geolocation: 5.8.0
+    react-native-background-geolocation: 5.8.2
     react-native-date-picker: ^4.4.2
     react-native-device-info: ^15.0.2
     react-native-draggable-flatlist: 4.0.3
@@ -24455,14 +24455,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-native-background-geolocation@npm:5.8.0":
-  version: 5.8.0
-  resolution: "react-native-background-geolocation@npm:5.8.0"
+"react-native-background-geolocation@npm:5.8.2":
+  version: 5.8.2
+  resolution: "react-native-background-geolocation@npm:5.8.2"
   dependencies:
     "@babel/runtime": ^7.26.0
     "@transistorsoft/background-geolocation-types": ^5.3.8
     tslib: ^2.6.3
-  checksum: 8c16ae353a37f485645db222420d463723c8767f1c8b502bd9deea192c0649eb99fdbc70194c48c63c4d8de4b1209b25c80bd3ef08a9831121ffa22051508de8
+  checksum: 0892a64ad9148fbfde6156011bd3475305421ebb9b926f8dedf871aa8d89deda291fff09c77d95b19699d4863f70fe0fa7a66a20144c5e6ceefbeb8e7d0e6f65
   languageName: node
   linkType: hard
 

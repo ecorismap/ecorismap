@@ -16,9 +16,10 @@ buildscript {
         // react-native-background-geolocation
         appCompatVersion = "1.4.2"
         googlePlayServicesLocationVersion = "21.0.1"
-        // プラグイン5.8.0はネイティブSDKを4.7.0に固定するため、修正版を明示する。
-        // 4.7.3=停止検出オフで位置1件ごとにヒープが増え続ける問題、4.7.6=ready()待ちのイベント無制限滞留の修正
-        tslocationmanagerVersion = "4.7.6"
+        // プラグインの既定（4.7.+）に任せるとビルドごとに版が変わるため、検証した版を明示する。
+        // 4.7.3=停止検出オフで位置1件ごとにヒープが増え続ける問題、4.7.6=ready()待ちのイベント無制限滞留の修正、
+        // 4.7.8=起動時に設定の読み込み待ちでメインスレッドが止まるANRの修正（プラグイン5.8.2と対）
+        tslocationmanagerVersion = "4.7.8"
     }
     repositories {
         google()
