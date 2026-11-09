@@ -185,7 +185,7 @@
     "react-map-gl": "^8.1.1",
     "react-native": "0.85.3",
     "react-native-background-fetch": "4.4.2",
-    "react-native-background-geolocation": "5.8.0",
+    "react-native-background-geolocation": "5.8.2",
     "react-native-date-picker": "^4.4.2",
     "react-native-device-info": "^15.0.2",
     "react-native-draggable-flatlist": "4.0.3",

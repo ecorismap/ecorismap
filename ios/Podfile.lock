@@ -3667,7 +3667,7 @@ PODS:
     - ReactNativeDependencies
     - TSBackgroundFetch (~> 4.1.0)
     - Yoga
-  - RNBackgroundGeolocation (5.8.0):
+  - RNBackgroundGeolocation (5.8.2):
     - hermes-engine
     - RCTRequired
     - RCTTypeSafety
@@ -4903,7 +4903,7 @@ SPEC CHECKSUMS:
   ReactNativeDependencies: 1d6e5bc9eb16a13860fd7ce2d959fb21f0d78774
   RecaptchaInterop: 11e0b637842dfb48308d242afc3f448062325aba
   RNBackgroundFetch: cbc3004dbdc6f462eafa7304fd93ee518ea741eb
-  RNBackgroundGeolocation: 37c918ed8dec591c9dd77c1e3dde39acf8ecf454
+  RNBackgroundGeolocation: 1014e3d4c303f04c9685c33bb93cf53694e38474
   RNCAsyncStorage: a455ed0edb854f0c8471b3049935680d5868796a
   RNCPicker: 47d8598233e5858a65f6d91a80505d5ca86bd5f0
   RNDeviceInfo: 4c852998208b60dc192ae3529e5867817719ad1e
