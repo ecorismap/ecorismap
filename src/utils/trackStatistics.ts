@@ -25,6 +25,12 @@ export interface ElevationProfilePoint {
   speed?: number | null;
   latitude: number;
   longitude: number;
+  // 以下は地図ポップアップ用。altitudeはグラフ用に平滑化されるため、測位値をそのまま残す
+  rawAltitude?: number;
+  accuracy?: number | null;
+  // 外部GNSS受信機で記録した点のみ
+  fixQuality?: number;
+  ellipsoidHeight?: number;
 }
 
 const hasAltitude = (p: LocationType): p is LocationType & { altitude: number } =>
@@ -148,6 +154,10 @@ export const buildElevationProfile = (coords: LocationType[], maxPoints = 300): 
         speed: point.speed,
         latitude: point.latitude,
         longitude: point.longitude,
+        rawAltitude: point.altitude,
+        accuracy: point.accuracy,
+        fixQuality: point.fixQuality,
+        ellipsoidHeight: point.ellipsoidHeight,
       });
     }
   }
