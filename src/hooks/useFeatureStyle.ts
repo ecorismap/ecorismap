@@ -7,7 +7,7 @@ import { shallowEqual, useDispatch, useSelector } from 'react-redux';
 import { RootState } from '../store';
 import { cloneDeep } from 'lodash';
 import { getRandomColor, hsv2rgbaString } from '../utils/Color';
-import { updateLayerAction } from '../modules/layers';
+import { TRACK_LAYER_ID, updateLayerAction } from '../modules/layers';
 import { t } from '../i18n/config';
 import { selectDataSetForLayer } from '../modules/selectors';
 import { applyColorStyle } from '../utils/Layer';
@@ -101,8 +101,12 @@ export const useFeatureStyle = (layer_: LayerType, isEdited_: boolean): UseFeatu
     if (!isPaletteLayer && colorStyle.colorType !== 'INDIVIDUAL') {
       types = types.filter((type) => type !== 'INDIVIDUAL');
     }
+    //測位品質は頂点ごとの外部GNSSの測位品質で塗り分ける軌跡専用の設定。他のレイヤは品質を持たない
+    if (layer_.id !== TRACK_LAYER_ID && colorStyle.colorType !== 'GNSS_QUALITY') {
+      types = types.filter((type) => type !== 'GNSS_QUALITY');
+    }
     return types;
-  }, [colorStyle.colorType, hisyouTool, layer_.toolPalette, layer_.type, projectId]);
+  }, [colorStyle.colorType, hisyouTool, layer_.id, layer_.toolPalette, layer_.type, projectId]);
   const colorTypeLabels = useMemo(() => colorTypes.map((type) => COLORTYPE[type]), [colorTypes]);
   const layerType = useMemo(() => layer_.type, [layer_.type]);
   useEffect(() => {

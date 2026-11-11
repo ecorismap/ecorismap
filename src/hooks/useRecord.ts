@@ -24,7 +24,8 @@ import { addRecordsAction, deleteRecordsAction, updateRecordsAction } from '../m
 import { calcCentroid, calcLineMidPoint } from '../utils/Coords';
 import { usePermission } from './usePermission';
 import { selectLineDataSet, selectPointDataSet, selectPolygonDataSet } from '../modules/selectors';
-import { addLayerAction, layersInitialState, MEMO_LAYER_ID } from '../modules/layers';
+import { addLayerAction, layersInitialState, MEMO_LAYER_ID, updateLayerAction } from '../modules/layers';
+import { toGnssQualityColorLayer } from '../utils/Layer';
 import { storage, trackLogStorage } from '../utils/mmkvStorage';
 
 export type UseRecordReturnType = {
@@ -112,6 +113,7 @@ export const useRecord = (): UseRecordReturnType => {
   const polygonDataSet = useSelector(selectPolygonDataSet);
 
   const selectedRecord = useSelector((state: RootState) => state.settings.selectedRecord, shallowEqual);
+  const trackGnssColorAutoApplied = useSelector((state: RootState) => state.settings.trackGnssColorAutoApplied === true);
 
   const { isRunningProject } = usePermission();
   const activePointLayer = useMemo(() => layers.find((d) => d.active && d.type === 'POINT'), [layers]);
@@ -323,11 +325,23 @@ export const useRecord = (): UseRecordReturnType => {
   const addTrackRecord = useCallback(
     (locations: LocationType[], options?: { distance?: string }) => {
       let trackLayer = layers.find((l) => l.id === 'track');
+      const isNewLayer = !trackLayer;
       if (!trackLayer) {
         // Trackレイヤーがなければ初期状態から作成
         trackLayer = layersInitialState.find((l) => l.id === 'track');
         if (!trackLayer) throw new Error('Track layer template not found');
+      }
+      // 外部GNSS受信機で記録した軌跡を初めて保存するときは、色分けを「測位品質」へ切り替える。
+      // 一度だけにして、利用者が単色へ戻したら以後は尊重する
+      const gnssColorLayer = trackGnssColorAutoApplied ? undefined : toGnssQualityColorLayer(trackLayer, locations);
+      if (gnssColorLayer !== undefined) {
+        trackLayer = gnssColorLayer;
+        dispatch(editSettingsAction({ trackGnssColorAutoApplied: true }));
+      }
+      if (isNewLayer) {
         dispatch(addLayerAction(trackLayer));
+      } else if (gnssColorLayer !== undefined) {
+        dispatch(updateLayerAction(trackLayer));
       }
       const trackDataSet = lineDataSet.find((d) => d.layerId === trackLayer!.id && d.userId === dataUser.uid);
       const trackRecordSet = trackDataSet ? trackDataSet.data : [];
@@ -342,7 +356,7 @@ export const useRecord = (): UseRecordReturnType => {
 
       return { isOK: true, message: '', layer: trackLayer, record };
     },
-    [layers, lineDataSet, generateRecord, addRecord, dispatch, dataUser.uid]
+    [layers, lineDataSet, generateRecord, addRecord, dispatch, dataUser.uid, trackGnssColorAutoApplied]
   );
 
   const addRecordWithCheck = useCallback(

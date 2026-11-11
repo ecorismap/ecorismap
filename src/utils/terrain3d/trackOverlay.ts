@@ -29,19 +29,21 @@ export const trackWidthMeters = (zoom: number): number =>
  * @param idPrefix spec idの接頭辞（チャンク番号など、系統内で一意になる文字列）
  * @param widthMeters リボン幅[メルカトルm]
  * @param color 実線部分の色
+ * @param fixColored 外部GNSS受信機のFIX/FLOAT区間を品質色にするか（軌跡レイヤのカラータイプ「測位品質」）
  */
 export const buildTrackOverlaySpecs = (
   segments: TrackSegmentType[],
   idPrefix: string,
   widthMeters: number,
-  color: Rgba
+  color: Rgba,
+  fixColored = false
 ): DataOverlaySpec[] => {
   const specs: DataOverlaySpec[] = [];
   segments.forEach((segment, index) => {
     // 1点だけの区間はリボンにならない（buildRibbonもnullを返す）
     if (segment.coordinates.length < 2) return;
     // 外部GNSS受信機のFIX/FLOAT区間は2Dと同じ色にする
-    const fixColor = trackFixColor(segment.fixQuality);
+    const fixColor = fixColored ? trackFixColor(segment.fixQuality) : undefined;
     const base: Rgba = fixColor !== undefined ? parseColorToRgba(fixColor, color) : color;
     const segmentColor: Rgba = segment.isLowAccuracy
       ? [base[0], base[1], base[2], base[3] * LOW_ACCURACY_ALPHA_RATIO]

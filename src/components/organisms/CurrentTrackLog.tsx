@@ -1,7 +1,10 @@
 import React, { useMemo } from 'react';
 import { Polyline } from 'react-native-maps';
 
+import { useSelector } from 'react-redux';
 import { COLOR, TRACK_DASH_PATTERN } from '../../constants/AppConstants';
+import { RootState } from '../../store';
+import { isTrackGnssQualityColored } from '../../utils/Layer';
 import { trackFixColor } from '../../lib/gnss/toLocation';
 import { getDisplayBufferSimplified, splitTrackByAccuracy } from '../../utils/Location';
 
@@ -32,6 +35,8 @@ export const CurrentTrackLog = React.memo((props: Props) => {
   // props.currentLocationとtotalPointsは再レンダリングのトリガーとして使用（arePropsEqualで比較）
 
   const { currentLocation, totalPoints } = props;
+  // 軌跡レイヤのカラータイプが「測位品質」のときだけFIX/FLOAT区間を色分けする
+  const fixColored = useSelector((state: RootState) => isTrackGnssQualityColored(state.layers));
 
   // 実際のデータはメモリ内キャッシュ（無ければMMKV）から取得。
   // 毎レンダリングでの再取得/再簡略化を避けるため、再描画トリガー（点数・現在地）をキーにメモ化する。
@@ -55,7 +60,7 @@ export const CurrentTrackLog = React.memo((props: Props) => {
           key={`current-track-${index}`}
           tappable={false}
           coordinates={segment.coordinates}
-          strokeColor={trackFixColor(segment.fixQuality) ?? COLOR.TRACK}
+          strokeColor={(fixColored ? trackFixColor(segment.fixQuality) : undefined) ?? COLOR.TRACK}
           strokeWidth={4}
           lineCap="butt"
           zIndex={101}

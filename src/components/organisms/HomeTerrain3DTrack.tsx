@@ -14,7 +14,9 @@
  * HomeTerrain3D側で既に描かれるので、ここでは扱わない。
  */
 import React, { useContext, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
+import { useSelector } from 'react-redux';
 import { COLOR } from '../../constants/AppConstants';
+import { RootState } from '../../store';
 import { TrackSegmentType } from '../../types';
 import { LocationTrackingContext } from '../../contexts/LocationTracking';
 import { MapViewStableContext } from '../../contexts/MapViewStable';
@@ -23,6 +25,7 @@ import { parseColorToRgba } from '../../utils/terrain3d/colorUtils';
 import { TerrainScene } from '../../utils/terrain3d/TerrainScene';
 import { buildTrackOverlaySpecs, trackWidthMeters } from '../../utils/terrain3d/trackOverlay';
 import { terrain3dVistaStore } from '../../utils/terrain3d/vistaStore';
+import { isTrackGnssQualityColored } from '../../utils/Layer';
 
 interface Props {
   scene: TerrainScene | null;
@@ -47,6 +50,7 @@ export const HomeTerrain3DTrack = React.memo(({ scene }: Props) => {
   // 線幅はメルカトルmでジオメトリへ焼き込まれるので、ズームが変わると作り直しになる
   const widthMeters = useMemo(() => trackWidthMeters(zoom), [zoom]);
   const color = useMemo(() => parseColorToRgba(COLOR.TRACK), []);
+  const fixColored = useSelector((state: RootState) => isTrackGnssQualityColored(state.layers));
   // 眺望中は描かない。地上1.7mの視点では足元の軌跡が地形に貼られた太い帯として
   // 視界を塞ぐうえ、立ち位置が現在地なら軌跡の終端が真下に来るため
   const vistaActive = useSyncExternalStore(terrain3dVistaStore.subscribe, getVistaActive);
@@ -62,9 +66,9 @@ export const HomeTerrain3DTrack = React.memo(({ scene }: Props) => {
     const specs =
       points.length === 0
         ? []
-        : buildTrackOverlaySpecs(splitTrackByAccuracy(points), 'track-live', widthMeters, color);
+        : buildTrackOverlaySpecs(splitTrackByAccuracy(points), 'track-live', widthMeters, color, fixColored);
     scene.setOverlays('trackLive', specs);
-  }, [scene, widthMeters, color, totalPoints, vistaActive]);
+  }, [scene, widthMeters, color, fixColored, totalPoints, vistaActive]);
 
   // 保存済みチャンク（大きい・500点ごとに1つ増える）。
   // MMKVの読み出しとJSONパースは1チャンクあたり数ms。まとめて読むと3D切替直後に
@@ -107,9 +111,11 @@ export const HomeTerrain3DTrack = React.memo(({ scene }: Props) => {
     if (scene === null) return;
     scene.setOverlays(
       'trackSaved',
-      vistaActive ? [] : buildTrackOverlaySpecs(savedSegmentsRef.current, 'track-saved', widthMeters, color)
+      vistaActive
+        ? []
+        : buildTrackOverlaySpecs(savedSegmentsRef.current, 'track-saved', widthMeters, color, fixColored)
     );
-  }, [scene, savedVersion, widthMeters, color, vistaActive]);
+  }, [scene, savedVersion, widthMeters, color, fixColored, vistaActive]);
 
   // 2Dへ戻る・3Dを閉じるときに軌跡を残さない
   useEffect(() => {

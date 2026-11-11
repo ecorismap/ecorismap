@@ -1,10 +1,32 @@
 import { cloneDeep } from 'lodash';
 import { COLOR } from '../constants/AppConstants';
 import { t } from '../i18n/config';
-import { RecordType, LayerType, ColorStyle, FieldType, FormatType } from '../types';
+import { RecordType, LayerType, ColorStyle, FieldType, FormatType, LocationType } from '../types';
 import { ulid } from 'ulid';
 import { getUserColor, hex2rgba } from './Color';
 import dayjs from '../i18n/dayjs';
+import { TRACK_LAYER_ID } from '../modules/layers';
+
+/**
+ * 軌跡をFIX/FLOATの品質色で塗り分けるか。軌跡レイヤのカラータイプ「測位品質」で切り替える。
+ * レイヤ未作成（初回の記録中）は単色扱い
+ */
+export const isGnssQualityColored = (layer: LayerType | undefined): boolean =>
+  layer?.id === TRACK_LAYER_ID && layer.colorStyle.colorType === 'GNSS_QUALITY';
+
+/** 記録中の軌跡（レイヤデータになる前）も軌跡レイヤの設定に従う */
+export const isTrackGnssQualityColored = (layers: LayerType[]): boolean =>
+  isGnssQualityColored(layers.find((layer) => layer.id === TRACK_LAYER_ID));
+
+/**
+ * 外部GNSS受信機で記録した軌跡を初めて保存するとき、単色のままの軌跡レイヤを「測位品質」へ切り替える。
+ * 以前は品質色を常に重ねていたため、その見た目を引き継ぐ。切り替えないときはundefined
+ */
+export const toGnssQualityColorLayer = (layer: LayerType, locations: LocationType[]): LayerType | undefined => {
+  if (layer.id !== TRACK_LAYER_ID || layer.colorStyle.colorType !== 'SINGLE') return undefined;
+  if (!locations.some((location) => location.fixQuality !== undefined)) return undefined;
+  return { ...layer, colorStyle: { ...layer.colorStyle, colorType: 'GNSS_QUALITY' } };
+};
 
 /**
  * レイヤの色分けを「個別（ストロークごとの_strokeColor）」へ切り替える。
@@ -213,7 +235,8 @@ export const getColor = (layer: LayerType, feature: RecordType) => {
   const colorStyle = layer.colorStyle;
 
   let color = COLOR.WHITE;
-  if (colorStyle.colorType === 'SINGLE') {
+  //測位品質の線そのものは単色。FIX/FLOAT区間の品質色は描画側で上に重ねる
+  if (colorStyle.colorType === 'SINGLE' || colorStyle.colorType === 'GNSS_QUALITY') {
     color = hex2rgba(colorStyle.color);
   } else if (colorStyle.colorType === 'CATEGORIZED') {
     //未設定（列を後から追加したレコードなど）は空欄のカテゴリに一致させる
@@ -252,7 +275,7 @@ export function getColorRule(layer_: LayerType, displayName?: string) {
   const colorList = layer_.colorStyle.colorList;
   const customFieldValue = layer_.colorStyle.customFieldValue;
   const color = layer_.colorStyle.color;
-  if (colorType === 'SINGLE') {
+  if (colorType === 'SINGLE' || colorType === 'GNSS_QUALITY') {
     colorRule = hex2rgba(color) ?? 'rgba(255,0,0,0)';
   } else if (colorType === 'CATEGORIZED') {
     if (fieldName === '__CUSTOM') {

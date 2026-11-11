@@ -132,6 +132,8 @@ export const COLORTYPE = {
   CATEGORIZED: t('constants.colortype.categorized'),
   USER: t('constants.colortype.user'),
   INDIVIDUAL: t('constants.colortype.individual'),
+  //軌跡レイヤ専用。線は単色で描き、外部GNSS受信機のFIX/FLOAT区間だけ品質色を重ねる
+  GNSS_QUALITY: t('constants.colortype.gnssQuality'),
 } as const;
 
 export const COLORRAMP = {

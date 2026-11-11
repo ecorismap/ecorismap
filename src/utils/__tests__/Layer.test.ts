@@ -5,6 +5,9 @@ import { getColor, getColorRule, changeLayerId, applyColorStyle, getLineWidth, g
   updateFieldReferences,
   getMapMemoSymbolScaleAtZoom,
   SYMBOL_BASE_ZOOM,
+  isGnssQualityColored,
+  isTrackGnssQualityColored,
+  toGnssQualityColorLayer,
 } from '../Layer';
 import { getUserColor } from '../Color';
 import { t } from '../../i18n/config';
@@ -953,5 +956,63 @@ describe('updateFieldReferences 属性の削除', () => {
     const result = updateFieldReferences(layer, base, new Set(['description']), new Map());
     expect(result.colorStyle).toEqual(base.colorStyle);
     expect(result.label).toBe('name');
+  });
+});
+
+describe('測位品質の色分け（軌跡レイヤ）', () => {
+  const trackLayer: LayerType = {
+    id: 'track',
+    name: '軌跡',
+    type: 'LINE',
+    permission: 'PRIVATE',
+    colorStyle: {
+      colorType: 'SINGLE',
+      color: COLOR.TRACK,
+      fieldName: 'name',
+      colorRamp: 'RANDOM',
+      customFieldValue: '',
+      colorList: [],
+      transparency: 0.2,
+    },
+    label: 'name',
+    visible: true,
+    active: false,
+    field: [],
+  };
+  const gnssLayer: LayerType = { ...trackLayer, colorStyle: { ...trackLayer.colorStyle, colorType: 'GNSS_QUALITY' } };
+  const internalPoints = [
+    { latitude: 35, longitude: 135 },
+    { latitude: 35.001, longitude: 135 },
+  ];
+  const gnssPoints = [
+    { latitude: 35, longitude: 135 },
+    { latitude: 35.001, longitude: 135, fixQuality: 4 },
+  ];
+
+  it('線そのものは単色と同じ色で描く', () => {
+    const record = { id: 'r', userId: 'u', displayName: 'u', visible: true, redraw: false, coords: [], field: {} };
+    expect(getColor(gnssLayer, record)).toBe(getColor(trackLayer, record));
+    expect(getColorRule(gnssLayer)).toBe(getColorRule(trackLayer));
+  });
+
+  it('品質色を重ねるのは軌跡レイヤが測位品質のときだけ', () => {
+    expect(isGnssQualityColored(gnssLayer)).toBe(true);
+    expect(isGnssQualityColored(trackLayer)).toBe(false);
+    expect(isGnssQualityColored({ ...gnssLayer, id: 'other' })).toBe(false);
+    expect(isGnssQualityColored(undefined)).toBe(false);
+    expect(isTrackGnssQualityColored([gnssLayer])).toBe(true);
+    expect(isTrackGnssQualityColored([])).toBe(false);
+  });
+
+  it('外部GNSSの点を含む軌跡なら単色の軌跡レイヤを測位品質へ切り替える', () => {
+    expect(toGnssQualityColorLayer(trackLayer, gnssPoints)?.colorStyle.colorType).toBe('GNSS_QUALITY');
+  });
+
+  it('内蔵GPSだけの軌跡・単色以外・軌跡以外のレイヤは切り替えない', () => {
+    expect(toGnssQualityColorLayer(trackLayer, internalPoints)).toBeUndefined();
+    const userLayer: LayerType = { ...trackLayer, colorStyle: { ...trackLayer.colorStyle, colorType: 'USER' } };
+    expect(toGnssQualityColorLayer(userLayer, gnssPoints)).toBeUndefined();
+    expect(toGnssQualityColorLayer(gnssLayer, gnssPoints)).toBeUndefined();
+    expect(toGnssQualityColorLayer({ ...trackLayer, id: 'other' }, gnssPoints)).toBeUndefined();
   });
 });
