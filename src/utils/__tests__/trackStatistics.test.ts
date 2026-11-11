@@ -211,4 +211,20 @@ describe('buildElevationProfile', () => {
     expect(buildElevationProfile(makeTrack(10, { altitude: () => null }))).toEqual([]);
     expect(buildElevationProfile(makeTrack(10, { altitude: (i) => (i === 0 ? 100 : null) }))).toEqual([]);
   });
+
+  it('地図ポップアップ用に測位品質・精度・楕円体高と平滑化前の標高を保持する', () => {
+    const track = makeTrack(10, { altitude: (i) => (i === 5 ? 120.34 : 100) }).map((p, i) => ({
+      ...p,
+      accuracy: 0.02,
+      fixQuality: i < 5 ? 4 : 5,
+      ellipsoidHeight: 140 + i,
+    }));
+    const profile = buildElevationProfile(track);
+    expect(profile[5].rawAltitude).toBe(120.34);
+    expect(profile[5].altitude).not.toBe(120.34);
+    expect(profile[5].accuracy).toBe(0.02);
+    expect(profile[4].fixQuality).toBe(4);
+    expect(profile[5].fixQuality).toBe(5);
+    expect(profile[5].ellipsoidHeight).toBe(145);
+  });
 });

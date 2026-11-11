@@ -26,16 +26,17 @@ export const HomeTrackPointPopup = React.memo(() => {
 
   const displayInfo = useMemo(() => {
     if (trackFocusPoint !== null) {
+      const isGnss = trackFocusPoint.fixQuality !== undefined;
       return {
         coordinate: { latitude: trackFocusPoint.latitude, longitude: trackFocusPoint.longitude },
         position: undefined,
         timestamp: trackFocusPoint.timestamp,
-        altitude: trackFocusPoint.altitude,
+        // 外部GNSSの点は測位標高（cm級）として出すため、グラフ用に平滑化する前の値を使う
+        altitude: isGnss ? (trackFocusPoint.rawAltitude ?? trackFocusPoint.altitude) : trackFocusPoint.altitude,
         speed: trackFocusPoint.speed,
-        // 標高グラフのフォーカス点は精度・測位品質・楕円体高を持たない（地図上のタップのみ）
-        accuracy: undefined as number | null | undefined,
-        fixQuality: undefined as number | undefined,
-        ellipsoidHeight: undefined as number | undefined,
+        accuracy: trackFocusPoint.accuracy,
+        fixQuality: trackFocusPoint.fixQuality,
+        ellipsoidHeight: trackFocusPoint.ellipsoidHeight,
       };
     }
     return trackPointInfo;
