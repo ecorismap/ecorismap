@@ -472,6 +472,8 @@ export interface SettingsType {
   lockLocationPerLayer?: { [layerId: string]: boolean };
   //データ一覧の絞り込み条件。解除するまで保持するため画面の再表示をまたいで残す（fieldNameが空なら全フィールド）
   dataFilterPerLayer?: { [layerId: string]: { text: string; fieldName: string } };
+  //外部GNSSの軌跡を初めて保存したときに軌跡レイヤを「測位品質」の色分けへ切り替え済みか（一度だけ行う）。端末ローカル
+  trackGnssColorAutoApplied?: boolean;
   //軌跡上に端末ライブラリの写真を表示するか。既存ユーザーの永続化済みsettingsにはキーがないためoptional（未定義=ON）
   isTrackPhotoVisible?: boolean;
   //写真フィールドのカメラ撮影中（Android）。カメラ起動中にActivityが破棄されReactツリーが作り直されても

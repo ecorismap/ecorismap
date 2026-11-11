@@ -23,9 +23,8 @@ import { substituteGoogleBasemaps } from '../../utils/terrain3d/googleBasemapSub
 import { DataOverlaySpec, TerrainScene } from '../../utils/terrain3d/TerrainScene';
 import { parseColorToRgba } from '../../utils/terrain3d/colorUtils';
 import { MERCATOR_CIRCUMFERENCE } from '../../utils/terrain3d/coords';
-import { getColor, getLineWidthAtZoom, getLineWidth } from '../../utils/Layer';
+import { getColor, getLineWidthAtZoom, getLineWidth, isGnssQualityColored } from '../../utils/Layer';
 import { LineRecordType, PointRecordType, PolygonRecordType } from '../../types';
-import { TRACK_LAYER_ID } from '../../modules/layers';
 import { splitTrackFixSegments } from '../../utils/Location';
 import { HomeTerrain3DPoints } from './HomeTerrain3DPoints';
 import { HomeVistaPeakLabels } from './HomeVistaPeakLabels';
@@ -213,8 +212,8 @@ export const HomeTerrain3D = React.memo(() => {
           color: rgba,
           widthMeters,
         });
-        // 保存した軌跡は2Dと同じく外部GNSSのFIX/FLOAT区間を品質色で上に重ねる
-        if (layer.id === TRACK_LAYER_ID) {
+        // カラータイプ「測位品質」の軌跡は2Dと同じく外部GNSSのFIX/FLOAT区間を品質色で上に重ねる
+        if (isGnssQualityColored(layer)) {
           splitTrackFixSegments(record.coords).forEach((segment, index) => {
             specs.push({
               id: `line-fix-${dataSet.layerId}-${record.id}-${index}`,

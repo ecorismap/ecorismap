@@ -8,9 +8,8 @@ import { isBrushTool } from '../../utils/General';
 import { HomeMapMemoStamp } from './HomeMapMemoStamp';
 import { HomeMapMemoBrush } from './HomeMapMemoBrush';
 import { COLOR } from '../../constants/AppConstants';
-import { generateLabel, getColor, getLineWidthAtZoom, SYMBOL_BASE_SIZE_PX } from '../../utils/Layer';
+import { generateLabel, getColor, getLineWidthAtZoom, isGnssQualityColored, SYMBOL_BASE_SIZE_PX } from '../../utils/Layer';
 import { LineArrow } from '../atoms';
-import { TRACK_LAYER_ID } from '../../modules/layers';
 import { splitTrackFixSegments } from '../../utils/Location';
 
 interface Props {
@@ -117,8 +116,8 @@ export const Line = React.memo((props: Props) => {
         displayName={displayName}
         zoom={zoom}
       />
-      {/* 保存した軌跡は記録中と同じくRTKのFIX/FLOAT区間を色分けする（選択中の軌跡は黄色の強調を優先） */}
-      {layer.id === TRACK_LAYER_ID && (
+      {/* カラータイプ「測位品質」の軌跡はRTKのFIX/FLOAT区間を色分けする（選択中の軌跡は黄色の強調を優先） */}
+      {isGnssQualityColored(layer) && (
         <TrackFixOverlay
           data={lineRecords}
           sourceId={`${layer.id}_${userId}_fix`}

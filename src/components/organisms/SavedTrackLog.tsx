@@ -1,7 +1,10 @@
 import React, { useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { Polyline } from 'react-native-maps';
 
+import { useSelector } from 'react-redux';
 import { COLOR, TRACK_DASH_PATTERN } from '../../constants/AppConstants';
+import { RootState } from '../../store';
+import { isTrackGnssQualityColored } from '../../utils/Layer';
 import { trackFixColor } from '../../lib/gnss/toLocation';
 import { TrackSegmentType } from '../../types';
 import { getTrackChunkForDisplay, splitTrackByAccuracy } from '../../utils/Location';
@@ -22,6 +25,8 @@ export const SavedTrackLog = React.memo((props: Props) => {
   const [loadedChunks, setLoadedChunks] = useState<Record<number, TrackSegmentType[]>>({});
   const loadedChunksRef = useRef<Record<number, TrackSegmentType[]>>({});
   const { setLoading } = useContext(AppStateContext);
+  // 軌跡レイヤのカラータイプが「測位品質」のときだけFIX/FLOAT区間を色分けする
+  const fixColored = useSelector((state: RootState) => isTrackGnssQualityColored(state.layers));
   const [isInitialLoading, setIsInitialLoading] = useState(false);
   const loadingControlRef = useRef(false);
   
@@ -160,7 +165,7 @@ export const SavedTrackLog = React.memo((props: Props) => {
             key={`saved-track-${chunkIndex}-${segmentIndex}`}
             tappable={false}
             coordinates={segment.coordinates}
-            strokeColor={trackFixColor(segment.fixQuality) ?? COLOR.TRACK}
+            strokeColor={(fixColored ? trackFixColor(segment.fixQuality) : undefined) ?? COLOR.TRACK}
             strokeWidth={4}
             lineCap="butt"
             zIndex={100}

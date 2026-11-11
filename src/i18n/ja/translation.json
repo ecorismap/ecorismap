@@ -4,7 +4,8 @@
       "single": "単色",
       "categorized": "カテゴリ",
       "user": "ユーザー別",
-      "individual": "個別"
+      "individual": "個別",
+      "gnssQuality": "測位品質"
     },
     "colorramp": {
       "random": "ランダム"
@@ -715,7 +716,8 @@
   "LayerEditFeatureStyle": {
     "navigation": {
       "title": "スタイル設定"
-    }
+    },
+    "gnssQualityNote": "FIX・FLOATの区間を上の色で塗り分けます。それ以外の区間（内蔵GPS・単独測位など）は下の色で描きます。"
   },
   "LayerEditFieldItem": {
     "navigation": {

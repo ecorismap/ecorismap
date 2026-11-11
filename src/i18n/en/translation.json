@@ -4,7 +4,8 @@
       "single": "Single",
       "categorized": "Categorized",
       "user": "User",
-      "individual": "Individual"
+      "individual": "Individual",
+      "gnssQuality": "GNSS quality"
     },
     "colorramp": {
       "random": "Random"
@@ -1051,7 +1052,8 @@
   "LayerEditFeatureStyle": {
     "navigation": {
       "title": "Style settings"
-    }
+    },
+    "gnssQualityNote": "FIX and FLOAT sections are drawn in the colors above. Other sections (built-in GPS, standalone, etc.) use the color below."
   },
   "LayerEditFieldItem": {
     "navigation": {

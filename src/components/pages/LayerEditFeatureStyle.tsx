@@ -4,6 +4,7 @@ import { COLOR, LAYEREDIT_BTN } from '../../constants/AppConstants';
 import { ColorTable } from '../organisms/FeatureStyleColorTable';
 import { SimplePicker } from '../molecules/SimplePicker';
 import { SingleColorSelect } from '../organisms/FeatureStyleSingleColorSelect';
+import { GnssQualityLegend } from '../organisms/FeatureStyleGnssQualityLegend';
 import Slider from '../atoms/Slider';
 import { t } from '../../i18n/config';
 import { LayerEditFeatureStyleContext } from '../../contexts/LayerEditFeatureStyle';
@@ -97,7 +98,8 @@ export default function LayerEditFeatureStyleScreen() {
             </View>
           </View>
         )}
-        {colorStyle.colorType === 'SINGLE' && (
+        {colorStyle.colorType === 'GNSS_QUALITY' && <GnssQualityLegend />}
+        {(colorStyle.colorType === 'SINGLE' || colorStyle.colorType === 'GNSS_QUALITY') && (
           <SingleColorSelect value={colorStyle.color} onPressColorSelect={pressSelectSingleColor} />
         )}
 

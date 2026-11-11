@@ -2,14 +2,13 @@ import React, { useMemo } from 'react';
 import { Polyline, LatLng } from 'react-native-maps';
 import { ArrowStyleType, LayerType, LineRecordType, LocationType, RecordType } from '../../types';
 import { LineLabel } from '../atoms';
-import { generateLabel, getColor, getLineWidthAtZoom, SYMBOL_BASE_SIZE_PX } from '../../utils/Layer';
+import { generateLabel, getColor, getLineWidthAtZoom, isGnssQualityColored, SYMBOL_BASE_SIZE_PX } from '../../utils/Layer';
 import { COLOR } from '../../constants/AppConstants';
 import { isBrushTool } from '../../utils/General';
 import LineArrow from '../atoms/LineArrow';
 import { HomeMapMemoStamp } from './HomeMapMemoStamp';
 import { HomeMapMemoBrush } from './HomeMapMemoBrush';
 import { ViewportBounds, cullLines } from '../../utils/ViewportCulling';
-import { TRACK_LAYER_ID } from '../../modules/layers';
 import { splitTrackFixSegments } from '../../utils/Location';
 
 interface Props {
@@ -90,8 +89,8 @@ export const Line = React.memo(
                   zoom={zoom}
                   selected={selected}
                 />
-                {/* 保存した軌跡は記録中と同じくRTKのFIX/FLOAT区間を色分けする（選択中は黄色の強調を優先） */}
-                {layer.id === TRACK_LAYER_ID && !selected && (
+                {/* カラータイプ「測位品質」の軌跡はRTKのFIX/FLOAT区間を色分けする（選択中は黄色の強調を優先） */}
+                {isGnssQualityColored(layer) && !selected && (
                   <TrackFixOverlay coords={feature.coords} strokeWidth={strokeWidth} zIndex={zIndex} />
                 )}
               </React.Fragment>
