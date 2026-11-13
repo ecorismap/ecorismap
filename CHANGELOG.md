@@ -10,17 +10,19 @@
 - Added the GEBCO bathymetry map in 3D (color relief with seafloor terrain), on iOS/Android and the web
 - In the 3D view, the Google standard map and satellite imagery are replaced with the GSI standard map and seamless aerial photos, because Google's map imagery cannot be shown in 3D
 - The 2D map can now be rotated with two fingers, as in the 3D view. While rotated, the compass points to the map's north and tapping it returns to north up; the current location marker, line arrows and brush symbols keep their real-world directions. Rotation is disabled while drawing or using tools, and when the 3D view is opened from a rotated map it keeps the direction
-- Added support for external GNSS receivers on Android (USB serial and Bluetooth LE / Nordic UART) with a built-in NTRIP client that relays corrections to the receiver for RTK positioning (NTRIP v1/v2, mountpoint list from the source table, optional GGA for VRS). The receiver's position is used for the current location, tracks and points, falling back to the built-in GPS when it stops for 5 seconds. The GPS button shows the fix type (FIX/FLOAT/DGPS/SPP), and a long press shows accuracy, satellites, HDOP, elevation, ellipsoidal height and the NTRIP status. Long-pressing the current location shows the measured elevation and coordinates to 8 decimal places
+- Added support for external GNSS receivers on Android (USB serial and Bluetooth LE / Nordic UART) with a built-in NTRIP client that relays corrections to the receiver for RTK positioning (NTRIP v1/v2, mountpoint list from the source table, optional GGA for VRS). The receiver's position is used for the current location, tracks and points, falling back to the built-in GPS when it stops for 5 seconds. The GPS button shows the fix type (FIX/FLOAT/DGPS/SPP), and a long press shows accuracy, satellites, HDOP, elevation, ellipsoidal height and the NTRIP status. Long-pressing the current location shows the measured elevation and coordinates to 8 decimal places. The app reconnects to the last receiver (and NTRIP) automatically at launch and when returning to the app, unless you disconnected it
 - Added position averaging (5–60 epochs, optionally RTK FIX only) when adding a point at the current location or updating a point's position with "Edit position"
 - Points recorded with an external receiver keep the fix type, accuracy, measured elevation (antenna height subtracted) and ellipsoidal height. They are shown in the data edit screen and exported as extra columns in CSV/GeoJSON
-- Tracks recorded with an external receiver can be thinned by accuracy or by distance, are colored by fix type (FIX green / FLOAT orange) in 2D and 3D, and keep the ellipsoidal height (exported as geoidheight in GPX)
+- Tracks recorded with an external receiver can be thinned by accuracy or by distance and keep the fix type and ellipsoidal height (exported as geoidheight in GPX). The new track layer color type "GNSS quality" colors them by fix type (FIX green / FLOAT orange) in 2D and 3D, and is switched on automatically the first time such a track is saved. Tapping a track point shows the fix type and accuracy
 - Added PMTiles maps (vector, raster and pbf) to PDF export
+- Improved track export: before starting, it shows the number of points and photos and lets you include photos or export the track only, and it can be cancelled with progress shown. Export from the data list also asks for confirmation, shows progress and can be cancelled
 - Improved elevation data by unifying the source to Mapterhorn and decoding it natively, which makes the 3D view, viewshed and long-press elevation much faster
 - Improved elevation data downloads to also fetch the surrounding area used for the distant view in 3D
 - Improved the project edit screen to show the progress indicator immediately after pressing Save. Previously it appeared only after the member lookup (Functions/Virgil) had finished, so the screen looked frozen for several seconds
 - Updated the background location library (react-native-background-geolocation 5.1.1 → 5.8.2, native SDK 4.1 → 4.7.8 on Android / 4.8.2 on iOS). This brings upstream fixes for a freeze (ANR) at launch on Android, and for tracking that could stop on Android (foreground service start/stop races, the activity being recreated being mistaken for app termination, duplicated event listeners, re-registering location subscriptions Play Services had dropped, memory growing with every recorded location during long tracking, and locations piling up without limit after the app was reopened while tracking continued in the background) and on iOS (a future-stamped fix blocking all later locations until restart, tracking stuck stationary after a failed location request). Only the location permission is now requested, so iOS no longer asks for Motion & Fitness
 - Fixed attribute values becoming blank after renaming an attribute in the layer settings. Labels, color coding and sorting that refer to the attribute are also updated, and duplicate attribute names can no longer be saved
 - Fixed vector tile styles that use expressions such as match for properties other than color: on iOS the layer disappeared and on Android the whole style fell back to the default
+- Fixed export on Android getting stuck at "Creating file" because the destination choice could not be tapped
 - Fixed the whole screen turning white on the web when a PMTiles style could not be loaded
 - Fixed the PDF export window on the web closing without showing the print dialog
 - Fixed the photo picker appearing after every shot on Android 14+ when only selected photos are allowed
@@ -37,17 +39,19 @@
 - GEBCO海底地形図を3Dで表示できるようにしました（段彩＋海底の起伏、iOS/Android・Web）
 - 3D表示では、Googleの標準地図・衛星写真を地理院の標準地図・シームレス空中写真に置き換えて表示します（Googleの地図画像は3Dに表示できないため）
 - 2Dの地図も3D表示と同じく2本指で回転できるようにしました。回転中はコンパスが地図の北を指し、タップすると北が上に戻ります。現在地マーカー・線の矢印・ブラシ記号は回転しても実際の方角を向きます。作図やツールの使用中は回転しません。回転した地図から3D表示に切り替えると向きを引き継ぎます
-- Androidで外部GNSS受信機（USBシリアル、Bluetooth LE／Nordic UART）に対応し、NTRIPクライアントで補正を受信機へ中継してRTK測位できるようにしました（NTRIP v1/v2、ソーステーブルからのマウントポイント選択、VRS向けのGGA送信）。受信機の位置を現在地・軌跡・ポイント記録に使い、5秒途絶えると内蔵GPSに戻ります。GPSボタンにFix種別（FIX/FLOAT/DGPS/SPP）を表示し、長押しで精度・衛星数・HDOP・標高・楕円体高・NTRIPの状態を確認できます。現在地の長押しでは測位標高と小数8桁の緯度経度を表示します
+- Androidで外部GNSS受信機（USBシリアル、Bluetooth LE／Nordic UART）に対応し、NTRIPクライアントで補正を受信機へ中継してRTK測位できるようにしました（NTRIP v1/v2、ソーステーブルからのマウントポイント選択、VRS向けのGGA送信）。受信機の位置を現在地・軌跡・ポイント記録に使い、5秒途絶えると内蔵GPSに戻ります。GPSボタンにFix種別（FIX/FLOAT/DGPS/SPP）を表示し、長押しで精度・衛星数・HDOP・標高・楕円体高・NTRIPの状態を確認できます。現在地の長押しでは測位標高と小数8桁の緯度経度を表示します。最後に接続した受信機（とNTRIP）には、起動時やアプリに戻ったときに自動で接続し直します（「切断」を押した場合を除く）
 - 現在地ポイントの追加と「位置を編集」での位置の更新に、平均化測位（5〜60エポック、RTK FIXのみの採用も可）を追加しました
 - 外部GNSS受信機で記録したポイントに、Fix種別・精度・測位標高（アンテナ高を差し引いた値）・楕円体高を残すようにしました。データ編集画面に表示し、CSV/GeoJSONのエクスポートでは列として出力します
-- 外部GNSS受信機での軌跡は、精度または距離で間引いて記録できるようにし、2D・3DでFix種別ごとに色分け（FIXは緑、FLOATは橙）、楕円体高も残すようにしました（GPXではgeoidheightとして出力）
+- 外部GNSS受信機での軌跡は、精度または距離で間引いて記録できるようにし、Fix種別と楕円体高も残すようにしました（GPXではgeoidheightとして出力）。軌跡レイヤのカラータイプに「測位品質」を追加し、2D・3DでFix種別ごとに色分け（FIXは緑、FLOATは橙）できます。外部GNSSの軌跡を初めて保存したときに自動でこのカラータイプに切り替わります。軌跡の点をタップするとFix種別と精度を表示します
 - PDF出力にPMTiles（ベクタ・ラスタ・pbf）の地図を含めるようにしました
+- 軌跡のエクスポートで、開始前に点数と写真の枚数を示し、写真を含めるか軌跡のみにするかを選べるようにしました。進捗を表示し、途中で中止もできます。データ一覧のエクスポートにも開始前の確認・進捗表示・中止を追加しました
 - 標高データの取得元をMapterhornに統一し、デコードをネイティブ化しました。3D表示・可視領域・長押しの標高表示が大幅に速くなります
 - 標高データのダウンロードで、3Dの遠景に使う周辺の範囲も取得するようにしました
 - プロジェクト編集で保存ボタンを押した直後にインジケータを出すようにしました。これまではメンバーの照会（Functions/Virgil）が終わるまで表示されず、数秒間固まったように見えていました
 - バックグラウンド位置情報ライブラリを更新しました（react-native-background-geolocation 5.1.1 → 5.8.2、ネイティブSDK 4.1 → Android 4.7.8／iOS 4.8.2）。Androidの起動時に固まる（ANR）問題、Androidで追跡が止まり得た問題（フォアグラウンドサービスの起動・停止の競合、画面の再生成をアプリ終了と誤判定、イベントリスナーの多重登録、Play Servicesが止めた位置購読の再登録、長時間の記録で位置ごとにメモリが増え続ける、バックグラウンドで記録を続けたままアプリを開き直すと位置が際限なく溜まる）と、iOSの問題（未来の時刻を持つ位置が以後の全位置を再起動まで止める、位置取得失敗後に静止状態から復帰できない）の上流修正を含みます。権限要求は位置のみにしたため、iOSでモーション（Motion & Fitness）の許可を求めなくなりました
 - レイヤ設定で属性名を変更すると、その属性の値が空白になる問題を修正しました。属性を参照するラベル・色分け・並び替えも新しい名前に付け替え、同じ属性名が重複している場合は保存できないようにしました
 - 色以外のプロパティにmatch等の式を使ったベクタタイルのスタイルで、iOSではレイヤが消え、Androidではスタイル全体が既定に戻る問題を修正しました
+- Androidのエクスポートで、保存先の選択肢が押せず「ファイルを作成中」のまま進めない問題を修正しました
 - Web版でPMTilesのスタイルを読み込めないと画面全体が白くなる問題を修正しました
 - Web版のPDF出力で、印刷ダイアログが出ずにウィンドウが閉じる問題を修正しました
 - Android 14以降で「選択した写真のみ許可」にしていると、撮影のたびに写真選択画面が出る問題を修正しました
