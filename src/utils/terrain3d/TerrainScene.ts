@@ -23,7 +23,7 @@ import {
   FAR_RING_DELTAS,
   FAR_RING_DEM_ZOOM_OFFSET,
   FAR_RING_FORWARD_BIAS,
-  FAR_RING_MESH_SEGMENTS,
+  farRingMeshSegments,
   FOG_FAR_RATIO,
   INITIAL_PITCH_DEG,
   FOG_NEAR_RATIO,
@@ -392,7 +392,7 @@ export class TerrainScene {
     // 遠景リング（粗ズーム）のLODチェーン。近景タイルを上に重ね描きして遠方の山まで見せる。
     // DEMは2段粗いものを共有させる（等倍だとタイル数ぶんデコードが走る）
     this.farTileManagers = FAR_RING_DELTAS.map(
-      (_, i) =>
+      () =>
         new TerrainTileManager(
           this.origin,
           this.elevScale,
@@ -400,8 +400,7 @@ export class TerrainScene {
           this.demCache,
           () => this.markDirty(),
           FAR_RING_DEM_ZOOM_OFFSET,
-          FAR_RING_FORWARD_BIAS,
-          FAR_RING_MESH_SEGMENTS[i] ?? MESH_SEGMENTS
+          FAR_RING_FORWARD_BIAS
         )
     );
     this.texZoom = Math.min(MAX_TEX_ZOOM, Math.max(MIN_TEX_ZOOM, Math.round(cameraState.zoom)));
@@ -1421,22 +1420,25 @@ export class TerrainScene {
     // ズームが下限に張り付いて近景/前のリングと同じになったリングは省く
     const farRings: {
       manager: TerrainTileManager;
-      index: number;
       zoom: number;
       radius: number;
       maxTiles: number;
+      segments: number;
     }[] = [];
     let prevZoom = this.texZoom;
     for (let i = 0; i < this.farTileManagers.length; i++) {
       const zoom = Math.max(MIN_TEX_ZOOM, this.texZoom - FAR_RING_DELTAS[i]);
       if (zoom >= prevZoom) break;
       const maxTiles = MAX_FAR_TILES[i] ?? MAX_FAR_TILES[MAX_FAR_TILES.length - 1];
+      const segments = farRingMeshSegments(zoom);
+      // 標高サンプリング（ドットの高さ等）も描画と同じ頂点格子で補間する
+      this.farTileManagers[i].setMeshSegments(segments);
       farRings.push({
         manager: this.farTileManagers[i],
-        index: i,
         zoom,
         radius: Math.sqrt(maxTiles / Math.PI) * tileSizeMeters(zoom),
         maxTiles,
+        segments,
       });
       prevZoom = zoom;
     }
@@ -1451,7 +1453,7 @@ export class TerrainScene {
       ...farRings.map((ring) => ({
         manager: ring.manager,
         zoom: ring.zoom,
-        segments: FAR_RING_MESH_SEGMENTS[ring.index] ?? MESH_SEGMENTS,
+        segments: ring.segments,
         order: 0,
       })),
       ...telephotoRings.map((ring) => ({ manager: ring.manager, zoom: ring.zoom, segments: ring.segments, order: 1 })),

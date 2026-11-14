@@ -189,6 +189,14 @@ export class TerrainTileManager {
     this.loadConcurrency = loadConcurrency;
   }
 
+  /**
+   * 描画のメッシュ分割数を合わせる（遠景リングはズームで分割数が変わる）。
+   * 標高サンプリングは描画と同じ頂点格子で補間するため、ずれるとドットが浮く・沈む
+   */
+  setMeshSegments(segments: number): void {
+    this.meshSegments = segments;
+  }
+
   /** 保持タイルをすべて捨てて空にする（破棄はしない。望遠の扇形リングを解く時に使う） */
   clearTiles(): void {
     if (this.tiles.size === 0 && this.queue.length === 0) return;
