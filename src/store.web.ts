@@ -2,6 +2,7 @@ import { configureStore } from '@reduxjs/toolkit';
 import reducer from './modules/';
 import { persistStore, persistReducer } from 'redux-persist';
 import { reduxPersistWebStorage } from './utils/reduxPersistWebStorage';
+import { attachPersistFlushOnBackground } from './utils/persistFlush';
 
 const persistConfig = {
   key: 'root',
@@ -22,4 +23,6 @@ export const store = configureStore({
     }),
 });
 export const persistor = persistStore(store);
+// スロットル待ちのまま kill されると直前の変更（更新情報のOK・設定・レイヤ）が失われるため
+attachPersistFlushOnBackground(persistor);
 export type RootState = ReturnType<typeof store.getState>;
