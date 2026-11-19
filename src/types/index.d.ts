@@ -113,6 +113,9 @@ export interface TrackPointInfoType {
   // 外部GNSS受信機で記録した点のみ
   fixQuality?: number;
   ellipsoidHeight?: number;
+  // 保存済み軌跡の記録者（プロジェクトで共有された軌跡で誰のものか示す）と地図上の線の色
+  ownerName?: string;
+  ownerColor?: string;
 }
 
 export interface UserType {

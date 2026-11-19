@@ -31,6 +31,8 @@ export default function TrackSummary() {
     statistics,
     profile,
     isRecording,
+    ownerName,
+    ownerColor,
     gotoBack,
     pressExportTrack,
     cancelExportTrack,
@@ -183,8 +185,17 @@ export default function TrackSummary() {
                 </TouchableOpacity>
               </View>
             )}
+            {ownerName !== null && (
+              <View style={[styles.timeRow, styles.ownerRow]}>
+                <MaterialCommunityIcons name="account" size={16} color={COLOR.GRAY3} />
+                {ownerColor !== null && <View style={[styles.ownerColor, { backgroundColor: ownerColor }]} />}
+                <Text style={styles.timeText} numberOfLines={1}>
+                  {ownerName}
+                </Text>
+              </View>
+            )}
             {timeRangeText !== null && (
-              <View style={styles.timeRow}>
+              <View style={[styles.timeRow, ownerName !== null && styles.timeRowAfterOwner]}>
                 <MaterialCommunityIcons name="calendar-clock" size={16} color={COLOR.GRAY3} />
                 <Text style={styles.timeText}>{timeRangeText}</Text>
               </View>
@@ -276,6 +287,18 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     justifyContent: 'center',
     minHeight: 120,
+  },
+  ownerColor: {
+    borderRadius: 5,
+    height: 10,
+    marginLeft: 6,
+    width: 10,
+  },
+  ownerRow: {
+    marginBottom: 0,
+  },
+  timeRowAfterOwner: {
+    marginTop: 6,
   },
   timeRow: {
     alignItems: 'center',
