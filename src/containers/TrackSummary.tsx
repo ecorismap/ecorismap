@@ -10,6 +10,7 @@ import { useBottomSheetNavigation, useBottomSheetRoute } from '../contexts/Botto
 import { RootState } from '../store';
 import { ExportType, LineRecordType, LocationType } from '../types';
 import { getAllTrackPoints } from '../utils/Location';
+import { getColor } from '../utils/Layer';
 import { calcTrackStatistics, buildElevationProfile, findNearestProfileIndex } from '../utils/trackStatistics';
 import {
   generateCSV,
@@ -42,6 +43,7 @@ export default function TrackSummaryContainers() {
   const { goBack, canGoBack, closeBottomSheet } = useBottomSheetNavigation();
   const { params } = useBottomSheetRoute<'TrackSummary'>();
   const dataSet = useSelector((state: RootState) => state.dataSet);
+  const layers = useSelector((state: RootState) => state.layers);
   const dispatch = useDispatch();
 
   const isRecordingTarget = params !== undefined && 'recording' in params;
@@ -81,6 +83,14 @@ export default function TrackSummaryContainers() {
   }, [isRecordingTarget, totalPoints]);
 
   const coords = isRecordingTarget ? recordingCoords : record?.coords;
+
+  // プロジェクトで共有された軌跡は誰のものか分かるよう、記録者と地図上の線の色を示す
+  const ownerName = record?.displayName ?? null;
+  const ownerColor = useMemo(() => {
+    if (record === undefined || params === undefined || 'recording' in params) return null;
+    const layer = layers.find((l) => l.id === params.layerId);
+    return layer !== undefined ? getColor(layer, record) : null;
+  }, [layers, params, record]);
 
   const statistics = useMemo(() => (coords !== undefined ? calcTrackStatistics(coords) : null), [coords]);
   const profile = useMemo(() => (coords !== undefined ? buildElevationProfile(coords) : []), [coords]);
@@ -355,6 +365,8 @@ export default function TrackSummaryContainers() {
         statistics,
         profile,
         isRecording: isRecordingTarget,
+        ownerName,
+        ownerColor,
         gotoBack,
         pressExportTrack,
         cancelExportTrack,

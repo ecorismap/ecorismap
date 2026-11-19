@@ -114,7 +114,7 @@ import { setVistaHeadingFollow, terrain3dVistaStore } from '../utils/terrain3d/v
 import { isMapRotated, mapHeadingStore } from '../utils/mapHeadingStore';
 import { isMapView } from '../utils/Map';
 import { substituteGoogleBasemaps } from '../utils/terrain3d/googleBasemapSubstitute';
-import { generateLabel, resolveCodeField, toCodeFieldValue } from '../utils/Layer';
+import { generateLabel, getColor, resolveCodeField, toCodeFieldValue } from '../utils/Layer';
 import { hex2rgba, hsv2rgbaString } from '../utils/Color';
 import { getAllTrackPoints } from '../utils/Location';
 import { TRACK_PHOTO_TAP_RADIUS_PX, clusterTrackPhotos, spiderOffsets } from '../utils/trackPhoto';
@@ -2617,6 +2617,8 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
               accuracy: nearest.point.accuracy,
               fixQuality: nearest.point.fixQuality,
               ellipsoidHeight: nearest.point.ellipsoidHeight,
+              ownerName: lineFeature.displayName ?? undefined,
+              ownerColor: getColor(layer, lineFeature),
             });
             // タップと同時にサマリーを開き、タップ地点を初期フォーカスにする
             openSheet(isLandscape ? 2 : 1);

@@ -6,6 +6,9 @@ interface TrackSummaryContextType {
   profile: ElevationProfilePoint[];
   // 記録中の軌跡ログを表示中か（サマリーは定期的にライブ更新される）
   isRecording: boolean;
+  // 保存済み軌跡の記録者名と地図上の線の色（記録中・記録者情報の無い軌跡はnull）
+  ownerName: string | null;
+  ownerColor: string | null;
   gotoBack: () => void;
   // 軌跡(trk)+写真(wpt)のGPXと写真ファイルをzipでエクスポートする
   pressExportTrack: () => Promise<void>;

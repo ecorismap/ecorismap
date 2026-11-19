@@ -37,6 +37,9 @@ export const HomeTrackPointPopup = React.memo(() => {
         accuracy: trackFocusPoint.accuracy,
         fixQuality: trackFocusPoint.fixQuality,
         ellipsoidHeight: trackFocusPoint.ellipsoidHeight,
+        // フォーカス点は記録者を持たないため、タップで開いた軌跡の記録者を引き継ぐ
+        ownerName: trackPointInfo?.ownerName,
+        ownerColor: trackPointInfo?.ownerColor,
       };
     }
     return trackPointInfo;
@@ -104,8 +107,11 @@ export const HomeTrackPointPopup = React.memo(() => {
     setTrackFocusPoint(null);
   }, [setTrackPointInfo, setTrackFocusPoint]);
 
+  const ownerName = displayInfo?.ownerName;
+
   const HEIGHT =
     36 +
+    (ownerName ? 22 : 0) +
     (timeText ? 22 : 0) +
     (showQualityRow ? 22 : 0) +
     (elevationText ? 20 : 0) +
@@ -164,6 +170,24 @@ export const HomeTrackPointPopup = React.memo(() => {
         </TouchableOpacity>
         <View style={{ alignItems: 'center' }}>
           <Text style={{ color: COLOR.GRAY4, fontSize: 12, paddingBottom: 4 }}>{t('Home.trackPoint.title')}</Text>
+          {ownerName && (
+            <View style={{ flexDirection: 'row', alignItems: 'center', paddingBottom: 4, maxWidth: WIDTH - 16 }}>
+              {displayInfo.ownerColor && (
+                <View
+                  style={{
+                    width: 10,
+                    height: 10,
+                    borderRadius: 5,
+                    marginRight: 5,
+                    backgroundColor: displayInfo.ownerColor,
+                  }}
+                />
+              )}
+              <Text style={{ color: COLOR.BLACK, fontSize: 13 }} numberOfLines={1}>
+                {ownerName}
+              </Text>
+            </View>
+          )}
           <Text style={{ color: COLOR.BLACK, fontSize: 14, fontWeight: 'bold', paddingBottom: 4 }}>{timeText}</Text>
           {showQualityRow && (
             <View style={{ flexDirection: 'row', alignItems: 'center', paddingBottom: 4 }}>
