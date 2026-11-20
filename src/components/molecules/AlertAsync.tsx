@@ -148,6 +148,22 @@ export const ConfirmAsync = async (
     );
   });
 
+/**
+ * 暗号化キーのリセットの最終確認。取り消せない操作なので、実行ボタンを危険操作の見た目にする。
+ */
+export const ResetEncryptKeyConfirmAsync = async (message: string): Promise<boolean> =>
+  new Promise((resolve) => {
+    Alert.alert(
+      t('Account.resetWarning.title'),
+      message,
+      [
+        { text: t('Account.resetWarning.cancel'), style: 'cancel', onPress: () => resolve(false), swalType: 'cancel' },
+        { text: t('Account.resetWarning.reset'), style: 'destructive', onPress: () => resolve(true) },
+      ],
+      { cancelable: false }
+    );
+  });
+
 export const AlertAsync = async (message: string) =>
   new Promise((resolve) => {
     Alert.alert('', message, [{ text: 'OK', onPress: () => resolve(true), swalType: 'confirm' }], {

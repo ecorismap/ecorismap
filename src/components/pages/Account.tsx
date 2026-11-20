@@ -363,7 +363,7 @@ export default function Account() {
               style={styles.resetText}
               onPress={accountFormState === 'loginUserAccount' ? changeResetPasswordForm : changeResetEncryptForm}
             >
-              <Text style={{ fontSize: 12, color: COLOR.BLUE }}>{`${t('Account.text.forgetPassword')}`}</Text>
+              <Text style={{ fontSize: 12, color: COLOR.BLUE }}>{accountFormState === 'loginUserAccount' ? t('Account.text.forgetPassword') : t('Account.text.forgetEncryptPassword')}</Text>
             </Pressable>
           )}
           <Loading visible={isLoading} text="" />

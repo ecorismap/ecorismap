@@ -5,10 +5,12 @@ import AccountSettings from '../components/pages/AccountSettings';
 import { t } from '../i18n/config';
 import { RootState } from '../store';
 import { Props_AccountSettings } from '../routes';
+import { useEncryptKeyResetConfirm } from '../hooks/useEncryptKeyResetConfirm';
 import { AccountSettingsContext } from '../contexts/AccountSettings';
 
 export default function AccountSettingsContainers({ navigation }: Props_AccountSettings) {
   const projectId = useSelector((state: RootState) => state.settings.projectId, shallowEqual);
+  const confirmEncryptKeyReset = useEncryptKeyResetConfirm();
 
   const pressUpdateUserProfile = useCallback(() => {
     navigation.navigate('Account', { accountFormState: 'updateUserProfile', previous: 'AccountSettings' });
@@ -22,7 +24,7 @@ export default function AccountSettingsContainers({ navigation }: Props_AccountS
   }, [navigation]);
 
   const pressResetEncryptKey = useCallback(async () => {
-    const ret = await ConfirmAsync(t('AccountSettings.confirm.resetEncryptKey'));
+    const ret = await confirmEncryptKeyReset();
     if (ret) {
       navigation.navigate('Account', {
         accountFormState: 'resetEncryptKey',
@@ -30,7 +32,7 @@ export default function AccountSettingsContainers({ navigation }: Props_AccountS
         previous: 'AccountSettings',
       });
     }
-  }, [navigation]);
+  }, [confirmEncryptKeyReset, navigation]);
 
   const pressDeleteUserAccount = useCallback(async () => {
     const ret = await ConfirmAsync(t('AccountSettings.confirm.deleteUserAccount'));

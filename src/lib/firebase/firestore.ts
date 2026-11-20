@@ -1591,6 +1591,25 @@ export const getMemberKeyFreshness = async (
   return result;
 };
 
+/**
+ * 暗号化キーをリセットしたときに影響を受けるプロジェクト数（リセット前の警告用。アーカイブ済みも含む）。
+ * shared: 他のメンバーがいる＝管理者に再共有してもらえば戻る。
+ * solo: メンバーが自分だけ＝誰も再共有できず、データを二度と復号できなくなる。
+ */
+export const countProjectsAffectedByKeyReset = async (uid: string): Promise<{ shared: number; solo: number }> => {
+  const snapshot = await getDocsFromServer(
+    query(collection(firestore, 'projects'), where('membersUid', 'array-contains', uid))
+  );
+  let shared = 0;
+  let solo = 0;
+  snapshot.docs.forEach((d) => {
+    const others = ((d.data() as ProjectFS).membersUid ?? []).filter((m) => m !== uid);
+    if (others.length > 0) shared++;
+    else solo++;
+  });
+  return { shared, solo };
+};
+
 /** 一括再共有の対象（あるプロジェクトの、鍵リセット後にラップが更新されていないメンバー）。 */
 export type StaleMemberKey = {
   projectId: string;

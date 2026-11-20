@@ -1,4 +1,4 @@
-import { findStaleMemberKeys } from '../firestore';
+import { countProjectsAffectedByKeyReset, findStaleMemberKeys } from '../firestore';
 import { getDoc, getDocsFromServer } from '../firebase';
 
 jest.mock('../../../constants/AppConstants', () => ({
@@ -132,5 +132,18 @@ describe('findStaleMemberKeys', () => {
     mockedGetDocsFromServer.mockResolvedValue({ docs: [] });
     setupDocs({});
     await expect(findStaleMemberKeys('me')).resolves.toEqual([]);
+  });
+});
+
+describe('countProjectsAffectedByKeyReset', () => {
+  it('他のメンバーがいるプロジェクトと、自分だけのプロジェクトを数える（アーカイブ・方式を問わない）', async () => {
+    mockedGetDocsFromServer.mockResolvedValue({
+      docs: [
+        projectDoc('a', { membersUid: ['me', 'x'] }),
+        projectDoc('b', { membersUid: ['x', 'me', 'y'], archived: true, cryptoScheme: 'group' }),
+        projectDoc('c', { membersUid: ['me'] }),
+      ],
+    });
+    await expect(countProjectsAffectedByKeyReset('me')).resolves.toEqual({ shared: 2, solo: 1 });
   });
 });

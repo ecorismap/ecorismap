@@ -5,6 +5,7 @@ import { AlertAsync } from '../components/molecules/AlertAsync';
 import Account from '../components/pages/Account';
 import { AccountContext } from '../contexts/Account';
 import { useAccount } from '../hooks/useAccount';
+import { useEncryptKeyResetConfirm } from '../hooks/useEncryptKeyResetConfirm';
 import { signInGoogleDrive } from '../lib/googledrive/auth';
 import { setGoogleDriveConnectedEmailAction } from '../modules/googleDrive';
 import { t } from '../i18n/config';
@@ -42,6 +43,7 @@ export default function AccountContainers({ navigation, route }: Props_Account) 
     resetEncryptKey,
     deleteAllProjects,
   } = useAccount();
+  const confirmEncryptKeyReset = useEncryptKeyResetConfirm();
 
   useEffect(() => {
     // パラメータが存在する場合のみ処理（無限ループ防止）
@@ -399,10 +401,11 @@ export default function AccountContainers({ navigation, route }: Props_Account) 
   }, [setAccountFormState, setAccountMessage]);
 
   const changeResetEncryptForm = useCallback(async () => {
-    await AlertAsync(t('Account.alert.needResetEncryptKey'));
+    const ret = await confirmEncryptKeyReset();
+    if (!ret) return;
     setAccountMessage(t('Account.message.inputPassword'));
     setAccountFormState('resetEncryptKey');
-  }, [setAccountFormState, setAccountMessage]);
+  }, [confirmEncryptKeyReset, setAccountFormState, setAccountMessage]);
 
   return (
     <AccountContext.Provider
