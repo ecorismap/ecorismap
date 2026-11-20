@@ -18,6 +18,7 @@ import { Loading } from '../molecules/Loading';
 import { t } from '../../i18n/config';
 import { ProjectsContext } from '../../contexts/Projects';
 import { ProjectsModalEncryptPassword } from '../organisms/ProjectsModalEncryptPassword';
+import { ProjectsModalReshareKeys } from '../organisms/ProjectsModalReshareKeys';
 import { ProjectType } from '../../types';
 import { ListRenderItemInfo } from 'react-native';
 
@@ -47,9 +48,23 @@ export default function Projects() {
     dekMigratableCount,
     migrationProgress,
     pressMigrateProjects,
+    reshareProgress,
+    isReshareRunning,
+    isReshareModalOpen,
+    reshareCandidates,
+    pressCheckStaleKeys,
+    pressReshareKeysOK,
+    pressReshareKeysCancel,
+    pressCancelReshareRunning,
   } = useContext(ProjectsContext);
   const insets = useSafeAreaInsets();
   const { height: windowHeight } = useWindowDimensions();
+
+  // 一括再共有は管理者（オーナー含む）になっているプロジェクトがある人にだけ出す
+  const isAnyAdmin = useMemo(
+    () => !!user.uid && projects.some((p) => p.ownerUid === user.uid || (p.adminsUid ?? []).includes(user.uid!)),
+    [projects, user.uid]
+  );
 
   // Web用: ヘッダー(56 + insets.top) + テーブルヘッダー(45) + ボタン(約60) + マージンを引く
   const tableHeight = windowHeight - (56 + insets.top) - 45 - 60 - insets.bottom - 20;
@@ -295,6 +310,18 @@ export default function Projects() {
                 </Text>
               </TouchableOpacity>
             )}
+            {isAnyAdmin && (
+              <TouchableOpacity
+                style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 5, marginRight: 15 }}
+                onPress={pressCheckStaleKeys}
+                testID="check-stale-keys"
+              >
+                <MaterialCommunityIcons name="key-change" size={20} color={COLOR.BLUE} />
+                <Text style={{ fontSize: 12, color: COLOR.BLUE, marginLeft: 2 }}>
+                  {t('Projects.label.reshareKeysCheck')}
+                </Text>
+              </TouchableOpacity>
+            )}
             <TouchableOpacity
               style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 5 }}
               onPress={toggleShowArchive}
@@ -310,6 +337,10 @@ export default function Projects() {
               />
             </TouchableOpacity>
           </View>
+        ) : isAnyAdmin ? (
+          <TouchableOpacity style={{ padding: 5, width: 40, alignItems: 'center' }} onPress={pressCheckStaleKeys}>
+            <MaterialCommunityIcons name="key-change" size={24} color={COLOR.BLUE} />
+          </TouchableOpacity>
         ) : (
           <View style={{ width: 40 }} />
         )}
@@ -341,6 +372,17 @@ export default function Projects() {
 
       <ProjectsButtons createProject={pressAddProject} reloadProjects={onReloadProjects} />
       <Loading visible={migrationProgress !== ''} text={migrationProgress} />
+      <Loading
+        visible={reshareProgress !== ''}
+        text={reshareProgress}
+        onCancel={isReshareRunning ? pressCancelReshareRunning : undefined}
+      />
+      <ProjectsModalReshareKeys
+        visible={isReshareModalOpen}
+        candidates={reshareCandidates}
+        pressOK={pressReshareKeysOK}
+        pressCancel={pressReshareKeysCancel}
+      />
       <ProjectsModalEncryptPassword
         visible={isEncryptPasswordModalOpen}
         pressOK={pressEncryptPasswordOK}

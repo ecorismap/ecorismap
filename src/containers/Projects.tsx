@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Alert } from '../components/atoms/Alert';
 import { AlertAsync, ConfirmAsync } from '../components/molecules/AlertAsync';
 import Projects from '../components/pages/Projects';
@@ -10,11 +10,20 @@ import { usePermission } from '../hooks/usePermission';
 import { useAccount } from '../hooks/useAccount';
 import { Platform } from 'react-native';
 import { isLoggedIn } from '../utils/Account';
+import { useE3kitGroup } from '../hooks/useE3kitGroup';
+import { findStaleMemberKeys, StaleMemberKey } from '../lib/firebase/firestore';
+import { ReshareCandidate } from '../components/organisms/ProjectsModalReshareKeys';
 
 export default function ProjectsContainers({ navigation, route }: Props_Projects) {
   const [isEncryptPasswordModalOpen, setIsEncryptPasswordModalOpen] = useState(false);
   const [projectIndex, setProjectIndex] = useState(0);
   const [migrationProgress, setMigrationProgress] = useState('');
+  const [reshareProgress, setReshareProgress] = useState('');
+  const [isReshareRunning, setIsReshareRunning] = useState(false);
+  const [staleMemberKeys, setStaleMemberKeys] = useState<StaleMemberKey[]>([]);
+  const [isReshareModalOpen, setIsReshareModalOpen] = useState(false);
+  const reshareCancelledRef = useRef(false);
+  const { reshareMemberKeys } = useE3kitGroup();
   const { isSettingProject } = usePermission();
   const {
     user,
@@ -204,6 +213,88 @@ export default function ProjectsContainers({ navigation, route }: Props_Projects
     }
   }, [dekMigratableProjects, migrateProjectsToDEK]);
 
+  // 一括再共有の候補はメンバー単位にまとめる（1人の鍵リセットが参加中の全プロジェクトに及ぶため）。
+  // メールアドレスは暗号化されたプロジェクト本体にしかないので、読み込み済みの一覧から引く。
+  const reshareCandidates = useMemo<ReshareCandidate[]>(() => {
+    const emailByUid = new Map<string, string>();
+    projects.forEach((p) => p.members.forEach((m) => m.uid && emailByUid.set(m.uid, m.email)));
+    const byUid = new Map<string, ReshareCandidate>();
+    staleMemberKeys.forEach((s) => {
+      const c = byUid.get(s.uid);
+      if (c) {
+        c.projectCount++;
+      } else {
+        byUid.set(s.uid, { uid: s.uid, label: emailByUid.get(s.uid) ?? s.uid, keyChangedAt: s.keyChangedAt, projectCount: 1 });
+      }
+    });
+    return [...byUid.values()];
+  }, [projects, staleMemberKeys]);
+
+  const pressCheckStaleKeys = useCallback(async () => {
+    if (!user.uid) return;
+    try {
+      setReshareProgress(t('Projects.label.reshareKeysChecking', { done: 0, total: 0 }));
+      const stale = await findStaleMemberKeys(user.uid, (done, total) =>
+        setReshareProgress(t('Projects.label.reshareKeysChecking', { done, total }))
+      );
+      setReshareProgress('');
+      if (stale.length === 0) {
+        await AlertAsync(t('Projects.alert.reshareKeysNone'));
+        return;
+      }
+      setStaleMemberKeys(stale);
+      setIsReshareModalOpen(true);
+    } catch (e: any) {
+      setReshareProgress('');
+      Alert.alert('error', e.message);
+    }
+  }, [user.uid]);
+
+  const pressReshareKeysCancel = useCallback(() => {
+    setIsReshareModalOpen(false);
+  }, []);
+
+  const pressCancelReshareRunning = useCallback(() => {
+    reshareCancelledRef.current = true;
+  }, []);
+
+  const pressReshareKeysOK = useCallback(
+    async (uids: string[]) => {
+      setIsReshareModalOpen(false);
+      const targets = staleMemberKeys.filter((s) => uids.includes(s.uid));
+      reshareCancelledRef.current = false;
+      setIsReshareRunning(true);
+      try {
+        setReshareProgress(t('Projects.label.reshareKeysRunning', { done: 0, total: targets.length }));
+        const { isOK, message, succeeded, failed } = await reshareMemberKeys(
+          targets,
+          (done, total) => setReshareProgress(t('Projects.label.reshareKeysRunning', { done, total })),
+          () => reshareCancelledRef.current
+        );
+        setReshareProgress('');
+        setIsReshareRunning(false);
+        if (!isOK) {
+          await AlertAsync(message || t('hooks.message.failReshareKey'));
+          return;
+        }
+        const nameById = new Map(projects.map((p) => [p.id, p.name]));
+        const skipped = targets.length - succeeded.length - failed.length;
+        let text = t('Projects.alert.reshareKeysDone', { num: succeeded.length });
+        if (skipped > 0) text += '\n' + t('Projects.alert.reshareKeysCancelled', { num: skipped });
+        if (failed.length > 0) {
+          const names = [...new Set(failed.map((f) => nameById.get(f.projectId) ?? f.projectId))];
+          text += '\n' + t('Projects.alert.reshareKeysFailed', { num: failed.length, names: names.join(', ') });
+        }
+        await AlertAsync(text);
+      } catch (e: any) {
+        setReshareProgress('');
+        setIsReshareRunning(false);
+        Alert.alert('error', e.message);
+      }
+    },
+    [projects, reshareMemberKeys, staleMemberKeys]
+  );
+
   const didInitialLoadRef = useRef(false);
   useEffect(() => {
     // プロジェクト一覧の読み込み。
@@ -249,6 +340,14 @@ export default function ProjectsContainers({ navigation, route }: Props_Projects
         dekMigratableCount: dekMigratableProjects.length,
         migrationProgress,
         pressMigrateProjects,
+        reshareProgress,
+        isReshareRunning,
+        isReshareModalOpen,
+        reshareCandidates,
+        pressCheckStaleKeys,
+        pressReshareKeysOK,
+        pressReshareKeysCancel,
+        pressCancelReshareRunning,
       }}
     >
       <Projects />

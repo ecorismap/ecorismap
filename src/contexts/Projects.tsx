@@ -1,6 +1,7 @@
 import { createContext } from 'react';
 import { ProjectType, UserType } from '../types';
 import { ProjectSortField, ProjectSortOrder } from '../modules/projectsUI';
+import { ReshareCandidate } from '../components/organisms/ProjectsModalReshareKeys';
 
 interface ProjectsContextType {
   projects: ProjectType[];
@@ -27,5 +28,13 @@ interface ProjectsContextType {
   dekMigratableCount: number;
   migrationProgress: string;
   pressMigrateProjects: () => void;
+  reshareProgress: string;
+  isReshareRunning: boolean;
+  isReshareModalOpen: boolean;
+  reshareCandidates: ReshareCandidate[];
+  pressCheckStaleKeys: () => void;
+  pressReshareKeysOK: (uids: string[]) => void;
+  pressReshareKeysCancel: () => void;
+  pressCancelReshareRunning: () => void;
 }
 export const ProjectsContext = createContext({} as ProjectsContextType);

@@ -7,6 +7,7 @@ import {
   deleteGroupMembers,
 } from '../../lib/virgilsecurity/e3kit';
 import { addMemberKey, clearProjectCryptoCache, removeMemberKey } from '../../lib/firebase/firestore';
+import { clearPublicKeyLedgerCache } from '../../lib/crypto';
 import { ProjectType } from '../../types';
 
 jest.mock('../../lib/virgilsecurity/e3kit', () => ({
@@ -26,6 +27,8 @@ jest.mock('../../lib/firebase/firestore', () => ({
   clearProjectCryptoCache: jest.fn(),
 }));
 
+jest.mock('../../lib/crypto', () => ({ clearPublicKeyLedgerCache: jest.fn() }));
+
 jest.mock('../../i18n/config', () => ({ t: jest.fn((key: string) => key) }));
 
 jest.mock('../../constants/AppConstants', () => ({
@@ -36,6 +39,7 @@ jest.mock('../../constants/AppConstants', () => ({
 
 const mockInitializeUser = initializeUser as jest.MockedFunction<typeof initializeUser>;
 const mockClearPublicKeyCache = clearPublicKeyCache as jest.MockedFunction<typeof clearPublicKeyCache>;
+const mockClearLedgerCache = clearPublicKeyLedgerCache as jest.MockedFunction<typeof clearPublicKeyLedgerCache>;
 const mockAddMemberKey = addMemberKey as jest.MockedFunction<typeof addMemberKey>;
 const mockClearProjectCryptoCache = clearProjectCryptoCache as jest.MockedFunction<typeof clearProjectCryptoCache>;
 const mockAddGroupMembers = addGroupMembers as jest.MockedFunction<typeof addGroupMembers>;
@@ -162,6 +166,99 @@ describe('useE3kitGroup.reshareMemberKey', () => {
 
     expect(res.isOK).toBe(true);
     expect(mockAddGroupMembers).toHaveBeenCalledWith('project-1', 'owner-uid', ['new-member-uid']);
+    expect(mockAddMemberKey).not.toHaveBeenCalled();
+  });
+});
+
+describe('useE3kitGroup 再共有の台帳キャッシュ', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockInitializeUser.mockResolvedValue({ isOK: true, message: '' });
+    mockAddMemberKey.mockResolvedValue({ isOK: true, message: '' });
+  });
+
+  it('単体の再共有でも台帳キャッシュを消してからラップする（旧公開鍵で包み直さないため）', async () => {
+    const { result } = renderHook(() => useE3kitGroup());
+    await result.current.reshareMemberKey(dekProject, 'member-uid');
+    expect(mockClearLedgerCache).toHaveBeenCalledTimes(1);
+    expect(mockClearLedgerCache.mock.invocationCallOrder[0]).toBeLessThan(
+      mockAddMemberKey.mock.invocationCallOrder[0]
+    );
+  });
+});
+
+describe('useE3kitGroup.reshareMemberKeys', () => {
+  const at = new Date('2026-11-18T10:28:06Z');
+  const targets = [
+    { projectId: 'p1', ownerUid: 'owner-uid', uid: 'm1', keyChangedAt: at },
+    { projectId: 'p2', ownerUid: 'owner-uid', uid: 'm1', keyChangedAt: at },
+    { projectId: 'p3', ownerUid: 'other-owner', uid: 'm2', keyChangedAt: at },
+  ];
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockInitializeUser.mockResolvedValue({ isOK: true, message: '' });
+    mockAddMemberKey.mockResolvedValue({ isOK: true, message: '' });
+  });
+
+  it('初期化とキャッシュクリアは1回だけで、全件を順に再共有し進捗を報告する', async () => {
+    const { result } = renderHook(() => useE3kitGroup());
+    const progress: [number, number][] = [];
+    const res = await result.current.reshareMemberKeys(targets, (d, t) => progress.push([d, t]), () => false);
+
+    expect(res.isOK).toBe(true);
+    expect(res.succeeded).toHaveLength(3);
+    expect(res.failed).toHaveLength(0);
+    expect(mockInitializeUser).toHaveBeenCalledTimes(1);
+    expect(mockClearPublicKeyCache).toHaveBeenCalledTimes(1);
+    expect(mockClearLedgerCache).toHaveBeenCalledTimes(1);
+    expect(mockAddMemberKey.mock.calls).toEqual([
+      ['p1', 'm1'],
+      ['p2', 'm1'],
+      ['p3', 'm2'],
+    ]);
+    expect(progress).toEqual([
+      [0, 3],
+      [1, 3],
+      [2, 3],
+      [3, 3],
+    ]);
+  });
+
+  it('失敗した件はDEKキャッシュを捨てて1回だけ再試行し、それでも失敗なら failed に入れて続行する', async () => {
+    mockAddMemberKey
+      .mockResolvedValueOnce({ isOK: true, message: '' })
+      .mockResolvedValueOnce({ isOK: false, message: 'x' })
+      .mockResolvedValueOnce({ isOK: false, message: 'x' })
+      .mockResolvedValueOnce({ isOK: true, message: '' });
+    const { result } = renderHook(() => useE3kitGroup());
+    const res = await result.current.reshareMemberKeys(targets, () => undefined, () => false);
+
+    expect(res.succeeded.map((r) => r.projectId)).toEqual(['p1', 'p3']);
+    expect(res.failed.map((r) => r.projectId)).toEqual(['p2']);
+    expect(mockClearProjectCryptoCache).toHaveBeenCalledTimes(1);
+    expect(mockAddMemberKey).toHaveBeenCalledTimes(4);
+  });
+
+  it('中止されたら残りは処理しない', async () => {
+    let cancelled = false;
+    mockAddMemberKey.mockImplementation(async () => {
+      cancelled = true;
+      return { isOK: true, message: '' };
+    });
+    const { result } = renderHook(() => useE3kitGroup());
+    const res = await result.current.reshareMemberKeys(targets, () => undefined, () => cancelled);
+
+    expect(res.succeeded).toHaveLength(1);
+    expect(mockAddMemberKey).toHaveBeenCalledTimes(1);
+  });
+
+  it('初期化に失敗したら何もしない', async () => {
+    mockInitializeUser.mockResolvedValue({ isOK: false, message: 'init failed' });
+    const { result } = renderHook(() => useE3kitGroup());
+    const res = await result.current.reshareMemberKeys(targets, () => undefined, () => false);
+
+    expect(res).toEqual({ isOK: false, message: 'init failed', succeeded: [], failed: [] });
     expect(mockAddMemberKey).not.toHaveBeenCalled();
   });
 });
