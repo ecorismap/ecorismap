@@ -19,7 +19,7 @@ import obj_sizeof from 'object-sizeof';
 import { decryptEThree as decGroup, encryptEThree as encGroup } from '../virgilsecurity/e3kit';
 // DEKのラップ/アンラップは脱Virgilファサード経由（ENABLE_KEY_LEDGER で台帳優先、e3kitへフォールバック）
 import { wrapDEKForMember, unwrapDEK } from '../crypto';
-import { getPublicKeyFromLedger } from './publicKeys';
+import { clearPublicKeyLedgerCache, getPublicKeyFromLedger } from './publicKeys';
 import { createProjectDEK, encryptWithDEK, decryptWithDEK, isDEKKeyPair, ExportedDEK } from '../virgilsecurity/dek';
 import { FUNC_ENCRYPTION, CREATE_DEK_PROJECTS, ENABLE_KEY_LEDGER } from '../../constants/AppConstants';
 import {
@@ -1588,5 +1588,60 @@ export const getMemberKeyFreshness = async (
       }
     })
   );
+  return result;
+};
+
+/** 一括再共有の対象（あるプロジェクトの、鍵リセット後にラップが更新されていないメンバー）。 */
+export type StaleMemberKey = {
+  projectId: string;
+  ownerUid: string;
+  uid: string;
+  /** メンバーが鍵を作り直した日時（台帳の現行世代の作成時刻） */
+  keyChangedAt: Date;
+};
+
+/**
+ * 自分が管理者（オーナー含む）のDEK方式プロジェクトを全て走査し、再共有が必要なメンバーを列挙する。
+ * アーカイブ済みも含める（復元した時に開けない状態を残さないため）。自分自身は対象外
+ * （自分の鍵をリセットした場合は自分でDEKを開けないので、他の管理者に依頼するしかない）。
+ * 判定は getMemberKeyFreshness と同じ。読み取り回数を抑えるため台帳はメンバーごとに1回、keysは数件ずつ並行で読む。
+ */
+export const findStaleMemberKeys = async (
+  myUid: string,
+  onProgress?: (done: number, total: number) => void
+): Promise<StaleMemberKey[]> => {
+  if (!ENABLE_KEY_LEDGER || !FUNC_ENCRYPTION) return [];
+  // 同じセッション中に相手が鍵をリセットしていると、キャッシュの旧世代で「最新」と誤判定するため読み直す
+  clearPublicKeyLedgerCache();
+  const snapshot = await getDocsFromServer(
+    query(collection(firestore, 'projects'), where('membersUid', 'array-contains', myUid))
+  );
+  const targets = snapshot.docs
+    .map((d) => ({ id: d.id, data: d.data() as ProjectFS }))
+    .filter(
+      ({ data }) => data.cryptoScheme === 'dek' && (data.ownerUid === myUid || (data.adminsUid ?? []).includes(myUid))
+    );
+
+  const result: StaleMemberKey[] = [];
+  let done = 0;
+  onProgress?.(0, targets.length);
+  const CONCURRENCY = 5;
+  let next = 0;
+  const worker = async () => {
+    while (next < targets.length) {
+      const { id, data } = targets[next++];
+      const memberUids = (data.membersUid ?? []).filter((uid) => uid !== myUid);
+      const freshness = await getMemberKeyFreshness(id, memberUids);
+      for (const uid of memberUids) {
+        if (freshness[uid] !== 'needs-reshare') continue;
+        const ledger = await getPublicKeyFromLedger(uid);
+        if (ledger === undefined) continue;
+        result.push({ projectId: id, ownerUid: data.ownerUid, uid, keyChangedAt: toDate(ledger.createdAt) });
+      }
+      done++;
+      onProgress?.(done, targets.length);
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(CONCURRENCY, targets.length) }, worker));
   return result;
 };

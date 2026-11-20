@@ -549,7 +549,14 @@
       "archive": "Archive",
       "restore": "Restore",
       "migrateDek": "Migrate encryption ({{num}})",
-      "migrating": "Migrating projects... ({{done}}/{{total}})"
+      "migrating": "Migrating projects... ({{done}}/{{total}})",
+      "reshareKeysCheck": "Reshare encryption keys",
+      "reshareKeysChecking": "Checking members who need a key reshare... ({{done}}/{{total}})",
+      "reshareKeysRunning": "Resharing encryption keys... ({{done}}/{{total}})",
+      "reshareKeysTitle": "Reshare encryption keys",
+      "reshareKeysMessage": "The following members recreated their encryption key and cannot open the projects. Confirm that they reset the key themselves, then select the members to reshare with.",
+      "reshareKeysRow": "Key changed: {{date}}  {{num}} projects",
+      "reshareKeysRun": "Reshare"
     },
     "confirm": {
       "archive": "Archive this project? Archived projects are hidden from the normal list.",
@@ -558,7 +565,11 @@
     },
     "alert": {
       "migrateDekDone": "Migrated {{num}} projects.",
-      "migrateDekFailed": "Migrated {{num}} projects, but the following projects failed: {{failed}}"
+      "migrateDekFailed": "Migrated {{num}} projects, but the following projects failed: {{failed}}",
+      "reshareKeysNone": "No members need a key reshare.",
+      "reshareKeysDone": "Reshared {{num}} encryption keys. Ask the members to reopen their projects.",
+      "reshareKeysCancelled": "Cancelled: {{num}} were not reshared.",
+      "reshareKeysFailed": "{{num}} could not be reshared (ask another admin): {{names}}"
     }
   },
   "ProjectEdit": {

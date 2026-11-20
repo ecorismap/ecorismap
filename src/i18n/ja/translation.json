@@ -577,7 +577,14 @@
       "archive": "アーカイブ",
       "restore": "復元",
       "migrateDek": "暗号方式の移行({{num}}件)",
-      "migrating": "プロジェクトを移行中... ({{done}}/{{total}})"
+      "migrating": "プロジェクトを移行中... ({{done}}/{{total}})",
+      "reshareKeysCheck": "暗号化キーの再共有",
+      "reshareKeysChecking": "再共有が必要なメンバーを確認中... ({{done}}/{{total}})",
+      "reshareKeysRunning": "暗号化キーを再共有中... ({{done}}/{{total}})",
+      "reshareKeysTitle": "暗号化キーの再共有",
+      "reshareKeysMessage": "次のメンバーは暗号化キーを作り直したため、プロジェクトを開けません。本人がリセットしたことを確認してから、再共有するメンバーを選んでください。",
+      "reshareKeysRow": "鍵の変更: {{date}}　{{num}}プロジェクト",
+      "reshareKeysRun": "再共有"
     },
     "confirm": {
       "archive": "このプロジェクトをアーカイブしますか？アーカイブすると通常の一覧に表示されなくなります。",
@@ -586,7 +593,11 @@
     },
     "alert": {
       "migrateDekDone": "{{num}}件のプロジェクトを移行しました。",
-      "migrateDekFailed": "{{num}}件を移行しましたが、次のプロジェクトは移行に失敗しました: {{failed}}"
+      "migrateDekFailed": "{{num}}件を移行しましたが、次のプロジェクトは移行に失敗しました: {{failed}}",
+      "reshareKeysNone": "再共有が必要なメンバーはいません。",
+      "reshareKeysDone": "{{num}}件の暗号化キーを再共有しました。メンバーにはプロジェクトを開き直すよう伝えてください。",
+      "reshareKeysCancelled": "中止したため、{{num}}件は再共有していません。",
+      "reshareKeysFailed": "{{num}}件は再共有できませんでした（他の管理者に依頼してください）: {{names}}"
     }
   },
   "ProjectEdit": {

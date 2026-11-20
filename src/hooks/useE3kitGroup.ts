@@ -10,7 +10,14 @@ import {
   initializeUser,
   loadGroup,
 } from '../lib/virgilsecurity/e3kit';
-import { addMemberKey, clearProjectCryptoCache, removeMemberKey, migrateProjectToDEK } from '../lib/firebase/firestore';
+import {
+  addMemberKey,
+  clearProjectCryptoCache,
+  removeMemberKey,
+  migrateProjectToDEK,
+  StaleMemberKey,
+} from '../lib/firebase/firestore';
+import { clearPublicKeyLedgerCache } from '../lib/crypto';
 import { FUNC_ENCRYPTION, CREATE_DEK_PROJECTS, ENABLE_DEK_MIGRATION } from '../constants/AppConstants';
 import { ProjectType, VerifiedType } from '../types';
 
@@ -53,6 +60,16 @@ export type UseE3kitGroupReturnType = {
   ) => Promise<{
     isOK: boolean;
     message: string;
+  }>;
+  reshareMemberKeys: (
+    targets: StaleMemberKey[],
+    onProgress: (done: number, total: number) => void,
+    isCancelled: () => boolean
+  ) => Promise<{
+    isOK: boolean;
+    message: string;
+    succeeded: StaleMemberKey[];
+    failed: StaleMemberKey[];
   }>;
 };
 
@@ -208,7 +225,9 @@ export const useE3kitGroup = (): UseE3kitGroupReturnType => {
       return { isOK: false, message: initResult.message };
     }
     // 対象メンバーの旧公開鍵がキャッシュに残っていると旧鍵で再ラップしてしまうため必ずクリアする。
+    // ラップは台帳(publicKeys)優先なので、e3kitのキャッシュだけでなく台帳のキャッシュも消す。
     clearPublicKeyCache();
+    clearPublicKeyLedgerCache();
     let res = await addMemberKey(project.id, uid);
     if (!res.isOK) {
       // 実行者側のDEKキャッシュに開封失敗(undefined)が焼き付いている場合を救済して1回だけ再試行する。
@@ -221,7 +240,42 @@ export const useE3kitGroup = (): UseE3kitGroupReturnType => {
     return { isOK: true, message: '' };
   }, []);
 
+  /**
+   * 複数プロジェクト×メンバーへの一括再共有（findStaleMemberKeys の結果を渡す）。
+   * 初期化とキャッシュのクリアは最初に1回だけ行い、各件は reshareMemberKey と同じく
+   * 失敗時にDEKキャッシュを捨てて1回だけ再試行する。中止されたら残りは処理しない。
+   */
+  const reshareMemberKeys = useCallback(
+    async (
+      targets: StaleMemberKey[],
+      onProgress: (done: number, total: number) => void,
+      isCancelled: () => boolean
+    ) => {
+      const succeeded: StaleMemberKey[] = [];
+      const failed: StaleMemberKey[] = [];
+      if (!FUNC_ENCRYPTION || targets.length === 0) return { isOK: true, message: '', succeeded, failed };
+      const initResult = await initializeUser(targets[0].ownerUid);
+      if (!initResult.isOK) return { isOK: false, message: initResult.message, succeeded, failed };
+      clearPublicKeyCache();
+      clearPublicKeyLedgerCache();
+      onProgress(0, targets.length);
+      for (const target of targets) {
+        if (isCancelled()) break;
+        let res = await addMemberKey(target.projectId, target.uid);
+        if (!res.isOK) {
+          clearProjectCryptoCache();
+          res = await addMemberKey(target.projectId, target.uid);
+        }
+        (res.isOK ? succeeded : failed).push(target);
+        onProgress(succeeded.length + failed.length, targets.length);
+      }
+      return { isOK: true, message: '', succeeded, failed };
+    },
+    []
+  );
+
   return {
+    reshareMemberKeys,
     loadE3kitGroup,
     createE3kitGroup,
     updateE3kitGroupMembers,

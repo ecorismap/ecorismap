@@ -63,6 +63,14 @@ const createContextValue = () => ({
   dekMigratableCount: 0,
   migrationProgress: '',
   pressMigrateProjects: jest.fn(),
+  reshareProgress: '',
+  isReshareRunning: false,
+  isReshareModalOpen: false,
+  reshareCandidates: [],
+  pressCheckStaleKeys: jest.fn(),
+  pressReshareKeysOK: jest.fn(),
+  pressReshareKeysCancel: jest.fn(),
+  pressCancelReshareRunning: jest.fn(),
 });
 
 // ソート状態はReduxへ移動したため、実際のreducerをuseReducerで再現して配線する
