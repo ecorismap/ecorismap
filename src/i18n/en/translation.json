@@ -397,6 +397,17 @@
     }
   },
   "Account": {
+    "resetWarning": {
+      "title": "Reset encryption key",
+      "intro": "Resetting the encryption key makes the data protected by your current key unreadable. Unlike resetting your login password, this cannot be undone.",
+      "shared": "- {{num}} shared projects you belong to cannot be opened until the admin of each project reshares the encryption key.",
+      "solo": "- {{num}} projects where you are the only member can never be decrypted again, because no one can reshare the key.",
+      "sharedUnknown": "- Shared projects cannot be opened until the admin of each project reshares the encryption key.",
+      "soloUnknown": "- Projects where you are the only member can never be decrypted again.",
+      "retry": "If you might remember your PIN, try again instead of resetting.",
+      "reset": "Reset (cannot be undone)",
+      "cancel": "Cancel"
+    },
     "title": {
       "login": "Login",
       "resetUserPassword": "Password reset",
@@ -424,6 +435,7 @@
     },
     "text": {
       "forgetPassword": "Did you forget your password?",
+      "forgetEncryptPassword": "Forgot your encryption password (PIN)?",
       "createAccount": "Create an account",
       "next": "Next",
       "connectGoogle": "Connect with Google",
@@ -442,11 +454,10 @@
       "changeEncryptPassword": "Encrypted password changed.",
       "backupEncryptPassword": "Encryption key registered.",
       "FailResetEncryptKey": "Failed to reset the encryption key.",
-      "resetEncryptKey": "The encryption key has been reset. \nPlease continue to register the encrypted password.",
+      "resetEncryptKey": "The encryption key has been reset. To open shared projects, ask the admin of each project to reshare the encryption key (admins can do this for all projects at once with the key button in the project list).\nPlease continue to register the encrypted password.",
       "FailDeleteUserAccount": "Failed to delete the account.",
       "deleteUserAccount": "I deleted my account.",
       "deleteAllProjects": "Deleted all projects.",
-      "needResetEncryptKey": "You need to reset the encryption key.",
       "FailRestoreEncryptKey": "Failed to restore the encryption key.",
       "FailBackupEncryptPassword": "Failed to register the encryption key.",
       "FailRegistEncryptPassword": "Failed to register the encryption key.",
@@ -491,7 +502,6 @@
       "text": "Delete all projects"
     },
     "confirm": {
-      "resetEncryptKey": "Are you sure you want to reset the encryption key? \nYou will no longer be able to access existing projects, so please ask the project owner or an administrator to re-share the encryption key after the reset.",
       "deleteUserAccount": "Do you really want to delete your account?",
       "deleteAllProjects": "Do you want to delete all projects?"
     },
