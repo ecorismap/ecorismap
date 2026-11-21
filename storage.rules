@@ -4,10 +4,11 @@ service firebase.storage {
     match /projects/{projectId}/PHOTO/{layerId}/{userId}/{allPaths=**} {
       allow get: if isMember(projectId);
       allow create: if isMember(projectId) && request.auth.uid == userId
-        && isValidContentType(request.resource)
+        && isValidPhotoContentType(request.resource)
         && isValidFileSize(request.resource);
-      // 本人に加え、管理者も削除可（クラウドデータ管理・メンバー削除時に他人の写真を消すため）
-      allow delete: if isSignedIn() && (request.auth.uid == userId || isAdmin(projectId));
+      // 本人（現メンバーに限る。脱退・除名後は消せない）に加え、管理者も削除可
+      //（クラウドデータ管理・メンバー削除時に他人の写真を消すため）
+      allow delete: if (isMember(projectId) && request.auth.uid == userId) || isAdmin(projectId);
     }
     match /projects/{projectId}/PDF/{allPaths=**} {
       allow get: if isMember(projectId);
@@ -63,6 +64,12 @@ service firebase.storage {
 
   function isValidContentType(data) {
     return data.contentType in ['image/png',"image/jpeg","application/pdf","application/x-sqlite3","application/json"];
+  }
+
+  // 写真パスは画像のみ。Web(e3kit-browserがfile.typeを引き継ぐ)とAndroid(暗号化後も拡張子を引き継ぐ)はimage/*で届く。
+  // 注意: iOSは暗号化後の一時ファイルに拡張子が無くapplication/octet-streamになるため、変更前の許可リストでも拒否されている（要クライアント修正）。
+  function isValidPhotoContentType(data) {
+    return data.contentType in ['image/png', 'image/jpeg'];
   }
 
   function isValidFileSize(data) {

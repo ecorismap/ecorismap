@@ -70,8 +70,22 @@ beforeAll(async () => {
   });
 });
 
+// testEnv.clearStorage() はルート直下の items しか消さず、入れ子の projects/... 配下が
+// 前のテストから残り続ける（件数系のテストが汚染される）。prefixes まで再帰して消す。
+type StorageRef = ReturnType<ReturnType<ftest.RulesTestContext['storage']>['ref']>;
+const clearStorageRecursive = async () => {
+  await testEnv.withSecurityRulesDisabled(async (context) => {
+    const walk = async (r: StorageRef): Promise<void> => {
+      const res = await r.listAll();
+      await Promise.all(res.items.map((item) => item.delete()));
+      await Promise.all(res.prefixes.map((prefix) => walk(prefix)));
+    };
+    await walk(context.storage().ref());
+  });
+};
+
 beforeEach(async () => {
-  await testEnv.clearStorage();
+  await clearStorageRecursive();
   await testEnv.clearFirestore();
   await seedProject();
 });
