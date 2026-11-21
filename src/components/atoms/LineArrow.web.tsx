@@ -11,11 +11,13 @@ interface Props {
   coordinates: LatLng[];
   strokeColor: string;
   strokeWidth: number;
+  //記号と大きさを揃えるための倍率（飛翔線のように線幅がズームで変わらない線で使う）
+  sizeScale?: number;
   arrowStyle: ArrowStyleType;
 }
 
 const LineArrow = React.memo((props: Props) => {
-  const { coordinates, strokeColor, strokeWidth, arrowStyle } = props;
+  const { coordinates, strokeColor, strokeWidth, arrowStyle, sizeScale = 1 } = props;
 
   if (arrowStyle === 'NONE') return null;
   const p0 = [coordinates[0].longitude, coordinates[0].latitude];
@@ -27,7 +29,7 @@ const LineArrow = React.memo((props: Props) => {
   const bearingStart = bearing(turf.point(p1), turf.point(p0));
   const angleStart = (bearingStart + 360) % 360;
   // ズームアウトでstrokeWidthが1未満に縮むと負の平方根でNaNになるため下限をクランプ（最小でもscale=0.5で矢印を維持）
-  const scale = Math.sqrt(Math.max(strokeWidth - 1, 0.25));
+  const scale = Math.sqrt(Math.max(strokeWidth - 1, 0.25)) * sizeScale;
   const originalSize = 20;
   // scaleに基づいた新しいサイズを計算
   const size = originalSize * scale;
@@ -37,9 +39,18 @@ const LineArrow = React.memo((props: Props) => {
     15 * scale
   } ${20 * scale} Z`;
 
+  // 角度は北基準の方位。既定(auto)だとrotationが画面基準になり、地図を回転したときに向きがずれる。
+  // ネイティブのflatと同じく、地図に寝かせて回転・傾きに追従させる
   return (
     <>
-      <Marker {...coordinates[coordinates.length - 1]} anchor={'center'} draggable={false} rotation={angleEnd}>
+      <Marker
+        {...coordinates[coordinates.length - 1]}
+        anchor={'center'}
+        draggable={false}
+        rotation={angleEnd}
+        rotationAlignment="map"
+        pitchAlignment="map"
+      >
         <View style={{ width: size, height: size }}>
           <Svg height={size.toString()} width={size.toString()} viewBox={`0 0 ${size} ${size}`}>
             <Path d={scaledPath} fill={strokeColor} stroke="white" />
@@ -47,7 +58,14 @@ const LineArrow = React.memo((props: Props) => {
         </View>
       </Marker>
       {arrowStyle === 'ARROW_BOTH' && (
-        <Marker {...coordinates[0]} anchor={'center'} draggable={false} rotation={angleStart}>
+        <Marker
+          {...coordinates[0]}
+          anchor={'center'}
+          draggable={false}
+          rotation={angleStart}
+          rotationAlignment="map"
+          pitchAlignment="map"
+        >
           <View style={{ width: size, height: size }}>
             <Svg height={size.toString()} width={size.toString()} viewBox={`0 0 ${size} ${size}`}>
               <Path d={scaledPath} fill={strokeColor} stroke="white" />

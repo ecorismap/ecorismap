@@ -31,6 +31,10 @@ const findUsersWithCache = async (userId: string): Promise<any> => {
   }
   const promise = eThree.findUsers(userId);
   publicKeyCache.set(userId, promise);
+  // 失敗を保持すると通信が一度途切れただけで以後ずっと失敗するため、rejectされたら捨てて再試行可能にする
+  promise.catch(() => {
+    if (publicKeyCache.get(userId) === promise) publicKeyCache.delete(userId);
+  });
   return promise;
 };
 
@@ -365,15 +369,9 @@ export const encryptFileEThree = async (
       key: undefined;
     }
 > => {
-  // TODO: Implement file encryption using uri
-  // console.log('Encrypting file from URI:', uri);
-  if (uri) {
-    // Placeholder implementation
-  }
-  return {
-    encdata: undefined,
-    key: undefined,
-  };
+  // Blobを扱うWeb専用の経路。ネイティブは encryptFileEThreeRN を使う。黙って undefined を返すと
+  // 呼び出し側で「暗号化失敗」と区別できず原因が埋もれるため、誤って呼ばれたら明示的に失敗させる。
+  throw new Error(`encryptFileEThree is web-only (native: use encryptFileEThreeRN, uri length=${uri.length})`);
 };
 // 暗号化ファイルの出力先。iOSのreact-native-virgil-cryptoはoutputPath省略時に拡張子なしの一時ファイルを作る
 //（Androidは入力の拡張子を引き継ぐ）。RNFB StorageのiOS版はputFileのcontentTypeを拡張子だけで決め、
@@ -422,14 +420,10 @@ export const decryptFileEThree = async (
       decdata: undefined;
     }
 > => {
-  // TODO: Implement file decryption using file and key
-  // console.log('Decrypting file:', file, key);
-  if (file && key) {
-    // Placeholder implementation
-  }
-  return {
-    decdata: undefined,
-  };
+  // encryptFileEThree と同じ理由で、ネイティブから誤って呼ばれたら明示的に失敗させる。
+  throw new Error(
+    `decryptFileEThree is web-only (native: use decryptFileEThreeRN, size=${file.size}, hasKey=${key !== ''})`
+  );
 };
 
 export const decryptFileEThreeRN = async (uri: string, key: string) => {
@@ -568,6 +562,15 @@ export const loadGroup = async (
   }
   const promise = loadGroupInternal(groupId, owner, skipUpdate);
   groupCache.set(cacheKey, promise);
+  // loadGroupInternal は例外を isOK:false に変換して返す。失敗結果を保持すると再試行できないため捨てる
+  promise.then(
+    (result) => {
+      if (!result.isOK && groupCache.get(cacheKey) === promise) groupCache.delete(cacheKey);
+    },
+    () => {
+      if (groupCache.get(cacheKey) === promise) groupCache.delete(cacheKey);
+    }
+  );
   return promise;
 };
 

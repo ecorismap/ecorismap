@@ -54,7 +54,9 @@ export async function exportDatabase(layerId: string) {
     const tables = (await sourceDb.getAllAsync('SELECT name FROM sqlite_schema WHERE type="table"')) as {
       name: string;
     }[];
-    for (const table of tables) {
+    // 辞書テーブルは `_${layerId}_${fieldId}` 形式。LIKEだと _ がワイルドカードになるためJS側で前方一致で絞る
+    const layerTablePrefix = `_${layerId}_`;
+    for (const table of tables.filter(({ name }) => name.startsWith(layerTablePrefix))) {
       const tableName = table.name;
       if (!isValidTableName(tableName)) {
         console.warn(`Skipped table with unexpected name: ${tableName}`);
@@ -104,10 +106,20 @@ export async function importDictionary(
     name: string;
   }[];
   for (const table of tables) {
-    const [_, layerId, fieldId] = table.name.split('_');
     const oldTableName = table.name;
-    const newTableName =
-      layerIdMap !== null && fieldIdMap !== null ? `_${layerIdMap[layerId]}_${fieldIdMap[fieldId]}` : table.name;
+    let newTableName = oldTableName;
+    if (layerIdMap !== null && fieldIdMap !== null) {
+      const [head, layerId, fieldId, ...rest] = oldTableName.split('_');
+      const newLayerId = layerIdMap[layerId];
+      const newFieldId = fieldIdMap[fieldId];
+      // 対応の無いテーブル（他レイヤの辞書や形式外の名前）は取り込まない。
+      // そのまま進めると `_undefined_undefined` のような不要なテーブルが作られて上書きを繰り返す
+      if (head !== '' || rest.length > 0 || newLayerId === undefined || newFieldId === undefined) {
+        console.warn(`Skipped table without mapping: ${oldTableName}`);
+        continue;
+      }
+      newTableName = `_${newLayerId}_${newFieldId}`;
+    }
 
     // インポートしたファイル由来の名前をそのままSQLに埋めないよう、読み書き両方の名前を検証する
     if (!isValidTableName(oldTableName) || !isValidTableName(newTableName)) {

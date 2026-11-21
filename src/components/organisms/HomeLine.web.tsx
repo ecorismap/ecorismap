@@ -25,6 +25,13 @@ interface Props {
 export const Line = React.memo((props: Props) => {
   const { data, layer, zoom, selectedRecord, zoomDecimal } = props;
 
+  // _group を持たない地物（_groupを書かないメモ等）が、未選択時に
+  // undefined === undefined で選択扱いになるのを防ぐ（ネイティブ HomeLine.tsx と同じ判定）
+  const isFeatureSelected = (feature: LineRecordType) => {
+    const selectedId = selectedRecord?.record?.id;
+    return selectedId !== undefined && (feature.id === selectedId || feature.field._group === selectedId);
+  };
+
   const { stampRecords, brushRecords, arrowRecords, lineRecords } = useMemo(() => {
     const stamps: LineRecordType[] = [];
     const brushes: LineRecordType[] = [];
@@ -60,8 +67,7 @@ export const Line = React.memo((props: Props) => {
       {stampRecords.map((feature) => {
         if (feature.coords === undefined) return null;
 
-        const selected =
-          feature.id === selectedRecord?.record?.id || feature.field._group === selectedRecord?.record?.id;
+        const selected = isFeatureSelected(feature);
         const lineColor = selected ? COLOR.YELLOW : getColor(layer, feature);
         return (
           <HomeMapMemoStamp
@@ -75,8 +81,7 @@ export const Line = React.memo((props: Props) => {
         );
       })}
       {brushRecords.map((feature) => {
-        const selected =
-          feature.id === selectedRecord?.record?.id || feature.field._group === selectedRecord?.record?.id;
+        const selected = isFeatureSelected(feature);
         const lineColor = selected ? COLOR.YELLOW : getColor(layer, feature);
         return (
           <HomeMapMemoBrush
@@ -90,8 +95,7 @@ export const Line = React.memo((props: Props) => {
       })}
       {arrowRecords.map((feature) => {
         if (feature.coords === undefined) return null;
-        const selected =
-          feature.id === selectedRecord?.record?.id || feature.field._group === selectedRecord?.record?.id;
+        const selected = isFeatureSelected(feature);
         const lineColor = selected ? COLOR.YELLOW : getColor(layer, feature);
         const arrowStyle = feature.field._strokeStyle as ArrowStyleType;
         const strokeWidth = getLineWidthAtZoom(layer, feature, zoomDecimal ?? zoom);
@@ -194,7 +198,7 @@ const PolylineComponent = React.memo((props: PolylineProps) => {
     [data, layer]
   );
   const geojsonLabel = useMemo(
-    () => generateGeoJson(data, layer.field, 'LINEEND', layer.name, layer.permission),
+    () => generateGeoJson(data, layer.field, 'LINEEND', layer.name, layer.permission, layer),
     [data, layer]
   );
 

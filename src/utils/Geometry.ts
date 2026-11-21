@@ -1131,8 +1131,13 @@ export const generateGeoJson = (
   field: LayerType['field'],
   type: GeoJsonFeatureType,
   layerName: string,
-  permission?: LayerType['permission']
+  permission?: LayerType['permission'],
+  labelLayer?: LayerType
 ) => {
+  //ラベル用(CENTROID/LINEEND)はネイティブと同じ文字列・色をWebでも出すため、整形済みの値を持たせる。
+  //maplibreの式ではDATETIMEの整形や個別色の解決ができないので、ここでgenerateLabel/getColorを通す
+  const labelProperties = (record: RecordType) =>
+    labelLayer ? { _label: generateLabel(labelLayer, record), _labelColor: getColor(labelLayer, record) } : {};
   const isMapMemoLayer = data.some((d) => d.field._strokeColor !== undefined);
   const withGnss = hasGnssPoints(data, type);
 
@@ -1261,7 +1266,7 @@ export const generateGeoJson = (
         const coordinates = d.centroid ? [d.centroid!.longitude, d.centroid!.latitude] : [];
         const feature = {
           type: 'Feature',
-          properties: { ...properties, _visible: d.visible, _id: d.id },
+          properties: { ...properties, _visible: d.visible, _id: d.id, ...labelProperties(d) },
           geometry: {
             type: 'Point',
             coordinates: coordinates,
@@ -1288,7 +1293,7 @@ export const generateGeoJson = (
         }
         const feature = {
           type: 'Feature',
-          properties: { ...properties, _visible: d.visible, _id: d.id },
+          properties: { ...properties, _visible: d.visible, _id: d.id, ...labelProperties(d) },
           geometry: geometry,
         };
         return feature;

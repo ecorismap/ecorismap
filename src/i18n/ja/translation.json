@@ -1073,6 +1073,8 @@
       "failInitializeUser": "セッションが切れました。ログインし直してください。",
       "receiveFile": "ファイルをインポートしました。",
       "failReceiveFile": "ファイルの読み込みに失敗しました。",
+      "pmtilesNotSupportedOnMobile": "PMTilesファイルの取り込みはモバイルでは未対応です。Web版をご利用ください。",
+      "cannotGetBoundary": "地図の範囲を取得できません。",
       "failClearTiles": "ダウンロードしたタイルの削除に失敗しました。",
       "failUpdatePmtilesURL": "以下の地図の再読み込みに失敗しました。",
       "stopSyncPosition": "メンバー位置の同期が停止しました。プロジェクトを開き直してください。",

@@ -1,5 +1,5 @@
-import React, { useCallback, useContext, useState, useMemo } from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import React, { useCallback, useContext, useState, useMemo, useRef } from 'react';
+import { View, Text, StyleSheet, ScrollView, GestureResponderEvent } from 'react-native';
 import { Pressable } from '../atoms/Pressable';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { COLOR } from '../../constants/AppConstants';
@@ -31,11 +31,11 @@ const SortableDataRow = React.memo(
     changeChecked,
     changeVisible,
     gotoDataEdit,
-    isFiltering,
+    isDragDisabled,
   }: {
     item: RecordType;
     index: number;
-    isFiltering: boolean;
+    isDragDisabled: boolean;
     checkList: { id: number; checked: boolean }[];
     projectId: string | undefined;
     layer: LayerType;
@@ -46,9 +46,24 @@ const SortableDataRow = React.memo(
   }) => {
     const { listeners, setNodeRef, transform, transition, isDragging } = useSortable({
       id: item.id,
-      //絞り込み中の並べ替えはストアのレコードを丸ごと置き換えてしまうため禁止する
-      disabled: isFiltering,
+      //絞り込み中の並べ替えはストアのレコードを丸ごと置き換えてしまうため禁止する。
+      //列ソート中はドロップしても何も起きず元に戻るだけなので、ネイティブと同じく無効化する
+      disabled: isDragDisabled,
     });
+    //ドラッグできないときにgrabカーソルを出すと、掴めるのに戻されるように見えるため外す
+    const dragCursor = isDragDisabled ? undefined : 'grab';
+    //ドラッグ無効の行では掴んで動かしても dnd-kit が受け取らず、離した瞬間にただのクリックとして
+    //編集画面が開いてしまう。押した位置から一定以上動いていたらクリックとして扱わない
+    const pressStartRef = useRef<{ x: number; y: number } | null>(null);
+    const onPressInRow = (e: GestureResponderEvent) => {
+      pressStartRef.current = { x: e.nativeEvent.pageX, y: e.nativeEvent.pageY };
+    };
+    const onPressRow = (e: GestureResponderEvent) => {
+      const start = pressStartRef.current;
+      pressStartRef.current = null;
+      if (start !== null && Math.hypot(e.nativeEvent.pageX - start.x, e.nativeEvent.pageY - start.y) > 5) return;
+      gotoDataEdit(index);
+    };
 
     const style = {
       transform: CSS.Transform.toString(transform),
@@ -85,8 +100,9 @@ const SortableDataRow = React.memo(
 
           {projectId !== undefined && layer.permission !== 'COMMON' && (
             <Pressable
-              style={[styles.td, { flex: 2, width: 100, cursor: 'grab' } as any]}
-              onPress={() => gotoDataEdit(index)}
+              style={[styles.td, { flex: 2, width: 100, cursor: dragCursor } as any]}
+              onPressIn={onPressInRow}
+              onPress={onPressRow}
               {...listeners}
             >
               <Text numberOfLines={2} style={{ textAlign: 'center' }}>
@@ -108,8 +124,9 @@ const SortableDataRow = React.memo(
             layer.field.map(({ name, format }, field_index) => (
               <Pressable
                 key={field_index}
-                style={[styles.td, { flex: 2, width: 120, cursor: 'grab' } as any]}
-                onPress={() => gotoDataEdit(index)}
+                style={[styles.td, { flex: 2, width: 120, cursor: dragCursor } as any]}
+                onPressIn={onPressInRow}
+                onPress={onPressRow}
                 {...listeners}
               >
                 <Text numberOfLines={2}>{getFieldDisplayValue(item.field[name], format)}</Text>
@@ -138,7 +155,7 @@ const SortableDataRow = React.memo(
     return (
       isItemEqual &&
       prevProps.index === nextProps.index &&
-      prevProps.isFiltering === nextProps.isFiltering &&
+      prevProps.isDragDisabled === nextProps.isDragDisabled &&
       prevProps.checkList[prevProps.index]?.checked === nextProps.checkList[nextProps.index]?.checked
     );
   }
@@ -256,7 +273,7 @@ export const DataTable = React.memo(() => {
                   changeChecked={changeChecked}
                   changeVisible={changeVisible}
                   gotoDataEdit={gotoDataEdit}
-                  isFiltering={isFiltering}
+                  isDragDisabled={isFiltering || sortedOrder !== 'UNSORTED'}
                 />
               );
             })}

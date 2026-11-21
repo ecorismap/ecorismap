@@ -125,6 +125,11 @@ import { getPmtilesSource, getVectorLayerStyles, VECTOR_GLYPHS_URL } from '../..
 import { HomeTerrainControl } from '../organisms/HomeTerrainControl';
 import { Pressable } from '../atoms/Pressable';
 
+// Protocolはヘッダとディレクトリをインスタンス内にキャッシュするため、レンダーのたびに作り直すと
+// 地図を動かすたびにキャッシュが捨てられRange要求が増える。モジュール読み込み時に一度だけ登録する
+const pmtilesProtocol = new pmtiles.Protocol();
+maplibregl.addProtocol('pmtiles', pmtilesProtocol.tile);
+
 export default function HomeScreen() {
   // TileManagementContext
   const { downloadMode, tileMaps } = useContext(TileManagementContext);
@@ -144,7 +149,7 @@ export default function HomeScreen() {
   const isEditingMap = useSelector((state: RootState) => state.settings.isEditingMap);
 
   // AppStateContext
-  const { restored, isLoading, bottomSheetRef, onCloseBottomSheet, updatePmtilesURL, gotoHome } =
+  const { restored, isLoading, bottomSheetRef, onCloseBottomSheet, onSheetIndexChange, updatePmtilesURL, gotoHome } =
     useContext(AppStateContext);
 
   // BottomSheetNavigationContext
@@ -321,9 +326,6 @@ export default function HomeScreen() {
     'fog-ground-blend': 1,
     'horizon-fog-blend': 0.15,
   };
-  const protocol = new pmtiles.Protocol();
-  maplibregl.addProtocol('pmtiles', protocol.tile);
-
   const loadPDF = async (params: RequestParameters, _abortController: AbortController) => {
     try {
       // //parms.urlはpdf://mapId/z/x/yの形式
@@ -1047,7 +1049,12 @@ export default function HomeScreen() {
         animatedIndex={animatedIndex}
         animateOnMount={true}
         onClose={() => onCloseBottomSheet(currentRouteName)}
-        onChange={(index) => setIsBottomSheetOpen(index >= 0)}
+        onChange={(index) => {
+          //開閉状態のフラグ（直前のindex・自前で閉じ中か）はここでしか更新されない。
+          //呼ばないとopenSheetが「閉じている」と誤判定して全画面へ広げてしまう
+          onSheetIndexChange(index);
+          setIsBottomSheetOpen(index >= 0);
+        }}
         handleComponent={customHandle}
         enableDynamicSizing={false}
         overrideReduceMotion={ReduceMotion.Always}

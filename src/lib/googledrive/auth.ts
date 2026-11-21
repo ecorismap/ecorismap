@@ -28,6 +28,21 @@ export const signInGoogleDrive = async (): Promise<GoogleDriveAuthResult> => {
     if (response.type !== 'success') {
       return { isOK: false, message: 'cancelled' };
     }
+    // 同意画面でDrive権限を外して続行されるとサインイン自体は成功し、Drive操作だけが403になる。
+    // 一度だけ追加同意を求め、それでも付かなければWebと同じscope-deniedで案内する。
+    let scopes = response.data.scopes;
+    if (!scopes.includes(DRIVE_FILE_SCOPE)) {
+      // Androidでは追加同意を拒否すると reject される（cancelledには変換されない）ため、拒否と同じ扱いにする
+      const added = await GoogleSignin.addScopes({ scopes: [DRIVE_FILE_SCOPE] }).catch(() => null);
+      scopes = added !== null && added.type === 'success' ? added.data.scopes : [];
+    }
+    if (!scopes.includes(DRIVE_FILE_SCOPE)) {
+      // SDKにサインイン状態が残るとgetConnectedEmailが接続済み扱いにするため破棄する
+      await GoogleSignin.signOut().catch(() => undefined);
+      connectedEmail = undefined;
+      cachedToken = undefined;
+      return { isOK: false, message: 'scope-denied' };
+    }
     connectedEmail = response.data.user.email;
     cachedToken = undefined;
     return { isOK: true, message: '', email: connectedEmail };

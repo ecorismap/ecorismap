@@ -1,4 +1,3 @@
-import { t } from '../i18n/config';
 import { LayerType } from '../types';
 import { getColorRule } from './Layer';
 
@@ -15,34 +14,19 @@ export const getColorExpression = (layer_: LayerType, displayName: string) => {
   return colorExpression;
 };
 
-export const getLabelStyle = (layer_: LayerType, userId: string, displayName: string) => {
-  const colorExpression = getColorExpression(layer_, displayName);
-
-  // Prepare the text-field based on the label value
-  let textField;
-  if (layer_.label === t('common.custom') && layer_.customLabel) {
-    // Split the customLabel into fields and create a Mapbox expression
-    const fieldNames = layer_.customLabel.split('|');
-    const fields = fieldNames.reduce((acc, field, index) => {
-      const fieldName = field.trim(); // Remove leading and trailing whitespaces
-      if (fieldName.startsWith('"') || fieldName.startsWith("'")) {
-        //@ts-ignore
-        acc.push(fieldName.substring(1, fieldName.length - 1)); // Remove quotes
-      } else {
-        //@ts-ignore
-        acc.push(['get', fieldName]);
-      }
-      // Do not add " " after the last field
-      if (index < fieldNames.length - 1) {
-        //@ts-ignore
-        acc.push(' ');
-      }
-      return acc;
-    }, []);
-    textField = ['concat', ...fields];
-  } else {
-    textField = ['get', layer_.label];
-  }
+//_displayNameは呼び出し側の互換のため残している（色はfeatureの_labelColorで決まる）
+export const getLabelStyle = (layer_: LayerType, userId: string, _displayName?: string) => {
+  //文字列と色はgenerateGeoJsonのCENTROID/LINEENDでgenerateLabel/getColorを通した値を使う。
+  //式で組み立てるとカスタムラベルの区切りやDATETIMEの整形、個別色がネイティブとずれるため
+  const colorExpression = [
+    'case',
+    ['boolean', ['feature-state', 'clicked'], false],
+    'rgba(255, 255, 0, 0.7)',
+    ['boolean', ['feature-state', 'hover'], false],
+    'rgba(255, 255, 0, 0.7)',
+    ['coalesce', ['get', '_labelColor'], 'rgba(0,0,0,1)'],
+  ];
+  const textField = ['coalesce', ['get', '_label'], ''];
 
   return {
     id: `${layer_.id}_${userId}-label`,

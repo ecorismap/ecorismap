@@ -64,6 +64,8 @@ export const DataEditTimeRange = (props: Props) => {
 
   const onDateChange = useCallback(
     (dateTime: Date | string | null, id: number) => {
+      // MUIは存在しない日付（11月31日など）でもInvalid Dateを渡してくるため、保存前に捨てる
+      if (dateTime instanceof Date && isNaN(dateTime.getTime())) return;
       const dateString = dateToString(dateTime);
       if (id === 1) {
         onValueChange(`${dateString}${t('common.ndash')}${value2}`);

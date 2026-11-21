@@ -4,7 +4,7 @@ import sanitize from 'sanitize-filename';
 import { ExportResultType, ExportType } from '../types';
 import { Buffer } from 'buffer';
 import { fetchPhoto } from '../lib/firebase/storage';
-import { ExportZipOptions } from './zipProgress';
+import { ExportCancelledError, ExportZipOptions, generateZipCancellable, throwIfExportCancelled } from './zipProgress';
 // //@ts-ignore
 // import Base64 from 'Base64';
 // import jschardet from 'jschardet';
@@ -38,13 +38,16 @@ export const generateZipBlob = async (
     type: ExportType;
     url?: string | null;
     key?: string | null;
-  }[]
+  }[],
+  // 中止されたらExportCancelledErrorを投げる
+  options?: ExportZipOptions
 ): Promise<Blob | undefined> => {
   try {
     const zip = new JSZip();
     const folder = zip.folder('');
     if (folder == null) return;
     for (const d of exportData) {
+      throwIfExportCancelled(options);
       const folderName = sanitize(d.folder) === '' ? '' : sanitize(d.folder) + '/';
       try {
         if (d.type === 'PHOTO' || d.type === 'SQLITE') {
@@ -112,8 +115,11 @@ export const generateZipBlob = async (
       }
     }
 
-    return await zip.generateAsync({ type: 'blob' });
+    // generateAsyncは途中で止められないため、中止・進捗に対応した共通ヘルパーでbase64を作ってからBlobへ戻す
+    const base64 = await generateZipCancellable(zip, { type: 'base64' }, options);
+    return new Blob([new Uint8Array(Buffer.from(base64, 'base64'))], { type: 'application/zip' });
   } catch (e) {
+    if (e instanceof ExportCancelledError) throw e;
     console.log(e);
     return undefined;
   }
@@ -132,10 +138,10 @@ export const exportGeoFile = async (
   ext: string,
   // Webはブラウザダウンロード固定のため未使用（ネイティブ版とのシグネチャ互換用）
   _destination?: 'save' | 'share',
-  // Webは一括でBlobを作るため進捗・中止は未対応（シグネチャ互換用）
-  _options?: ExportZipOptions
+  // 中止されたらExportCancelledErrorを投げる
+  options?: ExportZipOptions
 ): Promise<ExportResultType> => {
-  const zipFile = await generateZipBlob(exportData);
+  const zipFile = await generateZipBlob(exportData, options);
   if (zipFile === undefined) return 'error';
   FileSaver.saveAs(zipFile, `${sanitize(exportFileName)}.${ext}`);
   return 'saved';
