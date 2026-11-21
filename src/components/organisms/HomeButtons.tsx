@@ -37,6 +37,7 @@ export const HomeButtons = React.memo(() => {
       )}
       <View style={{ marginHorizontal: 9 }}>
         <Button
+          testID="home-layers"
           name={HOME_BTN.LAYERS}
           backgroundColor={COLOR.BLUE}
           onPress={gotoLayers}

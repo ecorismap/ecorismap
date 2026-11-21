@@ -1,0 +1,51 @@
+# 写真フィールドの「カメラ」で撮影して保存する（Android実機・エミュレーター用）。
+# 0.6.0〜0.6.7で保存されなくなった経路。カメラアプリの操作は機種で違うため、
+# シャッターと確定は位置で指定している（Pixelの標準カメラで確認）。
+appId: jp.co.ecoris.ecorismap
+env:
+  LAYER_NAME: 'ポイント.*'
+---
+- launchApp:
+    permissions:
+      all: allow
+- runFlow: ../common/open-point-layer.yaml
+# 03は先頭のレコードを検証して消すので、レイヤが空の状態から始める。
+# 失敗したフローの残りがあるときは 99-delete-all-test-records.yaml で片付ける
+- assertNotVisible:
+    id: 'data-row-0'
+- tapOn:
+    id: 'data-add'
+- extendedWaitUntil:
+    visible:
+      id: 'dataedit-photo-camera'
+    timeout: 10000
+- waitForAnimationToEnd
+- tapOn:
+    id: 'dataedit-photo-camera'
+- waitForAnimationToEnd:
+    timeout: 5000
+# シャッター
+- tapOn:
+    point: '50%,75%'
+- waitForAnimationToEnd:
+    timeout: 5000
+# 撮影結果の確定（チェックマーク）
+- tapOn:
+    point: '50%,75%'
+- extendedWaitUntil:
+    visible:
+      id: 'dataedit-photo-thumb-0'
+    timeout: 30000
+# 「アクティビティを保持しない」がONのときは、復帰処理が自動で保存するので保存ボタンは無効のまま
+- runFlow:
+    when:
+      visible:
+        id: 'dataedit-save'
+        enabled: true
+    commands:
+      - tapOn:
+          id: 'dataedit-save'
+      - extendedWaitUntil:
+          visible:
+            id: 'data-row-0'
+          timeout: 10000

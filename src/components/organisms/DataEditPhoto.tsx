@@ -27,6 +27,7 @@ export const DataEditPhoto = (props: Props) => {
           </View>
           <View style={styles.button}>
             <Button
+              testID="dataedit-photo-camera"
               name="camera"
               onPress={() => pressTakePhoto(fieldName)}
               style={{ backgroundColor: COLOR.GRAY3 }}
@@ -35,6 +36,7 @@ export const DataEditPhoto = (props: Props) => {
           </View>
           <View style={styles.button}>
             <Button
+              testID="dataedit-photo-library"
               name="file-image"
               onPress={() => pressPickPhoto(fieldName)}
               style={{ backgroundColor: COLOR.GRAY3 }}
@@ -47,7 +49,12 @@ export const DataEditPhoto = (props: Props) => {
         {fieldData.map(
           (photo, index) =>
             photo.uri !== undefined && (
-              <Pressable style={{ margin: 2 }} key={index} onPress={() => pressPhoto(fieldName, photo, index)}>
+              <Pressable
+                testID={`dataedit-photo-thumb-${index}`}
+                style={{ margin: 2 }}
+                key={index}
+                onPress={() => pressPhoto(fieldName, photo, index)}
+              >
                 <Image
                   source={{ uri: photo.thumbnail ? photo.thumbnail : undefined }}
                   style={{

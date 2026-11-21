@@ -51,6 +51,7 @@ export const DataEditButtons = () => {
         labelText={t('DataEdit.label.copy')}
       />
       <Button
+        testID="dataedit-delete"
         name={DATAEDIT_BTN.DELETE}
         onPress={pressDeleteData}
         backgroundColor={isEditingRecord || !isEditable ? COLOR.LIGHTBLUE : COLOR.BLUE}

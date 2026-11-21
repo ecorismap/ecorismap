@@ -94,7 +94,13 @@ export const DataEditModalPhotoView = () => {
             </View>
           )}
           <View style={styles.headerRight}>
-            <Button name={DATAEDIT_BTN.CLOSE} onPress={pressClosePhoto} backgroundColor={COLOR.BLACK} size={30} />
+            <Button
+              testID="photo-view-close"
+              name={DATAEDIT_BTN.CLOSE}
+              onPress={pressClosePhoto}
+              backgroundColor={COLOR.BLACK}
+              size={30}
+            />
           </View>
         </View>
         {imageUrls.length > 0 && (
@@ -112,7 +118,7 @@ export const DataEditModalPhotoView = () => {
         )}
         {!hasLocal && (
           <View style={[styles.downloadContainer, { bottom: insets.bottom + 30 }]}>
-            <Button name="download" onPress={pressDownloadPhoto} />
+            <Button testID="photo-view-download" name="download" onPress={pressDownloadPhoto} />
           </View>
         )}
       </View>

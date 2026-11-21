@@ -849,6 +849,9 @@ export default function HomeScreen() {
         //瞬間スナップや指のドラッグ後にはズレて解除されず、スクロール不能のまま固着する。
         //falseにするとBottomSheetScrollViewは常時アンロックになり、この問題を迂回できる
         enableContentPanningGesture={false}
+        //既定(true)だとiOSではシート全体が「Bottom Sheet」という1つの要素になり、中の一覧やボタンを
+        //VoiceOverやE2E（Maestro）から個別に辿れない
+        accessible={false}
         animateOnMount={false}
         animatedIndex={animatedIndex}
         onClose={() => onCloseBottomSheet(currentRouteName)}

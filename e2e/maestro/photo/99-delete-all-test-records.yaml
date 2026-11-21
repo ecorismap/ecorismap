@@ -1,0 +1,29 @@
+# 失敗したフローが残したテスト用レコードを片付ける。
+# 既定の「ポイント」レイヤのレコードを先頭から全部削除するので、テスト専用の端末でだけ使うこと。
+appId: jp.co.ecoris.ecorismap
+env:
+  LAYER_NAME: 'ポイント.*'
+---
+- stopApp
+- launchApp
+- runFlow: ../common/open-point-layer.yaml
+- repeat:
+    while:
+      visible:
+        id: 'data-row-0'
+    times: 20
+    commands:
+      - tapOn:
+          id: 'data-row-0'
+      - extendedWaitUntil:
+          visible:
+            id: 'dataedit-delete'
+          timeout: 10000
+      - waitForAnimationToEnd
+      - tapOn:
+          id: 'dataedit-delete'
+      - tapOn: 'Yes'
+      - extendedWaitUntil:
+          visible:
+            id: 'data-add'
+          timeout: 10000

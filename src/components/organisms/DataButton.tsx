@@ -15,6 +15,7 @@ export const DataButton = () => {
     <View style={styles.button}>
       {(layer.type === 'NONE' || layer.type === 'POINT') && (
         <Button
+          testID="data-add"
           name={DATA_BTN.ADD}
           onPress={pressAddData}
           backgroundColor={isEditable ? COLOR.BLUE : COLOR.LIGHTBLUE}
