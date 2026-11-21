@@ -130,9 +130,11 @@ class WebSQLiteDatabase implements SQLiteDatabase {
 
     try {
       // 関連するテーブルを見つける
-      const tables = this.getAllSync("SELECT name FROM sqlite_master WHERE type='table' AND name LIKE ?", [
-        `%${layerId}%`,
-      ]);
+      // 辞書テーブルは `_${layerId}_${fieldId}` 形式。LIKEだと _ がワイルドカードになるためJS側で前方一致で絞る
+      const layerTablePrefix = `_${layerId}_`;
+      const tables = (
+        this.getAllSync("SELECT name FROM sqlite_master WHERE type='table'") as { name: string }[]
+      ).filter(({ name }) => name.startsWith(layerTablePrefix));
 
       // 各テーブルをコピー
       for (const table of tables) {
@@ -196,10 +198,20 @@ class WebSQLiteDatabase implements SQLiteDatabase {
 
       for (const table of tables) {
         //table.nameは_layerId_fieldIdの形式.これをlayerIdMapとfieldIdMapを使って変換する.
-        const [_, layerId, fieldId] = table.name.split('_');
         const oldTableName = table.name;
-        const newTableName =
-          layerIdMap !== null && fieldIdMap !== null ? `_${layerIdMap[layerId]}_${fieldIdMap[fieldId]}` : table.name;
+        let newTableName = oldTableName;
+        if (layerIdMap !== null && fieldIdMap !== null) {
+          const [head, layerId, fieldId, ...rest] = oldTableName.split('_');
+          const newLayerId = layerIdMap[layerId];
+          const newFieldId = fieldIdMap[fieldId];
+          // 対応の無いテーブル（他レイヤの辞書や形式外の名前）は取り込まない。
+          // そのまま進めると `_undefined_undefined` のような不要なテーブルが作られて上書きを繰り返す
+          if (head !== '' || rest.length > 0 || newLayerId === undefined || newFieldId === undefined) {
+            console.log(`skip table without mapping: ${oldTableName}`);
+            continue;
+          }
+          newTableName = `_${newLayerId}_${newFieldId}`;
+        }
         //テーブル名はSQLに直接埋め込むため、外部ファイル由来の想定外の名前は扱わない
         if (!isValidTableName(oldTableName) || !isValidTableName(newTableName)) {
           console.log(`skip invalid table name: ${oldTableName}`);

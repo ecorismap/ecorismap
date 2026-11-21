@@ -270,8 +270,10 @@ export const useGeoFile = (): UseGeoFileReturnType => {
             Platform.OS !== 'web'
               ? await loaded.files[sqliteFile].async('uint8array')
               : await loaded.files[sqliteFile].async('arraybuffer');
-          // 置き換えの場合は既存レイヤIDを使用
-          await importDictionary(sqlite, { [originalLayerId]: existingLayerToReplace.id }, {});
+          // 置き換えの場合は既存レイヤIDを使用。フィールドIDは元のまま引き継ぐので同じIDへ対応させる
+          //（空の対応表だと辞書テーブルが対応なしとして取り込まれない）
+          const sameFieldIdMap = Object.fromEntries(json.field.map((f) => [f.id, f.id]));
+          await importDictionary(sqlite, { [originalLayerId]: existingLayerToReplace.id }, sameFieldIdMap);
         }
 
         // 既存データを削除

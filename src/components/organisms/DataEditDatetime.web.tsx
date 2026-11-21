@@ -34,7 +34,8 @@ export const DataEditDatetime = (props: Props) => {
   const onDateChange = useCallback(
     (dateTime: Date | null) => {
       let dateString: string;
-      if (dateTime === null) return;
+      // MUIは存在しない日付（11月31日など）でもInvalid Dateを渡してくるため、保存前に捨てる
+      if (dateTime === null || isNaN(dateTime.getTime())) return;
       if (mode === 'time') {
         dateString = dayjs(dateTime).format('HH:mm');
       } else if (mode === 'date') {

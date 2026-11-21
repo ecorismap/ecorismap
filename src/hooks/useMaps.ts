@@ -846,6 +846,10 @@ export const useMaps = (): UseMapsReturnType => {
 
   const importPmtilesFile = useCallback(
     async (uri: string, name: string, id?: string) => {
+      // ネイティブはヘッダーを読めず必ず失敗するため、数百MBにもなるコピーを作る前に断る
+      if (Platform.OS !== 'web') {
+        return { isOK: false, message: t('hooks.message.pmtilesNotSupportedOnMobile') };
+      }
       const mapId = id === undefined ? ulid() : id;
       let url;
       let blob;
@@ -860,6 +864,14 @@ export const useMaps = (): UseMapsReturnType => {
       }
       const { header, boundary } = await getPmtilesBoundary(url);
       if (header === undefined || boundary === undefined) {
+        // 失敗した地図は一覧に載らず利用者が消す手段がないため、コピーをここで片付ける
+        if (Platform.OS === 'web') {
+          URL.revokeObjectURL(url);
+        } else {
+          // 既存地図の置き換え時はディレクトリに既存の資産があるため、コピーしたファイルだけを消す
+          const target = id === undefined ? `${TILE_FOLDER}/${mapId}` : url;
+          await FileSystem.deleteAsync(target, { idempotent: true }).catch(() => undefined);
+        }
         return { isOK: false, message: t('hooks.message.failReceiveFile') };
       }
       //console.log('AAA', metadata);

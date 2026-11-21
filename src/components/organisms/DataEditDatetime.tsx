@@ -48,7 +48,8 @@ export const DataEditDatetime = (props: Props) => {
       } else if (mode === 'date') {
         dateString = dayjs(dateTime).format('L');
       } else {
-        dateString = dayjs(dateTime).format('L HH:mm');
+        //既定値・取り込み・Web版と同じISO形式で保存する（ロケール形式だと秒・タイムゾーンが落ち、並べ替えも崩れる）
+        dateString = dayjs(dateTime).format();
       }
       onValueChange(dateString);
     },

@@ -129,7 +129,9 @@ export const useData = (layerId: string): UseDataReturnType => {
         setCheckList(newCheckList);
         setSortedRecordSet(recordSet);
       } else {
-        const result = sortData(recordSet, colName, order);
+        // DATETIME列は時刻で比べる（ISOと旧ネイティブのロケール形式が混在しうるため文字列比較では時系列にならない）
+        const format = targetLayer?.field.find((f) => f.name === colName)?.format;
+        const result = sortData(recordSet, colName, order, format);
         const newCheckList = result.idx.map((d) => checkList_.find((c) => d === c.id) ?? { id: d, checked: false });
         setCheckList(newCheckList);
         setSortedRecordSet(result.data);

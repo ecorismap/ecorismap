@@ -196,6 +196,11 @@ export default function MapContainer() {
       await AlertAsync(t('hooks.message.wrongExtension'));
       return;
     }
+    // ネイティブはPMTilesのヘッダーを読めず取り込みが必ず失敗するため、選ばれた時点で案内する
+    if (ext === 'pmtiles' && Platform.OS !== 'web') {
+      await AlertAsync(t('hooks.message.pmtilesNotSupportedOnMobile'));
+      return;
+    }
     // expo-document-picker(Web)はblob: URLを返すが、importMapFileはdata:を想定しているためdata:に変換する
     if (Platform.OS === 'web' && uri.startsWith('blob:')) {
       uri = await blobUriToDataUri(uri);
@@ -256,8 +261,8 @@ export default function MapContainer() {
     });
   }, [navigateToHome]);
 
-  const jumpToBoundary = useCallback(
-    async (item: TileMapType) => {
+  const loadBoundary = useCallback(
+    async (item: TileMapType): Promise<boundaryType | undefined> => {
       let boundary: boundaryType | undefined;
       if (Platform.OS === 'web') {
         let boundaryJson;
@@ -266,13 +271,17 @@ export default function MapContainer() {
           if (boundaryJson === undefined) {
             const result = await getPmtilesBoundary(item.url);
             boundary = result.boundary;
+            if (boundary === undefined) {
+              await AlertAsync(t('hooks.message.cannotGetBoundary'));
+              return undefined;
+            }
             await db.pmtiles.update(item.id, { boundary: JSON.stringify(boundary) });
           } else {
             boundary = JSON.parse(boundaryJson);
           }
         } else if (item.url.endsWith('.pdf') || item.url.startsWith('pdf://') || item.url.startsWith('file://')) {
           boundaryJson = (await db.geotiff.get(item.id))?.boundary;
-          if (boundaryJson === undefined) return;
+          if (boundaryJson === undefined) return undefined;
           boundary = JSON.parse(boundaryJson);
         }
       } else {
@@ -283,15 +292,36 @@ export default function MapContainer() {
           if (item.url.includes('pmtiles')) {
             const result = await getPmtilesBoundary(item.url);
             boundary = result.boundary;
+            // 未取得のまま書き込もうとすると例外で終わり、利用者には何も表示されない
+            if (boundary === undefined) {
+              await AlertAsync(t('hooks.message.cannotGetBoundary'));
+              return undefined;
+            }
             boundaryJson = JSON.stringify(boundary);
             await FileSystem.makeDirectoryAsync(`${TILE_FOLDER}/${item.id}`, { intermediates: true });
             await FileSystem.writeAsStringAsync(boundaryUri, boundaryJson);
           } else {
-            return;
+            return undefined;
           }
         } else {
           boundary = JSON.parse(boundaryJson);
         }
+      }
+      return boundary;
+    },
+    [getPmtilesBoundary]
+  );
+
+  const jumpToBoundary = useCallback(
+    async (item: TileMapType) => {
+      // 地図名タップから呼ばれ、拒否されると未処理のPromise拒否になるためここで受け止める
+      let boundary: boundaryType | undefined;
+      try {
+        boundary = await loadBoundary(item);
+      } catch (e) {
+        console.error('jumpToBoundary error:', e);
+        await AlertAsync(t('hooks.message.cannotGetBoundary'));
+        return;
       }
       if (boundary === undefined) return;
       navigateToHome?.({
@@ -306,7 +336,7 @@ export default function MapContainer() {
         mode: 'jumpTo',
       });
     },
-    [getPmtilesBoundary, navigateToHome]
+    [loadBoundary, navigateToHome]
   );
 
   const pressMapOrder = useCallback(

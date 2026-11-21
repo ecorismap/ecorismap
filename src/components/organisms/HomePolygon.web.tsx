@@ -32,7 +32,7 @@ export const Polygon = React.memo((props: Props) => {
     [data, layer]
   );
   const geojsonLabel = useMemo(
-    () => generateGeoJson(data, layer.field, 'CENTROID', layer.name, layer.permission),
+    () => generateGeoJson(data, layer.field, 'CENTROID', layer.name, layer.permission, layer),
     [data, layer]
   );
 

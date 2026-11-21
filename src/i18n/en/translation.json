@@ -801,6 +801,8 @@
       "failInitializeUser": "Your session has expired. \nPlease log in again.",
       "receiveFile": "The file has been imported.",
       "failReceiveFile": "Failed to load file.",
+      "pmtilesNotSupportedOnMobile": "Importing PMTiles files is not supported on mobile. Please use the web version.",
+      "cannotGetBoundary": "Unable to get the map extent.",
       "failClearTiles": "Failed to delete downloaded tiles.",
       "failUpdatePmtilesURL": "Failed to reload the following maps.",
       "stopSyncPosition": "Member location sync has stopped. Please reopen the project.",

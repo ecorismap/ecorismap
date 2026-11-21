@@ -15,7 +15,7 @@ export const MemberMarker = React.memo((props: Props) => {
   //console.log(angle);
 
   return (
-    <Marker {...memberLocation.coords} offset={[-24 / 2, -15.72 / 2]} anchor={'top-left'}>
+    <Marker {...memberLocation.coords} anchor={'center'}>
       <div>
         {memberLocation.icon.photoURL !== null ? (
           //@ts-ignore

@@ -54,7 +54,9 @@ export const initializeUser = async (userId: string) => {
     return { isOK: true, message: '' };
   } catch (e: any) {
     console.log(e);
-    return { isOK: false, message: e };
+    // 失敗したインスタンスを残すと isInitialized() が true になり、復元・登録の案内へ進めなくなる
+    eThree = undefined as unknown as EThree;
+    return { isOK: false, message: e.message || e };
   }
 };
 
@@ -92,12 +94,42 @@ export const cleanupEncryptKey = async () => {
   }
 };
 
+// e3kit-browser の既定の保存先（EThree.prepareConstructorParams の DEFAULT_STORAGE_NAME /
+// DEFAULT_GROUP_STORAGE_NAME）。グループ側は level-js が 'level-js-' を前置する。
+const VIRGIL_IDB_NAMES = ['.virgil-local-storage', 'level-js-.virgil-group-storage'];
+
+const deleteIndexedDb = (name: string) =>
+  new Promise<void>((resolve) => {
+    try {
+      const req = indexedDB.deleteDatabase(name);
+      req.onsuccess = () => resolve();
+      req.onerror = () => {
+        console.log('[purgeLocalKeys] delete error', name, req.error);
+        resolve();
+      };
+      // 他タブ等の接続が残っていると blocked になる。削除要求は接続が閉じた時点で実行されるため、
+      // ここでは待たずに続行する（ログアウト処理を止めない）。
+      req.onblocked = () => {
+        console.log('[purgeLocalKeys] delete blocked', name);
+        resolve();
+      };
+    } catch (e) {
+      console.log('[purgeLocalKeys] delete exception', name, e);
+      resolve();
+    }
+  });
+
 /**
- * Web版はno-op。Virgil鍵の削除はcleanupEncryptKey、識別鍵の削除はkeyStorage.webでカバーする。
- * eThree未初期化時にIndexedDB(.virgil-local-storage)を直接消す案は、接続中DBのdeleteDatabaseが
- * blockedになるハンドリングが必要なため見送り（native版のフォールバックとのAPI整合のための定義）。
+ * 明示的ログアウト専用のローカル鍵削除フォールバック。
+ * cleanupEncryptKey() は eThree 未初期化（再読み込み直後など）だと何も消さないため、
+ * そのときだけ IndexedDB の保存実体を直接削除する。初期化済みなら cleanup が消しているので触らない。
  */
-export const purgeLocalKeys = async (): Promise<void> => {};
+export const purgeLocalKeys = async (): Promise<void> => {
+  if (!FUNC_ENCRYPTION) return;
+  if (eThree !== undefined) return;
+  if (typeof indexedDB === 'undefined') return;
+  await Promise.all(VIRGIL_IDB_NAMES.map(deleteIndexedDb));
+};
 
 export const deleteEncryptKey = async () => {
   if (!FUNC_ENCRYPTION) return { isOK: true };

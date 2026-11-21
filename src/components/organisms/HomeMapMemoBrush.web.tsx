@@ -34,7 +34,10 @@ export const HomeMapMemoBrush = React.memo((props: Props) => {
           longitude={point.coordinates[0]}
           latitude={point.coordinates[1]}
           anchor={'center'}
+          // 角度は北基準の方位。既定(auto)だとrotationが画面基準になり、地図を回転したときに向きがずれる
           rotation={point.angle}
+          rotationAlignment="map"
+          pitchAlignment="map"
           draggable={false}
         >
           {/* <Marker

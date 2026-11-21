@@ -25,12 +25,46 @@ import * as wanakana from 'wanakana';
 
 export type SortOrderType = 'ASCENDING' | 'DESCENDING' | 'UNSORTED';
 
-export const sortData = (data: RecordType[], fieldName: string, order: SortOrderType = 'UNSORTED') => {
+//旧ネイティブ版はDATETIMEを端末ロケールの'L HH:mm'で保存していたため、ISOと併せて読めるようにする。
+//en形式の'MM/DD/YYYY'はdayjs標準の解析では環境によって読めないので、明示的な書式で先に試す
+const LEGACY_DATETIME_FORMATS = ['YYYY/MM/DD HH:mm', 'MM/DD/YYYY HH:mm'];
+
+const toDatetimeNumber = (value: unknown): number => {
+  if (typeof value !== 'string' || value === '') return NaN;
+  for (const format of LEGACY_DATETIME_FORMATS) {
+    const legacy = dayjs(value, format, true);
+    if (legacy.isValid()) return legacy.valueOf();
+  }
+  const date = dayjs(value);
+  return date.isValid() ? date.valueOf() : NaN;
+};
+
+const sortDatetimeData = (data: RecordType[], fieldName: string, order: SortOrderType) => {
+  const items = data.map((d, idx) => ({ d, idx, time: toDatetimeNumber(d.field[fieldName]) }));
+  const sign = order === 'DESCENDING' ? -1 : 1;
+  //日付にならない値（未入力など）は昇順・降順どちらでも末尾にまとめる
+  const valid = items.filter((item) => !Number.isNaN(item.time));
+  const invalid = items.filter((item) => Number.isNaN(item.time));
+  valid.sort((a, b) => (a.time === b.time ? a.idx - b.idx : (a.time - b.time) * sign));
+  const sorted = [...valid, ...invalid];
+  return { data: sorted.map((item) => item.d), idx: sorted.map((item) => item.idx) };
+};
+
+export const sortData = (
+  data: RecordType[],
+  fieldName: string,
+  order: SortOrderType = 'UNSORTED',
+  format?: FormatType
+) => {
   //console.log('sortData', fieldName, order);
   const dataWithIdx = data.map((d, idx) => ({ ...d, idx }));
   let idx = data.map((_, i) => i);
   if (data.length === 0) {
     return { data: [], idx: [] };
+  }
+  //DATETIMEは文字列比較だとISOとロケール形式が混在したときに時系列にならないため、時刻値で比べる
+  if (format === 'DATETIME' && fieldName !== '_user_' && data[0].field[fieldName] !== undefined) {
+    return sortDatetimeData(data, fieldName, order);
   }
 
   let sortedDataWithIdx;
