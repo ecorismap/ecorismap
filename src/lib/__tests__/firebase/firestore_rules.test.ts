@@ -1,6 +1,6 @@
 import * as fs from 'fs';
 import * as firebase from '@firebase/rules-unit-testing';
-import { collection, deleteDoc, doc, getDoc, getDocs, query, setDoc, updateDoc, where } from 'firebase/firestore';
+import { collection, deleteDoc, doc, getDoc, getDocs, query, setDoc, Timestamp, updateDoc, where, writeBatch } from 'firebase/firestore';
 
 let testEnv: firebase.RulesTestEnvironment;
 const projectID = 'ecorismap';
@@ -488,8 +488,8 @@ describe('settings subcollection', () => {
     await firebase.assertSucceeds(
       setDoc(doc(context1.firestore(), `projects/${documentId}/settings/default`), {
         editorUid: uid1,
-        encdata: '1',
-        encryptedAt: '2022年1月2日',
+        encdata: ['1'],
+        encryptedAt: Timestamp.now(),
       })
     );
     const context2 = testEnv.authenticatedContext(uid2, {
@@ -499,8 +499,8 @@ describe('settings subcollection', () => {
     await firebase.assertSucceeds(
       setDoc(doc(context2.firestore(), `projects/${documentId}/settings/default`), {
         editorUid: uid1,
-        encdata: '2',
-        encryptedAt: '2022年1月2日',
+        encdata: ['2'],
+        encryptedAt: Timestamp.now(),
       })
     );
   });
@@ -557,13 +557,13 @@ describe('data subcollection', () => {
         ownerUid: uid1,
         adminsUid: [uid1, uid2],
         membersUid: [uid1, uid2, uid3, uid4],
-        encdata: '',
+        encdata: [''],
         encryptedAt: '2022年1月2日',
       });
     });
     await testEnv.withSecurityRulesDisabled(async (context) => {
       await setDoc(doc(context.firestore(), `projects/${documentId}/data/${dataId1}`), {
-        encdata: '',
+        encdata: [''],
         userId: uid3,
         layerId: layerId,
         permission: 'PRIVATE',
@@ -572,7 +572,7 @@ describe('data subcollection', () => {
     });
     await testEnv.withSecurityRulesDisabled(async (context) => {
       await setDoc(doc(context.firestore(), `projects/${documentId}/data/${dataId2}`), {
-        encdata: '',
+        encdata: [''],
         userId: uid1,
         layerId: layerId,
         permission: 'COMMON',
@@ -603,13 +603,13 @@ describe('data subcollection', () => {
         ownerUid: uid1,
         adminsUid: [uid1, uid2],
         membersUid: [uid1, uid2, uid3, uid4],
-        encdata: '',
+        encdata: [''],
         encryptedAt: '2022年1月2日',
       });
     });
     await testEnv.withSecurityRulesDisabled(async (context) => {
       await setDoc(doc(context.firestore(), `projects/${documentId}/data/${dataId1}`), {
-        encdata: '',
+        encdata: [''],
         userId: uid3,
         layerId: layerId,
         permission: 'PRIVATE',
@@ -618,7 +618,7 @@ describe('data subcollection', () => {
     });
     await testEnv.withSecurityRulesDisabled(async (context) => {
       await setDoc(doc(context.firestore(), `projects/${documentId}/data/${dataId2}`), {
-        encdata: '',
+        encdata: [''],
         userId: uid1,
         layerId: layerId,
         permission: 'COMMON',
@@ -641,13 +641,13 @@ describe('data subcollection', () => {
         ownerUid: uid1,
         adminsUid: [uid1, uid2],
         membersUid: [uid1, uid2, uid3, uid4],
-        encdata: '',
+        encdata: [''],
         encryptedAt: '2022年1月2日',
       });
     });
     await testEnv.withSecurityRulesDisabled(async (context) => {
       await setDoc(doc(context.firestore(), `projects/${documentId}/data/${dataId1}`), {
-        encdata: '',
+        encdata: [''],
         userId: uid1,
         layerId: layerId,
         permission: 'COMMON',
@@ -656,7 +656,7 @@ describe('data subcollection', () => {
     });
     await testEnv.withSecurityRulesDisabled(async (context) => {
       await setDoc(doc(context.firestore(), `projects/${documentId}/data/${dataId2}`), {
-        encdata: '',
+        encdata: [''],
         userId: uid2,
         layerId: layerId,
         permission: 'PRIVATE',
@@ -700,14 +700,14 @@ describe('data subcollection', () => {
         ownerUid: uid1,
         adminsUid: [uid1, uid2],
         membersUid: [uid1, uid2, uid3, uid4],
-        encdata: '',
+        encdata: [''],
         encryptedAt: '2022年1月2日',
       });
     });
 
     await testEnv.withSecurityRulesDisabled(async (context) => {
       await setDoc(doc(context.firestore(), `projects/${documentId}/data/${dataId1}`), {
-        encdata: '',
+        encdata: [''],
         userId: uid1,
         layerId: layerId,
         permission: 'COMMON',
@@ -740,13 +740,13 @@ describe('data subcollection', () => {
         ownerUid: uid1,
         adminsUid: [uid1, uid2],
         membersUid: [uid1, uid2, uid3, uid4],
-        encdata: '',
+        encdata: [''],
         encryptedAt: '2022年1月2日',
       });
     });
     await testEnv.withSecurityRulesDisabled(async (context) => {
       await setDoc(doc(context.firestore(), `projects/${documentId}/data/${dataId1}`), {
-        encdata: '',
+        encdata: [''],
         userId: uid1,
         layerId: layerId,
         permission: 'PUBLIC',
@@ -755,7 +755,7 @@ describe('data subcollection', () => {
     });
     await testEnv.withSecurityRulesDisabled(async (context) => {
       await setDoc(doc(context.firestore(), `projects/${documentId}/data/${dataId2}`), {
-        encdata: '',
+        encdata: [''],
         userId: uid2,
         layerId: layerId,
         permission: 'PRIVATE',
@@ -800,13 +800,13 @@ describe('data subcollection', () => {
         ownerUid: uid1,
         adminsUid: [uid1, uid2],
         membersUid: [uid1, uid2, uid3, uid4],
-        encdata: '',
+        encdata: [''],
         encryptedAt: '2022年1月2日',
       });
     });
     await testEnv.withSecurityRulesDisabled(async (context) => {
       await setDoc(doc(context.firestore(), `projects/${documentId}/data/${dataId1}`), {
-        encdata: '',
+        encdata: [''],
         userId: uid1,
         layerId: layerId,
         permission: 'PRIVATE',
@@ -815,7 +815,7 @@ describe('data subcollection', () => {
     });
     await testEnv.withSecurityRulesDisabled(async (context) => {
       await setDoc(doc(context.firestore(), `projects/${documentId}/data/${dataId2}`), {
-        encdata: '',
+        encdata: [''],
         userId: uid3,
         layerId: layerId,
         permission: 'PRIVATE',
@@ -846,13 +846,13 @@ describe('data subcollection', () => {
         ownerUid: uid1,
         adminsUid: [uid1, uid2],
         membersUid: [uid1, uid2, uid3, uid4],
-        encdata: '',
+        encdata: [''],
         encryptedAt: '2022年1月2日',
       });
     });
     await testEnv.withSecurityRulesDisabled(async (context) => {
       await setDoc(doc(context.firestore(), `projects/${documentId}/data/${dataId1}`), {
-        encdata: '',
+        encdata: [''],
         userId: uid1,
         layerId: layerId,
         permission: 'PUBLIC',
@@ -861,7 +861,7 @@ describe('data subcollection', () => {
     });
     await testEnv.withSecurityRulesDisabled(async (context) => {
       await setDoc(doc(context.firestore(), `projects/${documentId}/data/${dataId2}`), {
-        encdata: '',
+        encdata: [''],
         userId: uid2,
         layerId: layerId,
         permission: 'PRIVATE',
@@ -891,7 +891,7 @@ describe('data subcollection', () => {
         ownerUid: uid1,
         adminsUid: [uid1, uid2],
         membersUid: [uid1, uid2, uid3, uid4],
-        encdata: '',
+        encdata: [''],
         encryptedAt: '2022年1月2日',
       });
     });
@@ -901,7 +901,7 @@ describe('data subcollection', () => {
     });
     await firebase.assertSucceeds(
       setDoc(doc(context2.firestore(), `projects/${documentId}/data/${dataId1}`), {
-        encdata: '',
+        encdata: [''],
         userId: uid2,
         layerId: layerId,
         permission: 'COMMON',
@@ -916,7 +916,7 @@ describe('data subcollection', () => {
         ownerUid: uid1,
         adminsUid: [uid1, uid2],
         membersUid: [uid1, uid2, uid3, uid4],
-        encdata: '',
+        encdata: [''],
         encryptedAt: '2022年1月2日',
       });
     });
@@ -927,7 +927,7 @@ describe('data subcollection', () => {
     });
     await firebase.assertFails(
       setDoc(doc(context3.firestore(), `projects/${documentId}/data/${dataId1}`), {
-        encdata: '',
+        encdata: [''],
         userId: uid3,
         layerId: layerId,
         permission: 'COMMON',
@@ -942,7 +942,7 @@ describe('data subcollection', () => {
         ownerUid: uid1,
         adminsUid: [uid1, uid2],
         membersUid: [uid1, uid2, uid3, uid4],
-        encdata: '',
+        encdata: [''],
         encryptedAt: '2022年1月2日',
       });
     });
@@ -967,7 +967,7 @@ describe('data subcollection', () => {
         ownerUid: uid1,
         adminsUid: [uid1, uid2],
         membersUid: [uid1, uid2, uid3, uid4],
-        encdata: '',
+        encdata: [''],
         encryptedAt: '2022年1月2日',
       });
     });
@@ -977,7 +977,7 @@ describe('data subcollection', () => {
     });
     await firebase.assertSucceeds(
       setDoc(doc(context3.firestore(), `projects/${documentId}/data/${dataId1}`), {
-        encdata: '',
+        encdata: [''],
         userId: uid3,
         layerId: layerId,
         permission: 'PRIVATE',
@@ -992,7 +992,7 @@ describe('data subcollection', () => {
         ownerUid: uid1,
         adminsUid: [uid1, uid2],
         membersUid: [uid1, uid2, uid3, uid4],
-        encdata: '',
+        encdata: [''],
         encryptedAt: '2022年1月2日',
       });
     });
@@ -1002,7 +1002,7 @@ describe('data subcollection', () => {
     });
     await firebase.assertFails(
       setDoc(doc(context3.firestore(), `projects/${documentId}/data/${dataId1}`), {
-        encdata: '',
+        encdata: [''],
         userId: uid2,
         layerId: layerId,
         permission: 'PRIVATE',
@@ -1017,7 +1017,7 @@ describe('data subcollection', () => {
         ownerUid: uid1,
         adminsUid: [uid1, uid2],
         membersUid: [uid1, uid2, uid3, uid4],
-        encdata: '',
+        encdata: [''],
         encryptedAt: '2022年1月2日',
       });
     });
@@ -1027,7 +1027,7 @@ describe('data subcollection', () => {
     });
     await firebase.assertSucceeds(
       setDoc(doc(context3.firestore(), `projects/${documentId}/data/${dataId1}`), {
-        encdata: '',
+        encdata: [''],
         userId: uid3,
         layerId: layerId,
         permission: 'PRIVATE',
@@ -1037,7 +1037,7 @@ describe('data subcollection', () => {
     );
     await firebase.assertSucceeds(
       setDoc(doc(context3.firestore(), `projects/${documentId}/data/${dataId2}`), {
-        encdata: '',
+        encdata: [''],
         userId: uid3,
         layerId: layerId,
         permission: 'PUBLIC',
@@ -1054,7 +1054,7 @@ describe('data subcollection', () => {
         ownerUid: uid1,
         adminsUid: [uid1, uid2],
         membersUid: [uid1, uid2, uid3, uid4],
-        encdata: '',
+        encdata: [''],
         encryptedAt: '2022年1月2日',
       });
     });
@@ -1065,7 +1065,7 @@ describe('data subcollection', () => {
     // 管理者が他人(uid3)のuserIdでCOMMONを書き戻す（移行専用ルート）
     await firebase.assertSucceeds(
       setDoc(doc(context2.firestore(), `projects/${documentId}/data/${dataId1}`), {
-        encdata: '',
+        encdata: [''],
         userId: uid3,
         layerId: layerId,
         permission: 'COMMON',
@@ -1081,7 +1081,7 @@ describe('data subcollection', () => {
         ownerUid: uid1,
         adminsUid: [uid1, uid2],
         membersUid: [uid1, uid2, uid3, uid4],
-        encdata: '',
+        encdata: [''],
         encryptedAt: '2022年1月2日',
       });
     });
@@ -1091,7 +1091,7 @@ describe('data subcollection', () => {
     });
     await firebase.assertSucceeds(
       setDoc(doc(context3.firestore(), `projects/${documentId}/data/${dataId1}`), {
-        encdata: '',
+        encdata: [''],
         userId: uid3,
         layerId: layerId,
         permission: 'PRIVATE',
@@ -1109,7 +1109,7 @@ describe('data subcollection', () => {
         ownerUid: uid1,
         adminsUid: [uid1, uid2],
         membersUid: [uid1, uid2, uid3, uid4],
-        encdata: '',
+        encdata: [''],
         encryptedAt: '2022年1月2日',
       });
     });
@@ -1119,7 +1119,7 @@ describe('data subcollection', () => {
     });
     await firebase.assertSucceeds(
       setDoc(doc(context2.firestore(), `projects/${documentId}/data/${dataId1}`), {
-        encdata: '',
+        encdata: [''],
         userId: uid3,
         layerId: layerId,
         permission: 'COMMON',
@@ -1137,7 +1137,7 @@ describe('data subcollection', () => {
         ownerUid: uid1,
         adminsUid: [uid1, uid2],
         membersUid: [uid1, uid2, uid3, uid4],
-        encdata: '',
+        encdata: [''],
         encryptedAt: '2022年1月2日',
       });
     });
@@ -1147,7 +1147,7 @@ describe('data subcollection', () => {
     });
     await firebase.assertFails(
       setDoc(doc(context3.firestore(), `projects/${documentId}/data/${dataId1}`), {
-        encdata: '',
+        encdata: [''],
         userId: uid3,
         layerId: layerId,
         permission: 'PRIVATE',
@@ -1165,7 +1165,7 @@ describe('data subcollection', () => {
         ownerUid: uid1,
         adminsUid: [uid1, uid2],
         membersUid: [uid1, uid2, uid3, uid4],
-        encdata: '',
+        encdata: [''],
         encryptedAt: '2022年1月2日',
       });
     });
@@ -1175,7 +1175,7 @@ describe('data subcollection', () => {
     });
     await firebase.assertFails(
       setDoc(doc(context3.firestore(), `projects/${documentId}/data/${dataId1}`), {
-        encdata: '',
+        encdata: [''],
         userId: uid3,
         layerId: layerId,
         permission: 'PRIVATE',
@@ -1192,13 +1192,13 @@ describe('data subcollection', () => {
         ownerUid: uid1,
         adminsUid: [uid1, uid2],
         membersUid: [uid1, uid2, uid3, uid4],
-        encdata: '',
+        encdata: [''],
         encryptedAt: '2022年1月2日',
       });
     });
     await testEnv.withSecurityRulesDisabled(async (context) => {
       await setDoc(doc(context.firestore(), `projects/${documentId}/data/${dataId1}`), {
-        encdata: '',
+        encdata: [''],
         userId: uid3,
         layerId: layerId,
         permission: 'PRIVATE',
@@ -1207,7 +1207,7 @@ describe('data subcollection', () => {
     });
     await testEnv.withSecurityRulesDisabled(async (context) => {
       await setDoc(doc(context.firestore(), `projects/${documentId}/data/${dataId2}`), {
-        encdata: '',
+        encdata: [''],
         userId: uid1,
         layerId: layerId,
         permission: 'COMMON',
@@ -1229,11 +1229,11 @@ describe('data subcollection', () => {
           ownerUid: uid1,
           adminsUid: [uid1, uid2, uid4],
           membersUid: [uid1, uid2, uid3, uid4],
-          encdata: '',
+          encdata: [''],
           encryptedAt: '2022年1月2日',
         });
         await setDoc(doc(context.firestore(), `projects/${documentId}/data/${dataId1}`), {
-          encdata: '',
+          encdata: [''],
           userId: uid3,
           layerId: layerId,
           permission: 'PRIVATE',
@@ -1777,9 +1777,30 @@ describe('publicKeys collection（公開鍵台帳・脱Virgil）', () => {
     );
   });
 
-  it('update: 本人はローテーション（keyVersion+1）できる', async () => {
+  // 正規フロー(publishPublicKeyToLedger)と同じく、旧世代のhistory退避と本体の+1を同一バッチで書く
+  const rotationBatch = (uid: string, fromVersion: number, newPublicKey: string) => {
+    const db = ctx(uid, 'test1').firestore();
+    const batch = writeBatch(db);
+    batch.set(doc(db, `publicKeys/${uid}/history/${fromVersion}`), {
+      publicKey: 'PUBKEY_B64',
+      keyVersion: fromVersion,
+      createdAt: '2026年8月16日',
+      rotatedAt: '2026年8月16日',
+    });
+    batch.set(doc(db, `publicKeys/${uid}`), { ...validEntry(fromVersion + 1), publicKey: newPublicKey });
+    return batch;
+  };
+
+  it('update: 本人はローテーション（旧世代の退避＋keyVersion+1を同一バッチ）できる', async () => {
     await seedPublicKey(uid1, 1);
-    await firebase.assertSucceeds(setDoc(doc(ctx(uid1, 'test1').firestore(), `publicKeys/${uid1}`), validEntry(2)));
+    await firebase.assertSucceeds(rotationBatch(uid1, 1, 'PUBKEY_B64_V2').commit());
+  });
+
+  it('update: 旧世代を退避せず本体だけをkeyVersion+1で上書きできない', async () => {
+    await seedPublicKey(uid1, 1);
+    await firebase.assertFails(
+      setDoc(doc(ctx(uid1, 'test1').firestore(), `publicKeys/${uid1}`), { ...validEntry(2), publicKey: 'PUBKEY_B64_V2' })
+    );
   });
 
   it('update: keyVersion の巻き戻しはできない', async () => {
@@ -1797,11 +1818,16 @@ describe('publicKeys collection（公開鍵台帳・脱Virgil）', () => {
     await firebase.assertFails(deleteDoc(doc(ctx(uid1, 'test1').firestore(), `publicKeys/${uid1}`)));
   });
 
-  it('history create: 本人は旧世代を退避できる', async () => {
+  it('history create: 本人はローテーションのバッチ内で旧世代を退避できる', async () => {
     await seedPublicKey(uid1, 1);
-    await firebase.assertSucceeds(
+    await firebase.assertSucceeds(rotationBatch(uid1, 1, 'NEW_PUBKEY').commit());
+  });
+
+  it('history create: 台帳を進めずにhistoryだけを単独で書けない', async () => {
+    await seedPublicKey(uid1, 1);
+    await firebase.assertFails(
       setDoc(doc(ctx(uid1, 'test1').firestore(), `publicKeys/${uid1}/history/1`), {
-        publicKey: 'OLD_PUBKEY',
+        publicKey: 'PUBKEY_B64',
         keyVersion: 1,
         createdAt: '2026年8月16日',
         rotatedAt: '2026年8月16日',

@@ -6,15 +6,32 @@ service cloud.firestore {
           return request.auth != null && request.auth.token.email_verified;
         }
         function verifyFields(requiredFields, optionalFields) {
-  				return (request.resource.data.keys().hasAll(requiredFields) && 
+  				return (request.resource.data.keys().hasAll(requiredFields) &&
           request.resource.data.keys().hasOnly(requiredFields.concat(optionalFields)));
 				}
         function verifyUpdateFields(fields) {
           return request.resource.data.diff(resource.data).affectedKeys().hasOnly(fields);
         }
+        // プロジェクトdocの形状検証（create用）。
+        //  - adminsUid/membersUid は配列（mapだと `in` はキー判定で通るが、array-containsの一覧や
+        //    クライアントの .includes/.filter が壊れ、招待されたメンバー側の処理まで落ちる）
+        //  - オーナー自身を両方に含める（含めないとオーナーが settings/data/keys を失う）
+        //  - 暗号方式は「どちらも無し(group)」か「cryptoScheme=='dek' かつ dekPublicKey が非空文字列」のみ
+        function validProjectShape(d) {
+          return d.adminsUid is list && d.membersUid is list
+            && d.ownerUid in d.adminsUid
+            && d.ownerUid in d.membersUid
+            && (
+                 !d.keys().hasAny(["cryptoScheme", "dekPublicKey"])
+              || (d.get("cryptoScheme", "") == "dek"
+                  && d.get("dekPublicKey", null) is string
+                  && d.dekPublicKey.size() > 0)
+            );
+        }
         allow create: if isSignedIn()
         && request.auth.uid == request.resource.data.ownerUid
-        && verifyFields(["ownerUid", "adminsUid", "membersUid","encdata","encryptedAt"],["cryptoScheme","dekPublicKey"]);
+        && verifyFields(["ownerUid", "adminsUid", "membersUid","encdata","encryptedAt"],["cryptoScheme","dekPublicKey"])
+        && validProjectShape(request.resource.data);
 
         // 更新: オーナーは常に可。更新後がDEK方式(エンベロープ暗号)になるなら管理者も可。
         // request.resource(更新後)を見ることで、管理者による「メンバー追加(既にdek)」と
@@ -33,8 +50,35 @@ service cloud.firestore {
           return resource.data.get("cryptoScheme", "") != "dek"
             || !request.resource.data.diff(resource.data).affectedKeys().hasAny(["dekPublicKey"]);
         }
+        // 更新後の型を固定する（全分岐に適用）。`in` は map のキーにも真を返すので、map 化されると
+        // keepsOwner を満たしたまま array-contains の一覧(getAllProjects)から全員分消える。
+        // archived は DEK 管理者分岐からも書けるため、分岐ごとではなく update 全体に掛ける（未設定は可）。
+        function validProjectTypes() {
+          return request.resource.data.membersUid is list
+            && request.resource.data.adminsUid is list
+            && request.resource.data.get("archived", false) is bool;
+        }
+        // 暗号方式の遷移制御（全分岐に適用）:
+        //  - cryptoScheme/dekPublicKey に触れる更新は、更新後が「dek＋空でない文字列の dekPublicKey」であること
+        //  - 既に dek の文書は group へ戻せない（オーナーも不可。切り戻しは Admin SDK で行う）
+        function validSchemeTransition() {
+          return (
+               !request.resource.data.diff(resource.data).affectedKeys().hasAny(["cryptoScheme", "dekPublicKey"])
+            || (
+                 request.resource.data.get("cryptoScheme", "") == "dek"
+              && request.resource.data.get("dekPublicKey", null) is string
+              && request.resource.data.dekPublicKey.size() > 0
+            )
+          )
+          && (
+               resource.data.get("cryptoScheme", "") != "dek"
+            || request.resource.data.get("cryptoScheme", "") == "dek"
+          );
+        }
         allow update: if isSignedIn()
         && verifyUpdateFields(["adminsUid", "membersUid","encdata","encryptedAt","cryptoScheme","dekPublicKey","archived"])
+        && validProjectTypes()
+        && validSchemeTransition()
         && (
              request.auth.uid == resource.data.ownerUid
           || (
@@ -48,17 +92,41 @@ service cloud.firestore {
             && request.auth.uid in resource.data.adminsUid
           )
         );
- 
+
 
         allow delete: if isSignedIn() && request.auth.uid == resource.data.ownerUid;
         allow read: if isSignedIn() && ((request.auth.uid in resource.data.membersUid) || (request.auth.uid == resource.data.ownerUid));
         match /settings/{settings} {
           allow read: if isSignedIn() && request.auth.uid in get(/databases/$(database)/documents/projects/$(project)).data.membersUid;
-          allow write: if isSignedIn() 
-          && request.auth.uid in get(/databases/$(database)/documents/projects/$(project)).data.adminsUid
-          && verifyFields(["editorUid","encdata","encryptedAt"],[]);
+          // 書けるのは default の1件のみ。delete は許可しない（プロジェクト削除時は Functions が掃除）。
+          // オーナーは adminsUid に居なくても書ける（keys と同じく Owner>Admin）。
+          // editorUid は group 方式で復号時の署名者になるため、「自分」か「既存値の据え置き」（DEK 移行）に限る。
+          allow create, update: if isSignedIn()
+          && settings == "default"
+          && (
+               request.auth.uid in get(/databases/$(database)/documents/projects/$(project)).data.adminsUid
+            || request.auth.uid == get(/databases/$(database)/documents/projects/$(project)).data.ownerUid
+          )
+          && verifyFields(["editorUid","encdata","encryptedAt"],[])
+          && request.resource.data.editorUid is string
+          && (
+               request.resource.data.editorUid == request.auth.uid
+            || (resource != null && request.resource.data.editorUid == resource.data.editorUid)
+          )
+          && request.resource.data.encdata is list
+          && request.resource.data.encryptedAt is timestamp;
         }
         match /data/{data} {
+          // クライアント(uploadDataHelper: src/lib/firebase/firestore.ts)が書く形への型検証。
+          // chunkIndex/chunkCount/cryptoScheme は旧形式docに無いため存在時のみ検証。permissionのみのupdate分岐には掛けない。
+          function validDataShape() {
+            let d = request.resource.data;
+            return d.encdata is list
+              && (!('chunkIndex' in d) || (d.chunkIndex is int && d.chunkIndex >= 0))
+              && (!('chunkCount' in d) || (d.chunkCount is int && d.chunkCount >= 1
+                    && (!('chunkIndex' in d) || d.chunkIndex < d.chunkCount)))
+              && (!('cryptoScheme' in d) || d.cryptoScheme == 'dek');
+          }
           // isSignedIn()(email_verified検証)は全分岐に効かせる必要があるため、
           // ||で並ぶ分岐全体を括弧で囲む（&&が||より優先されるので括弧が無いと後半分岐が検証を迂回する）
           allow create,update: if isSignedIn()
@@ -71,35 +139,53 @@ service cloud.firestore {
                  || (request.auth.uid in get(/databases/$(database)/documents/projects/$(project)).data.adminsUid && request.resource.data.permission == "TEMPLATE")
                  )
                 && request.auth.uid == request.resource.data.userId
+                // updateは既存docの所有者本人に限る（request側のuserIdだけを見ると、他人のdocを自分名義で
+                // 上書き・乗っ取りできてしまう）。クライアントは常に自動IDでcreateし旧世代はdeleteするため、
+                // 他人docへの丸ごとupdateは正当フローに無い。
+                && (request.method == "create" || resource.data.userId == request.auth.uid)
                 && verifyFields(["layerId", "userId", "permission","encdata","encryptedAt"],["chunkIndex","chunkCount","cryptoScheme"])
+                && validDataShape()
               )
+           // レイヤ公開範囲の一括変更(updateLayerDataPermission)専用。値はPermissionTypeに限る。
+           // 不正文字列・型違い・フィールド削除(deleteField)は全クエリから文書を消すため拒否する。
            || (
                 request.method == "update"
                 && request.auth.uid in get(/databases/$(database)/documents/projects/$(project)).data.adminsUid
                 && verifyUpdateFields(["permission"])
+                && request.resource.data.permission in ["PRIVATE", "PUBLIC", "COMMON"]
               )
            // Phase ii(移行)用: 管理者は共有データ(COMMON/TEMPLATE)を任意ユーザーのuserIdで再暗号化・書き戻しできる。
            // COMMON/TEMPLATEは管理者管理の共有データであり、所有者本人でなくても書ける（移行/再暗号化のため）。
+           // 既存docの上書きは元から共有データ(COMMON/TEMPLATE)のものに限る（メンバーのPRIVATE/PUBLICを一手で
+           // 中身ごと書き換えさせない）。ただし管理者は上の付け替え分岐と組み合わせれば（COMMONへ付け替え→上書き→戻す）
+           // 書き換えられる。管理者は元々全件を読めて消せるため受容している（付け替え分岐はレイヤ公開範囲の一括変更に必要）。
            || (
                 request.auth.uid in get(/databases/$(database)/documents/projects/$(project)).data.adminsUid
                 && (request.resource.data.permission == "COMMON" || request.resource.data.permission == "TEMPLATE")
+                && (request.method == "create" || resource.data.permission in ["COMMON", "TEMPLATE"])
                 && verifyFields(["layerId", "userId", "permission","encdata","encryptedAt"],["chunkIndex","chunkCount","cryptoScheme"])
+                && validDataShape()
               )
           );
 
-          allow delete: if isSignedIn() 
-          && (request.auth.uid == resource.data.userId
-          || request.auth.uid == get(/databases/$(database)/documents/projects/$(project)).data.ownerUid 
-          || request.auth.uid in get(/databases/$(database)/documents/projects/$(project)).data.adminsUid);
+          // 本人削除は現メンバーに限る（外れた元メンバー/元管理者が自分のuserIdの共有データを消せないように。
+          // read/createと同じ境界）。
+          allow delete: if isSignedIn()
+          && (
+               (request.auth.uid == resource.data.userId
+                && request.auth.uid in get(/databases/$(database)/documents/projects/$(project)).data.membersUid)
+            || request.auth.uid == get(/databases/$(database)/documents/projects/$(project)).data.ownerUid
+            || request.auth.uid in get(/databases/$(database)/documents/projects/$(project)).data.adminsUid
+          );
 
- 
-          allow read: if isSignedIn() 
+
+          allow read: if isSignedIn()
           && (
              (request.auth.uid in get(/databases/$(database)/documents/projects/$(project)).data.membersUid && request.auth.uid == resource.data.userId)
           || (request.auth.uid in get(/databases/$(database)/documents/projects/$(project)).data.membersUid && resource.data.permission == "PUBLIC")
           || (request.auth.uid in get(/databases/$(database)/documents/projects/$(project)).data.membersUid && resource.data.permission == "COMMON")
           || (request.auth.uid in get(/databases/$(database)/documents/projects/$(project)).data.membersUid && resource.data.permission == "TEMPLATE")
-          || (request.auth.uid in get(/databases/$(database)/documents/projects/$(project)).data.adminsUid) 
+          || (request.auth.uid in get(/databases/$(database)/documents/projects/$(project)).data.adminsUid)
           );
         }
         // メンバーの現在地共有。読み取りはメンバー全員。
@@ -108,21 +194,40 @@ service cloud.firestore {
         // 送信者署名が無いため、他人のIDに書けると他メンバーの位置・アイコンをなりすまし/消去できてしまう。
         match /position/{position} {
           allow read: if isSignedIn() && request.auth.uid in get(/databases/$(database)/documents/projects/$(project)).data.membersUid;
-          allow write: if isSignedIn()
+          // 位置は暗号文のみ。平文座標や余計なフィールドを混ぜさせない（uploadCurrentPositionはsetDocで全置換）。
+          // deleteはrequest.resourceが無くverifyFieldsを評価できないため分ける。
+          allow create, update: if isSignedIn()
+          && request.auth.uid == position
+          && request.auth.uid in get(/databases/$(database)/documents/projects/$(project)).data.membersUid
+          && verifyFields(["encdata","encryptedAt"],[])
+          && request.resource.data.encdata is list;
+          allow delete: if isSignedIn()
           && request.auth.uid == position
           && request.auth.uid in get(/databases/$(database)/documents/projects/$(project)).data.membersUid;
         }
         // DEK（エンベロープ暗号）の鍵配布。各メンバー宛てにラップされたDEK秘密鍵を格納する。
         match /keys/{uid} {
-          // 自分宛ての鍵は読める。管理者は全メンバーの鍵を読める（移行・ローテーション用）。
+          // 自分宛ての鍵は「現在このプロジェクトのメンバー（またはオーナー）である間だけ」読める。
+          // removeMemberKey の失敗は無視され keys/{uid} が消し残りうるため、uid一致だけだと除名後も
+          // 読めてしまう（プロジェクトdocが無い場合は get() がエラーになり拒否）。
+          // 管理者は全メンバーの鍵を読める（移行・ローテーション用）。
           allow read: if isSignedIn()
           && (
-               request.auth.uid == uid
+               (
+                 request.auth.uid == uid
+              && (
+                   request.auth.uid in get(/databases/$(database)/documents/projects/$(project)).data.membersUid
+                || request.auth.uid == get(/databases/$(database)/documents/projects/$(project)).data.ownerUid
+              )
+            )
             || request.auth.uid in get(/databases/$(database)/documents/projects/$(project)).data.adminsUid
           );
           // 鍵の作成/更新は管理者またはオーナーのみ（オーナーは新規作成時のために許可）。
           // 例外: メンバーは「オーナー宛ての鍵」のみ書ける。管理者不在のプロジェクトでオーナーが
           // 鍵をリセットした場合の復旧用。メンバーは元々DEKを開封できるため機密性は変わらない。
+          // wrapperUid は開封時の署名検証で「誰の公開鍵で検証するか」に使うため書き手本人に固定する
+          // （addMemberKey / distributeProjectDEK はいずれも auth.uid を入れる）。
+          // encryptedAt は旧データ・旧テストに文字列があるため型を縛らない。
           allow create, update: if isSignedIn()
           && (
                request.auth.uid in get(/databases/$(database)/documents/projects/$(project)).data.adminsUid
@@ -132,12 +237,20 @@ service cloud.firestore {
               && request.auth.uid in get(/databases/$(database)/documents/projects/$(project)).data.membersUid
             )
           )
-          && verifyFields(["encDek","wrapperUid","encryptedAt"],[]);
-          // 削除は管理者またはオーナー（メンバー削除時）。
+          && verifyFields(["encDek","wrapperUid","encryptedAt"],[])
+          && request.resource.data.wrapperUid == request.auth.uid
+          && request.resource.data.encDek is string;
+          // 削除は管理者またはオーナー（メンバー削除時）。ただしオーナー宛ての鍵はオーナー本人のみ
+          // （Owner>Admin。管理者はオーナーを外せない=keepsOwner ので正当な削除フローは無い）。
+          // なお update ではオーナー宛て鍵を上書きできる（F4・オーナー復旧のため意図して開けてある）。
           allow delete: if isSignedIn()
           && (
                request.auth.uid in get(/databases/$(database)/documents/projects/$(project)).data.adminsUid
             || request.auth.uid == get(/databases/$(database)/documents/projects/$(project)).data.ownerUid
+          )
+          && (
+               uid != get(/databases/$(database)/documents/projects/$(project)).data.ownerUid
+            || request.auth.uid == uid
           );
         }
     }
@@ -150,18 +263,27 @@ service cloud.firestore {
     }
 
     // ユーザー識別鍵の公開鍵台帳（Virgil Cards の後継、脱Virgil移行）。
-    // DEKのラップ/署名検証に使うため全認証済みユーザーが読める。
+    // DEKのラップ/署名検証に使うため、全認証済みユーザーが uid 指定で読める（list は不可）。
     // 書き込みは本人のみ。台帳の差し替えには本人のFirebase認証の奪取が必要＝E2Eの本人性前提と同等。
-    // keyVersion の巻き戻し禁止で「古い（漏洩済みかもしれない）鍵への差し戻し」を塞ぐ。
+    // keyVersion は必ず+1で進め、旧世代は同一バッチで history へ退避させる
+    //（同一世代での差し替え・巻き戻し・飛び番・退避なしのローテーションを塞ぐ）。
     match /publicKeys/{uid} {
       function isVerifiedUser() {
         return request.auth != null && request.auth.token.email_verified;
       }
       function verifyPublicKeyFields() {
         return request.resource.data.keys().hasAll(["publicKey", "keyVersion", "createdAt", "updatedAt"])
-        && request.resource.data.keys().hasOnly(["publicKey", "keyVersion", "createdAt", "updatedAt", "card"]);
+        && request.resource.data.keys().hasOnly(["publicKey", "keyVersion", "createdAt", "updatedAt", "card"])
+        && request.resource.data.publicKey is string
+        && request.resource.data.publicKey.size() > 0
+        && request.resource.data.keyVersion is int;
       }
-      allow read: if isVerifiedUser();
+      // ローテーション時に同一バッチで退避される旧世代（history/{旧keyVersion}）
+      function rotatedHistoryPath() {
+        return /databases/$(database)/documents/publicKeys/$(uid)/history/$(string(resource.data.keyVersion));
+      }
+      // list を許すと全ユーザーの uid を列挙できるため get のみ
+      allow get: if isVerifiedUser();
       allow create: if isVerifiedUser()
       && request.auth.uid == uid
       && verifyPublicKeyFields()
@@ -169,17 +291,33 @@ service cloud.firestore {
       allow update: if isVerifiedUser()
       && request.auth.uid == uid
       && verifyPublicKeyFields()
-      && request.resource.data.keyVersion >= resource.data.keyVersion;
+      && request.resource.data.keyVersion == resource.data.keyVersion + 1
+      && request.resource.data.publicKey != resource.data.publicKey
+      && existsAfter(rotatedHistoryPath())
+      && getAfter(rotatedHistoryPath()).data.publicKey == resource.data.publicKey;
       // アカウント削除時の掃除はFunctions(Admin SDK)側で行う
       allow delete: if false;
 
       // ローテーションで退避した旧世代の公開鍵（旧ラップの署名検証フォールバック用）
+      // 書けるのはローテーションのバッチ内で「バッチ前の現行鍵をそのまま退避」する場合のみ。
+      // get()=バッチ前の台帳、getAfter()=バッチ後の台帳。過去鍵の改ざん防止のため update は禁止。
       match /history/{keyVersion} {
+        function ledgerPath() {
+          return /databases/$(database)/documents/publicKeys/$(uid);
+        }
         allow read: if isVerifiedUser();
-        allow create, update: if isVerifiedUser()
+        allow create: if isVerifiedUser()
         && request.auth.uid == uid
-        && request.resource.data.keys().hasOnly(["publicKey", "keyVersion", "createdAt", "rotatedAt"]);
-        allow delete: if false;
+        && request.resource.data.keys().hasAll(["publicKey", "keyVersion", "createdAt", "rotatedAt"])
+        && request.resource.data.keys().hasOnly(["publicKey", "keyVersion", "createdAt", "rotatedAt"])
+        && request.resource.data.publicKey is string
+        && request.resource.data.keyVersion is int
+        && keyVersion == string(request.resource.data.keyVersion)
+        && exists(ledgerPath())
+        && get(ledgerPath()).data.keyVersion == request.resource.data.keyVersion
+        && get(ledgerPath()).data.publicKey == request.resource.data.publicKey
+        && getAfter(ledgerPath()).data.keyVersion == request.resource.data.keyVersion + 1;
+        allow update, delete: if false;
       }
     }
 
