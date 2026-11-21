@@ -3402,6 +3402,14 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
             gotoMaps();
           } else {
             result = await importGeoFile(file.uri, file.name);
+            // 成功時もmessageに「一部除外」「写真の欠落」の件数が付くことがある。最後の完了通知とは別にファイル単位で伝える
+            const notes = result.isOK
+              ? result.message
+                  .split('\n')
+                  .filter((line) => line !== '' && line !== t('hooks.message.receiveFile'))
+                  .join('\n')
+              : '';
+            if (notes !== '') await AlertAsync(`${file.name}:${notes}`);
           }
           if (!result.isOK) {
             await AlertAsync(`${file.name}:${result.message}`);

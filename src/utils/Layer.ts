@@ -579,7 +579,8 @@ export function generateLabel(layer: LayerType, feature: RecordType) {
         .join('') || '' // Remove space between joined items
     : layer.label === ''
     ? ''
-    : feature.field[layer.label]
+    : // 数値の0もラベルとして表示するため、真偽値ではなく未入力（null/undefined/空文字）かで判定する
+    feature.field[layer.label] != null && feature.field[layer.label] !== ''
     ? layer.field.find((f) => f.name === layer.label)?.format === 'DATETIME'
       ? dayjs(feature.field[layer.label].toString()).format('L HH:mm')
       : feature.field[layer.label].toString()
