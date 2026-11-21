@@ -34,8 +34,9 @@ export const TextInputDialog = React.memo((props: Props) => {
 
   return (
     <Modal animationType="fade" visible={shown} transparent={true} onRequestClose={onCancel}>
-      <Pressable style={styles.modalOverlay} onPress={onCancel} disablePressedAnimation>
-        <Pressable style={styles.modalCard} onPress={() => null} disablePressedAnimation>
+      {/* accessible={false}: 既定ではiOSで中身が1つの要素にまとまり、ボタンをVoiceOverやE2Eから個別に押せない */}
+      <Pressable style={styles.modalOverlay} onPress={onCancel} disablePressedAnimation accessible={false}>
+        <Pressable style={styles.modalCard} onPress={() => null} disablePressedAnimation accessible={false}>
           <Text style={styles.title}>{title}</Text>
           <TextInput
             style={styles.textInput}

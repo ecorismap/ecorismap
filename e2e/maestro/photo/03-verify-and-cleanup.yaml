@@ -1,0 +1,34 @@
+# アプリを起動し直して、保存した写真が原画のまま開けることを確かめ、テスト用レコードを削除する。
+# 01または02の後に実行する。iOSでは、このフローの前にアプリを入れ直すことで
+# 「データコンテナが変わっても原画を参照できるか」（photoUriRebase）も確かめられる。
+appId: jp.co.ecoris.ecorismap
+env:
+  LAYER_NAME: 'ポイント.*'
+---
+- stopApp
+- launchApp
+- runFlow: ../common/open-point-layer.yaml
+- tapOn:
+    id: 'data-row-0'
+- extendedWaitUntil:
+    visible:
+      id: 'dataedit-photo-thumb-0'
+    timeout: 10000
+- waitForAnimationToEnd
+- tapOn:
+    id: 'dataedit-photo-thumb-0'
+- extendedWaitUntil:
+    visible:
+      id: 'photo-view-close'
+    timeout: 10000
+# ダウンロードボタンは実ファイルが見つからないとき（サムネイル代用）だけ出る
+- assertNotVisible:
+    id: 'photo-view-download'
+- takeScreenshot: photo-view
+- tapOn:
+    id: 'photo-view-close'
+- tapOn:
+    id: 'dataedit-delete'
+- tapOn: 'Yes'
+- assertNotVisible:
+    id: 'data-row-0'

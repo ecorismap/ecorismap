@@ -1,0 +1,53 @@
+# 写真フィールドの「ライブラリから選択」で写真を付けて保存する。
+# iOSシミュレーター・Android共通（iOSシミュレーターはカメラで撮影できないため、こちらを使う）。
+appId: jp.co.ecoris.ecorismap
+env:
+  LAYER_NAME: 'ポイント.*'
+---
+- launchApp:
+    permissions:
+      all: allow
+- runFlow: ../common/open-point-layer.yaml
+# 03は先頭のレコードを検証して消すので、レイヤが空の状態から始める。
+# 失敗したフローの残りがあるときは 99-delete-all-test-records.yaml で片付ける
+- assertNotVisible:
+    id: 'data-row-0'
+- tapOn:
+    id: 'data-add'
+- extendedWaitUntil:
+    visible:
+      id: 'dataedit-photo-library'
+    timeout: 10000
+# 編集画面を開いた直後のタップは取りこぼすことがある（シートの開くアニメーション中）
+- waitForAnimationToEnd
+- tapOn:
+    id: 'dataedit-photo-library'
+# OSの写真選択画面が編集画面を覆うまで待つ
+- extendedWaitUntil:
+    notVisible:
+      id: 'dataedit-photo-library'
+    timeout: 15000
+# 先頭の1枚を選ぶ（要素名はOS・言語で変わるため位置で指定）。
+# 一覧の読み込み前のタップは効かないので、サムネイルが付くまで押し直す
+- repeat:
+    while:
+      notVisible:
+        id: 'dataedit-photo-thumb-0'
+    times: 4
+    commands:
+      - waitForAnimationToEnd:
+          timeout: 3000
+      - tapOn:
+          point: '17%,27%'
+          retryTapIfNoChange: false
+      - waitForAnimationToEnd:
+          timeout: 5000
+- assertVisible:
+    id: 'dataedit-photo-thumb-0'
+- tapOn:
+    id: 'dataedit-save'
+# 保存するとデータ一覧へ戻る
+- extendedWaitUntil:
+    visible:
+      id: 'data-row-0'
+    timeout: 10000

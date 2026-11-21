@@ -76,6 +76,7 @@ export default function DataEditScreen() {
 
   const rightComponent = (
     <Button
+      testID="dataedit-save"
       name={DATAEDIT_BTN.SAVE}
       onPress={pressSaveData}
       backgroundColor={isEditingRecord ? COLOR.BLUE : COLOR.LIGHTBLUE}

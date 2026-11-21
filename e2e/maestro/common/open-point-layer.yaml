@@ -1,0 +1,41 @@
+# 起動直後の地図画面から、既定の「ポイント」レイヤのデータ一覧を開く。
+# 初回起動のダイアログ（利用規約・更新情報）と開発ビルドの警告トーストは、出ていれば閉じる。
+appId: jp.co.ecoris.ecorismap
+---
+- runFlow:
+    when:
+      visible: '利用規約に同意して開始しますか？'
+    commands:
+      - tapOn: 'OK'
+- runFlow:
+    when:
+      visible: '更新情報'
+    commands:
+      - tapOn: 'OK'
+- runFlow:
+    when:
+      visible: 'Open debugger to view warnings.'
+    commands:
+      - tapOn:
+          rightOf: 'Open debugger to view warnings.'
+- extendedWaitUntil:
+    visible:
+      id: 'home-layers'
+    timeout: 60000
+# 起動直後（地図の読み込み中）のタップは効かないことがあるので、一覧が開くまで押し直す
+- repeat:
+    while:
+      notVisible: ${LAYER_NAME}
+    times: 5
+    commands:
+      - tapOn:
+          id: 'home-layers'
+          # 画面が変わらないと同じ位置を押し直す既定動作は、開いた一覧の別ボタンを押してしまう
+          retryTapIfNoChange: false
+      - waitForAnimationToEnd:
+          timeout: 3000
+- tapOn: ${LAYER_NAME}
+- extendedWaitUntil:
+    visible:
+      id: 'data-add'
+    timeout: 10000

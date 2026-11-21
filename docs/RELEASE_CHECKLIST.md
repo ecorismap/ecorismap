@@ -15,14 +15,35 @@
 
 ## ネイティブ経路のスモークテスト（iOS / Android 両方）
 
+### 自動スモーク（Maestro）
+写真の経路は、Maestroのフロー（`e2e/maestro/photo/`）で自動確認できる。下の「写真」の手動項目のうち、
+`[自動]` と付けたものが対象。
+
+```bash
+# iOSシミュレーター: ライブラリから選択 → 保存 → アプリを入れ直す → 原画で開ける → 削除
+yarn smoke:photo ios <ビルドした ecorismap.app のパス>
+# Android（実機・エミュレーター）: カメラで撮影 → 保存 → 起動し直す → 原画で開ける → 削除
+yarn smoke:photo android
+```
+
+- Maestroのインストール: `brew install mobile-dev-inc/tap/maestro`（Homebrew標準の`maestro`は別製品）
+- 端末はログインしておらずプロジェクトを開いていない状態で、言語は日本語、既定の「ポイント」レイヤが空であること。
+  テスト用レコードを1件作って最後に消す。途中で失敗して残ったときは
+  `maestro test e2e/maestro/photo/99-delete-all-test-records.yaml`（レイヤの全レコードを消すのでテスト専用端末でのみ）
+- デバッグビルドで回すときはMetro（`yarn start`）を起動しておく
+- 画面要素は`testID`で特定している（`home-layers`, `data-add`, `data-row-N`, `dataedit-photo-camera`,
+  `dataedit-photo-library`, `dataedit-photo-thumb-N`, `dataedit-save`, `dataedit-delete`, `photo-view-close`,
+  `photo-view-download`）。これらを消したり名前を変えたりしたらフローも直す
+- iOSシミュレーターはカメラで撮影できない。カメラ経路・カメラロール保存・「アクティビティを保持しない」はAndroidで確認する
+
 ### 写真
-- [ ] 写真フィールドの **カメラボタン** で撮影 → サムネイルが出て保存ボタンが有効になる → 保存 → 開き直して写真が残っている
+- [ ] `[自動: Android]` 写真フィールドの **カメラボタン** で撮影 → サムネイルが出て保存ボタンが有効になる → 保存 → 開き直して写真が残っている
       （0.6.0〜0.6.7で `expo-media-library` の入口変更により保存されなかった。[CHANGELOG 0.6.8]）
 - [ ] 撮影した写真が端末のカメラロールにも入っている
 - [ ] **Android**: 開発者オプション「アクティビティを保持しない」をONにして撮影 → 編集画面が開き直り写真が付いている
       （カメラ起動中にMainActivityが破棄されると、Reactツリーが作り直されてボトムシートが閉じ撮影結果が失われる。
       復帰は `usePendingPhotoCapture` ＋ expo-modules-core のパッチで実現。[docs/RELEASE_CHECKLIST.md 参照元: 0.6.8]）
-- [ ] 写真フィールドの **ライブラリから選択** で追加 → 保存 → 再表示
+- [ ] `[自動]` 写真フィールドの **ライブラリから選択** で追加 → 保存 → 再表示
 - [ ] 写真をタップして拡大表示・削除ができる
 - [ ] 軌跡サマリーに軌跡上の写真が表示される（iOS: Live Photo を含む）
 

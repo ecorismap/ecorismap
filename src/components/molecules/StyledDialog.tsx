@@ -192,8 +192,9 @@ export const StyledDialog = React.memo(() => {
 
   return (
     <Modal animationType="fade" visible={hasCurrent && visible} transparent={true} onRequestClose={handleDismiss}>
-      <Pressable style={styles.modalOverlay} onPress={handleDismiss} disablePressedAnimation>
-        <Pressable style={styles.modalCard} onPress={() => null} disablePressedAnimation>
+      {/* accessible={false}: 既定ではiOSで中身が1つの要素にまとまり、ボタンをVoiceOverやE2Eから個別に押せない */}
+      <Pressable style={styles.modalOverlay} onPress={handleDismiss} disablePressedAnimation accessible={false}>
+        <Pressable style={styles.modalCard} onPress={() => null} disablePressedAnimation accessible={false}>
           {!!displayed?.title && <Text style={styles.title}>{displayed.title}</Text>}
           {!!displayed?.message && (
             <ScrollView style={styles.messageScroll} contentContainerStyle={styles.messageContainer}>

@@ -7,6 +7,8 @@ import { Pressable } from './Pressable';
 
 interface Props {
   id?: string;
+  /** E2E（Maestro）から要素を特定するためのID */
+  testID?: string;
   disabled?: boolean;
   onPress?: () => void;
   onLongPress?: () => void;
@@ -34,6 +36,7 @@ const DISABLED_OPACITY = 0.45;
 
 const Button = React.memo((props: Props) => {
   const {
+    testID,
     disabled,
     onPress,
     onLongPress,
@@ -164,6 +167,7 @@ const Button = React.memo((props: Props) => {
       )}
 
       <Pressable
+        testID={testID}
         disabled={disabled}
         onPress={onPress}
         onLongPress={onLongPress}

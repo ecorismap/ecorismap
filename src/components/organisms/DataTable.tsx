@@ -92,6 +92,7 @@ const DataRow = React.memo(
           layer.field.map(({ name, format }, field_index) => (
             <Pressable
               key={field_index}
+              testID={field_index === 0 ? `data-row-${index}` : undefined}
               style={[styles.td, { flex: 2, width: 120 }]}
               onLongPress={isDragDisabled ? undefined : drag}
               disabled={isActive}
