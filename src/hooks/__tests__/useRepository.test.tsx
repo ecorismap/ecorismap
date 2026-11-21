@@ -14,6 +14,7 @@ import { setDataSyncTimestampsAction } from '../../modules/dataSync';
 
 import * as DataUtils from '../../utils/Data';
 import * as projectStore from '../../lib/firebase/firestore';
+import * as projectStorage from '../../lib/firebase/storage';
 import * as AlertAsyncModule from '../../components/molecules/AlertAsync';
 
 // spy を仕掛ける前にオリジナルを退避
@@ -615,5 +616,94 @@ describe('uploadDataToRepository（trackレイヤのサイズ超過）', () => {
 
     expect(res.isOK).toBe(false);
     expect(res.message).toContain('hooks.message.deleteOldTracks');
+  });
+});
+
+describe('uploadDataToRepository（写真のアップロード失敗）', () => {
+  const project = { id: 'proj1' } as any;
+  const layer = {
+    id: 'l1',
+    name: 'L1',
+    permission: 'PRIVATE',
+    field: [{ id: 'f1', name: '写真', format: 'PHOTO' }],
+  } as any;
+  const photo = { id: 'p1', name: 'a.jpg', uri: 'file:///photos/a.jpg', url: null, key: null, width: 1, height: 1, thumbnail: null };
+  const record = {
+    id: 'r1',
+    userId: 'test-user',
+    displayName: 'U',
+    visible: true,
+    redraw: false,
+    coords: { latitude: 35, longitude: 135 },
+    field: { 写真: [photo] },
+    updatedAt: 100,
+  };
+
+  const makeStore = () => {
+    const initialState = {
+      user: { uid: 'test-user', email: 'a@b.c', displayName: 'U' },
+      dataSet: [{ layerId: 'l1', userId: 'test-user', data: [record] }],
+      layers: [layer],
+      settings: { isSettingProject: false, updatedAt: undefined },
+      tileMaps: [],
+      dataSync: {},
+    };
+    const store = configureStore({
+      reducer: {
+        user: (state = initialState.user) => state,
+        dataSet: (state = initialState.dataSet) => state,
+        layers: (state = initialState.layers) => state,
+        settings: (state = initialState.settings) => state,
+        tileMaps: (state = initialState.tileMaps) => state,
+        dataSync: (state = initialState.dataSync) => state,
+      } as any,
+      preloadedState: initialState,
+    });
+    store.dispatch = jest.fn();
+    return store;
+  };
+
+  const renderWithStore = (store: any) =>
+    renderHook(() => useRepository(), {
+      wrapper: (props: any) => <Provider store={store}>{props.children}</Provider>,
+    });
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    jest.spyOn(projectStore, 'isSettingsUpdatedAtCurrent').mockResolvedValue(true);
+    jest.spyOn(projectStore, 'getMyDataUpdatedAt').mockResolvedValue({ isOK: true, message: '', data: new Map() });
+  });
+
+  test('写真のアップロードに失敗したら警告を返し、写真は未アップロードのまま保存する（次回再試行）', async () => {
+    jest
+      .spyOn(projectStorage, 'uploadPhoto')
+      .mockResolvedValue({ isOK: false, message: 'firebase.message.failUploadPhoto', url: null, key: null });
+    const uploadSpy = jest.spyOn(projectStore, 'uploadDataHelper').mockResolvedValue({ isOK: true, message: '', encryptedAt: 1 });
+
+    const { result } = renderWithStore(makeStore());
+    let res: any;
+    await act(async () => {
+      res = await result.current.uploadDataToRepository(project, 'All');
+    });
+
+    expect(res.isOK).toBe(true);
+    expect(res.warning).toBe('hooks.message.failUploadSomePhotos');
+    const savedPhoto = (uploadSpy.mock.calls[0][1] as any).data[0].field['写真'][0];
+    expect(savedPhoto).toEqual(photo);
+  });
+
+  test('写真のアップロードに成功したら警告は返さず url/key を保存する', async () => {
+    jest.spyOn(projectStorage, 'uploadPhoto').mockResolvedValue({ isOK: true, message: '', url: 'https://x/p1', key: 'k' });
+    const uploadSpy = jest.spyOn(projectStore, 'uploadDataHelper').mockResolvedValue({ isOK: true, message: '', encryptedAt: 1 });
+
+    const { result } = renderWithStore(makeStore());
+    let res: any;
+    await act(async () => {
+      res = await result.current.uploadDataToRepository(project, 'All');
+    });
+
+    expect(res).toEqual({ isOK: true, message: '' });
+    const savedPhoto = (uploadSpy.mock.calls[0][1] as any).data[0].field['写真'][0];
+    expect(savedPhoto).toMatchObject({ url: 'https://x/p1', key: 'k' });
   });
 });

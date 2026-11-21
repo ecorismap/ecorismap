@@ -4,6 +4,8 @@ import * as Keychain from 'react-native-keychain';
 import { ProjectType } from '../../types';
 import { virgilCrypto } from 'react-native-virgil-crypto';
 import { Buffer } from 'buffer';
+import { Platform } from 'react-native';
+import * as FileSystem from 'expo-file-system/legacy';
 import { splitStringsIntoChunksOfLen } from '../../utils/General';
 import { FUNC_ENCRYPTION } from '../../constants/AppConstants';
 import { compressFileToTempUri, decompressFileToTempUri, gzip, unzip } from '../../utils/Zip';
@@ -373,6 +375,20 @@ export const encryptFileEThree = async (
     key: undefined,
   };
 };
+// 暗号化ファイルの出力先。iOSのreact-native-virgil-cryptoはoutputPath省略時に拡張子なしの一時ファイルを作る
+//（Androidは入力の拡張子を引き継ぐ）。RNFB StorageのiOS版はputFileのcontentTypeを拡張子だけで決め、
+// metadataで渡したcontentTypeも上書きするため、拡張子が無いとapplication/octet-streamになり
+// Storage Rules（写真はimage/png・image/jpegのみ）で拒否される。iOSもAndroidと同じく入力の拡張子を付ける
+export const encryptedOutputPath = (inputUri: string): string | undefined => {
+  if (Platform.OS !== 'ios') return undefined;
+  const fileName = inputUri.split(/[?#]/)[0].split('/').pop() ?? '';
+  const dot = fileName.lastIndexOf('.');
+  const ext = dot > 0 ? fileName.slice(dot + 1) : '';
+  const suffix = /^[A-Za-z0-9]{1,8}$/.test(ext) ? `.${ext}` : '';
+  const id = `${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 10)}`;
+  return `${FileSystem.cacheDirectory}enc_${id}${suffix}`;
+};
+
 export const encryptFileEThreeRN = async (uri: string) => {
   try {
     if (!FUNC_ENCRYPTION) {
@@ -382,7 +398,7 @@ export const encryptFileEThreeRN = async (uri: string) => {
     const keypair = virgilCrypto.generateKeys();
     const encryptedFilePath = await virgilCrypto.encryptFile({
       inputPath: uri,
-      outputPath: undefined,
+      outputPath: encryptedOutputPath(uri),
       publicKeys: keypair.publicKey,
     });
 

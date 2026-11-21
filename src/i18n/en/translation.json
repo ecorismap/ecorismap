@@ -824,6 +824,7 @@
       "successExportMaps": "Map settings have been saved.",
       "updateMap": "Map settings have been updated.",
       "addMap": "Map has been added.",
+      "failUploadSomePhotos": "Your data was uploaded, but {{count}} photo(s) could not be uploaded. Please check your connection and upload again.",
       "dataSizeTooLarge": "Cannot upload data due to large size",
       "deleteOldTracks": "Please delete old tracks and try uploading again.",
       "failDeleteFile": "Failed to delete files in the project",

@@ -2189,11 +2189,13 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
         }
       }
 
-      const { isOK, message } = await uploadData();
+      const { isOK, message, warning } = await uploadData();
       setIsLoading(false);
       if (!isOK) {
         // キャンセル時など message が空の場合は不要なダイアログを出さない
         if (message) await AlertAsync(message);
+      } else if (warning) {
+        await AlertAsync(warning);
       } else {
         await AlertAsync(t('Home.alert.upload'));
       }
@@ -2225,9 +2227,9 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       const ret = await ConfirmAsync(t('Home.confirm.saveProject'));
       if (!ret) return;
       setIsLoading(true);
-      await saveProjectSetting();
+      const warning = await saveProjectSetting();
       setIsLoading(false);
-      await AlertAsync(t('Home.alert.saveProject'));
+      await AlertAsync(warning ? `${t('Home.alert.saveProject')}\n${warning}` : t('Home.alert.saveProject'));
       navigateToSplit?.('Layers');
       clearProject();
       navigation.navigate('ProjectEdit', { previous: 'Projects', project: project!, isNew: false });

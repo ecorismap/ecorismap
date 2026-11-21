@@ -131,6 +131,8 @@ export type UseRepositoryReturnType = {
   ) => Promise<{
     isOK: boolean;
     message: string;
+    /** データは保存できたが一部の写真をアップロードできなかったときの利用者向け警告 */
+    warning?: string;
   }>;
   uploadProjectSettings: (project_: ProjectType) => Promise<{
     isOK: boolean;
@@ -398,7 +400,13 @@ export const useRepository = (): UseRepositoryReturnType & {
   }, []);
 
   const updateStoragePhoto = useCallback(
-    async (data: RecordType, project: ProjectType, layerId: string, photoField: LayerType['field']) => {
+    async (
+      data: RecordType,
+      project: ProjectType,
+      layerId: string,
+      photoField: LayerType['field'],
+      onPhotoUploadFailed?: () => void
+    ) => {
       if (user.uid === undefined) return data;
       const uid = user.uid;
       const newData = cloneDeep(data);
@@ -410,7 +418,13 @@ export const useRepository = (): UseRepositoryReturnType & {
             await projectStorage.deleteStoragePhoto(project.id, layerId, uid, photo.id);
           } else if (photo.uri !== null && photo.uri !== undefined && photo.url === null) {
             //アップロード
-            const { url, key } = await projectStorage.uploadPhoto(project.id, layerId, uid, photo.id, photo.uri);
+            const { isOK, url, key } = await projectStorage.uploadPhoto(project.id, layerId, uid, photo.id, photo.uri);
+            if (!isOK || url === null || key === null) {
+              // 失敗した写真は未アップロード（url:null）のまま残し、次回のアップロードで再試行させる。
+              // Webはuriを消すと原画が失われるので、元の値をそのまま返す
+              onPhotoUploadFailed?.();
+              return photo;
+            }
             if (Platform.OS === 'web') {
               //Webはuriに直接写真データが入ってしまい重いのでアップロードしたら消す。
               return { ...photo, url, key, uri: null };
@@ -578,6 +592,10 @@ export const useRepository = (): UseRepositoryReturnType & {
       }
 
       const newBaselineEntries: { [key: string]: number | undefined } = {};
+      let failedPhotoCount = 0;
+      const countFailedPhoto = () => {
+        failedPhotoCount += 1;
+      };
 
       for (const layer of targetLayers) {
         const photoFields = layer.field.filter((f) => f.format === 'PHOTO');
@@ -587,7 +605,7 @@ export const useRepository = (): UseRepositoryReturnType & {
         //写真の更新
         const updatedData = await Promise.all(
           targetRecordSet.map((d: RecordType) => {
-            return updateStoragePhoto(d, project, layer.id, photoFields);
+            return updateStoragePhoto(d, project, layer.id, photoFields, countFailedPhoto);
           })
         );
 
@@ -647,6 +665,13 @@ export const useRepository = (): UseRepositoryReturnType & {
         dispatch(setDataSyncTimestampsAction({ projectId: project.id, entries: newBaselineEntries }));
       }
 
+      if (failedPhotoCount > 0) {
+        return {
+          isOK: true,
+          message: '',
+          warning: t('hooks.message.failUploadSomePhotos', { count: failedPhotoCount }),
+        };
+      }
       return { isOK: true, message: '' };
     },
     [
