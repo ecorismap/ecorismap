@@ -21,7 +21,14 @@ jest.mock('../../lib/firebase/firebase', () => ({
 }));
 jest.mock('../../lib/firebase/storage', () => ({ uploadPhoto: jest.fn(), downloadFile: jest.fn(), deletePhoto: jest.fn() }));
 
+jest.mock('../../components/molecules/AlertAsync', () => ({
+  ConfirmAsync: jest.fn(),
+  DuplicateLayerConfirmAsync: jest.fn(),
+}));
+
 import { renderHook, act } from '@testing-library/react-hooks';
+import { ConfirmAsync } from '../../components/molecules/AlertAsync';
+import { POLYGON_SIMPLIFY_CONFIRM_VERTICES } from '../../utils/Geometry';
 import { useGeoFile } from '../useGeoFile';
 import { RecordType, UserType } from '../../types';
 import { Buffer } from 'buffer';
@@ -229,5 +236,58 @@ describe('useGeoFile 取り込みの通知と正規化', () => {
     const records = addedRecords();
     expect(records).toHaveLength(1);
     expect(records[0].field['名前']).toBe('地点');
+  });
+
+  describe('頂点の多いポリゴンは簡略化するかを確かめる（M17）', () => {
+    // 約100m四方の外周を、直線上に細かく刻んだ形（中間点は簡略化で消える）
+    const polygonGeojson = (vertices: number) => {
+      const perSide = Math.ceil((vertices - 1) / 4);
+      const corners = [
+        [139, 35],
+        [139.001, 35],
+        [139.001, 35.001],
+        [139, 35.001],
+      ];
+      const ring: number[][] = [];
+      for (let c = 0; c < 4; c++) {
+        const [x0, y0] = corners[c];
+        const [x1, y1] = corners[(c + 1) % 4];
+        for (let i = 0; i < perSide; i++) ring.push([x0 + ((x1 - x0) * i) / perSide, y0 + ((y1 - y0) * i) / perSide]);
+      }
+      ring.push(ring[0]);
+      return {
+        ring,
+        geojson: {
+          type: 'FeatureCollection',
+          features: [{ type: 'Feature', properties: { name: 'a' }, geometry: { type: 'Polygon', coordinates: [ring] } }],
+        },
+      };
+    };
+
+    test('上限以下なら確かめずに、そのまま取り込む', async () => {
+      const { ring, geojson } = polygonGeojson(1000);
+      const ret = await importFile(toDataUri(JSON.stringify(geojson)), 'small.geojson');
+      expect(ret?.isOK).toBe(true);
+      expect(ConfirmAsync).not.toHaveBeenCalled();
+      expect(addedRecords()[0].coords).toHaveLength(ring.length);
+    });
+
+    test('上限を超えて「そのまま取り込む」を選ぶと、頂点を保つ', async () => {
+      (ConfirmAsync as jest.Mock).mockResolvedValue(false);
+      const { ring, geojson } = polygonGeojson(POLYGON_SIMPLIFY_CONFIRM_VERTICES + 100);
+      const ret = await importFile(toDataUri(JSON.stringify(geojson)), 'large.geojson');
+      expect(ret?.isOK).toBe(true);
+      expect(ConfirmAsync).toHaveBeenCalledTimes(1);
+      expect((ConfirmAsync as jest.Mock).mock.calls[0][0]).toContain('hooks.simplifyPolygons.message');
+      expect(addedRecords()[0].coords).toHaveLength(ring.length);
+    });
+
+    test('上限を超えて「簡略化する」を選ぶと、頂点を間引く', async () => {
+      (ConfirmAsync as jest.Mock).mockResolvedValue(true);
+      const { ring, geojson } = polygonGeojson(POLYGON_SIMPLIFY_CONFIRM_VERTICES + 100);
+      const ret = await importFile(toDataUri(JSON.stringify(geojson)), 'large.geojson');
+      expect(ret?.isOK).toBe(true);
+      expect((addedRecords()[0].coords as unknown[]).length).toBeLessThan(ring.length);
+    });
   });
 });

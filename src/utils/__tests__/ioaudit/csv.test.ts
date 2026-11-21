@@ -153,7 +153,7 @@ describe('escapeCSVValue / 数式インジェクション対策', () => {
     expect(csv.split('\n')[1].startsWith('"\'=evil()"')).toBe(true);
   });
 
-  it.failing('【往復】無害化で付けた先頭の\'は取り込み時に外れて元の値に戻る', () => {
+  it('【往復】無害化で付けた先頭の\'は取り込み時に外れて元の値に戻る', () => {
     const layer = mkLayer('NONE', [mkField('a', 'STRING'), mkField('b', 'STRING'), mkField('c', 'STRING')]);
     const recs = [mkRecord({ a: '=1+1', b: '-abc', c: '@user' })];
     const { result } = roundTrip(layer, recs);

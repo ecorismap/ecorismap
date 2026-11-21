@@ -164,6 +164,7 @@ import { useGeoFile } from '../../../hooks/useGeoFile';
 import { useEcorisMapFile } from '../../../hooks/useEcorismapFile';
 import { generateZipFile, generateEcorisMapZip } from '../../File';
 import { isSafePathSegment, isUriInsideFolder } from '../../safePath';
+import { assertZipWithinLimit, zipDeclaredUncompressedTotal, ZipTooLargeError } from '../../Zip';
 import { PHOTO_FOLDER } from '../../../constants/AppConstants';
 import type { FieldType, LayerType, PhotoType, RecordType } from '../../../types';
 
@@ -588,7 +589,7 @@ describe('3. データ（GeoJSON経由）の往復', () => {
     expect(addedRecords().map((r) => r.field.name).sort()).toEqual(['nocoords', 'ok']);
   });
 
-  test.failing('ポリゴン: 頂点が書き出し→取り込みで間引かれない', async () => {
+  test('ポリゴン: 頂点が書き出し→取り込みで間引かれない', async () => {
     const layer = makeLayer({ type: 'POLYGON', field: [{ id: 'F1', name: 'name', format: 'STRING' }] });
     // 一辺の途中に、直線から約1cm（1e-7度）だけずれた頂点を置く
     const ring = [
@@ -684,22 +685,38 @@ describe('4. 壊れた・悪意あるZIP（useGeoFile）', () => {
     expect(addedLayers()).toHaveLength(1);
   });
 
-  test.failing('展開後に巨大になるエントリ（zip bomb）は展開前のサイズ表示で拒否する', async () => {
+  test('展開後の申告サイズが合計500MBを超えるZIP（zip bomb）は、展開する前に拒否する', async () => {
     const layer = makeLayer({ field: [{ id: 'F1', name: 'name', format: 'STRING' }] });
-    // 30MBの同一文字はDEFLATEで数十KBに縮む
-    const huge = JSON.stringify({
-      type: 'FeatureCollection',
-      features: [
-        { type: 'Feature', properties: { name: 'a'.repeat(30 * 1024 * 1024) }, geometry: { type: 'Point', coordinates: [139, 35] } },
-      ],
-    });
-    const zip = await buildZip({ 'l.json': JSON.stringify(layer), 'l.geojson': huge });
-    const compressedSize = Buffer.from(zip, 'base64').length;
-    expect(compressedSize).toBeLessThan(200 * 1024);
-    const ret = await importZip(zip);
-    // 圧縮率が極端なエントリは取り込まない（現状は全体をメモリに展開してから処理する）
+    const zip = Buffer.from(
+      await buildZip({ 'l.json': JSON.stringify(layer), 'l.geojson': '{"type":"FeatureCollection","features":[]}' }),
+      'base64'
+    );
+    // セントラルディレクトリの l.geojson の展開後サイズ（シグネチャから24バイト目）を約3.7GBと申告させる
+    let patched = 0;
+    for (let i = 0; i + 46 <= zip.length; i++) {
+      if (zip.readUInt32LE(i) !== 0x02014b50) continue;
+      const nameLength = zip.readUInt16LE(i + 28);
+      if (zip.toString('utf8', i + 46, i + 46 + nameLength) === 'l.geojson') {
+        zip.writeUInt32LE(0xf0000000, i + 24);
+        patched++;
+      }
+    }
+    expect(patched).toBe(1);
+    const ret = await importZip(zip.toString('base64'));
     expect(ret.isOK).toBe(false);
-  }, 60000);
+    expect(ret.message).toContain('hooks.message.zipTooLarge');
+    expect(addedLayers()).toHaveLength(0);
+  });
+
+  test('申告サイズの合計が上限以内なら通常どおり取り込める（上限の判定は合計で行う）', async () => {
+    const zip = new JSZip();
+    zip.file('a.txt', 'a'.repeat(600 * 1024));
+    zip.file('b.txt', 'b'.repeat(600 * 1024));
+    const loaded = await JSZip.loadAsync(await zip.generateAsync({ type: 'uint8array', compression: 'DEFLATE' }));
+    expect(zipDeclaredUncompressedTotal(loaded)).toBe(1200 * 1024);
+    expect(() => assertZipWithinLimit(loaded, 1024 * 1024)).toThrow(ZipTooLargeError);
+    expect(assertZipWithinLimit(loaded, 2 * 1024 * 1024)).toBe(loaded);
+  });
 });
 
 // ---------------- 5. バックアップ/Drive形式（generateEcorisMapZip → openEcorisMapFile）の写真 ----------------
