@@ -31,7 +31,7 @@ import { findDictionaryFileKey, findPhotoFileKey, getExt, truncateMiddle } from 
 import dayjs from '../i18n/dayjs';
 import { PHOTO_FOLDER } from '../constants/AppConstants';
 import { isSafePathSegment, isUriInsideFolder } from '../utils/safePath';
-import { unzipFromUri } from '../utils/Zip';
+import { unzipFromUri, ZipTooLargeError } from '../utils/Zip';
 import JSZip from 'jszip';
 import { ulid } from 'ulid';
 import { deleteDatabase, importDictionary } from '../utils/SQLite';
@@ -344,6 +344,8 @@ export const useEcorisMapFile = (): UseEcorisMapFileReturnType => {
         // console.log('updatedUserDataSet', updatedUserDataSet);
         return { ...data, dataSet: mergedDataSet };
       } catch (e) {
+        // 大きすぎるZIPは理由を利用者に伝える（それ以外は従来どおり「取得に失敗」で扱う）
+        if (e instanceof ZipTooLargeError) throw e;
         console.log(e);
         return undefined;
       } finally {
@@ -356,9 +358,16 @@ export const useEcorisMapFile = (): UseEcorisMapFileReturnType => {
   const openEcorisMapFile = useCallback(
     async (uri: string) => {
       //console.log('######', loaded);
-      const loaded = await loadEcorisMapFile(uri);
+      let loaded: Awaited<ReturnType<typeof loadEcorisMapFile>>;
+      try {
+        loaded = await loadEcorisMapFile(uri);
+      } catch (e) {
+        if (e instanceof ZipTooLargeError) return { isOK: false, message: e.message };
+        throw e;
+      }
+      // 失敗を isOK:true で返すと、設定画面が「読み込みました」と表示して地図へ移ってしまう
       if (loaded === undefined) {
-        return { isOK: true, message: t('hooks.message.failGetData') };
+        return { isOK: false, message: t('hooks.message.failGetData') };
       }
       //ファイル読み込み（この端末/Google Drive）による上書きで現在のデータが失われないよう、直前に自動バックアップ
       const state = store.getState();

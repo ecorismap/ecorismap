@@ -1,6 +1,15 @@
 // 取り込みの細かな判定（KMLのhtml値・_visible・EPSG:4326のURN・XML数値文字参照・CSV列の対応）
 import { FeatureCollection, Geometry, GeoJsonProperties } from 'geojson';
-import { checkGeoJsonCrs, csv2Data, geoJson2Data, gpx2Data } from '../Geometry';
+import {
+  checkGeoJsonCrs,
+  countPolygonVertices,
+  csv2Data,
+  geoJson2Data,
+  gpx2Data,
+  unguardCSVValue,
+  escapeCSVValue,
+  generateCSV,
+} from '../Geometry';
 import { FieldType, LayerType } from '../../types';
 
 let mockUlidCounter = 0;
@@ -104,5 +113,107 @@ describe('CSV（レイヤ設定あり）の列の対応', () => {
     const result = csv2Data(csv, 't.csv', 'u', 'n', layer)!;
     expect(result.recordSet[0].field.displayName).toBe('A');
     expect(result.recordSet[0].field.geometry).toBe('B');
+  });
+});
+
+// 約100m四方の外周を細かく（直線上に）歩いた形。直線上の中間点は簡略化で消える
+const finePolygon = (perSide: number) => {
+  const ring: number[][] = [];
+  const corners = [
+    [139, 35],
+    [139.001, 35],
+    [139.001, 35.001],
+    [139, 35.001],
+  ];
+  for (let c = 0; c < 4; c++) {
+    const [x0, y0] = corners[c];
+    const [x1, y1] = corners[(c + 1) % 4];
+    for (let i = 0; i < perSide; i++) ring.push([x0 + ((x1 - x0) * i) / perSide, y0 + ((y1 - y0) * i) / perSide]);
+  }
+  ring.push(ring[0]);
+  return ring;
+};
+
+describe('ポリゴンの簡略化（M17）', () => {
+  const layerPolygon = makeLayer('POLYGON', [{ id: 'f1', name: 'name', format: 'STRING' }]);
+  const polygonCollection = (ring: number[][]) =>
+    ({
+      type: 'FeatureCollection',
+      features: [{ type: 'Feature', properties: { name: 'a' }, geometry: { type: 'Polygon', coordinates: [ring] } }],
+    }) as unknown as FeatureCollection<Geometry | null, GeoJsonProperties>;
+
+  it('既定では頂点を間引かない', () => {
+    const ring = finePolygon(50);
+    const records = geoJson2Data(polygonCollection(ring), layerPolygon, 'POLYGON', undefined, null);
+    expect(records?.[0].coords).toHaveLength(ring.length);
+  });
+
+  it('simplifyPolygons を指定したときだけ間引く', () => {
+    const ring = finePolygon(50);
+    const records = geoJson2Data(polygonCollection(ring), layerPolygon, 'POLYGON', undefined, null, {
+      simplifyPolygons: true,
+    });
+    const coords = records?.[0].coords as unknown[];
+    expect(coords.length).toBeLessThan(ring.length);
+    expect(coords.length).toBeGreaterThanOrEqual(4);
+  });
+
+  it('countPolygonVertices は Polygon と MultiPolygon の全リング（穴を含む）を数え、他の型や壊れた値は数えない', () => {
+    const geojson = {
+      type: 'FeatureCollection',
+      features: [
+        { type: 'Feature', properties: {}, geometry: { type: 'Polygon', coordinates: [finePolygon(1), finePolygon(1)] } },
+        {
+          type: 'Feature',
+          properties: {},
+          geometry: { type: 'MultiPolygon', coordinates: [[finePolygon(2)], [finePolygon(1)]] },
+        },
+        { type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: [[0, 0], [1, 1]] } },
+        { type: 'Feature', properties: {}, geometry: { type: 'Polygon', coordinates: 'broken' } },
+        { type: 'Feature', properties: {}, geometry: null },
+        null,
+      ],
+    } as unknown as FeatureCollection<Geometry | null, GeoJsonProperties>;
+    expect(countPolygonVertices(geojson)).toBe(5 + 5 + 9 + 5);
+  });
+});
+
+describe('CSVの数式対策の \' を取り込み時に外す（L14）', () => {
+  it('書き出しで付けた \' だけを外す', () => {
+    expect(unguardCSVValue("'=1+1")).toBe('=1+1');
+    expect(unguardCSVValue("'-abc")).toBe('-abc');
+    expect(unguardCSVValue("'@user")).toBe('@user');
+    expect(unguardCSVValue("'-1.5–2")).toBe('-1.5–2');
+    expect(unguardCSVValue("'\tx")).toBe('\tx');
+  });
+
+  it('書き出しでは付けない形（数値・数式の開始文字以外・\' だけ）はそのまま残す', () => {
+    expect(unguardCSVValue("'-3.5")).toBe("'-3.5");
+    expect(unguardCSVValue("'abc")).toBe("'abc");
+    expect(unguardCSVValue("'")).toBe("'");
+    expect(unguardCSVValue('=x')).toBe('=x');
+  });
+
+  it('利用者が \' + 数式の開始文字で入力した値・項目名も、書き出し→取り込みで元に戻る', () => {
+    for (const value of ["'=A1", "'-メモ", "''@x", "'", "'abc", '=1+1', '-3.5', "'-3.5"]) {
+      const written = escapeCSVValue(value);
+      expect(unguardCSVValue(written.slice(1, -1).replace(/""/g, '"'))).toBe(value);
+    }
+    const fields: FieldType[] = [{ id: 'f1', name: "'=x", format: 'STRING' }];
+    const csv = generateCSV(
+      [{ id: 'R1', userId: undefined, displayName: null, visible: true, redraw: false, coords: undefined, field: { "'=x": "'-メモ" } }],
+      fields,
+      'NONE'
+    );
+    const result = csv2Data(csv, 'a.csv', undefined, null);
+    expect(result?.layer.field.map((f) => f.name)).toEqual(["'=x"]);
+    expect(result?.recordSet[0].field).toEqual({ "'=x": "'-メモ" });
+  });
+
+  it('レイヤ設定なしの単体CSVでも、値と項目名の \' を外す', () => {
+    const csv = `"'=name",geometry\n"'-abc",POINT(139 35)\n`;
+    const result = csv2Data(csv, 'a.csv', undefined, null);
+    expect(result?.layer.field.map((f) => f.name)).toEqual(['=name']);
+    expect(result?.recordSet[0].field).toEqual({ '=name': '-abc' });
   });
 });

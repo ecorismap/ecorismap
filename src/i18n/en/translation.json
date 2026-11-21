@@ -688,6 +688,11 @@
     }
   },
   "hooks": {
+    "simplifyPolygons": {
+      "message": "The polygons have {{count}} vertices, which may make display and editing slow. Simplify their shapes on import?\nSimplifying changes the shapes by up to about 0.1–100 m depending on their area.",
+      "simplify": "Simplify",
+      "keep": "Import as is"
+    },
     "duplicateLayer": {
       "title": "Duplicate Layer Detected",
       "message": "Layer \"{{layerName}}\" already exists. What would you like to do?",
@@ -809,6 +814,7 @@
       "failInitializeUser": "Your session has expired. \nPlease log in again.",
       "receiveFile": "The file has been imported.",
       "failReceiveFile": "Failed to load file.",
+      "zipTooLarge": "This ZIP expands to {{size}} MB, which exceeds the {{limit}} MB limit, so it cannot be loaded.",
       "noImportableData": "No importable data was found. Nothing was added.",
       "someFeaturesSkipped": "Features not imported due to invalid coordinates or format: {{count}}",
       "somePhotosMissing": "Photos not found in the file or could not be imported: {{count}}",

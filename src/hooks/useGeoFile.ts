@@ -15,6 +15,8 @@ import {
   normalizeKmlGeoJson,
   splitGeometryCollections,
   GeoJson2DataOptions,
+  countPolygonVertices,
+  POLYGON_SIMPLIFY_CONFIRM_VERTICES,
 } from '../utils/Geometry';
 import { Buffer } from 'buffer';
 import { Image, Platform } from 'react-native';
@@ -34,7 +36,7 @@ import { Feature, FeatureCollection, GeoJsonProperties, Geometry } from 'geojson
 import { decodeTextBytes, decodeUri } from '../utils/File.web';
 import { importDictionary, exportDatabase } from '../utils/SQLite';
 import { generateCSV, generateGeoJson, generateGPX, generateKML } from '../utils/Geometry';
-import { DuplicateLayerConfirmAsync } from '../components/molecules/AlertAsync';
+import { ConfirmAsync, DuplicateLayerConfirmAsync } from '../components/molecules/AlertAsync';
 import { isSafePathSegment, isUriInsideFolder } from '../utils/safePath';
 import { PHOTO_FOLDER } from '../constants/AppConstants';
 
@@ -105,6 +107,21 @@ const emptyOutcome = (geojson?: FeatureCollection<Geometry | null, GeoJsonProper
 
 // JSON.parse は先頭のBOMを受け付けない（Windowsのエディタで保存したファイルで起きる）
 const stripBom = (text: string) => (text.charCodeAt(0) === 0xfeff ? text.slice(1) : text);
+
+/**
+ * 頂点の多いポリゴンを含むときだけ、簡略化して取り込むかを確かめる。測った形を黙って変えないよう既定は簡略化しない
+ */
+const askSimplifyPolygons = async (
+  geojson: FeatureCollection<Geometry | null, GeoJsonProperties>
+): Promise<GeoJson2DataOptions> => {
+  const vertices = countPolygonVertices(geojson);
+  if (vertices <= POLYGON_SIMPLIFY_CONFIRM_VERTICES) return {};
+  const simplifyPolygons = await ConfirmAsync(t('hooks.simplifyPolygons.message', { count: vertices }), {
+    true: t('hooks.simplifyPolygons.simplify'),
+    false: t('hooks.simplifyPolygons.keep'),
+  });
+  return simplifyPolygons ? { simplifyPolygons: true } : {};
+};
 
 // 文字列として読む。Webは decodeUri（Shift_JIS/UTF-16LE判定つき）、ネイティブはUTF-8。
 // 先頭のBOMは後段（JSONは stripBom、CSV・XMLは各パーサ）で吸収する
@@ -482,7 +499,11 @@ export const useGeoFile = (): UseGeoFileReturnType => {
    * @returns レコードになったフィーチャーの番号。除外件数は全タイプを通して数える（1フィーチャーは1タイプでしか取り込まれない）
    */
   const importAllFeatureTypes = useCallback(
-    async (geojson: FeatureCollection<Geometry | null, GeoJsonProperties>, name: string) => {
+    async (
+      geojson: FeatureCollection<Geometry | null, GeoJsonProperties>,
+      name: string,
+      options: GeoJson2DataOptions = {}
+    ) => {
       const importedIndices = new Set<number>();
       if (!Array.isArray(geojson.features)) return importedIndices;
       // 線・面を先に取り込み、取り込んだフィーチャーは後のタイプに渡さない。
@@ -497,7 +518,7 @@ export const useGeoFile = (): UseGeoFileReturnType => {
         // 単体ファイルは常に新規レイヤになる。_id を使うと、同じファイルを2回取り込んだときや
         // 書き出し元のレイヤが残っているときに同じidのレコードが2レイヤにできるため振り直す
         const result = await runAsync(() =>
-          importGeoJson(subset, featureType, name, undefined, undefined, { regenerateIds: true })
+          importGeoJson(subset, featureType, name, undefined, undefined, { ...options, regenerateIds: true })
         );
         if (result === undefined) continue;
         result.featureIndices.forEach((index) => importedIndices.add(remaining[index].originalIndex));
@@ -518,7 +539,7 @@ export const useGeoFile = (): UseGeoFileReturnType => {
       );
       const featureCount = countFeatures(geojson);
       if (featureCount === 0) return loadOutcome('empty');
-      const importedIndices = await importAllFeatureTypes(geojson, name);
+      const importedIndices = await importAllFeatureTypes(geojson, name, await askSimplifyPolygons(geojson));
       if (importedIndices.size === 0) return emptyOutcome(geojson);
       return loadOutcome('imported', featureCount - importedIndices.size);
     },
@@ -551,7 +572,7 @@ export const useGeoFile = (): UseGeoFileReturnType => {
         const count = countFeatures(geojson);
         featureCount += count + invalidGeometryCount;
         if (count === 0) continue;
-        const importedIndices = await importAllFeatureTypes(geojson, name);
+        const importedIndices = await importAllFeatureTypes(geojson, name, await askSimplifyPolygons(geojson));
         importedCount += importedIndices.size;
       }
       if (importedCount === 0) return loadOutcome('empty');
@@ -566,7 +587,7 @@ export const useGeoFile = (): UseGeoFileReturnType => {
       // MultiGeometry の分割とスタイル由来の項目の除去。除外件数は分割後の件数で数える
       const { geojson, invalidGeometryCount } = await runAsync(() => kmlToGeoJson(kmlString));
 
-      const importedIndices = await importAllFeatureTypes(geojson, name);
+      const importedIndices = await importAllFeatureTypes(geojson, name, await askSimplifyPolygons(geojson));
       if (importedIndices.size === 0) return loadOutcome('empty');
       return loadOutcome('imported', countFeatures(geojson) + invalidGeometryCount - importedIndices.size);
     },
@@ -655,7 +676,15 @@ export const useGeoFile = (): UseGeoFileReturnType => {
           const geojsonStrings = await loaded.files[geojsonFile].async('text');
           const geojson = JSON.parse(geojsonStrings);
           replacingFeatureCount = countFeatures(geojson);
-          replacing = convertGeoJson(geojson, updatedLayer, updatedLayer.type, dataUser.uid, dataUser.displayName);
+          const simplifyOptions = await askSimplifyPolygons(geojson);
+          replacing = convertGeoJson(
+            geojson,
+            updatedLayer,
+            updatedLayer.type,
+            dataUser.uid,
+            dataUser.displayName,
+            simplifyOptions
+          );
           if (replacing === undefined || replacing.records.length === 0) {
             // MULTIタイプを試す
             const multi = convertGeoJson(
@@ -663,7 +692,8 @@ export const useGeoFile = (): UseGeoFileReturnType => {
               updatedLayer,
               `MULTI${updatedLayer.type}` as GeoJsonFeatureType,
               dataUser.uid,
-              dataUser.displayName
+              dataUser.displayName,
+              simplifyOptions
             );
             if (multi !== undefined) replacing = multi;
           }
@@ -736,9 +766,10 @@ export const useGeoFile = (): UseGeoFileReturnType => {
           const geojson = JSON.parse(geojsonStrings);
           // 書き出し元のレイヤが手元に残っている（重複ダイアログで「新規レイヤ」を選んだ等）ときに _id を使うと、
           // 同じidのレコードが2レイヤにできる。そのときだけ振り直し、それ以外は _id（_group の参照先）を保つ
-          const idOptions: GeoJson2DataOptions = layers.some((layer) => layer.id === originalLayerId)
-            ? { regenerateIds: true }
-            : {};
+          const idOptions: GeoJson2DataOptions = {
+            ...(await askSimplifyPolygons(geojson)),
+            ...(layers.some((layer) => layer.id === originalLayerId) ? { regenerateIds: true } : {}),
+          };
           //ToDo 有効なgeojsonファイルかチェック
           const result =
             (await importGeoJson(geojson, importedLayer.type, name, importedLayer, loaded, idOptions)) ??

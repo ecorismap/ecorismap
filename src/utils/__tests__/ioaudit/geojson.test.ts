@@ -611,7 +611,7 @@ describe('ZIP往復（レイヤ設定jsonのfieldで取り込む経路）での�
     expect(result!.map((r) => r.field.name)).toContain('pg');
   });
 
-  it.failing('POLYGON: 細かい頂点（GPSで歩いた外周など）が往復で間引かれない', () => {
+  it('POLYGON: 細かい頂点（GPSで歩いた外周など）が往復で間引かれない', () => {
     const layer = makeLayer('POLYGON', [{ id: 'f1', name: 'name', format: 'STRING' }]);
     // 半径約50mの円を360頂点で表したポリゴン
     const ring: LocationType[] = [];

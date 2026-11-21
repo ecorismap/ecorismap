@@ -960,6 +960,11 @@
     }
   },
   "hooks": {
+    "simplifyPolygons": {
+      "message": "ポリゴンの頂点が{{count}}点あり、表示や編集が重くなることがあります。形を簡略化して取り込みますか？\n簡略化すると、面積に応じて最大約0.1〜100mの範囲で形が変わります。",
+      "simplify": "簡略化する",
+      "keep": "そのまま取り込む"
+    },
     "duplicateLayer": {
       "title": "重複するレイヤを検出",
       "message": "レイヤ「{{layerName}}」は既に存在します。どうしますか？",
@@ -1081,6 +1086,7 @@
       "failInitializeUser": "セッションが切れました。ログインし直してください。",
       "receiveFile": "ファイルをインポートしました。",
       "failReceiveFile": "ファイルの読み込みに失敗しました。",
+      "zipTooLarge": "ZIPを展開すると{{size}}MBになり、上限の{{limit}}MBを超えるため読み込めません。",
       "noImportableData": "取り込めるデータがありませんでした。何も追加していません。",
       "someFeaturesSkipped": "座標や形式が正しくないため、{{count}}件のデータを取り込めませんでした。",
       "somePhotosMissing": "{{count}}枚の写真がファイル内に見つからないか、取り込めませんでした。",

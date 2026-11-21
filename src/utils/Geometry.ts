@@ -125,8 +125,16 @@ const parseCsvGeometry = (
   return undefined;
 };
 
+/**
+ * escapeCSVValue が数式注入対策で付けた先頭の ' を外す。付ける条件（数式の開始文字で始まり数値でない）の
+ * ちょうど逆だけを外すので、書き出し→取り込みで元の値に戻る。Excel で ' を付けて入力した値は
+ * CSV に ' が残らないため、外部の CSV で利用者の ' が消えることはほぼない
+ */
+export const unguardCSVValue = (value: string): string =>
+  value.startsWith("'") && needsFormulaGuard(value.slice(1)) ? value.slice(1) : value;
+
 // parseCsv が BOM・\r・引用符を外すので、ここでは見た目の空白だけを除く
-const csvHeaderFromRows = (rows: string[][]) => (rows[0] ?? []).map((field) => field.trim());
+const csvHeaderFromRows = (rows: string[][]) => (rows[0] ?? []).map((field) => unguardCSVValue(field).trim());
 
 const detectCsvTypeFromRows = (rows: string[][]): { type: FeatureType; column: number } => {
   const geometryColumn = csvHeaderFromRows(rows).findIndex((field) => field === 'geometry');
@@ -188,14 +196,6 @@ const convertCsvValue = (value: string, format: FormatType | undefined): string 
       const num = Number(value);
       return Number.isFinite(num) ? num : '';
     }
-    case 'NUMBERRANGE': {
-      // 下限が負の範囲（-1.5–2）は数式注入対策で先頭に ' が付いて書き出される。
-      // 数値と区切りだけの値なら ' は利用者の入力ではないので外す（文字列項目の ' は方針未定のため触らない）
-      if (!value.startsWith("'-")) return value;
-      const unguarded = value.slice(1);
-      const isRange = unguarded.split('–').every((part) => part.trim() !== '' && Number.isFinite(Number(part)));
-      return isRange ? unguarded : value;
-    }
     default:
       return value;
   }
@@ -252,7 +252,7 @@ export const csv2Data = (
       const fields = layer.field
         .map((field, idx) => {
           //CSVの列数がレイヤのフィールド数より少ない場合にundefinedが入るのを防ぐ
-          const value = data[fieldColumns[idx]] ?? '';
+          const value = unguardCSVValue(data[fieldColumns[idx]] ?? '');
           return { [field.name]: importedLayer === undefined ? value : convertCsvValue(value, field.format) };
         })
         .reduce((obj, userObj) => Object.assign(obj, userObj), {});
@@ -881,7 +881,10 @@ export const geoJson2Data = (
           ),
           (feature) => ({
             ...createBase(feature),
-            ...createGeometryFromPolygonGeoJson(feature.geometry === null ? undefined : feature.geometry.coordinates),
+            ...createGeometryFromPolygonGeoJson(
+              feature.geometry === null ? undefined : feature.geometry.coordinates,
+              options.simplifyPolygons === true
+            ),
             field: createLineOrPolygonFields(layer.field, feature),
           })
         );
@@ -902,7 +905,7 @@ export const geoJson2Data = (
             } else {
               return feature.geometry.coordinates.map((partCoords) => ({
                 ...createBase(feature),
-                ...createGeometryFromPolygonGeoJson(partCoords),
+                ...createGeometryFromPolygonGeoJson(partCoords, options.simplifyPolygons === true),
                 field: createLineOrPolygonFields(layer.field, feature),
               }));
             }
@@ -922,9 +925,17 @@ const FORMULA_TRIGGER = /^[=+\-@\t\r]/;
 // -3.5 のような負数まで無害化するとExcelで数値として扱えなくなるため、数値は対象外にする
 const isNumericValue = (value: string) => value.trim() !== '' && Number.isFinite(Number(value));
 
+/**
+ * 先頭に ' を付けて書き出す値。数式になりうる値に加え、取り込み時に unguardCSVValue が ' を外す形
+ * （利用者が入力した "'=A1" など）にも付ける。こうすると書き出し→取り込みで必ず元の値に戻る
+ */
+const needsFormulaGuard = (value: string): boolean =>
+  (FORMULA_TRIGGER.test(value) && !isNumericValue(value)) ||
+  (value.startsWith("'") && needsFormulaGuard(value.slice(1)));
+
 export const escapeCSVValue = (value: unknown): string => {
   const str = value === null || value === undefined ? '' : String(value);
-  const guarded = FORMULA_TRIGGER.test(str) && !isNumericValue(str) ? `'${str}` : str;
+  const guarded = needsFormulaGuard(str) ? `'${str}` : str;
   return `"${guarded.replace(/"/g, '""')}"`;
 };
 
@@ -932,7 +943,7 @@ const MAP_MEMO_EXPORT_KEYS = ['_group', '_strokeWidth', '_strokeColor', '_stroke
 
 // 既存の書き出し（ヘッダは素の列名）と同じ見た目を保つため、区切り・引用符・改行・数式になりうる名前だけをエスケープする
 const escapeCSVHeader = (name: string): string =>
-  /[",\r\n]/.test(name) || FORMULA_TRIGGER.test(name) || name !== name.trim() ? escapeCSVValue(name) : name;
+  /[",\r\n]/.test(name) || needsFormulaGuard(name) || name !== name.trim() ? escapeCSVValue(name) : name;
 
 const GNSS_EXPORT_KEYS = [
   '_gnssFix',
@@ -1783,10 +1794,8 @@ function createGeometryFromLineStringGeoJson(coordinates: Position[] | undefined
   return { coords, centroid };
 }
 
-function createGeometryFromPolygonGeoJson(coordinates: Position[][] | undefined) {
-  if (coordinates === undefined) return { coords: undefined, holes: undefined, centroid: undefined };
-  const polygon = turf.polygon(coordinates);
-
+// 面積に応じた許容値で頂点を間引く（1ha未満で約0.1m、100km²超で約100mまで形が変わる）
+function simplifyPolygonByArea(polygon: Feature<Polygon>): Feature<Polygon> {
   // ポリゴンの面積を計算（平方キロメートル単位）
   const polygonArea = area(polygon) / 1000000; // 平方メートルから平方キロメートルに変換
 
@@ -1806,11 +1815,16 @@ function createGeometryFromPolygonGeoJson(coordinates: Position[][] | undefined)
     tolerance = 0.001;
   }
 
-  const simplified = simplify(polygon, {
+  return simplify(polygon, {
     tolerance: tolerance,
     highQuality: true,
   });
-  //console.log(simplified);
+}
+
+function createGeometryFromPolygonGeoJson(coordinates: Position[][] | undefined, simplifyPolygon: boolean) {
+  if (coordinates === undefined) return { coords: undefined, holes: undefined, centroid: undefined };
+  const polygon = turf.polygon(coordinates);
+  const simplified = simplifyPolygon ? simplifyPolygonByArea(polygon) : polygon;
   const coords = simplified.geometry.coordinates[0].map((xy) => latlonToLatLonObject(xy));
   const holes = simplified.geometry.coordinates
     .slice(1)
@@ -1823,6 +1837,28 @@ export type GeoJson2DataOptions = {
   // 書き出し時の _id をレコードidに使わず振り直す。元のレイヤを残したまま同じZIPを別レイヤとして
   // 取り込むときなど、同じidのレコードが2つできてしまう場合に指定する（_group は振り直したidへ付け替える）
   regenerateIds?: boolean;
+  // ポリゴンの頂点を面積に応じて間引く。測った形を黙って変えないよう既定では行わず、
+  // 頂点が多いファイルで利用者が選んだときだけ指定する（countPolygonVertices と POLYGON_SIMPLIFY_CONFIRM_VERTICES）
+  simplifyPolygons?: boolean;
+};
+
+// これを超える頂点数のポリゴンを含むファイルは、取り込み時に簡略化するかを利用者に確かめる（表示・編集が重くなるため）
+export const POLYGON_SIMPLIFY_CONFIRM_VERTICES = 50000;
+
+/** Polygon・MultiPolygon の全リング（穴を含む）の頂点数の合計。形が壊れたジオメトリは数えない */
+export const countPolygonVertices = (geojson: FeatureCollection<Geometry | null, GeoJsonProperties>): number => {
+  if (geojson === null || typeof geojson !== 'object' || !Array.isArray(geojson.features)) return 0;
+  const countRings = (rings: unknown): number =>
+    Array.isArray(rings) ? rings.reduce((sum: number, ring) => sum + (Array.isArray(ring) ? ring.length : 0), 0) : 0;
+  return geojson.features.reduce((total, feature) => {
+    const geometry = feature !== null && typeof feature === 'object' ? feature.geometry : null;
+    if (geometry === null || typeof geometry !== 'object') return total;
+    if (geometry.type === 'Polygon') return total + countRings(geometry.coordinates);
+    if (geometry.type === 'MultiPolygon' && Array.isArray(geometry.coordinates)) {
+      return total + geometry.coordinates.reduce((sum: number, polygon) => sum + countRings(polygon), 0);
+    }
+    return total;
+  }, 0);
 };
 
 // 外部ファイルの _id に極端に長い文字列が入っていてもidにしない（アプリのidはULIDの26文字）

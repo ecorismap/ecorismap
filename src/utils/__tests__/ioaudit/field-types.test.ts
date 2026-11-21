@@ -364,14 +364,14 @@ describe('レイヤZIP(NONEレイヤ=CSV経路)の往復', () => {
     expect(imported.field.str).toBe('  前後に空白  ');
   });
 
-  it('[制約の確認] 数式注入対策で先頭が = + - @ の非数値文字列には \' が付いて戻る（意図的な変化）', () => {
+  it('数式注入対策で書き出し時に付けた先頭の \' は、取り込み時に外れて元の値に戻る（L14）', () => {
     const [imported] = zipCsvRoundTrip(
       [noneRecord({ ...typicalField(), multi: '', str: '=SUM(A1)', dict: '-abc', ref: '@x' })],
       layer
     );
-    expect(imported.field.str).toBe("'=SUM(A1)");
-    expect(imported.field.dict).toBe("'-abc");
-    expect(imported.field.ref).toBe("'@x");
+    expect(imported.field.str).toBe('=SUM(A1)');
+    expect(imported.field.dict).toBe('-abc');
+    expect(imported.field.ref).toBe('@x');
   });
 
   it('[回帰] 負数は数式注入対策の対象外で、そのまま戻る', () => {
