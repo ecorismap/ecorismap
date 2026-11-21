@@ -93,6 +93,7 @@ jest.mock('react-native-fs', () => ({
   DownloadDirectoryPath: '/download',
 }));
 
+import { kmzPhotoEntryNames } from '../../kmzPhotoNames';
 import { kml as toGeoJSON } from '@tmcw/togeojson';
 import { DOMParser } from '@xmldom/xmldom';
 import JSZip from 'jszip';
@@ -217,7 +218,7 @@ describe('generateKML: 出力の健全性', () => {
     expect(() => generateKML(records, layer)).not.toThrow();
   });
 
-  it.failing('未入力(undefined/null)の項目はdescriptionに "undefined"/"null" という文字列で出ない', () => {
+  it('未入力(undefined/null)の項目はdescriptionに "undefined"/"null" という文字列で出ない', () => {
     const layer = makeLayer('POINT', [f('a', 'STRING'), f('b', 'INTEGER'), f('c', 'STRING')]);
     const r = rec({ latitude: 35, longitude: 135 }, { c: 'x' });
     // b は後から追加した項目で値が無い、a は null が入っているケース
@@ -274,14 +275,14 @@ describe('generateKML → KML取り込み の往復', () => {
     expect(data[0][0].coords).toEqual(coords);
   });
 
-  it.failing('POINTの標高(altitude)が往復で失われない', async () => {
+  it('POINTの標高(altitude)が往復で失われない', async () => {
     const layer = makeLayer('POINT', [f('name', 'STRING')]);
     const coords = { latitude: 35, longitude: 135, altitude: 1234.5 };
     const { data } = await importViaHook(generateKML([rec(coords, { name: 'a' })], layer), 'p.kml');
     expect((data[0][0].coords as LocationType).altitude).toBe(1234.5);
   });
 
-  it.failing('POLYGONの穴(holes)が書き出され、取り込み直すと穴が残る', async () => {
+  it('POLYGONの穴(holes)が書き出され、取り込み直すと穴が残る', async () => {
     const layer = makeLayer('POLYGON', [f('name', 'STRING')]);
     const outer: LocationType[] = [
       { latitude: 35, longitude: 135 },
@@ -303,7 +304,7 @@ describe('generateKML → KML取り込み の往復', () => {
     expect(Object.keys(data[0][0].holes ?? {})).toHaveLength(1);
   });
 
-  it.failing('全ての項目型の値が、取り込み直すと同じ項目名・同じ値で戻る（ExtendedData相当）', async () => {
+  it('全ての項目型の値が、取り込み直すと同じ項目名・同じ値で戻る（ExtendedData相当）', async () => {
     const fields: FieldType[] = [
       f('文字', 'STRING'),
       f('複数行', 'STRING_MULTI'),
@@ -366,7 +367,7 @@ describe('KML取り込み: 構造のバリエーション', () => {
     expect(data[0][0].coords).toEqual({ latitude: 35, longitude: 135 });
   });
 
-  it.failing('CDATAのdescriptionは文字列として取り込まれる（オブジェクト{"@type":"html"}が項目値に入らない）', async () => {
+  it('CDATAのdescriptionは文字列として取り込まれる（オブジェクト{"@type":"html"}が項目値に入らない）', async () => {
     const k = wrapKml(
       `<Placemark><name>x</name><description><![CDATA[<b>太字</b> & <img src="a.jpg">]]></description><Point><coordinates>135,35</coordinates></Point></Placemark>`
     );
@@ -382,7 +383,7 @@ describe('KML取り込み: 構造のバリエーション', () => {
     expect(Object.keys(data[0][0].holes ?? {})).toHaveLength(1);
   });
 
-  it.failing('MultiGeometry(同種のPoint×2)のPlacemarkが黙って捨てられない', async () => {
+  it('MultiGeometry(同種のPoint×2)のPlacemarkが黙って捨てられない', async () => {
     const k = wrapKml(
       `<Placemark><name>mp</name><MultiGeometry><Point><coordinates>135,35</coordinates></Point><Point><coordinates>135.1,35.1</coordinates></Point></MultiGeometry></Placemark>`
     );
@@ -390,7 +391,7 @@ describe('KML取り込み: 構造のバリエーション', () => {
     expect(data.flat().length).toBeGreaterThanOrEqual(1);
   });
 
-  it.failing('MultiGeometry(LineString+Point混在)のPlacemarkが黙って捨てられない', async () => {
+  it('MultiGeometry(LineString+Point混在)のPlacemarkが黙って捨てられない', async () => {
     const k = wrapKml(
       `<Placemark><name>mix</name><MultiGeometry><LineString><coordinates>135,35 135.1,35.1</coordinates></LineString><Point><coordinates>135,35</coordinates></Point></MultiGeometry></Placemark>`
     );
@@ -408,7 +409,7 @@ describe('KML取り込み: 構造のバリエーション', () => {
     expect(data[lineLayerIdx]?.[0]?.field.name).toBe('line');
   });
 
-  it.failing('ExtendedDataの項目が2件目以降のPlacemarkにしか無くても項目として取り込まれる', async () => {
+  it('ExtendedDataの項目が2件目以降のPlacemarkにしか無くても項目として取り込まれる', async () => {
     const k = wrapKml(
       `<Placemark><name>a</name><Point><coordinates>135,35</coordinates></Point></Placemark><Placemark><name>b</name><ExtendedData><Data name="種名"><value>ヤマガラ</value></Data></ExtendedData><Point><coordinates>135.1,35.1</coordinates></Point></Placemark>`
     );
@@ -443,7 +444,7 @@ describe('KML取り込み: 構造のバリエーション', () => {
     expect(names).not.toContain('bad');
   });
 
-  it.failing('座標が数値でないPlacemark(abc,def)が「位置なしレコード」として黙って取り込まれない', async () => {
+  it('座標が数値でないPlacemark(abc,def)が「位置なしレコード」として黙って取り込まれない', async () => {
     const k = wrapKml(
       `<Placemark><name>ok</name><Point><coordinates>135,35</coordinates></Point></Placemark><Placemark><name>nan</name><Point><coordinates>abc,def</coordinates></Point></Placemark>`
     );
@@ -457,9 +458,12 @@ describe('KML取り込み: 構造のバリエーション', () => {
     expect(ret.isOK).toBe(false);
   });
 
-  it.failing('名前空間プレフィックス付き(kml:Placemark)のKMLも取り込める', () => {
+  // togeojson 単体は接頭辞込みのタグ名を探すので0件になる。取り込み処理（useGeoFile）が接頭辞を外してから渡すので、フック経由で確かめる
+  it('名前空間プレフィックス付き(kml:Placemark)のKMLも取り込める', async () => {
     const k = `<kml:kml xmlns:kml="http://www.opengis.net/kml/2.2"><kml:Placemark><kml:name>x</kml:name><kml:Point><kml:coordinates>135,35</kml:coordinates></kml:Point></kml:Placemark></kml:kml>`;
-    expect(parseKml(k).features).toHaveLength(1);
+    const { ret, layers } = await importViaHook(k, 'prefixed.kml');
+    expect(ret.isOK).toBe(true);
+    expect(layers).toHaveLength(1);
   });
 });
 
@@ -531,7 +535,7 @@ describe('KMZ取り込み', () => {
     expect(data[0][0].field.name).toBe('p');
   });
 
-  it.failing('PointとLineStringが混在するKMZで、両方とも取り込まれる（KMLと同じ挙動）', async () => {
+  it('PointとLineStringが混在するKMZで、両方とも取り込まれる（KMLと同じ挙動）', async () => {
     const body = `<Placemark><name>p</name><Point><coordinates>135,35</coordinates></Point></Placemark><Placemark><name>l</name><LineString><coordinates>135,35 135.1,35.1</coordinates></LineString></Placemark>`;
     const kmlResult = await importViaHook(wrapKml(body), 'mix.kml');
     const kmzResult = await importViaHook(await makeKmz({ 'doc.kml': wrapKml(body) }), 'mix.kmz');
@@ -545,11 +549,11 @@ describe('KMZ取り込み', () => {
     expect(ret.message).not.toMatch(/Cannot read|undefined/);
   });
 
-  it.failing('detectGeoJsonType は features が空でも例外にならない', () => {
+  it('detectGeoJsonType は features が空でも例外にならない', () => {
     expect(() => detectGeoJsonType({ type: 'FeatureCollection', features: [] })).not.toThrow();
   });
 
-  it.failing('拡張子が大文字(DOC.KML)のKMZでも取り込める', async () => {
+  it('拡張子が大文字(DOC.KML)のKMZでも取り込める', async () => {
     const kmz = await makeKmz({
       'DOC.KML': wrapKml(`<Placemark><name>p</name><Point><coordinates>135,35</coordinates></Point></Placemark>`),
     });
@@ -557,7 +561,7 @@ describe('KMZ取り込み', () => {
     expect(data.flat()).toHaveLength(1);
   });
 
-  it.failing('macOSで作ったKMZの __MACOSX/._doc.kml が混ざっていても本体だけ取り込み、失敗にならない', async () => {
+  it('macOSで作ったKMZの __MACOSX/._doc.kml が混ざっていても本体だけ取り込み、失敗にならない', async () => {
     const kmz = await makeKmz({
       'doc.kml': wrapKml(`<Placemark><name>p</name><Point><coordinates>135,35</coordinates></Point></Placemark>`),
       '__MACOSX/._doc.kml': '\u0000\u0005\u0016\u0007 Mac OS X        garbage',
@@ -567,7 +571,7 @@ describe('KMZ取り込み', () => {
     expect(data.flat()).toHaveLength(1);
   });
 
-  it.failing('__MACOSX混入時、本体が取り込まれたのに「失敗」と表示される食い違いが起きない', async () => {
+  it('__MACOSX混入時、本体が取り込まれたのに「失敗」と表示される食い違いが起きない', async () => {
     const kmz = await makeKmz({
       'doc.kml': wrapKml(`<Placemark><name>p</name><Point><coordinates>135,35</coordinates></Point></Placemark>`),
       '__MACOSX/._doc.kml': '\u0000\u0005\u0016\u0007 Mac OS X        garbage',
@@ -607,7 +611,7 @@ describe('generateTrackKML / generateKMZFile', () => {
     ]);
   });
 
-  it.failing('写真ファイル名に " や < が含まれてもdescriptionのimgタグ(HTML)が壊れない／注入されない', () => {
+  it('写真ファイル名に " や < が含まれてもdescriptionのimgタグ(HTML)が壊れない／注入されない', () => {
     const k = generateTrackKML(coords, 't', [
       { filename: 'a" onerror="alert(1)<b>.jpg', timestamp: T0, latitude: 35, longitude: 135 },
     ]);
@@ -617,12 +621,16 @@ describe('generateTrackKML / generateKMZFile', () => {
     expect(d.value).not.toContain('onerror="alert(1)');
   });
 
-  it.failing('写真ファイル名に "]]>" が含まれても書き出しが例外にならず、取り込み直すとdescriptionが途中で切れない', () => {
+  it('写真ファイル名に "]]>" が含まれても書き出しが例外にならず、取り込み直すとdescriptionが途中で切れない', () => {
     const k = generateTrackKML(coords, 't', [{ filename: 'x]]>y.jpg', timestamp: T0, latitude: 35, longitude: 135 }]);
     const gj = parseKml(k);
     const pt = gj.features.find((x) => x.geometry?.type === 'Point');
     expect(pt?.properties?.name).toBe('x]]>y.jpg');
-    expect((pt?.properties?.description as { value: string }).value).toContain('src="x]]>y.jpg"');
+    // img の src は KMZ に同梱するファイル名（ファイル名として不正な文字を除いたもの）を指す。
+    // description が途中で切れず、src が同梱名と一致することを確かめる
+    const desc = (pt?.properties?.description as { value: string }).value;
+    expect(desc).toContain(`src="${kmzPhotoEntryNames(['x]]>y.jpg'])[0]}"`);
+    expect(desc).toContain('width="480"');
   });
 
   it('[回帰] generateKMZFile: doc.kmlがルートにあり、写真が同梱され、KMZとして取り込み直せる', async () => {
@@ -642,7 +650,7 @@ describe('generateTrackKML / generateKMZFile', () => {
     expect(layers.length).toBeGreaterThanOrEqual(1);
   });
 
-  it.failing('generateKMZFile: 写真名がファイル名として不正な文字を含む場合もdoc.kml内の参照と同梱ファイル名が一致する', async () => {
+  it('generateKMZFile: 写真名がファイル名として不正な文字を含む場合もdoc.kml内の参照と同梱ファイル名が一致する', async () => {
     Platform.OS = 'ios';
     mockFiles['/photos/x.jpg'] = Buffer.from('J').toString('base64');
     const fname = '調査:地点1/写真?.jpg';
@@ -653,7 +661,7 @@ describe('generateTrackKML / generateKMZFile', () => {
     expect(k).toContain(`src="${photoEntries[0]}"`);
   });
 
-  it.failing('generateKMZFile: 同名の写真が2枚あっても片方が黙って上書きされない', async () => {
+  it('generateKMZFile: 同名の写真が2枚あっても片方が黙って上書きされない', async () => {
     Platform.OS = 'ios';
     mockFiles['/p/1.jpg'] = Buffer.from('ONE').toString('base64');
     mockFiles['/p/2.jpg'] = Buffer.from('TWO').toString('base64');

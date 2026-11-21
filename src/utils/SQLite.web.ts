@@ -218,29 +218,29 @@ class WebSQLiteDatabase implements SQLiteDatabase {
           continue;
         }
 
-        // テーブルを削除する（存在する場合）
-        await this.execAsync(`DROP TABLE IF EXISTS "${newTableName}"`);
-        console.log(`Table ${newTableName} dropped (if it existed).`);
-
-        // 新しいテーブルを作成する
-        const createTableSQL = `CREATE TABLE "${newTableName}" (value TEXT)`;
-        await this.execAsync(createTableSQL);
-        console.log(`Table ${newTableName} created.`);
-
+        // ネイティブと同じく value 列だけを読む。value 列の無い表はここで例外になり、
+        // トランザクション（DROP）より前に失敗するので既存の辞書表は上書きされずに残る
+        // （SELECT * だと value が undefined の空行で既存表を置き換えていた）
         const data = importDb.exec({
-          sql: `SELECT * FROM "${oldTableName}"`,
+          sql: `SELECT value FROM "${oldTableName}"`,
           rowMode: 'object',
           returnValue: 'resultRows',
         }) as {
-          value: string;
+          value: string | number | null;
         }[];
-        if (data.length > 0) {
-          await bulkInsertValues(
-            this,
-            newTableName,
-            data.map(({ value }) => value)
-          );
-        }
+
+        // 削除・作成・挿入を1つのトランザクションにまとめ、途中で失敗しても既存の辞書表を残す
+        await this.withTransactionAsync(async () => {
+          await this.execAsync(`DROP TABLE IF EXISTS "${newTableName}"`);
+          await this.execAsync(`CREATE TABLE "${newTableName}" (value TEXT)`);
+          if (data.length > 0) {
+            await bulkInsertValues(
+              this,
+              newTableName,
+              data.map(({ value }) => value)
+            );
+          }
+        });
       }
       importDb.close();
     } catch (error) {

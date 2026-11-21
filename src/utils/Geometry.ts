@@ -19,6 +19,7 @@ import dayjs from '../i18n/dayjs';
 import sanitize from 'sanitize-filename';
 import { formattedInputs } from './Format';
 import { parseCsv } from './csvParse';
+import { kmzPhotoEntryNames } from './kmzPhotoNames';
 import { calcCentroid, calcLineMidPoint, latlonToLatLonObject } from './Coords';
 import {
   Feature,
@@ -31,6 +32,7 @@ import {
   Polygon,
   GeoJsonProperties,
   Geometry,
+  GeometryCollection,
   Position,
 } from 'geojson';
 import { rgbaString2qgis } from './Color';
@@ -38,35 +40,134 @@ import { cloneDeep } from 'lodash';
 import { isLocationType, isLocationTypeArray } from './General';
 import { generateLabel, getColor, getLineWidth } from './Layer';
 import { fixQualityLabel } from '../lib/gnss/toLocation';
+import { FIX_QUALITY } from '../lib/gnss/nmea';
 
+// QGIS などは "Point (139 35)" や "POINT Z (139 35 10)" のように大文字小文字・空白・次元指定が混ざるため、
+// 部分一致ではなくタグを取り出して判定する（部分一致だと MULTIPOINT まで POINT と誤解析していた）
+const WKT_PATTERN = /^\s*([A-Za-z]+)(?:\s+(?:ZM|Z|M))?\s*\(([\s\S]*)\)\s*$/;
+const WKT_RING_PATTERN = /\(([^()]*)\)/g;
+
+const parseWktTag = (geometryString: string): { tag: string; body: string } | undefined => {
+  const match = WKT_PATTERN.exec(geometryString);
+  return match === null ? undefined : { tag: match[1].toUpperCase(), body: match[2] };
+};
+
+/** MULTI* は1レコード1ジオメトリに収まらないので扱わない（NONE） */
 export const getGeometryType = (geometryString: string): FeatureType => {
-  if (geometryString.includes('POINT')) {
-    return 'POINT';
-  } else if (geometryString.includes('LINESTRING')) {
-    return 'LINE';
-  } else if (geometryString.includes('POLYGON')) {
-    return 'POLYGON';
-  } else {
-    return 'NONE';
+  switch (parseWktTag(geometryString)?.tag) {
+    case 'POINT':
+      return 'POINT';
+    case 'LINESTRING':
+      return 'LINE';
+    case 'POLYGON':
+      return 'POLYGON';
+    default:
+      return 'NONE';
   }
 };
+
+// 範囲外・数値でない座標を (0,0) で埋めると赤道ギニア沖に黙って置かれるため、読めなければ欠損にする
+const parseWktPosition = (text: string): LocationType | undefined => {
+  const [lon, lat] = text.trim().split(/\s+/);
+  if (lon === undefined || lat === undefined) return undefined;
+  const latitude = formattedInputs(lat, 'latitude-decimal', false);
+  const longitude = formattedInputs(lon, 'longitude-decimal', false);
+  if (!latitude.isOK || !longitude.isOK) return undefined;
+  return { latitude: Number(latitude.result), longitude: Number(longitude.result) };
+};
+
+// 1点でも読めなければ形が変わるので、部分的に取り込まずジオメトリごと欠損にする
+const parseWktPositions = (text: string): LocationType[] | undefined => {
+  const positions = text.split(',').map(parseWktPosition);
+  return positions.every((p): p is LocationType => p !== undefined) ? positions : undefined;
+};
+
+const parseWktRings = (body: string): LocationType[][] | undefined => {
+  // 環の間はカンマと空白だけのはず。旧版が穴なしで書き出した "((外周),)" の末尾カンマも読めるよう空の区切りは許す
+  if (body.replace(WKT_RING_PATTERN, '').replace(/[\s,]/g, '') !== '') return undefined;
+  const rings: LocationType[][] = [];
+  for (const ring of body.match(WKT_RING_PATTERN) ?? []) {
+    const positions = parseWktPositions(ring.slice(1, -1));
+    if (positions === undefined) return undefined;
+    rings.push(positions);
+  }
+  return rings.length > 0 ? rings : undefined;
+};
+
+/** レイヤの種類に合うWKTだけを座標にする。合わない・読めない場合は undefined */
+const parseCsvGeometry = (
+  geometryString: string,
+  layerType: FeatureType
+): Pick<RecordType, 'coords' | 'holes'> | undefined => {
+  const wkt = parseWktTag(geometryString);
+  if (wkt === undefined) return undefined;
+  if (layerType === 'POINT' && wkt.tag === 'POINT') {
+    const coords = parseWktPosition(wkt.body);
+    return coords && { coords };
+  }
+  if (layerType === 'LINE' && wkt.tag === 'POINT') {
+    // マップメモのスタンプ（1点のLINE）は generateCSV が POINT で書き出している
+    const coords = parseWktPosition(wkt.body);
+    return coords && { coords: [coords] };
+  }
+  if (layerType === 'LINE' && wkt.tag === 'LINESTRING') {
+    const coords = parseWktPositions(wkt.body);
+    return coords && { coords };
+  }
+  if (layerType === 'POLYGON' && wkt.tag === 'POLYGON') {
+    const rings = parseWktRings(wkt.body);
+    if (rings === undefined) return undefined;
+    const [outer, ...holes] = rings;
+    return holes.length === 0
+      ? { coords: outer }
+      : { coords: outer, holes: Object.fromEntries(holes.map((hole) => [ulid(), hole])) };
+  }
+  return undefined;
+};
+
+// parseCsv が BOM・\r・引用符を外すので、ここでは見た目の空白だけを除く
+const csvHeaderFromRows = (rows: string[][]) => (rows[0] ?? []).map((field) => field.trim());
+
 const detectCsvTypeFromRows = (rows: string[][]): { type: FeatureType; column: number } => {
-  const csvFields = (rows[0] ?? []).map((field) => field.trim());
-  const geometryColumn = csvFields.findIndex((field) => field === 'geometry');
+  const geometryColumn = csvHeaderFromRows(rows).findIndex((field) => field === 'geometry');
   if (geometryColumn === -1) {
     return { type: 'NONE', column: -1 }; // geometryカラムがない場合
   }
-  const firstRowGeometry = rows[1]?.[geometryColumn]?.trim();
-  if (!firstRowGeometry) {
-    return { type: 'NONE', column: -1 }; // データが不完全な場合
+  // 先頭レコードの座標が空・ヘッダ直後の空行・未対応のWKTで全件を NONE にしないよう、読める最初の値で決める
+  for (const row of rows.slice(1)) {
+    const geometryType = getGeometryType(row[geometryColumn] ?? '');
+    if (geometryType !== 'NONE') return { type: geometryType, column: geometryColumn };
   }
-  const geometryType = getGeometryType(firstRowGeometry);
-  return { type: geometryType, column: geometryColumn };
+  // 位置なしでも geometry 列を項目にしないよう列番号は返す
+  return { type: 'NONE', column: geometryColumn };
 };
 
 /** 引用符が閉じていないなど CSV として読めない場合は例外を投げる */
 export const detectCsvType = (csv: string): { type: FeatureType; column: number } =>
   detectCsvTypeFromRows(parseCsv(csv));
+
+// geometry 列の無い外部のCSV（GPSロガー・Excel）は緯度・経度の列で位置を持つことが多い。
+// x/y は投影座標のこともあるので、緯度経度系の名前が無いときだけ使い、範囲外の値は位置にしない
+const CSV_LATLON_COLUMN_NAMES: [string[], string[]][] = [
+  [
+    ['latitude', 'lat', '緯度'],
+    ['longitude', 'lon', 'lng', 'long', '経度'],
+  ],
+  [['y'], ['x']],
+];
+
+const csvLatLonColumns = (header: string[]): { lat: number; lon: number } | undefined => {
+  const names = header.map((name) => name.toLowerCase());
+  for (const [latNames, lonNames] of CSV_LATLON_COLUMN_NAMES) {
+    const lat = names.findIndex((name) => latNames.includes(name));
+    const lon = names.findIndex((name) => lonNames.includes(name));
+    if (lat !== -1 && lon !== -1) return { lat, lon };
+  }
+  return undefined;
+};
+
+const parseCsvLatLon = (row: string[], columns: { lat: number; lon: number }): LocationType | undefined =>
+  parseWktPosition(`${row[columns.lon] ?? ''} ${row[columns.lat] ?? ''}`);
 
 // 空行（空白だけの行を含む）は従来どおりレコードとして扱わない
 const isBlankCsvRow = (row: string[]) => row.length === 1 && row[0].trim() === '';
@@ -87,6 +188,14 @@ const convertCsvValue = (value: string, format: FormatType | undefined): string 
       const num = Number(value);
       return Number.isFinite(num) ? num : '';
     }
+    case 'NUMBERRANGE': {
+      // 下限が負の範囲（-1.5–2）は数式注入対策で先頭に ' が付いて書き出される。
+      // 数値と区切りだけの値なら ' は利用者の入力ではないので外す（文字列項目の ' は方針未定のため触らない）
+      if (!value.startsWith("'-")) return value;
+      const unguarded = value.slice(1);
+      const isRange = unguarded.split('–').every((part) => part.trim() !== '' && Number.isFinite(Number(part)));
+      return isRange ? unguarded : value;
+    }
     default:
       return value;
   }
@@ -103,74 +212,61 @@ export const csv2Data = (
     //console.log(type);
     // 引用符内の改行でレコードが分裂しないよう、本文・ヘッダ・型判定で同じパーサの結果を使う
     const rows = parseCsv(csv);
-    const { type, column } = detectCsvTypeFromRows(rows);
-    const layer = importedLayer === undefined ? createLayerFromCsv(csv, fileName, type) : cloneDeep(importedLayer);
-    const header = (rows[0] ?? []).map((field) => field.trim());
-    const body = rows
-      .slice(1)
-      .filter((row) => !isBlankCsvRow(row))
-      .map((row) => row.map((value) => value.trim()));
+    const detected = detectCsvTypeFromRows(rows);
+    const header = csvHeaderFromRows(rows);
+    // 緯度経度の列は属性としても残す（元の表記・精度を失わないため）。1行でも読めればポイントにする
+    const latLonColumns =
+      importedLayer === undefined && detected.column === -1 ? csvLatLonColumns(header) : undefined;
+    const useLatLon =
+      latLonColumns !== undefined &&
+      rows.slice(1).some((row) => !isBlankCsvRow(row) && parseCsvLatLon(row, latLonColumns) !== undefined);
+    // レイヤ設定があれば、レコードの座標から推測した種類より設定の種類を信じる
+    const type = importedLayer?.type ?? (useLatLon ? 'POINT' : detected.type);
+    const column = detected.column;
+    const attributeColumns = csvAttributeColumns(header);
+    const layer =
+      importedLayer === undefined
+        ? createLayerFromCsvColumns(attributeColumns, fileName, type)
+        : cloneDeep(importedLayer);
+    // 値の前後の空白も利用者の入力なので trim しない
+    // （parseCsv は引用符の内外を区別して返さないため、引用符の外の空白も値に残る）
+    const body = rows.slice(1).filter((row) => !isBlankCsvRow(row));
 
-    const offset = (header[0] ?? '').includes('displayName') ? 1 : 0;
+    // 位置で対応させると displayName 列の有無などで全項目が1列ずれるため、列名で対応させる。
+    // 名前で見つからない項目（旧版がエスケープせずに書き出したカンマ入りの項目名など）は従来どおり位置で拾う
+    const offset = header[0] === 'displayName' ? 1 : 0;
+    const fieldColumns =
+      importedLayer === undefined
+        ? attributeColumns.map((attribute) => attribute.column)
+        : layer.field.map((field, idx) => {
+            // displayName 列と座標列は項目の値ではないので、同名の項目があってもそこから拾わない
+            const named = header.findIndex(
+              (name, col) => name === field.name && !(offset === 1 && col === 0) && col !== column
+            );
+            return named === -1 ? idx + offset : named;
+          });
+    let invalidGeometryCount = 0;
 
     const importedData: RecordType[] = body.map((data) => {
       //layer.fieldとdataの配列からfieldを作成
       const fields = layer.field
         .map((field, idx) => {
           //CSVの列数がレイヤのフィールド数より少ない場合にundefinedが入るのを防ぐ
-          const value = data[idx + offset] ?? '';
+          const value = data[fieldColumns[idx]] ?? '';
           return { [field.name]: importedLayer === undefined ? value : convertCsvValue(value, field.format) };
         })
         .reduce((obj, userObj) => Object.assign(obj, userObj), {});
-      let coords;
-      if (type === 'POINT') {
-        const geometryType = getGeometryType(data[column]);
-        if (geometryType !== 'POINT') {
-          coords = undefined;
-        } else {
-          const geometry = data[column].replace('POINT(', '').replace(')', '').split(' ');
-          const { isOK: latIsOK, result: lat } = formattedInputs(geometry[1], 'latitude-decimal', false);
-          const { isOK: lonIsOK, result: lon } = formattedInputs(geometry[0], 'longitude-decimal', false);
-          coords = {
-            latitude: latIsOK ? Number(lat as string) : 0,
-            longitude: lonIsOK ? Number(lon as string) : 0,
-          };
-        }
-      } else if (type === 'LINE') {
-        const geometryType = getGeometryType(data[column]);
-        if (geometryType !== 'LINE') {
-          coords = undefined;
-        } else {
-          const geometry = data[column].replace('LINESTRING(', '').replace(')', '').split(',');
-          coords = geometry.map((xy) => {
-            const [lon, lat] = xy.split(' ');
-            const { isOK: latIsOK, result: latResult } = formattedInputs(lat, 'latitude-decimal', false);
-            const { isOK: lonIsOK, result: lonResult } = formattedInputs(lon, 'longitude-decimal', false);
-            return {
-              latitude: latIsOK ? Number(latResult as string) : 0,
-              longitude: lonIsOK ? Number(lonResult as string) : 0,
-            };
-          });
-        }
-      } else if (type === 'POLYGON') {
-        const geometryType = getGeometryType(data[column]);
-        if (geometryType !== 'POLYGON') {
-          coords = undefined;
-        } else {
-          const geometry = data[column].replace('POLYGON((', '').replace('))', '').split(',');
-          const polygon = geometry.map((xy) => {
-            const [lon, lat] = xy.split(' ');
-            const { isOK: latIsOK, result: latResult } = formattedInputs(lat, 'latitude-decimal', false);
-            const { isOK: lonIsOK, result: lonResult } = formattedInputs(lon, 'longitude-decimal', false);
-            return {
-              latitude: latIsOK ? Number(latResult as string) : 0,
-              longitude: lonIsOK ? Number(lonResult as string) : 0,
-            };
-          });
-          coords = polygon;
-        }
+      let geometry: Pick<RecordType, 'coords' | 'holes'> | undefined;
+      if (useLatLon && latLonColumns !== undefined) {
+        const coords = parseCsvLatLon(data, latLonColumns);
+        geometry = coords && { coords };
+        const written = [latLonColumns.lat, latLonColumns.lon].some((col) => (data[col] ?? '').trim() !== '');
+        if (geometry === undefined && written) invalidGeometryCount++;
       } else {
-        coords = undefined;
+        const geometryString = column === -1 ? '' : data[column] ?? '';
+        geometry = type === 'NONE' ? undefined : parseCsvGeometry(geometryString, type);
+        // 書かれていたのに読めなかった座標（範囲外・MULTI*・種類違い）は欠損にし、件数で知らせる
+        if (geometry === undefined && geometryString.trim() !== '') invalidGeometryCount++;
       }
 
       return {
@@ -179,18 +275,112 @@ export const csv2Data = (
         displayName: displayName,
         redraw: false,
         visible: true,
-        coords: coords,
+        coords: geometry?.coords,
+        ...(geometry?.holes !== undefined ? { holes: geometry.holes } : {}),
         field: fields,
       };
     });
     //csvから
-    return { layer: layer, recordSet: importedData };
+    return { layer: layer, recordSet: importedData, invalidGeometryCount };
   } catch (e) {
     return undefined;
   }
 };
 
-const GPX_ARRAY_TAGS = new Set(['trk', 'trkseg', 'trkpt']);
+const GPX_ARRAY_TAGS = new Set(['wpt', 'trk', 'trkseg', 'trkpt', 'rte', 'rtept']);
+const GPX_CDATA_PROP = '__cdata';
+// GNSS品質を書き出す<extensions>の子要素の名前空間（識別子なので解決できるURLである必要はない）
+const GPX_GNSS_NAMESPACE = 'https://ecorismap.web.app/xmlns/gpx-gnss/1';
+
+// XMLParserの出力には型が無く、要素の中身はファイル次第なので any で受ける（値は下で個別に検証する）
+type GpxXmlNode = Record<string, any>;
+// <trk/>や<trkseg/>は''としてパースされるため、オブジェクトのものだけを扱う
+const isGpxXmlObject = (v: unknown): v is GpxXmlNode => typeof v === 'object' && v !== null && !Array.isArray(v);
+
+const XML_PREDEFINED_ENTITIES: Record<string, string> = { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'" };
+// processEntities は DOCTYPE の内部実体まで展開してしまう（billion laughs）うえ数値文字参照を復号しないため、
+// 定義済みの5実体と数値文字参照だけを自前で復号する。それ以外の &name; はそのまま残す
+const decodeXmlEntities = (text: string): string =>
+  text.replace(/&(#x[0-9a-fA-F]+|#[0-9]+|amp|lt|gt|quot|apos);/g, (match, ref: string) => {
+    if (ref[0] !== '#') return XML_PREDEFINED_ENTITIES[ref];
+    const codePoint = ref[1] === 'x' || ref[1] === 'X' ? parseInt(ref.slice(2), 16) : parseInt(ref.slice(1), 10);
+    return isXmlChar(codePoint) ? String.fromCodePoint(codePoint) : match;
+  });
+
+// XML 1.0 の Char（#x9 | #xA | #xD | [#x20-#xD7FF] | [#xE000-#xFFFD] | [#x10000-#x10FFFF]）。
+// 範囲外の数値文字参照（&#0; など）は整形式でないので復号せず、制御文字を値に入れない
+const isXmlChar = (codePoint: number): boolean =>
+  Number.isFinite(codePoint) &&
+  (codePoint === 0x9 ||
+    codePoint === 0xa ||
+    codePoint === 0xd ||
+    (codePoint >= 0x20 && codePoint <= 0xd7ff) ||
+    (codePoint >= 0xe000 && codePoint <= 0xfffd) ||
+    (codePoint >= 0x10000 && codePoint <= 0x10ffff));
+
+// 要素のテキストを文字列で返す。CDATAの中身は実体参照として扱わず、そのまま使う。
+// 前後の空白は利用者の入力の一部なので削らない
+const gpxText = (value: unknown): string | undefined => {
+  if (typeof value === 'string') return decodeXmlEntities(value);
+  if (typeof value === 'number' || typeof value === 'boolean') return String(value);
+  if (!isGpxXmlObject(value)) return undefined;
+  const text = typeof value['#text'] === 'string' ? decodeXmlEntities(value['#text']) : '';
+  const cdataValue = value[GPX_CDATA_PROP];
+  const cdata = Array.isArray(cdataValue) ? cdataValue.join('') : typeof cdataValue === 'string' ? cdataValue : '';
+  return text + cdata;
+};
+
+// 数値・時刻として読む要素は、整形で入った前後の改行や空白を無視する
+const gpxNumber = (value: unknown): number | undefined => {
+  const text = gpxText(value)?.trim();
+  if (text === undefined || text === '') return undefined;
+  const num = Number(text);
+  return Number.isFinite(num) ? num : undefined;
+};
+
+const gpxTimestamp = (value: unknown): number | undefined => {
+  const text = gpxText(value)?.trim();
+  if (text === undefined || text === '') return undefined;
+  const time = dayjs(text);
+  return time.isValid() ? time.valueOf() : undefined;
+};
+
+// 緯度経度が欠けた・範囲外・数値でない点は (0,0) で埋めず、その点だけを捨てる
+const gpxLatLon = (node: GpxXmlNode): { latitude: number; longitude: number } | undefined => {
+  if (typeof node.lat !== 'string' || typeof node.lon !== 'string') return undefined;
+  const { isOK: latIsOK, result: lat } = formattedInputs(node.lat.trim(), 'latitude-decimal', false);
+  const { isOK: lonIsOK, result: lon } = formattedInputs(node.lon.trim(), 'longitude-decimal', false);
+  if (!latIsOK || !lonIsOK) return undefined;
+  const latitude = Number(lat as string);
+  const longitude = Number(lon as string);
+  if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return undefined;
+  return { latitude, longitude };
+};
+
+// <extensions>の中のEcorisMapのGNSS要素を探す。他のツールが名前空間に接頭辞を付け直しても読めるようにする
+const gpxGnssExtension = (node: GpxXmlNode): GpxXmlNode | undefined => {
+  const extensions = node.extensions;
+  if (!isGpxXmlObject(extensions)) return undefined;
+  const key = Object.keys(extensions).find((k) => k === 'gnss' || k.endsWith(':gnss'));
+  const gnss = key === undefined ? undefined : extensions[key];
+  return isGpxXmlObject(gnss) ? gnss : undefined;
+};
+
+// GPXの楕円体高は ele + geoidheight で表す（書き出し側と同じ定義）
+const gpxEllipsoidHeight = (altitude: number | undefined, node: GpxXmlNode): number | undefined => {
+  const geoidHeight = gpxNumber(node.geoidheight);
+  if (altitude === undefined || geoidHeight === undefined) return undefined;
+  return Number((altitude + geoidHeight).toFixed(3));
+};
+
+// GPXの項目は name/time/cmt しか無く、EcorisMapはそれ以外の項目を desc に「項目名: 値」で書き出す。
+// 値に改行や「: 」を含みうるので項目には分解せず、desc 全体を文字列の項目として残す（型は戻らない）
+const GPX_DESC_FIELD = 'desc';
+
+const gpxDescField = (node: GpxXmlNode): { desc: string } | Record<string, never> => {
+  const desc = gpxText(node.desc);
+  return desc === undefined || desc === '' ? {} : { desc };
+};
 
 export const gpx2Data = (
   gpx: string,
@@ -205,86 +395,93 @@ export const gpx2Data = (
     const parser = new XMLParser({
       ignoreAttributes: false,
       attributeNamePrefix: '',
-      // GPXにエンティティ展開は不要。外部由来のファイルを読むため明示的に無効化する
+      // DOCTYPEの内部実体（billion laughs）や外部実体を展開しないよう無効化し、定義済み実体はgpxTextで復号する
       processEntities: false,
+      // "007"や"0"が数値に変わらないよう、値は文字列のまま受け取り、数値の要素だけを個別に変換する
+      parseTagValue: false,
+      // nameやcmtの前後の空白も利用者の入力なので削らない
+      trimValues: false,
+      // CDATAの中身は実体参照を含まない生の文字列なので、復号の対象から分けて受け取る
+      cdataPropName: GPX_CDATA_PROP,
       // 要素が1個だとオブジェクト、0個だと''になり.mapで例外→全軌跡が消えるため、常に配列にそろえる
       isArray: (tagName, _jPath, _isLeafNode, isAttribute) => !isAttribute && GPX_ARRAY_TAGS.has(tagName),
     });
     const json = parser.parse(gpx);
-    //console.log(json);
     const gpxkey = json.gpx ? 'gpx' : 'GPX';
-    //console.log(gpxkey);
+    const root: GpxXmlNode = json[gpxkey];
     let importedData: RecordType[] = [];
+    // 緯度経度が不正で捨てた点の数（呼び出し側で利用者に知らせるため）
+    let skippedPoints = 0;
+
+    const nodesOf = (parent: GpxXmlNode, tagName: string): GpxXmlNode[] =>
+      Array.isArray(parent[tagName]) ? parent[tagName].filter(isGpxXmlObject) : [];
 
     switch (type) {
       case 'POINT':
-        const wpts = json[gpxkey].wpt ? (Array.isArray(json[gpxkey].wpt) ? json[gpxkey].wpt : [json[gpxkey].wpt]) : [];
-        importedData = wpts.map((d: any) => {
-          const { isOK: latIsOK, result: lat } = formattedInputs(d.lat, 'latitude-decimal', false);
-          const { isOK: lonIsOK, result: lon } = formattedInputs(d.lon, 'longitude-decimal', false);
-          const time = dayjs(d.time);
-          const ele = isNaN(d.ele) || d.ele === '' ? undefined : d.ele;
+        importedData = nodesOf(root, 'wpt').flatMap((wpt) => {
+          const latlon = gpxLatLon(wpt);
+          if (latlon === undefined) {
+            skippedPoints++;
+            return [];
+          }
+          const altitude = gpxNumber(wpt.ele);
+          // time の無い wpt に dayjs(undefined)＝取り込んだ時刻が入らないよう、要素が無いときは空にする
+          const timestamp = gpxTimestamp(wpt.time);
+          const coords: LocationType = { ...latlon, altitude };
+          const gnssExtension = gpxGnssExtension(wpt);
+          const fixQuality = gnssExtension === undefined ? undefined : gpxNumber(gnssExtension.fixQuality);
+          if (gnssExtension !== undefined && fixQuality !== undefined) {
+            const ellipsoidHeight = gpxEllipsoidHeight(altitude, wpt);
+            const averagedCount = gpxNumber(gnssExtension.averagedCount);
+            coords.gnss = {
+              fixQuality,
+              satellites: gpxNumber(wpt.sat) ?? null,
+              hdop: gpxNumber(wpt.hdop) ?? null,
+              diffAge: gpxNumber(wpt.ageofdgpsdata) ?? null,
+              ...(ellipsoidHeight !== undefined && { ellipsoidHeight }),
+              ...(averagedCount !== undefined && { averagedCount }),
+            };
+          }
           const record: RecordType = {
             id: ulid(),
             userId: userId,
             displayName: displayName,
             redraw: false,
             visible: true,
-            coords: {
-              latitude: latIsOK ? Number(lat as string) : 0,
-              longitude: lonIsOK ? Number(lon as string) : 0,
-              altitude: ele,
-            },
+            coords,
             field: {
-              name: d.name ? d.name : '',
-              time: time.isValid() ? time.format() : '',
-              cmt: d.cmt ? d.cmt : '',
+              name: gpxText(wpt.name) ?? '',
+              time: timestamp === undefined ? '' : dayjs(timestamp).format(),
+              cmt: gpxText(wpt.cmt) ?? '',
+              ...gpxDescField(wpt),
             },
           };
-          return record;
+          return [record];
         });
-
-        //console.log(importedData);
         break;
       case 'LINE': {
-        const trks = json[gpxkey].trk ? (Array.isArray(json[gpxkey].trk) ? json[gpxkey].trk : [json[gpxkey].trk]) : [];
+        const toLocation = (point: GpxXmlNode): LocationType | undefined => {
+          const latlon = gpxLatLon(point);
+          if (latlon === undefined) {
+            skippedPoints++;
+            return undefined;
+          }
+          const altitude = gpxNumber(point.ele);
+          const location: LocationType = { ...latlon, timestamp: gpxTimestamp(point.time), altitude };
+          const ellipsoidHeight = gpxEllipsoidHeight(altitude, point);
+          if (ellipsoidHeight !== undefined) location.ellipsoidHeight = ellipsoidHeight;
+          const gnssExtension = gpxGnssExtension(point);
+          const fixQuality = gnssExtension === undefined ? undefined : gpxNumber(gnssExtension.fixQuality);
+          if (fixQuality !== undefined) location.fixQuality = fixQuality;
+          return location;
+        };
+        const toLocations = (points: GpxXmlNode[]): LocationType[] =>
+          points.map(toLocation).filter((c): c is LocationType => c !== undefined);
 
-        // XMLParserの出力には型が無く、要素の中身はファイル次第なので any で受ける（値は下で個別に検証する）
-        type XmlNode = Record<string, any>;
-        // <trk/>や<trkseg/>は''としてパースされるため、オブジェクトのものだけを扱う
-        const isXmlObject = (v: unknown): v is XmlNode => typeof v === 'object' && v !== null;
-        const trkptsOf = (trackseg: XmlNode): XmlNode[] =>
-          Array.isArray(trackseg.trkpt) ? trackseg.trkpt.filter(isXmlObject) : [];
-        importedData = trks.filter(isXmlObject).flatMap((trk: XmlNode) => {
-          // 点を持たないセグメントは飛ばす（1点だけのセグメントは残す）
-          const trksegs: XmlNode[] = (Array.isArray(trk.trkseg) ? trk.trkseg : [])
-            .filter(isXmlObject)
-            .filter((trackseg: XmlNode) => trkptsOf(trackseg).length > 0);
-          // 点が1つも無いtrkは飛ばし、他のtrkの取り込みを巻き添えにしない
-          if (trksegs.length === 0) return [];
-          const coords: LocationType[] = trksegs
-            .map((trackseg) =>
-              trkptsOf(trackseg).map((trkpt) => {
-                const { isOK: latIsOK, result: lat } = formattedInputs(trkpt.lat, 'latitude-decimal', false);
-                const { isOK: lonIsOK, result: lon } = formattedInputs(trkpt.lon, 'longitude-decimal', false);
-
-                const time = dayjs(trkpt.time);
-                const ele = isNaN(trkpt.ele) || trkpt.ele === '' ? undefined : trkpt.ele;
-                return {
-                  latitude: latIsOK ? Number(lat as string) : 0,
-                  longitude: lonIsOK ? Number(lon as string) : 0,
-                  timestamp: trkpt.time !== undefined && time.isValid() ? time.valueOf() : undefined,
-                  altitude: ele,
-                };
-              })
-            )
-            .flat();
-          //console.log(coords[0]);
-          //トラックの最初のポイントの時間をtimeとする。trk.timeは無い場合があるため。
-          const firstTrkptTime = trksegs[0]?.trkpt[0]?.time;
-          const time = trk.time !== undefined ? dayjs(trk.time) : dayjs(firstTrkptTime);
-
-          const record: RecordType = {
+        const toRecord = (line: GpxXmlNode, coords: LocationType[]): RecordType => {
+          // trk.time は GPX 1.1 には無い要素で、無いことが多いため、そのときは最初の点の時刻を使う
+          const lineTimestamp = gpxTimestamp(line.time) ?? coords[0]?.timestamp;
+          return {
             id: ulid(),
             userId: userId,
             displayName: displayName,
@@ -293,69 +490,139 @@ export const gpx2Data = (
             coords: coords,
             centroid: calcLineMidPoint(coords),
             field: {
-              name: trk.name ? trk.name : '',
-              time: firstTrkptTime !== undefined && time.isValid() ? time.format() : '',
-              cmt: trk.cmt ? trk.cmt : '',
+              name: gpxText(line.name) ?? '',
+              time: lineTimestamp === undefined ? '' : dayjs(lineTimestamp).format(),
+              cmt: gpxText(line.cmt) ?? '',
+              ...gpxDescField(line),
             },
           };
-          //console.log('%%%', trk);
-          return record;
+        };
+
+        // セグメントは連結し、有効な点が1つも無いtrkは飛ばして他のtrkの取り込みを巻き添えにしない
+        // （1点だけのセグメントは残す）
+        const trackRecords = nodesOf(root, 'trk').flatMap((trk) => {
+          const coords = nodesOf(trk, 'trkseg').flatMap((trkseg) => toLocations(nodesOf(trkseg, 'trkpt')));
+          return coords.length === 0 ? [] : [toRecord(trk, coords)];
         });
+        // ルートだけのGPX（山行計画・ナビアプリ）を0件で成功扱いにしないよう、rteもラインとして取り込む
+        const routeRecords = nodesOf(root, 'rte').flatMap((rte) => {
+          const coords = toLocations(nodesOf(rte, 'rtept'));
+          return coords.length === 0 ? [] : [toRecord(rte, coords)];
+        });
+        importedData = [...trackRecords, ...routeRecords];
         break;
       }
       case 'POLYGON':
         break;
     }
-    //console.log(importedData.map((n) => n.name));
-    return { layer: newLayer, recordSet: importedData };
+    // desc の無いGPXの項目構成を変えないよう、desc を持つ要素があるときだけ項目を足す
+    if (importedData.some((record) => record.field[GPX_DESC_FIELD] !== undefined)) {
+      newLayer.field.push({ id: ulid(), name: GPX_DESC_FIELD, format: 'STRING' });
+      importedData = importedData.map((record) =>
+        record.field[GPX_DESC_FIELD] === undefined
+          ? { ...record, field: { ...record.field, [GPX_DESC_FIELD]: '' } }
+          : record
+      );
+    }
+    // 正常なファイルの戻り値の形を変えないよう、捨てた点があるときだけ件数を付ける
+    return skippedPoints > 0
+      ? { layer: newLayer, recordSet: importedData, skippedPoints }
+      : { layer: newLayer, recordSet: importedData };
   } catch (e) {
     return undefined;
   }
 };
 
-function isWGS84(geojson: any) {
-  // crsプロパティが存在しない場合、デフォルトでWGS84とみなす
-  if (!geojson.crs) {
-    return true;
-  }
+// 経度・緯度の順が定義のCRS（GeoJSONの既定）
+const LONLAT_CRS_NAMES = new Set([
+  'urn:ogc:def:crs:ogc:1.3:crs84',
+  'urn:ogc:def:crs:ogc::crs84',
+  'urn:ogc:def:crs:ogc:2:84',
+  'http://www.opengis.net/def/crs/ogc/1.3/crs84',
+  'https://www.opengis.net/def/crs/ogc/1.3/crs84',
+  'ogc:crs84',
+  'crs:84',
+  'crs84',
+]);
+// EPSG:4326 は定義上は緯度・経度の順だが、実際のGeoJSONはほぼ経度・緯度で書かれている（GeoJSON 2008 の運用）
+const EPSG4326_CRS_PATTERN =
+  /^(?:epsg:4326|urn:ogc:def:crs:epsg:(?:[\d.]*:)?4326|https?:\/\/www\.opengis\.net\/def\/crs\/epsg\/[\d.]+\/4326)$/;
 
-  // crsプロパティが存在する場合、WGS84かどうかをチェック
-  if (geojson.crs.type === 'name') {
-    // OGC CRS URNs
-    if (
-      geojson.crs.properties.name === 'urn:ogc:def:crs:OGC:1.3:CRS84' ||
-      geojson.crs.properties.name === 'urn:ogc:def:crs:OGC:2:84'
-    ) {
-      return true;
+export type GeoJsonCrsCheck = { ok: true; swapAxes: boolean } | { ok: false; reason: string };
+
+const crsNameOf = (crs: unknown): string | undefined => {
+  if (typeof crs !== 'object' || crs === null) return undefined;
+  const { type, properties } = crs as { type?: unknown; properties?: unknown };
+  if (typeof properties !== 'object' || properties === null) return undefined;
+  const { name, code } = properties as { name?: unknown; code?: unknown };
+  if (type === 'name' && typeof name === 'string') return name.trim();
+  // 古い形式のEPSG指定 {"type":"EPSG","properties":{"code":4326}}
+  if (type === 'EPSG' && (typeof code === 'number' || typeof code === 'string')) return `EPSG:${code}`;
+  return undefined;
+};
+
+/**
+ * EPSG:4326 と書かれたファイルの軸の順を座標から判定する。
+ * 経度の値域（±180）にしか収まらない値がどちらの位置にあるかで決め、決められなければ慣例どおり経度・緯度とみなす。
+ */
+const looksLatLonOrder = (geojson: FeatureCollection<Geometry | null, GeoJsonProperties>): boolean => {
+  let firstExceeds90 = false;
+  let secondExceeds90 = false;
+  const visit = (value: unknown): void => {
+    if (!Array.isArray(value)) return;
+    if (value.length >= 2 && typeof value[0] === 'number' && typeof value[1] === 'number') {
+      if (Math.abs(value[0]) > 90) firstExceeds90 = true;
+      if (Math.abs(value[1]) > 90) secondExceeds90 = true;
+      return;
     }
-    // EPSG コード
-    if (geojson.crs.properties.name === 'EPSG:4326') {
-      return true;
-    }
-  } else if (geojson.crs.type === 'EPSG') {
-    // 古い形式のEPSG指定
-    if (geojson.crs.properties.code === 4326) {
-      return true;
-    }
+    value.forEach(visit);
+  };
+  geojson.features.forEach((feature) => {
+    const geometry: unknown = feature?.geometry;
+    if (typeof geometry === 'object' && geometry !== null) visit((geometry as { coordinates?: unknown }).coordinates);
+  });
+  return secondExceeds90 && !firstExceeds90;
+};
+
+/**
+ * ルートの crs が WGS84 の経緯度かを判定する。取り込めないときは理由（crsの名前）を返し、画面に出せるようにする。
+ * crs が無い場合は GeoJSON の既定（WGS84 経度・緯度）とみなす。
+ * crs はあるが読めない（type:link 等）場合は、投影座標系の可能性があるため従来どおり取り込まない。
+ */
+export const checkGeoJsonCrs = (geojson: FeatureCollection<Geometry | null, GeoJsonProperties>): GeoJsonCrsCheck => {
+  const crs: unknown = (geojson as { crs?: unknown }).crs;
+  if (crs === undefined || crs === null) return { ok: true, swapAxes: false };
+  const name = crsNameOf(crs);
+  if (name === undefined) return { ok: false, reason: 'unsupported crs' };
+  const normalized = name.toLowerCase();
+  if (LONLAT_CRS_NAMES.has(normalized)) return { ok: true, swapAxes: false };
+  if (EPSG4326_CRS_PATTERN.test(normalized)) {
+    return { ok: true, swapAxes: Array.isArray(geojson.features) && looksLatLonOrder(geojson) };
   }
+  return { ok: false, reason: `unsupported crs: ${name}` };
+};
 
-  // 上記のいずれにも該当しない場合、WGS84ではないとみなす
-  return false;
-}
-
-// GeoJSONオブジェクト全体をチェックする関数
-function checkGeoJSONCRS(geojson: any) {
-  if (typeof geojson !== 'object' || geojson === null) {
-    return false;
+const swapPositions = (value: unknown): unknown => {
+  if (!Array.isArray(value)) return value;
+  if (value.length >= 2 && typeof value[0] === 'number' && typeof value[1] === 'number') {
+    return [value[1], value[0], ...value.slice(2)];
   }
+  return value.map(swapPositions);
+};
 
-  // ルートレベルでcrsをチェック
-  if (isWGS84(geojson)) {
-    return true;
+const swapGeometryAxes = (geometry: Geometry | null | undefined): Geometry | null | undefined => {
+  if (typeof geometry !== 'object' || geometry === null) return geometry;
+  if (geometry.type === 'GeometryCollection') {
+    return {
+      ...geometry,
+      geometries: Array.isArray(geometry.geometries)
+        ? (geometry.geometries.map((g) => swapGeometryAxes(g)) as Geometry[])
+        : geometry.geometries,
+    };
   }
-
-  return false;
-}
+  // 座標配列の入れ子の深さは型ごとに違うため、末端の位置だけを入れ替える汎用の走査にしている
+  return { ...geometry, coordinates: swapPositions(geometry.coordinates) } as Geometry;
+};
 
 // GeoJSONは外部ファイル由来なので、座標が数値であることと値域を検証する。
 // GeoJSONの座標は [経度, 緯度] の順（高度が続く場合がある）。
@@ -397,29 +664,126 @@ export const hasValidCoordinates = (geometry: Geometry | null): boolean => {
   }
 };
 
+// 3番目の値は標高（GeoJSON・KMLとも）。latlonToLatLonObject は2次元しか扱わないため、ここで補う。
+// 0 は戻さない: Google Earth の KML や QGIS 等の GeoJSON は標高が無くても常に 0 を出すため、
+// 全点に「標高0m」が付いてしまう（海抜0mの実測値が落ちるのは許容する）
+const positionToLocation = (position: Position): LocationType => {
+  const altitude = position[2];
+  return typeof altitude === 'number' && Number.isFinite(altitude) && altitude !== 0
+    ? { ...latlonToLatLonObject(position), altitude }
+    : latlonToLatLonObject(position);
+};
+
+const flattenGeometryCollection = (collection: GeometryCollection): Geometry[] =>
+  (Array.isArray(collection.geometries) ? collection.geometries : []).flatMap((geometry) =>
+    geometry !== null && typeof geometry === 'object' && geometry.type === 'GeometryCollection'
+      ? flattenGeometryCollection(geometry)
+      : [geometry]
+  );
+
+// togeojson は KML の MultiGeometry を（同種の要素だけでも）常に GeometryCollection にする。
+// 取り込みは単一型のジオメトリが前提で、そのままだと属性ごと黙って捨てられるため、
+// 構成要素ごとに属性を複製した Feature に分ける（1つの地物が複数のレコードになる）
+export const splitGeometryCollections = (
+  geojson: FeatureCollection<Geometry | null, GeoJsonProperties>
+): FeatureCollection<Geometry | null, GeoJsonProperties> => {
+  if (geojson === null || typeof geojson !== 'object' || !Array.isArray(geojson.features)) return geojson;
+  const features = geojson.features.flatMap((feature) => {
+    if (feature === null || typeof feature !== 'object' || feature.geometry?.type !== 'GeometryCollection') {
+      return [feature];
+    }
+    const geometries = flattenGeometryCollection(feature.geometry);
+    // 空の GeometryCollection は分けようがないので、そのまま残して「取り込めなかった件数」に数えさせる
+    if (geometries.length === 0) return [feature];
+    return geometries.map((geometry) => ({
+      ...feature,
+      properties: feature.properties === null ? null : { ...feature.properties },
+      geometry,
+    }));
+  });
+  return { ...geojson, features };
+};
+
+// togeojson が KML の Style から作るプロパティ（ExtendedData とは別物で、利用者の項目ではない）
+const KML_STYLE_PROPERTY_KEYS = new Set([
+  'styleUrl',
+  'stroke',
+  'stroke-opacity',
+  'stroke-width',
+  'fill',
+  'fill-opacity',
+  'icon',
+  'icon-color',
+  'icon-opacity',
+  'icon-scale',
+  'icon-heading',
+  'icon-offset',
+  'icon-offset-units',
+  'label-color',
+  'label-opacity',
+  'label-scale',
+]);
+
+/**
+ * togeojson で変換した KML を取り込める形にそろえる（KML/KMZ の取り込みでだけ使う）。
+ * - MultiGeometry（GeometryCollection）を構成要素ごとの Feature に分ける
+ * - スタイル由来のプロパティを除き、項目が name/description/ExtendedData だけになるようにする
+ *   （.geojson の simplestyle の stroke/fill 等は利用者の属性でありうるため、GeoJSON には適用しない）
+ */
+export const normalizeKmlGeoJson = (
+  geojson: FeatureCollection<Geometry | null, GeoJsonProperties>
+): FeatureCollection<Geometry | null, GeoJsonProperties> => {
+  const split = splitGeometryCollections(geojson);
+  if (split === null || typeof split !== 'object' || !Array.isArray(split.features)) return split;
+  return {
+    ...split,
+    features: split.features.map((feature) =>
+      feature === null || typeof feature !== 'object' || feature.properties === null || feature.properties === undefined
+        ? feature
+        : {
+            ...feature,
+            properties: Object.fromEntries(
+              Object.entries(feature.properties).filter(([key]) => !KML_STYLE_PROPERTY_KEYS.has(key))
+            ),
+          }
+    ),
+  };
+};
+
 export const geoJson2Data = (
   geojson: FeatureCollection<Geometry | null, GeoJsonProperties>,
   layer: LayerType,
   type: GeoJsonFeatureType,
   userId: string | undefined,
-  displayName: string | null
+  displayName: string | null,
+  options: GeoJson2DataOptions = {}
 ) => {
   try {
     let importedData: RecordType[] = [];
 
-    const isValidGeojson = checkGeoJSONCRS(geojson);
-    if (!isValidGeojson) {
+    if (typeof geojson !== 'object' || geojson === null) return undefined;
+    const crsCheck = checkGeoJsonCrs(geojson);
+    if (!crsCheck.ok) {
       return undefined;
     }
     // featuresが配列でないファイルは取り込めない
     if (!Array.isArray(geojson.features)) {
       return undefined;
     }
+    const features = crsCheck.swapAxes
+      ? geojson.features.map((feature) =>
+          feature === null || typeof feature !== 'object'
+            ? feature
+            : { ...feature, geometry: swapGeometryAxes(feature.geometry) ?? null }
+        )
+      : geojson.features;
     // 座標が数値でない、範囲外などの壊れたフィーチャは取り込まない。
     // 取り込むと緯度経度がNaNや(0,0)になり、地図がアフリカ沖へ飛ぶなどの実害が出る。
-    const validFeatures = geojson.features.filter(
-      (feature) => feature != null && hasValidCoordinates(feature.geometry ?? null)
+    const validFeatures = features.filter(
+      (feature) => feature != null && typeof feature === 'object' && hasValidCoordinates(feature.geometry ?? null)
     );
+    const ids = new RecordIdAssigner(options.regenerateIds === true);
+    const createBase = (feature: Feature<Geometry | null>) => createRecordBase(userId, displayName, feature, ids);
     switch (type) {
       case 'POINT':
         importedData = validFeatures
@@ -428,9 +792,12 @@ export const geoJson2Data = (
           )
           .map((feature) => {
             return {
-              ...createBase(userId, displayName),
-              coords: feature.geometry === null ? undefined : latlonToLatLonObject(feature.geometry.coordinates),
-              field: createFields(layer.field, feature),
+              ...createBase(feature),
+              coords:
+                feature.geometry === null
+                  ? undefined
+                  : restoreGnssCoords(positionToLocation(feature.geometry.coordinates), feature),
+              field: { ...createFields(layer.field, feature), ...createGroupField(feature) },
             };
           });
         break;
@@ -443,14 +810,14 @@ export const geoJson2Data = (
           .map((feature) => {
             if (feature.geometry === null) {
               return {
-                ...createBase(userId, displayName),
+                ...createBase(feature),
                 coords: undefined,
                 field: createFields(layer.field, feature),
               };
             } else {
               return feature.geometry.coordinates.map((partCoords) => ({
-                ...createBase(userId, displayName),
-                coords: feature.geometry === null ? undefined : latlonToLatLonObject(partCoords),
+                ...createBase(feature),
+                coords: feature.geometry === null ? undefined : positionToLocation(partCoords),
                 field: createFields(layer.field, feature),
               }));
             }
@@ -469,7 +836,7 @@ export const geoJson2Data = (
                 : feature.geometry.type === 'LineString'
           ),
           (feature) => ({
-            ...createBase(userId, displayName),
+            ...createBase(feature),
             ...createGeometryFromLineStringGeoJson(
               feature.geometry === null
                 ? undefined
@@ -490,13 +857,13 @@ export const geoJson2Data = (
           .map((feature) => {
             if (feature.geometry === null) {
               return {
-                ...createBase(userId, displayName),
+                ...createBase(feature),
                 coords: undefined,
                 field: createLineOrPolygonFields(layer.field, feature),
               };
             } else {
               return feature.geometry.coordinates.map((partCoords) => ({
-                ...createBase(userId, displayName),
+                ...createBase(feature),
                 ...createGeometryFromLineStringGeoJson(partCoords),
                 field: createLineOrPolygonFields(layer.field, feature),
               }));
@@ -513,7 +880,7 @@ export const geoJson2Data = (
               feature.geometry === null ? isEcorisMapExportFeature(feature) : feature.geometry.type === 'Polygon'
           ),
           (feature) => ({
-            ...createBase(userId, displayName),
+            ...createBase(feature),
             ...createGeometryFromPolygonGeoJson(feature.geometry === null ? undefined : feature.geometry.coordinates),
             field: createLineOrPolygonFields(layer.field, feature),
           })
@@ -528,13 +895,13 @@ export const geoJson2Data = (
           .map((feature) => {
             if (feature.geometry === null) {
               return {
-                ...createBase(userId, displayName),
+                ...createBase(feature),
                 coords: undefined,
                 field: createLineOrPolygonFields(layer.field, feature),
               };
             } else {
               return feature.geometry.coordinates.map((partCoords) => ({
-                ...createBase(userId, displayName),
+                ...createBase(feature),
                 ...createGeometryFromPolygonGeoJson(partCoords),
                 field: createLineOrPolygonFields(layer.field, feature),
               }));
@@ -543,7 +910,7 @@ export const geoJson2Data = (
           .flat();
         break;
     }
-    return importedData;
+    return ids.remapGroups(importedData);
   } catch (e) {
     //console.log(e);
     return undefined;
@@ -560,6 +927,12 @@ export const escapeCSVValue = (value: unknown): string => {
   const guarded = FORMULA_TRIGGER.test(str) && !isNumericValue(str) ? `'${str}` : str;
   return `"${guarded.replace(/"/g, '""')}"`;
 };
+
+const MAP_MEMO_EXPORT_KEYS = ['_group', '_strokeWidth', '_strokeColor', '_strokeStyle', '_stamp', '_zoom', '_visible'];
+
+// 既存の書き出し（ヘッダは素の列名）と同じ見た目を保つため、区切り・引用符・改行・数式になりうる名前だけをエスケープする
+const escapeCSVHeader = (name: string): string =>
+  /[",\r\n]/.test(name) || FORMULA_TRIGGER.test(name) || name !== name.trim() ? escapeCSVValue(name) : name;
 
 const GNSS_EXPORT_KEYS = [
   '_gnssFix',
@@ -605,13 +978,12 @@ export const gnssExportProperties = (coords: RecordType['coords']): Record<(type
 
 export const generateCSV = (dataSet: RecordType[], field: LayerType['field'], type: FeatureType) => {
   const isMapMemoLayer = dataSet.some((d) => d.field._strokeColor !== undefined);
-  const mapMemoHeader = ['_group', '_strokeWidth', '_strokeColor', '_strokeStyle', '_stamp', '_zoom', '_visible'];
   const withGnss = hasGnssPoints(dataSet, type);
 
-  let header = field.map((f) => f.name).join(',');
+  let header = field.map((f) => escapeCSVHeader(f.name)).join(',');
   header = 'displayName' + ',' + header;
   if (isMapMemoLayer) {
-    header = header + ',' + '_id' + ',' + mapMemoHeader.join(',') + ',' + '_qgisColor';
+    header = header + ',' + '_id' + ',' + MAP_MEMO_EXPORT_KEYS.join(',') + ',' + '_qgisColor';
   }
   if (withGnss) {
     header = header + ',' + GNSS_EXPORT_KEYS.join(',');
@@ -633,7 +1005,7 @@ export const generateCSV = (dataSet: RecordType[], field: LayerType['field'], ty
     fieldCSV = escapeCSVValue(record.displayName === null ? '' : record.displayName) + ',' + fieldCSV;
     if (isMapMemoLayer) {
       // _strokeColorのrgba(0,0,0,1)のようにカンマを含む値があるため必ずクォートする
-      const mapMemoProperties = mapMemoHeader.map((name) => escapeCSVValue(record.field[name] ?? '')).join(',');
+      const mapMemoProperties = MAP_MEMO_EXPORT_KEYS.map((name) => escapeCSVValue(record.field[name] ?? '')).join(',');
       const id = escapeCSVValue(record.id);
       const qgisColor = escapeCSVValue(
         record.field._strokeColor ? rgbaString2qgis(record.field._strokeColor as string) : ''
@@ -678,14 +1050,11 @@ export const generateCSV = (dataSet: RecordType[], field: LayerType['field'], ty
     case 'POLYGON':
       geometries = dataSet.map(({ coords, holes }) => {
         if (isLocationTypeArray(coords)) {
-          const polygonstring = coords.map((coord) => `${coord.longitude} ${coord.latitude}`).join(',');
-          const holestring = (holes !== undefined ? (Object.values(holes) as LocationType[][]) : [])
-            .map((hole) => {
-              const hole_one = hole.map((coord) => `${coord.longitude} ${coord.latitude}`).join(',');
-              return `(${hole_one})`;
-            })
-            .join(',');
-          return `"POLYGON((${polygonstring}),${holestring})"`;
+          // 穴なしで "((外周),)" のように末尾カンマを付けると不正なWKTになるため、環を並べてから連結する
+          const rings = [coords, ...(holes !== undefined ? (Object.values(holes) as LocationType[][]) : [])].map(
+            (ring) => `(${ring.map((coord) => `${coord.longitude} ${coord.latitude}`).join(',')})`
+          );
+          return `"POLYGON(${rings.join(',')})"`;
         } else {
           return '';
         }
@@ -703,18 +1072,41 @@ export const generateCSV = (dataSet: RecordType[], field: LayerType['field'], ty
 const generateDescription = (record: RecordType, field: FieldType[]) => {
   const userInfo = record.displayName ? `User: ${record.displayName}\n` : '';
 
-  const fieldInfo = field
-    .map(({ name }) => {
-      const fieldValue = record.field[name];
-      if (isPhotoField(fieldValue)) {
-        return `${name}: ${fieldValue.map((p) => p.name).join(',')}`;
-      } else {
-        return `${name}: ${fieldValue}`;
-      }
-    })
-    .join('\n');
+  const fieldInfo = field.map(({ name }) => `${name}: ${kmlFieldValue(record.field[name])}`).join('\n');
 
   return userInfo + fieldInfo;
+};
+
+// 後から追加した項目などは値が undefined/null のことがあり、そのまま文字列にすると "undefined"/"null" と出るため空にする
+const kmlFieldValue = (fieldValue: unknown): string => {
+  if (isPhotoField(fieldValue)) return fieldValue.map((p) => p.name).join(',');
+  if (fieldValue === undefined || fieldValue === null) return '';
+  return String(fieldValue);
+};
+
+// description は1つの文字列なので、取り込み直すと項目が戻らない。項目ごとの値を ExtendedData にも出す
+// （KML に型は無いため、取り込みで戻るのは文字列）
+const appendKmlExtendedData = (placemark: xmlBuilder.XMLElement, record: RecordType, field: FieldType[]) => {
+  if (field.length === 0) return;
+  const extendedData = placemark.ele('ExtendedData');
+  field.forEach(({ name }) => {
+    extendedData.ele('Data', { name }).ele('value', kmlFieldValue(record.field[name]));
+  });
+};
+
+const kmlCoordinates = (coords: LocationType[]) =>
+  coords.map((coord) => `${coord.longitude},${coord.latitude}`).join(' ');
+
+// 写真ファイル名を img の属性値に入れるため、HTML として意味を持つ文字をエスケープする。
+// " で属性が閉じて任意の属性を注入されるのを防ぎ、> も消えることで CDATA の終端 "]]>" が現れなくなる
+const escapeHtmlAttribute = (value: string): string =>
+  value.replace(/[&<>"']/g, (char) => HTML_ATTRIBUTE_ESCAPES[char]);
+const HTML_ATTRIBUTE_ESCAPES: Record<string, string> = {
+  '&': '&amp;',
+  '<': '&lt;',
+  '>': '&gt;',
+  '"': '&quot;',
+  "'": '&#39;',
 };
 
 // XML 1.0で使えない制御文字(\u000B等)や孤立サロゲートが1文字でもあるとxmlbuilderが例外を投げ、
@@ -788,9 +1180,16 @@ export const generateKML = (data: RecordType[], layer: LayerType) => {
           const placemark = document.ele('Placemark');
           addStyleToPlacemark(placemark, point);
           const pointElement = placemark.ele('Point');
-          pointElement.ele('coordinates', `${point.coords.longitude},${point.coords.latitude}`);
+          const { longitude, latitude, altitude } = point.coords;
+          pointElement.ele(
+            'coordinates',
+            typeof altitude === 'number' && Number.isFinite(altitude)
+              ? `${longitude},${latitude},${altitude}`
+              : `${longitude},${latitude}`
+          );
           placemark.ele('name', generateLabel(layer, point));
           placemark.ele('description', generateDescription(point, layer.field));
+          appendKmlExtendedData(placemark, point, layer.field);
         }
       });
       break;
@@ -800,10 +1199,10 @@ export const generateKML = (data: RecordType[], layer: LayerType) => {
           const placemark = document.ele('Placemark');
           addStyleToPlacemark(placemark, line);
           const lineString = placemark.ele('LineString');
-          const coordinates = line.coords.map((coord) => `${coord.longitude},${coord.latitude}`).join(' ');
-          lineString.ele('coordinates', coordinates);
+          lineString.ele('coordinates', kmlCoordinates(line.coords));
           placemark.ele('name', generateLabel(layer, line));
           placemark.ele('description', generateDescription(line, layer.field));
+          appendKmlExtendedData(placemark, line, layer.field);
         }
       });
       break;
@@ -815,10 +1214,15 @@ export const generateKML = (data: RecordType[], layer: LayerType) => {
           const polygonElement = placemark.ele('Polygon');
           const outerBoundary = polygonElement.ele('outerBoundaryIs');
           const linearRing = outerBoundary.ele('LinearRing');
-          const coordinates = polygon.coords.map((coord) => `${coord.longitude},${coord.latitude}`).join(' ');
-          linearRing.ele('coordinates', coordinates);
+          linearRing.ele('coordinates', kmlCoordinates(polygon.coords));
+          // 外部から取り込んだポリゴンの穴を、書き出しで黙って埋めないようにする
+          Object.values(polygon.holes ?? {}).forEach((hole) => {
+            if (!isLocationTypeArray(hole) || hole.length === 0) return;
+            polygonElement.ele('innerBoundaryIs').ele('LinearRing').ele('coordinates', kmlCoordinates(hole));
+          });
           placemark.ele('name', generateLabel(layer, polygon));
           placemark.ele('description', generateDescription(polygon, layer.field));
+          appendKmlExtendedData(placemark, polygon, layer.field);
         }
       });
       break;
@@ -840,7 +1244,8 @@ const appendTrackPoints = (trkseg: xmlBuilder.XMLElement, coords: LocationType[]
     if (coord.altitude !== null && coord.altitude !== undefined) {
       trkpt.ele('ele', coord.altitude);
     }
-    if (coord.timestamp) {
+    // 0（1970-01-01T00:00:00Z）も時刻なので真偽値では判定しない。NaN は toISOString が例外になるので除く
+    if (typeof coord.timestamp === 'number' && Number.isFinite(coord.timestamp)) {
       trkpt.ele('time', new Date(coord.timestamp).toISOString());
     }
     // 外部GNSS受信機の点は、GPX 1.1のgeoidheight（楕円体からのジオイド高。GGAと同じ定義）を残す。
@@ -848,7 +1253,23 @@ const appendTrackPoints = (trkseg: xmlBuilder.XMLElement, coords: LocationType[]
     if (typeof coord.ellipsoidHeight === 'number' && typeof coord.altitude === 'number') {
       trkpt.ele('geoidheight', Number((coord.ellipsoidHeight - coord.altitude).toFixed(3)));
     }
+    if (typeof coord.fixQuality === 'number') {
+      appendGnssExtension(trkpt, { fixQuality: coord.fixQuality });
+    }
   });
+};
+
+// GPX 1.1 の <fix> は none/2d/3d/dgps/pps しか無く RTK の FIX と FLOAT を区別できないため、
+// GGAの測位品質は独自名前空間の <extensions> に残す（スキーマ上 extensions は子要素の最後）
+const appendGnssExtension = (
+  parent: xmlBuilder.XMLElement,
+  values: { fixQuality: number; averagedCount?: number }
+) => {
+  const gnss = parent.ele('extensions').ele('gnss').att('xmlns', GPX_GNSS_NAMESPACE);
+  gnss.ele('fixQuality', values.fixQuality);
+  if (typeof values.averagedCount === 'number') {
+    gnss.ele('averagedCount', values.averagedCount);
+  }
 };
 
 // TrackSummaryからのエクスポート用: 軌跡(trk)と軌跡上の写真(wpt)を1つのGPXにまとめる。
@@ -939,14 +1360,16 @@ export const generateTrackKML = (
     // Google Earthのサイドバーで軌跡と写真を分けて扱えるようフォルダにまとめる
     const folder = document.ele('Folder');
     folder.ele('name', photoFolderName);
-    photos.forEach((photo) => {
+    // KMZに同梱するファイル名（generateKMZFile と同じ関数・同じ並び順で決める）。不正な文字や同名の写真でも参照が一致するようにする
+    const entryNames = kmzPhotoEntryNames(photos.map((p) => p.filename));
+    photos.forEach((photo, photoIndex) => {
       const placemark = folder.ele('Placemark');
       placemark.ele('name', photo.filename);
       // CDATAで囲うことでGoogle EarthがHTMLとして解釈する
       placemark
         .ele('description')
         .cdata(
-          `<img src="${photo.filename}" width="480" /><br/>${dayjs(photo.timestamp).format('YYYY-MM-DD HH:mm:ss')}`
+          `<img src="${escapeHtmlAttribute(entryNames[photoIndex])}" width="480" /><br/>${dayjs(photo.timestamp).format('YYYY-MM-DD HH:mm:ss')}`
         );
       // タイムスライダーで撮影時刻順に辿れるようにする
       placemark.ele('TimeStamp').ele('when', new Date(photo.timestamp).toISOString());
@@ -1051,15 +1474,19 @@ export const generateGPX = (data: RecordType[], type: FeatureType) => {
   // Generate description with all fields except name, time, cmt
   const generateGPXDescription = (record: RecordType) => {
     const descriptions: string[] = [];
+    // GPXから取り込んだ desc はそのまま書き戻す。「desc: …」と包むと書き出すたびに入れ子になって増えるため
+    const importedDesc = typeof record.field[GPX_DESC_FIELD] === 'string' ? (record.field[GPX_DESC_FIELD] as string) : '';
 
-    // Add user info first if available
-    if (record.displayName) {
-      descriptions.push(`User: ${record.displayName}`);
+    // Add user info first if available（取り込んだ desc に同じ行があれば重ねない）
+    const userLine = record.displayName ? `User: ${record.displayName}` : '';
+    if (userLine !== '' && !importedDesc.split(/\r?\n/).includes(userLine)) {
+      descriptions.push(userLine);
     }
 
     // Add all other fields except name, time, cmt
     Object.entries(record.field).forEach(([fieldName, fieldValue]) => {
-      if (fieldName !== 'name' && fieldName !== 'time' && fieldName !== 'cmt') {
+      // 文字列の desc は取り込んだ説明文として下でそのまま書き戻す。文字列でない desc（他レイヤの数値項目など）は通常の項目として扱う
+      if (fieldName !== 'name' && fieldName !== 'time' && fieldName !== 'cmt' && !(fieldName === GPX_DESC_FIELD && typeof record.field[fieldName] === 'string')) {
         if (isPhotoField(fieldValue)) {
           descriptions.push(`${fieldName}: ${fieldValue.map((p) => p.name).join(',')}`);
         } else if (fieldValue !== undefined && fieldValue !== '') {
@@ -1067,6 +1494,7 @@ export const generateGPX = (data: RecordType[], type: FeatureType) => {
         }
       }
     });
+    if (importedDesc !== '') descriptions.push(importedDesc);
 
     return descriptions.join('\n');
   };
@@ -1084,12 +1512,24 @@ export const generateGPX = (data: RecordType[], type: FeatureType) => {
             wpt.ele('ele', point.coords.altitude);
           }
           wpt.ele('time', time === undefined ? undefined : time.isValid() ? time.toISOString() : undefined);
+          const gnss = point.coords.gnss;
+          // 楕円体高 = ele + geoidheight で復元できるようにする（軌跡の点と同じ定義）
+          if (gnss && typeof gnss.ellipsoidHeight === 'number' && typeof point.coords.altitude === 'number') {
+            wpt.ele('geoidheight', Number((gnss.ellipsoidHeight - point.coords.altitude).toFixed(3)));
+          }
           wpt.ele('name', point.field.name);
           wpt.ele('cmt', point.field.cmt);
           // Add all other fields to description
           const desc = generateGPXDescription(point);
           if (desc) {
             wpt.ele('desc', desc);
+          }
+          // GPX 1.1スキーマの要素順: desc → … → sat → hdop → … → ageofdgpsdata → … → extensions
+          if (gnss && typeof gnss.fixQuality === 'number') {
+            if (typeof gnss.satellites === 'number') wpt.ele('sat', gnss.satellites);
+            if (typeof gnss.hdop === 'number') wpt.ele('hdop', gnss.hdop);
+            if (typeof gnss.diffAge === 'number') wpt.ele('ageofdgpsdata', gnss.diffAge);
+            appendGnssExtension(wpt, { fixQuality: gnss.fixQuality, averagedCount: gnss.averagedCount });
           }
         }
       });
@@ -1168,6 +1608,10 @@ export const generateGeoJson = (
     labelLayer ? { _label: generateLabel(labelLayer, record), _labelColor: getColor(labelLayer, record) } : {};
   const isMapMemoLayer = data.some((d) => d.field._strokeColor !== undefined);
   const withGnss = hasGnssPoints(data, type);
+  // 親子（_group）はマップメモ以外のレイヤでも使う。書き出さないと取り込み直したときに子が独立したレコードになる。
+  // 親子の無いレイヤの出力は従来どおりにするため、使っているときだけ出す
+  const withGroup = data.some((d) => typeof d.field._group === 'string' && d.field._group !== '');
+  const groupProperties = (record: RecordType) => (withGroup ? { _group: record.field._group ?? '' } : {});
 
   const geojson = {
     type: 'FeatureCollection',
@@ -1189,6 +1633,7 @@ export const generateGeoJson = (
             ...properties,
             _visible: record.visible,
             _id: record.id,
+            ...groupProperties(record),
             ...(withGnss && gnssExportProperties(record.coords)),
           },
           geometry: isLocationType(record.coords)
@@ -1216,7 +1661,7 @@ export const generateGeoJson = (
               _zoom: record.field._zoom ?? '',
               _qgisColor: record.field._strokeColor ? rgbaString2qgis(record.field._strokeColor as string) : '',
             }
-          : { _visible: record.visible, _id: record.id };
+          : { _visible: record.visible, _id: record.id, ...groupProperties(record) };
         let geometry;
         if (isLocationTypeArray(record.coords)) {
           if (record.coords.length === 1) {
@@ -1263,7 +1708,7 @@ export const generateGeoJson = (
               _zoom: record.field._zoom ?? '',
               _qgisColor: record.field._strokeColor ? rgbaString2qgis(record.field._strokeColor as string) : '',
             }
-          : { _visible: record.visible, _id: record.id };
+          : { _visible: record.visible, _id: record.id, ...groupProperties(record) };
         let geometry;
         if (isLocationTypeArray(record.coords)) {
           const coordinates = record.coords.map((coords) => [coords.longitude, coords.latitude]);
@@ -1374,31 +1819,173 @@ function createGeometryFromPolygonGeoJson(coordinates: Position[][] | undefined)
   return { coords, holes, centroid };
 }
 
-function createBase(userId: string | undefined, displayName: string | null) {
+export type GeoJson2DataOptions = {
+  // 書き出し時の _id をレコードidに使わず振り直す。元のレイヤを残したまま同じZIPを別レイヤとして
+  // 取り込むときなど、同じidのレコードが2つできてしまう場合に指定する（_group は振り直したidへ付け替える）
+  regenerateIds?: boolean;
+};
+
+// 外部ファイルの _id に極端に長い文字列が入っていてもidにしない（アプリのidはULIDの26文字）
+const MAX_IMPORTED_RECORD_ID_LENGTH = 128;
+
+/**
+ * 取り込むレコードのidを決める。
+ * 自前の書き出し（_id 付き）はそのidを使う。REFERENCE（主キー=_id）で他のレイヤから参照されているため、
+ * idが変わると参照元が親を見失う。同じファイル内で重複した _id（MULTIのパート等）は新しいidにする。
+ * 旧id→新idの対応を覚えておき、_group（親子）の参照を付け替える。
+ */
+class RecordIdAssigner {
+  private readonly used = new Set<string>();
+  private readonly oldToNew = new Map<string, string>();
+
+  constructor(private readonly regenerate: boolean) {}
+
+  assign(feature: Feature<Geometry | null>): string {
+    const exportedId = isEcorisMapExportFeature(feature) ? String(featureProperties(feature)?._id) : undefined;
+    const keep =
+      !this.regenerate &&
+      exportedId !== undefined &&
+      exportedId.length <= MAX_IMPORTED_RECORD_ID_LENGTH &&
+      !this.used.has(exportedId);
+    const id = keep && exportedId !== undefined ? exportedId : ulid();
+    this.used.add(id);
+    if (exportedId !== undefined && !this.oldToNew.has(exportedId)) this.oldToNew.set(exportedId, id);
+    return id;
+  }
+
+  remapGroups(records: RecordType[]): RecordType[] {
+    records.forEach((record) => {
+      const group = record.field._group;
+      if (typeof group !== 'string' || group === '') return;
+      const newId = this.oldToNew.get(group);
+      if (newId !== undefined && newId !== group) record.field._group = newId;
+    });
+    return records;
+  }
+}
+
+// properties がオブジェクトでないフィーチャー（null・欠落・壊れたファイル）は属性なしとして扱う
+function featureProperties(feature: Feature<Geometry | null>): Record<string, unknown> | undefined {
+  const properties: unknown = feature.properties;
+  return typeof properties === 'object' && properties !== null && !Array.isArray(properties)
+    ? (properties as Record<string, unknown>)
+    : undefined;
+}
+
+// "constructor" や "__proto__" などの項目名でプロトタイプ上の値を拾わないよう、自前のプロパティだけを読む
+function ownProperty(properties: Record<string, unknown>, key: string): unknown {
+  return Object.prototype.hasOwnProperty.call(properties, key) ? properties[key] : undefined;
+}
+
+function createRecordBase(
+  userId: string | undefined,
+  displayName: string | null,
+  feature: Feature<Geometry | null>,
+  ids: RecordIdAssigner
+) {
+  const properties = featureProperties(feature);
   return {
-    id: ulid(),
+    id: ids.assign(feature),
     userId: userId,
     displayName: displayName,
     redraw: false,
-    visible: true,
+    // 書き出しは _visible を出しているので、非表示にしていたレコードは非表示のまま戻す。
+    // 外部ファイルの同名キーで黙って非表示にならないよう、自前の書き出しに限る
+    visible:
+      properties === undefined ||
+      !isEcorisMapExportFeature(feature) ||
+      ownProperty(properties, '_visible') !== false,
   };
 }
 
-function createFields(fields: FieldType[], feature: Feature<Geometry | null>) {
-  const properties = feature.properties;
-  if (properties === null) return {};
-  return fields
-    .map((field) =>
-      field.format === 'PHOTO'
-        ? {
-            [field.name]: [],
-          }
-        : {
-            // || だと数値の0やfalseが空欄になり、「0件」と「未記録」の区別が消える
-            [field.name]: properties[field.name] ?? '',
-          }
-    )
-    .reduce((obj, userObj) => Object.assign(obj, userObj), {});
+const FIX_QUALITY_BY_LABEL = new Map<string, number>([
+  ['FIX', FIX_QUALITY.RTK_FIX],
+  ['FLOAT', FIX_QUALITY.RTK_FLOAT],
+  ['DGPS', FIX_QUALITY.DGPS],
+  ['NO FIX', FIX_QUALITY.INVALID],
+  ['SINGLE', FIX_QUALITY.SINGLE],
+]);
+
+const finiteNumberOf = (value: unknown): number | undefined =>
+  typeof value === 'number' && Number.isFinite(value) ? value : undefined;
+
+/**
+ * 外部GNSSで測ったポイントの書き出し（gnssExportProperties の _altitude/_gnssFix 等）を coords に戻す。
+ * 項目ではないので layer.field からは拾えない。自前の書き出しに限る（外部ファイルの同名キーは属性として扱う）
+ */
+function restoreGnssCoords(coords: LocationType, feature: Feature<Geometry | null>): LocationType {
+  const properties = featureProperties(feature);
+  if (properties === undefined || !isEcorisMapExportFeature(feature)) return coords;
+  const altitude = finiteNumberOf(ownProperty(properties, '_altitude'));
+  const accuracy = finiteNumberOf(ownProperty(properties, '_accuracy'));
+  const fixLabel = ownProperty(properties, '_gnssFix');
+  const fixQuality = typeof fixLabel === 'string' ? FIX_QUALITY_BY_LABEL.get(fixLabel) : undefined;
+  if (altitude === undefined && accuracy === undefined && fixQuality === undefined) return coords;
+  const restored: LocationType = { ...coords };
+  if (altitude !== undefined) restored.altitude = altitude;
+  if (accuracy !== undefined) restored.accuracy = accuracy;
+  if (fixQuality !== undefined) {
+    const ellipsoidHeight = finiteNumberOf(ownProperty(properties, '_ellipsoidHeight'));
+    const averagedCount = finiteNumberOf(ownProperty(properties, '_averaged'));
+    restored.gnss = {
+      fixQuality,
+      satellites: finiteNumberOf(ownProperty(properties, '_satellites')) ?? null,
+      hdop: finiteNumberOf(ownProperty(properties, '_hdop')) ?? null,
+      diffAge: finiteNumberOf(ownProperty(properties, '_diffAge')) ?? null,
+      ...(ellipsoidHeight !== undefined && { ellipsoidHeight }),
+      ...(averagedCount !== undefined && { averagedCount }),
+    };
+  }
+  return restored;
+}
+
+// ポイントの親子（_group）。ライン・ポリゴンは createDrawingStyleFields で戻す
+function createGroupField(feature: Feature<Geometry | null>): Record<string, string> {
+  const properties = featureProperties(feature);
+  const group = properties === undefined ? undefined : ownProperty(properties, '_group');
+  return typeof group === 'string' && group !== '' ? { _group: group } : {};
+}
+
+/**
+ * 外部ファイルの属性値を RecordType の値（string | number）にそろえる。
+ * 入れ子・配列・真偽値をそのまま入れると、編集画面や書き出しが型を前提にしているため壊れる。
+ * null/欠落は空欄にする（|| だと数値の0が空欄になり、「0件」と「未記録」の区別が消える）
+ */
+function normalizeImportedValue(value: unknown): string | number {
+  if (value === null || value === undefined) return '';
+  if (typeof value === 'string') return value;
+  if (typeof value === 'number') return Number.isFinite(value) ? value : '';
+  if (typeof value === 'boolean' || typeof value === 'bigint') return String(value);
+  const unwrapped = unwrapKmlHtmlValue(value);
+  if (typeof unwrapped === 'string') return unwrapped;
+  try {
+    return JSON.stringify(value) ?? '';
+  } catch {
+    return String(value);
+  }
+}
+
+function createFields(fields: FieldType[], feature: Feature<Geometry | null>): RecordType['field'] {
+  const properties = featureProperties(feature);
+  if (properties === undefined) return {};
+  // Object.assign で組み立てると "__proto__" という項目名でレコードのプロトタイプが差し替わるため、
+  // Object.fromEntries で自前のプロパティとして作る
+  return Object.fromEntries(
+    fields.map((field) => [
+      field.name,
+      field.format === 'PHOTO' ? [] : normalizeImportedValue(ownProperty(properties, field.name)),
+    ])
+  );
+}
+
+// togeojson は KML の CDATA の description を {"@type":"html", value} で返す。そのまま入れると
+// 編集画面に [object Object] と出て、保存・再書き出しで中身が消えるため、文字列の value を取り出す
+function unwrapKmlHtmlValue<T>(value: T): T | string {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) return value;
+  // 他のオブジェクト（外部GeoJSONの入れ子属性など）は value キーがあっても JSON 文字列化に任せる
+  if ((value as { '@type'?: unknown })['@type'] !== 'html') return value;
+  const inner: unknown = (value as { value?: unknown }).value;
+  return typeof inner === 'string' ? inner : value;
 }
 
 // 手書き・マップメモの線のスタイルとスタンプ。layer.field に無い内部項目なので createFields では拾えず、
@@ -1512,20 +2099,58 @@ function createGpxLayer(fileName: string, featureType: FeatureType): LayerType {
   };
 }
 
+// 先頭のフィーチャーだけで項目を作ると、2件目以降にしかない属性（OSMのタグ・KMLのExtendedData等）が全件から消えるため、
+// 全フィーチャーのキーの和集合（出現順）で作る
 function createAllStringFieldsFromGeoJson(geojson: FeatureCollection<Geometry | null, GeoJsonProperties>) {
-  if (geojson.features === undefined) return [];
-  if (geojson.features.length === 0) return [];
-  const properties = geojson.features[0].properties;
-  if (properties === null) return [];
-  const fields = Object.keys(properties).map((fieldName) => ({
+  if (typeof geojson !== 'object' || geojson === null || !Array.isArray(geojson.features)) return [];
+  const names = new Set<string>();
+  geojson.features.forEach((feature) => {
+    if (feature === null || typeof feature !== 'object') return;
+    const properties = featureProperties(feature);
+    if (properties !== undefined) Object.keys(properties).forEach((key) => names.add(key));
+  });
+  return [...names].map((fieldName) => ({
     id: ulid(),
     name: fieldName,
     format: 'STRING' as FormatType,
   }));
-  return fields;
+}
+
+type CsvAttributeColumn = { name: string; column: number };
+
+/**
+ * CSV のヘッダから項目にする列を選ぶ。
+ * displayName・geometry と、EcorisMap の書き出し（先頭列が displayName）が付ける付帯列は属性ではないので除く。
+ */
+function csvAttributeColumns(header: string[]): CsvAttributeColumn[] {
+  const isEcorisMapExport = header[0] === 'displayName';
+  const excluded = new Set<string>([
+    'displayName',
+    'geometry',
+    ...(isEcorisMapExport ? ['_id', ...MAP_MEMO_EXPORT_KEYS, '_qgisColor', ...GNSS_EXPORT_KEYS] : []),
+  ]);
+  const used = new Set<string>();
+  const columns: CsvAttributeColumn[] = [];
+  header.forEach((headerName, column) => {
+    if (excluded.has(headerName)) return;
+    // 同名の列をそのまま項目名にすると後の列の値で前の列が上書きされて消えるため、連番を付けて別の項目にする
+    let name = headerName;
+    for (let n = 2; used.has(name); n++) name = `${headerName}_${n}`;
+    used.add(name);
+    columns.push({ name, column });
+  });
+  return columns;
 }
 
 export function createLayerFromCsv(csv: string, fileName: string, featureType: FeatureType): LayerType {
+  return createLayerFromCsvColumns(csvAttributeColumns(csvHeaderFromRows(parseCsv(csv))), fileName, featureType);
+}
+
+function createLayerFromCsvColumns(
+  columns: CsvAttributeColumn[],
+  fileName: string,
+  featureType: FeatureType
+): LayerType {
   return {
     id: ulid(),
     name: sanitize(fileName),
@@ -1544,23 +2169,51 @@ export function createLayerFromCsv(csv: string, fileName: string, featureType: F
     label: '',
     visible: true,
     active: false,
-    field: createAllStringFieldsFromCsv(csv),
+    field: columns.map(({ name }) => ({
+      id: ulid(),
+      name,
+      format: 'STRING' as FormatType,
+    })),
   };
 }
 
-function createAllStringFieldsFromCsv(csv: string) {
-  const csvFields = csv.split('\n')[0].split(',');
-  const fields = csvFields.map((fieldName) => ({
-    id: ulid(),
-    name: fieldName,
-    format: 'STRING' as FormatType,
-  }));
-  return fields;
+const GEOJSON_GEOMETRY_TYPE_NAMES = new Set([
+  'Point',
+  'MultiPoint',
+  'LineString',
+  'MultiLineString',
+  'Polygon',
+  'MultiPolygon',
+  'GeometryCollection',
+]);
+
+// FeatureCollection・単体のFeature・Geometry単体のどれでも、各フィーチャーのgeometryの並びにする（nullの要素は除く）
+function geoJsonGeometries(geojson: unknown): (Geometry | null)[] {
+  if (typeof geojson !== 'object' || geojson === null) return [];
+  const { type, features, geometry } = geojson as { type?: unknown; features?: unknown; geometry?: unknown };
+  const toGeometry = (value: unknown): Geometry | null =>
+    typeof value === 'object' && value !== null ? (value as Geometry) : null;
+  if (Array.isArray(features)) {
+    return features
+      .filter((feature): feature is { geometry?: unknown } => typeof feature === 'object' && feature !== null)
+      .map((feature) => toGeometry(feature.geometry));
+  }
+  if (type === 'Feature') return [toGeometry(geometry)];
+  if (typeof type === 'string' && GEOJSON_GEOMETRY_TYPE_NAMES.has(type)) return [geojson as Geometry];
+  return [];
 }
 
+/**
+ * 取り込むジオメトリの型を決める。先頭のフィーチャーに依存しないよう、nullでない最初のgeometryで判定する。
+ * 全件 geometry が null（属性のみ）のときは位置なしのポイントとして取り込めるよう POINT にする
+ * （useGeoFile の presentFeatureTypes も null を Point として数えている）。フィーチャーが無ければ NONE。
+ * 混在したファイルは型ごとに取り込む必要がある（presentFeatureTypes）。
+ */
 export function detectGeoJsonType(geojson: FeatureCollection<Geometry | null, GeoJsonProperties>): GeoJsonFeatureType {
-  const geometry = geojson.features[0].geometry;
-  if (geometry === null) return 'NONE';
+  const geometries = geoJsonGeometries(geojson);
+  if (geometries.length === 0) return 'NONE';
+  const geometry = geometries.find((g) => g !== null);
+  if (geometry === undefined) return 'POINT';
   switch (geometry.type) {
     case 'Point':
       return 'POINT';

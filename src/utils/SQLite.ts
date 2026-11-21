@@ -127,19 +127,16 @@ export async function importDictionary(
       continue;
     }
 
-    // テーブルを削除する（存在する場合）
-    await sourceDb.execAsync(`DROP TABLE IF EXISTS "${newTableName}"`);
-    console.log(`Table ${newTableName} dropped (if it existed).`);
+    // 読み出しを先に済ませ、削除・作成・挿入を1つのトランザクションにまとめる。
+    // SQLiteのDDLはトランザクション内で巻き戻せるので、途中で失敗しても既存の辞書表は元のまま残る
+    // （以前は削除してから挿入していたため、失敗すると空の表だけが残っていた）
+    const data = (await importDb.getAllAsync(`SELECT value FROM "${oldTableName}"`)) as {
+      value: string | number | null;
+    }[];
 
-    // 新しいテーブルを作成する
-    const createTableSQL = `CREATE TABLE "${newTableName}" (value TEXT)`;
-    await sourceDb.execAsync(createTableSQL);
-    console.log(`Table ${newTableName} created.`);
-
-    const data = (await importDb.getAllAsync(`SELECT value FROM "${oldTableName}"`)) as { value: string }[];
-
-    // データを挿入する
     await sourceDb.withTransactionAsync(async () => {
+      await sourceDb.execAsync(`DROP TABLE IF EXISTS "${newTableName}"`);
+      await sourceDb.execAsync(`CREATE TABLE "${newTableName}" (value TEXT)`);
       await bulkInsertValues(
         sourceDb,
         newTableName,

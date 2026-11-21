@@ -92,15 +92,8 @@ describe('gpx2Data', () => {
   it('return track from invalid gpx', () => {
     const data = gpx2Data(invalid_track_gpx, 'LINE', 'test.gpx', '34-56', 'user1');
     const checkValue = data!.recordSet.map(({ coords, field }) => ({ coords, field }));
-    expect(checkValue).toStrictEqual([
-      {
-        coords: [
-          { altitude: undefined, latitude: 0, longitude: 139.8534992896, timestamp: undefined },
-          { altitude: undefined, latitude: 0, longitude: 139.853411112, timestamp: undefined },
-        ],
-        field: { cmt: '', name: '', time: '' },
-      },
-    ]);
+    // 緯度が不正な点は(0,0)などで埋めずに捨てる。有効な点が残らない軌跡は取り込まない（監査 L4）
+    expect(checkValue).toStrictEqual([]);
   });
 
   it('return point from valid gpx', () => {
@@ -128,14 +121,7 @@ it('return  point from invalid gpx', () => {
       coords: { altitude: undefined, latitude: 38.196045763864404, longitude: 140.88482022285461 },
       field: { cmt: '', name: 'test', time: '' },
     },
-    {
-      coords: { altitude: undefined, latitude: 0, longitude: 140.88485810905695 },
-      field: { cmt: '', name: '', time: '' },
-    },
-    {
-      coords: { altitude: undefined, latitude: 0, longitude: 0 },
-      field: { cmt: '', name: '', time: '2000-01-01T09:00:00+09:00' },
-    },
+    // 緯度が範囲外・文字列の点は(0,0)で埋めずに捨てる（監査 L4）
   ]);
 });
 

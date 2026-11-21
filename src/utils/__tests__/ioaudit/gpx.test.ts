@@ -67,7 +67,7 @@ describe('gpx2Data 取り込み 正常系', () => {
     ]);
   });
 
-  it.failing('timeの無いwptは時刻が空になる（取り込んだ時刻を入れない）', () => {
+  it('timeの無いwptは時刻が空になる（取り込んだ時刻を入れない）', () => {
     const data = importPoints(wrap('<wpt lat="1" lon="2"><name>no-time</name></wpt>'))!;
     expect(data.recordSet[0].field.time).toBe('');
   });
@@ -210,7 +210,7 @@ describe('gpx2Data 取り込み 異常系・境界', () => {
     expect(data!.recordSet.map((r) => r.field.name)).toContain('ok');
   });
 
-  it.failing('rte（ルート）は黙って捨てずにラインとして取り込む', () => {
+  it('rte（ルート）は黙って捨てずにラインとして取り込む', () => {
     const gpx = wrap(`
       <rte><name>route1</name><rtept lat="1" lon="1"/><rtept lat="2" lon="2"/><rtept lat="3" lon="3"/></rte>`);
     const data = importLines(gpx);
@@ -220,19 +220,19 @@ describe('gpx2Data 取り込み 異常系・境界', () => {
     expect(data!.recordSet[0].coords).toHaveLength(3);
   });
 
-  it.failing('lat属性の無いwptが1件あっても、他のwptは取り込める', () => {
+  it('lat属性の無いwptが1件あっても、他のwptは取り込める', () => {
     const data = importPoints(wrap('<wpt lon="10"><name>missing</name></wpt><wpt lat="35" lon="139"><name>ok</name></wpt>'));
     expect(data).toBeDefined();
     expect(data!.recordSet.map((r) => r.field.name)).toContain('ok');
   });
 
-  it.failing('lat属性の無いtrkptが1点あっても、軌跡は取り込める', () => {
+  it('lat属性の無いtrkptが1点あっても、軌跡は取り込める', () => {
     const data = importLines(wrap('<trk><trkseg><trkpt lon="10"/><trkpt lat="35" lon="139"/><trkpt lat="35.1" lon="139.1"/></trkseg></trk>'));
     expect(data).toBeDefined();
     expect(data!.recordSet).toHaveLength(1);
   });
 
-  it.failing('緯度経度が範囲外・文字列の点は(0,0)にせず取り込まない', () => {
+  it('緯度経度が範囲外・文字列の点は(0,0)にせず取り込まない', () => {
     const gpx = wrap(`
       <wpt lat="91" lon="10"><name>bad-lat</name></wpt>
       <wpt lat="10" lon="181"><name>bad-lon</name></wpt>
@@ -246,7 +246,7 @@ describe('gpx2Data 取り込み 異常系・境界', () => {
     expect(hasNullIsland).toBe(false);
   });
 
-  it.failing('軌跡の点の緯度経度が不正なとき(0,0)を混ぜない', () => {
+  it('軌跡の点の緯度経度が不正なとき(0,0)を混ぜない', () => {
     const gpx = wrap('<trk><trkseg><trkpt lat="35" lon="139"/><trkpt lat="999" lon="139"/><trkpt lat="35.1" lon="139.1"/></trkseg></trk>');
     const coords = importLines(gpx)!.recordSet[0].coords as LocationType[];
     expect(coords.some((c) => c.latitude === 0 || c.longitude === 0)).toBe(false);
@@ -263,7 +263,7 @@ describe('gpx2Data 取り込み 異常系・境界', () => {
     ]);
   });
 
-  it.failing('数字だけのname/cmtは文字列のまま（先頭ゼロ・巨大数も保つ）', () => {
+  it('数字だけのname/cmtは文字列のまま（先頭ゼロ・巨大数も保つ）', () => {
     const data = importPoints(
       wrap(`
       <wpt lat="1" lon="1"><name>007</name><cmt>12345678901234567890123</cmt></wpt>
@@ -274,12 +274,12 @@ describe('gpx2Data 取り込み 異常系・境界', () => {
     expect(data.recordSet.map((r) => r.field.cmt)).toEqual(['12345678901234567890123', '1.50', '1e3']);
   });
 
-  it.failing('trkのnameが数字でも文字列のまま', () => {
+  it('trkのnameが数字でも文字列のまま', () => {
     const data = importLines(wrap('<trk><name>0012</name><trkseg><trkpt lat="1" lon="1"/><trkpt lat="2" lon="2"/></trkseg></trk>'))!;
     expect(data.recordSet[0].field.name).toBe('0012');
   });
 
-  it.failing('XMLの定義済み実体参照（&amp; &lt; &gt; &quot; &apos;）と数値文字参照は復号する', () => {
+  it('XMLの定義済み実体参照（&amp; &lt; &gt; &quot; &apos;）と数値文字参照は復号する', () => {
     const data = importPoints(
       wrap('<wpt lat="1" lon="1"><name>A&amp;B &lt;c&gt; &quot;d&quot; &apos;e&apos;</name><cmt>&#26085;&#x672C;</cmt></wpt>')
     )!;
@@ -316,9 +316,6 @@ const TRICKY_STRINGS = [
   '改行\nあり',
   'CRLF\r\nあり',
 ];
-// M6（GPXのXML実体参照を復号しない）が未修正のため、該当する文字列は失敗が正しい。M6を直したら1つに戻す
-const M6_UNFIXED = ['<tag> & </tag>', 'A&amp;B（すでにエスケープ済みに見える文字列）', 'CRLF\r\nあり'];
-const TRICKY_OK = TRICKY_STRINGS.filter((s) => !M6_UNFIXED.includes(s));
 
 describe('往復 generateGPX(POINT) → gpx2Data', () => {
   it('座標・標高・時刻・name/cmtが戻る（素直な値）', () => {
@@ -350,7 +347,7 @@ describe('往復 generateGPX(POINT) → gpx2Data', () => {
     ]);
   });
 
-  it.each(TRICKY_OK)('nameに特殊文字を含んでも同じ文字列で戻る: %j', (s) => {
+  it.each(TRICKY_STRINGS)('nameに特殊文字を含んでも同じ文字列で戻る: %j', (s) => {
     const back = importPoints(generateGPX([pointRecord({ name: s, cmt: s }, { latitude: 1, longitude: 2 })], 'POINT'))!;
     // XMLは属性外のCRLFをLFに正規化するのでそこだけは許容
     const norm = (v: unknown) => String(v).replace(/\r\n/g, '\n');
@@ -358,20 +355,12 @@ describe('往復 generateGPX(POINT) → gpx2Data', () => {
     expect(norm(back.recordSet[0].field.cmt)).toBe(norm(s));
   });
 
-  it.failing.each(M6_UNFIXED)('nameに特殊文字を含んでも同じ文字列で戻る: %j', (s) => {
-    const back = importPoints(generateGPX([pointRecord({ name: s, cmt: s }, { latitude: 1, longitude: 2 })], 'POINT'))!;
-    // XMLは属性外のCRLFをLFに正規化するのでそこだけは許容
-    const norm = (v: unknown) => String(v).replace(/\r\n/g, '\n');
-    expect(norm(back.recordSet[0].field.name)).toBe(norm(s));
-    expect(norm(back.recordSet[0].field.cmt)).toBe(norm(s));
-  });
-
-  it.failing('前後の空白を含むnameも保たれる', () => {
+  it('前後の空白を含むnameも保たれる', () => {
     const back = importPoints(generateGPX([pointRecord({ name: '  前後空白  ' }, { latitude: 1, longitude: 2 })], 'POINT'))!;
     expect(back.recordSet[0].field.name).toBe('  前後空白  ');
   });
 
-  it.failing('数字だけのname（先頭ゼロ・0）は文字列のまま戻る', () => {
+  it('数字だけのname（先頭ゼロ・0）は文字列のまま戻る', () => {
     const records = [
       pointRecord({ name: '007', cmt: '0' }, { latitude: 1, longitude: 2 }),
       pointRecord({ name: '0', cmt: '-1.50' }, { latitude: 1, longitude: 2 }),
@@ -381,7 +370,7 @@ describe('往復 generateGPX(POINT) → gpx2Data', () => {
     expect(back.recordSet.map((r) => r.field.cmt)).toEqual(['0', '-1.50']);
   });
 
-  it.failing('数値型のname（INTEGER/SERIAL由来など）も書き出せて文字列で戻る', () => {
+  it('数値型のname（INTEGER/SERIAL由来など）も書き出せて文字列で戻る', () => {
     const back = importPoints(generateGPX([pointRecord({ name: 0, cmt: 12 }, { latitude: 1, longitude: 2 })], 'POINT'))!;
     expect(back.recordSet[0].field.name).toBe('0');
     expect(back.recordSet[0].field.cmt).toBe('12');
@@ -424,7 +413,7 @@ describe('往復 generateGPX(POINT) → gpx2Data', () => {
     expect(xml).toContain('STRING: 文字&lt;&amp;&gt;"');
   });
 
-  it.failing('name/time/cmt以外の項目（descに書いたもの）も取り込み直すと失われない', () => {
+  it('name/time/cmt以外の項目（descに書いたもの）も取り込み直すと失われない', () => {
     const rec = pointRecord({ name: 'n', time: '', cmt: '', 種別: 'ヒノキ', 本数: 3 }, { latitude: 1, longitude: 2 });
     const back = importPoints(generateGPX([rec], 'POINT'))!;
     const all = JSON.stringify(back.recordSet[0].field);
@@ -432,7 +421,7 @@ describe('往復 generateGPX(POINT) → gpx2Data', () => {
     expect(all).toContain('3');
   });
 
-  it.failing('外部GNSSで測ったポイントの測位品質・楕円体高がGPXに残る', () => {
+  it('外部GNSSで測ったポイントの測位品質・楕円体高がGPXに残る', () => {
     const rec = pointRecord(
       { name: 'gnss' },
       {
@@ -479,14 +468,7 @@ describe('往復 generateGPX(LINE) → gpx2Data', () => {
     expect(back.recordSet.map((r) => r.field.name)).toEqual(['a', 'b']);
   });
 
-  it.each(TRICKY_OK)('軌跡名に特殊文字を含んでも同じ文字列で戻る: %j', (s) => {
-    const back = importLines(generateGPX([lineRecord({ name: s, cmt: s }, coords.slice(0, 2))], 'LINE'))!;
-    const norm = (v: unknown) => String(v).replace(/\r\n/g, '\n');
-    expect(norm(back.recordSet[0].field.name)).toBe(norm(s));
-    expect(norm(back.recordSet[0].field.cmt)).toBe(norm(s));
-  });
-
-  it.failing.each(M6_UNFIXED)('軌跡名に特殊文字を含んでも同じ文字列で戻る: %j', (s) => {
+  it.each(TRICKY_STRINGS)('軌跡名に特殊文字を含んでも同じ文字列で戻る: %j', (s) => {
     const back = importLines(generateGPX([lineRecord({ name: s, cmt: s }, coords.slice(0, 2))], 'LINE'))!;
     const norm = (v: unknown) => String(v).replace(/\r\n/g, '\n');
     expect(norm(back.recordSet[0].field.name)).toBe(norm(s));
@@ -507,7 +489,7 @@ describe('往復 generateGPX(LINE) → gpx2Data', () => {
     expect(back!.recordSet.map((r) => r.field.name)).toContain('many');
   });
 
-  it.failing('timestamp=0（1970-01-01T00:00:00Z）の点も時刻が書き出される', () => {
+  it('timestamp=0（1970-01-01T00:00:00Z）の点も時刻が書き出される', () => {
     const xml = generateGPX([lineRecord({ name: 'epoch' }, [{ latitude: 1, longitude: 1, timestamp: 0 }, { latitude: 2, longitude: 2, timestamp: 1000 }])], 'LINE');
     expect(xml).toContain('<time>1970-01-01T00:00:00.000Z</time>');
   });
@@ -520,7 +502,7 @@ describe('往復 generateGPX(LINE) → gpx2Data', () => {
     expect(xml).toContain('<geoidheight>38.5</geoidheight>');
   });
 
-  it.failing('GNSS点の楕円体高（geoidheight）は取り込み直すと戻る', () => {
+  it('GNSS点の楕円体高（geoidheight）は取り込み直すと戻る', () => {
     const back = importLines(
       generateGPX(
         [lineRecord({ name: 'g' }, [{ latitude: 1, longitude: 1, altitude: 10, ellipsoidHeight: 48.5, fixQuality: 4 }, { latitude: 2, longitude: 2 }])],
@@ -530,7 +512,7 @@ describe('往復 generateGPX(LINE) → gpx2Data', () => {
     expect((back.recordSet[0].coords as LocationType[])[0].ellipsoidHeight).toBeCloseTo(48.5, 3);
   });
 
-  it.failing('軌跡の点の測位品質（fixQuality）がGPXに残る', () => {
+  it('軌跡の点の測位品質（fixQuality）がGPXに残る', () => {
     const xml = generateGPX(
       [lineRecord({ name: 'g' }, [{ latitude: 1, longitude: 1, altitude: 10, fixQuality: 4 }, { latitude: 2, longitude: 2, fixQuality: 5 }])],
       'LINE'
@@ -539,7 +521,7 @@ describe('往復 generateGPX(LINE) → gpx2Data', () => {
     expect(xml).toMatch(/<fix>|fixQuality|RTK|<extensions>/i);
   });
 
-  it.failing('軌跡のname/time/cmt以外の項目も取り込み直すと失われない', () => {
+  it('軌跡のname/time/cmt以外の項目も取り込み直すと失われない', () => {
     const back = importLines(generateGPX([lineRecord({ name: 't', 調査者: '山田', 距離: 1.5 }, coords.slice(0, 2))], 'LINE'))!;
     const all = JSON.stringify(back.recordSet[0].field);
     expect(all).toContain('山田');
@@ -579,7 +561,7 @@ describe('往復 generateTrackGPXWithPhotos → gpx2Data', () => {
     expect(dayjs(back.recordSet[0].field.time as string).valueOf()).toBe(photos[0].timestamp);
   });
 
-  it.failing('記号を含む写真ファイル名・軌跡名も同じ文字列で戻る', () => {
+  it('記号を含む写真ファイル名・軌跡名も同じ文字列で戻る', () => {
     const xml = generateTrackGPXWithPhotos(coords, 'A&B <軌跡>', photos);
     expect(importPoints(xml)!.recordSet[1].field.name).toBe('写真 & <2>.jpg');
     expect(importLines(xml)!.recordSet[0].field.name).toBe('A&B <軌跡>');
@@ -591,7 +573,7 @@ describe('往復 generateTrackGPXWithPhotos → gpx2Data', () => {
     expect(back!.recordSet).toHaveLength(1);
   });
 
-  it.failing('楕円体高はgeoidheightとして書き出され、取り込み直すと戻る', () => {
+  it('楕円体高はgeoidheightとして書き出され、取り込み直すと戻る', () => {
     const xml = generateTrackGPXWithPhotos(coords, 't');
     expect(xml).toContain('<geoidheight>38.25</geoidheight>');
     const back = importLines(xml)!;

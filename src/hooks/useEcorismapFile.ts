@@ -33,7 +33,6 @@ import { PHOTO_FOLDER } from '../constants/AppConstants';
 import { isSafePathSegment, isUriInsideFolder } from '../utils/safePath';
 import { unzipFromUri } from '../utils/Zip';
 import JSZip from 'jszip';
-import { useRepository } from './useRepository';
 import { ulid } from 'ulid';
 import { deleteDatabase, importDictionary } from '../utils/SQLite';
 import { useGeoFile } from './useGeoFile';
@@ -79,7 +78,6 @@ export const useEcorisMapFile = (): UseEcorisMapFileReturnType => {
   const store = useStore<RootState>();
   const settings = useSelector((state: RootState) => state.settings);
   const [isLoading, setIsLoading] = useState(false);
-  const { fetchAllPhotos } = useRepository();
 
   const projectId = useSelector((state: RootState) => state.settings.projectId, shallowEqual);
   const user = useSelector((state: RootState) => state.user, shallowEqual);
@@ -168,20 +166,14 @@ export const useEcorisMapFile = (): UseEcorisMapFileReturnType => {
           folder: exportFolder,
           exportDictionary: true,
         });
+        // fromProjectでもクラウドの写真はここで別に取得しない。generateExportGeoDataが写真ごとに
+        // url/key と photoId を積み、ZIP作成時（File.ts/File.web.ts）にローカルが無ければクラウドから取得する。
+        // 別途積むと photoId なしの同じ写真がレイヤフォルダ直下にも入り、二重取得・二重格納になる
         exportData.push(...geoData);
-        //fromProject
-        if (option?.fromProject) {
-          const imagePromises = fetchAllPhotos(layer, records);
-          const photos = await Promise.all(imagePromises);
-          photos.forEach((photo) => {
-            photo !== undefined &&
-              exportData.push({ data: photo.data, name: photo.name, type: 'PHOTO', folder: exportFolder });
-          });
-        }
       }
       return exportData;
     },
-    [fetchAllPhotos, generateExportGeoData]
+    [generateExportGeoData]
   );
 
   async function importPhotos(
@@ -249,9 +241,17 @@ export const useEcorisMapFile = (): UseEcorisMapFileReturnType => {
                   // zip内の写真ファイルを layer.id 基準で探す。
                   // エクスポート時にレイヤ名を切り詰めてもフォルダ名には layer.id が
                   // 含まれるため、新旧どちらのバックアップでもヒットする。
-                  const from = findPhotoFileKey(Object.keys(files), layer.id, photo.name);
+                  // 写真名は秒単位の自動命名で別レコードと重なりうる。新形式のZIPは photo.id のフォルダに分けて
+                  // 入っているので photo.id で照合し、書き込み先も photo.id のフォルダに分けて上書きし合わないようにする。
+                  // 旧形式（レイヤフォルダ直下）のZIPは findPhotoFileKey がベース名だけで拾う
+                  const from = findPhotoFileKey(Object.keys(files), layer.id, photo.name, photo.id);
                   if (from === undefined) return photo;
-                  const to = `${toFolder}/${photo.name}`;
+                  const toDir = isSafePathSegment(photo.id) ? `${toFolder}/${photo.id}` : toFolder;
+                  const to = `${toDir}/${photo.name}`;
+                  if (Platform.OS !== 'web' && toDir !== toFolder) {
+                    if (!isUriInsideFolder(to, PHOTO_FOLDER)) return photo;
+                    await FileSystem.makeDirectoryAsync(toDir, { intermediates: true });
+                  }
                   const newUri = await importPhotos(files, from, to);
                   return { ...photo, uri: newUri };
                 } else {

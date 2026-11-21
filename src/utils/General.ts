@@ -85,9 +85,25 @@ export function getBaseName(path: string): string {
  * @param fileKeys zip内の全エントリのパス一覧（JSZipのfilesのキー）
  * @param layerId レイヤID
  * @param photoName 写真ファイル名（photo.name）
+ * @param photoId 写真のID（photo.id）。新しい書き出しは同名の写真が上書きし合わないよう
+ *   `レイヤフォルダ/photo.id/photo.name` に入れるため、IDのフォルダにあるものを優先する。
+ *   見つからなければ旧形式（レイヤフォルダ直下）としてベース名だけで照合する
  */
-export function findPhotoFileKey(fileKeys: string[], layerId: string, photoName: string): string | undefined {
-  return fileKeys.find((f) => f.includes(layerId) && getBaseName(f) === photoName);
+export function findPhotoFileKey(
+  fileKeys: string[],
+  layerId: string,
+  photoName: string,
+  photoId?: string
+): string | undefined {
+  const candidates = fileKeys.filter((f) => f.includes(layerId) && getBaseName(f) === photoName);
+  if (photoId !== undefined && photoId !== '') {
+    const byId = candidates.find((f) => {
+      const segments = f.split('/');
+      return segments[segments.length - 2] === photoId;
+    });
+    if (byId !== undefined) return byId;
+  }
+  return candidates[0];
 }
 
 /**

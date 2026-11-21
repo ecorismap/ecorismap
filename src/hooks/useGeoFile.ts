@@ -6,22 +6,32 @@ import { RootState } from '../store';
 import { addLayerAction, updateLayerAction } from '../modules/layers';
 import * as FileSystem from 'expo-file-system/legacy';
 
-import { gpx2Data, geoJson2Data, createLayerFromGeoJson, csv2Data, detectGeoJsonType } from '../utils/Geometry';
+import {
+  gpx2Data,
+  geoJson2Data,
+  createLayerFromGeoJson,
+  csv2Data,
+  checkGeoJsonCrs,
+  normalizeKmlGeoJson,
+  splitGeometryCollections,
+  GeoJson2DataOptions,
+} from '../utils/Geometry';
+import { Buffer } from 'buffer';
 import { Image, Platform } from 'react-native';
 import { addDataAction, deleteDataAction } from '../modules/dataSet';
 import { cloneDeep } from 'lodash';
 import { t } from '../i18n/config';
 import { getBaseName, getExt, runAsync } from '../utils/General';
 import { kml } from '@tmcw/togeojson';
-import { DOMParser } from '@xmldom/xmldom';
+import { DOMParser, Document as XmlDocument, Element as XmlElement, Node as XmlNode } from '@xmldom/xmldom';
 import JSZip from 'jszip';
 import { ulid } from 'ulid';
 import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
 
 import { unzipFromUri } from '../utils/Zip';
 import { changeLayerId, isLayerType } from '../utils/Layer';
-import { FeatureCollection, GeoJsonProperties, Geometry } from 'geojson';
-import { decodeUri } from '../utils/File.web';
+import { Feature, FeatureCollection, GeoJsonProperties, Geometry } from 'geojson';
+import { decodeTextBytes, decodeUri } from '../utils/File.web';
 import { importDictionary, exportDatabase } from '../utils/SQLite';
 import { generateCSV, generateGeoJson, generateGPX, generateKML } from '../utils/Geometry';
 import { DuplicateLayerConfirmAsync } from '../components/molecules/AlertAsync';
@@ -76,6 +86,8 @@ type LoadOutcome = {
   status: 'imported' | 'empty' | 'cancelled';
   skipped: number;
   missingPhotos: number;
+  // empty のとき、取り込めなかった理由（座標系が緯度経度でない等）。利用者に伝えるため
+  emptyReason?: string;
 };
 
 const loadOutcome = (status: LoadOutcome['status'], skipped = 0, missingPhotos = 0): LoadOutcome => ({
@@ -83,6 +95,21 @@ const loadOutcome = (status: LoadOutcome['status'], skipped = 0, missingPhotos =
   skipped,
   missingPhotos,
 });
+
+// 0件の原因が座標系なら、その理由を添えて返す（「取り込めるデータがありません」だけでは原因に気付けない）
+const emptyOutcome = (geojson?: FeatureCollection<Geometry | null, GeoJsonProperties>): LoadOutcome => {
+  if (geojson === undefined || geojson === null || typeof geojson !== 'object') return loadOutcome('empty');
+  const crsCheck = checkGeoJsonCrs(geojson);
+  return crsCheck.ok ? loadOutcome('empty') : { ...loadOutcome('empty'), emptyReason: crsCheck.reason };
+};
+
+// JSON.parse は先頭のBOMを受け付けない（Windowsのエディタで保存したファイルで起きる）
+const stripBom = (text: string) => (text.charCodeAt(0) === 0xfeff ? text.slice(1) : text);
+
+// 文字列として読む。Webは decodeUri（Shift_JIS/UTF-16LE判定つき）、ネイティブはUTF-8。
+// 先頭のBOMは後段（JSONは stripBom、CSV・XMLは各パーサ）で吸収する
+const readTextFile = (uri: string) =>
+  Platform.OS === 'web' ? decodeUri(uri) : FileSystem.readAsStringAsync(uri);
 
 // geoJson2Dataは元のフィーチャーとの対応を返さず、PHOTOも常に[]にする。
 // 写真名の照合と除外件数の算出のため、レイヤに無い一時項目でフィーチャーの番号を通しておく
@@ -101,7 +128,8 @@ const convertGeoJson = (
   layer: LayerType,
   featureType: GeoJsonFeatureType,
   userId: string | undefined,
-  displayName: string | null
+  displayName: string | null,
+  options: GeoJson2DataOptions = {}
 ): ConvertedGeoJson | undefined => {
   if (geojson === null || typeof geojson !== 'object' || !Array.isArray(geojson.features)) return undefined;
   const features = geojson.features.map((feature, index) =>
@@ -115,7 +143,8 @@ const convertGeoJson = (
     { ...layer, field: [...layer.field, indexField] },
     featureType,
     userId,
-    displayName
+    displayName,
+    options
   );
   if (records === undefined) return undefined;
   const sourceProperties: GeoJsonProperties[] = [];
@@ -134,6 +163,117 @@ const convertGeoJson = (
 
 const countFeatures = (geojson: FeatureCollection<Geometry | null, GeoJsonProperties>) =>
   geojson !== null && typeof geojson === 'object' && Array.isArray(geojson.features) ? geojson.features.length : 0;
+
+const KML_NAMESPACES = new Set([
+  'http://www.opengis.net/kml/2.2',
+  'http://earth.google.com/kml/2.0',
+  'http://earth.google.com/kml/2.1',
+  'http://earth.google.com/kml/2.2',
+]);
+const isKmlElement = (node: XmlNode) => {
+  if (node.nodeType !== 1) return false;
+  const ns = (node as XmlElement).namespaceURI;
+  return ns !== null && KML_NAMESPACES.has(ns);
+};
+
+// togeojson はタグ名（接頭辞込み）で要素を探すため、kml:Placemark のような接頭辞付きの KML は0件になる。
+// KML 名前空間の要素だけ接頭辞を外した複製に差し替える（gx: など他の名前空間はそのまま）
+const stripKmlPrefixes = (doc: XmlDocument) => {
+  const root = doc.documentElement;
+  if (root === null) return;
+  const hasPrefixed = Array.from(doc.getElementsByTagName('*')).some((el) => el.prefix !== null && isKmlElement(el));
+  if (!hasPrefixed) return;
+  const copy = (node: XmlNode): XmlNode => {
+    if (node.nodeType !== 1) return doc.importNode(node, false);
+    const el = node as XmlElement;
+    const name = isKmlElement(el) && el.localName !== null ? el.localName : el.tagName;
+    const out = doc.createElementNS(el.namespaceURI, name);
+    for (const attr of Array.from(el.attributes)) out.setAttributeNS(attr.namespaceURI, attr.name, attr.value);
+    for (const child of Array.from(el.childNodes)) out.appendChild(copy(child));
+    return out;
+  };
+  doc.replaceChild(copy(root), root);
+};
+
+const KML_GEOMETRY_TAGS = new Set([
+  'Point',
+  'LineString',
+  'LinearRing',
+  'Polygon',
+  'MultiGeometry',
+  'Track',
+  'gx:Track',
+  'MultiTrack',
+  'gx:MultiTrack',
+]);
+const KML_GEOMETRY_MARKER = '__ecorismap_kml_geometry_';
+
+/**
+ * KML文字列を GeoJSON にする。
+ * togeojson は座標が読めないジオメトリ（abc,def など）を黙って捨てて geometry:null にするため、
+ * 元からジオメトリの無い Placemark（位置なしレコードとして取り込む）と区別できない。
+ * ジオメトリ要素を持つ Placemark に一時的な id を付けて変換し、それが null になったものは取り込まずに件数を返す。
+ */
+const kmlToGeoJson = (kmlString: string) => {
+  const doc = new DOMParser().parseFromString(kmlString, 'text/xml');
+  stripKmlPrefixes(doc);
+  const originalIds = new Map<string, string | null>();
+  Array.from(doc.getElementsByTagName('Placemark')).forEach((placemark, index) => {
+    const hasGeometry = Array.from(placemark.childNodes).some(
+      (child) => child.nodeType === 1 && KML_GEOMETRY_TAGS.has((child as XmlElement).tagName)
+    );
+    if (!hasGeometry) return;
+    const marker = `${KML_GEOMETRY_MARKER}${index}`;
+    originalIds.set(marker, placemark.getAttribute('id'));
+    placemark.setAttribute('id', marker);
+  });
+  //@ts-ignore xmldomのDocumentはDOMのDocumentと型が異なる
+  const raw = kml(doc) as FeatureCollection<Geometry | null, GeoJsonProperties>;
+  let invalidGeometryCount = 0;
+  const features: Feature<Geometry | null, GeoJsonProperties>[] = [];
+  for (const feature of raw.features) {
+    if (typeof feature.id !== 'string' || !originalIds.has(feature.id)) {
+      features.push(feature);
+      continue;
+    }
+    if (feature.geometry === null) {
+      invalidGeometryCount++;
+      continue;
+    }
+    const { id, ...rest } = feature;
+    const originalId = originalIds.get(id);
+    features.push(originalId ? { ...rest, id: originalId } : rest);
+  }
+  return { geojson: normalizeKmlGeoJson({ ...raw, features }), invalidGeometryCount };
+};
+
+const GEOJSON_GEOMETRY_TYPES = ['Point', 'MultiPoint', 'LineString', 'MultiLineString', 'Polygon', 'MultiPolygon'];
+
+// .geojsonは単体のFeatureやGeometryだけのファイルも仕様上有効。取り込みはFeatureCollection前提なので包んでおく
+const toFeatureCollection = (json: unknown): FeatureCollection<Geometry | null, GeoJsonProperties> => {
+  const empty: FeatureCollection<Geometry | null, GeoJsonProperties> = { type: 'FeatureCollection', features: [] };
+  if (json === null || typeof json !== 'object') return empty;
+  const type = (json as { type?: unknown }).type;
+  if (type === 'FeatureCollection') return json as FeatureCollection<Geometry | null, GeoJsonProperties>;
+  if (type === 'Feature') {
+    return { type: 'FeatureCollection', features: [json as Feature<Geometry | null, GeoJsonProperties>] };
+  }
+  if (typeof type === 'string' && GEOJSON_GEOMETRY_TYPES.includes(type)) {
+    return { type: 'FeatureCollection', features: [{ type: 'Feature', properties: {}, geometry: json as Geometry }] };
+  }
+  return empty;
+};
+
+// macOSのFinderで圧縮すると、本体と同じ拡張子のAppleDouble（__MACOSX/配下や._で始まるファイル）が入る。
+// 中身は拡張属性のバイナリで、本体として読むと解析に失敗する
+const isMacMetadataEntry = (path: string) =>
+  path.split('/').includes('__MACOSX') || getBaseName(path).startsWith('._');
+
+// dictionaryKeyはプロジェクトのクラウド辞書を復号する鍵。ファイルとして持ち出したレイヤに付けておく理由が無い
+const withoutDictionaryKey = (layer: LayerType): LayerType => {
+  const { dictionaryKey: _dictionaryKey, ...rest } = layer;
+  return rest;
+};
 
 // PhotoTypeのwidth/heightは原画の寸法（写真ビューアが拡大表示の大きさに使う）。
 // Image.getSizeはネイティブのfile://とWebのblob:の両方を読める。取れなければ0/0にして、ビューア側のgetSizeに任せる
@@ -178,7 +318,7 @@ const restorePhotosFromZip = async (converted: ConvertedGeoJson, layer: LayerTyp
 
   const entryByName = new Map<string, string>();
   for (const key of Object.keys(zip.files)) {
-    if (zip.files[key].dir || key.split('/').includes('__MACOSX')) continue;
+    if (zip.files[key].dir || isMacMetadataEntry(key)) continue;
     const baseName = getBaseName(key);
     if (!entryByName.has(baseName)) entryByName.set(baseName, key);
   }
@@ -257,13 +397,15 @@ export const useGeoFile = (): UseGeoFileReturnType => {
   const importGPX = useCallback(
     (gpx: string, featureType: FeatureType, importFileName: string) => {
       const data = gpx2Data(gpx, featureType, importFileName, dataUser.uid, dataUser.displayName);
-      if (data === undefined) return 0;
+      if (data === undefined) return { count: 0, skipped: 0 };
       //console.log(recordSet[0].field);
       if (data.recordSet.length > 0) {
         dispatch(addLayerAction(data.layer));
         dispatch(addDataAction([{ layerId: data.layer.id, userId: dataUser.uid, data: data.recordSet }]));
       }
-      return data.recordSet.length;
+      // 緯度経度が不正で捨てた点（wpt・trkpt・rtept）の数
+      const skipped = 'skippedPoints' in data && typeof data.skippedPoints === 'number' ? data.skippedPoints : 0;
+      return { count: data.recordSet.length, skipped };
     },
     [dispatch, dataUser.displayName, dataUser.uid]
   );
@@ -271,13 +413,14 @@ export const useGeoFile = (): UseGeoFileReturnType => {
   const importCsv = useCallback(
     (csv: string, importFileName: string, importedLayer?: LayerType) => {
       const data = csv2Data(csv, importFileName, dataUser.uid, dataUser.displayName, importedLayer);
-      if (data === undefined) return 0;
+      if (data === undefined) return { count: 0, skipped: 0 };
       //console.log(recordSet[0].field);
       if (data.recordSet.length > 0) {
         dispatch(addLayerAction(data.layer));
         dispatch(addDataAction([{ layerId: data.layer.id, userId: dataUser.uid, data: data.recordSet }]));
       }
-      return data.recordSet.length;
+      // 座標が書かれていたのに読めなかったレコードの数（位置なしで取り込まれている）
+      return { count: data.recordSet.length, skipped: data.invalidGeometryCount };
     },
     [dispatch, dataUser.displayName, dataUser.uid]
   );
@@ -288,13 +431,14 @@ export const useGeoFile = (): UseGeoFileReturnType => {
       featureType: GeoJsonFeatureType,
       importFileName: string,
       importedLayer?: LayerType,
-      photoZip?: JSZip
+      photoZip?: JSZip,
+      options: GeoJson2DataOptions = {}
     ): Promise<{ featureIndices: Set<number>; missingPhotos: number } | undefined> => {
       const layer =
         importedLayer === undefined
           ? createLayerFromGeoJson(geojson, importFileName, featureType)
           : cloneDeep(importedLayer);
-      const converted = convertGeoJson(geojson, layer, featureType, dataUser.uid, dataUser.displayName);
+      const converted = convertGeoJson(geojson, layer, featureType, dataUser.uid, dataUser.displayName, options);
 
       if (converted === undefined) return undefined;
       if (converted.records.length === 0) return undefined;
@@ -309,11 +453,15 @@ export const useGeoFile = (): UseGeoFileReturnType => {
     [dispatch, dataUser.displayName, dataUser.uid]
   );
 
-  // KMLは全フィーチャータイプを走査するため、含まれるジオメトリタイプだけ処理して無駄な走査を省く
+  // 1つのファイルに複数のジオメトリタイプが混ざることがあるため、全タイプを取り込む（先頭の型だけだと他が黙って消える）。
+  // 含まれるジオメトリタイプだけ処理して無駄な走査を省く
   const presentFeatureTypes = useCallback((geojson: FeatureCollection<Geometry | null, GeoJsonProperties>) => {
-    // geometryがnullのフィーチャーはPOINTとして扱われる（geoJson2Dataの仕様に合わせる）
+    if (!Array.isArray(geojson.features)) return [];
+    // geometryがnull・欠落のフィーチャーはPOINTとして扱われる（geoJson2Dataの仕様に合わせる）
     const geometryTypes = new Set<string>(
-      geojson.features.map((f) => (f.geometry === null ? 'Point' : f.geometry.type))
+      geojson.features
+        .filter((f) => f !== null && typeof f === 'object')
+        .map((f) => (f.geometry === null || f.geometry === undefined ? 'Point' : f.geometry.type))
     );
     const typeMap: Partial<Record<GeoJsonFeatureType, string>> = {
       POINT: 'Point',
@@ -329,28 +477,61 @@ export const useGeoFile = (): UseGeoFileReturnType => {
     });
   }, []);
 
+  /**
+   * ファイルに含まれる全ジオメトリタイプを、タイプごとのレイヤとして取り込む（KMLと.geojson・KMZで同じ挙動にする）。
+   * @returns レコードになったフィーチャーの番号。除外件数は全タイプを通して数える（1フィーチャーは1タイプでしか取り込まれない）
+   */
+  const importAllFeatureTypes = useCallback(
+    async (geojson: FeatureCollection<Geometry | null, GeoJsonProperties>, name: string) => {
+      const importedIndices = new Set<number>();
+      if (!Array.isArray(geojson.features)) return importedIndices;
+      // 線・面を先に取り込み、取り込んだフィーチャーは後のタイプに渡さない。
+      // 自前の書き出し（_id付き）の線・面レイヤは1点のスタンプ(Point)や位置なし(null)も自分のレコードとして受け入れるため、
+      // POINTを先に（または同時に）処理すると同じフィーチャーが点レイヤにも重複して入る
+      const order: GeoJsonFeatureType[] = ['LINE', 'MULTILINE', 'POLYGON', 'MULTIPOLYGON', 'POINT', 'MULTIPOINT'];
+      let remaining = geojson.features.map((feature, originalIndex) => ({ feature, originalIndex }));
+      for (const featureType of order) {
+        if (remaining.length === 0) break;
+        const subset = { ...geojson, features: remaining.map((r) => r.feature) };
+        if (!presentFeatureTypes(subset).includes(featureType)) continue;
+        // 単体ファイルは常に新規レイヤになる。_id を使うと、同じファイルを2回取り込んだときや
+        // 書き出し元のレイヤが残っているときに同じidのレコードが2レイヤにできるため振り直す
+        const result = await runAsync(() =>
+          importGeoJson(subset, featureType, name, undefined, undefined, { regenerateIds: true })
+        );
+        if (result === undefined) continue;
+        result.featureIndices.forEach((index) => importedIndices.add(remaining[index].originalIndex));
+        remaining = remaining.filter((_, index) => !result.featureIndices.has(index));
+      }
+      return importedIndices;
+    },
+    [importGeoJson, presentFeatureTypes]
+  );
+
   const loadGeojson = useCallback(
     async (uri: string, name: string) => {
-      const geojsonStrings = Platform.OS === 'web' ? await decodeUri(uri) : await FileSystem.readAsStringAsync(uri);
+      const geojsonStrings = await readTextFile(uri);
       // parseと変換は重いのでrunAsyncでUIスレッドをブロックしないようにする
-      const geojson = await runAsync(() => JSON.parse(geojsonStrings));
+      // GeometryCollection は取り込めないため構成要素ごとのFeatureに分ける（除外件数は分けた後で数える）
+      const geojson = splitGeometryCollections(
+        toFeatureCollection(await runAsync(() => JSON.parse(stripBom(geojsonStrings))))
+      );
       const featureCount = countFeatures(geojson);
-      // detectGeoJsonTypeは空のfeaturesで例外になる。内部エラーではなく「取り込めるデータが無い」として返す
       if (featureCount === 0) return loadOutcome('empty');
-      const featureType = detectGeoJsonType(geojson);
-      const result = await runAsync(() => importGeoJson(geojson, featureType, name));
-      if (result === undefined) return loadOutcome('empty');
-      return loadOutcome('imported', featureCount - result.featureIndices.size);
+      const importedIndices = await importAllFeatureTypes(geojson, name);
+      if (importedIndices.size === 0) return emptyOutcome(geojson);
+      return loadOutcome('imported', featureCount - importedIndices.size);
     },
-    [importGeoJson]
+    [importAllFeatureTypes]
   );
 
   const loadGpx = useCallback(
     async (uri: string, name: string) => {
-      const gpx = Platform.OS === 'web' ? await decodeUri(uri) : await FileSystem.readAsStringAsync(uri);
-      const pointCount = await runAsync(() => importGPX(gpx, 'POINT', name));
-      const lineCount = await runAsync(() => importGPX(gpx, 'LINE', name));
-      return loadOutcome(pointCount + lineCount > 0 ? 'imported' : 'empty');
+      const gpx = await readTextFile(uri);
+      const points = await runAsync(() => importGPX(gpx, 'POINT', name));
+      const lines = await runAsync(() => importGPX(gpx, 'LINE', name));
+      if (points.count + lines.count === 0) return loadOutcome('empty');
+      return loadOutcome('imported', points.skipped + lines.skipped);
     },
     [importGPX]
   );
@@ -358,56 +539,52 @@ export const useGeoFile = (): UseGeoFileReturnType => {
   const loadKmz = useCallback(
     async (uri: string, name: string) => {
       const loaded = await unzipFromUri(uri);
-      const files = loaded.file(/\.kml$/);
+      // Windows等で作ると拡張子が大文字(DOC.KML)になることがある
+      const files = loaded.file(/\.kml$/i).filter((file) => !isMacMetadataEntry(file.name));
 
-      const parser = new DOMParser();
       let featureCount = 0;
       let importedCount = 0;
       for (const file of files) {
         const kmlString = await file.async('string');
-        const xml = await runAsync(() => parser.parseFromString(kmlString, 'text/xml'));
-        //@ts-ignore
-        const geojson = await runAsync(() => kml(xml));
+        // MultiGeometry の分割とスタイル由来の項目の除去。除外件数は分割後の件数で数える
+        const { geojson, invalidGeometryCount } = await runAsync(() => kmlToGeoJson(kmlString));
         const count = countFeatures(geojson);
-        featureCount += count;
-        // detectGeoJsonTypeは空のfeaturesで例外になるため、Placemarkの無いkmlは飛ばす
+        featureCount += count + invalidGeometryCount;
         if (count === 0) continue;
-        const featureType = detectGeoJsonType(geojson);
-        const result = await runAsync(() => importGeoJson(geojson, featureType, name));
-        importedCount += result?.featureIndices.size ?? 0;
+        const importedIndices = await importAllFeatureTypes(geojson, name);
+        importedCount += importedIndices.size;
       }
       if (importedCount === 0) return loadOutcome('empty');
       return loadOutcome('imported', featureCount - importedCount);
     },
-    [importGeoJson]
+    [importAllFeatureTypes]
   );
 
   const loadKml = useCallback(
     async (uri: string, name: string) => {
-      const kmlString = Platform.OS === 'web' ? await decodeUri(uri) : await FileSystem.readAsStringAsync(uri);
-      const parser = new DOMParser();
-      const xml = await runAsync(() => parser.parseFromString(kmlString, 'text/xml'));
-      //@ts-ignore
-      const geojson = await runAsync(() => kml(xml));
+      const kmlString = await readTextFile(uri);
+      // MultiGeometry の分割とスタイル由来の項目の除去。除外件数は分割後の件数で数える
+      const { geojson, invalidGeometryCount } = await runAsync(() => kmlToGeoJson(kmlString));
 
-      // 除外件数は全タイプを通して数える（1フィーチャーは1タイプでしか取り込まれない）
-      const importedIndices = new Set<number>();
-      for (const featureType of presentFeatureTypes(geojson)) {
-        const result = await runAsync(() => importGeoJson(geojson, featureType, name));
-        result?.featureIndices.forEach((index) => importedIndices.add(index));
-      }
+      const importedIndices = await importAllFeatureTypes(geojson, name);
       if (importedIndices.size === 0) return loadOutcome('empty');
-      return loadOutcome('imported', countFeatures(geojson) - importedIndices.size);
+      return loadOutcome('imported', countFeatures(geojson) + invalidGeometryCount - importedIndices.size);
     },
-    [importGeoJson, presentFeatureTypes]
+    [importAllFeatureTypes]
   );
 
   const loadCsv = useCallback(
     async (uri: string, name: string) => {
-      //ToDo:スマホではcsvの文字コードがShift-JISの場合の対応が必要。webでは対応済み
-      const csvStrings = Platform.OS === 'web' ? await decodeUri(uri) : await FileSystem.readAsStringAsync(uri);
-      const count = await runAsync(() => importCsv(csvStrings, name));
-      return loadOutcome(count > 0 ? 'imported' : 'empty');
+      // ExcelのCSVはShift_JISやUTF-16LEのことがあるため、Web・ネイティブとも同じ判定（decodeTextBytes）で読む
+      const csvStrings =
+        Platform.OS === 'web'
+          ? await decodeUri(uri)
+          : decodeTextBytes(
+              new Uint8Array(Buffer.from(await FileSystem.readAsStringAsync(uri, { encoding: 'base64' }), 'base64'))
+            );
+      const { count, skipped } = await runAsync(() => importCsv(csvStrings, name));
+      if (count === 0) return loadOutcome('empty');
+      return loadOutcome('imported', skipped);
     },
     [importCsv]
   );
@@ -417,7 +594,7 @@ export const useGeoFile = (): UseGeoFileReturnType => {
       const loaded = await unzipFromUri(uri);
       //console.log(loaded);
       const files = Object.keys(loaded.files);
-      const jsonFile = files.find((f) => getExt(f) === 'json' && !f.startsWith('__MACOS/'));
+      const jsonFile = files.find((f) => getExt(f) === 'json' && !isMacMetadataEntry(f));
       if (jsonFile === undefined) throw new Error('invalid zip file');
       const jsonDecompressed = await loaded.files[jsonFile].async('text');
       //有効なjsonかチェック
@@ -454,14 +631,15 @@ export const useGeoFile = (): UseGeoFileReturnType => {
         // choice === 'newLayer' の場合は通常フロー（新規ID生成）
       }
 
-      const sqliteFile = files.find((f) => getExt(f) === 'sqlite' && !f.startsWith('__MACOS/'));
-      const csvFile = files.find((f) => getExt(f) === 'csv' && !f.startsWith('__MACOS/'));
-      const geojsonFile = files.find((f) => getExt(f) === 'geojson' && !f.startsWith('__MACOS/'));
+      const sqliteFile = files.find((f) => getExt(f) === 'sqlite' && !isMacMetadataEntry(f));
+      const csvFile = files.find((f) => getExt(f) === 'csv' && !isMacMetadataEntry(f));
+      const geojsonFile = files.find((f) => getExt(f) === 'geojson' && !isMacMetadataEntry(f));
 
       if (shouldReplace && existingLayerToReplace) {
         // 置き換えモード
+        // 旧版で書き出したファイルにはdictionaryKeyが入っていることがある。ファイル由来の鍵はレイヤに持ち込まない
         const updatedLayer: LayerType = {
-          ...json,
+          ...withoutDictionaryKey(json),
           id: existingLayerToReplace.id, // 既存IDを保持
           active: existingLayerToReplace.active,
           visible: existingLayerToReplace.visible,
@@ -494,11 +672,13 @@ export const useGeoFile = (): UseGeoFileReturnType => {
         }
         // CSVもGeoJSONと同じく、消す前に変換して読めることを確かめる
         let replacingCsvRecords: RecordType[] | undefined;
+        let replacingCsvSkipped = 0;
         if (updatedLayer.type !== 'LAYERGROUP' && replacing === undefined && csvFile !== undefined) {
           const csv = await loaded.files[csvFile].async('text');
           const data = csv2Data(csv, name, dataUser.uid, dataUser.displayName, updatedLayer);
           if (data === undefined) throw new Error('invalid csv file');
           replacingCsvRecords = data.recordSet;
+          replacingCsvSkipped = data.invalidGeometryCount;
         }
 
         // SQLite辞書処理
@@ -534,10 +714,11 @@ export const useGeoFile = (): UseGeoFileReturnType => {
           dispatch(
             addDataAction([{ layerId: existingLayerToReplace.id, userId: dataUser.uid, data: replacingCsvRecords }])
           );
+          return loadOutcome('imported', replacingCsvSkipped);
         }
       } else {
         // 通常モード（新規レイヤとして追加）
-        const { layer: importedLayer, layerIdMap, fieldIdMap } = changeLayerId(json);
+        const { layer: importedLayer, layerIdMap, fieldIdMap } = changeLayerId(withoutDictionaryKey(json));
 
         if (sqliteFile !== undefined) {
           const sqlite =
@@ -553,17 +734,24 @@ export const useGeoFile = (): UseGeoFileReturnType => {
         } else if (geojsonFile !== undefined && importedLayer.type !== 'NONE') {
           const geojsonStrings = await loaded.files[geojsonFile].async('text');
           const geojson = JSON.parse(geojsonStrings);
+          // 書き出し元のレイヤが手元に残っている（重複ダイアログで「新規レイヤ」を選んだ等）ときに _id を使うと、
+          // 同じidのレコードが2レイヤにできる。そのときだけ振り直し、それ以外は _id（_group の参照先）を保つ
+          const idOptions: GeoJson2DataOptions = layers.some((layer) => layer.id === originalLayerId)
+            ? { regenerateIds: true }
+            : {};
           //ToDo 有効なgeojsonファイルかチェック
           const result =
-            (await importGeoJson(geojson, importedLayer.type, name, importedLayer, loaded)) ??
+            (await importGeoJson(geojson, importedLayer.type, name, importedLayer, loaded, idOptions)) ??
             //QGISでgeojsonをエクスポートするとマルチタイプになるので。厳密にするなら必要ない処理だが作業的に頻出するので対応
-            (await importGeoJson(geojson, `MULTI${importedLayer.type}`, name, importedLayer, loaded));
-          if (result === undefined) return loadOutcome('empty');
+            (await importGeoJson(geojson, `MULTI${importedLayer.type}`, name, importedLayer, loaded, idOptions));
+          if (result === undefined) return emptyOutcome(geojson);
           return loadOutcome('imported', countFeatures(geojson) - result.featureIndices.size, result.missingPhotos);
         } else if (csvFile !== undefined) {
           const csv = await loaded.files[csvFile].async('text');
           //ToDo 有効なcsvファイルかチェック
-          if (importCsv(csv, name, importedLayer) === 0) return loadOutcome('empty');
+          const { count, skipped } = importCsv(csv, name, importedLayer);
+          if (count === 0) return loadOutcome('empty');
+          return loadOutcome('imported', skipped);
         } else {
           //レイヤー設定のみの場合
           dispatch(addLayerAction(importedLayer));
@@ -576,10 +764,10 @@ export const useGeoFile = (): UseGeoFileReturnType => {
 
   const loadJson = useCallback(
     async (uri: string) => {
-      const jsonStrings = Platform.OS === 'web' ? await decodeUri(uri) : await FileSystem.readAsStringAsync(uri);
-      const json = JSON.parse(jsonStrings);
+      const jsonStrings = await readTextFile(uri);
+      const json = JSON.parse(stripBom(jsonStrings));
       if (!isLayerType(json)) throw new Error('invalid json file');
-      const { layer: importedLayer } = changeLayerId(json);
+      const { layer: importedLayer } = changeLayerId(withoutDictionaryKey(json));
       dispatch(addLayerAction(importedLayer));
       return loadOutcome('imported');
     },
@@ -624,6 +812,13 @@ export const useGeoFile = (): UseGeoFileReturnType => {
         }
         if (result.status === 'empty') {
           // 何も追加していないのに「インポートしました」と出すと、取り込めなかったことに気付けない
+          if (result.emptyReason !== undefined) {
+            // 座標系が緯度経度でないなど、原因が分かっているときはそれを伝える（理由はcrsの名前を含む）
+            return {
+              isOK: false,
+              message: `${t('hooks.message.noImportableData')}\n${t('hooks.message.failLoadFile')}\n(${result.emptyReason})`,
+            };
+          }
           return { isOK: false, message: t('hooks.message.noImportableData') };
         }
         const notes = [t('hooks.message.receiveFile')];
@@ -646,10 +841,19 @@ export const useGeoFile = (): UseGeoFileReturnType => {
       fileNameBase: string,
       option?: { settingsOnly?: boolean; exportDictionary?: boolean; folder?: string; exportPhoto?: boolean }
     ) => {
-      const exportData: { data: string; name: string; type: ExportType; folder: string; url?: string | null; key?: string | null }[] = [];
+      const exportData: {
+        data: string;
+        name: string;
+        type: ExportType;
+        folder: string;
+        url?: string | null;
+        key?: string | null;
+        photoId?: string;
+      }[] = [];
       const exportFolder = option?.folder ?? '';
       //LayerSetting
-      const layerSetting = JSON.stringify(targetLayer);
+      // 書き出したファイルはプロジェクトの外へ渡りうるので、クラウド辞書の鍵は含めない
+      const layerSetting = JSON.stringify(withoutDictionaryKey(targetLayer));
       exportData.push({
         data: layerSetting,
         name: `${fileNameBase}.json`,
@@ -733,7 +937,10 @@ export const useGeoFile = (): UseGeoFileReturnType => {
                   folder: exportFolder,
                   // Firebase URLとキーを追加（ローカルがない場合のフォールバック用）
                   url: photo.url,
-                  key: photo.key 
+                  key: photo.key,
+                  // 写真名は秒単位の自動命名で別レコード（別メンバー）と重なりうる。ZIP内でphoto.idのフォルダに分けて
+                  // 上書きし合わないようにする。パスに使えないidは付けない（従来どおりレイヤのフォルダ直下に入る）
+                  ...(isSafePathSegment(photo.id) && { photoId: photo.id }),
                 });
               }
             }
