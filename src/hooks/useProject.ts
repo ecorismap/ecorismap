@@ -24,10 +24,12 @@ export type UseProjectReturnType = {
   uploadData: () => Promise<{
     isOK: boolean;
     message: string;
+    warning?: string;
   }>;
   syncPosition: (shouldSync: boolean) => void;
   clearProject: () => void;
-  saveProjectSetting: () => Promise<void>;
+  /** 一部の写真をアップロードできなかったときは警告文を返す */
+  saveProjectSetting: () => Promise<string | undefined>;
 };
 
 export const useProject = (): UseProjectReturnType => {
@@ -107,6 +109,7 @@ export const useProject = (): UseProjectReturnType => {
     if (!dataToRepositoryResult.isOK) throw new Error(dataToRepositoryResult.message);
     const uploadTemplateResult = await uploadDataToRepository(project, 'Template');
     if (!uploadTemplateResult.isOK) throw new Error(uploadTemplateResult.message);
+    return dataToRepositoryResult.warning ?? uploadTemplateResult.warning;
   }, [deleteCommonAndTemplateData, project, uploadDataToRepository, uploadProjectSettings]);
 
   return {

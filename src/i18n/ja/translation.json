@@ -1096,6 +1096,7 @@
       "successExportMaps": "地図の設定を保存しました。",
       "updateMap": "地図の設定を更新しました。",
       "addMap": "地図を追加しました。",
+      "failUploadSomePhotos": "データはアップロードしましたが、写真{{count}}枚をアップロードできませんでした。通信状態を確認して、もう一度アップロードしてください。",
       "dataSizeTooLarge": "データのサイズが大きいためアップロードできません",
       "deleteOldTracks": "古い軌跡を削除してから、再度アップロードしてください。",
       "failDeleteFile": "プロジェクトのファイルの削除に失敗しました",
