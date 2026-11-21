@@ -66,8 +66,9 @@ service firebase.storage {
     return data.contentType in ['image/png',"image/jpeg","application/pdf","application/x-sqlite3","application/json"];
   }
 
-  // 写真パスは画像のみ。Web(e3kit-browserがfile.typeを引き継ぐ)とAndroid(暗号化後も拡張子を引き継ぐ)はimage/*で届く。
-  // 注意: iOSは暗号化後の一時ファイルに拡張子が無くapplication/octet-streamになるため、変更前の許可リストでも拒否されている（要クライアント修正）。
+  // 写真パスは画像のみ。Web(e3kit-browserがfile.typeを引き継ぐ)・Android(暗号化後も拡張子を引き継ぐ)・
+  // iOS(encryptFileEThreeRNが入力の拡張子付きの出力先を渡す)のいずれもimage/*で届く。
+  // RNFBのiOS版はputFileのcontentTypeを拡張子だけで決める（metadata指定も上書き）ため、拡張子を落とすと拒否される。
   function isValidPhotoContentType(data) {
     return data.contentType in ['image/png', 'image/jpeg'];
   }
