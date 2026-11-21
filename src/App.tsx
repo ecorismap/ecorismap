@@ -13,6 +13,7 @@ import { ExportDestinationModal } from './components/organisms/ExportDestination
 import { StyledDialog } from './components/molecules/StyledDialog';
 import { TileSignatureSync } from './components/atoms/TileSignatureSync';
 import { runDemSourceMigration } from './utils/demSourceMigration';
+import { runPhotoUriRebase } from './utils/photoUriRebase';
 import { setTileMapsAction } from './modules/tileMaps';
 import { dropUnsafeTileMaps } from './utils/tileMapId';
 import { TileMapType } from './types';
@@ -45,6 +46,7 @@ export default function App() {
             onBeforeLift={() => {
               dropUnsafePersistedTileMaps();
               runDemSourceMigration(store);
+              runPhotoUriRebase(store);
             }}
           >
             <>
