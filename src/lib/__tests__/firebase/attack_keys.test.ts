@@ -275,6 +275,57 @@ describe('keys: 削除', () => {
   });
 });
 
+// migrateProjectToDEK は方式の確定(project update)と keys の配布を1バッチで書く。
+// 既に dek のプロジェクトへの再移行は project update が Rules で拒否され、keys もまとめて書かれないこと。
+const migrationBatch = (uid: string, members: string[], dekPublicKey: string) => {
+  const db = ctx(uid, uid === uid1 ? 'test1' : 'test2').firestore();
+  const batch = writeBatch(db);
+  batch.update(doc(db, `projects/${documentId}`), {
+    encdata: ['reenc'],
+    encryptedAt: Timestamp.now(),
+    cryptoScheme: 'dek',
+    dekPublicKey,
+  });
+  for (const m of members) batch.set(doc(db, keyPath(m)), keyFS(uid, `wrapped-by-${dekPublicKey}`));
+  return batch;
+};
+
+describe('keys: 二重移行（DEK移行のバッチ）', () => {
+  it('[A-KEY-31] オーナーが既に dek のプロジェクトを再移行しても、keys は上書きされない', async () => {
+    await seedProject({ adminsUid: [uid1, uid2], membersUid: [uid1, uid2, uid3] });
+    await seedKey(uid3);
+    await firebase.assertFails(migrationBatch(uid1, [uid1, uid2, uid3], 'PUBKEY2').commit());
+    // withSecurityRulesDisabled はコールバックの戻り値を返さないため、外側の変数で受け取る
+    let encDek: unknown;
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      encDek = (await getDoc(doc(context.firestore(), keyPath(uid3)))).data()?.encDek;
+    });
+    expect(encDek).toBe('wrapped-original');
+  });
+
+  it('[A-KEY-32] 管理者が既に dek のプロジェクトを再移行しても、keys は上書きされない', async () => {
+    await seedProject({ adminsUid: [uid1, uid2], membersUid: [uid1, uid2, uid3] });
+    await seedKey(uid3);
+    await firebase.assertFails(migrationBatch(uid2, [uid1, uid2, uid3], 'PUBKEY2').commit());
+    // withSecurityRulesDisabled はコールバックの戻り値を返さないため、外側の変数で受け取る
+    let encDek: unknown;
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      encDek = (await getDoc(doc(context.firestore(), keyPath(uid3)))).data()?.encDek;
+    });
+    expect(encDek).toBe('wrapped-original');
+  });
+
+  it('[L-KEY-09] オーナーは group 方式のプロジェクトを方式の確定と keys の配布を1バッチで移行できる', async () => {
+    await seedProject({ scheme: 'group', adminsUid: [uid1, uid2], membersUid: [uid1, uid2, uid3] });
+    await firebase.assertSucceeds(migrationBatch(uid1, [uid1, uid2, uid3], 'PUBKEY2').commit());
+  });
+
+  it('[L-KEY-10] 管理者は group 方式のプロジェクトを方式の確定と keys の配布を1バッチで移行できる', async () => {
+    await seedProject({ scheme: 'group', adminsUid: [uid1, uid2], membersUid: [uid1, uid2, uid3] });
+    await firebase.assertSucceeds(migrationBatch(uid2, [uid1, uid2, uid3], 'PUBKEY2').commit());
+  });
+});
+
 describe('keys: 正当なクライアントフロー（回帰防止）', () => {
   it('[L-KEY-01] オーナーは新規DEKプロジェクト作成直後に全メンバーへ鍵をバッチ配布できる（addProject）', async () => {
     await seedProject({ adminsUid: [uid1, uid2], membersUid: [uid1, uid2, uid3] });
@@ -284,7 +335,7 @@ describe('keys: 正当なクライアントフロー（回帰防止）', () => {
     await firebase.assertSucceeds(batch.commit());
   });
 
-  it('[L-KEY-02] 管理者は group 方式のまま全メンバーへ鍵をバッチ配布できる（migrateProjectToDEK: プロジェクト更新前）', async () => {
+  it('[L-KEY-02] 管理者は group 方式のまま全メンバーへ鍵をバッチ配布できる（配布済みの旧版の migrateProjectToDEK: プロジェクト更新前に配布する）', async () => {
     await seedProject({ scheme: 'group', adminsUid: [uid1, uid2], membersUid: [uid1, uid2, uid3] });
     const db = ctx(uid2, 'test2').firestore();
     const batch = writeBatch(db);

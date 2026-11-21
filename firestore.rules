@@ -42,6 +42,10 @@ service cloud.firestore {
         //  - オーナーを membersUid/adminsUid から外せない（外すとオーナーが一覧・設定・データを失う）
         //  - 既にDEK方式のプロジェクトでは dekPublicKey を差し替えられない（オーナーを復号不能にさせない）。
         //    group→dek の移行(Phase ii)で初めて設定するのは許可する。
+        // keepsDekPublicKey はオーナーにも掛ける（update 全体）。差し替えを行う正当なクライアントフローは無く、
+        // 二重移行（古い一覧の端末・2端末同時）の負けた側が dekPublicKey を上書きすると、keys と対にならず
+        // 全員が恒久的に復号できなくなる。migrateProjectToDEK は方式の確定と keys の配布を1バッチで書くので、
+        // ここで拒否されれば負けた側の keys もまとめて書かれない。DEKのローテーションを実装するなら Admin SDK 経由にする。
         function keepsOwner() {
           return resource.data.ownerUid in request.resource.data.membersUid
             && resource.data.ownerUid in request.resource.data.adminsUid;
@@ -79,6 +83,7 @@ service cloud.firestore {
         && verifyUpdateFields(["adminsUid", "membersUid","encdata","encryptedAt","cryptoScheme","dekPublicKey","archived"])
         && validProjectTypes()
         && validSchemeTransition()
+        && keepsDekPublicKey()
         && (
              request.auth.uid == resource.data.ownerUid
           || (

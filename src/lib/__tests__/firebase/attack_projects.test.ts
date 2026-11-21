@@ -250,6 +250,24 @@ describe('projects: update の3分岐の抜け道', () => {
     );
   });
 
+  it('[A-PRJ-32] update: オーナーでも既に dek のプロジェクトの dekPublicKey を差し替えられない（二重移行の上書き防止）', async () => {
+    await seedDekProject();
+    // migrateProjectToDEK と同じ構成で再移行しても、既に確定した dekPublicKey は上書きできない
+    await firebase.assertFails(
+      updateDoc(projectRef(verified(uid1)), {
+        encdata: ['reenc'],
+        encryptedAt: Timestamp.now(),
+        cryptoScheme: 'dek',
+        dekPublicKey: 'NEW_PUBKEY',
+      })
+    );
+  });
+
+  it('[A-PRJ-33] update: オーナーでも deleteField で dekPublicKey を消せない', async () => {
+    await seedDekProject();
+    await firebase.assertFails(updateDoc(projectRef(verified(uid1)), { dekPublicKey: deleteField() }));
+  });
+
   it('[A-PRJ-15] update: 管理者は membersUid/adminsUid を map 化して keepsOwner をすり抜けられない', async () => {
     await seedDekProject();
     // `in` は map のキーにも真を返すため keepsOwner を満たすが、array-contains の一覧クエリから全員分消える
@@ -446,6 +464,30 @@ describe('projects: クライアントが依存する正当な操作', () => {
         encryptedAt: Timestamp.now(),
         cryptoScheme: 'dek',
         dekPublicKey: 'NEW_PUBKEY',
+      })
+    );
+  });
+
+  it('[L-PRJ-10] update: オーナーは group 方式から dekPublicKey を設定して移行できる', async () => {
+    await seedGroupProject();
+    await firebase.assertSucceeds(
+      updateDoc(projectRef(verified(uid1)), {
+        encdata: ['reenc'],
+        encryptedAt: Timestamp.now(),
+        cryptoScheme: 'dek',
+        dekPublicKey: 'NEW_PUBKEY',
+      })
+    );
+  });
+
+  it('[L-PRJ-11] update: オーナーは dek 方式で dekPublicKey を据え置いたままメタ・メンバーを更新できる（updateProject）', async () => {
+    await seedDekProject();
+    await firebase.assertSucceeds(
+      updateDoc(projectRef(verified(uid1)), {
+        adminsUid: [uid1, uid2],
+        membersUid: [uid1, uid2, uid3],
+        encdata: ['reenc'],
+        encryptedAt: Timestamp.now(),
       })
     );
   });
