@@ -30,6 +30,7 @@ import { findDictionaryFileKey, findPhotoFileKey, getExt, truncateMiddle } from 
 
 import dayjs from '../i18n/dayjs';
 import { PHOTO_FOLDER } from '../constants/AppConstants';
+import { isSafePathSegment, isUriInsideFolder } from '../utils/safePath';
 import { unzipFromUri } from '../utils/Zip';
 import JSZip from 'jszip';
 import { useRepository } from './useRepository';
@@ -200,6 +201,8 @@ export const useEcorisMapFile = (): UseEcorisMapFileReturnType => {
         newUri = URL.createObjectURL(photoData);
         //console.log(newUri);
       } else {
+        // 呼び出し側で検証済みでも、写真フォルダの外へ書く経路を最後にもう一度塞ぐ
+        if (!isUriInsideFolder(to, PHOTO_FOLDER)) return undefined;
         const photoData = await files[from].async('base64');
         newUri = to;
         //console.log(newUri);
@@ -225,8 +228,10 @@ export const useEcorisMapFile = (): UseEcorisMapFileReturnType => {
       //URIを書き換える
       let newDataSet: DataType[] = [];
       for (const layer of data.layers) {
+        // layer.idと写真名はファイル由来。%2f等で写真フォルダの外を指せるため、満たさないものは写真を取り込まない
+        const isLayerIdSafe = isSafePathSegment(layer.id);
         const toFolder = `${PHOTO_FOLDER}/LOCAL/${layer.id}/OWNER`;
-        if (Platform.OS !== 'web') {
+        if (Platform.OS !== 'web' && isLayerIdSafe && isUriInsideFolder(toFolder, PHOTO_FOLDER)) {
           await FileSystem.makeDirectoryAsync(toFolder, {
             intermediates: true,
           });
@@ -240,6 +245,7 @@ export const useEcorisMapFile = (): UseEcorisMapFileReturnType => {
             for (const photoField of photoFields) {
               const photos = (record.field[photoField.name] as PhotoType[]).map(async (photo) => {
                 if (photo.uri) {
+                  if (!isLayerIdSafe || !isSafePathSegment(photo.name)) return photo;
                   // zip内の写真ファイルを layer.id 基準で探す。
                   // エクスポート時にレイヤ名を切り詰めてもフォルダ名には layer.id が
                   // 含まれるため、新旧どちらのバックアップでもヒットする。

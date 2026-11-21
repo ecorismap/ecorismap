@@ -1,19 +1,22 @@
 import { useCallback, useMemo, useState } from 'react';
 import { shallowEqual, useDispatch, useSelector } from 'react-redux';
-import { ExportType, FeatureType, GeoJsonFeatureType, LayerType, PhotoType, RecordType } from '../types';
+import { ExportType, FeatureType, FieldType, GeoJsonFeatureType, LayerType, PhotoType, RecordType } from '../types';
 
 import { RootState } from '../store';
 import { addLayerAction, updateLayerAction } from '../modules/layers';
 import * as FileSystem from 'expo-file-system/legacy';
 
 import { gpx2Data, geoJson2Data, createLayerFromGeoJson, csv2Data, detectGeoJsonType } from '../utils/Geometry';
-import { Platform } from 'react-native';
+import { Image, Platform } from 'react-native';
 import { addDataAction, deleteDataAction } from '../modules/dataSet';
 import { cloneDeep } from 'lodash';
 import { t } from '../i18n/config';
-import { getExt, runAsync } from '../utils/General';
+import { getBaseName, getExt, runAsync } from '../utils/General';
 import { kml } from '@tmcw/togeojson';
 import { DOMParser } from '@xmldom/xmldom';
+import JSZip from 'jszip';
+import { ulid } from 'ulid';
+import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
 
 import { unzipFromUri } from '../utils/Zip';
 import { changeLayerId, isLayerType } from '../utils/Layer';
@@ -22,7 +25,7 @@ import { decodeUri } from '../utils/File.web';
 import { importDictionary, exportDatabase } from '../utils/SQLite';
 import { generateCSV, generateGeoJson, generateGPX, generateKML } from '../utils/Geometry';
 import { DuplicateLayerConfirmAsync } from '../components/molecules/AlertAsync';
-import { isUriInsideFolder } from '../utils/safePath';
+import { isSafePathSegment, isUriInsideFolder } from '../utils/safePath';
 import { PHOTO_FOLDER } from '../constants/AppConstants';
 
 export type UseGeoFileReturnType = {
@@ -63,6 +66,183 @@ const geoJsonFeatureTypes: GeoJsonFeatureType[] = [
   'MULTIPOLYGON',
 ];
 
+/**
+ * 取り込みの結果。失敗・0件・一部除外を利用者に伝えるため、各loadXXXはこれを返す。
+ * - imported: レイヤかレコードを追加した（skipped件のフィーチャーは取り込めなかった）
+ * - empty: 取り込めるデータが無く、何も追加していない
+ * - cancelled: 利用者が中止した（メッセージは出さない）
+ */
+type LoadOutcome = {
+  status: 'imported' | 'empty' | 'cancelled';
+  skipped: number;
+  missingPhotos: number;
+};
+
+const loadOutcome = (status: LoadOutcome['status'], skipped = 0, missingPhotos = 0): LoadOutcome => ({
+  status,
+  skipped,
+  missingPhotos,
+});
+
+// geoJson2Dataは元のフィーチャーとの対応を返さず、PHOTOも常に[]にする。
+// 写真名の照合と除外件数の算出のため、レイヤに無い一時項目でフィーチャーの番号を通しておく
+const FEATURE_INDEX_KEY = '$$ecorismapImportFeatureIndex';
+
+type ConvertedGeoJson = {
+  records: RecordType[];
+  // records[i]の元になったフィーチャーのproperties（写真名の照合に使う）
+  sourceProperties: GeoJsonProperties[];
+  // レコードになったフィーチャーの番号（MULTIは1フィーチャーが複数レコードになるので集合で持つ）
+  featureIndices: Set<number>;
+};
+
+const convertGeoJson = (
+  geojson: FeatureCollection<Geometry | null, GeoJsonProperties>,
+  layer: LayerType,
+  featureType: GeoJsonFeatureType,
+  userId: string | undefined,
+  displayName: string | null
+): ConvertedGeoJson | undefined => {
+  if (geojson === null || typeof geojson !== 'object' || !Array.isArray(geojson.features)) return undefined;
+  const features = geojson.features.map((feature, index) =>
+    feature === null || typeof feature !== 'object'
+      ? feature
+      : { ...feature, properties: { ...(feature.properties ?? {}), [FEATURE_INDEX_KEY]: String(index) } }
+  );
+  const indexField: FieldType = { id: FEATURE_INDEX_KEY, name: FEATURE_INDEX_KEY, format: 'STRING' };
+  const records = geoJson2Data(
+    { ...geojson, features },
+    { ...layer, field: [...layer.field, indexField] },
+    featureType,
+    userId,
+    displayName
+  );
+  if (records === undefined) return undefined;
+  const sourceProperties: GeoJsonProperties[] = [];
+  const featureIndices = new Set<number>();
+  for (const record of records) {
+    const index = Number(record.field[FEATURE_INDEX_KEY]);
+    delete record.field[FEATURE_INDEX_KEY];
+    const source = Number.isInteger(index) ? geojson.features[index] : undefined;
+    if (source !== undefined) featureIndices.add(index);
+    // propertiesがnullのフィーチャーは項目を作らない（{}）のが本来の結果。目印を足したことで空欄の項目が増えないよう戻す
+    if (source !== undefined && source !== null && source.properties === null) record.field = {};
+    sourceProperties.push(source?.properties ?? null);
+  }
+  return { records, sourceProperties, featureIndices };
+};
+
+const countFeatures = (geojson: FeatureCollection<Geometry | null, GeoJsonProperties>) =>
+  geojson !== null && typeof geojson === 'object' && Array.isArray(geojson.features) ? geojson.features.length : 0;
+
+// PhotoTypeのwidth/heightは原画の寸法（写真ビューアが拡大表示の大きさに使う）。
+// Image.getSizeはネイティブのfile://とWebのblob:の両方を読める。取れなければ0/0にして、ビューア側のgetSizeに任せる
+const getOriginalImageSize = (uri: string) =>
+  new Promise<{ width: number; height: number }>((resolve) => {
+    try {
+      Image.getSize(
+        uri,
+        (width, height) => resolve({ width, height }),
+        () => resolve({ width: 0, height: 0 })
+      );
+    } catch (e) {
+      resolve({ width: 0, height: 0 });
+    }
+  });
+
+// 写真を取り込んだときと同じ大きさのサムネイルを作る
+const createImportedPhotoThumbnail = async (uri: string) => {
+  const size = await getOriginalImageSize(uri);
+  try {
+    const result = await manipulateAsync(uri, [{ resize: { height: 150 } }], {
+      compress: 0.7,
+      format: SaveFormat.JPEG,
+      base64: true,
+    });
+    return { thumbnail: result.base64 ? `data:image/jpeg;base64,${result.base64}` : null, ...size };
+  } catch (e) {
+    // 画像として読めなくても写真の参照は戻す（サムネイルが無いだけで、原本は開ける）
+    return { thumbnail: null, ...size };
+  }
+};
+
+/**
+ * データ一覧の書き出しZIP（exportPhoto:true）に同梱した写真を写真フォルダへ展開し、PHOTO項目の参照を戻す。
+ * 書き出し側はPHOTO項目を「写真名のカンマ区切り」で出し、写真本体を同じ名前でZIPに入れている。
+ * 写真名とレイヤIDはファイル由来なので、パス区切りなどを含むものは取り込まない（写真フォルダの外へ書かない）。
+ * @returns ZIPに見つからなかった・取り込めなかった写真の枚数
+ */
+const restorePhotosFromZip = async (converted: ConvertedGeoJson, layer: LayerType, zip: JSZip): Promise<number> => {
+  const photoFields = layer.field.filter((f) => f.format === 'PHOTO');
+  if (photoFields.length === 0) return 0;
+
+  const entryByName = new Map<string, string>();
+  for (const key of Object.keys(zip.files)) {
+    if (zip.files[key].dir || key.split('/').includes('__MACOSX')) continue;
+    const baseName = getBaseName(key);
+    if (!entryByName.has(baseName)) entryByName.set(baseName, key);
+  }
+
+  const isLayerIdSafe = isSafePathSegment(layer.id);
+  const toFolder = `${PHOTO_FOLDER}/LOCAL/${layer.id}/OWNER`;
+  let isFolderReady = false;
+  type RestoredPhoto = Pick<PhotoType, 'thumbnail' | 'width' | 'height'> & { uri: string };
+  // 同じ写真を複数のレコードが参照していても、展開とサムネイル作成は1回にする
+  const restored = new Map<string, RestoredPhoto | undefined>();
+  let missing = 0;
+
+  const extractPhoto = async (name: string): Promise<RestoredPhoto | undefined> => {
+    if (restored.has(name)) return restored.get(name);
+    let uri: string | undefined;
+    const entry = entryByName.get(name) ?? entryByName.get(name.normalize('NFC'));
+    if (entry !== undefined && isLayerIdSafe && isSafePathSegment(name)) {
+      try {
+        if (Platform.OS === 'web') {
+          const content = await zip.files[entry].async('arraybuffer');
+          uri = URL.createObjectURL(new Blob([content]));
+        } else {
+          const to = `${toFolder}/${name}`;
+          if (isUriInsideFolder(to, PHOTO_FOLDER)) {
+            if (!isFolderReady) {
+              await FileSystem.makeDirectoryAsync(toFolder, { intermediates: true });
+              isFolderReady = true;
+            }
+            const base64 = await zip.files[entry].async('base64');
+            await FileSystem.writeAsStringAsync(to, base64, { encoding: FileSystem.EncodingType.Base64 });
+            uri = to;
+          }
+        }
+      } catch (e) {
+        console.log(e);
+        uri = undefined;
+      }
+    }
+    const photo = uri === undefined ? undefined : { uri, ...(await createImportedPhotoThumbnail(uri)) };
+    restored.set(name, photo);
+    return photo;
+  };
+
+  for (let i = 0; i < converted.records.length; i++) {
+    const record = converted.records[i];
+    const properties = converted.sourceProperties[i];
+    for (const field of photoFields) {
+      const value = properties?.[field.name];
+      if (typeof value !== 'string' || value === '') continue;
+      const photos: PhotoType[] = [];
+      for (const name of value.split(',').filter((n) => n !== '')) {
+        const photo = await extractPhoto(name);
+        if (photo === undefined) {
+          missing++;
+          continue;
+        }
+        photos.push({ id: ulid(), name, url: null, key: null, ...photo });
+      }
+      record.field[field.name] = photos;
+    }
+  }
+  return missing;
+};
+
 export const useGeoFile = (): UseGeoFileReturnType => {
   const dispatch = useDispatch();
   const projectId = useSelector((state: RootState) => state.settings.projectId, shallowEqual);
@@ -77,12 +257,13 @@ export const useGeoFile = (): UseGeoFileReturnType => {
   const importGPX = useCallback(
     (gpx: string, featureType: FeatureType, importFileName: string) => {
       const data = gpx2Data(gpx, featureType, importFileName, dataUser.uid, dataUser.displayName);
-      if (data === undefined) return;
+      if (data === undefined) return 0;
       //console.log(recordSet[0].field);
       if (data.recordSet.length > 0) {
         dispatch(addLayerAction(data.layer));
         dispatch(addDataAction([{ layerId: data.layer.id, userId: dataUser.uid, data: data.recordSet }]));
       }
+      return data.recordSet.length;
     },
     [dispatch, dataUser.displayName, dataUser.uid]
   );
@@ -90,37 +271,40 @@ export const useGeoFile = (): UseGeoFileReturnType => {
   const importCsv = useCallback(
     (csv: string, importFileName: string, importedLayer?: LayerType) => {
       const data = csv2Data(csv, importFileName, dataUser.uid, dataUser.displayName, importedLayer);
-      if (data === undefined) return;
+      if (data === undefined) return 0;
       //console.log(recordSet[0].field);
       if (data.recordSet.length > 0) {
         dispatch(addLayerAction(data.layer));
         dispatch(addDataAction([{ layerId: data.layer.id, userId: dataUser.uid, data: data.recordSet }]));
       }
+      return data.recordSet.length;
     },
     [dispatch, dataUser.displayName, dataUser.uid]
   );
 
   const importGeoJson = useCallback(
-    (
+    async (
       geojson: FeatureCollection<Geometry | null, GeoJsonProperties>,
       featureType: GeoJsonFeatureType,
       importFileName: string,
-      importedLayer?: LayerType
-    ) => {
+      importedLayer?: LayerType,
+      photoZip?: JSZip
+    ): Promise<{ featureIndices: Set<number>; missingPhotos: number } | undefined> => {
       const layer =
         importedLayer === undefined
           ? createLayerFromGeoJson(geojson, importFileName, featureType)
           : cloneDeep(importedLayer);
-      const recordSet = geoJson2Data(geojson, layer, featureType, dataUser.uid, dataUser.displayName);
+      const converted = convertGeoJson(geojson, layer, featureType, dataUser.uid, dataUser.displayName);
 
-      if (recordSet === undefined) return false;
-      if (recordSet.length === 0) return false;
+      if (converted === undefined) return undefined;
+      if (converted.records.length === 0) return undefined;
+      const missingPhotos = photoZip === undefined ? 0 : await restorePhotosFromZip(converted, layer, photoZip);
       //ToDo Layerとデータの整合性のチェック
       //console.log(layer);
       //SET_LAYERSだとレンダリング時にしかdispatchの値が更新されず、連続で呼び出した際に不具合があるためADDする
       dispatch(addLayerAction(layer));
-      dispatch(addDataAction([{ layerId: layer.id, userId: dataUser.uid, data: recordSet }]));
-      return true;
+      dispatch(addDataAction([{ layerId: layer.id, userId: dataUser.uid, data: converted.records }]));
+      return { featureIndices: converted.featureIndices, missingPhotos };
     },
     [dispatch, dataUser.displayName, dataUser.uid]
   );
@@ -150,8 +334,13 @@ export const useGeoFile = (): UseGeoFileReturnType => {
       const geojsonStrings = Platform.OS === 'web' ? await decodeUri(uri) : await FileSystem.readAsStringAsync(uri);
       // parseと変換は重いのでrunAsyncでUIスレッドをブロックしないようにする
       const geojson = await runAsync(() => JSON.parse(geojsonStrings));
+      const featureCount = countFeatures(geojson);
+      // detectGeoJsonTypeは空のfeaturesで例外になる。内部エラーではなく「取り込めるデータが無い」として返す
+      if (featureCount === 0) return loadOutcome('empty');
       const featureType = detectGeoJsonType(geojson);
-      return await runAsync(() => importGeoJson(geojson, featureType, name));
+      const result = await runAsync(() => importGeoJson(geojson, featureType, name));
+      if (result === undefined) return loadOutcome('empty');
+      return loadOutcome('imported', featureCount - result.featureIndices.size);
     },
     [importGeoJson]
   );
@@ -159,8 +348,9 @@ export const useGeoFile = (): UseGeoFileReturnType => {
   const loadGpx = useCallback(
     async (uri: string, name: string) => {
       const gpx = Platform.OS === 'web' ? await decodeUri(uri) : await FileSystem.readAsStringAsync(uri);
-      await runAsync(() => importGPX(gpx, 'POINT', name));
-      await runAsync(() => importGPX(gpx, 'LINE', name));
+      const pointCount = await runAsync(() => importGPX(gpx, 'POINT', name));
+      const lineCount = await runAsync(() => importGPX(gpx, 'LINE', name));
+      return loadOutcome(pointCount + lineCount > 0 ? 'imported' : 'empty');
     },
     [importGPX]
   );
@@ -171,14 +361,23 @@ export const useGeoFile = (): UseGeoFileReturnType => {
       const files = loaded.file(/\.kml$/);
 
       const parser = new DOMParser();
+      let featureCount = 0;
+      let importedCount = 0;
       for (const file of files) {
         const kmlString = await file.async('string');
         const xml = await runAsync(() => parser.parseFromString(kmlString, 'text/xml'));
         //@ts-ignore
         const geojson = await runAsync(() => kml(xml));
+        const count = countFeatures(geojson);
+        featureCount += count;
+        // detectGeoJsonTypeは空のfeaturesで例外になるため、Placemarkの無いkmlは飛ばす
+        if (count === 0) continue;
         const featureType = detectGeoJsonType(geojson);
-        await runAsync(() => importGeoJson(geojson, featureType, name));
+        const result = await runAsync(() => importGeoJson(geojson, featureType, name));
+        importedCount += result?.featureIndices.size ?? 0;
       }
+      if (importedCount === 0) return loadOutcome('empty');
+      return loadOutcome('imported', featureCount - importedCount);
     },
     [importGeoJson]
   );
@@ -191,9 +390,14 @@ export const useGeoFile = (): UseGeoFileReturnType => {
       //@ts-ignore
       const geojson = await runAsync(() => kml(xml));
 
+      // 除外件数は全タイプを通して数える（1フィーチャーは1タイプでしか取り込まれない）
+      const importedIndices = new Set<number>();
       for (const featureType of presentFeatureTypes(geojson)) {
-        await runAsync(() => importGeoJson(geojson, featureType, name));
+        const result = await runAsync(() => importGeoJson(geojson, featureType, name));
+        result?.featureIndices.forEach((index) => importedIndices.add(index));
       }
+      if (importedIndices.size === 0) return loadOutcome('empty');
+      return loadOutcome('imported', countFeatures(geojson) - importedIndices.size);
     },
     [importGeoJson, presentFeatureTypes]
   );
@@ -202,7 +406,8 @@ export const useGeoFile = (): UseGeoFileReturnType => {
     async (uri: string, name: string) => {
       //ToDo:スマホではcsvの文字コードがShift-JISの場合の対応が必要。webでは対応済み
       const csvStrings = Platform.OS === 'web' ? await decodeUri(uri) : await FileSystem.readAsStringAsync(uri);
-      await runAsync(() => importCsv(csvStrings, name));
+      const count = await runAsync(() => importCsv(csvStrings, name));
+      return loadOutcome(count > 0 ? 'imported' : 'empty');
     },
     [importCsv]
   );
@@ -239,7 +444,7 @@ export const useGeoFile = (): UseGeoFileReturnType => {
         const choice = await DuplicateLayerConfirmAsync(json.name);
 
         if (choice === 'cancel') {
-          return false; // インポート中止
+          return loadOutcome('cancelled'); // インポート中止
         }
 
         if (choice === 'replace') {
@@ -264,6 +469,38 @@ export const useGeoFile = (): UseGeoFileReturnType => {
           expanded: existingLayerToReplace.expanded,
         };
 
+        // 既存データを消す前に変換しておく（壊れたGeoJSONで手元のデータだけが消え、「成功」と出るのを防ぐ）
+        let replacing: ConvertedGeoJson | undefined;
+        let replacingFeatureCount = 0;
+        let missingPhotos = 0;
+        if (updatedLayer.type !== 'LAYERGROUP' && geojsonFile !== undefined && updatedLayer.type !== 'NONE') {
+          const geojsonStrings = await loaded.files[geojsonFile].async('text');
+          const geojson = JSON.parse(geojsonStrings);
+          replacingFeatureCount = countFeatures(geojson);
+          replacing = convertGeoJson(geojson, updatedLayer, updatedLayer.type, dataUser.uid, dataUser.displayName);
+          if (replacing === undefined || replacing.records.length === 0) {
+            // MULTIタイプを試す
+            const multi = convertGeoJson(
+              geojson,
+              updatedLayer,
+              `MULTI${updatedLayer.type}` as GeoJsonFeatureType,
+              dataUser.uid,
+              dataUser.displayName
+            );
+            if (multi !== undefined) replacing = multi;
+          }
+          if (replacing === undefined) throw new Error('invalid geojson file');
+          missingPhotos = await restorePhotosFromZip(replacing, updatedLayer, loaded);
+        }
+        // CSVもGeoJSONと同じく、消す前に変換して読めることを確かめる
+        let replacingCsvRecords: RecordType[] | undefined;
+        if (updatedLayer.type !== 'LAYERGROUP' && replacing === undefined && csvFile !== undefined) {
+          const csv = await loaded.files[csvFile].async('text');
+          const data = csv2Data(csv, name, dataUser.uid, dataUser.displayName, updatedLayer);
+          if (data === undefined) throw new Error('invalid csv file');
+          replacingCsvRecords = data.recordSet;
+        }
+
         // SQLite辞書処理
         if (sqliteFile !== undefined) {
           const sqlite =
@@ -285,33 +522,18 @@ export const useGeoFile = (): UseGeoFileReturnType => {
         // データのインポート処理
         if (updatedLayer.type === 'LAYERGROUP') {
           // LAYERGROUPの場合はデータなし
-        } else if (geojsonFile !== undefined && updatedLayer.type !== 'NONE') {
-          const geojsonStrings = await loaded.files[geojsonFile].async('text');
-          const geojson = JSON.parse(geojsonStrings);
-          const recordSet = geoJson2Data(geojson, updatedLayer, updatedLayer.type, dataUser.uid, dataUser.displayName);
-          if (recordSet && recordSet.length > 0) {
-            dispatch(addDataAction([{ layerId: existingLayerToReplace.id, userId: dataUser.uid, data: recordSet }]));
-          } else {
-            // MULTIタイプを試す
-            const multiRecordSet = geoJson2Data(
-              geojson,
-              updatedLayer,
-              `MULTI${updatedLayer.type}` as GeoJsonFeatureType,
-              dataUser.uid,
-              dataUser.displayName
+        } else if (replacing !== undefined) {
+          if (replacing.records.length > 0) {
+            dispatch(
+              addDataAction([{ layerId: existingLayerToReplace.id, userId: dataUser.uid, data: replacing.records }])
             );
-            if (multiRecordSet && multiRecordSet.length > 0) {
-              dispatch(
-                addDataAction([{ layerId: existingLayerToReplace.id, userId: dataUser.uid, data: multiRecordSet }])
-              );
-            }
           }
-        } else if (csvFile !== undefined) {
-          const csv = await loaded.files[csvFile].async('text');
-          const data = csv2Data(csv, name, dataUser.uid, dataUser.displayName, updatedLayer);
-          if (data && data.recordSet.length > 0) {
-            dispatch(addDataAction([{ layerId: existingLayerToReplace.id, userId: dataUser.uid, data: data.recordSet }]));
-          }
+          // レイヤ設定は置き換わっているので、レコードが0件でも中止ではなく取り込み扱い（除外件数で伝える）
+          return loadOutcome('imported', replacingFeatureCount - replacing.featureIndices.size, missingPhotos);
+        } else if (replacingCsvRecords !== undefined && replacingCsvRecords.length > 0) {
+          dispatch(
+            addDataAction([{ layerId: existingLayerToReplace.id, userId: dataUser.uid, data: replacingCsvRecords }])
+          );
         }
       } else {
         // 通常モード（新規レイヤとして追加）
@@ -332,19 +554,22 @@ export const useGeoFile = (): UseGeoFileReturnType => {
           const geojsonStrings = await loaded.files[geojsonFile].async('text');
           const geojson = JSON.parse(geojsonStrings);
           //ToDo 有効なgeojsonファイルかチェック
-          const result = importGeoJson(geojson, importedLayer.type, name, importedLayer);
-          //QGISでgeojsonをエクスポートするとマルチタイプになるので。厳密にするなら必要ない処理だが作業的に頻出するので対応
-          if (!result) importGeoJson(geojson, `MULTI${importedLayer.type}`, name, importedLayer);
+          const result =
+            (await importGeoJson(geojson, importedLayer.type, name, importedLayer, loaded)) ??
+            //QGISでgeojsonをエクスポートするとマルチタイプになるので。厳密にするなら必要ない処理だが作業的に頻出するので対応
+            (await importGeoJson(geojson, `MULTI${importedLayer.type}`, name, importedLayer, loaded));
+          if (result === undefined) return loadOutcome('empty');
+          return loadOutcome('imported', countFeatures(geojson) - result.featureIndices.size, result.missingPhotos);
         } else if (csvFile !== undefined) {
           const csv = await loaded.files[csvFile].async('text');
           //ToDo 有効なcsvファイルかチェック
-          importCsv(csv, name, importedLayer);
+          if (importCsv(csv, name, importedLayer) === 0) return loadOutcome('empty');
         } else {
           //レイヤー設定のみの場合
           dispatch(addLayerAction(importedLayer));
         }
       }
-      return true;
+      return loadOutcome('imported');
     },
     [dispatch, importCsv, importGeoJson, layers, dataUser.uid, dataUser.displayName]
   );
@@ -356,47 +581,32 @@ export const useGeoFile = (): UseGeoFileReturnType => {
       if (!isLayerType(json)) throw new Error('invalid json file');
       const { layer: importedLayer } = changeLayerId(json);
       dispatch(addLayerAction(importedLayer));
+      return loadOutcome('imported');
     },
     [dispatch]
   );
 
   const loadFile = useCallback(
-    async (name: string, uri: string) => {
+    async (name: string, uri: string): Promise<LoadOutcome> => {
       const ext = getExt(name)?.toLowerCase();
-      let result = true;
       switch (ext) {
-        case 'csv': {
-          await loadCsv(uri, name);
-          break;
-        }
-        case 'zip': {
-          result = await loadZip(uri, name);
-          break;
-        }
-        case 'json': {
-          await loadJson(uri);
-          break;
-        }
-        case 'kml': {
-          await loadKml(uri, name);
-          break;
-        }
-        case 'kmz': {
-          await loadKmz(uri, name);
-          break;
-        }
-        case 'gpx': {
-          await loadGpx(uri, name);
-          break;
-        }
-        case 'geojson': {
-          result = await loadGeojson(uri, name);
-          break;
-        }
+        case 'csv':
+          return await loadCsv(uri, name);
+        case 'zip':
+          return await loadZip(uri, name);
+        case 'json':
+          return await loadJson(uri);
+        case 'kml':
+          return await loadKml(uri, name);
+        case 'kmz':
+          return await loadKmz(uri, name);
+        case 'gpx':
+          return await loadGpx(uri, name);
+        case 'geojson':
+          return await loadGeojson(uri, name);
         default:
           throw new Error('invalid extension');
       }
-      return result;
     },
     [loadCsv, loadGeojson, loadGpx, loadJson, loadKml, loadKmz, loadZip]
   );
@@ -408,12 +618,18 @@ export const useGeoFile = (): UseGeoFileReturnType => {
         setIsLoading(true);
 
         const result = await loadFile(name, uri);
-        if (result) {
-          return { isOK: true, message: t('hooks.message.receiveFile') };
-        } else {
+        if (result.status === 'cancelled') {
           // キャンセル時はメッセージを空にする
           return { isOK: false, message: '' };
         }
+        if (result.status === 'empty') {
+          // 何も追加していないのに「インポートしました」と出すと、取り込めなかったことに気付けない
+          return { isOK: false, message: t('hooks.message.noImportableData') };
+        }
+        const notes = [t('hooks.message.receiveFile')];
+        if (result.skipped > 0) notes.push(t('hooks.message.someFeaturesSkipped', { count: result.skipped }));
+        if (result.missingPhotos > 0) notes.push(t('hooks.message.somePhotosMissing', { count: result.missingPhotos }));
+        return { isOK: true, message: notes.join('\n') };
       } catch (e: any) {
         return { isOK: false, message: e.message + '\n' + t('hooks.message.failReceiveFile') };
       } finally {

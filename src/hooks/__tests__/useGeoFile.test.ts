@@ -183,4 +183,33 @@ describe('useGeoFile', () => {
       ],
     });
   });
+
+  const importGeoJsonString = async (geojsonData: unknown) => {
+    const base64String = Buffer.from(JSON.stringify(geojsonData)).toString('base64');
+    const uri = `data:application/json;base64,${base64String}`;
+    const { result } = renderHook(() => useGeoFile());
+    let ret: { isOK: boolean; message: string } | undefined;
+    await act(async () => {
+      ret = await result.current.importGeoFile(uri, 'test.geojson');
+    });
+    return ret;
+  };
+
+  test('取り込めるフィーチャーが1件も無いgeojsonは「インポートしました」ではなく失敗として返す', async () => {
+    const ret = await importGeoJsonString({ type: 'FeatureCollection', features: [] });
+    expect(ret).toStrictEqual({ isOK: false, message: 'hooks.message.noImportableData' });
+    expect(mockDispatch).not.toHaveBeenCalled();
+  });
+
+  test('座標が壊れたフィーチャーを除外したときは、成功に除外件数を添えて返す', async () => {
+    const ret = await importGeoJsonString({
+      type: 'FeatureCollection',
+      features: [
+        { type: 'Feature', properties: { name: 'ok' }, geometry: { type: 'Point', coordinates: [139.7455, 35.6586] } },
+        { type: 'Feature', properties: { name: 'bad' }, geometry: { type: 'Point', coordinates: [139.7455, 999] } },
+      ],
+    });
+    expect(ret?.isOK).toBe(true);
+    expect(ret?.message).toBe('hooks.message.receiveFile\nhooks.message.someFeaturesSkipped');
+  });
 });

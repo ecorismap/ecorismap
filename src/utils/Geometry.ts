@@ -18,6 +18,7 @@ import { COLOR } from '../constants/AppConstants';
 import dayjs from '../i18n/dayjs';
 import sanitize from 'sanitize-filename';
 import { formattedInputs } from './Format';
+import { parseCsv } from './csvParse';
 import { calcCentroid, calcLineMidPoint, latlonToLatLonObject } from './Coords';
 import {
   Feature,
@@ -49,14 +50,13 @@ export const getGeometryType = (geometryString: string): FeatureType => {
     return 'NONE';
   }
 };
-export const detectCsvType = (csv: string): { type: FeatureType; column: number } => {
-  const csvLines = csv.split('\n').map((line) => line.trim());
-  const csvFields = csvLines[0].split(',').map((field) => field.trim());
+const detectCsvTypeFromRows = (rows: string[][]): { type: FeatureType; column: number } => {
+  const csvFields = (rows[0] ?? []).map((field) => field.trim());
   const geometryColumn = csvFields.findIndex((field) => field === 'geometry');
   if (geometryColumn === -1) {
     return { type: 'NONE', column: -1 }; // geometryカラムがない場合
   }
-  const firstRowGeometry = csvLines[1]?.split(',')[geometryColumn]?.trim();
+  const firstRowGeometry = rows[1]?.[geometryColumn]?.trim();
   if (!firstRowGeometry) {
     return { type: 'NONE', column: -1 }; // データが不完全な場合
   }
@@ -64,38 +64,33 @@ export const detectCsvType = (csv: string): { type: FeatureType; column: number 
   return { type: geometryType, column: geometryColumn };
 };
 
-function parseCSVLine(line: string) {
-  const result = [];
-  let current = '';
-  let inQuotes = false;
+/** 引用符が閉じていないなど CSV として読めない場合は例外を投げる */
+export const detectCsvType = (csv: string): { type: FeatureType; column: number } =>
+  detectCsvTypeFromRows(parseCsv(csv));
 
-  for (let i = 0; i < line.length; i++) {
-    const char = line[i];
+// 空行（空白だけの行を含む）は従来どおりレコードとして扱わない
+const isBlankCsvRow = (row: string[]) => row.length === 1 && row[0].trim() === '';
 
-    if (char === '"') {
-      if (inQuotes && line[i + 1] === '"') {
-        // エスケープされた引用符
-        current += char;
-        i++; // 次の文字をスキップ
-      } else {
-        // 引用符の開始または終了
-        inQuotes = !inQuotes;
-      }
-    } else if (char === ',' && !inQuotes) {
-      // フィールドの区切り
-      result.push(current.trim());
-      current = '';
-    } else {
-      // 通常の文字
-      current += char;
+/**
+ * CSV は全て文字列なので、レイヤの項目型に合わせて戻す。
+ * 文字列のままだと PHOTO の forEach/map（削除・同期）が例外になり、数値も文字列に落ちる。
+ */
+const convertCsvValue = (value: string, format: FormatType | undefined): string | number | PhotoType[] => {
+  switch (format) {
+    case 'PHOTO':
+      // CSV には写真名しか無く写真本体と結びつけられないため空にする（GeoJSON経路と同じ）
+      return [];
+    case 'INTEGER':
+    case 'DECIMAL':
+    case 'SERIAL': {
+      if (value.trim() === '') return '';
+      const num = Number(value);
+      return Number.isFinite(num) ? num : '';
     }
+    default:
+      return value;
   }
-
-  // 最後のフィールドを追加
-  result.push(current.trim());
-
-  return result;
-}
+};
 
 export const csv2Data = (
   csv: string,
@@ -106,29 +101,25 @@ export const csv2Data = (
 ) => {
   try {
     //console.log(type);
-    const { type, column } = detectCsvType(csv);
+    // 引用符内の改行でレコードが分裂しないよう、本文・ヘッダ・型判定で同じパーサの結果を使う
+    const rows = parseCsv(csv);
+    const { type, column } = detectCsvTypeFromRows(rows);
     const layer = importedLayer === undefined ? createLayerFromCsv(csv, fileName, type) : cloneDeep(importedLayer);
-    const header = csv
-      .split('\n')[0]
-      .split(',')
-      .map((field) => field.trim());
-    const body = csv
-      .split('\n')
-      .map((line) => line.trim())
-      .filter((line) => line.length > 0) // 空行を除外
-      .slice(1);
+    const header = (rows[0] ?? []).map((field) => field.trim());
+    const body = rows
+      .slice(1)
+      .filter((row) => !isBlankCsvRow(row))
+      .map((row) => row.map((value) => value.trim()));
 
-    const offset = header[0].includes('displayName') ? 1 : 0;
+    const offset = (header[0] ?? '').includes('displayName') ? 1 : 0;
 
-    const importedData: RecordType[] = body.map((line) => {
-      //カンマで区切るが""で囲まれた,は残す。最初と最後の"を削除
-      const data = parseCSVLine(line);
-
+    const importedData: RecordType[] = body.map((data) => {
       //layer.fieldとdataの配列からfieldを作成
       const fields = layer.field
         .map((field, idx) => {
           //CSVの列数がレイヤのフィールド数より少ない場合にundefinedが入るのを防ぐ
-          return { [field.name]: data[idx + offset] ?? '' };
+          const value = data[idx + offset] ?? '';
+          return { [field.name]: importedLayer === undefined ? value : convertCsvValue(value, field.format) };
         })
         .reduce((obj, userObj) => Object.assign(obj, userObj), {});
       let coords;
@@ -199,6 +190,8 @@ export const csv2Data = (
   }
 };
 
+const GPX_ARRAY_TAGS = new Set(['trk', 'trkseg', 'trkpt']);
+
 export const gpx2Data = (
   gpx: string,
   type: FeatureType,
@@ -214,6 +207,8 @@ export const gpx2Data = (
       attributeNamePrefix: '',
       // GPXにエンティティ展開は不要。外部由来のファイルを読むため明示的に無効化する
       processEntities: false,
+      // 要素が1個だとオブジェクト、0個だと''になり.mapで例外→全軌跡が消えるため、常に配列にそろえる
+      isArray: (tagName, _jPath, _isLeafNode, isAttribute) => !isAttribute && GPX_ARRAY_TAGS.has(tagName),
     });
     const json = parser.parse(gpx);
     //console.log(json);
@@ -254,12 +249,22 @@ export const gpx2Data = (
       case 'LINE': {
         const trks = json[gpxkey].trk ? (Array.isArray(json[gpxkey].trk) ? json[gpxkey].trk : [json[gpxkey].trk]) : [];
 
-        importedData = trks.map((trk: any) => {
-          const trksegs = Array.isArray(trk.trkseg) ? trk.trkseg : [trk.trkseg];
-          //console.log(trksegs[0]);
+        // XMLParserの出力には型が無く、要素の中身はファイル次第なので any で受ける（値は下で個別に検証する）
+        type XmlNode = Record<string, any>;
+        // <trk/>や<trkseg/>は''としてパースされるため、オブジェクトのものだけを扱う
+        const isXmlObject = (v: unknown): v is XmlNode => typeof v === 'object' && v !== null;
+        const trkptsOf = (trackseg: XmlNode): XmlNode[] =>
+          Array.isArray(trackseg.trkpt) ? trackseg.trkpt.filter(isXmlObject) : [];
+        importedData = trks.filter(isXmlObject).flatMap((trk: XmlNode) => {
+          // 点を持たないセグメントは飛ばす（1点だけのセグメントは残す）
+          const trksegs: XmlNode[] = (Array.isArray(trk.trkseg) ? trk.trkseg : [])
+            .filter(isXmlObject)
+            .filter((trackseg: XmlNode) => trkptsOf(trackseg).length > 0);
+          // 点が1つも無いtrkは飛ばし、他のtrkの取り込みを巻き添えにしない
+          if (trksegs.length === 0) return [];
           const coords: LocationType[] = trksegs
-            .map((trackseg: any) =>
-              trackseg.trkpt.map((trkpt: any) => {
+            .map((trackseg) =>
+              trkptsOf(trackseg).map((trkpt) => {
                 const { isOK: latIsOK, result: lat } = formattedInputs(trkpt.lat, 'latitude-decimal', false);
                 const { isOK: lonIsOK, result: lon } = formattedInputs(trkpt.lon, 'longitude-decimal', false);
 
@@ -453,16 +458,28 @@ export const geoJson2Data = (
           .flat();
         break;
       case 'LINE':
-        importedData = validFeatures
-          .filter(
-            (feature): feature is Feature<LineString> =>
-              feature.geometry === null || feature.geometry.type === 'LineString'
-          )
-          .map((feature) => ({
+        importedData = mapFeaturesSkippingInvalid(
+          validFeatures.filter(
+            // 1点のLINEレコード（マップメモ・飛翔図のスタンプ等）は書き出しでPointになるため、1点の線として受け入れる。
+            // 位置なしレコードは書き出しでnullになる。どちらも自前の書き出し由来に限る
+            // （KMLは全タイプで走査するため、外部のPoint・ジオメトリ無しがPOINTレイヤと重複して入る）
+            (feature): feature is Feature<LineString | Point | null> =>
+              feature.geometry === null || feature.geometry.type === 'Point'
+                ? isEcorisMapExportFeature(feature)
+                : feature.geometry.type === 'LineString'
+          ),
+          (feature) => ({
             ...createBase(userId, displayName),
-            ...createGeometryFromLineStringGeoJson(feature.geometry.coordinates),
-            field: createFields(layer.field, feature),
-          }));
+            ...createGeometryFromLineStringGeoJson(
+              feature.geometry === null
+                ? undefined
+                : feature.geometry.type === 'Point'
+                ? [feature.geometry.coordinates]
+                : feature.geometry.coordinates
+            ),
+            field: createLineOrPolygonFields(layer.field, feature),
+          })
+        );
         break;
       case 'MULTILINE':
         importedData = validFeatures
@@ -475,13 +492,13 @@ export const geoJson2Data = (
               return {
                 ...createBase(userId, displayName),
                 coords: undefined,
-                field: createFields(layer.field, feature),
+                field: createLineOrPolygonFields(layer.field, feature),
               };
             } else {
               return feature.geometry.coordinates.map((partCoords) => ({
                 ...createBase(userId, displayName),
                 ...createGeometryFromLineStringGeoJson(partCoords),
-                field: createFields(layer.field, feature),
+                field: createLineOrPolygonFields(layer.field, feature),
               }));
             }
           })
@@ -489,15 +506,18 @@ export const geoJson2Data = (
         break;
 
       case 'POLYGON':
-        importedData = validFeatures
-          .filter(
-            (feature): feature is Feature<Polygon> => feature.geometry === null || feature.geometry.type === 'Polygon'
-          )
-          .map((feature) => ({
+        importedData = mapFeaturesSkippingInvalid(
+          validFeatures.filter(
+            // 位置なしレコード（null）は自前の書き出し由来に限って残す（理由はLINEと同じ）
+            (feature): feature is Feature<Polygon | null> =>
+              feature.geometry === null ? isEcorisMapExportFeature(feature) : feature.geometry.type === 'Polygon'
+          ),
+          (feature) => ({
             ...createBase(userId, displayName),
-            ...createGeometryFromPolygonGeoJson(feature.geometry.coordinates),
-            field: createFields(layer.field, feature),
-          }));
+            ...createGeometryFromPolygonGeoJson(feature.geometry === null ? undefined : feature.geometry.coordinates),
+            field: createLineOrPolygonFields(layer.field, feature),
+          })
+        );
         break;
       case 'MULTIPOLYGON':
         importedData = validFeatures
@@ -510,13 +530,13 @@ export const geoJson2Data = (
               return {
                 ...createBase(userId, displayName),
                 coords: undefined,
-                field: createFields(layer.field, feature),
+                field: createLineOrPolygonFields(layer.field, feature),
               };
             } else {
               return feature.geometry.coordinates.map((partCoords) => ({
                 ...createBase(userId, displayName),
                 ...createGeometryFromPolygonGeoJson(partCoords),
-                field: createFields(layer.field, feature),
+                field: createLineOrPolygonFields(layer.field, feature),
               }));
             }
           })
@@ -697,6 +717,10 @@ const generateDescription = (record: RecordType, field: FieldType[]) => {
   return userInfo + fieldInfo;
 };
 
+// XML 1.0で使えない制御文字(\u000B等)や孤立サロゲートが1文字でもあるとxmlbuilderが例外を投げ、
+// エクスポート全体が失敗する。外部ファイル由来の値に混ざりうるため、書き出し時に取り除く（< & 等のエスケープは従来どおり）
+const XML_INVALID_CHAR_REPLACEMENT = '';
+
 const rgbaToKmlColor = (rgba: string, transparency: boolean): string => {
   const match = rgba.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*(\d*\.?\d+))?\)/);
   if (!match) return transparency ? '00ffffff' : 'ffffffff';
@@ -719,6 +743,7 @@ export const generateKML = (data: RecordType[], layer: LayerType) => {
   const kml = xmlBuilder
     .create('kml', {
       encoding: 'UTF-8',
+      invalidCharReplacement: XML_INVALID_CHAR_REPLACEMENT,
     })
     .att('xmlns', 'http://www.opengis.net/kml/2.2');
 
@@ -843,6 +868,7 @@ export const generateTrackGPXWithPhotos = (
   const gpx = xmlBuilder
     .create('gpx', {
       encoding: 'UTF-8',
+      invalidCharReplacement: XML_INVALID_CHAR_REPLACEMENT,
     })
     .att('creator', 'ecoris')
     .att('version', '1.1');
@@ -882,6 +908,7 @@ export const generateTrackKML = (
   const kml = xmlBuilder
     .create('kml', {
       encoding: 'UTF-8',
+      invalidCharReplacement: XML_INVALID_CHAR_REPLACEMENT,
     })
     .att('xmlns', 'http://www.opengis.net/kml/2.2');
 
@@ -1016,6 +1043,7 @@ export const generateGPX = (data: RecordType[], type: FeatureType) => {
   const gpx = xmlBuilder
     .create('gpx', {
       encoding: 'UTF-8',
+      invalidCharReplacement: XML_INVALID_CHAR_REPLACEMENT,
     })
     .att('creator', 'ecoris')
     .att('version', '1.1');
@@ -1310,7 +1338,7 @@ function createGeometryFromLineStringGeoJson(coordinates: Position[] | undefined
   return { coords, centroid };
 }
 
-function createGeometryFromPolygonGeoJson(coordinates: Position[][]) {
+function createGeometryFromPolygonGeoJson(coordinates: Position[][] | undefined) {
   if (coordinates === undefined) return { coords: undefined, holes: undefined, centroid: undefined };
   const polygon = turf.polygon(coordinates);
 
@@ -1356,7 +1384,7 @@ function createBase(userId: string | undefined, displayName: string | null) {
   };
 }
 
-function createFields(fields: FieldType[], feature: Feature) {
+function createFields(fields: FieldType[], feature: Feature<Geometry | null>) {
   const properties = feature.properties;
   if (properties === null) return {};
   return fields
@@ -1366,10 +1394,52 @@ function createFields(fields: FieldType[], feature: Feature) {
             [field.name]: [],
           }
         : {
-            [field.name]: properties[field.name] || '',
+            // || だと数値の0やfalseが空欄になり、「0件」と「未記録」の区別が消える
+            [field.name]: properties[field.name] ?? '',
           }
     )
     .reduce((obj, userObj) => Object.assign(obj, userObj), {});
+}
+
+// 手書き・マップメモの線のスタイルとスタンプ。layer.field に無い内部項目なので createFields では拾えず、
+// 書き出し（generateGeoJson）が出しているものだけを許可リストで戻す（外部ファイルの任意の _ キーは取り込まない）
+const DRAWING_STYLE_KEYS = ['_strokeColor', '_strokeWidth', '_strokeStyle', '_group', '_stamp', '_zoom'] as const;
+
+// 自前の書き出し（generateGeoJson）は全フィーチャーの properties に _id（レコードID）を出す。
+// KML（togeojson）や他のソフトのGeoJSONには通常無いため、書き出し由来かどうかの印に使う。
+// _stamp に限らないのは、スタンプ以外の1点の線（1点だけのGPX軌跡など）もPointで書き出されるため
+function isEcorisMapExportFeature(feature: Feature<Geometry | null>): boolean {
+  const id: unknown = feature.properties?._id;
+  return typeof id === 'string' && id !== '';
+}
+
+function createDrawingStyleFields(feature: Feature<Geometry | null>): Record<string, string | number> {
+  const properties = feature.properties;
+  if (properties === null || properties === undefined) return {};
+  const result: Record<string, string | number> = {};
+  DRAWING_STYLE_KEYS.forEach((key) => {
+    const value: unknown = properties[key];
+    // 書き出しは未設定を '' で出すため、空は戻さない（通常のレイヤに空の内部項目を増やさない）
+    if ((typeof value === 'string' && value !== '') || (typeof value === 'number' && Number.isFinite(value))) {
+      result[key] = value;
+    }
+  });
+  return result;
+}
+
+function createLineOrPolygonFields(fields: FieldType[], feature: Feature<Geometry | null>) {
+  return { ...createFields(fields, feature), ...createDrawingStyleFields(feature) };
+}
+
+// 1件の壊れたフィーチャ（閉じていないリング等で turf が例外）で全件の取り込みが失敗しないよう、そのフィーチャだけ除外する
+function mapFeaturesSkippingInvalid<T>(features: T[], convert: (feature: T) => RecordType | RecordType[]): RecordType[] {
+  return features.flatMap((feature) => {
+    try {
+      return convert(feature);
+    } catch {
+      return [];
+    }
+  });
 }
 
 export function createLayerFromGeoJson(
