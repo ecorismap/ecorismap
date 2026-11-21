@@ -14,6 +14,7 @@ import { truncateForFileName } from '../utils/General';
 import { ProjectType } from '../types';
 import { FUNC_ENCRYPTION, CREATE_DEK_PROJECTS, ENABLE_DEK_SELF_MIGRATION, ENABLE_KEY_LEDGER } from '../constants/AppConstants';
 import { getKeyMigrationState } from '../lib/crypto/migration';
+import { resolveKeyRestoreMessage } from '../hooks/useProjects';
 import { getMemberKeyFreshness, migrateSelfDataToDEK, SelfMigrationInputType } from '../lib/firebase/firestore';
 import dayjs from '../i18n/dayjs';
 import { useEcorisMapFile } from '../hooks/useEcorismapFile';
@@ -128,10 +129,7 @@ export default function ProjectEditContainer({ navigation, route }: Props_Projec
       const migrationState = await getKeyMigrationState(user.uid);
       navigation.navigate('Account', {
         accountFormState: 'restoreEncryptKey',
-        message:
-          migrationState.state === 'migrated-need-restore'
-            ? t('hooks.message.inputNewPinRestore')
-            : t('hooks.message.inputEncryptPassword'),
+        message: resolveKeyRestoreMessage(migrationState),
         previous: 'Projects',
       });
       return true;

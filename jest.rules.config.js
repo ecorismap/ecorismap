@@ -12,6 +12,8 @@
 module.exports = {
   testEnvironment: 'node',
   testMatch: ['**/src/lib/__tests__/firebase/**/*.test.ts'],
+  // 他セッションの作業ツリー（.claude/worktrees）にある古いテストのコピーを拾わない
+  testPathIgnorePatterns: ['/node_modules/', '/\\.claude/'],
   transform: {
     '^.+\\.(ts|tsx|js|jsx)$': 'babel-jest',
   },

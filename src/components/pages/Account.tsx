@@ -358,7 +358,10 @@ export default function Account() {
               <Text style={styles.messageText}>{message}</Text>
             </View>
           )}
-          {(accountFormState === 'loginUserAccount' || accountFormState === 'restoreEncryptKey') && (
+          {(accountFormState === 'loginUserAccount' ||
+            accountFormState === 'restoreEncryptKey' ||
+            // 鍵リセット後のバックアップ再開で前回のPINを思い出せないとき、リセットをやり直せるようにする
+            accountFormState === 'backupEncryptPassword') && (
             <Pressable
               style={styles.resetText}
               onPress={accountFormState === 'loginUserAccount' ? changeResetPasswordForm : changeResetEncryptForm}

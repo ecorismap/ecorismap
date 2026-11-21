@@ -56,8 +56,21 @@ import { t } from '../../i18n/config';
 // ownerUid: Virgilグループのチケットはプロジェクトオーナー名義で保管されるため、
 // グループ暗号の復号・暗号化時に loadGroup へ渡す照会名義として必要。
 // （データ所有者のuidを渡すと他人のデータでは存在しない棚を照会して必ず失敗する）
-type ProjectCrypto = { scheme: 'group' | 'dek'; ownerUid?: string; dekPublicKey?: string; dekPrivateKey?: string };
+// confirmedAt: group 方式をサーバーで確かめた時刻(ms)。別端末・別管理者がDEKへ移行した後も
+// 古い group キャッシュのままグループ暗号で書き込む（暗号方式のダウングレード）のを防ぐため、
+// enc はこの時刻が古い group キャッシュを使う前にサーバーの cryptoScheme を確かめ直す。
+type ProjectCrypto = {
+  scheme: 'group' | 'dek';
+  ownerUid?: string;
+  dekPublicKey?: string;
+  dekPrivateKey?: string;
+  confirmedAt?: number;
+};
 const projectCryptoCache = new Map<string, ProjectCrypto>();
+
+// group キャッシュを確かめ直さずに書き込みへ使ってよい時間。一覧取得・プロジェクトを開く処理の直後に続く
+// 連続アップロード（レイヤごと）で毎回 project doc を読まないための猶予で、移行とすれ違う窓はこの長さに収まる。
+const GROUP_SCHEME_CONFIRM_TTL_MS = 10 * 1000;
 
 /** プロジェクトの暗号情報キャッシュをクリア（ログアウト・プロジェクト切替時に呼ぶ）。 */
 export const clearProjectCryptoCache = () => projectCryptoCache.clear();
@@ -96,7 +109,7 @@ const getProjectCrypto = async (projectId: string): Promise<ProjectCrypto> => {
   const snap = await getDoc(doc(firestore, 'projects', projectId));
   const pdata = snap.data() as ProjectFS | undefined;
   if (pdata?.cryptoScheme !== 'dek') {
-    const crypto: ProjectCrypto = { scheme: 'group', ownerUid: pdata?.ownerUid };
+    const crypto: ProjectCrypto = { scheme: 'group', ownerUid: pdata?.ownerUid, confirmedAt: Date.now() };
     projectCryptoCache.set(projectId, crypto);
     return crypto;
   }
@@ -115,7 +128,13 @@ const getProjectCrypto = async (projectId: string): Promise<ProjectCrypto> => {
 
 /** 方式分岐つき暗号化（従来 enc と同シグネチャ）。 */
 const enc = async (data: any, userId: string, projectId: string): Promise<string[]> => {
-  const crypto = await getProjectCrypto(projectId);
+  let crypto = await getProjectCrypto(projectId);
+  if (crypto.scheme === 'group' && FUNC_ENCRYPTION && Date.now() - (crypto.confirmedAt ?? 0) > GROUP_SCHEME_CONFIRM_TTL_MS) {
+    // 古い group キャッシュのままグループ暗号で書くと、移行後に追加された（Virgilグループに居ない）
+    // メンバーが読めないデータになる。書き込み前にサーバーの方式を確かめ、dek ならDEKを取り直す。
+    projectCryptoCache.delete(projectId);
+    crypto = await getProjectCrypto(projectId);
+  }
   if (crypto.scheme === 'dek') {
     if (!crypto.dekPublicKey) throw new Error('DEK public key not available');
     return encryptWithDEK(data, crypto.dekPublicKey);
@@ -150,6 +169,34 @@ export const decryptProjectData = (
 ): Promise<any> => dec(encryptedAt, encdata, userId, projectId);
 
 /**
+ * DEK秘密鍵を各メンバーの公開鍵でラップし、keys/{uid} に書く内容を作る（書き込みはしない）。
+ * 退会済み（Virgilカード失効・台帳削除済み）のメンバーは公開鍵が無くラップ不能なのでスキップする
+ * （元々復号できないアカウントで、失敗扱いにすると移行全体が止まる）。それ以外のエラーは投げる。
+ */
+const wrapDEKForMembers = async (
+  dekPrivateKey: string,
+  memberUids: string[],
+  wrapperUid: string
+): Promise<{ uid: string; keyFS: ProjectKeyFS }[]> => {
+  const encryptedAt = Timestamp.now();
+  const wrapped: { uid: string; keyFS: ProjectKeyFS }[] = [];
+  for (const uid of memberUids) {
+    let encDek: string;
+    try {
+      encDek = await wrapDEKForMember(dekPrivateKey, uid);
+    } catch (e: any) {
+      if (e?.name === 'UsersNotFoundError') {
+        console.warn('[wrapDEKForMembers] 公開鍵が無いメンバーをスキップ:', uid);
+        continue;
+      }
+      throw e;
+    }
+    wrapped.push({ uid, keyFS: { encDek, wrapperUid, encryptedAt } });
+  }
+  return wrapped;
+};
+
+/**
  * 生成済みDEKを全メンバーの公開鍵でラップして projects/{id}/keys/{uid} に保存する。
  * プロジェクト doc 作成後に呼ぶこと（Rulesが project の adminsUid/membersUid を参照するため）。
  */
@@ -160,22 +207,9 @@ export const distributeProjectDEK = async (
   wrapperUid: string
 ): Promise<{ isOK: boolean; message: string }> => {
   try {
-    const encryptedAt = Timestamp.now();
+    const wrapped = await wrapDEKForMembers(dek.privateKey, memberUids, wrapperUid);
     const batch = writeBatch(firestore);
-    for (const uid of memberUids) {
-      let encDek: string;
-      try {
-        encDek = await wrapDEKForMember(dek.privateKey, uid);
-      } catch (e: any) {
-        // 退会済み（Virgilカード失効・台帳削除済み）のメンバーは公開鍵が無くラップ不能。
-        // 元々復号できないアカウントなのでスキップする（失敗扱いにすると移行全体が止まる）。
-        if (e?.name === 'UsersNotFoundError') {
-          console.warn('[distributeProjectDEK] 公開鍵が無いメンバーをスキップ:', uid);
-          continue;
-        }
-        throw e;
-      }
-      const keyFS: ProjectKeyFS = { encDek, wrapperUid, encryptedAt };
+    for (const { uid, keyFS } of wrapped) {
       batch.set(doc(firestore, 'projects', projectId, 'keys', uid), keyFS);
     }
     await batch.commit();
@@ -189,14 +223,25 @@ export const distributeProjectDEK = async (
 /**
  * 管理者が新メンバーを追加する: 既存DEKを取得し、新メンバーの公開鍵でラップして keys/{newUid} を書く。
  * オーナー不要（DEKを開封できる任意の管理者が実行可能）。
+ * requireCurrentMember: 再共有（既存メンバー宛ての鍵の作り直し）では true を渡す。古い候補リストのまま
+ *   除名とすれ違うと、除名済みの uid に鍵を作り直してしまうため、サーバーの membersUid に居るかを確かめる。
+ *   メンバー追加はプロジェクト保存（membersUid 更新）より先に呼ばれるので、既定（false）では確かめない。
  */
 export const addMemberKey = async (
   projectId: string,
-  newMemberUid: string
+  newMemberUid: string,
+  options: { requireCurrentMember?: boolean } = {}
 ): Promise<{ isOK: boolean; message: string }> => {
   try {
     const wrapperUid = auth?.currentUser?.uid;
     if (!wrapperUid) return { isOK: false, message: t('hooks.message.pleaseLogin') };
+    if (options.requireCurrentMember) {
+      const pdata = (await getDoc(doc(firestore, 'projects', projectId))).data() as ProjectFS | undefined;
+      if (!pdata?.membersUid?.includes(newMemberUid)) {
+        console.warn('[addMemberKey] 宛先がプロジェクトのメンバーではないため中止:', newMemberUid);
+        return { isOK: false, message: t('hooks.message.failReshareKey') };
+      }
+    }
     const crypto = await getProjectCrypto(projectId);
     if (crypto.scheme !== 'dek' || !crypto.dekPrivateKey) {
       return { isOK: false, message: t('hooks.message.failGetDekForReshare') };
@@ -325,7 +370,11 @@ export const getAllProjects = async (uid: string, excludeMember = false, include
       // group方式は方式が確定しているのでキャッシュへ事前登録し、dec内での余分なproject doc再読み取りを防ぐ
       // （既存プロジェクトの読み取り回数を従来どおりに保つ）。dek方式はDEK秘密鍵の遅延取得が要るので事前登録しない。
       if (cryptoScheme !== 'dek') {
-        setProjectCryptoCache(docSnapshot.id, { scheme: 'group', ownerUid });
+        setProjectCryptoCache(docSnapshot.id, { scheme: 'group', ownerUid, confirmedAt: Date.now() });
+      } else if (projectCryptoCache.get(docSnapshot.id)?.scheme === 'group') {
+        // 別端末・別管理者がDEKへ移行済み。古い group キャッシュを残すと、移行の冪等判定をすり抜けて
+        // 二重移行したり、グループ暗号で書き込んだりするため捨てる（dec が dek として読み直す）。
+        projectCryptoCache.delete(docSnapshot.id);
       }
       const data = await dec(toDate(encryptedAt), encdata, ownerUid, docSnapshot.id);
       if (data === undefined) {
@@ -397,7 +446,8 @@ export const addProject = async (project: ProjectType) => {
 
     // 従来のグループ暗号方式（フラグOFF）または暗号無効モード(gzip)。
     // グループ暗号の場合、Virgilグループは createE3kitGroup で作成済み。
-    setProjectCryptoCache(id, { scheme: 'group', ownerUid });
+    // 作成前の doc は読めない（Rules）ため、作成者として方式を確定済みとして登録する。
+    setProjectCryptoCache(id, { scheme: 'group', ownerUid, confirmedAt: Date.now() });
     const encdata = await enc(others, ownerUid, id);
     const projectFS: ProjectFS = {
       ownerUid,
@@ -1169,6 +1219,111 @@ export const downloadTemplateData = async (projectId: string) => {
   }
 };
 
+/** DEK移行で再暗号化する共有データ（設定・COMMON・TEMPLATE）を復号したもの。 */
+type SharedDataForDEK = {
+  settings?: { data: ProjectSettingsType; editorUid: string; encryptedAt: Timestamp };
+  common: DataType[];
+  template: DataType[];
+};
+
+const isDecryptableWithDEK = async (encdata: string[], dekPrivateKey: string): Promise<boolean> => {
+  try {
+    await decryptWithDEK(encdata, dekPrivateKey);
+    return true;
+  } catch {
+    return false;
+  }
+};
+
+/**
+ * DEK移行で再暗号化する共有データを読み出して復号する。
+ * 読み出しの失敗（getDoc/getDocs の例外＝一時的な障害）はそのまま投げ、呼び出し側で移行失敗にする。
+ * 設定が復号できない（dec が undefined。旧グループ暗号の最終編集者が鍵をリセットした等で恒久的に開けない）
+ * 場合は警告だけ出して設定をグループ暗号のまま残し、移行は続ける（旧実装と同じ）。ここで失敗にすると
+ * そのプロジェクトのメンバー編集と一括移行が永久に通らなくなる。
+ * dekPrivateKey を渡すと、既にDEKで暗号化済みのもの（設定はDEKで開けるか、データは cryptoScheme 印）を除く。
+ * 途中で失敗した移行の再実行で、残りだけを再暗号化するために使う（cryptoScheme だけでは完了を判定できない）。
+ */
+const collectSharedDataForDEK = async (projectId: string, dekPrivateKey?: string): Promise<SharedDataForDEK> => {
+  const settingsFS = (await getDoc(doc(firestore, 'projects', projectId, 'settings', 'default'))).data() as
+    | ProjectSettingsFS
+    | undefined;
+  let settings: SharedDataForDEK['settings'];
+  if (settingsFS !== undefined) {
+    const alreadyDEK = dekPrivateKey !== undefined && (await isDecryptableWithDEK(settingsFS.encdata, dekPrivateKey));
+    if (!alreadyDEK) {
+      const data = await dec(toDate(settingsFS.encryptedAt), settingsFS.encdata, settingsFS.editorUid, projectId);
+      if (data === undefined) {
+        console.warn('[collectSharedDataForDEK] 設定を復号できないためグループ暗号のまま残す:', projectId);
+      } else {
+        // 更新日時と最終編集者は移行前の値のまま書き戻す（一覧の「更新日時」が移行日時に置き換わらないように）
+        settings = { data, editorUid: settingsFS.editorUid, encryptedAt: settingsFS.encryptedAt };
+      }
+    }
+  }
+
+  const collectData = async (permission: 'COMMON' | 'TEMPLATE'): Promise<DataType[]> => {
+    const snap = await getDocs(
+      query(collection(firestore, 'projects', projectId, 'data'), where('permission', '==', permission))
+    );
+    let docs: { data: () => unknown }[] = snap.docs;
+    if (dekPrivateKey !== undefined) {
+      const groupKey = (d: { data: () => unknown }) => {
+        const { userId, layerId } = d.data() as DataFS;
+        return `${userId}_${layerId}`;
+      };
+      const unmarked = new Set(
+        selectCompleteGenerationDocs(docs)
+          .filter((d) => (d.data() as DataFS).cryptoScheme !== 'dek')
+          .map(groupKey)
+      );
+      docs = docs.filter((d) => unmarked.has(groupKey(d)));
+    }
+    if (docs.length === 0) return [];
+    return projectDataSetToDataSet(projectId, { docs });
+  };
+
+  return { settings, common: await collectData('COMMON'), template: await collectData('TEMPLATE') };
+};
+
+/** 共有データをDEKで再暗号化して書き戻す。1件でも失敗すれば false（移行は未完了として扱う）。 */
+const writeSharedDataWithDEK = async (projectId: string, shared: SharedDataForDEK): Promise<boolean> => {
+  if (shared.settings !== undefined) {
+    const { data, editorUid, encryptedAt } = shared.settings;
+    const res = await uploadProjectSettings(projectId, editorUid, data, encryptedAt);
+    if (!res.isOK) return false;
+  }
+  const targets: [DataType[], 'COMMON' | 'TEMPLATE'][] = [
+    [shared.common, 'COMMON'],
+    [shared.template, 'TEMPLATE'],
+  ];
+  for (const [list, permission] of targets) {
+    for (const d of list) {
+      if (d.userId === undefined) continue;
+      const res = await uploadDataHelper(projectId, { userId: d.userId, layerId: d.layerId, data: d.data, permission });
+      if (!res.isOK) return false;
+    }
+  }
+  return true;
+};
+
+/**
+ * 既にDEK方式のプロジェクトで、移行の残り（グループ暗号のままの設定・COMMON・TEMPLATE）を再暗号化する。
+ * 前回の移行が書き戻しの途中で失敗した場合と、別端末・別管理者が移行済みだった場合の両方でここに来る。
+ */
+const completeDEKMigration = async (projectId: string): Promise<{ isOK: boolean; message: string }> => {
+  projectCryptoCache.delete(projectId);
+  const crypto = await getProjectCrypto(projectId);
+  if (crypto.scheme !== 'dek' || crypto.dekPrivateKey === undefined) {
+    return { isOK: false, message: t('hooks.message.failGetDekForReshare') };
+  }
+  const shared = await collectSharedDataForDEK(projectId, crypto.dekPrivateKey);
+  if (!(await writeSharedDataWithDEK(projectId, shared))) {
+    return { isOK: false, message: t('common.message.failGetProjects') };
+  }
+  return { isOK: true, message: '' };
+};
+
 /**
  * 既存のグループ暗号プロジェクトをDEK(エンベロープ暗号)方式へ移行する（Phase ii / 遅延移行）。
  * 管理者端末で実行する（E2Eのためクラウド関数では復号できない）。
@@ -1177,7 +1332,12 @@ export const downloadTemplateData = async (projectId: string) => {
  *  - 再暗号化する(DEK化): プロジェクトメタ・設定・COMMON・TEMPLATE（新メンバーに必要な共有データ）。
  *  - そのまま残す: PRIVATE/PUBLIC（各メンバー所有）。Virgilグループも残し、これらは dual-read で復号する。
  *  - DEK秘密鍵は引数 project の membersUid 全員へラップして keys/{uid} に保存する。
- * 冪等: 既にDEK方式なら何もしない。
+ * 冪等: サーバー上で既にDEK方式なら新しいDEKは作らず、再暗号化の残りだけを片付ける。
+ *
+ * 方式の確定(cryptoScheme/dekPublicKey)と keys の配布は1つのバッチで書く。別々に書くと、
+ * 二重移行（古い一覧の端末・2端末同時）の負けた側が keys だけを自分のDEKで上書きし、
+ * keys と dekPublicKey が対にならず全員が恒久的に復号できなくなる。既にDEKの doc の
+ * dekPublicKey 差し替えは Rules（keepsDekPublicKey）が拒否するので、負けた側はバッチごと失敗し keys も書かれない。
  */
 export const migrateProjectToDEK = async (
   project: ProjectType
@@ -1187,60 +1347,57 @@ export const migrateProjectToDEK = async (
     if (!wrapperUid) return { isOK: false, message: t('hooks.message.pleaseLogin') };
 
     const { id, ownerUid, membersUid } = project;
+    const projectRef = doc(firestore, 'projects', id);
 
-    // 既にDEK方式なら多重移行しない。
-    const current = await getProjectCrypto(id);
-    if (current.scheme === 'dek') return { isOK: true, message: '' };
+    // 冪等判定はキャッシュでなくサーバーの doc で行う（キャッシュは別端末での移行を知らない）。
+    const serverProject = (await getDoc(projectRef)).data() as ProjectFS | undefined;
+    if (serverProject === undefined) return { isOK: false, message: t('common.message.failGetProjects') };
+    if (serverProject.cryptoScheme === 'dek') return await completeDEKMigration(id);
 
     // 1. まだgroup方式のうちに、移行対象データを復号して取り出す（このdecはグループ暗号で動く）。
-    const settingsRes = await downloadProjectSettings(id);
-    // 設定の更新日時・最終編集者は再暗号化後も据え置くため、上書きされる前に控えておく
-    // （プロジェクト一覧の「更新日時」がこの値。移行日時に置き換わると実際の作業履歴が失われる）。
-    const settingsMeta = await getProjectSettingsMeta(id);
-    const commonRes = await downloadCommonData(id);
-    const templateRes = await downloadTemplateData(id);
-    if (!commonRes.isOK || !templateRes.isOK) {
-      return { isOK: false, message: t('common.message.cannotLoadProject') };
-    }
+    //    読み出しに失敗したら、何も書かないうちに失敗にする（例外は外側の catch へ）。
+    const shared = await collectSharedDataForDEK(id);
 
-    // 2. DEKを生成し、以降の暗号化がDEKを使うようキャッシュを切り替える。
+    // 2. DEKを生成する。キャッシュの切り替えはバッチの確定後に行う（確定前に切り替えると、
+    //    バッチが拒否された場合に並行する書き込みがサーバーの知らないDEKで暗号化されてしまう）。
     const dek = await createProjectDEK();
-    setProjectCryptoCache(id, { scheme: 'dek', ownerUid, dekPublicKey: dek.publicKey, dekPrivateKey: dek.privateKey });
 
-    // 3. 既存の全メンバーへDEKを配布（keys/{uid}）。新メンバーは呼び出し側が addMemberKey で追加する。
-    const distRes = await distributeProjectDEK(id, membersUid, dek, wrapperUid);
-    if (!distRes.isOK) return { isOK: false, message: distRes.message };
-
-    // 4. プロジェクトメタをDEKで再暗号化し、cryptoScheme/dekPublicKey を設定（管理者更新としてRulesを通す）。
+    // 3. プロジェクトメタのDEK再暗号化・方式の確定と、既存の全メンバーへのDEK配布(keys/{uid})を1バッチで書く。
+    //    新メンバーは呼び出し側が addMemberKey で追加する。
+    //    メタはキャッシュ(まだgroup)を経由せず、生成したDEKの公開鍵で直接暗号化する。
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { id: _id, ownerUid: _o, adminsUid: _a, membersUid: _m, storage, settingsEncryptedAt, ...others } = project;
-    const encdata = await enc(others, ownerUid, id);
-    await updateDoc(doc(firestore, 'projects', id), {
+    const encdata = await encryptWithDEK(others, dek.publicKey);
+    const wrapped = await wrapDEKForMembers(dek.privateKey, membersUid, wrapperUid);
+    if (wrapped.length + 1 > MAX_BATCH_OPS) {
+      return { isOK: false, message: t('hooks.message.failAddGroupMembers') };
+    }
+    const batch = writeBatch(firestore);
+    batch.update(projectRef, {
       encdata,
       encryptedAt: Timestamp.now(),
       cryptoScheme: 'dek',
       dekPublicKey: dek.publicKey,
     });
+    for (const { uid, keyFS } of wrapped) {
+      batch.set(doc(firestore, 'projects', id, 'keys', uid), keyFS);
+    }
+    try {
+      await batch.commit();
+    } catch (e) {
+      // 先に別の端末が移行を確定させた場合は、このDEKを捨ててその移行の残りを片付ける。
+      projectCryptoCache.delete(id);
+      const latest = (await getDoc(projectRef)).data() as ProjectFS | undefined;
+      if (latest?.cryptoScheme === 'dek') return await completeDEKMigration(id);
+      throw e;
+    }
+    // 方式が確定したので、以降の暗号化（設定・COMMON・TEMPLATE の書き戻し含む）をDEKへ切り替える。
+    setProjectCryptoCache(id, { scheme: 'dek', ownerUid, dekPublicKey: dek.publicKey, dekPrivateKey: dek.privateKey });
 
-    // 5. 設定・COMMON・TEMPLATE をDEKで再暗号化して書き戻す。
-    if (settingsRes.isOK) {
-      // 中身はDEKで暗号化し直すが、更新日時と最終編集者は移行前の値のまま書く。
-      await uploadProjectSettings(
-        id,
-        settingsMeta?.editorUid ?? wrapperUid,
-        settingsRes.data,
-        settingsMeta?.encryptedAt
-      );
+    // 4. 設定・COMMON・TEMPLATE をDEKで再暗号化して書き戻す。失敗しても再実行で残りを片付けられる。
+    if (!(await writeSharedDataWithDEK(id, shared))) {
+      return { isOK: false, message: t('common.message.failGetProjects') };
     }
-    for (const d of commonRes.data ?? []) {
-      if (d.userId === undefined) continue;
-      await uploadDataHelper(id, { userId: d.userId, layerId: d.layerId, data: d.data, permission: 'COMMON' });
-    }
-    for (const d of templateRes.data ?? []) {
-      if (d.userId === undefined) continue;
-      await uploadDataHelper(id, { userId: d.userId, layerId: d.layerId, data: d.data, permission: 'TEMPLATE' });
-    }
-
     return { isOK: true, message: '' };
   } catch (e) {
     console.log('[migrateProjectToDEK] error', e);

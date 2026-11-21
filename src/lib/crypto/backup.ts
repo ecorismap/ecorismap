@@ -41,6 +41,24 @@ const normalizeError = (e: any): { message: string; lockedUntil?: number } => {
   return { message: 'backup-error' };
 };
 
+/**
+ * バックアップ作成（beginKeyBackup/commitKeyBackup）のエラーを正規化する。
+ * 作成側の failed-precondition はロックではなく台帳との世代不一致、permission-denied は誤PINではなく
+ * メール未検証なので、復元側（normalizeError）と別に扱う。
+ */
+const normalizeBackupWriteError = (e: unknown): { message: string } => {
+  const err = e as { code?: string; message?: string } | undefined;
+  const code = err?.code ?? '';
+  const detail = err?.message ?? '';
+  if (code.endsWith('failed-precondition') && detail.includes('key-version-mismatch')) {
+    return { message: 'backup-key-version-mismatch' };
+  }
+  if (code.endsWith('permission-denied')) {
+    return { message: 'backup-email-not-verified' };
+  }
+  return normalizeError(e);
+};
+
 export const getKeyBackupStatus = async (): Promise<
   { isOK: true; status: KeyBackupStatus } | { isOK: false; message: string }
 > => {
@@ -83,7 +101,9 @@ export const createKeyBackup = async (
     return { isOK: true, message: '' };
   } catch (e) {
     console.log('[createKeyBackup] error', e);
-    return { isOK: false, message: normalizeError(e).message };
+    // backup-key-version-mismatch: 鍵の世代が台帳・既存バックアップと合わない（古い鍵・他端末で更新途中）
+    // backup-email-not-verified: メールアドレス未確認
+    return { isOK: false, message: normalizeBackupWriteError(e).message };
   }
 };
 

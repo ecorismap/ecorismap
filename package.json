@@ -16,7 +16,7 @@
       "src/__tests__/resources/.*",
       "src/lib/__tests__/firebase/.*",
       "maplibre-native/.*",
-      "\\.claude/tests/.*"
+      "\\.claude/"
     ],
     "moduleFileExtensions": [
       "ts",
