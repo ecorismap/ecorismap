@@ -10,13 +10,19 @@ const CHUNK_SIZE = 500;
 type RunAsyncDb = { runAsync: (sql: string, params: string[]) => Promise<unknown> };
 
 // tableNameはSQLに直接埋め込むため、呼び出し側でisValidTableName等の検証を済ませること
-export async function bulkInsertValues(db: RunAsyncDb, tableName: string, values: string[]): Promise<void> {
+// valuesは取り込んだSQLiteファイル由来でNULLや数値が混ざりうる（外部で編集した辞書など）。
+// .trim()が例外で取り込みを止めないよう、文字列へ揃えてから入れる
+export async function bulkInsertValues(
+  db: RunAsyncDb,
+  tableName: string,
+  values: readonly (string | number | null | undefined)[]
+): Promise<void> {
   for (let i = 0; i < values.length; i += CHUNK_SIZE) {
     const chunk = values.slice(i, i + CHUNK_SIZE);
     const placeholders = chunk.map(() => '(?)').join(',');
     await db.runAsync(
       `INSERT INTO "${tableName}" (value) VALUES ${placeholders}`,
-      chunk.map((value) => value.trim())
+      chunk.map((value) => String(value ?? '').trim())
     );
   }
 }

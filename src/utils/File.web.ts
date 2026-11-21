@@ -5,10 +5,7 @@ import { ExportResultType, ExportType } from '../types';
 import { Buffer } from 'buffer';
 import { fetchPhoto } from '../lib/firebase/storage';
 import { ExportCancelledError, ExportZipOptions, generateZipCancellable, throwIfExportCancelled } from './zipProgress';
-// //@ts-ignore
-// import Base64 from 'Base64';
-// import jschardet from 'jschardet';
-// import iconv from 'iconv-lite';
+import iconv from 'iconv-lite';
 
 //bugのため以下の記述が必要。https://github.com/eligrey/FileSaver.js/pull/533
 let FileSaver: { saveAs: (arg0: any, arg1: string) => void };
@@ -38,6 +35,7 @@ export const generateZipBlob = async (
     type: ExportType;
     url?: string | null;
     key?: string | null;
+    photoId?: string;
   }[],
   // 中止されたらExportCancelledErrorを投げる
   options?: ExportZipOptions
@@ -48,7 +46,14 @@ export const generateZipBlob = async (
     if (folder == null) return;
     for (const d of exportData) {
       throwIfExportCancelled(options);
-      const folderName = sanitize(d.folder) === '' ? '' : sanitize(d.folder) + '/';
+      const baseFolder = sanitize(d.folder) === '' ? '' : sanitize(d.folder) + '/';
+      // 写真名は秒単位の自動命名で別レコードと重なりうるため、photo.idのフォルダに分けて上書きし合わないようにする。
+      // サニタイズで形が変わるidは取り込み側で照合できないので使わない（ネイティブのFile.tsと同じ規則）
+      const photoDir =
+        d.type === 'PHOTO' && d.photoId !== undefined && d.photoId !== '' && sanitize(d.photoId) === d.photoId
+          ? `${d.photoId}/`
+          : '';
+      const folderName = baseFolder + photoDir;
       try {
         if (d.type === 'PHOTO' || d.type === 'SQLITE') {
           let blob: Blob | undefined;
@@ -133,6 +138,7 @@ export const exportGeoFile = async (
     type: ExportType;
     url?: string | null;
     key?: string | null;
+    photoId?: string;
   }[],
   exportFileName: string,
   ext: string,
@@ -157,6 +163,7 @@ export const generateEcorisMapZip = async (
     type: ExportType;
     url?: string | null;
     key?: string | null;
+    photoId?: string;
   }[],
   _exportFileName: string
 ): Promise<{ source: string | Blob; size: number } | undefined> => {
@@ -195,29 +202,88 @@ export async function getDropedFile(acceptedFiles: any) {
   }
 }
 
-// export function decodeUri(uri: string) {
-//   const arr = uri.split(',');
-//   const base64 = arr[arr.length - 1];
-//   //return decodeURIComponent(escape(Base64.atob(base64)));
-//   const buffer = Buffer.from(Base64.atob(base64), 'binary');
-//   const encoding = jschardet.detect(buffer).encoding;
-//   return iconv.decode(buffer, encoding);
-// }
+// TextDecoderのfatalオプションは実行環境（Hermes等）で対応がまちまちなため、UTF-8の妥当性は自前で判定する
+const isValidUtf8 = (bytes: Uint8Array): boolean => {
+  let i = 0;
+  while (i < bytes.length) {
+    const b = bytes[i];
+    if (b < 0x80) {
+      i += 1;
+      continue;
+    }
+    let need: number;
+    let min: number;
+    if (b >= 0xc2 && b <= 0xdf) {
+      need = 1;
+      min = 0x80;
+    } else if (b >= 0xe0 && b <= 0xef) {
+      need = 2;
+      min = 0x800;
+    } else if (b >= 0xf0 && b <= 0xf4) {
+      need = 3;
+      min = 0x10000;
+    } else {
+      return false;
+    }
+    if (i + need >= bytes.length) return false;
+    let cp = b & (need === 1 ? 0x1f : need === 2 ? 0x0f : 0x07);
+    for (let k = 1; k <= need; k++) {
+      const c = bytes[i + k];
+      if ((c & 0xc0) !== 0x80) return false;
+      cp = (cp << 6) | (c & 0x3f);
+    }
+    // 冗長表現・サロゲート領域・U+10FFFF超は不正なUTF-8
+    if (cp < min || (cp >= 0xd800 && cp <= 0xdfff) || cp > 0x10ffff) return false;
+    i += need + 1;
+  }
+  return true;
+};
+
+// TextDecoder('shift_jis')はブラウザでは使えるが、Expoの組み込みTextDecoder（ネイティブ・jest）はUTF-8のみのため、
+// 全プラットフォームで同じ結果になるようiconv-liteで読む。Excelが書くのはWindowsの拡張文字（①・㈱等）を含むCP932。
+const decodeShiftJis = (bytes: Uint8Array): string | undefined => {
+  try {
+    return iconv.decode(bytes, 'cp932');
+  } catch {
+    return undefined;
+  }
+};
+
+// 日本語版ExcelのCSVはShift_JISで保存されるため、BOM → UTF-8として妥当か → Shift_JIS の順に判定する。
+// 正しいUTF-8を誤ってSJISで読まないよう、SJISは「UTF-8として不正」なときだけ試す。
+export const decodeTextBytes = (bytes: Uint8Array): string => {
+  const buf = Buffer.from(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  if (bytes.length >= 2 && bytes[0] === 0xff && bytes[1] === 0xfe) {
+    return buf.subarray(2).toString('utf16le');
+  }
+  if (bytes.length >= 3 && bytes[0] === 0xef && bytes[1] === 0xbb && bytes[2] === 0xbf) {
+    // BOMは取り除いて返す（旧実装の response.text() と同じ挙動）。
+    // 残すと BOM 付き GeoJSON/JSON の JSON.parse が先頭の U+FEFF で失敗する
+    return buf.subarray(3).toString('utf-8');
+  }
+  if (isValidUtf8(bytes)) return buf.toString('utf-8');
+  const sjis = decodeShiftJis(bytes);
+  const text = sjis ?? buf.toString('utf-8');
+  if (text.includes('�')) {
+    console.warn('decodeTextBytes: 文字コードを判定できず、一部の文字が置換文字(U+FFFD)になりました');
+  }
+  return text;
+};
 
 export async function decodeUri(uri: string): Promise<string> {
   try {
     // blob URLまたはhttp(s) URLの場合
     if (uri.startsWith('blob:') || uri.startsWith('http')) {
       const response = await fetch(uri);
-      return await response.text();
+      return decodeTextBytes(new Uint8Array(await response.arrayBuffer()));
     }
     // data URIの場合
     if (uri.includes(',')) {
       const base64 = uri.split(',').pop() || '';
-      return Buffer.from(base64, 'base64').toString('utf-8');
+      return decodeTextBytes(new Uint8Array(Buffer.from(base64, 'base64')));
     }
     // その他はbase64として扱う
-    return Buffer.from(uri, 'base64').toString('utf-8');
+    return decodeTextBytes(new Uint8Array(Buffer.from(uri, 'base64')));
   } catch (error) {
     console.error('Error decoding URI:', error);
     return '';

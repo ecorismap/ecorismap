@@ -228,19 +228,20 @@ describe('レイヤZIP(GeoJSON経路)の往復', () => {
     expect(imported.field.dec).toBe(0);
   });
 
-  it.failing('PHOTOの写真参照（ファイル名）が戻る', () => {
+  // geojson.test.ts の同名テストと同じ理由（写真は useGeoFile が ZIP から戻す。M3）
+  it.skip('PHOTOの写真参照（ファイル名）が戻る', () => {
     const [imported] = zipGeoJsonRoundTrip([pointRecord(typicalField())], layer);
     const photos = imported.field.photo as PhotoType[];
     expect(Array.isArray(photos)).toBe(true);
     expect(photos.map((p) => p.name)).toEqual(['IMG_0001.jpg', 'IMG_0002.jpg']);
   });
 
-  it.failing('非表示(visible=false)にしていたレコードは非表示のまま戻る（_visibleは書き出している）', () => {
+  it('非表示(visible=false)にしていたレコードは非表示のまま戻る（_visibleは書き出している）', () => {
     const [imported] = zipGeoJsonRoundTrip([pointRecord(typicalField(), { visible: false })], layer);
     expect(imported.visible).toBe(false);
   });
 
-  it.failing('グループの子レコード（_group=親id）は親子関係が保たれる', () => {
+  it('グループの子レコード（_group=親id）は親子関係が保たれる', () => {
     const parent = pointRecord(typicalField(), { id: 'parent' });
     const child = pointRecord({ ...typicalField(), _group: 'parent' }, { id: 'child' });
     const imported = zipGeoJsonRoundTrip([parent, child], layer);
@@ -250,7 +251,7 @@ describe('レイヤZIP(GeoJSON経路)の往復', () => {
     expect(importedChild.field._group).toBe(importedParent.id);
   });
 
-  it.failing('REFERENCE(主キー=_id)で子が持つ親idが、取り込み後の親レコードidと一致する', () => {
+  it('REFERENCE(主キー=_id)で子が持つ親idが、取り込み後の親レコードidと一致する', () => {
     // 参照元レイヤの主キーが_idのとき、子レコードのref列には親のrecord.idが入る（DataEditReference）
     const parent = pointRecord(typicalField(), { id: '01PARENTID' });
     const imported = zipGeoJsonRoundTrip([parent], layer);
@@ -307,7 +308,7 @@ describe('レイヤZIP(GeoJSON経路)の往復', () => {
     expect(imported.map((r) => r.field.str)).toEqual(['line', 'stamp']);
   });
 
-  it.failing('外部GNSSで測ったポイントの標高・測位品質が戻る（書き出しでは_altitude/_gnssFixを出している）', () => {
+  it('外部GNSSで測ったポイントの標高・測位品質が戻る（書き出しでは_altitude/_gnssFixを出している）', () => {
     const rec = pointRecord(typicalField(), {
       coords: {
         latitude: 35,
@@ -358,7 +359,7 @@ describe('レイヤZIP(NONEレイヤ=CSV経路)の往復', () => {
     expect(Array.isArray(imported.field.photo)).toBe(true);
   });
 
-  it.failing('前後の空白を含む文字列が削られずに戻る', () => {
+  it('前後の空白を含む文字列が削られずに戻る', () => {
     const [imported] = zipCsvRoundTrip([noneRecord({ ...typicalField(), multi: '', str: '  前後に空白  ' })], layer);
     expect(imported.field.str).toBe('  前後に空白  ');
   });
@@ -386,7 +387,7 @@ describe('単体CSVの往復（レイヤ設定なし）', () => {
   const layer = makeLayer('POINT', [f('str', 'STRING'), f('int', 'INTEGER'), f('dt', 'DATETIME')]);
   const rec = pointRecord({ str: 'abc', int: 7, dt: '2026-11-21T10:20:30+09:00' });
 
-  it.failing('項目名が書き出し時の項目名と一致する（BOM付きdisplayNameやgeometry列が項目にならない）', () => {
+  it('項目名が書き出し時の項目名と一致する（BOM付きdisplayNameやgeometry列が項目にならない）', () => {
     const csv = generateCSV([rec], layer.field, 'POINT');
     const data = csv2Data(csv, 'audit.csv', 'u2', 'user2')!;
     const names = data.layer.field.map((x) => x.name);
@@ -395,7 +396,7 @@ describe('単体CSVの往復（レイヤ設定なし）', () => {
     expect(names).not.toContain('geometry');
   });
 
-  it.failing('各項目の値が列ずれせずに対応する項目へ入る', () => {
+  it('各項目の値が列ずれせずに対応する項目へ入る', () => {
     const csv = generateCSV([rec], layer.field, 'POINT');
     const data = csv2Data(csv, 'audit.csv', 'u2', 'user2')!;
     const field = data.recordSet[0].field;
@@ -446,14 +447,14 @@ describe('KMLの往復', () => {
     expect(String(records[0].field.description)).toContain('str: <a&b> "q"');
   });
 
-  it.failing('各項目が項目として戻る（descriptionの1つの文字列に潰れない: ExtendedData等）', () => {
+  it('各項目が項目として戻る（descriptionの1つの文字列に潰れない: ExtendedData等）', () => {
     const { records } = standaloneKml([rec], layer);
     expect(records[0].field.str).toBe('<a&b> "q"');
     expect(String(records[0].field.int)).toBe('12');
     expect(records[0].field.check).toBe('a,b');
   });
 
-  it.failing('値の無い項目が "undefined" という文字列で書き出されない', () => {
+  it('値の無い項目が "undefined" という文字列で書き出されない', () => {
     const kmlString = generateKML([pointRecord({ str: 'x' })], layer);
     expect(kmlString).not.toContain('undefined');
   });
@@ -480,13 +481,13 @@ describe('GPXの往復', () => {
     expect(data.recordSet[0].field.cmt).toBe('コメント');
   });
 
-  it.failing('& < > を含むname/cmtが実体参照のまま残らない', () => {
+  it('& < > を含むname/cmtが実体参照のまま残らない', () => {
     const data = roundTrip([gpxPoint({ name: 'A&B <c>', time: '', cmt: 'x>y' })], 'POINT');
     expect(data.recordSet[0].field.name).toBe('A&B <c>');
     expect(data.recordSet[0].field.cmt).toBe('x>y');
   });
 
-  it.failing('数字だけのnameが数値に化けない（"007"や"1e3"、"0x1F"）', () => {
+  it('数字だけのnameが数値に化けない（"007"や"1e3"、"0x1F"）', () => {
     const data = roundTrip(
       [
         gpxPoint({ name: '007', time: '', cmt: '' }),
@@ -498,12 +499,12 @@ describe('GPXの往復', () => {
     expect(data.recordSet.map((r) => r.field.name)).toEqual(['007', '1e3', '0x1F']);
   });
 
-  it.failing('nameが"0"の地点の名前が空にならない', () => {
+  it('nameが"0"の地点の名前が空にならない', () => {
     const data = roundTrip([gpxPoint({ name: '0', time: '', cmt: '' })], 'POINT');
     expect(String(data.recordSet[0].field.name)).toBe('0');
   });
 
-  it.failing('時刻の無い軌跡でも、ラインのtime(DATETIME)が戻る', () => {
+  it('時刻の無い軌跡でも、ラインのtime(DATETIME)が戻る', () => {
     const line: RecordType = {
       ...pointRecord({ name: 'trk', time: '2026-11-21T10:20:30+09:00', cmt: '' }),
       coords: [
@@ -517,12 +518,13 @@ describe('GPXの往復', () => {
     expect(dayjs(time).valueOf()).toBe(dayjs('2026-11-21T10:20:30+09:00').valueOf());
   });
 
-  it('[制約の確認] name/time/cmt以外の項目はdescの文字列にしか残らない（GPXの項目構造の制約）', () => {
+  it('[制約の確認] name/time/cmt以外の項目はdesc項目（文字列）として戻り、型は戻らない（GPXの項目構造の制約）', () => {
     const layer2 = makeLayer('POINT', [f('name', 'STRING'), f('int', 'INTEGER')]);
     const gpx = generateGPX([pointRecord({ name: 'a', int: 5 })], 'POINT');
     expect(gpx).toContain('<desc>');
     const data = gpx2Data(gpx, 'POINT', 'audit.gpx', 'u2', 'user2')!;
-    expect(Object.keys(data.recordSet[0].field).sort()).toEqual(['cmt', 'name', 'time']);
+    expect(Object.keys(data.recordSet[0].field).sort()).toEqual(['cmt', 'desc', 'name', 'time']);
+    expect(typeof data.recordSet[0].field.desc).toBe('string');
     expect(layer2.field).toHaveLength(2);
   });
 });

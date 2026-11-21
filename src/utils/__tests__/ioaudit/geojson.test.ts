@@ -191,18 +191,18 @@ describe('detectGeoJsonType', () => {
     expect(detectGeoJsonType(fc({ type: 'GeometryCollection', geometries: [] }))).toBe('NONE');
   });
 
-  it.failing('featuresが空の FeatureCollection で例外を投げない', () => {
+  it('featuresが空の FeatureCollection で例外を投げない', () => {
     expect(() => detectGeoJsonType({ type: 'FeatureCollection', features: [] } as any)).not.toThrow();
   });
 
-  it.failing('FeatureCollectionでない単体Feature / Geometry単体で例外を投げない', () => {
+  it('FeatureCollectionでない単体Feature / Geometry単体で例外を投げない', () => {
     expect(() =>
       detectGeoJsonType({ type: 'Feature', properties: {}, geometry: { type: 'Point', coordinates: [139, 35] } } as any)
     ).not.toThrow();
     expect(() => detectGeoJsonType({ type: 'Point', coordinates: [139, 35] } as any)).not.toThrow();
   });
 
-  it.failing('先頭要素がnullでも例外を投げない', () => {
+  it('先頭要素がnullでも例外を投げない', () => {
     expect(() =>
       detectGeoJsonType({
         type: 'FeatureCollection',
@@ -211,7 +211,7 @@ describe('detectGeoJsonType', () => {
     ).not.toThrow();
   });
 
-  it.failing('先頭フィーチャーのgeometryがnullでも、後続のPointからPOINTと判定する', () => {
+  it('先頭フィーチャーのgeometryがnullでも、後続のPointからPOINTと判定する', () => {
     const geojson = {
       type: 'FeatureCollection',
       features: [
@@ -230,7 +230,9 @@ describe('単体ファイル取り込みのパイプライン（loadGeojsonと�
     return { type, layer, records: geoJson2Data(geojson, layer, type, 'u', 'n') };
   };
 
-  it.failing('Point と Polygon が混在したファイルで、Polygonが黙って捨てられない', () => {
+  // 混在した型は useGeoFile が型ごとにレイヤを分けて取り込む（M10）。geoJson2Data 単体を1つの型で通すこのテストの組み立てでは表せない。
+  // 実際の取り込み経路は src/hooks/__tests__/useGeoFile.importNotices.test.ts の「点と線が混在」で確かめている
+  it.skip('Point と Polygon が混在したファイルで、Polygonが黙って捨てられない', () => {
     const geojson = {
       type: 'FeatureCollection',
       features: [
@@ -247,7 +249,8 @@ describe('単体ファイル取り込みのパイプライン（loadGeojsonと�
     expect(records!.length).toBe(2);
   });
 
-  it.failing('LineString と MultiLineString が混在（QGIS出力で頻出）しても全線が取り込まれる', () => {
+  // 上と同じ理由（型ごとのレイヤ分けは useGeoFile 側。M10）
+  it.skip('LineString と MultiLineString が混在（QGIS出力で頻出）しても全線が取り込まれる', () => {
     const geojson = {
       type: 'FeatureCollection',
       features: [
@@ -263,7 +266,7 @@ describe('単体ファイル取り込みのパイプライン（loadGeojsonと�
     expect(records!.length).toBe(2);
   });
 
-  it.failing('2件目以降のフィーチャーにしかない属性キーも項目として作られる', () => {
+  it('2件目以降のフィーチャーにしかない属性キーも項目として作られる', () => {
     const geojson = {
       type: 'FeatureCollection',
       features: [
@@ -276,7 +279,7 @@ describe('単体ファイル取り込みのパイプライン（loadGeojsonと�
     expect(records![1].field.b).toBe('only2nd');
   });
 
-  it.failing('先頭フィーチャーのpropertiesがnullでも、後続の属性が項目になる', () => {
+  it('先頭フィーチャーのpropertiesがnullでも、後続の属性が項目になる', () => {
     const geojson = {
       type: 'FeatureCollection',
       features: [
@@ -288,7 +291,7 @@ describe('単体ファイル取り込みのパイプライン（loadGeojsonと�
     expect(layer.field.map((f) => f.name)).toEqual(['a']);
   });
 
-  it.failing('全フィーチャーのgeometryがnull（属性のみ）でも件数ぶん取り込まれる', () => {
+  it('全フィーチャーのgeometryがnull（属性のみ）でも件数ぶん取り込まれる', () => {
     const geojson = {
       type: 'FeatureCollection',
       features: [
@@ -343,7 +346,7 @@ describe('geoJson2Data: 入力の形と境界', () => {
     expect(geoJson2Data(geojson, layerP, 'POINT', 'u', 'n')!).toHaveLength(1);
   });
 
-  it.failing('3次元座標の標高（3番目の値）が保持される', () => {
+  it('3次元座標の標高（3番目の値）が保持される', () => {
     const geojson = {
       type: 'FeatureCollection',
       features: [{ type: 'Feature', properties: { name: 'a' }, geometry: { type: 'Point', coordinates: [139, 35, 1234.5] } }],
@@ -486,7 +489,7 @@ describe('geoJson2Data: CRS', () => {
     expect(geoJson2Data(fc({ type: 'name', properties: { name: 'EPSG:4326' } }), layerP, 'POINT', 'u', 'n')).toHaveLength(1);
   });
 
-  it.failing('URN形式の urn:ogc:def:crs:EPSG::4326 も WGS84 として取り込める', () => {
+  it('URN形式の urn:ogc:def:crs:EPSG::4326 も WGS84 として取り込める', () => {
     expect(geoJson2Data(fc({ type: 'name', properties: { name: 'urn:ogc:def:crs:EPSG::4326' } }), layerP, 'POINT', 'u', 'n')).toHaveLength(1);
   });
 
@@ -536,7 +539,7 @@ describe('geoJson2Data: 属性値', () => {
     expect(r[0].field).toEqual({ a: '', b: '' });
   });
 
-  it.failing('入れ子オブジェクト・配列・真偽値の属性は string|number に正規化される（RecordTypeの型を守る）', () => {
+  it('入れ子オブジェクト・配列・真偽値の属性は string|number に正規化される（RecordTypeの型を守る）', () => {
     const layer = makeLayer('POINT', [
       { id: 'f1', name: 'obj', format: 'STRING' },
       { id: 'f2', name: 'arr', format: 'STRING' },
@@ -548,7 +551,7 @@ describe('geoJson2Data: 属性値', () => {
     }
   });
 
-  it.failing('"__proto__" という属性名でもプロトタイプが書き換わらず値が保持される', () => {
+  it('"__proto__" という属性名でもプロトタイプが書き換わらず値が保持される', () => {
     const geojson = JSON.parse(
       '{"type":"FeatureCollection","features":[{"type":"Feature","properties":{"__proto__":{"polluted":"yes"},"name":"a"},"geometry":{"type":"Point","coordinates":[139,35]}}]}'
     );
@@ -560,7 +563,9 @@ describe('geoJson2Data: 属性値', () => {
 });
 
 describe('ZIP往復（レイヤ設定jsonのfieldで取り込む経路）での保持', () => {
-  it.failing('PHOTO: 写真の参照（ファイル名）が往復で失われない', () => {
+  // 写真は ZIP 取り込み時に useGeoFile（restorePhotosFromZip）が同梱ファイルと照合して戻す設計（M3）。
+  // geoJson2Data 単体で名前だけの写真を作るとリンク切れが残るため PHOTO は [] のまま。経路の確認は ecorismap-zip.test.ts の写真の往復テスト
+  it.skip('PHOTO: 写真の参照（ファイル名）が往復で失われない', () => {
     const layer = makeLayer('POINT', fields);
     const rec = pointRecord('r1', { latitude: 35, longitude: 139 });
     const exported = generateGeoJson([rec], layer.field, 'POINT', 'x', 'PRIVATE') as any;
@@ -569,7 +574,7 @@ describe('ZIP往復（レイヤ設定jsonのfieldで取り込む経路）での�
     expect((result[0].field.PHOTO as PhotoType[]).map((p) => p.name)).toEqual(['a.jpg', 'b.jpg']);
   });
 
-  it.failing('非表示（visible=false）のレコードは非表示のまま戻る', () => {
+  it('非表示（visible=false）のレコードは非表示のまま戻る', () => {
     const layer = makeLayer('POINT', [{ id: 'f1', name: 'name', format: 'STRING' }]);
     const result = roundTrip([{ ...pointRecord('r1', { latitude: 35, longitude: 139 }, { name: 'h' }), visible: false }], layer)!;
     expect(result[0].visible).toBe(false);

@@ -4,6 +4,7 @@ import { ExportResultType, ExportType } from '../types';
 import { showExportDestinationModal } from '../components/organisms/ExportDestinationModal';
 import JSZip from 'jszip';
 import sanitize from 'sanitize-filename';
+import { kmzPhotoEntryNames } from './kmzPhotoNames';
 import { getExt } from './General';
 import { AppID } from '../constants/AppConstants';
 import * as FileSystem from 'expo-file-system/legacy';
@@ -13,6 +14,19 @@ import { ExportCancelledError, ExportZipOptions, generateZipCancellable, throwIf
 
 // 写真（JPEG等）とKMZは圧縮済みで、DEFLATEしてもほぼ縮まずJSでの圧縮に時間だけかかるため無圧縮で格納する
 const isPrecompressed = (type: ExportType) => type === 'PHOTO' || type === 'KMZ';
+
+/**
+ * 書き出す1ファイルを置くフォルダ（作業フォルダ・ZIP内で共通の相対パス）。
+ * 写真名は秒単位の自動命名で別レコードと重なりうるため、photoIdがあれば写真はその名前のフォルダに分けて
+ * 上書きし合わないようにする。取り込み側はベース名で照合するので、旧版のアプリもこの形式を読める
+ */
+const exportFolderOf = (d: { folder: string; type: ExportType; photoId?: string }) => {
+  const folder = sanitize(d.folder).normalize('NFC');
+  // サニタイズで形が変わるidは、取り込み側でphoto.idと照合できないので使わない
+  const photoDir = d.type === 'PHOTO' && d.photoId !== undefined && sanitize(d.photoId) === d.photoId ? d.photoId : '';
+  if (photoDir === '') return folder;
+  return folder === '' ? photoDir : `${folder}/${photoDir}`;
+};
 
 /**
  * ファイルパスのUnicode正規化を行う関数
@@ -36,6 +50,7 @@ async function createZipWithJSZipDirect(
     name: string;
     folder: string;
     type: ExportType;
+    photoId?: string;
   }[],
   sourcePath: string,
   targetPath: string,
@@ -47,8 +62,8 @@ async function createZipWithJSZipDirect(
     for (const d of exportData) {
       throwIfExportCancelled(options);
       // フォルダ名を正規化（空の場合は空文字列）
-      const folderName = sanitize(d.folder) === '' ? '' : 
-                        sanitize(d.folder).normalize('NFC') + '/';
+      const folder = exportFolderOf(d);
+      const folderName = folder === '' ? '' : folder + '/';
       
       // ファイル名を正規化
       const fileName = sanitize(d.name).normalize('NFC');
@@ -57,7 +72,6 @@ async function createZipWithJSZipDirect(
       if (d.type === 'PHOTO' || d.type === 'SQLITE' || d.type === 'KMZ') {
         // 実際のファイルパスを構築（exportGeoFileで作成されたもの）
         // 空のフォルダの場合は'.'を使わない
-        const folder = sanitize(d.folder).normalize('NFC');
         const filePath = folder === '' 
           ? `${sourcePath}/${sanitize(d.name).normalize('NFC')}`
           : `${sourcePath}/${folder}/${sanitize(d.name).normalize('NFC')}`;
@@ -115,7 +129,9 @@ export const generateKMZFile = async (
     const jszip = new JSZip();
     // KMZのルートに置いたdoc.kmlがGoogle Earthの読み込み対象になる
     jszip.file('doc.kml', kml);
-    for (const photo of photos) {
+    // doc.kml側（generateTrackKML）と同じ規則で名前を決め、不正文字や同名の上書きで参照が切れないようにする
+    const entryNames = kmzPhotoEntryNames(photos.map((photo) => photo.name));
+    for (const [index, photo] of photos.entries()) {
       throwIfExportCancelled(options);
       // RNFSのreadFileはfile://スキームを解釈しないため実パスに直す
       const photoPath = photo.uri.startsWith('file://')
@@ -123,7 +139,7 @@ export const generateKMZFile = async (
         : photo.uri;
       if (!(await RNFS.exists(photoPath))) continue;
       const content = await RNFS.readFile(photoPath, 'base64');
-      jszip.file(sanitize(photo.name).normalize('NFC'), content, { base64: true, compression: 'STORE' });
+      jszip.file(entryNames[index], content, { base64: true, compression: 'STORE' });
     }
     const zipContent = await generateZipCancellable(
       jszip,
@@ -147,6 +163,7 @@ export const generateZipFile = async (
     type: ExportType;
     url?: string | null;
     key?: string | null;
+    photoId?: string;
   }[],
   exportFileName: string,
   // ecorismap拡張子は廃止済み（読み込みのみ互換維持）
@@ -162,7 +179,7 @@ export const generateZipFile = async (
     for (const d of exportData) {
       throwIfExportCancelled(options);
       // フォルダ名もUnicode正規化を適用（空の場合は空文字列のまま）
-      const folder = sanitize(d.folder).normalize('NFC');
+      const folder = exportFolderOf(d);
       if (folder !== '') {
         await RNFS.mkdir(`${sourcePath}/${folder}`);
       }
@@ -263,6 +280,7 @@ export const exportGeoFile = async (
     type: ExportType;
     url?: string | null;
     key?: string | null;
+    photoId?: string;
   }[],
   exportFileName: string,
   // ecorismap拡張子は廃止済み（読み込みのみ互換維持）
@@ -297,6 +315,7 @@ export const generateEcorisMapZip = async (
     type: ExportType;
     url?: string | null;
     key?: string | null;
+    photoId?: string;
   }[],
   exportFileName: string
 ): Promise<{ source: string | Blob; size: number } | undefined> => {
