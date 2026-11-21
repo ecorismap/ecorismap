@@ -44,14 +44,25 @@ export const getPublicKeyFromLedger = async (uid: string): Promise<LedgerPublicK
  * 旧世代の公開鍵を新しい順で取得する（署名検証フォールバック用・ローテーションは稀なのでキャッシュしない）。
  */
 export const getPublicKeyHistoryFromLedger = async (uid: string): Promise<string[]> => {
+  const result = await fetchPublicKeyHistoryFromLedger(uid);
+  return result.isOK ? result.history : [];
+};
+
+/**
+ * 旧世代の公開鍵を新しい順で取得する（取得失敗を「履歴が空」と区別して返す版）。
+ * 台帳を古い鍵へ巻き戻さないための判定など、失敗を空扱いにすると安全側に倒れない用途で使う。
+ */
+export const fetchPublicKeyHistoryFromLedger = async (
+  uid: string
+): Promise<{ isOK: true; history: string[] } | { isOK: false }> => {
   try {
     const snapshot = await getDocs(collection(firestore, 'publicKeys', uid, 'history'));
     const entries = snapshot.docs.map((d) => d.data() as PublicKeyHistoryFS);
     entries.sort((a, b) => b.keyVersion - a.keyVersion);
-    return entries.map((entry) => entry.publicKey);
+    return { isOK: true, history: entries.map((entry) => entry.publicKey) };
   } catch (e) {
-    console.log('[getPublicKeyHistoryFromLedger] error', e);
-    return [];
+    console.log('[fetchPublicKeyHistoryFromLedger] error', e);
+    return { isOK: false };
   }
 };
 
@@ -60,19 +71,25 @@ export const getPublicKeyHistoryFromLedger = async (uid: string): Promise<string
  * - 未登録: keyVersion=1 で作成
  * - 登録済みで同一鍵: 何もしない
  * - 登録済みで別鍵（ローテーション）: 旧世代を history/{旧keyVersion} へ退避して keyVersion+1 で上書き
+ * @param expectedKeyVersion 指定時は、登録後の世代がこれと一致する場合だけ書き込む（一致しなければ
+ *   何も書かずに message='ledger-version-conflict'）。キャッシュの古い台帳を前提に意図しない世代へ
+ *   ローテーションしないためのもの。読み取り後に他端末が書いた場合は Rules の +1 条件で拒否される
  * @returns keyVersion=登録後の世代（PINバックアップの keyVersion に使う）
  */
 export const publishPublicKeyToLedger = async (
   uid: string,
   publicKeyB64: string,
-  card?: string
+  card?: string,
+  expectedKeyVersion?: number
 ): Promise<{ isOK: boolean; message: string; keyVersion?: number }> => {
   try {
     const ref = doc(firestore, 'publicKeys', uid);
     const snapshot = await getDoc(ref);
     const now = Timestamp.now();
+    const conflicts = (keyVersion: number) => expectedKeyVersion !== undefined && keyVersion !== expectedKeyVersion;
 
     if (!snapshot.exists()) {
+      if (conflicts(1)) return { isOK: false, message: 'ledger-version-conflict' };
       const entry: PublicKeyFS = {
         publicKey: publicKeyB64,
         keyVersion: 1,
@@ -87,8 +104,10 @@ export const publishPublicKeyToLedger = async (
 
     const current = snapshot.data() as PublicKeyFS;
     if (current.publicKey === publicKeyB64) {
+      if (conflicts(current.keyVersion)) return { isOK: false, message: 'ledger-version-conflict' };
       return { isOK: true, message: '', keyVersion: current.keyVersion };
     }
+    if (conflicts(current.keyVersion + 1)) return { isOK: false, message: 'ledger-version-conflict' };
 
     // 鍵ローテーション: 旧世代を退避してから上書き（同一バッチで原子的に）
     const batch = writeBatch(firestore);

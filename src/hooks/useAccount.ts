@@ -22,6 +22,16 @@ import * as projectStorage from '../lib/firebase/storage';
 import { t } from '../i18n/config';
 import { FirebaseAuthTypes } from '@react-native-firebase/auth';
 
+/**
+ * KMSバックアップ作成の失敗理由のうち、利用者の対処が通常の失敗と違うものを表示文にする。
+ * それ以外（通信エラー等）は undefined を返し、呼び出し側の既定の文言に任せる。
+ */
+const keyBackupFailureMessage = (message: string): string | undefined => {
+  if (message === 'backup-key-version-mismatch') return t('hooks.message.backupKeyVersionMismatch');
+  if (message === 'backup-email-not-verified') return t('hooks.message.backupEmailNotVerified');
+  return undefined;
+};
+
 export type UseAccountReturnType = {
   user: UserType;
   accountMessage: string;
@@ -66,7 +76,8 @@ export type UseAccountReturnType = {
   deleteUserAccount: (password: string) => Promise<{ isOK: boolean }>;
   changeEncryptPassword: (oldPassword: string, password: string) => Promise<{ isOK: boolean }>;
   registEncryptPassword: (password: string) => Promise<{ isOK: boolean }>;
-  backupEncryptPassword: (password: string) => Promise<{ isOK: boolean }>;
+  /** retry=true: フォームに留まって再入力できる（メッセージは設定済み）。message: 失敗理由の表示文（あれば） */
+  backupEncryptPassword: (password: string) => Promise<{ isOK: boolean; retry?: boolean; message?: string }>;
   cleanupEncryptKey: () => Promise<void>;
   migrateEncryptKey: (password: string) => Promise<{ isOK: boolean }>;
   restoreEncryptKey: (password: string) => Promise<{ isOK: boolean; needsMigration?: boolean; retry?: boolean }>;
@@ -91,6 +102,9 @@ export const useAccount = (): UseAccountReturnType => {
     if (ENABLE_KEY_LEDGER && FUNC_ENCRYPTION) {
       // 脱Virgil移行フロー: 移行状態で分岐する（詳細は src/lib/crypto/migration.ts）
       setIsLoading(true);
+      // 鍵リセット中断の判定はe3kitに残る新鍵を見る必要があるため、先にe3kitを初期化しておく
+      const resetPending = await migration.isKeyResetPending(authUser.uid);
+      if (resetPending) await e3kit.initializeUser(authUser.uid);
       const migrationState = await migration.getKeyMigrationState(authUser.uid);
       if (migrationState.state === 'migrated') {
         // 旧グループ暗号のdual-read用にe3kitも初期化しておく（失敗しても続行=Virgil障害時もDEKは動く）
@@ -105,6 +119,24 @@ export const useAccount = (): UseAccountReturnType => {
       }
       // 未移行 or この端末に鍵なし: 移行元鍵の取得・従来フォールバックのためにe3kitを初期化
       const { isOK: initE3kitOK, message: initE3kitMessage } = await e3kit.initializeUser(authUser.uid);
+      if (migrationState.state === 'needs-backup') {
+        setIsLoading(false);
+        if (migrationState.reason === 'reset-pending') {
+          // 鍵リセット後のバックアップが未完了。旧鍵の復元へ戻すとリセットが黙って取り消されるため、
+          // 新鍵のバックアップをやり直させる（e3kitに新鍵が見えないとバックアップできない）
+          if (!e3kit.isInitialized()) {
+            setAccountMessage(t('hooks.message.errorInitEncrypt'));
+            return { isOK: false };
+          }
+          setAccountMessage(t('hooks.message.resumeKeyBackupAfterReset'));
+          setAccountFormState('backupEncryptPassword');
+          return { isOK: false };
+        }
+        // KMSバックアップが台帳より古い: 別端末での復元で古い鍵が戻らないよう作り直させる
+        setAccountMessage(t('hooks.message.rebackupStaleKey'));
+        setAccountFormState('migrateEncryptPassword');
+        return { isOK: false };
+      }
       if (migrationState.state === 'migrated-need-restore') {
         // 他端末で移行済み。e3kit側にローカル鍵が残っていて台帳の現行鍵と一致すれば
         // 新ストレージへコピーして完了（古い鍵の可能性があるため必ず整合検証する）
@@ -116,7 +148,11 @@ export const useAccount = (): UseAccountReturnType => {
           return { isOK: true };
         }
         setIsLoading(false);
-        setAccountMessage(t('hooks.message.inputNewPinRestore'));
+        setAccountMessage(
+          migrationState.reason === 'stale-local-key'
+            ? t('hooks.message.inputNewPinRestoreStaleKey')
+            : t('hooks.message.inputNewPinRestore')
+        );
         setAccountFormState('restoreEncryptKey');
         return { isOK: false };
       }
@@ -278,6 +314,8 @@ export const useAccount = (): UseAccountReturnType => {
         console.log('[deleteLocalEncryptKeys] identity key error', e);
       }
       await migration.clearMigratedMarker(user.uid);
+      // 端末の新鍵ごと消したので、リセット中断の再開対象も無くなる
+      await migration.clearKeyResetPending(user.uid);
     }
   }, [user.uid]);
 
@@ -378,7 +416,8 @@ export const useAccount = (): UseAccountReturnType => {
       if (ENABLE_KEY_LEDGER && FUNC_ENCRYPTION && user.uid !== undefined) {
         setIsLoading(true);
         const migrationState = await migration.getKeyMigrationState(user.uid);
-        if (migrationState.state === 'migrated') {
+        const isBackupStale = migrationState.state === 'needs-backup' && migrationState.reason === 'backup-stale';
+        if (migrationState.state === 'migrated' || isBackupStale) {
           // 旧PINの検証を兼ねてKMSバックアップから復元し、新PINで作り直す。
           // keyknox側は旧PINが一致する場合のみベストエフォートで同期される。
           const restoreResult = await keyBackup.restoreKeyBackup(oldPassword);
@@ -391,17 +430,38 @@ export const useAccount = (): UseAccountReturnType => {
             );
             return { isOK: false };
           }
-          const createResult = await keyBackup.createKeyBackup(
-            password,
-            restoreResult.privateKey,
-            restoreResult.keyVersion
-          );
-          await e3kit.changeEncryptPassword(oldPassword, password);
-          setIsLoading(false);
-          if (!createResult.isOK) {
+          // 包み直すのは端末にある台帳の現行鍵。KMSの中身は古い鍵・古い世代のことがあり、
+          // そのまま作り直すと古いバックアップが新PINで固定されてしまう。台帳を照合できないときだけ従来どおり
+          const current = await migration.findLocalKeyMatchingLedger(user.uid);
+          if (current === undefined && isBackupStale) {
+            setIsLoading(false);
             setAccountMessage(t('hooks.message.failedUpdatePassword'));
             return { isOK: false };
           }
+          // KMSが台帳より新しい世代＝他端末で鍵リセットが台帳publish前に止まっている。
+          // ここで台帳の世代で作り直すと相手の新鍵のバックアップを古い鍵で消してしまうため、書く前に止める
+          const ledgerKeyVersion = current?.keyVersion ?? (await migration.getLedgerKeyVersion(user.uid));
+          if (ledgerKeyVersion !== undefined && restoreResult.keyVersion > ledgerKeyVersion) {
+            setIsLoading(false);
+            setAccountMessage(t('hooks.message.keyResetInProgressElsewhere'));
+            return { isOK: false };
+          }
+          const createResult = await keyBackup.createKeyBackup(
+            password,
+            current?.privateKey ?? restoreResult.privateKey,
+            current?.keyVersion ?? restoreResult.keyVersion
+          );
+          if (!createResult.isOK) {
+            // keyknoxだけ新PINになると、KMSと旧方式でPINがずれる。KMSが成功したときだけ keyknox も変える
+            setIsLoading(false);
+            setAccountMessage(
+              keyBackupFailureMessage(createResult.message) ?? t('hooks.message.failedUpdatePassword')
+            );
+            return { isOK: false };
+          }
+          // keyknox側は旧PINが一致する場合のみ同期されるベストエフォート（失敗しても変更自体は成功）
+          await e3kit.changeEncryptPassword(oldPassword, password);
+          setIsLoading(false);
           return { isOK: true };
         }
         // 未移行: 従来のkeyknox変更に続けて、新PIN(6桁)でそのまま移行する
@@ -414,7 +474,9 @@ export const useAccount = (): UseAccountReturnType => {
         const migrateResult = await migration.migrateIdentityKey(user.uid, password);
         setIsLoading(false);
         if (!migrateResult.isOK) {
-          setAccountMessage(t('hooks.message.failedUpdatePassword'));
+          setAccountMessage(
+            keyBackupFailureMessage(migrateResult.message) ?? t('hooks.message.failedUpdatePassword')
+          );
           return { isOK: false };
         }
         return { isOK: true };
@@ -444,8 +506,12 @@ export const useAccount = (): UseAccountReturnType => {
 
   const resetEncryptKey = useCallback(async () => {
     setIsLoading(true);
+    const useLedger = ENABLE_KEY_LEDGER && FUNC_ENCRYPTION && user.uid !== undefined;
+    // リセット後のバックアップが中断しても、次回起動で旧鍵の復元へ戻らずバックアップを再開させるため、
+    // 鍵を回転する前に立てる（台帳publish+KMSバックアップが済んだら migrateIdentityKey が消す）
+    if (useLedger && user.uid !== undefined) await migration.markKeyResetPending(user.uid);
     const { isOK } = await e3kit.resetEncryptKey();
-    if (isOK && ENABLE_KEY_LEDGER && FUNC_ENCRYPTION && user.uid !== undefined) {
+    if (isOK && useLedger && user.uid !== undefined) {
       // 鍵が変わったため新ストレージの旧鍵とマーカーを破棄する。
       // 直後のbackupEncryptPasswordステップで台帳publish+KMSバックアップが再同期される。
       await deleteIdentityPrivateKey(user.uid);
@@ -494,7 +560,7 @@ export const useAccount = (): UseAccountReturnType => {
       setIsLoading(false);
       if (!isOK) {
         console.log('[migrateEncryptKey]', message);
-        setAccountMessage(t('hooks.message.failMigrateEncryptKey'));
+        setAccountMessage(keyBackupFailureMessage(message) ?? t('hooks.message.failMigrateEncryptKey'));
         return { isOK: false };
       }
       return { isOK: true };
@@ -520,6 +586,8 @@ export const useAccount = (): UseAccountReturnType => {
                 ? t('hooks.message.backupLocked')
                 : result.message === 'backup-wrong-pin'
                 ? t('hooks.message.backupWrongPin')
+                : result.message === 'backup-stale'
+                ? t('hooks.message.backupStale')
                 : t('hooks.message.failMigrateEncryptKey')
             );
             return { isOK: false, retry: true };
@@ -565,14 +633,27 @@ export const useAccount = (): UseAccountReturnType => {
   const backupEncryptPassword = useCallback(
     async (password: string) => {
       setIsLoading(true);
-      const { isOK } = await e3kit.backupEncryptKey(password);
+      let { isOK } = await e3kit.backupEncryptKey(password);
+      if (!isOK && ENABLE_KEY_LEDGER && FUNC_ENCRYPTION && user.uid !== undefined) {
+        // 前回のバックアップがkeyknoxまで済んで中断していると、keyknoxへの再バックアップは「既にある」で失敗する。
+        // 同じPINのkeyknoxバックアップが既にあるなら、残りの台帳+KMSだけやり直す
+        const verifyResult = await e3kit.verifyEncryptPassword(password);
+        isOK = verifyResult.isOK;
+        if (!isOK && verifyResult.message === 'wrong-password') {
+          // 前回設定したPINと違う。ログアウトさせると次回も同じフォームに戻るだけなので、
+          // フォームに留まらせ、思い出せなければ鍵リセットをやり直せるよう案内する
+          setIsLoading(false);
+          setAccountMessage(t('hooks.message.backupPinMismatchAfterReset'));
+          return { isOK: false, retry: true };
+        }
+      }
       if (isOK && ENABLE_KEY_LEDGER && FUNC_ENCRYPTION && user.uid !== undefined) {
         // 鍵リセット直後のkeyknoxバックアップと同時に、新方式(台帳+KMS)も同じPINで再同期する。
         // 鍵が変わっていれば台帳は自動でkeyVersion+1・旧世代をhistoryへ退避する
         const migrateResult = await migration.migrateIdentityKey(user.uid, password);
         if (!migrateResult.isOK) {
           setIsLoading(false);
-          return { isOK: false };
+          return { isOK: false, message: keyBackupFailureMessage(migrateResult.message) };
         }
       }
       setIsLoading(false);

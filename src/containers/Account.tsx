@@ -280,10 +280,12 @@ export default function AccountContainers({ navigation, route }: Props_Account) 
     async (password: string) => {
       const checkEncryptPasswordResult = checkNewEncryptPassword(password);
       if (!checkEncryptPasswordResult.isOK) return;
-      const { isOK } = await backupEncryptPassword(password);
+      const { isOK, retry, message } = await backupEncryptPassword(password);
+      // PINの再入力・鍵リセットのやり直しができるようフォームに留まる（メッセージは設定済み）
+      if (!isOK && retry) return;
       setAccountMessage('');
       if (!isOK) {
-        await AlertAsync(t('Account.alert.FailBackupEncryptPassword'));
+        await AlertAsync(message ?? t('Account.alert.FailBackupEncryptPassword'));
         await logout();
         // ログアウト後にフォームが残らないようにリセットする
         setAccountFormState('loginUserAccount');

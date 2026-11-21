@@ -1,9 +1,10 @@
 import { useCallback, useMemo, useState } from 'react';
-import { ProjectType, UserType } from '../types';
+import { AccountFormStateType, ProjectType, UserType } from '../types';
 import * as projectRepository from '../lib/firebase/firestore';
 import { setProjectsAction, updateProjectAction } from '../modules/projects';
 import { FUNC_ENCRYPTION, ENABLE_DEK_MIGRATION, ENABLE_KEY_LEDGER } from '../constants/AppConstants';
-import { getKeyMigrationState } from '../lib/crypto/migration';
+import { getKeyMigrationState, KeyMigrationState } from '../lib/crypto/migration';
+import { getKeyBackupStatus } from '../lib/crypto/backup';
 import {
   toggleFavorite as toggleFavoriteAction,
   setShowOnlyFavorites as setShowOnlyFavoritesAction,
@@ -21,6 +22,56 @@ import { ulid } from 'ulid';
 import { isLoggedIn } from '../utils/Account';
 import { t } from '../i18n/config';
 import * as e3kit from '../lib/virgilsecurity/e3kit';
+
+/** 鍵の状態に応じて誘導する暗号化キーのフォームと、そこで表示するメッセージ */
+export type KeyGuidanceType = {
+  accountFormState: Extract<AccountFormStateType, 'migrateEncryptPassword' | 'backupEncryptPassword' | 'restoreEncryptKey'>;
+  message: string;
+};
+
+/**
+ * e3kitが初期化済み（端末に鍵がある）復帰セッションで、鍵状態からログイン時と同じ誘導先を決める。
+ * 誘導しない状態（migrated / error / 理由なしの migrated-need-restore）は undefined。
+ * 理由なしの migrated-need-restore は台帳を照合できなかった（オフライン等）ときにも返るため誘導しない。
+ * 対応はログインフロー（useAccount.loginUserAccount）と揃えている。
+ */
+export const resolveKeyGuidance = (migrationState: KeyMigrationState): KeyGuidanceType | undefined => {
+  switch (migrationState.state) {
+    case 'needs-migration':
+      return { accountFormState: 'migrateEncryptPassword', message: t('hooks.message.migrateEncryptPassword') };
+    case 'needs-backup':
+      return migrationState.reason === 'reset-pending'
+        ? // 鍵リセット後のバックアップが未完了: 新鍵のバックアップをやり直させる
+          { accountFormState: 'backupEncryptPassword', message: t('hooks.message.resumeKeyBackupAfterReset') }
+        : // KMSバックアップが台帳より古い: 別端末の復元で古い鍵が戻らないよう作り直させる
+          { accountFormState: 'migrateEncryptPassword', message: t('hooks.message.rebackupStaleKey') };
+    case 'migrated-need-restore':
+      return migrationState.reason === 'stale-local-key'
+        ? // 端末の鍵が台帳の現行鍵と違う（他端末で鍵リセット済み等）: 最新の鍵を復元させる
+          { accountFormState: 'restoreEncryptKey', message: t('hooks.message.inputNewPinRestoreStaleKey') }
+        : undefined;
+    default:
+      return undefined;
+  }
+};
+
+/** 端末に鍵がない（not-localkey）ときの復元フォームのメッセージ */
+export const resolveKeyRestoreMessage = (migrationState: KeyMigrationState): string => {
+  if (migrationState.state !== 'migrated-need-restore') return t('hooks.message.inputEncryptPassword');
+  return migrationState.reason === 'stale-local-key'
+    ? t('hooks.message.inputNewPinRestoreStaleKey')
+    : t('hooks.message.inputNewPinRestore');
+};
+
+/**
+ * 鍵リセット中断（reset-pending）はローカルのマーカーで判定され、台帳やKMSに届かない
+ * オフラインでも返る。オフラインで誘導しても進めない（バックアップに失敗するとログアウトになる）ため、
+ * サーバーへ届くことを確かめてから誘導する。他の誘導対象はサーバー照会が成功しないと返らない。
+ */
+const isGuidanceReachable = async (migrationState: KeyMigrationState): Promise<boolean> => {
+  if (migrationState.state !== 'needs-backup' || migrationState.reason !== 'reset-pending') return true;
+  return (await getKeyBackupStatus()).isOK;
+};
 
 export type UseProjectsReturnType = {
   user: UserType;
@@ -40,6 +91,8 @@ export type UseProjectsReturnType = {
     needsKeyRegist?: boolean;
     needsKeyBackup?: boolean;
     restoreMessage?: string;
+    /** 復帰セッションで鍵の移行・再バックアップ・復元が必要なときの誘導先（isOK=trueでも返る） */
+    keyGuidance?: KeyGuidanceType;
   }>;
   generateProject: () => ProjectType;
   toggleFavorite: (projectId: string) => void;
@@ -102,10 +155,7 @@ export const useProjects = (): UseProjectsReturnType => {
               isOK: false,
               message: '',
               needsKeyRestore: true,
-              restoreMessage:
-                migrationState.state === 'migrated-need-restore'
-                  ? t('hooks.message.inputNewPinRestore')
-                  : t('hooks.message.inputEncryptPassword'),
+              restoreMessage: resolveKeyRestoreMessage(migrationState),
             };
           }
           if (initE3kitMessage === 'not-registered') {
@@ -147,13 +197,17 @@ export const useProjects = (): UseProjectsReturnType => {
       // console.log(`[PERF] === fetchProjects TOTAL: ${(perfEnd - perfStart).toFixed(0)}ms ===`);
 
       // 脱Virgil移行の取りこぼし対策: ログインフォームを通らない復帰セッション
-      // （Webのリロード等）でも未移行を検知し、呼び出し元で移行フォームへ誘導する
+      // （Webのリロード・アプリの自動復帰等）でも、未移行・バックアップの再作成・古い鍵の復元が
+      // 必要な状態を検知し、呼び出し元でログイン時と同じフォームへ誘導する
       let needsKeyMigration = false;
+      let keyGuidance: KeyGuidanceType | undefined;
       if (ENABLE_KEY_LEDGER && FUNC_ENCRYPTION) {
         const migrationState = await getKeyMigrationState(user.uid);
         needsKeyMigration = migrationState.state === 'needs-migration';
+        const guidance = resolveKeyGuidance(migrationState);
+        if (guidance !== undefined && (await isGuidanceReachable(migrationState))) keyGuidance = guidance;
       }
-      return { isOK: true, message, needsKeyMigration };
+      return { isOK: true, message, needsKeyMigration, keyGuidance };
     } catch (e: any) {
       return { isOK: false, message: e.message };
     } finally {

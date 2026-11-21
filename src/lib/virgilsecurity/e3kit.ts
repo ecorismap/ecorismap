@@ -9,7 +9,7 @@ import * as FileSystem from 'expo-file-system/legacy';
 import { splitStringsIntoChunksOfLen } from '../../utils/General';
 import { FUNC_ENCRYPTION } from '../../constants/AppConstants';
 import { compressFileToTempUri, decompressFileToTempUri, gzip, unzip } from '../../utils/Zip';
-import { functions, httpsCallable, firebaseReady } from '../firebase/firebase';
+import { auth, functions, httpsCallable, firebaseReady } from '../firebase/firebase';
 
 let eThree: EThree;
 
@@ -54,6 +54,16 @@ export const isInitialized = (): boolean => {
 
 export const initializeUser = async (userId: string) => {
   if (!FUNC_ENCRYPTION) return { isOK: true, message: '' };
+  // 強制ログアウト経路ではインスタンスが破棄されないため、別アカウントでログインすると
+  // 前ユーザー名義の eThree が残る（前ユーザーの鍵で署名・復号してしまう）。
+  // ローカル鍵は消さずに（同一端末で戻ったとき再入力不要にするため）参照とキャッシュだけ捨てて作り直す。
+  // 照合先は引数ではなくFirebaseの現ユーザー: 呼び出し側の一部(useE3kitGroup)は project.ownerUid を渡すため、
+  // 引数と比べるとメンバーがプロジェクトを開くたびに再初期化されてしまう。
+  const currentUid = auth?.currentUser?.uid;
+  if (eThree !== undefined && currentUid !== undefined && eThree.identity !== currentUid) {
+    eThree = undefined as unknown as EThree;
+    clearPublicKeyCache();
+  }
   // eThreeが既に正常に初期化されているかチェック
   if (eThree !== undefined) {
     try {

@@ -78,7 +78,7 @@ export default function ProjectsContainers({ navigation, route }: Props_Projects
 
   const reloadProjects = useCallback(async () => {
     try {
-      const { isOK, message, needsKeyMigration, needsKeyRestore, needsKeyRegist, needsKeyBackup, restoreMessage } =
+      const { isOK, message, needsKeyRestore, needsKeyRegist, needsKeyBackup, restoreMessage, keyGuidance } =
         await fetchProjects();
       if (!isOK) {
         if (needsKeyRestore) {
@@ -102,11 +102,13 @@ export default function ProjectsContainers({ navigation, route }: Props_Projects
         await AlertAsync(message);
         return;
       }
-      if (needsKeyMigration) {
-        // 復帰セッションの未移行ユーザー: 暗号化キーの保護方式更新（これまでのPINを入力）へ誘導
+      if (keyGuidance !== undefined) {
+        // 復帰セッションでもログイン時と同じ鍵の誘導を行う（未移行=保護方式の更新、
+        // リセット中断=新鍵のバックアップ、バックアップが古い=作り直し、端末の鍵が古い=最新鍵の復元）
         navigation.navigate('Account', {
-          accountFormState: 'migrateEncryptPassword',
-          message: t('hooks.message.migrateEncryptPassword'),
+          accountFormState: keyGuidance.accountFormState,
+          message: keyGuidance.message,
+          previous: 'Projects',
         });
       }
     } catch (e: any) {

@@ -1537,9 +1537,12 @@ describe('DEK(エンベロープ暗号): keys サブコレクションと管理�
     );
   });
 
-  it('project update: オーナーはDEK方式プロジェクトの dekPublicKey を変更できる', async () => {
+  // 以前はオーナーの差し替えを許していたが、差し替えを行う正当なクライアントフローは無い
+  // （dekPublicKey を書くのは addProject の作成と migrateProjectToDEK の group→dek だけ）。
+  // 二重移行の負けた側の上書きで keys と dekPublicKey が対にならなくなる事故を防ぐため拒否に反転した。
+  it('project update: オーナーでもDEK方式プロジェクトの dekPublicKey は差し替えられない', async () => {
     await seedDekProject();
-    await firebase.assertSucceeds(
+    await firebase.assertFails(
       updateDoc(doc(ctx(uid1, 'test1').firestore(), `projects/${documentId}`), {
         encdata: ['reenc'],
         dekPublicKey: 'NEW_PUBKEY',

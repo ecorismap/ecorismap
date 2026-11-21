@@ -228,11 +228,13 @@ export const useE3kitGroup = (): UseE3kitGroupReturnType => {
     // ラップは台帳(publicKeys)優先なので、e3kitのキャッシュだけでなく台帳のキャッシュも消す。
     clearPublicKeyCache();
     clearPublicKeyLedgerCache();
-    let res = await addMemberKey(project.id, uid);
+    // 再共有は在籍中のメンバー宛てに限る（削除済みメンバーへ鍵を作り直さない）。
+    const options = { requireCurrentMember: true };
+    let res = await addMemberKey(project.id, uid, options);
     if (!res.isOK) {
       // 実行者側のDEKキャッシュに開封失敗(undefined)が焼き付いている場合を救済して1回だけ再試行する。
       clearProjectCryptoCache();
-      res = await addMemberKey(project.id, uid);
+      res = await addMemberKey(project.id, uid, options);
     }
     if (!res.isOK) {
       return { isOK: false, message: res.message || t('hooks.message.failReshareKey') };
@@ -261,10 +263,10 @@ export const useE3kitGroup = (): UseE3kitGroupReturnType => {
       onProgress(0, targets.length);
       for (const target of targets) {
         if (isCancelled()) break;
-        let res = await addMemberKey(target.projectId, target.uid);
+        let res = await addMemberKey(target.projectId, target.uid, { requireCurrentMember: true });
         if (!res.isOK) {
           clearProjectCryptoCache();
-          res = await addMemberKey(target.projectId, target.uid);
+          res = await addMemberKey(target.projectId, target.uid, { requireCurrentMember: true });
         }
         (res.isOK ? succeeded : failed).push(target);
         onProgress(succeeded.length + failed.length, targets.length);

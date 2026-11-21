@@ -76,7 +76,7 @@ describe('useE3kitGroup.reshareMemberKey', () => {
 
     expect(res).toEqual({ isOK: true, message: '' });
     expect(mockInitializeUser).toHaveBeenCalledWith('owner-uid');
-    expect(mockAddMemberKey).toHaveBeenCalledWith('project-1', 'member-uid');
+    expect(mockAddMemberKey).toHaveBeenCalledWith('project-1', 'member-uid', { requireCurrentMember: true });
     expect(mockAddMemberKey).toHaveBeenCalledTimes(1);
     // 呼び出し順: initializeUser → clearPublicKeyCache → addMemberKey
     const initOrder = mockInitializeUser.mock.invocationCallOrder[0];
@@ -105,6 +105,8 @@ describe('useE3kitGroup.reshareMemberKey', () => {
 
     expect(res).toEqual({ isOK: true, message: '' });
     expect(mockAddMemberKey).toHaveBeenCalledTimes(2);
+    // 再試行も在籍確認つきで呼ぶ
+    expect(mockAddMemberKey).toHaveBeenNthCalledWith(2, 'project-1', 'member-uid', { requireCurrentMember: true });
     expect(mockClearProjectCryptoCache).toHaveBeenCalledTimes(1);
     // クリアは1回目の失敗後、2回目の試行前
     const clearOrder = mockClearProjectCryptoCache.mock.invocationCallOrder[0];
@@ -168,6 +170,19 @@ describe('useE3kitGroup.reshareMemberKey', () => {
     expect(mockAddGroupMembers).toHaveBeenCalledWith('project-1', 'owner-uid', ['new-member-uid']);
     expect(mockAddMemberKey).not.toHaveBeenCalled();
   });
+
+  it('DEK方式のメンバー追加は在籍確認なしで addMemberKey を呼ぶ（プロジェクト保存より先に鍵を作るため）', async () => {
+    mockRemoveMemberKey.mockResolvedValue({ isOK: true, message: '' });
+    const updated: ProjectType = {
+      ...dekProject,
+      membersUid: ['owner-uid', 'member-uid', 'new-member-uid'],
+    };
+    const { result } = renderHook(() => useE3kitGroup());
+    const res = await result.current.updateE3kitGroupMembers(dekProject, updated);
+
+    expect(res.isOK).toBe(true);
+    expect(mockAddMemberKey.mock.calls).toEqual([['project-1', 'new-member-uid']]);
+  });
 });
 
 describe('useE3kitGroup 再共有の台帳キャッシュ', () => {
@@ -213,9 +228,9 @@ describe('useE3kitGroup.reshareMemberKeys', () => {
     expect(mockClearPublicKeyCache).toHaveBeenCalledTimes(1);
     expect(mockClearLedgerCache).toHaveBeenCalledTimes(1);
     expect(mockAddMemberKey.mock.calls).toEqual([
-      ['p1', 'm1'],
-      ['p2', 'm1'],
-      ['p3', 'm2'],
+      ['p1', 'm1', { requireCurrentMember: true }],
+      ['p2', 'm1', { requireCurrentMember: true }],
+      ['p3', 'm2', { requireCurrentMember: true }],
     ]);
     expect(progress).toEqual([
       [0, 3],
@@ -238,6 +253,7 @@ describe('useE3kitGroup.reshareMemberKeys', () => {
     expect(res.failed.map((r) => r.projectId)).toEqual(['p2']);
     expect(mockClearProjectCryptoCache).toHaveBeenCalledTimes(1);
     expect(mockAddMemberKey).toHaveBeenCalledTimes(4);
+    expect(mockAddMemberKey).toHaveBeenNthCalledWith(3, 'p2', 'm1', { requireCurrentMember: true });
   });
 
   it('中止されたら残りは処理しない', async () => {
