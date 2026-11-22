@@ -38,20 +38,57 @@ export const hsv2rgba = (H: number, S: number, V: number, alpha?: number) => {
   return { R, G, B, A };
 };
 //rgbaStringをqgisで使える形式に変換する
-export const rgbaString2qgis = (rgbaString: string): string => {
-  const r = rgbaString.match(/^rgba\((\d+),(\d+),(\d+),([\d\.]+)\)$/i);
-  let c: string[] = [];
-  if (r) {
-    c = r.slice(1, 5);
+export type RgbaColor = { r: number; g: number; b: number; a: number };
+
+const clampByte = (value: number) => Math.min(255, Math.max(0, Math.round(value)));
+const clampAlpha = (value: number) => Math.min(1, Math.max(0, value));
+
+/**
+ * アプリ内に混在する色表記（rgba()/rgb()、#RGB、#RGBA、#RRGGBB、#RRGGBBAA）を読む。
+ * レイヤの色は旧版のhex（軌跡の既定 #0000FFee のような8桁を含む）とrgba()の両方で保存されている。
+ * 読めない表記は undefined
+ */
+export const parseColor = (color: string): RgbaColor | undefined => {
+  const text = typeof color === 'string' ? color.trim() : '';
+  const rgba = text.match(
+    /^rgba?\(\s*(\d+(?:\.\d+)?)\s*,\s*(\d+(?:\.\d+)?)\s*,\s*(\d+(?:\.\d+)?)\s*(?:,\s*(\d*\.?\d+)\s*)?\)$/i
+  );
+  if (rgba) {
+    return {
+      r: clampByte(Number(rgba[1])),
+      g: clampByte(Number(rgba[2])),
+      b: clampByte(Number(rgba[3])),
+      a: rgba[4] === undefined ? 1 : clampAlpha(Number(rgba[4])),
+    };
   }
+  const hex = text.match(/^#([0-9a-f]{3,4}|[0-9a-f]{6}|[0-9a-f]{8})$/i);
+  if (!hex) return undefined;
+  const digits = hex[1];
+  const short = digits.length <= 4;
+  const channel = (index: number) =>
+    short ? 0x11 * parseInt(digits[index], 16) : parseInt(digits.slice(index * 2, index * 2 + 2), 16);
+  const hasAlpha = digits.length === 4 || digits.length === 8;
+  return { r: channel(0), g: channel(1), b: channel(2), a: hasAlpha ? channel(3) / 255 : 1 };
+};
 
-  // RGBA to ARGB hex
-  const A = zeroPadding(Math.round(Number(c[3]) * 255).toString(16), 2);
-  const R = zeroPadding(Number(c[0]).toString(16), 2);
-  const G = zeroPadding(Number(c[1]).toString(16), 2);
-  const B = zeroPadding(Number(c[2]).toString(16), 2);
+const toHexByte = (value: number) => clampByte(value).toString(16).padStart(2, '0');
 
-  return `#${A}${R}${G}${B}`;
+/** QGISの色（#AARRGGBB）。読めない色は空文字（以前は "#NaN..." のような壊れた値になっていた） */
+export const rgbaString2qgis = (rgbaString: string): string => {
+  const color = parseColor(rgbaString);
+  if (color === undefined) return '';
+  return `#${toHexByte(color.a * 255)}${toHexByte(color.r)}${toHexByte(color.g)}${toHexByte(color.b)}`;
+};
+
+/**
+ * KMLの色（aabbggrr）。読めない色は従来どおり白にする。
+ * transparent は塗りを完全に透明にする（ポリゴンの透過設定）
+ */
+export const toKmlColor = (colorString: string, transparent: boolean): string => {
+  const color = parseColor(colorString);
+  if (color === undefined) return transparent ? '00ffffff' : 'ffffffff';
+  const alpha = transparent ? '00' : toHexByte(color.a * 255);
+  return `${alpha}${toHexByte(color.b)}${toHexByte(color.g)}${toHexByte(color.r)}`;
 };
 
 export const hsv2rgbaString = (H: number, S: number, V: number, alpha?: number) => {

@@ -244,6 +244,17 @@ describe('generateKML: 出力の健全性', () => {
     expect(kml).toContain('<color>ff0000ff</color>');
   });
 
+  it('[回帰] 軌跡の既定色（8桁のhex #0000FFee）が白ではなく青で出る', () => {
+    const base = makeLayer('LINE', [f('name', 'STRING')]);
+    const layer = { ...base, colorStyle: { ...base.colorStyle, color: '#0000FFee' } };
+    const kml = generateKML(
+      [rec([{ latitude: 35, longitude: 135 }, { latitude: 35.1, longitude: 135.1 }], { name: 'a' })],
+      layer
+    );
+    expect(kml).toContain('<color>eeff0000</color>');
+    expect(kml).not.toContain('<color>ffffffff</color>');
+  });
+
   it('[回帰] 写真項目はファイル名がdescriptionに出る', () => {
     const layer = makeLayer('POINT', [f('photo', 'PHOTO')]);
     const photo: PhotoType = { id: 'p', name: 'IMG_1.jpg', uri: null, url: null, key: null, width: 1, height: 1, thumbnail: 't' };

@@ -35,7 +35,7 @@ import {
   GeometryCollection,
   Position,
 } from 'geojson';
-import { rgbaString2qgis } from './Color';
+import { rgbaString2qgis, toKmlColor } from './Color';
 import { cloneDeep } from 'lodash';
 import { isLocationType, isLocationTypeArray } from './General';
 import { generateLabel, getColor, getLineWidth } from './Layer';
@@ -1124,24 +1124,6 @@ const HTML_ATTRIBUTE_ESCAPES: Record<string, string> = {
 // エクスポート全体が失敗する。外部ファイル由来の値に混ざりうるため、書き出し時に取り除く（< & 等のエスケープは従来どおり）
 const XML_INVALID_CHAR_REPLACEMENT = '';
 
-const rgbaToKmlColor = (rgba: string, transparency: boolean): string => {
-  const match = rgba.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*(\d*\.?\d+))?\)/);
-  if (!match) return transparency ? '00ffffff' : 'ffffffff';
-
-  const r = parseInt(match[1], 10).toString(16).padStart(2, '0');
-  const g = parseInt(match[2], 10).toString(16).padStart(2, '0');
-  const b = parseInt(match[3], 10).toString(16).padStart(2, '0');
-  const a = transparency
-    ? '00'
-    : match[4]
-      ? Math.round(parseFloat(match[4]) * 255)
-          .toString(16)
-          .padStart(2, '0')
-      : 'ff';
-
-  return `${a}${b}${g}${r}`;
-};
-
 export const generateKML = (data: RecordType[], layer: LayerType) => {
   const kml = xmlBuilder
     .create('kml', {
@@ -1155,7 +1137,7 @@ export const generateKML = (data: RecordType[], layer: LayerType) => {
   const addStyleToPlacemark = (placemark: any, feature: RecordType) => {
     const rgbaColor = getColor(layer, feature);
     const transparency = Boolean(layer.colorStyle.transparency);
-    const kmlColor = rgbaToKmlColor(rgbaColor, false);
+    const kmlColor = toKmlColor(rgbaColor, false);
     const lineWidth = getLineWidth(layer, feature);
     const style = placemark.ele('Style');
 
@@ -1173,7 +1155,7 @@ export const generateKML = (data: RecordType[], layer: LayerType) => {
         break;
       case 'POLYGON':
         const polyStyle = style.ele('PolyStyle');
-        polyStyle.ele('color', rgbaToKmlColor(rgbaColor, transparency));
+        polyStyle.ele('color', toKmlColor(rgbaColor, transparency));
         polyStyle.ele('fill', '1');
         polyStyle.ele('outline', '1');
         // Add LineStyle for polygon outline
