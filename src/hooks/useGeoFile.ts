@@ -20,7 +20,7 @@ import {
 } from '../utils/Geometry';
 import { Buffer } from 'buffer';
 import { Image, Platform } from 'react-native';
-import { addDataAction, deleteDataAction } from '../modules/dataSet';
+import { addDataAction, replaceRecordsKeepingTombstonesAction } from '../modules/dataSet';
 import { cloneDeep } from 'lodash';
 import { t } from '../i18n/config';
 import { getBaseName, getExt, runAsync } from '../utils/General';
@@ -723,8 +723,16 @@ export const useGeoFile = (): UseGeoFileReturnType => {
           await importDictionary(sqlite, { [originalLayerId]: existingLayerToReplace.id }, sameFieldIdMap);
         }
 
-        // 既存データを削除
-        dispatch(deleteDataAction([{ layerId: existingLayerToReplace.id, userId: dataUser.uid, data: [] }]));
+        // 既存データを置き換える（消える記録のうちアップロード済みのものは墓標で残す）
+        const replacementRecords =
+          updatedLayer.type === 'LAYERGROUP' ? [] : replacing?.records ?? replacingCsvRecords ?? [];
+        dispatch(
+          replaceRecordsKeepingTombstonesAction({
+            layerId: existingLayerToReplace.id,
+            userId: dataUser.uid,
+            data: replacementRecords,
+          })
+        );
 
         // レイヤ設定を更新
         dispatch(updateLayerAction(updatedLayer));
@@ -733,17 +741,9 @@ export const useGeoFile = (): UseGeoFileReturnType => {
         if (updatedLayer.type === 'LAYERGROUP') {
           // LAYERGROUPの場合はデータなし
         } else if (replacing !== undefined) {
-          if (replacing.records.length > 0) {
-            dispatch(
-              addDataAction([{ layerId: existingLayerToReplace.id, userId: dataUser.uid, data: replacing.records }])
-            );
-          }
           // レイヤ設定は置き換わっているので、レコードが0件でも中止ではなく取り込み扱い（除外件数で伝える）
           return loadOutcome('imported', replacingFeatureCount - replacing.featureIndices.size, missingPhotos);
         } else if (replacingCsvRecords !== undefined && replacingCsvRecords.length > 0) {
-          dispatch(
-            addDataAction([{ layerId: existingLayerToReplace.id, userId: dataUser.uid, data: replacingCsvRecords }])
-          );
           return loadOutcome('imported', replacingCsvSkipped);
         }
       } else {

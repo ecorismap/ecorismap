@@ -655,6 +655,25 @@ describe('useData', () => {
     });
   });
 
+  describe('並べ替えで一覧に出ないレコードを消さない（同期監査 S5）', () => {
+    it('削除の墓標と _group でぶら下がる子レコードは、並べ替えても集合に残る', () => {
+      const parent1 = createMockRecord('p1', 'A', 1);
+      const parent2 = createMockRecord('p2', 'B', 2);
+      const child = { ...createMockRecord('c1', 'child', 0), field: { _group: 'p1' } };
+      const tombstone = { ...createMockRecord('d1', 'deleted', 0), deleted: true, uploaded: true };
+      const store = createTestStore([parent1, child, tombstone, parent2]);
+      const wrapper = ({ children }: { children: React.ReactNode }) => <Provider store={store}>{children}</Provider>;
+      const { result } = renderHook(() => useData('layer1'), { wrapper });
+
+      expect(result.current.sortedRecordSet.map((r: RecordType) => r.id)).toEqual(['p1', 'p2']);
+      act(() => {
+        result.current.updateRecordSetOrder([parent2, parent1]);
+      });
+
+      expect(store.getState().dataSet[0].data.map((r: RecordType) => r.id)).toEqual(['p2', 'p1', 'c1', 'd1']);
+    });
+  });
+
   describe('チェック機能', () => {
     it('changeCheckedで個別のチェック状態が変更される', () => {
       const record = createMockRecord('record1', 'Test', 100);

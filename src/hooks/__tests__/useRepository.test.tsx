@@ -707,3 +707,214 @@ describe('uploadDataToRepository（写真のアップロード失敗）', () => 
     expect(savedPhoto).toMatchObject({ url: 'https://x/p1', key: 'k' });
   });
 });
+
+// ---------------------------------------------------------------------------
+// 同期監査 2026-11 の high（docs/SYNC_AUDIT_2026-11.md の S1〜S4）
+describe('同期の high 修正', () => {
+  const project = { id: 'proj1' } as any;
+  const rec = (id: string, extra: Record<string, unknown> = {}) => ({
+    id,
+    userId: 'test-user',
+    displayName: 'U',
+    visible: true,
+    redraw: false,
+    coords: [],
+    field: {},
+    updatedAt: 100,
+    ...extra,
+  });
+
+  const makeStore = (opts: { layers: any[]; dataSet: any[]; dataSync?: any; isSettingProject?: boolean }) => {
+    const initialState = {
+      user: { uid: 'test-user', email: 'a@b.c', displayName: 'U' },
+      dataSet: opts.dataSet,
+      layers: opts.layers,
+      settings: { isSettingProject: opts.isSettingProject ?? false, updatedAt: undefined },
+      tileMaps: [],
+      dataSync: opts.dataSync ?? {},
+    };
+    const store = configureStore({
+      reducer: {
+        user: (state = initialState.user) => state,
+        dataSet: (state = initialState.dataSet) => state,
+        layers: (state = initialState.layers) => state,
+        settings: (state = initialState.settings) => state,
+        tileMaps: (state = initialState.tileMaps) => state,
+        dataSync: (state = initialState.dataSync) => state,
+      } as any,
+      preloadedState: initialState,
+    });
+    store.dispatch = jest.fn();
+    return store;
+  };
+  const renderWithStore = (store: any) =>
+    renderHook(() => useRepository(), {
+      wrapper: (props: any) => <Provider store={store}>{props.children}</Provider>,
+    });
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    jest.spyOn(projectStore, 'isSettingsUpdatedAtCurrent').mockResolvedValue(true);
+  });
+
+  describe('S1/M7: クラウドの自分のデータを確かめられないときは上書きしない', () => {
+    const layer = { id: 'l1', name: 'L1', permission: 'PRIVATE', field: [] } as any;
+    const store = () => makeStore({ layers: [layer], dataSet: [{ layerId: 'l1', userId: 'test-user', data: [rec('new')] }] });
+
+    test('getMyDataUpdatedAt が失敗したら中止する', async () => {
+      jest.spyOn(projectStore, 'getMyDataUpdatedAt').mockResolvedValue({ isOK: false, message: 'x' });
+      const uploadSpy = jest.spyOn(projectStore, 'uploadDataHelper');
+      const { result } = renderWithStore(store());
+      let res: any;
+      await act(async () => {
+        res = await result.current.uploadDataToRepository(project, 'All');
+      });
+      expect(res).toEqual({ isOK: false, message: 'hooks.message.cannotVerifyCloudData' });
+      expect(uploadSpy).not.toHaveBeenCalled();
+    });
+
+    test('内容比較のための取得が失敗したら中止する', async () => {
+      jest.spyOn(projectStore, 'getMyDataUpdatedAt').mockResolvedValue({ isOK: true, message: '', data: new Map([['l1_PRIVATE', 5]]) });
+      jest.spyOn(projectStore, 'downloadPrivateData').mockResolvedValue({ isOK: false, message: 'x' } as any);
+      const uploadSpy = jest.spyOn(projectStore, 'uploadDataHelper');
+      const { result } = renderWithStore(store());
+      let res: any;
+      await act(async () => {
+        res = await result.current.uploadDataToRepository(project, 'All');
+      });
+      expect(res.isOK).toBe(false);
+      expect(uploadSpy).not.toHaveBeenCalled();
+    });
+
+    test('クラウドに自分のデータがあるのに復号できないレイヤは上書きせずに残し、他のレイヤは送って知らせる', async () => {
+      const pub = { id: 'p1', name: 'P1', permission: 'PUBLIC', field: [] } as any;
+      jest
+        .spyOn(projectStore, 'getMyDataUpdatedAt')
+        .mockResolvedValue({ isOK: true, message: '', data: new Map([['l1_PRIVATE', 5]]) });
+      jest
+        .spyOn(projectStore, 'downloadPrivateData')
+        .mockResolvedValue({ isOK: true, message: '', data: [], unmarkedDekGroups: [] } as any);
+      const uploadSpy = jest.spyOn(projectStore, 'uploadDataHelper').mockResolvedValue({ isOK: true, message: '', encryptedAt: 1 });
+      const twoLayers = makeStore({
+        layers: [layer, pub],
+        dataSet: [
+          { layerId: 'l1', userId: 'test-user', data: [rec('new')] },
+          { layerId: 'p1', userId: 'test-user', data: [rec('pub')] },
+        ],
+      });
+      const { result } = renderWithStore(twoLayers);
+      let res: any;
+      await act(async () => {
+        res = await result.current.uploadDataToRepository(project, 'All');
+      });
+      expect(res).toEqual({ isOK: true, message: '', warning: 'hooks.message.skippedUnreadableLayers' });
+      expect(uploadSpy).toHaveBeenCalledTimes(1);
+      expect((uploadSpy.mock.calls[0][1] as any).layerId).toBe('p1');
+    });
+  });
+
+  describe('S2: COMMON は管理者ごとのバケットを統合して送る', () => {
+    const layer = { id: 'c1', name: 'C1', permission: 'COMMON', field: [] } as any;
+
+    test('別の管理者が編集して移した版と、追加した記録が消えない', async () => {
+      const dataSet = [
+        // 管理者1のバケット: X は管理者2が編集したので墓標
+        { layerId: 'c1', userId: 'admin1', data: [rec('X', { userId: 'admin1', deleted: true, updatedAt: 200 })] },
+        // 管理者2（自分）のバケット: 編集後の X' と新規の Y
+        { layerId: 'c1', userId: 'test-user', data: [rec('X', { field: { v: 'edited' }, updatedAt: 200 }), rec('Y')] },
+        // テンプレートは別に送るので混ぜない
+        { layerId: 'c1', userId: 'template', data: [rec('T', { userId: 'template' })] },
+      ];
+      const uploadSpy = jest.spyOn(projectStore, 'uploadDataHelper').mockResolvedValue({ isOK: true, message: '', encryptedAt: 1 });
+      const { result } = renderWithStore(makeStore({ layers: [layer], dataSet, isSettingProject: true }));
+      await act(async () => {
+        await result.current.uploadDataToRepository(project, 'Common');
+      });
+      const sent = (uploadSpy.mock.calls[0][1] as any).data;
+      expect(sent.map((r: any) => r.id)).toEqual(['X', 'Y']);
+      expect(sent[0].deleted).toBeUndefined();
+      expect(sent[0].field).toEqual({ v: 'edited' });
+      expect(sent.every((r: any) => r.userId === 'test-user')).toBe(true);
+    });
+
+    test('取り込みがあるレイヤは、全員分をまとめて送ってから他人名義の doc とテンプレートを片付け、手元も1つにそろえる', async () => {
+      const dataSet = [
+        { layerId: 'c1', userId: 'test-user', data: [rec('mine')] },
+        { layerId: 'c1', userId: 'admin1', data: [rec('a1', { userId: 'admin1' })] },
+      ];
+      const commonAbsorption = {
+        extraCommonDataSet: [{ layerId: 'c1', userId: 'test-user', data: [rec('m1', { userId: 'member' })] }],
+        representedUserIds: { c1: ['admin1', 'member'] },
+      };
+      const uploadSpy = jest.spyOn(projectStore, 'uploadDataHelper').mockResolvedValue({ isOK: true, message: '', encryptedAt: 1 });
+      const cleanupSpy = jest.spyOn(projectStore, 'deleteOtherUsersData').mockResolvedValue({ isOK: true, message: '' });
+      const templateSpy = jest.spyOn(projectStore, 'deleteData').mockResolvedValue({ isOK: true, message: '' });
+      const store = makeStore({ layers: [layer], dataSet, isSettingProject: true });
+      const { result } = renderWithStore(store);
+      let res: any;
+      await act(async () => {
+        res = await result.current.uploadDataToRepository(project, 'Common', { commonAbsorption });
+      });
+      expect(res.isOK).toBe(true);
+      const sentIds = (uploadSpy.mock.calls[0][1] as any).data.map((r: any) => r.id).sort();
+      expect(sentIds).toEqual(['a1', 'm1', 'mine']);
+      expect(cleanupSpy).toHaveBeenCalledWith('proj1', 'c1', 'COMMON', 'test-user', ['admin1', 'member']);
+      expect(templateSpy).toHaveBeenCalledWith('proj1', 'c1', 'TEMPLATE');
+      const types = (store.dispatch as jest.Mock).mock.calls.map((c) => c[0].type);
+      expect(types).toContain('dataSet/deleteDataAction');
+      const updateCall = (store.dispatch as jest.Mock).mock.calls.find((c) => c[0].type === 'dataSet/updateDataAction');
+      expect(updateCall[0].payload[0].data.map((r: any) => r.id).sort()).toEqual(['a1', 'm1', 'mine']);
+    });
+
+    test('書き込みに失敗したら、他人名義の doc を片付けない（先に消すと失敗で消えたままになる）', async () => {
+      const commonAbsorption = { extraCommonDataSet: [], representedUserIds: { c1: ['admin1'] } };
+      jest.spyOn(projectStore, 'uploadDataHelper').mockResolvedValue({ isOK: false, message: 'fail' } as any);
+      const cleanupSpy = jest.spyOn(projectStore, 'deleteOtherUsersData');
+      const { result } = renderWithStore(
+        makeStore({ layers: [layer], dataSet: [{ layerId: 'c1', userId: 'test-user', data: [rec('mine')] }], isSettingProject: true })
+      );
+      let res: any;
+      await act(async () => {
+        res = await result.current.uploadDataToRepository(project, 'Common', { commonAbsorption });
+      });
+      expect(res.isOK).toBe(false);
+      expect(cleanupSpy).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('S3: 保存の最初に COMMON を消さない', () => {
+    test('COMMON のレイヤでは deleteData を呼ばず、PUBLIC/PRIVATE のレイヤはテンプレートだけ消す', async () => {
+      const common = { id: 'c1', name: 'C1', permission: 'COMMON', field: [] } as any;
+      const pub = { id: 'p1', name: 'P1', permission: 'PUBLIC', field: [] } as any;
+      const deleteSpy = jest.spyOn(projectStore, 'deleteData').mockResolvedValue({ isOK: true, message: '' });
+      const { result } = renderWithStore(makeStore({ layers: [common, pub], dataSet: [], isSettingProject: true }));
+      await act(async () => {
+        await result.current.deleteCommonAndTemplateData(project);
+      });
+      expect(deleteSpy.mock.calls).toEqual([['proj1', 'p1', 'TEMPLATE']]);
+    });
+  });
+
+  describe('S4: 衝突時のマージで更新日時が同じなら手元を採る', () => {
+    test('旧版で作図した記録（時刻が進んでいない）の形の変更がクラウドの版に負けない', async () => {
+      const layer = { id: 'l1', name: 'L1', permission: 'PRIVATE', field: [] } as any;
+      const local = rec('L', { coords: [{ latitude: 1, longitude: 1 }], updatedAt: 100 });
+      const cloud = rec('L', { coords: [{ latitude: 0, longitude: 0 }], updatedAt: 100 });
+      const cloudOnly = rec('C', { updatedAt: 300 });
+      jest.spyOn(projectStore, 'getMyDataUpdatedAt').mockResolvedValue({ isOK: true, message: '', data: new Map([['l1_PRIVATE', 5]]) });
+      jest
+        .spyOn(projectStore, 'downloadPrivateData')
+        .mockResolvedValue({ isOK: true, message: '', data: [{ layerId: 'l1', userId: 'test-user', data: [cloud, cloudOnly] }], unmarkedDekGroups: [] } as any);
+      jest.spyOn(AlertAsyncModule, 'DataConflictConfirmAsync').mockResolvedValue('merge');
+      (DataUtils.mergeLayerData as jest.Mock).mockImplementationOnce((args: any) => realMergeLayerData(args));
+      const uploadSpy = jest.spyOn(projectStore, 'uploadDataHelper').mockResolvedValue({ isOK: true, message: '', encryptedAt: 9 });
+      const { result } = renderWithStore(makeStore({ layers: [layer], dataSet: [{ layerId: 'l1', userId: 'test-user', data: [local] }] }));
+      await act(async () => {
+        await result.current.uploadDataToRepository(project, 'All');
+      });
+      const sent = (uploadSpy.mock.calls[0][1] as any).data;
+      expect(sent.find((r: any) => r.id === 'L').coords).toEqual([{ latitude: 1, longitude: 1 }]);
+      expect(sent.map((r: any) => r.id).sort()).toEqual(['C', 'L']);
+    });
+  });
+});

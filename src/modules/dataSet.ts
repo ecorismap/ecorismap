@@ -80,6 +80,26 @@ const reducers = {
       state[dataIndex].data = [...updatedData, ...newRecords];
     }
   },
+  /**
+   * 集合の中身を丸ごと置き換える（ファイルの置き換えインポート）。置き換えで消える記録のうちアップロード済みのものは
+   * 墓標として残す。墓標が無いと、別端末に残る古い版や、レイヤの共有範囲の付け替えでクラウドの古い版が戻ってくる
+   */
+  replaceRecordsKeepingTombstonesAction: (state: DataType[], action: PayloadAction<DataType>) => {
+    const { layerId, userId, data } = action.payload;
+    const idx = state.findIndex((d) => d.layerId === layerId && d.userId === userId);
+    if (idx === -1) {
+      state.push(action.payload);
+      return;
+    }
+    const newIds = new Set(data.map((record) => record.id));
+    const now = Date.now();
+    const tombstones = (state[idx].data as RecordType[]).flatMap((record) => {
+      if (newIds.has(record.id)) return [];
+      if (record.deleted === true) return [record];
+      return record.uploaded ? [{ ...record, deleted: true, updatedAt: now }] : [];
+    });
+    state[idx].data = [...data, ...tombstones];
+  },
   deleteRecordsAction: (state: DataType[], action: PayloadAction<DataType>) => {
     const { layerId, userId, data: toDelete } = action.payload;
     const idx = state.findIndex((d) => d.layerId === layerId && d.userId === userId);
@@ -147,6 +167,7 @@ export const {
   addRecordsAction,
   updateRecordsAction,
   deleteRecordsAction,
+  replaceRecordsKeepingTombstonesAction,
 } = dataSetSlice.actions;
 
 export default dataSetSlice.reducer;

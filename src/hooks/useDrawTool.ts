@@ -1079,7 +1079,8 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
             const latlon = reprojectCoordsOnModifiedLine(latLonObjectsToLatLonArray(record.coords), oldLine, newLine);
             if (latlon === undefined) return [];
             const coords = latlonArrayToLatLonObjects(latlon);
-            return [{ ...record, coords, centroid: calcLineMidPoint(coords) }];
+            // 位置が変わったので更新日時も進める（同期で編集前の版に負けないように）
+            return [{ ...record, coords, centroid: calcLineMidPoint(coords), updatedAt: Date.now() }];
           });
           if (moved.length > 0) dispatch(updateRecordsAction({ layerId: layer.id, userId: d.userId, data: moved }));
         });
@@ -1457,7 +1458,8 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
         ];
       } else if (undo.deletedRecord !== undefined) {
         const { layerId, userId, record } = undo.deletedRecord;
-        dispatch(updateRecordsAction({ layerId, userId, data: [record] }));
+        // 削除の墓標（updatedAt 付き）より新しくしないと、同期で削除のほうが勝って戻した記号が消える
+        dispatch(updateRecordsAction({ layerId, userId, data: [{ ...record, updatedAt: Date.now() }] }));
       }
       setRedraw(ulid());
       return;

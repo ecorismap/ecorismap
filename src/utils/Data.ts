@@ -18,6 +18,7 @@ import {
 import dayjs from '../i18n/dayjs';
 import { formattedInputs } from './Format';
 import { cloneDeep } from 'lodash';
+import { ulid } from 'ulid';
 import { boundingBoxFromCoords, latLonDMS } from './Coords';
 import { t } from '../i18n/config';
 import { isLocationType } from './General';
@@ -459,6 +460,132 @@ export const updateRecordCoords = (
   }
 };
 
+/**
+ * COMMON のレイヤは、管理者ごとのバケット（ダウンロードした人・編集した人の userId）に分かれて手元にある。
+ * 他の管理者のレコードを編集すると元のバケットに墓標が残り、自分のバケットへ移る（useDataEdit）ため、
+ * 先頭のバケットだけを送ると、別の管理者が直した・追加したレコードが消える。全バケットを id ごとに1件へまとめる。
+ * - 同じ id が複数あれば、削除されていないものを優先する（墓標＋移った版の組は、編集して移ったもの）
+ * - どちらも同じ状態なら updatedAt が新しい方、同じなら自分のバケットの方を採る
+ * テンプレート（userId='template'）は別にアップロードするので含めない
+ */
+export const mergeCommonRecords = (dataSet: DataType[], layerId: string, ownUserId: string | undefined): RecordType[] => {
+  const buckets = dataSet.filter((d) => d.layerId === layerId && d.userId !== 'template');
+  const chosen = new Map<string, { record: RecordType; own: boolean }>();
+  const order: string[] = [];
+  const score = (record: RecordType, own: boolean) => [record.deleted === true ? 0 : 1, record.updatedAt ?? 0, own ? 1 : 0];
+  const isBetter = (a: number[], b: number[]) => {
+    for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return a[i] > b[i];
+    return false;
+  };
+  for (const bucket of buckets) {
+    const own = bucket.userId === ownUserId || bucket.userId === undefined;
+    for (const record of bucket.data) {
+      const current = chosen.get(record.id);
+      if (current === undefined) {
+        order.push(record.id);
+        chosen.set(record.id, { record, own });
+      } else if (isBetter(score(record, own), score(current.record, current.own))) {
+        chosen.set(record.id, { record, own });
+      }
+    }
+  }
+  return order.map((id) => chosen.get(id)!.record);
+};
+
+export type CommonAbsorption = {
+  /** COMMON のアップロードに加える記録（レイヤごとに自分の名義のバケット1つ） */
+  extraCommonDataSet: DataType[];
+  /**
+   * アップロード後にクラウドから消してよい他人名義の COMMON の doc の持ち主。内容を手元に持っている
+   * （取り込んだ、または設定モードで開いたときに取得済み）人だけ。復号できなかった人の doc は消さない
+   */
+  representedUserIds: { [layerId: string]: string[] };
+};
+
+/**
+ * 設定の保存で COMMON のレイヤをまとめて自分の名義で送る前に、手元に無いクラウドの共通データを取り込む。
+ * 保存の冒頭で全員分を消して手元だけを送る方式だと、PUBLIC/PRIVATE から COMMON へ付け替えたメンバーの記録、
+ * 途中で失敗した保存のやり直しで付け替え済みの記録、開いた後に他の管理者が足した記録が消える。
+ * - 手元のバケット（テンプレート以外）にある id の記録は、手元が取得済みの版なので取り込まない
+ *   （手元で削除した記録は墓標で残るので戻らない）
+ * - テンプレート由来の id は、メンバーや管理者がそれぞれ編集した別々の記録が同じ id を持つ。版（更新日時と内容）が
+ *   手元や取り込み済みと同じなら取り込まず、違えば新しい id を振って残す（保存のやり直しで複製しないため版で比べる）。
+ *   テンプレート由来の墓標は、その人がテンプレートを自分の表示から消しただけなので取り込まない
+ * - 取り込む記録どうしで id が重なる（他人の記録を編集して複製された等）ときも、版が違えば新しい id を振って残す
+ * - COMMON のレイヤはテンプレートを使わないので、手元のテンプレートの記録も、生きた編集版が無ければ共通データに移す
+ */
+export const buildCommonAbsorption = ({
+  localDataSet,
+  cloudCommonDataSet,
+  layerIds,
+  ownUserId,
+  newId = ulid,
+}: {
+  localDataSet: DataType[];
+  cloudCommonDataSet: DataType[];
+  layerIds: string[];
+  ownUserId: string;
+  newId?: () => string;
+}): CommonAbsorption => {
+  const versionOf = (record: RecordType) =>
+    JSON.stringify([record.updatedAt ?? 0, record.deleted === true, record.field, record.coords ?? null, record.holes ?? null]);
+  const extraCommonDataSet: DataType[] = [];
+  const representedUserIds: { [layerId: string]: string[] } = {};
+  for (const layerId of layerIds) {
+    const localBuckets = localDataSet.filter((d) => d.layerId === layerId && d.userId !== 'template');
+    const templateBuckets = localDataSet.filter((d) => d.layerId === layerId && d.userId === 'template');
+    const templateIds = new Set(templateBuckets.flatMap((d) => d.data.map((r) => r.id)));
+    const localRecords = localBuckets.flatMap((d) => d.data);
+    const localIds = new Set(localRecords.map((r) => r.id));
+    const knownVersions = new Set(localRecords.map(versionOf));
+    // 自分の doc（前回の保存で取り込んだ分を含む）を先に見て、他人の doc の同じ版を重ねないようにする
+    const cloudBuckets = cloudCommonDataSet
+      .filter((d) => d.layerId === layerId)
+      .sort((a, b) => Number(b.userId === ownUserId) - Number(a.userId === ownUserId));
+    const absorbed: RecordType[] = [];
+    const usedIds = new Set(localIds);
+    for (const bucket of cloudBuckets) {
+      // 子（_group）が親より先に並んでいても付け替えられるよう、先に id を決めてから記録を作る
+      const decided: { record: RecordType; id: string }[] = [];
+      const remap = new Map<string, string>();
+      for (const record of bucket.data) {
+        const fromTemplate = templateIds.has(record.id);
+        if (fromTemplate && record.deleted === true) continue;
+        if (!fromTemplate && localIds.has(record.id)) continue;
+        const version = versionOf(record);
+        // 同じ版をすでに持っているなら重ねない。テンプレート由来は、前回の保存で新しい id を振って自分の doc に
+        // 取り込んだ版と id が違うので版だけで比べる。それ以外は id も同じときだけ同一とみなす（内容が同じ別の記録がありうる）
+        if (knownVersions.has(version) && (fromTemplate || usedIds.has(record.id))) continue;
+        const id = usedIds.has(record.id) ? newId() : record.id;
+        if (id !== record.id) remap.set(record.id, id);
+        usedIds.add(id);
+        knownVersions.add(version);
+        decided.push({ record, id });
+      }
+      for (const { record, id } of decided) {
+        const group = record.field._group;
+        const field =
+          typeof group === 'string' && remap.has(group) ? { ...record.field, _group: remap.get(group)! } : record.field;
+        absorbed.push({ ...record, id, field });
+      }
+    }
+    const liveCloudIds = new Set(
+      cloudBuckets.flatMap((d) => d.data.filter((r) => r.deleted !== true).map((r) => r.id))
+    );
+    const templateRecords = templateBuckets
+      .flatMap((d) => d.data)
+      .filter((record) => !record.deleted && !localIds.has(record.id) && !liveCloudIds.has(record.id) && !usedIds.has(record.id));
+    absorbed.push(...templateRecords);
+    if (absorbed.length > 0) extraCommonDataSet.push({ layerId, userId: ownUserId, data: absorbed });
+    const users = new Set<string>();
+    [...cloudBuckets, ...localBuckets].forEach((d) => {
+      if (d.userId !== undefined && d.userId !== ownUserId) users.add(d.userId);
+    });
+    representedUserIds[layerId] = Array.from(users);
+  }
+  return { extraCommonDataSet, representedUserIds };
+};
+
 export const getTargetRecordSet = (
   dataSet: DataType[],
   layer: LayerType,
@@ -468,7 +595,9 @@ export const getTargetRecordSet = (
   //Commonの時は、全データが対象（アップロード後にCommonに変更した場合などもあるため）.Commonのデータをアップロードするのは管理者の場合のみ
   //PublicとPrivateの時は、自分のデータまたはundefine（プロジェクト作成時にログインしていない時に作成したデータをsaveでアップロードする場合）
   let targetDataSet: DataType | undefined;
-  if (layer.permission === 'COMMON') {
+  if (layer.permission === 'COMMON' && !isTemplate) {
+    targetDataSet = { layerId: layer.id, userId: user.uid, data: mergeCommonRecords(dataSet, layer.id, user.uid) };
+  } else if (layer.permission === 'COMMON') {
     targetDataSet = dataSet.find((d) => d.layerId === layer.id);
   } else if (isTemplate) {
     targetDataSet = dataSet.find(
@@ -571,9 +700,9 @@ export async function mergeLayerData({
       if (strategy === 'manual' && conflictsResolver) {
         chosen = await conflictsResolver(candidates, id);
       } else if (strategy === 'latest') {
-        chosen = candidates.reduce((prev, cur) =>
-          prev.updatedAt && cur.updatedAt && cur.updatedAt > prev.updatedAt ? cur : prev
-        );
+        // updatedAt の無いレコード（取り込んだファイル由来など）は最も古いとみなす。片方が無いときに先頭を採ると、
+        // 手元の古い版がクラウドの新しい編集・削除に勝ってしまう。同じ時刻なら先頭（呼び出し側が優先するもの）を採る
+        chosen = candidates.reduce((prev, cur) => ((cur.updatedAt ?? 0) > (prev.updatedAt ?? 0) ? cur : prev));
       } else if (strategy === 'self' && ownUserId) {
         const own = candidates.find((r) => r.userId === ownUserId);
         chosen = own ?? candidates[0];

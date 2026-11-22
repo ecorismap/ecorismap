@@ -741,6 +741,8 @@
     },
     "message": {
       "pleaseLogin": "Please login",
+      "cannotVerifyCloudData": "Upload was stopped so as not to overwrite your data in the cloud, because it could not be checked. Check your connection and try again.",
+      "skippedUnreadableLayers": "Your data in the cloud could not be read, so these layers were left as they are instead of being overwritten: {{names}}. Ask the administrator to share the encryption key again, then upload again.",
       "cannotUploadData": "Layer settings have been updated. Issues may occur, but would you like to upload anyway? (Please consult with the administrator)",
       "unknownError": "Unknown error.",
       "cannotAddProject": "Cannot be added while editing a project",

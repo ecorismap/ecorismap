@@ -1072,7 +1072,12 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
             updateRecordsAction({
               layerId: d.layerId,
               userId: d.userId,
-              data: targets.map((record) => ({ ...record, field: { ...record.field, [fieldName]: newValue } })),
+              // 値を書き換えたので更新日時も進める（同期で書き換え前の版に負けないように）
+              data: targets.map((record) => ({
+                ...record,
+                field: { ...record.field, [fieldName]: newValue },
+                updatedAt: Date.now(),
+              })),
             })
           );
         });

@@ -5,6 +5,8 @@ import { useProjectEdit } from '../hooks/useProjectEdit';
 import { Props_ProjectEdit } from '../routes';
 import { Platform } from 'react-native';
 import NetInfo from '@react-native-community/netinfo';
+import { useDispatch } from 'react-redux';
+import { clearDataSyncProjectAction } from '../modules/dataSync';
 import { t } from '../i18n/config';
 import { ProjectEditContext } from '../contexts/ProjectEdit';
 import { useE3kitGroup } from '../hooks/useE3kitGroup';
@@ -41,6 +43,7 @@ export default function ProjectEditContainer({ navigation, route }: Props_Projec
     startProjectSetting,
   } = useProjectEdit(route.params.project, route.params.isNew);
 
+  const dispatch = useDispatch();
   const [isLoading, setIsLoading] = useState(false);
   const [migrationProgress, setMigrationProgress] = useState('');
   // 鍵リセット済み（ラップが古く本人が開けない）メンバーのuid。管理者にバッジ表示して再共有を促す
@@ -153,6 +156,10 @@ export default function ProjectEditContainer({ navigation, route }: Props_Projec
         }
 
         setIsLoading(true);
+        // 開く処理は手元のデータを捨ててクラウドから取り直す。途中で失敗したり自分のデータを復号できなかったりして
+        // 手元が空でも、前回アップロード時の基準値が残っていると「同期済み」とみなされ、次のアップロードが
+        // 確認なしにクラウドの自分のデータを置き換えてしまう。基準値を捨てて、次回は必ず内容を比べさせる
+        dispatch(clearDataSyncProjectAction(targetProject.id));
         const loadE3kitGroupResult = await loadE3kitGroup(targetProject);
         if (!loadE3kitGroupResult.isOK) {
           if (await navigateToKeyRestoreIfNeeded(loadE3kitGroupResult.message)) {
@@ -214,6 +221,7 @@ export default function ProjectEditContainer({ navigation, route }: Props_Projec
       }
     },
     [
+      dispatch,
       isProjectOpen,
       isOwnerAdmin,
       targetProject,
