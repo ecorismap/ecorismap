@@ -92,18 +92,21 @@ private fun headerValue(lines: List<String>, name: String): String? =
 private class ChunkedInputStream(private val input: InputStream) : InputStream() {
   private var remaining = 0
   private var finished = false
+  // 読み取りが時間切れ（SocketTimeoutException）で中断しても、読みかけのサイズ行を失わないように持っておく
+  private val sizeLine = StringBuilder()
 
   private fun readChunkSize(): Int {
-    val sb = StringBuilder()
     while (true) {
       val b = input.read()
       if (b < 0) return -1
-      if (b == '\n'.code) break
-      if (b != '\r'.code) sb.append(b.toChar())
+      if (b == '\n'.code) {
+        val sizeText = sizeLine.toString().substringBefore(';').trim()
+        sizeLine.setLength(0)
+        if (sizeText.isEmpty()) continue // 前チャンク末尾のCRLF
+        return sizeText.toIntOrNull(16) ?: throw NtripException("invalid chunk size")
+      }
+      if (b != '\r'.code) sizeLine.append(b.toChar())
     }
-    val sizeText = sb.toString().substringBefore(';').trim()
-    if (sizeText.isEmpty()) return readChunkSize() // 前チャンク末尾のCRLF
-    return sizeText.toInt(16)
   }
 
   override fun read(): Int {
@@ -127,8 +130,12 @@ private class ChunkedInputStream(private val input: InputStream) : InputStream()
   }
 }
 
-private fun openStream(config: NtripConfig, path: String): Triple<Socket, InputStream, List<String>> {
-  val socket = Socket()
+/** socket は呼び出し側が先に作って渡せる（接続中・ヘッダ読み取り中でも stop() から閉じられるように） */
+private fun openStream(
+  config: NtripConfig,
+  path: String,
+  socket: Socket = Socket(),
+): Triple<Socket, InputStream, List<String>> {
   try {
     socket.connect(InetSocketAddress(config.host, config.port), CONNECT_TIMEOUT_MS)
     socket.soTimeout = READ_TIMEOUT_MS
@@ -203,8 +210,13 @@ class NtripClient(private val config: NtripConfig, private val listener: NtripLi
     while (running) {
       try {
         listener.onNtripState("connecting", null)
-        val (s, body, header) = openStream(config, config.mountpoint)
-        socket = s
+        // 接続とヘッダ読み取り（最大10秒＋30秒）の間も stop() で閉じられるよう、先にフィールドへ入れる。
+        // stop() は running を下ろしてから socket を読むので、ここで入れた後に running を見直せば取りこぼさない
+        val pendingSocket = Socket()
+        socket = pendingSocket
+        if (!running) break
+        val (s, body, header) = openStream(config, config.mountpoint, pendingSocket)
+        if (!running) break
         val status = header[0]
         when {
           status.startsWith("ICY 200") || (status.startsWith("HTTP/") && status.contains(" 200")) -> {

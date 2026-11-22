@@ -25,9 +25,12 @@ export interface TrackChunkMetadata {
 // 現在のチャンクとメタデータをメモリに保持する。MMKVへの書き込みはスロットルし、
 // rollover時とflush時、フォアグラウンド/停止/保存時には必ず書き込む。
 //
-// 重要: headlessタスク(アプリkill時)はメインとは別のJSコンテキストで動くため、
-// このキャッシュは共有されない。MMKVが唯一のコンテキスト間共有・永続の真実の源。
-// headless側ではタスク先頭でresetTrackLogCache()・末尾でflushTrackLog()を呼び、
+// 重要: headlessタスクは、プロセスごと落ちたあとはメインとは別に作られたJSランタイムで動くが、
+// Activityだけが破棄されプロセスがFGSで生き残った場合（Androidで、バックグラウンドから最近使った
+// アプリ画面でスワイプ終了したときなど）は、既存のReactContext＝メインと同じJSランタイムで動き、
+// このキャッシュを共有する。MMKVが唯一のランタイム間共有・永続の真実の源。
+// headless側ではタスク先頭でflushPendingTrackLog()→resetTrackLogCache()（同じランタイムなら
+// メインの未書き込みの点を先に確定させてから捨てる。軌跡監査 T-L3）・末尾でflushTrackLog()を呼び、
 // 毎回MMKVから読み・書きすることでキャッシュのドリフトを避ける。
 // ---------------------------------------------------------------------------
 const WRITE_EVERY_N = 10; // 未完成チャンクの書き込みは最大Nポイントに1回
@@ -90,8 +93,10 @@ const persistCache = (): void => {
   const currentChunkIndex = metadata.lastChunkIndex;
   saveTrackMetadata(metadata);
   if (currentChunk.length > 0) {
-    // つなぎ目を除いて保存（2番目以降のチャンクは最初の点を除外）
-    const chunkToSave = currentChunkIndex > 0 && currentChunk.length > 1 ? currentChunk.slice(1) : currentChunk;
+    // つなぎ目を除いて保存（2番目以降のチャンクは最初の点を除外）。つなぎ目だけ（長さ1）のときも除いて[]を
+    // 保存する。[J]のまま保存すると、読み直したときにgetCurrentChunkが前チャンクの末尾をさらに足して
+    // [J, J]になり、つなぎ目の点が重複して保存される（軌跡監査 T-L4）
+    const chunkToSave = currentChunkIndex > 0 ? currentChunk.slice(1) : currentChunk;
     saveTrackChunk(currentChunkIndex, chunkToSave);
   } else {
     saveTrackChunk(currentChunkIndex, []);
@@ -103,6 +108,13 @@ const persistCache = (): void => {
 // 未書き込みのキャッシュ内容を強制的にMMKVへ書き込む（バックグラウンド移行/停止/保存前に呼ぶ）。
 export const flushTrackLog = (): void => {
   persistCache();
+};
+
+// 未書き込みの点があるときだけMMKVへ書き込む。キャッシュを捨てる前（headlessタスクの先頭など）に使う。
+// 書き込み済みのキャッシュは書き戻さない: 別ランタイムのheadlessでは、前回のタスク末尾で書いたキャッシュが
+// 残っているので、その間に他方がMMKVへ書いた点を古い内容で上書きしないようにする
+export const flushPendingTrackLog = (): void => {
+  if (pendingWrites > 0) persistCache();
 };
 
 export const clearStoredLocations = (): void => {
@@ -412,8 +424,17 @@ export const simplifyLocations = (points: LocationType[] = [], maxPoints = 250):
   return simplified;
 };
 
+// 保存済みチャンクの表示用（間引き済み）。2番目以降のチャンクはつなぎ目を除いて保存されているので、
+// 前チャンクの末尾を先頭に補う。補わないと、チャンクごとに別の線で描く2D/3Dで境目の1区間が欠ける（軌跡監査 T-L5）。
+// simplifyLocationsは先頭の点を必ず残す
 export const getTrackChunkForDisplay = (chunkIndex: number, maxPoints = 250): LocationType[] => {
   const chunk = getTrackChunk(chunkIndex);
+  if (chunkIndex > 0 && chunk.length > 0) {
+    const prevChunk = getTrackChunk(chunkIndex - 1);
+    if (prevChunk.length > 0) {
+      return simplifyLocations([prevChunk[prevChunk.length - 1], ...chunk], maxPoints);
+    }
+  }
   return simplifyLocations(chunk, maxPoints);
 };
 

@@ -5,6 +5,15 @@ import { getLineLength, haversineKm, simplifyLocations } from './Location';
 export const ALTITUDE_SMOOTHING_WINDOW = 5;
 export const ELEVATION_GAIN_THRESHOLD = 5; // m
 
+// 記録中サマリーのライブ更新間隔（ms）。更新のたびに全チャンクを読み直し、全体にcleanupLine・統計・
+// 標高プロファイルを計算し直すため、長い記録ほど間隔を伸ばしてJSスレッドの占有を抑える（軌跡監査 T-L15）。
+// 計算の中身は変えない（差分計算はcleanupLineが線全体に依存するため保存結果と一致しなくなる）
+export const getRecordingStatsIntervalMs = (totalPoints: number): number => {
+  if (totalPoints > 30000) return 30 * 1000;
+  if (totalPoints > 10000) return 15 * 1000;
+  return 5 * 1000;
+};
+
 export interface TrackStatistics {
   distanceKm: number;
   startTime: number | null;

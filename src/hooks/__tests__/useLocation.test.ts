@@ -2,12 +2,13 @@ import { renderHook, act } from '@testing-library/react-hooks';
 import { Provider } from 'react-redux';
 import { configureStore } from '@reduxjs/toolkit';
 import React from 'react';
-import { AppState, Platform } from 'react-native';
+import { AppState, Linking, Platform } from 'react-native';
 import { useLocation, shouldEmitAzimuth, angularDeltaDeg, shouldRotateCompassCamera } from '../useLocation';
 import * as Location from 'expo-location';
 import BackgroundGeolocation from 'react-native-background-geolocation';
 import { ConfirmAsync, AlertAsync } from '../../components/molecules/AlertAsync';
 import * as Notifications from 'expo-notifications';
+import { t } from '../../i18n/config';
 
 // Mock dependencies
 jest.mock('expo-location');
@@ -91,6 +92,7 @@ jest.mock('../../utils/Location', () => ({
   })),
   addLocationsToChunks: jest.fn(),
   flushTrackLog: jest.fn(),
+  flushPendingTrackLog: jest.fn(),
   getLineLength: jest.fn(() => 0),
   toLocationObject: jest.fn((location: any) => ({
     coords: { ...location.coords },
@@ -265,7 +267,11 @@ describe('useLocation', () => {
   it('should handle permission denied', async () => {
     const alertSpy = AlertAsync as jest.Mock;
     alertSpy.mockResolvedValue(undefined);
-    mockBackgroundGeolocation.requestPermission.mockResolvedValueOnce(0 as any);
+    const openSettingsSpy = jest.spyOn(Linking, 'openSettings').mockResolvedValue(undefined);
+    // bggeo 5.8.x は拒否を AuthorizationStatus の数値で reject する（resolve しない）
+    mockBackgroundGeolocation.requestPermission.mockRejectedValueOnce(
+      BackgroundGeolocation.AuthorizationStatus.Denied
+    );
 
     const mockRef = createMockMapRef();
     const { result } = renderHook(() => useLocation(mockRef), { wrapper });
@@ -276,13 +282,20 @@ describe('useLocation', () => {
     });
 
     expect(permissionStatus).toBeUndefined();
+    expect(alertSpy).toHaveBeenCalledWith(t('hooks.message.permitAccessGPS'));
+    expect(openSettingsSpy).toHaveBeenCalled();
+    openSettingsSpy.mockRestore();
   });
 
   it('should open settings when permission is blocked', async () => {
+    (AlertAsync as jest.Mock).mockResolvedValue(undefined);
+    const openSettingsSpy = jest.spyOn(Linking, 'openSettings').mockResolvedValue(undefined);
     const mockRef = createMockMapRef();
     const { result } = renderHook(() => useLocation(mockRef), { wrapper });
 
-    mockBackgroundGeolocation.requestPermission.mockResolvedValueOnce(0 as any);
+    mockBackgroundGeolocation.requestPermission.mockRejectedValueOnce(
+      BackgroundGeolocation.AuthorizationStatus.Restricted
+    );
 
     let permissionStatus;
     await act(async () => {
@@ -290,6 +303,48 @@ describe('useLocation', () => {
     });
 
     expect(permissionStatus).toBeUndefined();
+    expect(AlertAsync).toHaveBeenCalledWith(t('hooks.message.permitAccessGPS'));
+    expect(openSettingsSpy).toHaveBeenCalled();
+    openSettingsSpy.mockRestore();
+  });
+
+  it('数値でない例外は拒否の案内を出さずにログだけ残す', async () => {
+    const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    const openSettingsSpy = jest.spyOn(Linking, 'openSettings').mockResolvedValue(undefined);
+    mockBackgroundGeolocation.requestPermission.mockRejectedValueOnce(new Error('native failure'));
+    const { result } = renderHook(() => useLocation(createMockMapRef()), { wrapper });
+
+    let permissionStatus;
+    await act(async () => {
+      permissionStatus = await result.current.confirmLocationPermission();
+    });
+
+    expect(permissionStatus).toBeUndefined();
+    expect(AlertAsync).not.toHaveBeenCalled();
+    expect(openSettingsSpy).not.toHaveBeenCalled();
+    expect(errorSpy).toHaveBeenCalledWith('confirmLocationPermission error', expect.any(Error));
+    errorSpy.mockRestore();
+    openSettingsSpy.mockRestore();
+  });
+
+  it('Android: 通知が拒否されたときは通知用の文言で案内し、位置の許可は求めない', async () => {
+    const originalOS = Platform.OS;
+    Platform.OS = 'android';
+    const openSettingsSpy = jest.spyOn(Linking, 'openSettings').mockResolvedValue(undefined);
+    mockNotifications.getPermissionsAsync.mockResolvedValueOnce({ status: 'denied', canAskAgain: false } as any);
+    const { result } = renderHook(() => useLocation(createMockMapRef()), { wrapper });
+
+    let permissionStatus;
+    await act(async () => {
+      permissionStatus = await result.current.confirmLocationPermission();
+    });
+
+    expect(permissionStatus).toBeUndefined();
+    expect(AlertAsync).toHaveBeenCalledWith(t('hooks.message.permitNotificationForGPS'));
+    expect(openSettingsSpy).toHaveBeenCalled();
+    expect(mockBackgroundGeolocation.requestPermission).not.toHaveBeenCalled();
+    Platform.OS = originalOS;
+    openSettingsSpy.mockRestore();
   });
 
   it('should handle location errors gracefully', () => {
@@ -1765,5 +1820,236 @@ describe('changePace拒否時の記録継続（GPS圏外・サービス起動直
     expect(mockBackgroundGeolocation.stop).toHaveBeenCalled();
     expect(result.current.gpsState).toBe('off');
     errorSpy.mockRestore();
+  });
+});
+
+describe('軌跡監査の安全な修正（T-M1/T-M2/T-M3/T-L16）', () => {
+  const originalPlatformOS = Platform.OS;
+  const flushPromises = () => new Promise((resolve) => setImmediate(resolve));
+  const { trackLogMMKV } = jest.requireMock('../../utils/mmkvStorage');
+  const LocationUtils = jest.requireMock('../../utils/Location');
+  let openSettingsSpy: jest.SpyInstance;
+
+  // 精度設定を途中で変えられるストア
+  const createAccuracyStore = (initial: 'HIGH' | 'MEDIUM' | 'LOW') =>
+    configureStore({
+      reducer: {
+        settings: (
+          state: { projectId: undefined; gpsAccuracy: string } = { projectId: undefined, gpsAccuracy: initial },
+          action: { type: string; payload?: string }
+        ) => (action.type === 'setAccuracy' && action.payload ? { ...state, gpsAccuracy: action.payload } : state),
+        user: (state = { uid: 'test-user', displayName: 'Test User' }) => state,
+      },
+    });
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    (ConfirmAsync as jest.Mock).mockResolvedValue(false);
+    (AlertAsync as jest.Mock).mockResolvedValue(undefined);
+    openSettingsSpy = jest.spyOn(Linking, 'openSettings').mockResolvedValue(undefined);
+    mockBackgroundGeolocation.ready.mockResolvedValue({ enabled: false } as any);
+    mockBackgroundGeolocation.getState.mockResolvedValue({ enabled: false } as any);
+    mockBackgroundGeolocation.removeListeners.mockResolvedValue(undefined);
+    mockBackgroundGeolocation.requestPermission.mockResolvedValue(BackgroundGeolocation.AuthorizationStatus.Always);
+    mockBackgroundGeolocation.getCurrentPosition.mockResolvedValue({
+      coords: { latitude: 35.0, longitude: 135.0, altitude: 0, accuracy: 10, altitudeAccuracy: 5, heading: 0, speed: 0 },
+      timestamp: Date.now(),
+    } as any);
+    mockBackgroundGeolocation.start.mockResolvedValue(undefined);
+    mockBackgroundGeolocation.stop.mockResolvedValue(undefined);
+    mockBackgroundGeolocation.setConfig.mockResolvedValue(undefined);
+    mockBackgroundGeolocation.changePace.mockResolvedValue(undefined);
+    mockBackgroundGeolocation.onLocation.mockReturnValue({ remove: jest.fn() } as any);
+    mockLocation.watchHeadingAsync.mockResolvedValue({ remove: jest.fn() });
+    mockLocation.getForegroundPermissionsAsync.mockResolvedValue({ granted: true } as any);
+    mockNotifications.getPermissionsAsync.mockResolvedValue({ status: 'granted', canAskAgain: true } as any);
+    (AppState as any).currentState = 'active';
+    trackLogMMKV.getGpsState.mockReturnValue('off');
+    trackLogMMKV.getTrackingState.mockReturnValue('off');
+    trackLogMMKV.getCurrentLocation.mockReturnValue(null);
+  });
+
+  afterEach(() => {
+    Platform.OS = originalPlatformOS;
+    (AppState as any).currentState = 'active';
+    openSettingsSpy.mockRestore();
+  });
+
+  describe('T-M2: 開始が重なっても記録済みの点を消さない', () => {
+    it('記録状態が off のときは開始時に保存済みの点を初期化する', async () => {
+      const store = createAccuracyStore('HIGH');
+      const { result } = renderHook(() => useLocation(createMockMapRef() as any), { wrapper: createWrapper(store) });
+      await act(async () => {
+        await flushPromises();
+      });
+      LocationUtils.clearStoredLocations.mockClear();
+
+      await act(async () => {
+        await result.current.toggleTracking('on');
+      });
+
+      expect(LocationUtils.clearStoredLocations).toHaveBeenCalledTimes(1);
+    });
+
+    it('MMKV の記録状態がすでに on なら（先の開始が記録中）初期化しない', async () => {
+      const store = createAccuracyStore('HIGH');
+      const { result } = renderHook(() => useLocation(createMockMapRef() as any), { wrapper: createWrapper(store) });
+      await act(async () => {
+        await flushPromises();
+      });
+      LocationUtils.clearStoredLocations.mockClear();
+      trackLogMMKV.getTrackingState.mockReturnValue('on');
+
+      await act(async () => {
+        await result.current.toggleTracking('on');
+      });
+
+      expect(LocationUtils.clearStoredLocations).not.toHaveBeenCalled();
+      expect(trackLogMMKV.setTrackingState).toHaveBeenCalledWith('on');
+    });
+  });
+
+  describe('T-M3: 精度設定を稼働中のサービスへ反映する', () => {
+    const accuracyConfigs = () =>
+      mockBackgroundGeolocation.setConfig.mock.calls
+        .map(([cfg]: any[]) => cfg)
+        .filter((cfg: any) => cfg?.desiredAccuracy !== undefined);
+
+    it('サービスを動かすときのsetConfigに精度と距離間隔をフラットに入れる', async () => {
+      const store = createAccuracyStore('MEDIUM');
+      const { result } = renderHook(() => useLocation(createMockMapRef() as any), { wrapper: createWrapper(store) });
+      await act(async () => {
+        await flushPromises();
+      });
+
+      await act(async () => {
+        await result.current.toggleGPS('show');
+      });
+
+      expect(accuracyConfigs().at(-1)).toEqual(
+        expect.objectContaining({
+          desiredAccuracy: BackgroundGeolocation.DesiredAccuracy.Medium,
+          distanceFilter: 10,
+          notification: expect.any(Object),
+        })
+      );
+    });
+
+    it('GPS ON中に精度を変えると、すぐに新しい精度をsetConfigする', async () => {
+      const store = createAccuracyStore('HIGH');
+      const { result } = renderHook(() => useLocation(createMockMapRef() as any), { wrapper: createWrapper(store) });
+      await act(async () => {
+        await flushPromises();
+      });
+      await act(async () => {
+        await result.current.toggleGPS('show');
+      });
+      mockBackgroundGeolocation.setConfig.mockClear();
+
+      await act(async () => {
+        store.dispatch({ type: 'setAccuracy', payload: 'LOW' });
+        await flushPromises();
+      });
+
+      expect(accuracyConfigs()).toEqual([
+        expect.objectContaining({ desiredAccuracy: BackgroundGeolocation.DesiredAccuracy.Low, distanceFilter: 50 }),
+      ]);
+      expect(mockBackgroundGeolocation.stop).not.toHaveBeenCalled();
+    });
+
+    it('GPS OFF・記録なしで精度を変えてもサービスに触れない（初回マウントでも呼ばない）', async () => {
+      const store = createAccuracyStore('HIGH');
+      renderHook(() => useLocation(createMockMapRef() as any), { wrapper: createWrapper(store) });
+      await act(async () => {
+        await flushPromises();
+      });
+      expect(accuracyConfigs()).toEqual([]);
+      mockBackgroundGeolocation.stop.mockClear();
+
+      await act(async () => {
+        store.dispatch({ type: 'setAccuracy', payload: 'LOW' });
+        await flushPromises();
+      });
+
+      expect(accuracyConfigs()).toEqual([]);
+      expect(mockBackgroundGeolocation.stop).not.toHaveBeenCalled();
+      expect(mockBackgroundGeolocation.start).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('T-L16/T-M1: 前面復帰時の権限確認', () => {
+    const renderWithAppState = async () => {
+      const addEventListenerSpy = jest.spyOn(AppState, 'addEventListener');
+      const store = createAccuracyStore('HIGH');
+      const rendered = renderHook(() => useLocation(createMockMapRef() as any), { wrapper: createWrapper(store) });
+      await act(async () => {
+        await flushPromises();
+      });
+      await act(async () => {
+        await rendered.result.current.toggleGPS('show');
+      });
+      // 状態が変わるたびにリスナーが張り直されるので、最後に登録されたものを使う
+      const latestHandler = () =>
+        addEventListenerSpy.mock.calls.filter(([type]) => type === 'change').at(-1)?.[1] as (
+          state: string
+        ) => Promise<void>;
+      const goBackgroundAndReturn = async () => {
+        await act(async () => {
+          await latestHandler()('background');
+        });
+        await act(async () => {
+          await latestHandler()('active');
+        });
+      };
+      return { ...rendered, goBackgroundAndReturn, restore: () => addEventListenerSpy.mockRestore() };
+    };
+
+    it('Android: 通知をオフにしたままGPS ON中に戻っても、通知の確認・案内・設定画面への遷移をしない', async () => {
+      Platform.OS = 'android';
+      const { goBackgroundAndReturn, restore } = await renderWithAppState();
+      mockNotifications.getPermissionsAsync.mockResolvedValue({ status: 'denied', canAskAgain: false } as any);
+      mockNotifications.getPermissionsAsync.mockClear();
+      mockLocation.watchHeadingAsync.mockClear();
+      (AlertAsync as jest.Mock).mockClear();
+      openSettingsSpy.mockClear();
+
+      await goBackgroundAndReturn();
+      await goBackgroundAndReturn();
+
+      expect(mockNotifications.getPermissionsAsync).not.toHaveBeenCalled();
+      expect(mockBackgroundGeolocation.requestPermission).not.toHaveBeenCalled();
+      expect(AlertAsync).not.toHaveBeenCalled();
+      expect(openSettingsSpy).not.toHaveBeenCalled();
+      // 位置の許可はあるので方位の購読は戻る（方位盤・ヘディングアップが動く）
+      expect(mockLocation.watchHeadingAsync).toHaveBeenCalledTimes(2);
+      restore();
+    });
+
+    it('記録・GPS使用中に位置の許可を外して戻ると、許可が戻るまで一度だけ案内する（設定画面へは飛ばさない）', async () => {
+      const { goBackgroundAndReturn, restore } = await renderWithAppState();
+      mockLocation.getForegroundPermissionsAsync.mockResolvedValue({ granted: false } as any);
+      (AlertAsync as jest.Mock).mockClear();
+      openSettingsSpy.mockClear();
+      mockLocation.watchHeadingAsync.mockClear();
+      const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+
+      await goBackgroundAndReturn();
+      await goBackgroundAndReturn();
+
+      expect(AlertAsync).toHaveBeenCalledTimes(1);
+      expect(AlertAsync).toHaveBeenCalledWith(t('hooks.message.permitAccessGPS'));
+      expect(openSettingsSpy).not.toHaveBeenCalled();
+      expect(mockLocation.watchHeadingAsync).not.toHaveBeenCalled();
+
+      // 許可が戻れば購読を再開し、次にまた外したときは改めて案内する
+      mockLocation.getForegroundPermissionsAsync.mockResolvedValue({ granted: true } as any);
+      await goBackgroundAndReturn();
+      expect(mockLocation.watchHeadingAsync).toHaveBeenCalledTimes(1);
+      mockLocation.getForegroundPermissionsAsync.mockResolvedValue({ granted: false } as any);
+      await goBackgroundAndReturn();
+      expect(AlertAsync).toHaveBeenCalledTimes(2);
+      warnSpy.mockRestore();
+      restore();
+    });
   });
 });

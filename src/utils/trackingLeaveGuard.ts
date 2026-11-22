@@ -233,11 +233,13 @@ export const stopTrackingBeforeForcedLogout = async (): Promise<boolean> => {
 };
 
 /**
- * ホームが登録する stopAndSave の中身。ボタンで止めるときと同じ停止処理で、先に止めて未書き込みの点を MMKV へ
- * 確定させてから保存する（保存の後に止めると、その間に届いた点がチャンクに残り、次の記録開始時に切り替え先へ
- * 保存されうる）。保存した軌跡レイヤの id を onSaved に渡す（アップロードの対象）
+ * 記録を止めて保存する。軌跡ボタンで止めるとき（Home の pressTracking）と、ホームが登録する stopAndSave の
+ * 両方がこれを使う。先に止めて未書き込みの点を MMKV へ確定させ、記録状態を 'off' にしてから保存する。
+ * 保存の後に止めると、全点を読んでからチャンクを消すまでの間に届いた点が、最後の消去で失われる（軌跡監査 T-L2）。
+ * 保存した軌跡レイヤの id を onSaved に渡す（アップロードの対象）。戻り値は saveTrackLog の結果そのもの
+ * （ボタン側はサマリーを開くのに layer と record を使う）。保存に失敗してもチャンクは残り、次の開始時に回収できる
  */
-export const stopAndSaveTrack = async ({
+export const stopAndSaveTrack = async <R extends { isOK: boolean; message: string; layer?: { id: string } }>({
   toggleTracking,
   toggleGPS,
   saveTrackLog,
@@ -245,14 +247,14 @@ export const stopAndSaveTrack = async ({
 }: {
   toggleTracking: (state: 'off') => Promise<unknown>;
   toggleGPS: (state: 'off') => Promise<unknown>;
-  saveTrackLog: () => Promise<{ isOK: boolean; message: string; layer?: { id: string } }>;
-  onSaved: (layerId: string | undefined) => void;
-}): Promise<TrackingLeaveResult> => {
+  saveTrackLog: () => Promise<R>;
+  onSaved?: (layerId: string | undefined) => void;
+}): Promise<R> => {
   await toggleTracking('off');
   await toggleGPS('off');
   const result = await saveTrackLog();
-  onSaved(result.isOK ? result.layer?.id : undefined);
-  return { isOK: result.isOK, message: result.message };
+  onSaved?.(result.isOK ? result.layer?.id : undefined);
+  return result;
 };
 
 /** 条件が満たされるまで待つ。満たされたら true、時間切れなら false */

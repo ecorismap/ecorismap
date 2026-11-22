@@ -29,6 +29,7 @@ import {
   getLineLength,
   toLocationObject,
   flushTrackLog,
+  flushPendingTrackLog,
   LocationObjectInput,
 } from '../utils/Location';
 import {
@@ -69,6 +70,12 @@ const openSettings = () => {
 // ネイティブAPIは依然としてフラットなトップレベルnotificationを要求する（型とランタイムの不整合）。
 // その差異を吸収するためのローカル型。
 type FlatConfig = Partial<BackgroundConfig> & { notification: NotificationConfig };
+
+// 稼働中のサービスへ反映する設定（通知テキスト＋位置精度）。精度もv5の型ではgeolocation配下だが、
+// ネイティブはフラットなトップレベルキーを読む（上と同じ不整合）。
+type FlatServiceConfig = FlatConfig & { desiredAccuracy: number; distanceFilter: number };
+
+type AuthorizationStatusValue = Awaited<ReturnType<typeof BackgroundGeolocation.requestPermission>>;
 
 // disableStopDetection等もv5の型ではgeolocation/activity配下にネストされているが、
 // ネイティブAPIはフラットなトップレベルキーを要求する（notificationと同様の不整合）。
@@ -337,6 +344,9 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
         return { desiredAccuracy: BackgroundGeolocation.DesiredAccuracy.High, distanceFilter: 2 };
     }
   }, [gpsAccuracy]);
+  // サービス遷移キューの中では、キューに積んだ時点ではなく実行時点の最新の精度設定を使う
+  const gpsAccuracyOptionRef = useRef(gpsAccuracyOption);
+  gpsAccuracyOptionRef.current = gpsAccuracyOption;
 
   // 方位を間引いて反映する（頻度制限＋最小角度差）。全てのheadingコールバックはこれを使う。
   const pushAzimuth = useCallback((heading: number) => {
@@ -424,7 +434,12 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
     setLocationStale(false);
   }, [setLocationStale]);
 
-  const confirmLocationPermission = useCallback(async () => {
+  // 前面復帰・起動時の「位置の許可がない」案内を出したか。許可が戻るまで繰り返し出さない
+  // （設定画面から戻るのも前面復帰なので、毎回出して設定へ飛ばすと抜けられなくなる）
+  const locationDeniedNoticeShownRef = useRef(false);
+
+  // GPS・軌跡・コンパスの開始操作で呼ぶ。通知（Android）と位置の許可を確かめ、なければ案内して設定を開く
+  const confirmLocationPermission = useCallback(async (): Promise<'granted' | undefined> => {
     try {
       if (Platform.OS === 'android') {
         const notificationPermission = await Notifications.getPermissionsAsync();
@@ -432,12 +447,12 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
           if (notificationPermission.canAskAgain) {
             const { status: notificationStatus } = await Notifications.requestPermissionsAsync();
             if (notificationStatus !== 'granted') {
-              await AlertAsync(t('hooks.message.permitAccessGPS'));
+              await AlertAsync(t('hooks.message.permitNotificationForGPS'));
               openSettings();
               return;
             }
           } else {
-            await AlertAsync(t('hooks.message.permitAccessGPS'));
+            await AlertAsync(t('hooks.message.permitNotificationForGPS'));
             openSettings();
             return;
           }
@@ -446,21 +461,54 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
 
       // 位置権限だけを要求する。引数なしだと5.6.0以降のiOSはモーション（Motion & Fitness）許可も
       // 続けて要求するが、本アプリはdisableMotionActivityUpdates:trueで使っておらず不要なダイアログになる。
-      const authStatus = await BackgroundGeolocation.requestPermission('location');
+      // 5.8.xは拒否をAuthorizationStatusの数値でrejectする（resolveしない）。数値のrejectは結果として判定し、
+      // それ以外の例外だけを外側のcatchへ回す。
+      let authStatus: AuthorizationStatusValue;
+      try {
+        authStatus = await BackgroundGeolocation.requestPermission('location');
+      } catch (rejected: unknown) {
+        if (typeof rejected !== 'number') throw rejected;
+        authStatus = rejected as AuthorizationStatusValue;
+      }
       if (
         authStatus === BackgroundGeolocation.AuthorizationStatus.Always ||
         authStatus === BackgroundGeolocation.AuthorizationStatus.WhenInUse
       ) {
+        locationDeniedNoticeShownRef.current = false;
         return 'granted';
       }
 
+      locationDeniedNoticeShownRef.current = true;
       await AlertAsync(t('hooks.message.permitAccessGPS'));
       openSettings();
       return;
-    } catch (e: any) {
+    } catch (e: unknown) {
       console.error('confirmLocationPermission error', e);
     }
   }, []);
+
+  // 起動時の復元・前面復帰でGPSや記録を使っているときのheading再購読。権限プロンプトと通知の確認はしない
+  // （通知の確認と案内は開始操作のconfirmLocationPermissionだけで行う）。位置の許可がなければ、
+  // 許可が戻るまでに一度だけ案内する。設定画面は開かない（戻るたびに飛ばされて抜けられなくなるため）
+  const resubscribeHeadingForService = useCallback(async () => {
+    if (headingSubscriber.current !== null) return;
+    let granted = false;
+    try {
+      ({ granted } = await getForegroundPermissionsAsync());
+    } catch (error) {
+      console.warn('[tracking] Failed to read location permission', error);
+      return;
+    }
+    if (granted) {
+      locationDeniedNoticeShownRef.current = false;
+      await ensureHeadingSubscription();
+      return;
+    }
+    console.warn('[tracking] Heading subscription skipped: location permission not granted');
+    if (locationDeniedNoticeShownRef.current) return;
+    locationDeniedNoticeShownRef.current = true;
+    await AlertAsync(t('hooks.message.permitAccessGPS'));
+  }, [ensureHeadingSubscription]);
 
   // 内蔵GPS・外部GNSS受信機の両方の位置がここに合流する。
   // gnssは外部受信機の位置のときだけ渡され、現在地（ポイント記録に使われる）にだけ載せる。軌跡には残さない。
@@ -694,13 +742,17 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
         const wantOn = gpsStateRef.current !== 'off' || isTracking;
         if (wantOn) {
           // 意図に応じた通知テキストを常に反映（start前の設定と、GPS→トラッキング昇格時の
-          // 稼働中サービスのテキスト書き換えを兼ねる）
-          const notificationConfig: FlatConfig = {
+          // 稼働中サービスのテキスト書き換えを兼ねる）。精度設定も毎回反映する。サービス稼働中は
+          // ready({reset:false})が設定を捨てるため、ここで渡さないとGPS設定の変更が記録を止めるまで効かない
+          const { desiredAccuracy, distanceFilter } = gpsAccuracyOptionRef.current;
+          const serviceConfig: FlatServiceConfig = {
             notification: makeNotification(
               isTracking ? t('hooks.notification.inTracking') : t('hooks.notification.gpsOn')
             ),
+            desiredAccuracy,
+            distanceFilter,
           };
-          await BackgroundGeolocation.setConfig(notificationConfig);
+          await BackgroundGeolocation.setConfig(serviceConfig);
           const state = await BackgroundGeolocation.getState();
           if (!state.enabled) {
             await BackgroundGeolocation.start();
@@ -715,6 +767,18 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
       }),
     [ensureBackgroundGeolocation, runExclusive]
   );
+
+  // GPS設定で精度を変えたら、GPS ON中・記録中のサービスへすぐ反映する（キュー経由。初回マウントでは呼ばない）
+  const appliedGpsAccuracyRef = useRef(gpsAccuracy);
+  useEffect(() => {
+    if (appliedGpsAccuracyRef.current === gpsAccuracy) return;
+    appliedGpsAccuracyRef.current = gpsAccuracy;
+    if (Platform.OS === 'web') return;
+    if (isGpsOffIntended()) return;
+    syncBackgroundService().catch((error) => {
+      console.error('[gps] failed to apply accuracy setting', error);
+    });
+  }, [gpsAccuracy, isGpsOffIntended, syncBackgroundService]);
 
   const startGPS = useCallback(
     async (mode: LocationStateType) => {
@@ -771,8 +835,12 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
 
   const startTracking = useCallback(async () => {
     try {
-      // チャンクシステムを初期化
-      clearStoredLocations();
+      // チャンクシステムを初期化。すでに記録中（MMKVの記録状態が'on'）なら消さない: 開始が重なったとき、
+      // 先に始めた記録の点を黙って消してしまうため。判定はtrackingStateRefではなくMMKVで行う
+      // （toggleTracking('on')がここより前にrefを'on'にするので、refでは区別できない）
+      if (trackLogMMKV.getTrackingState() !== 'on') {
+        clearStoredLocations();
+      }
 
       // トラッキング状態を先にMMKVへ確定する（kill後の復帰での復元と、checkAndStoreLocationsの
       // 記録ガードの両方がこの値を見る）。stopTrackingと同じく「意図を先に確定→サービス遷移」の順にする。
@@ -1261,17 +1329,10 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
           // サービス稼働中のためsyncはsetConfig+changePaceになる（stopは呼ばれない）。
           await syncBackgroundService();
 
-          if (headingSubscriber.current === null) {
-            try {
-              const permissionStatus = await confirmLocationPermission();
-              if (permissionStatus !== 'granted') {
-                console.warn('[tracking] Heading subscription skipped: permission not granted');
-              } else {
-                await ensureHeadingSubscription();
-              }
-            } catch (error) {
-              console.error('Error restoring heading subscriber:', error);
-            }
+          try {
+            await resubscribeHeadingForService();
+          } catch (error) {
+            console.error('Error restoring heading subscriber:', error);
           }
 
           // 最新の位置を設定して軌跡を表示（CurrentTrackLogは currentLocation の変更をトリガーに再レンダリングする）。
@@ -1294,15 +1355,10 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
         // （通知テキスト・start・changePaceはsyncが意図から導出。ref復元済みが前提）
         if (gpsStateRef.current !== 'off' || wasTracking) {
           await syncBackgroundService();
-          if (headingSubscriber.current === null) {
-            try {
-              const permissionStatus = await confirmLocationPermission();
-              if (permissionStatus === 'granted') {
-                await ensureHeadingSubscription();
-              }
-            } catch (error) {
-              console.error('Error starting heading subscriber:', error);
-            }
+          try {
+            await resubscribeHeadingForService();
+          } catch (error) {
+            console.error('Error starting heading subscriber:', error);
           }
 
           // 現在位置設定（GPS/軌跡共通）: キャッシュ位置を即表示（古ければ灰色マーカー）
@@ -1370,14 +1426,10 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
         if (headingSubscriber.current === null) {
           const usesLocationService = trackingState === 'on' || gpsState !== 'off' || headingUp;
           if (usesLocationService) {
-            // サービス利用中は従来どおり権限がなければ案内する
+            // サービス利用中は位置の許可がなければ案内する。プロンプト・通知の確認・設定画面への遷移はしない
+            // （通知をオフにしたまま戻るたびに設定へ飛ばされ、抜けられなくなっていた。T-L16）
             try {
-              const permissionStatus = await confirmLocationPermission();
-              if (permissionStatus === 'granted') {
-                await ensureHeadingSubscription();
-              } else {
-                console.warn('[tracking] Skipped heading subscription on foreground: permission not granted');
-              }
+              await resubscribeHeadingForService();
             } catch (error) {
               console.error('Error resubscribing heading watcher on foreground:', error);
             }
@@ -1414,8 +1466,7 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
     toggleHeadingUp,
     trackingState,
     syncLocationFromMMKV,
-    confirmLocationPermission,
-    ensureHeadingSubscription,
+    resubscribeHeadingForService,
     ensureHeadingSubscriptionIfPermitted,
     syncBackgroundService,
   ]);
@@ -1423,6 +1474,14 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
   useEffect(() => {
     trackingStateRef.current = trackingState;
   }, [trackingState]);
+
+  // アンマウント時に未書き込みの点をMMKVへ確定する（補助。点の書き込みは点が届いたときにしか判定しないため、
+  // 立ち止まると直前の点がメモリにだけ残る。主な対策はheadlessタスク先頭のflush。軌跡監査 T-L3）
+  useEffect(() => {
+    return () => {
+      flushPendingTrackLog();
+    };
+  }, []);
 
   useEffect(() => {
     gpsStateRef.current = gpsState;

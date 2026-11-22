@@ -3,6 +3,7 @@ import {
   buildElevationProfile,
   findNearestProfileIndex,
   smoothAltitudes,
+  getRecordingStatsIntervalMs,
   ELEVATION_GAIN_THRESHOLD,
 } from '../trackStatistics';
 import { LocationType } from '../../types';
@@ -226,5 +227,18 @@ describe('buildElevationProfile', () => {
     expect(profile[4].fixQuality).toBe(4);
     expect(profile[5].fixQuality).toBe(5);
     expect(profile[5].ellipsoidHeight).toBe(145);
+  });
+});
+
+describe('getRecordingStatsIntervalMs（軌跡監査 T-L15）', () => {
+  it('1万点までは従来どおり5秒', () => {
+    expect(getRecordingStatsIntervalMs(0)).toBe(5000);
+    expect(getRecordingStatsIntervalMs(10000)).toBe(5000);
+  });
+
+  it('1万点を超えたら15秒、3万点を超えたら30秒に伸ばす', () => {
+    expect(getRecordingStatsIntervalMs(10001)).toBe(15000);
+    expect(getRecordingStatsIntervalMs(30000)).toBe(15000);
+    expect(getRecordingStatsIntervalMs(30001)).toBe(30000);
   });
 });

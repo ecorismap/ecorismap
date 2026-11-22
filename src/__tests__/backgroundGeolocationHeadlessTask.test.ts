@@ -1,6 +1,6 @@
 import BackgroundGeolocation from 'react-native-background-geolocation';
 import { trackLogMMKV } from '../utils/mmkvStorage';
-import { checkAndStoreLocations, resetTrackLogCache, flushTrackLog } from '../utils/Location';
+import { checkAndStoreLocations, resetTrackLogCache, flushTrackLog, flushPendingTrackLog } from '../utils/Location';
 
 jest.mock('react-native-background-geolocation', () => {
   const mock = {
@@ -27,6 +27,7 @@ jest.mock('../utils/Location', () => ({
   checkAndStoreLocations: jest.fn(),
   resetTrackLogCache: jest.fn(),
   flushTrackLog: jest.fn(),
+  flushPendingTrackLog: jest.fn(),
   toLocationObject: jest.fn((location: any) => ({
     coords: { ...location.coords },
     timestamp: location.timestamp,
@@ -190,6 +191,17 @@ describe('backgroundGeolocationHeadlessTask', () => {
       expect(resetTrackLogCache).toHaveBeenCalled();
       expect(checkAndStoreLocations).toHaveBeenCalled();
       expect(flushTrackLog).toHaveBeenCalled();
+    });
+
+    it('キャッシュを破棄する前に未書き込みの点を確定する（同じランタイムでメインの点を捨てない。T-L3）', async () => {
+      (trackLogMMKV.getTrackingState as jest.Mock).mockReturnValue('on');
+
+      await headlessTask(locationEvent);
+
+      const pendingOrder = (flushPendingTrackLog as jest.Mock).mock.invocationCallOrder[0];
+      const resetOrder = (resetTrackLogCache as jest.Mock).mock.invocationCallOrder[0];
+      expect(pendingOrder).toBeDefined();
+      expect(pendingOrder).toBeLessThan(resetOrder);
     });
 
     it('トラッキングOFFなら軌跡は保存しない', async () => {

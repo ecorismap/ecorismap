@@ -133,3 +133,44 @@
 - **Android の通知**: 記録を止めてから移るので、移った先で通知が「記録中」のまま残ることはない。ただし、記録せずに GPS だけ ON で移った場合は、GPS の購読が外れたまま通知が出続ける（電池への影響は T-H1 の影響の項と同じ）。
 - **実行中フラグの前提**: 確認ダイアログ（ConfirmAsync）が必ず解決することを前提にしている。解決しないまま残ると、以後の記録ガードがすべて false を返す。今の AlertAsync・ConfirmAsync は必ず解決する。
 - **実機での確認**: iOS・Android とも未確認。確認する点は次のとおり。記録中にプロジェクト一覧、アカウント設定、ログインへ移るときに確認が出ること。止めて保存（とアップロード）したあとに移ること。キャンセルしたら記録が続くこと。押し直しても二重に進まないこと。
+
+---
+
+## 安全な項目の修正状況（2026-11-22、ブランチ fix/track-safe）
+
+コミットはしていない。実機では確かめていない。この節は軌跡ボタン（Home の `pressTracking`）まわりの T-M2・T-L1・T-L2 と、その組み込みへのレビュー指摘への対応を記す。
+
+### T-M2・T-L1・T-L2（軌跡ボタンの処理）
+
+- **本体を切り出した**（`src/utils/trackingPress.ts` の `runTrackingPress`）。Home の `pressTracking` は Web の案内のあと、状態・文言・依存（`checkUnsavedTrackLog`、`ConfirmAsync`、`AlertAsync`、`waitForModalTransition`、`confirmLocationPermission`、`toggleGPS`、`toggleTracking`、`saveTrackLog`、開始後の作図タブ処理、サマリーを開く処理）を渡して呼ぶだけにした。
+- **T-M2（二重開始）**: 処理中フラグを開始用と停止用に分けた（`trackingPressFlagsRef`）。
+  - 開始側（trackingState が 'off'）は、開始中か停止・保存中なら始めず、「軌跡の記録を開始または停止している途中です」と知らせる（`Home.alert.trackBusy`、ja/en）。停止中も対象にしたのは、`toggleTracking('off')` が先に状態を 'off' にするので、保存し終わる前の押し直しが開始側へ入るため。
+  - 停止側（trackingState が 'on'）は、**開始の処理中でも**従来どおり確認を出して止めて保存できる。開始は `toggleTracking('on')` が先にボタンを記録中の表示にしたあと、`startTracking`（サービス遷移）と位置の取得を数十秒待つことがあり、最初の修正（全体を1つのフラグで包む）ではこの間の停止が黙って捨てられていた（レビュー指摘）。停止の二重実行だけ停止用フラグで防ぐ。
+  - 補助の `startTracking` の clear 省略（MMKV の trackingState が 'on' なら消さない）は前回の変更のまま。
+- **T-L2（停止の順序）**: 停止は離脱時と同じ `stopAndSaveTrack`（`toggleTracking('off')` → `toggleGPS('off')` → `saveTrackLog`）を使う。
+- **T-L1（知らせ）**: `getTrackSaveNotice` で、失敗に加え「点が足りず保存しなかった」「無効な点を除いた」などの文言も、サマリーを開く前に `waitForModalTransition` を挟んで AlertAsync で出す。保存しなかったときはサマリーを開かない。
+- **テスト**（`src/utils/__tests__/trackingPress.test.ts`）: 開始の順序、開始中の押し直しは始めず知らせること、開始中でも停止は確認して止めて保存できること、停止は止めてから保存すること、キャンセル、知らせがあればサマリーより先にアラートを出すこと、保存しなかったときはサマリーを開かないこと、停止・保存中の押し直しは開始も停止も重ねないこと。
+
+### 残る制限・実機で確かめること
+
+- 開始の途中で停止したとき、開始側の残り（`startTracking` の続き、`moveCurrentPosition`、作図タブを閉じる処理）は停止の後にも走る。サービス遷移は `syncBackgroundService` のキュー（最新の意図に合わせる）が整えるので記録は 'off' に収束し、残りは表示だけの処理だが、実機で次を確かめる。屋内など衛星をつかめない場所で開始を OK し、記録中の表示になってすぐ停止→保存したとき、通知・GPS・ボタンが止まった状態に揃うこと。保存の確認（点が足りない知らせ）が出ること。
+- 開始中・停止中の押し直しで「処理中です」の案内が出ること（iOS でダイアログが重ならないこと）。
+- 処理中フラグは ConfirmAsync・AlertAsync・保存処理が必ず解決する前提。解決しないまま残ると以後のボタンが案内だけになる（今の実装は必ず解決する）。
+
+### そのほかの安全な項目
+
+| # | 変更 | 残る制限・実機で確かめること |
+|---|---|---|
+| T-M1 | `confirmLocationPermission` で `requestPermission` の reject（AuthorizationStatus の数値）を拒否として扱い、案内と設定画面を出す | 5.8.x が実機で数値で reject すること |
+| T-M3 | `syncBackgroundService` の setConfig に `desiredAccuracy`・`distanceFilter` を加え、精度を変えたら GPS ON／記録中に sync を1回呼ぶ。GPS 設定の注記を「すぐに反映」に直した | 稼働中のサービスに setConfig した値がすぐ効くこと |
+| T-L16 | 前面復帰と起動時の復元は `resubscribeHeadingForService`（位置の許可だけを確認、案内は許可が戻るまで一度だけ、設定画面は開かない）に置き換え。通知の拒否は文言を分けた | 通知オフで戻っても方位盤が回り、アラートが繰り返さないこと |
+| T-L3 | `flushPendingTrackLog()`（未書き込みの点があるときだけ書く）をヘッドレスの reset 前と useLocation のアンマウント時に呼ぶ | ヘッドレスが同じランタイムで動くかは推定 |
+| T-L4 | `persistCache` で2番目以降のチャンクはつなぎ目を除いて保存 | 修正前に重複して保存された点は1つ残る |
+| T-L5 | `getTrackChunkForDisplay` で前チャンクの末尾を先頭に足す（2D・3D） | 境目がつながって描かれること |
+| T-L14 | `SavedTrackLog` は初回だけ隠して Loading を出し、増えたチャンクは描いたまま足す | — |
+| T-L15 | サマリーの再計算間隔を点数で伸ばす（1万点超15秒、3万点超30秒） | 長い記録での負荷と体感 |
+| T-L8 | 外部GNSSストアに最後に使えたエポック `lastUsableFix` を持ち、品質0を挟んでも5秒の猶予内は外部を使う | 品質0の GGA を出す受信機での確認 |
+| T-L11 | 現在地ポイント追加・位置修正で、使えなくなった外部受信機の位置を捨てて測り直す（`dropInactiveExternalLocation`） | Home 以外で `currentLocation` を使う経路は未対応 |
+| T-L12 | Android `GnssSession` に NTRIP の世代を持たせ、古いクライアントの状態・補正を無視。接続中・ヘッダ読み取り中も stop で Socket を閉じる。iOS も補正に世代判定を追加 | ネイティブはビルド・実機未確認 |
+| T-L13 | Android `ChunkedInputStream` のサイズ行をフィールドに溜め、時間切れでも続きから読む | 回線遅延での再現は未確認 |
+| T-M9（除外） | 「設定を保存」のテンプレートのアップロードから軌跡レイヤを除く（削除対象には残すので、配られた軌跡のテンプレートは次の保存で消える） | 設定モード中に記録を止めるかどうか（判断）は未対応 |

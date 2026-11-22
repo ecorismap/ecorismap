@@ -17,6 +17,9 @@ import {
   clearAllChunks,
   resetTrackLogCache,
   flushTrackLog,
+  flushPendingTrackLog,
+  getTrackChunkForDisplay,
+  getTrackMetadata,
   CHUNK_SIZE,
 } from '../Location';
 import { trackLogMMKV } from '../mmkvStorage';
@@ -651,5 +654,88 @@ describe('splitTrackFixSegments', () => {
       line[4].timestamp,
       line[5].timestamp,
     ]);
+  });
+});
+
+describe('チャンクのつなぎ目（軌跡監査 T-L3/T-L4/T-L5）', () => {
+  const baseTime = 1_600_000_000_000;
+  const makePoints = (n: number, startIndex = 0): LocationType[] =>
+    Array.from({ length: n }, (_, k) => {
+      const i = startIndex + k;
+      return { latitude: 35, longitude: 135 + i * 0.0001, timestamp: baseTime + i * 1000, accuracy: 10 };
+    });
+  // 保存済みの全チャンクを素のまま連結する（getAllTrackPointsはcleanupLineを掛けるので使わない）
+  const concatChunks = (): LocationType[] => {
+    const { lastChunkIndex } = getTrackMetadata();
+    const all: LocationType[] = [];
+    for (let i = 0; i <= lastChunkIndex; i++) all.push(...getTrackChunk(i));
+    return all;
+  };
+
+  beforeEach(() => {
+    clearAllChunks();
+  });
+
+  it('点ごとにMMKVから読み直しても（headless方式）つなぎ目の点が重複しない', () => {
+    const total = CHUNK_SIZE * 2 + 200;
+    makePoints(total).forEach((point) => {
+      resetTrackLogCache();
+      addLocationsToChunks([point]);
+      flushTrackLog();
+    });
+
+    const all = concatChunks();
+    expect(all).toHaveLength(total);
+    expect(new Set(all.map((p) => p.timestamp)).size).toBe(total);
+    expect(getTrackMetadata().totalPoints).toBe(total);
+  });
+
+  it('切り替え直後に読み直すと、記録中のチャンクはつなぎ目1点だけになる', () => {
+    const points = makePoints(CHUNK_SIZE);
+    addLocationsToChunks(points);
+    expect(getTrackChunk(1)).toEqual([]);
+
+    resetTrackLogCache();
+    const buffer = getDisplayBuffer();
+    expect(buffer).toHaveLength(1);
+    expect(buffer[0].timestamp).toBe(points[CHUNK_SIZE - 1].timestamp);
+  });
+
+  it('切り替え直後に読み直して続けても、連結した点に重複がない', () => {
+    addLocationsToChunks(makePoints(CHUNK_SIZE));
+    resetTrackLogCache();
+    addLocationsToChunks(makePoints(5, CHUNK_SIZE));
+    flushTrackLog();
+
+    const all = concatChunks();
+    expect(all).toHaveLength(CHUNK_SIZE + 5);
+    expect(new Set(all.map((p) => p.timestamp)).size).toBe(CHUNK_SIZE + 5);
+  });
+
+  it('表示用の保存済みチャンクは、2番目以降に前チャンクの末尾を補う', () => {
+    const points = makePoints(CHUNK_SIZE * 2 + 10);
+    addLocationsToChunks(points);
+
+    const first = getTrackChunkForDisplay(0, 320);
+    expect(first[0].timestamp).toBe(points[0].timestamp);
+    const second = getTrackChunkForDisplay(1, 320);
+    expect(second[0].timestamp).toBe(points[CHUNK_SIZE - 1].timestamp);
+    expect(second[second.length - 1].timestamp).toBe(points[CHUNK_SIZE * 2 - 1].timestamp);
+  });
+
+  it('flushPendingTrackLogは未書き込みの点があるときだけ書き込む', () => {
+    addLocationsToChunks(makePoints(1)); // 初回は直ちに書き込まれる
+    (trackLogMMKV.setChunk as jest.Mock).mockClear();
+    flushPendingTrackLog();
+    expect(trackLogMMKV.setChunk).not.toHaveBeenCalled();
+
+    addLocationsToChunks(makePoints(1, 1)); // スロットルでメモリにだけ残る
+    expect(trackLogMMKV.setChunk).not.toHaveBeenCalled();
+    flushPendingTrackLog();
+    expect(trackLogMMKV.setChunk).toHaveBeenCalled();
+
+    // その後にキャッシュを捨てても、点は残る（headlessタスク先頭の順序）
+    resetTrackLogCache();
+    expect(getDisplayBuffer()).toHaveLength(2);
   });
 });

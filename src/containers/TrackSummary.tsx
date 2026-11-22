@@ -11,7 +11,12 @@ import { RootState } from '../store';
 import { ExportType, LineRecordType, LocationType } from '../types';
 import { getAllTrackPoints } from '../utils/Location';
 import { getColor } from '../utils/Layer';
-import { calcTrackStatistics, buildElevationProfile, findNearestProfileIndex } from '../utils/trackStatistics';
+import {
+  calcTrackStatistics,
+  buildElevationProfile,
+  findNearestProfileIndex,
+  getRecordingStatsIntervalMs,
+} from '../utils/trackStatistics';
 import {
   generateCSV,
   generateGeoJson,
@@ -34,9 +39,8 @@ import { t } from '../i18n/config';
 import { Platform } from 'react-native';
 import dayjs from '../i18n/dayjs';
 
-// 記録中サマリーのライブ更新間隔。統計・グラフはMMKV全点読み出しを伴うため間引き、
-// 写真はメディアライブラリ走査を伴うためさらに長い間隔にする
-const RECORDING_STATS_INTERVAL_MS = 5 * 1000;
+// 記録中サマリーのライブ更新間隔。統計・グラフはMMKV全点読み出しを伴うため間引き（点数に応じて伸ばす。
+// getRecordingStatsIntervalMs）、写真はメディアライブラリ走査を伴うためさらに長い間隔にする
 const RECORDING_PHOTO_INTERVAL_MS = 30 * 1000;
 
 export default function TrackSummaryContainers() {
@@ -73,11 +77,12 @@ export default function TrackSummaryContainers() {
       lastStatsLoadRef.current = Date.now();
       setRecordingCoords(getAllTrackPoints());
     };
+    const interval = getRecordingStatsIntervalMs(totalPoints);
     const elapsed = Date.now() - lastStatsLoadRef.current;
-    if (elapsed >= RECORDING_STATS_INTERVAL_MS) {
+    if (elapsed >= interval) {
       load();
     } else {
-      const timer = setTimeout(load, RECORDING_STATS_INTERVAL_MS - elapsed);
+      const timer = setTimeout(load, interval - elapsed);
       return () => clearTimeout(timer);
     }
   }, [isRecordingTarget, totalPoints]);

@@ -82,12 +82,13 @@ export const SavedTrackLog = React.memo((props: Props) => {
 
     const schedule = () => new Promise<void>((resolve) => setTimeout(resolve, 0));
 
-    const needInitialLoad = chunkIndices.some((index) => !loadedChunksRef.current[index]);
-    if (!needInitialLoad) {
-      setIsInitialLoading(false);
-    } else {
-      setIsInitialLoading(true);
-    }
+    // 表示を隠してLoadingを出すのは、まだ1チャンクも読み込んでいない初回だけ。記録中の500点ごとの
+    // チャンク追加では、既存の線を描いたまま増えた分を裏で読み込んで足す。追加のたびに全線を
+    // アンマウントし、共有のsetLoading（参照カウントなし）を出し入れすると、PDF出力・データの送受信など
+    // 他の処理のLoadingを途中で消してしまう（軌跡監査 T-L14）
+    const hasLoadedAny = Object.keys(loadedChunksRef.current).length > 0;
+    const needInitialLoad = !hasLoadedAny && chunkIndices.some((index) => !loadedChunksRef.current[index]);
+    setIsInitialLoading(needInitialLoad);
 
     const loadChunks = async () => {
       for (const index of chunkIndices) {

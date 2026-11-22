@@ -24,6 +24,8 @@ object GnssSession {
   private var ntrip: NtripClient? = null
   private var ntripState = "off"
   private var ntripError: String? = null
+  // 止めた後の古いクライアントからの遅れた通知を見分ける（lockの中でだけ触る）
+  private var ntripGeneration = 0
   @Volatile private var rtcmBytes = 0L
   @Volatile private var lastCorrectionAt = 0L
   @Volatile private var lastGga: String? = null
@@ -110,15 +112,21 @@ object GnssSession {
 
   fun startNtrip(config: NtripConfig) {
     stopNtrip()
-    synchronized(lock) {
+    val generation = synchronized(lock) {
       rtcmBytes = 0L
       lastCorrectionAt = 0L
       ntripError = null
+      ntripGeneration += 1
+      ntripGeneration
     }
     val client = NtripClient(config, object : NtripListener {
+      private fun isCurrent(): Boolean = ntripGeneration == generation && ntrip != null
+
       override fun onNtripState(state: String, message: String?) {
         synchronized(lock) {
-          if (ntrip == null && state != "off") return
+          // 張り直しで止めた旧クライアントが最後に出す "off" などで、新しい接続の状態を上書きしない。
+          // 自分の "off" は stopNtrip() が状態を 'off' にして通知済み
+          if (!isCurrent()) return
           ntripState = state
           if (state == "error") ntripError = message else if (state == "connected") ntripError = null
         }
@@ -126,6 +134,8 @@ object GnssSession {
       }
 
       override fun onCorrection(bytes: ByteArray, length: Int) {
+        // 旧クライアントが読み終えていた補正は、新しい接続の受信量に数えず受信機へも流さない
+        if (!synchronized(lock) { isCurrent() }) return
         val now = System.currentTimeMillis()
         rtcmBytes += length
         lastCorrectionAt = now
@@ -153,6 +163,7 @@ object GnssSession {
       val c = ntrip
       ntrip = null
       ntripState = "off"
+      ntripGeneration += 1
       c
     }
     old?.stop()
