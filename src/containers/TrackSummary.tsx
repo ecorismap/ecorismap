@@ -277,7 +277,15 @@ export default function TrackSummaryContainers() {
         },
         {
           data: JSON.stringify(
-            generateGeoJson(trackExportRecords(exportCoords, recordName), trackLayer.field, 'LINE', label)
+            generateGeoJson(
+              trackExportRecords(exportCoords, recordName),
+              trackLayer.field,
+              'LINE',
+              label,
+              undefined,
+              undefined,
+              { trackPointAttributes: true }
+            )
           ),
           name: `${label}_${time}.geojson`,
           folder: '',

@@ -842,7 +842,8 @@ export const geoJson2Data = (
                 ? undefined
                 : feature.geometry.type === 'Point'
                 ? [feature.geometry.coordinates]
-                : feature.geometry.coordinates
+                : feature.geometry.coordinates,
+              feature
             ),
             field: createLineOrPolygonFields(layer.field, feature),
           })
@@ -1587,13 +1588,59 @@ const generateProperties = (record: RecordType, field: LayerType['field'], permi
   return properties;
 };
 
+// 軌跡の点ごとの属性。GeoJSON の LineString は座標しか持てないため、点と同じ並びの配列をプロパティに出す
+// （値の無い点は null）。標高は全点にあれば座標の3番目に入れ、欠けた点があるときだけ _altitudes に出す
+type TrackPointNumberKey = 'timestamp' | 'accuracy' | 'speed' | 'fixQuality' | 'ellipsoidHeight';
+const TRACK_POINT_ARRAY_PROPERTIES: readonly { key: TrackPointNumberKey; property: string }[] = [
+  { key: 'timestamp', property: '_timestamps' },
+  { key: 'accuracy', property: '_accuracies' },
+  { key: 'speed', property: '_speeds' },
+  { key: 'fixQuality', property: '_fixQualities' },
+  { key: 'ellipsoidHeight', property: '_ellipsoidHeights' },
+];
+const TRACK_ALTITUDES_PROPERTY = '_altitudes';
+const TRACK_POINT_PROPERTY_KEYS = new Set([
+  TRACK_ALTITUDES_PROPERTY,
+  ...TRACK_POINT_ARRAY_PROPERTIES.map(({ property }) => property),
+]);
+
+const finiteOrNull = (value: unknown): number | null =>
+  typeof value === 'number' && Number.isFinite(value) ? value : null;
+
+const trackLinePositions = (coords: LocationType[]): { positions: Position[]; properties: Record<string, (number | null)[]> } => {
+  const altitudes = coords.map((coord) => finiteOrNull(coord.altitude));
+  const allHaveAltitude = altitudes.every((altitude) => altitude !== null);
+  const positions = coords.map((coord, i): Position => {
+    const altitude = altitudes[i];
+    return allHaveAltitude && altitude !== null
+      ? [coord.longitude, coord.latitude, altitude]
+      : [coord.longitude, coord.latitude];
+  });
+  const properties: Record<string, (number | null)[]> = {};
+  if (!allHaveAltitude && altitudes.some((altitude) => altitude !== null)) {
+    properties[TRACK_ALTITUDES_PROPERTY] = altitudes;
+  }
+  TRACK_POINT_ARRAY_PROPERTIES.forEach(({ key, property }) => {
+    const values = coords.map((coord) => finiteOrNull(coord[key]));
+    if (values.some((value) => value !== null)) properties[property] = values;
+  });
+  return { positions, properties };
+};
+
+export type GenerateGeoJsonOptions = {
+  // ファイルへの書き出し用。LINE の点ごとの標高・時刻・精度・速度・測位品質・楕円体高を出す
+  // （地図表示用の GeoJSON は重くなるので出さない）
+  trackPointAttributes?: boolean;
+};
+
 export const generateGeoJson = (
   data: RecordType[] | RecordType[],
   field: LayerType['field'],
   type: GeoJsonFeatureType,
   layerName: string,
   permission?: LayerType['permission'],
-  labelLayer?: LayerType
+  labelLayer?: LayerType,
+  options: GenerateGeoJsonOptions = {}
 ) => {
   //ラベル用(CENTROID/LINEEND)はネイティブと同じ文字列・色をWebでも出すため、整形済みの値を持たせる。
   //maplibreの式ではDATETIMEの整形や個別色の解決ができないので、ここでgenerateLabel/getColorを通す
@@ -1656,18 +1703,27 @@ export const generateGeoJson = (
             }
           : { _visible: record.visible, _id: record.id, ...groupProperties(record) };
         let geometry;
+        let trackPointProperties: Record<string, (number | null)[]> = {};
         if (isLocationTypeArray(record.coords)) {
+          const track =
+            options.trackPointAttributes === true
+              ? trackLinePositions(record.coords)
+              : {
+                  positions: record.coords.map((coords): Position => [coords.longitude, coords.latitude]),
+                  properties: {},
+                };
+          trackPointProperties = track.properties;
           if (record.coords.length === 1) {
             //MapMemoのSTAMPの場合
 
             geometry = {
               type: 'Point',
-              coordinates: [record.coords[0].longitude, record.coords[0].latitude],
+              coordinates: track.positions[0],
             };
           } else {
             geometry = {
               type: 'LineString',
-              coordinates: record.coords.map((coords) => [coords.longitude, coords.latitude]),
+              coordinates: track.positions,
             };
           }
         } else {
@@ -1678,6 +1734,7 @@ export const generateGeoJson = (
           properties: {
             ...properties,
             ...mapMemoProperties,
+            ...trackPointProperties,
           },
           geometry: geometry,
         };
@@ -1769,9 +1826,44 @@ export const generateGeoJson = (
   return { ...geojson, features: features };
 };
 
-function createGeometryFromLineStringGeoJson(coordinates: Position[] | undefined) {
+/**
+ * 自前の書き出し（trackPointAttributes）の点ごとの属性を coords に戻す。
+ * 標高は _altitudes があればそれを、無ければ座標の3番目を使う。自前の書き出しなので 0 も海抜0mとして戻す
+ * （外部ファイルは標高が無くても 0 を出すことがあるため、positionToLocation は 0 を捨てている）。
+ * 配列の長さが点の数と違うもの・数値でない要素は使わない
+ */
+function restoreTrackPoints(positions: Position[], feature: Feature<Geometry | null>): LocationType[] {
+  const properties = featureProperties(feature);
+  const arrayOf = (key: string): unknown[] | undefined => {
+    const value = properties === undefined ? undefined : ownProperty(properties, key);
+    return Array.isArray(value) && value.length === positions.length ? value : undefined;
+  };
+  const altitudes = arrayOf(TRACK_ALTITUDES_PROPERTY);
+  const attributes = TRACK_POINT_ARRAY_PROPERTIES.flatMap(({ key, property }) => {
+    const values = arrayOf(property);
+    return values === undefined ? [] : [{ key, values }];
+  });
+  return positions.map((position, i) => {
+    const location: LocationType = { ...latlonToLatLonObject(position) };
+    const altitude = finiteNumberOf(altitudes !== undefined ? altitudes[i] : position[2]);
+    if (altitude !== undefined) location.altitude = altitude;
+    attributes.forEach(({ key, values }) => {
+      const value = finiteNumberOf(values[i]);
+      if (value !== undefined) location[key] = value;
+    });
+    return location;
+  });
+}
+
+function createGeometryFromLineStringGeoJson(
+  coordinates: Position[] | undefined,
+  feature?: Feature<Geometry | null>
+) {
   if (coordinates === undefined) return { coords: undefined, centroid: undefined };
-  const coords = coordinates.map((xy) => latlonToLatLonObject(xy));
+  const coords =
+    feature !== undefined && isEcorisMapExportFeature(feature)
+      ? restoreTrackPoints(coordinates, feature)
+      : coordinates.map((xy) => latlonToLatLonObject(xy));
   const centroid = calcLineMidPoint(coords);
   return { coords, centroid };
 }
@@ -2125,7 +2217,12 @@ function createAllStringFieldsFromGeoJson(geojson: FeatureCollection<Geometry | 
   geojson.features.forEach((feature) => {
     if (feature === null || typeof feature !== 'object') return;
     const properties = featureProperties(feature);
-    if (properties !== undefined) Object.keys(properties).forEach((key) => names.add(key));
+    if (properties === undefined) return;
+    // 自前の書き出しの軌跡の点ごとの配列は項目ではない（取り込みで coords に戻す）
+    const isExport = isEcorisMapExportFeature(feature);
+    Object.keys(properties).forEach((key) => {
+      if (!(isExport && TRACK_POINT_PROPERTY_KEYS.has(key))) names.add(key);
+    });
   });
   return [...names].map((fieldName) => ({
     id: ulid(),

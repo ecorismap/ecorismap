@@ -40,11 +40,18 @@ export type TrackingPressDeps<L extends { id: string }, R> = {
   trackingState: 'on' | 'off';
   flags: TrackingPressFlags;
   messages: { confirmStart: string; confirmStop: string; busy: string };
+  /**
+   * 記録を始められないときの案内（プロジェクト設定の編集中など。軌跡監査 T-M9）。指定があれば開始せずに案内だけ出す。
+   * 記録中の停止は妨げない
+   */
+  startBlockedMessage?: string;
   checkUnsavedTrackLog: () => Promise<{ isOK: boolean; message: string }>;
   confirm: (message: string) => Promise<boolean>;
   alert: (message: string) => Promise<unknown>;
   waitForModalTransition: () => Promise<unknown>;
   confirmLocationPermission: () => Promise<'granted' | undefined>;
+  /** 位置の精度の許可を確かめる（「おおよその位置」の案内。軌跡監査 T-M5）。false なら開始をやめる */
+  confirmLocationAccuracy: () => Promise<boolean>;
   toggleGPS: (state: 'follow' | 'off') => Promise<unknown>;
   toggleTracking: (state: 'on' | 'off') => Promise<unknown>;
   saveTrackLog: () => Promise<TrackSaveResult<L, R>>;
@@ -65,6 +72,11 @@ export type TrackingPressDeps<L extends { id: string }, R> = {
 export const runTrackingPress = async <L extends { id: string }, R>(deps: TrackingPressDeps<L, R>): Promise<void> => {
   const { flags } = deps;
   if (deps.trackingState === 'off') {
+    // プロジェクト設定の編集中は始めない。設定中に保存した軌跡は管理者の名義になり、記録の扱いが利用者に分かりにくいため
+    if (deps.startBlockedMessage !== undefined) {
+      await deps.alert(deps.startBlockedMessage);
+      return;
+    }
     // 停止・保存の途中は、記録の状態が先に 'off' になるので開始側へ入る。保存し終わる前に始めさせない
     if (flags.starting.current || flags.stopping.current) {
       await deps.alert(deps.messages.busy);
@@ -78,6 +90,7 @@ export const runTrackingPress = async <L extends { id: string }, R>(deps: Tracki
       }
       if (!(await deps.confirm(deps.messages.confirmStart))) return;
       if ((await deps.confirmLocationPermission()) !== 'granted') return;
+      if (!(await deps.confirmLocationAccuracy())) return;
       await deps.toggleGPS('follow');
       await deps.toggleTracking('on');
       deps.onStarted();

@@ -196,6 +196,49 @@ describe('useProjectBackup', () => {
     expect(restoreResult.isOK).toBe(true);
   });
 
+  describe('canRestoreBackup（記録を止める前の判定、軌跡監査 T-M8）', () => {
+    test('別ユーザーのスナップショットは differentUser を返し、状態もバックアップも変えない', () => {
+      const store = createTestStore();
+      mockLoadBackup.mockReturnValue(createSnapshot());
+      mockGetAuthUid.mockReturnValue('u2');
+      const before = store.getState();
+
+      const { result } = renderHook(() => useProjectBackup(), { wrapper: createWrapper(store) });
+      expect(result.current.canRestoreBackup('backup-id')).toEqual({ isOK: false, reason: 'differentUser' });
+      expect(mockSaveProjectBackup).not.toHaveBeenCalled();
+      expect(store.getState()).toEqual(before);
+    });
+
+    test('読めないスナップショットは isOK false を返し、一覧を読み直す', () => {
+      const store = createTestStore();
+      mockLoadBackup.mockReturnValue(undefined);
+
+      const { result } = renderHook(() => useProjectBackup(), { wrapper: createWrapper(store) });
+      const listCalls = mockListBackups.mock.calls.length;
+      let check: { isOK: boolean; reason?: string } = { isOK: true };
+      act(() => {
+        check = result.current.canRestoreBackup('missing-id');
+      });
+      expect(check).toEqual({ isOK: false });
+      expect(mockListBackups.mock.calls.length).toBe(listCalls + 1);
+      expect(mockSaveProjectBackup).not.toHaveBeenCalled();
+    });
+
+    test('同じユーザー・未ログインなら isOK true を返すが、状態は変えない', () => {
+      const store = createTestStore();
+      mockLoadBackup.mockReturnValue(createSnapshot());
+      const before = store.getState();
+      const { result } = renderHook(() => useProjectBackup(), { wrapper: createWrapper(store) });
+
+      mockGetAuthUid.mockReturnValue('u1');
+      expect(result.current.canRestoreBackup('backup-id')).toEqual({ isOK: true });
+      mockGetAuthUid.mockReturnValue(undefined);
+      expect(result.current.canRestoreBackup('backup-id')).toEqual({ isOK: true });
+      expect(mockSaveProjectBackup).not.toHaveBeenCalled();
+      expect(store.getState()).toEqual(before);
+    });
+  });
+
   test('ログイン中の一覧は自分と未ログイン時のバックアップのみ表示する', () => {
     const store = createTestStore();
     const metas = [

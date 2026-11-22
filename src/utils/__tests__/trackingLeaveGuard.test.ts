@@ -6,6 +6,7 @@ import {
   leaveHomeWithTrackingGuard,
   leaveWithTrackingGuard,
   registerTrackingLeaveHandler,
+  replaceDataWithTrackingGuard,
   stopAndSaveTrack,
   stopTrackingBeforeForcedLogout,
   TrackingLeaveHandler,
@@ -511,5 +512,121 @@ describe('ホームがいない（handler が無い）のに記録の意図が�
     await expect(leaveWithTrackingGuard('openProject', confirmLeave)).resolves.toBe(true);
     expect(confirmLeave).toHaveBeenCalledTimes(1);
     expect(mockAlert).not.toHaveBeenCalled();
+  });
+});
+
+describe('replaceDataWithTrackingGuard（設定画面の復元・新規・ファイルを開く・Drive から開く、軌跡監査 T-M8）', () => {
+  it('記録していなければ軌跡の確認なしに選択・置き換えだけを行う', async () => {
+    const { handler, stopAndSave } = makeHandler({ isTracking: () => false });
+    register(handler);
+    const replace = jest.fn(async (_uri: string) => undefined);
+    await expect(replaceDataWithTrackingGuard('openFile', async () => 'file://a.zip', replace)).resolves.toBe(true);
+    expect(mockConfirm).not.toHaveBeenCalled();
+    expect(stopAndSave).not.toHaveBeenCalled();
+    expect(replace).toHaveBeenCalledWith('file://a.zip');
+  });
+
+  it('記録中は 軌跡の確認 → 選択 → 停止・保存 → アップロード → 置き換え の順に進め、選んだものを渡す', async () => {
+    const order: string[] = [];
+    mockConfirm.mockImplementation(async () => {
+      order.push('confirmTracking');
+      return true;
+    });
+    const stopAndSave = jest.fn(async () => {
+      order.push('stopAndSave');
+      return { isOK: true, message: '' };
+    });
+    const uploadTrack = jest.fn(async () => {
+      order.push('uploadTrack');
+      return { isOK: true, message: '' };
+    });
+    register(makeHandler({ stopAndSave, uploadTrack }).handler);
+    const replace = jest.fn(async (selected: string) => {
+      order.push(`replace:${selected}`);
+    });
+    const select = jest.fn(async () => {
+      order.push('select');
+      return 'backup-1';
+    });
+    await expect(replaceDataWithTrackingGuard('restoreBackup', select, replace)).resolves.toBe(true);
+    expect(order).toEqual(['confirmTracking', 'select', 'stopAndSave', 'uploadTrack', 'replace:backup-1']);
+  });
+
+  it('ファイルの選択を取りやめたら（undefined）記録を止めず置き換えもしない', async () => {
+    const { handler, stopAndSave } = makeHandler();
+    register(handler);
+    const replace = jest.fn(async (_uri: string) => undefined);
+    await expect(replaceDataWithTrackingGuard<string>('openFile', async () => undefined, replace)).resolves.toBe(
+      false
+    );
+    expect(stopAndSave).not.toHaveBeenCalled();
+    expect(replace).not.toHaveBeenCalled();
+  });
+
+  it('軌跡の確認でキャンセルしたら、選択も停止も置き換えもしない', async () => {
+    mockConfirm.mockResolvedValue(false);
+    const { handler, stopAndSave } = makeHandler();
+    register(handler);
+    const select = jest.fn(async () => true as const);
+    const replace = jest.fn(async () => undefined);
+    await expect(replaceDataWithTrackingGuard('clearData', select, replace)).resolves.toBe(false);
+    expect(select).not.toHaveBeenCalled();
+    expect(stopAndSave).not.toHaveBeenCalled();
+    expect(replace).not.toHaveBeenCalled();
+  });
+
+  it('通常利用中のプロジェクトで新規にするときは、アップロードできなければクリアしない', async () => {
+    const uploadTrack = jest.fn(async () => ({ isOK: false, message: 'offline' }));
+    register(makeHandler({ uploadTrack }).handler);
+    const replace = jest.fn(async () => undefined);
+    await expect(replaceDataWithTrackingGuard('clearData', async () => true as const, replace)).resolves.toBe(false);
+    expect(replace).not.toHaveBeenCalled();
+    expect(mockAlert.mock.calls[0][0]).toContain('Home.alert.stopTrackingUploadFailed');
+  });
+
+  it('保存に失敗したら置き換えない', async () => {
+    const stopAndSave = jest.fn(async () => ({ isOK: false, message: 'disk' }));
+    register(makeHandler({ stopAndSave }).handler);
+    const replace = jest.fn(async () => undefined);
+    await expect(replaceDataWithTrackingGuard('restoreBackup', async () => true as const, replace)).resolves.toBe(
+      false
+    );
+    expect(replace).not.toHaveBeenCalled();
+  });
+
+  it('端末内のデータ・設定の編集中は保存だけしてアップロードせず、軌跡が置き換え前の自動バックアップに残ると案内する', async () => {
+    const { handler, uploadTrack } = makeHandler({
+      getContext: () => ({ projectName: undefined, isRunningProject: false }),
+    });
+    register(handler);
+    const replace = jest.fn(async () => undefined);
+    await expect(replaceDataWithTrackingGuard('openFile', async () => true as const, replace)).resolves.toBe(true);
+    expect(uploadTrack).not.toHaveBeenCalled();
+    expect(replace).toHaveBeenCalledTimes(1);
+    const message = mockConfirm.mock.calls[0][0];
+    expect(message).toContain('Home.confirm.stopTrackingBeforeOpenFile');
+    expect(message).toContain('Home.confirm.stopTrackingBackupNote');
+    expect(message).not.toContain('Home.confirm.stopTrackingUploadNote');
+    expect(message).not.toContain('Home.confirm.stopTrackingSettingNote');
+  });
+
+  it('操作ごとの文言を出し、通常利用中のプロジェクトではアップロードの案内を出す', async () => {
+    register(makeHandler().handler);
+    await replaceDataWithTrackingGuard('restoreBackup', async () => undefined, async () => undefined);
+    await replaceDataWithTrackingGuard('clearData', async () => undefined, async () => undefined);
+    const [restoreMessage, clearMessage] = mockConfirm.mock.calls.map((c) => c[0]);
+    expect(restoreMessage).toContain('Home.confirm.stopTrackingBeforeRestoreBackup');
+    expect(restoreMessage).toContain('Home.confirm.stopTrackingUploadNote');
+    expect(clearMessage).toContain('Home.confirm.stopTrackingBeforeClearData');
+  });
+
+  it('ホームがいない画面で記録の意図だけが残っていたら、案内を出して選択も置き換えもしない', async () => {
+    mockGetTrackingState.mockReturnValue('on');
+    const select = jest.fn(async () => true as const);
+    const replace = jest.fn(async () => undefined);
+    await expect(replaceDataWithTrackingGuard('openFile', select, replace)).resolves.toBe(false);
+    expect(select).not.toHaveBeenCalled();
+    expect(replace).not.toHaveBeenCalled();
+    expect(mockAlert).toHaveBeenCalledWith('Home.alert.stopTrackingFromHome');
   });
 });

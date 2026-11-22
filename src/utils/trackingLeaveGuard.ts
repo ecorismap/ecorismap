@@ -23,7 +23,24 @@ import { trackLogMMKV } from './mmkvStorage';
  * ガードも「記録していない」とみなして素通りする。そのため、記録中はホームを離れる前に止めて保存させる。
  */
 
-export type TrackingLeaveAction = 'openProject' | 'closeProject' | 'logout' | 'leaveHome';
+export type TrackingLeaveAction =
+  | 'openProject'
+  | 'closeProject'
+  | 'logout'
+  | 'leaveHome'
+  | 'restoreBackup'
+  | 'clearData'
+  | 'openFile';
+
+/**
+ * 手元のデータを丸ごと置き換える操作（設定画面の「バックアップから復元」「新規」「ファイルを開く」と Google Drive から
+ * 開く、軌跡監査 T-M8）。置き換えの直前に自動バックアップを取るので、止めて保存した軌跡はそこに残る
+ */
+const REPLACE_DATA_ACTIONS: ReadonlySet<TrackingLeaveAction> = new Set<TrackingLeaveAction>([
+  'restoreBackup',
+  'clearData',
+  'openFile',
+]);
 
 export type TrackingLeaveContext = {
   /** いま開いているプロジェクトの名前。開いていなければ undefined（端末内のデータ） */
@@ -95,6 +112,9 @@ const CONFIRM_KEYS: Record<TrackingLeaveAction, string> = {
   closeProject: 'Home.confirm.stopTrackingBeforeCloseProject',
   logout: 'Home.confirm.stopTrackingBeforeLogout',
   leaveHome: 'Home.confirm.stopTrackingBeforeLeaveHome',
+  restoreBackup: 'Home.confirm.stopTrackingBeforeRestoreBackup',
+  clearData: 'Home.confirm.stopTrackingBeforeClearData',
+  openFile: 'Home.confirm.stopTrackingBeforeOpenFile',
 };
 
 /**
@@ -115,9 +135,12 @@ export const confirmTrackingLeave = async (action: TrackingLeaveAction): Promise
   const notes = [
     shouldUpload(context)
       ? t('Home.confirm.stopTrackingUploadNote')
-      : context.projectName !== undefined
-        ? t('Home.confirm.stopTrackingSettingNote')
-        : undefined,
+      : REPLACE_DATA_ACTIONS.has(action)
+        ? // 端末内のデータや設定の編集中は、保存した軌跡も置き換えで消える。直前の自動バックアップには残る
+          t('Home.confirm.stopTrackingBackupNote')
+        : context.projectName !== undefined
+          ? t('Home.confirm.stopTrackingSettingNote')
+          : undefined,
     t('Home.confirm.stopTrackingCancelNote'),
   ].filter((note): note is string => note !== undefined);
   const ok = await ConfirmAsync(`${t(CONFIRM_KEYS[action], { dest })}\n${notes.join('\n')}`, {
@@ -203,6 +226,29 @@ export const leaveWithTrackingGuard = async (
   } finally {
     leaving = false;
   }
+};
+
+/**
+ * 手元のデータを置き換える操作（'restoreBackup'・'clearData'・'openFile'、軌跡監査 T-M8）を記録ガードの内側で行う。
+ * 軌跡の確認 → select（操作の確認とファイルの選択など。データを変えない。undefined ならやめる）→ 停止・保存
+ * （通常利用中のプロジェクトではアップロードも）→ replace(選んだもの) の順。キャンセル、ファイル選択の取りやめ、
+ * 保存・アップロードの失敗、別の記録ガードの実行中なら replace を呼ばずに false を返し、記録は続けたまま。
+ * ファイル選択を確認の側に入れるのは、ピッカーで取りやめたときに記録を止めずに済ませるため。
+ * replace は止め終わってから呼ぶので、置き換え直前の自動バックアップ（store.getState() を読む）に保存した軌跡が入る
+ */
+export const replaceDataWithTrackingGuard = async <T>(
+  action: TrackingLeaveAction,
+  select: () => Promise<T | undefined>,
+  replace: (selected: T) => Promise<void>
+): Promise<boolean> => {
+  let selected: T | undefined;
+  const proceed = await leaveWithTrackingGuard(action, async () => {
+    selected = await select();
+    return selected !== undefined;
+  });
+  if (!proceed || selected === undefined) return false;
+  await replace(selected);
+  return true;
 };
 
 /**

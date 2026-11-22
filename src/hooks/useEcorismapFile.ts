@@ -386,15 +386,21 @@ export const useEcorisMapFile = (): UseEcorisMapFileReturnType => {
       //ToDo: データのサイズチェック。もともと書き出したものだからチェックいらない？
       dispatch(setDataSetAction(loaded.dataSet));
       dispatch(setLayersAction(loaded.layers));
+      //記録中に開くと、直前に軌跡を止めて保存する（軌跡監査 T-M8）。保存で設定が変わることがある
+      //（GNSS 軌跡の色分けの自動切替など）ので、描画時点の settings ではなく今の設定に重ねる
       dispatch(
-        setSettingsAction({ ...settings, mapRegion: loaded.settings.mapRegion, mapType: loaded.settings.mapType })
+        setSettingsAction({
+          ...state.settings,
+          mapRegion: loaded.settings.mapRegion,
+          mapType: loaded.settings.mapType,
+        })
       );
       //地図IDは保存先フォルダ名（TILE_FOLDER/{id}）になるため、フォルダの外を指すIDの地図は取り込まない
       dispatch(setTileMapsAction(dropUnsafeTileMaps(loaded.maps)));
 
       return { isOK: true, message: '', region: loaded.settings.mapRegion };
     },
-    [dispatch, loadEcorisMapFile, settings, store]
+    [dispatch, loadEcorisMapFile, store]
   );
 
   const clearEcorisMap = useCallback(async () => {

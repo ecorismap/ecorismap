@@ -49,6 +49,7 @@ import {
 } from '../utils/trackingLeaveGuard';
 import { requestGnssAveragingAsync } from '../hooks/useGnssAveraging';
 import { useExternalGnssAutoConnect } from '../hooks/useExternalGnssAutoConnect';
+import { isLocationInUse } from '../lib/gnss/autoReconnect';
 import { shallowEqual, useSelector, useDispatch, useStore } from 'react-redux';
 import { RootState, AppDispatch } from '../store';
 import { useTiles } from '../hooks/useTiles';
@@ -504,6 +505,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     checkUnsavedTrackLog,
     saveTrackLog,
     confirmLocationPermission,
+    confirmLocationAccuracy,
     updateLocationFromWebGeolocate,
     endWebGeolocate,
   } = useLocation(mapViewRef);
@@ -2012,11 +2014,14 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
         confirmStop: t('Home.confirm.track'),
         busy: t('Home.alert.trackBusy'),
       },
+      // プロジェクト設定の編集中は記録を始められない（軌跡監査 T-M9）。記録中に設定へ入る経路は記録ガードが止める
+      startBlockedMessage: isSettingProject ? t('Home.alert.trackDisabledWhileSettingProject') : undefined,
       checkUnsavedTrackLog,
       confirm: ConfirmAsync,
       alert: AlertAsync,
       waitForModalTransition,
       confirmLocationPermission,
+      confirmLocationAccuracy: () => confirmLocationAccuracy('tracking'),
       toggleGPS,
       toggleTracking,
       saveTrackLog,
@@ -2041,6 +2046,8 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     openSheet,
     checkUnsavedTrackLog,
     confirmLocationPermission,
+    confirmLocationAccuracy,
+    isSettingProject,
     isLandscape,
     navigateToSplit,
     saveTrackLog,
@@ -2135,6 +2142,8 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     //runTutrial('HOME_BTN_GPS');
     if (gpsState === 'off') {
       if ((await confirmLocationPermission()) !== 'granted') return;
+      // 「おおよその位置」なら正確な位置を求める（軌跡監査 T-M5）。設定を開いたらGPSは入れない
+      if (!(await confirmLocationAccuracy('gps'))) return;
       await toggleGPS('follow');
     } else if (gpsState === 'follow') {
       if (trackingState === 'on') {
@@ -2145,7 +2154,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     } else if (gpsState === 'show') {
       await toggleGPS('follow');
     }
-  }, [confirmLocationPermission, gpsState, toggleGPS, trackingState]);
+  }, [confirmLocationAccuracy, confirmLocationPermission, gpsState, toggleGPS, trackingState]);
 
   const pressDeleteTiles = useCallback(async () => {
     const ret = await ConfirmAsync(t('Home.confirm.deleteTiles'));
@@ -2449,8 +2458,8 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     openSheet(2);
   }, [openSheet, navigateToSplit]);
 
-  // 前回の外部GNSS受信機へ自動で接続し直す（Androidのみ）
-  useExternalGnssAutoConnect();
+  // 前回の外部GNSS受信機へ自動で接続し直す。GPSがOFFで記録もしていなければ、バックグラウンドでは切り離す
+  useExternalGnssAutoConnect(isLocationInUse(gpsState, trackingState));
 
   const pressDisconnectDrive = useCallback(async () => {
     const ret = await ConfirmAsync(t('GoogleDriveProjects.confirm.disconnect'));
