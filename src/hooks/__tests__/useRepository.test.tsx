@@ -15,6 +15,7 @@ import { setDataSyncTimestampsAction } from '../../modules/dataSync';
 import * as DataUtils from '../../utils/Data';
 import * as projectStore from '../../lib/firebase/firestore';
 import * as projectStorage from '../../lib/firebase/storage';
+import * as unsyncedChanges from '../../utils/unsyncedChanges';
 import * as AlertAsyncModule from '../../components/molecules/AlertAsync';
 
 // spy を仕掛ける前にオリジナルを退避
@@ -454,7 +455,7 @@ describe('uploadDataToRepository（楽観的ロック）', () => {
     const dialogSpy = jest.spyOn(AlertAsyncModule, 'DataConflictConfirmAsync');
     const downloadSpy = jest
       .spyOn(projectStore, 'downloadPrivateData')
-      .mockResolvedValue({ isOK: true, message: '', data: [{ layerId: 'l1', userId: 'test-user', data: [localRecord] }], unmarkedDekGroups: [] });
+      .mockResolvedValue({ isOK: true, message: '', data: [{ layerId: 'l1', userId: 'test-user', data: [localRecord] }], unmarkedDekGroups: [], undecryptableGroups: [] });
     const uploadSpy = jest
       .spyOn(projectStore, 'uploadDataHelper')
       .mockResolvedValue({ isOK: true, message: '', encryptedAt: 999 });
@@ -504,7 +505,7 @@ describe('uploadDataToRepository（楽観的ロック）', () => {
     const dialogSpy = jest.spyOn(AlertAsyncModule, 'DataConflictConfirmAsync').mockResolvedValue('merge');
     const downloadSpy = jest
       .spyOn(projectStore, 'downloadPrivateData')
-      .mockResolvedValue({ isOK: true, message: '', data: [{ layerId: 'l1', userId: 'test-user', data: [cloudOnly] }], unmarkedDekGroups: [] });
+      .mockResolvedValue({ isOK: true, message: '', data: [{ layerId: 'l1', userId: 'test-user', data: [cloudOnly] }], unmarkedDekGroups: [], undecryptableGroups: [] });
     const uploadSpy = jest
       .spyOn(projectStore, 'uploadDataHelper')
       .mockResolvedValue({ isOK: true, message: '', encryptedAt: 999 });
@@ -531,7 +532,7 @@ describe('uploadDataToRepository（楽観的ロック）', () => {
     jest.spyOn(AlertAsyncModule, 'DataConflictConfirmAsync').mockResolvedValue('cancel');
     jest
       .spyOn(projectStore, 'downloadPrivateData')
-      .mockResolvedValue({ isOK: true, message: '', data: [{ layerId: 'l1', userId: 'test-user', data: [cloudOnly] }], unmarkedDekGroups: [] });
+      .mockResolvedValue({ isOK: true, message: '', data: [{ layerId: 'l1', userId: 'test-user', data: [cloudOnly] }], unmarkedDekGroups: [], undecryptableGroups: [] });
     const uploadSpy = jest.spyOn(projectStore, 'uploadDataHelper');
 
     const store = makeStore({ proj1: { [conflictKey]: 555 } });
@@ -1079,6 +1080,472 @@ describe('同期の medium 修正', () => {
       const calls = dlSpy.mock.calls.map((c) => [c[2], c[3]]);
       expect(calls).toContainEqual(['ph9_EMAP_1.jpg', expect.stringMatching(/\/proj1\/l1\/other$/)]);
       expect(calls).toContainEqual(['EMAP_1.jpg', expect.stringMatching(/\/proj1\/l1\/test-user$/)]);
+    });
+  });
+});
+
+describe('同期の low 修正', () => {
+  const project = { id: 'proj1' } as any;
+  const rec = (id: string) => ({
+    id,
+    userId: 'test-user',
+    displayName: 'U',
+    visible: true,
+    redraw: false,
+    coords: [],
+    field: {},
+    updatedAt: 100,
+  });
+  const makeStore = (opts: { layers: any[]; dataSet: any[]; dataSync?: any }) => {
+    const initialState = {
+      user: { uid: 'test-user', email: 'a@b.c', displayName: 'U' },
+      dataSet: opts.dataSet,
+      layers: opts.layers,
+      settings: { isSettingProject: false, updatedAt: undefined },
+      tileMaps: [],
+      dataSync: opts.dataSync ?? {},
+    };
+    const store = configureStore({
+      reducer: {
+        user: (state = initialState.user) => state,
+        dataSet: (state = initialState.dataSet) => state,
+        layers: (state = initialState.layers) => state,
+        settings: (state = initialState.settings) => state,
+        tileMaps: (state = initialState.tileMaps) => state,
+        dataSync: (state = initialState.dataSync) => state,
+      } as any,
+      preloadedState: initialState,
+    });
+    store.dispatch = jest.fn();
+    return store;
+  };
+  const renderWithStore = (store: any) =>
+    renderHook(() => useRepository(), {
+      wrapper: (props: any) => <Provider store={store}>{props.children}</Provider>,
+    });
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    jest.spyOn(projectStore, 'isSettingsUpdatedAtCurrent').mockResolvedValue(true);
+  });
+
+  describe('L5: 判定に使ったクラウドの版を、書く直前の照合に渡す', () => {
+    const privateLayer = { id: 'l1', name: 'L1', permission: 'PRIVATE', field: [] } as any;
+    const commonLayer = { id: 'c1', name: 'C1', permission: 'COMMON', field: [] } as any;
+
+    it('衝突判定で見た版（基準値と同じ）を期待値として渡す', async () => {
+      jest
+        .spyOn(projectStore, 'getMyDataUpdatedAt')
+        .mockResolvedValue({ isOK: true, message: '', data: new Map([['l1_PRIVATE', 555]]) });
+      const uploadSpy = jest
+        .spyOn(projectStore, 'uploadDataHelper')
+        .mockResolvedValue({ isOK: true, message: '', encryptedAt: 999 });
+      const store = makeStore({
+        layers: [privateLayer],
+        dataSet: [{ layerId: 'l1', userId: 'test-user', data: [rec('a')] }],
+        dataSync: { proj1: { l1_PRIVATE: 555 } },
+      });
+      const { result } = renderWithStore(store);
+      await act(async () => {
+        await result.current.uploadDataToRepository(project, 'All');
+      });
+
+      expect(uploadSpy).toHaveBeenCalledTimes(1);
+      expect(uploadSpy.mock.calls[0][2]).toEqual({ expected: { encryptedAt: 555 } });
+    });
+
+    it('クラウドに無いと判定したレイヤは「無い」ことを期待値として渡す', async () => {
+      jest.spyOn(projectStore, 'getMyDataUpdatedAt').mockResolvedValue({ isOK: true, message: '', data: new Map() });
+      const uploadSpy = jest
+        .spyOn(projectStore, 'uploadDataHelper')
+        .mockResolvedValue({ isOK: true, message: '', encryptedAt: 999 });
+      const store = makeStore({
+        layers: [privateLayer],
+        dataSet: [{ layerId: 'l1', userId: 'test-user', data: [rec('a')] }],
+      });
+      const { result } = renderWithStore(store);
+      await act(async () => {
+        await result.current.uploadDataToRepository(project, 'All');
+      });
+
+      expect(uploadSpy.mock.calls[0][2]).toEqual({ expected: { encryptedAt: undefined } });
+    });
+
+    it('書く直前に別の端末で更新されていたら、中止して利用者にやり直しを伝え、基準値を保存しない', async () => {
+      jest
+        .spyOn(projectStore, 'getMyDataUpdatedAt')
+        .mockResolvedValue({ isOK: true, message: '', data: new Map([['l1_PRIVATE', 555]]) });
+      jest.spyOn(projectStore, 'uploadDataHelper').mockResolvedValue({
+        isOK: false,
+        message: 'hooks.message.cloudDataChangedByOtherDevice',
+        staleExpectation: true,
+      });
+      const store = makeStore({
+        layers: [privateLayer],
+        dataSet: [{ layerId: 'l1', userId: 'test-user', data: [rec('a')] }],
+        dataSync: { proj1: { l1_PRIVATE: 555 } },
+      });
+      const { result } = renderWithStore(store);
+      let res: any;
+      await act(async () => {
+        res = await result.current.uploadDataToRepository(project, 'All');
+      });
+
+      expect(res).toEqual({ isOK: false, message: 'hooks.message.cloudDataChangedByOtherDevice (L1)' });
+      const types = (store.dispatch as jest.Mock).mock.calls.map((c) => c[0].type);
+      expect(types).not.toContain(setDataSyncTimestampsAction({ projectId: 'p', entries: {} }).type);
+    });
+
+    it('COMMON には期待値を渡さない（衝突判定の対象外）', async () => {
+      const uploadSpy = jest
+        .spyOn(projectStore, 'uploadDataHelper')
+        .mockResolvedValue({ isOK: true, message: '', encryptedAt: 999 });
+      const store = makeStore({
+        layers: [commonLayer],
+        dataSet: [{ layerId: 'c1', userId: 'test-user', data: [rec('a')] }],
+      });
+      const { result } = renderWithStore(store);
+      await act(async () => {
+        await result.current.uploadDataToRepository(project, 'All');
+      });
+
+      expect(uploadSpy).toHaveBeenCalledTimes(1);
+      expect(uploadSpy.mock.calls[0][2]).toEqual({});
+    });
+  });
+});
+
+describe('同期の low 修正（ダウンロード時のマージ）', () => {
+  const dataSetReducer = require('../../modules/dataSet').default;
+  const rec = (id: string, userId: string, extra: Record<string, unknown> = {}) => ({
+    id,
+    userId,
+    displayName: userId,
+    visible: true,
+    redraw: false,
+    coords: [],
+    field: {},
+    updatedAt: 100,
+    ...extra,
+  });
+  const publicLayer = { id: 'pub', name: 'PUB', permission: 'PUBLIC', field: [] } as any;
+  const privateLayer = { id: 'prv', name: 'PRV', permission: 'PRIVATE', field: [] } as any;
+  // 取得の結果を手元の dataSet に反映させて確かめたいので、dataSet は本物の reducer を使う
+  const makeRealStore = (opts: { layers: any[]; dataSet: any[] }) =>
+    configureStore({
+      reducer: {
+        user: (state = { uid: 'test-user', email: 'a@b.c', displayName: 'U' }) => state,
+        dataSet: dataSetReducer,
+        layers: (state = opts.layers) => state,
+        settings: (state = { isSettingProject: false, updatedAt: undefined }) => state,
+        tileMaps: (state = []) => state,
+        dataSync: (state = {}) => state,
+      } as any,
+      preloadedState: { dataSet: opts.dataSet } as any,
+    });
+  const renderWithStore = (store: any) =>
+    renderHook(() => useRepository(), {
+      wrapper: (props: any) => <Provider store={store}>{props.children}</Provider>,
+    });
+  const bucketsOf = (store: any, layerId: string) =>
+    (store.getState().dataSet as any[])
+      .filter((d) => d.layerId === layerId)
+      .map((d) => ({ userId: d.userId, ids: d.data.map((r: any) => r.id) }));
+
+  describe('L2: クラウドから消えた他人のデータを手元から消す', () => {
+    test('取り直した PUBLIC レイヤで、取得結果に無い他人のバケットを消す。自分・未ログイン時の分は残す', async () => {
+      const store = makeRealStore({
+        layers: [publicLayer],
+        dataSet: [
+          { layerId: 'pub', userId: 'test-user', data: [rec('m1', 'test-user')] },
+          { layerId: 'pub', userId: 'gone', data: [rec('g1', 'gone')] },
+          { layerId: 'pub', userId: 'stay', data: [rec('s1', 'stay')] },
+          { layerId: 'pub', userId: undefined, data: [rec('u1', undefined as any)] },
+        ],
+      });
+      const { result } = renderWithStore(store);
+      await act(async () => {
+        await result.current.createMergedDataSet({
+          privateData: [],
+          publicData: [
+            { layerId: 'pub', userId: 'stay', data: [rec('s1', 'stay', { updatedAt: 200 })] },
+            { layerId: 'pub', userId: 'test-user', data: [rec('m1', 'test-user')] },
+          ],
+          templateData: [],
+          fetchedScope: { permissions: ['PUBLIC'], template: true },
+        });
+      });
+      const buckets = bucketsOf(store, 'pub');
+      expect(buckets.map((b) => b.userId)).not.toContain('gone');
+      expect(buckets).toEqual(
+        expect.arrayContaining([
+          { userId: 'test-user', ids: ['m1'] },
+          { userId: 'stay', ids: ['s1'] },
+          { userId: undefined, ids: ['u1'] },
+        ])
+      );
+    });
+
+    test('管理者が PRIVATE を取得しなかった取得（pruneOthers:false）では、PRIVATE から PUBLIC に変えたレイヤの他人の写しを消さない', async () => {
+      const store = makeRealStore({
+        layers: [publicLayer],
+        dataSet: [{ layerId: 'pub', userId: 'member', data: [rec('p1', 'member')] }],
+      });
+      const { result } = renderWithStore(store);
+      await act(async () => {
+        await result.current.createMergedDataSet({
+          privateData: [],
+          publicData: [],
+          templateData: [],
+          fetchedScope: { permissions: ['PUBLIC'], template: true, pruneOthers: false },
+        });
+      });
+      expect(bucketsOf(store, 'pub')).toEqual([{ userId: 'member', ids: ['p1'] }]);
+    });
+
+    test('取得結果にそのレイヤの分が一つも無くても、他人のバケットを消す', async () => {
+      const store = makeRealStore({
+        layers: [publicLayer],
+        dataSet: [{ layerId: 'pub', userId: 'gone', data: [rec('g1', 'gone')] }],
+      });
+      const { result } = renderWithStore(store);
+      await act(async () => {
+        await result.current.createMergedDataSet({
+          privateData: [],
+          publicData: [],
+          templateData: [],
+          fetchedScope: { permissions: ['PUBLIC'], template: true },
+        });
+      });
+      expect(bucketsOf(store, 'pub')).toEqual([]);
+    });
+
+    test('復号できなかった人のバケットは消さずに残し、件数を警告で知らせる', async () => {
+      const store = makeRealStore({
+        layers: [publicLayer],
+        dataSet: [{ layerId: 'pub', userId: 'locked', data: [rec('l1', 'locked')] }],
+      });
+      const { result } = renderWithStore(store);
+      let res: any;
+      await act(async () => {
+        res = await result.current.createMergedDataSet({
+          privateData: [],
+          publicData: [],
+          templateData: [],
+          fetchedScope: { permissions: ['PUBLIC'], template: true },
+          undecryptableGroups: [{ layerId: 'pub', userId: 'locked', permission: 'PUBLIC' }],
+        });
+      });
+      expect(bucketsOf(store, 'pub')).toEqual([{ userId: 'locked', ids: ['l1'] }]);
+      expect(res).toEqual({ isOK: true, message: '', warning: 'hooks.message.someDataUndecryptable' });
+    });
+
+    test('PRIVATE を取得しなかった取得（管理者として取得しない選択）では、以前に取得した他人の PRIVATE を消さない', async () => {
+      const store = makeRealStore({
+        layers: [publicLayer, privateLayer],
+        dataSet: [{ layerId: 'prv', userId: 'member', data: [rec('p1', 'member')] }],
+      });
+      const { result } = renderWithStore(store);
+      await act(async () => {
+        await result.current.createMergedDataSet({
+          privateData: [],
+          publicData: [],
+          templateData: [],
+          fetchedScope: { permissions: ['PUBLIC'], template: true },
+        });
+      });
+      expect(bucketsOf(store, 'prv')).toEqual([{ userId: 'member', ids: ['p1'] }]);
+    });
+
+    test('管理者として PRIVATE を取り直したときは、取得結果に無い他人の PRIVATE を消す', async () => {
+      const store = makeRealStore({
+        layers: [privateLayer],
+        dataSet: [
+          { layerId: 'prv', userId: 'test-user', data: [rec('m1', 'test-user')] },
+          { layerId: 'prv', userId: 'gone', data: [rec('g1', 'gone')] },
+        ],
+      });
+      const { result } = renderWithStore(store);
+      await act(async () => {
+        await result.current.createMergedDataSet({
+          privateData: [{ layerId: 'prv', userId: 'test-user', data: [rec('m1', 'test-user')] }],
+          publicData: [],
+          templateData: [],
+          fetchedScope: { permissions: ['PUBLIC', 'PRIVATE'], template: true },
+        });
+      });
+      expect(bucketsOf(store, 'prv')).toEqual([{ userId: 'test-user', ids: ['m1'] }]);
+    });
+
+    test('取得の範囲を渡さなければ、従来どおり手元のバケットを消さない', async () => {
+      const store = makeRealStore({
+        layers: [publicLayer],
+        dataSet: [{ layerId: 'pub', userId: 'gone', data: [rec('g1', 'gone')] }],
+      });
+      const { result } = renderWithStore(store);
+      await act(async () => {
+        await result.current.createMergedDataSet({ privateData: [], publicData: [], templateData: [] });
+      });
+      expect(bucketsOf(store, 'pub')).toEqual([{ userId: 'gone', ids: ['g1'] }]);
+    });
+  });
+
+  describe('L3: テンプレートを取得結果にそろえる', () => {
+    test('テンプレートの記録がすべて利用者の版に置き換わったら、手元のテンプレートを空にする（二重表示しない）', async () => {
+      const store = makeRealStore({
+        layers: [publicLayer],
+        dataSet: [{ layerId: 'pub', userId: 'template', data: [rec('t1', 'template')] }],
+      });
+      const { result } = renderWithStore(store);
+      await act(async () => {
+        await result.current.createMergedDataSet({
+          privateData: [],
+          publicData: [{ layerId: 'pub', userId: 'test-user', data: [rec('t1', 'test-user', { updatedAt: 300 })] }],
+          templateData: [{ layerId: 'pub', userId: 'template', data: [rec('t1', 'template')] }],
+          fetchedScope: { permissions: ['PUBLIC'], template: true },
+        });
+      });
+      expect(bucketsOf(store, 'pub')).toEqual(
+        expect.arrayContaining([
+          { userId: 'template', ids: [] },
+          { userId: 'test-user', ids: ['t1'] },
+        ])
+      );
+    });
+
+    test('テンプレートを取得したのにそのレイヤの分が無ければ、手元の古いテンプレートを消す', async () => {
+      const store = makeRealStore({
+        layers: [publicLayer],
+        dataSet: [{ layerId: 'pub', userId: 'template', data: [rec('t1', 'template')] }],
+      });
+      const { result } = renderWithStore(store);
+      await act(async () => {
+        await result.current.createMergedDataSet({
+          privateData: [],
+          publicData: [],
+          templateData: [],
+          fetchedScope: { permissions: ['PUBLIC'], template: true },
+        });
+      });
+      expect(bucketsOf(store, 'pub')).toEqual([{ userId: 'template', ids: [] }]);
+    });
+
+    test('テンプレートを復号できなかったときは、手元のテンプレートを残す', async () => {
+      const store = makeRealStore({
+        layers: [publicLayer],
+        dataSet: [{ layerId: 'pub', userId: 'template', data: [rec('t1', 'template')] }],
+      });
+      const { result } = renderWithStore(store);
+      await act(async () => {
+        await result.current.createMergedDataSet({
+          privateData: [],
+          publicData: [],
+          templateData: [],
+          fetchedScope: { permissions: ['PUBLIC'], template: true },
+          undecryptableGroups: [{ layerId: 'pub', userId: 'admin', permission: 'TEMPLATE' }],
+        });
+      });
+      expect(bucketsOf(store, 'pub')).toEqual([{ userId: 'template', ids: ['t1'] }]);
+    });
+  });
+
+  describe('L13: 途中のレイヤで失敗しても、先に書き込めたレイヤの基準値は保存する', () => {
+    beforeEach(() => {
+      jest.clearAllMocks();
+      jest.spyOn(projectStore, 'isSettingsUpdatedAtCurrent').mockResolvedValue(true);
+      jest.spyOn(projectStore, 'getMyDataUpdatedAt').mockResolvedValue({ isOK: true, message: '', data: new Map() });
+    });
+    const layerA = { id: 'a', name: 'A', permission: 'PRIVATE', field: [] } as any;
+    const layerB = { id: 'b', name: 'B', permission: 'PRIVATE', field: [] } as any;
+    const setup = () => {
+      const store = makeRealStore({
+        layers: [layerA, layerB],
+        dataSet: [
+          { layerId: 'a', userId: 'test-user', data: [rec('x', 'test-user')] },
+          { layerId: 'b', userId: 'test-user', data: [rec('y', 'test-user')] },
+        ],
+      });
+      const dispatchSpy = jest.spyOn(store, 'dispatch');
+      return { store, dispatchSpy };
+    };
+    const savedBaselines = (dispatchSpy: jest.SpyInstance) =>
+      dispatchSpy.mock.calls
+        .map((c) => c[0])
+        .filter((a: any) => a.type === setDataSyncTimestampsAction({ projectId: 'p', entries: {} }).type)
+        .map((a: any) => a.payload);
+
+    test('2つ目のレイヤの書き込みに失敗しても、1つ目の基準値を保存する', async () => {
+      jest
+        .spyOn(projectStore, 'uploadDataHelper')
+        .mockResolvedValueOnce({ isOK: true, message: '', encryptedAt: 11 })
+        .mockResolvedValueOnce({ isOK: false, message: 'fail' } as any);
+      const { store, dispatchSpy } = setup();
+      const { result } = renderWithStore(store);
+      let res: any;
+      await act(async () => {
+        res = await result.current.uploadDataToRepository({ id: 'proj1' } as any, 'All');
+      });
+      expect(res).toEqual({ isOK: false, message: 'fail (B)' });
+      expect(savedBaselines(dispatchSpy)).toEqual([{ projectId: 'proj1', entries: { a_PRIVATE: 11 } }]);
+    });
+
+    test('2つ目のレイヤが別端末に先に書かれていて中止しても、1つ目の基準値を保存する', async () => {
+      jest
+        .spyOn(projectStore, 'uploadDataHelper')
+        .mockResolvedValueOnce({ isOK: true, message: '', encryptedAt: 11 })
+        .mockResolvedValueOnce({ isOK: false, message: '', staleExpectation: true } as any);
+      const { store, dispatchSpy } = setup();
+      const { result } = renderWithStore(store);
+      await act(async () => {
+        await result.current.uploadDataToRepository({ id: 'proj1' } as any, 'All');
+      });
+      expect(savedBaselines(dispatchSpy)).toEqual([{ projectId: 'proj1', entries: { a_PRIVATE: 11 } }]);
+    });
+
+    test('1つ目で失敗したら基準値は保存しない', async () => {
+      jest.spyOn(projectStore, 'uploadDataHelper').mockResolvedValueOnce({ isOK: false, message: 'fail' } as any);
+      const { store, dispatchSpy } = setup();
+      const { result } = renderWithStore(store);
+      await act(async () => {
+        await result.current.uploadDataToRepository({ id: 'proj1' } as any, 'All');
+      });
+      expect(savedBaselines(dispatchSpy)).toEqual([]);
+    });
+  });
+
+  describe('L14: Web版の離脱確認のため、書き込めたレイヤだけをアップロード済みとして記録する', () => {
+    beforeEach(() => {
+      jest.clearAllMocks();
+      jest.spyOn(projectStore, 'isSettingsUpdatedAtCurrent').mockResolvedValue(true);
+      jest.spyOn(projectStore, 'getMyDataUpdatedAt').mockResolvedValue({ isOK: true, message: '', data: new Map() });
+    });
+    const layerA = { id: 'a', name: 'A', permission: 'PRIVATE', field: [] } as any;
+    const layerB = { id: 'b', name: 'B', permission: 'PRIVATE', field: [] } as any;
+
+    test('失敗したレイヤは記録せず、記録する時刻はアップロードを始めた時刻にする', async () => {
+      jest
+        .spyOn(projectStore, 'uploadDataHelper')
+        .mockResolvedValueOnce({ isOK: true, message: '', encryptedAt: 11 })
+        .mockResolvedValueOnce({ isOK: false, message: 'fail' } as any);
+      const markSpy = jest.spyOn(unsyncedChanges, 'markLayerUploaded').mockImplementation(() => undefined);
+      const store = makeRealStore({
+        layers: [layerA, layerB],
+        dataSet: [
+          { layerId: 'a', userId: 'test-user', data: [rec('x', 'test-user')] },
+          { layerId: 'b', userId: 'test-user', data: [rec('y', 'test-user')] },
+        ],
+      });
+      const { result } = renderWithStore(store);
+      const before = Date.now();
+      await act(async () => {
+        await result.current.uploadDataToRepository({ id: 'proj1' } as any, 'All');
+      });
+      expect(markSpy).toHaveBeenCalledTimes(1);
+      const [projectId, layerId, startedAt] = markSpy.mock.calls[0];
+      expect([projectId, layerId]).toEqual(['proj1', 'a']);
+      expect(startedAt).toBeGreaterThanOrEqual(before);
+      expect(startedAt).toBeLessThanOrEqual(Date.now());
+      markSpy.mockRestore();
     });
   });
 });

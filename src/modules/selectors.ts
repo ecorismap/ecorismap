@@ -75,3 +75,12 @@ export const selectNonDeletedAllUserRecordSet = createSelector(
       .flatMap((d) => (layerId === undefined || d.layerId === layerId ? d.data : []))
       .filter((d) => !d.deleted && (d.field._group ? d.field._group === '' : true))
 );
+
+// レイヤの削除されていない全レコード。_group でぶら下がる子（マップメモの子ストロークや飛翔図の行動記号）も含める。
+// 一覧（selectNonDeletedAllUserRecordSet）は子を除くため、親と一緒に消す・表示を切り替える・書き出すときはこちらから子を探す
+export const selectNonDeletedLayerRecordSetWithChildren = createSelector(
+  selectNonDeletedDataSet,
+  (_: RootState, layerId?: string) => layerId,
+  (dataSet, layerId): RecordType[] =>
+    dataSet.flatMap((d) => (layerId === undefined || d.layerId === layerId ? d.data : [])).filter((d) => !d.deleted)
+);

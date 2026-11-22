@@ -12,62 +12,147 @@ import { db } from '../../utils/db';
 import { blobToBase64 } from '../../utils/blob';
 import { isSafePathSegment } from '../../utils/safePath';
 
-export const uploadDictionary = async (projectId: string, layerId: string, dictionaryData: string) => {
+/**
+ * 辞書ファイルの保存先。version は設定のレイヤに持たせる dictionaryVersion。
+ * version が無いのは旧形式で、保存のたびに同じ dictionary.sqlite を上書きしていた。上書きのあとで設定の保存が
+ * 失敗すると、ファイルの鍵と設定の dictionaryKey が食い違い、メンバーの辞書候補が黙って空になるため、
+ * 新しい保存は版ごとに別のファイルへ書き、設定の書き込みに成功してから古い版を消す
+ */
+export const dictionaryStoragePath = (projectId: string, layerId: string, version?: string) =>
+  version === undefined
+    ? `projects/${projectId}/DICTIONARY/${layerId}/dictionary.sqlite`
+    : `projects/${projectId}/DICTIONARY/${layerId}/dictionary_${version}.sqlite`;
+
+const isObjectNotFound = (error: unknown) => {
+  const message = error instanceof Error ? error.message : '';
+  const code = (error as { code?: unknown } | null)?.code;
+  return message.includes('object-not-found') || code === 'storage/object-not-found';
+};
+
+/**
+ * 辞書を版付きのパスへ書く（旧形式のファイルや他の版には触れない）。
+ * encdata は、設定の保存に成功したあとで旧形式のパスへ同じ内容を写す（uploadDictionaryLegacyCopy）ために返す
+ */
+export const uploadDictionary = async (projectId: string, layerId: string, dictionaryData: string, version: string) => {
   try {
     const { encdata, key } = await encFile(dictionaryData);
     if (encdata === undefined || key === undefined) {
-      return { isOK: false, message: t('firebase.message.failEncryptDictionary'), key: undefined };
+      return { isOK: false, message: t('firebase.message.failEncryptDictionary'), key: undefined, encdata: undefined };
     }
-    const storageRef = ref(storage, `projects/${projectId}/DICTIONARY/${layerId}/dictionary.sqlite`);
+    const storageRef = ref(storage, dictionaryStoragePath(projectId, layerId, version));
     await uploadBytes(storageRef, encdata as Blob);
-    return { isOK: true, message: '', key };
+    return { isOK: true, message: '', key, encdata: encdata as Blob };
   } catch (error) {
     console.error('uploadDictionary Error:', error);
-    return { isOK: false, message: t('firebase.message.failUploadDictionary'), key: undefined };
+    return { isOK: false, message: t('firebase.message.failUploadDictionary'), key: undefined, encdata: undefined };
   }
 };
 
-export const downloadDictionary = async (projectId: string, layerId: string, key: string) => {
+/**
+ * 旧形式のパス（dictionary.sqlite）へ、版付きのパスと同じ暗号文を写す。
+ * 更新前のアプリは設定の dictionaryVersion を知らず、常に旧形式のパスを設定の dictionaryKey で読むため、
+ * 設定の保存に成功したあとで写しておかないと、更新前のアプリを使うメンバーの辞書候補が空になる
+ */
+export const uploadDictionaryLegacyCopy = async (projectId: string, layerId: string, encdata: Blob) => {
   try {
-    const storageRef = ref(storage, `projects/${projectId}/DICTIONARY/${layerId}/dictionary.sqlite`);
-    const url = await getDownloadURL(storageRef);
+    await uploadBytes(ref(storage, dictionaryStoragePath(projectId, layerId)), encdata);
+    return { isOK: true, message: '' };
+  } catch (error) {
+    console.error('uploadDictionaryLegacyCopy Error:', error);
+    return { isOK: false, message: t('firebase.message.failUploadDictionary') };
+  }
+};
 
-    if (url === undefined) {
+/** 版付きの辞書ファイルを1つ消す。無ければ成功とみなす（消し直し・他の端末が先に消した場合） */
+export const deleteDictionaryFile = async (projectId: string, layerId: string, version: string) => {
+  try {
+    await deleteObject(ref(storage, dictionaryStoragePath(projectId, layerId, version)));
+    return { isOK: true, message: '' };
+  } catch (error) {
+    if (isObjectNotFound(error)) return { isOK: true, message: '' };
+    console.error('deleteDictionaryFile Error:', error);
+    return { isOK: false, message: t('firebase.message.failUploadDictionary') };
+  }
+};
+
+/** レイヤの辞書ファイルを、旧形式・全ての版ともに消す（レイヤを削除したとき） */
+export const deleteLayerDictionaries = async (projectId: string, layerId: string) => {
+  try {
+    await deleteStorageFolderRecursive(ref(storage, `projects/${projectId}/DICTIONARY/${layerId}`));
+    return { isOK: true, message: '' };
+  } catch (error) {
+    if (isObjectNotFound(error)) return { isOK: true, message: '' };
+    console.error('deleteLayerDictionaries Error:', error);
+    return { isOK: false, message: t('firebase.message.failUploadDictionary') };
+  }
+};
+
+const downloadDictionaryAt = async (path: string, key: string) => {
+  const storageRef = ref(storage, path);
+  const url = await getDownloadURL(storageRef);
+
+  if (url === undefined) {
+    return { isOK: false, message: t('firebase.message.failGetDictionary') };
+  }
+  if (Platform.OS === 'web') {
+    const response = await fetch(url);
+    if (response.status !== 200) {
       return { isOK: false, message: t('firebase.message.failGetDictionary') };
-    }
-    if (Platform.OS === 'web') {
-      const response = await fetch(url);
-      if (response.status !== 200) {
-        return { isOK: false, message: t('firebase.message.failGetDictionary') };
-      } else {
-        const blob = await response.blob();
-        const { decdata } = await decFile(blob, key);
-        if (decdata === undefined) {
-          return { isOK: false, message: t('firebase.message.failGetDictionary') };
-        }
-        //blobをarrayBufferに変換
-        const arrayBuffer = await new Response(decdata).arrayBuffer();
-        return { isOK: true, message: '', data: arrayBuffer };
-      }
     } else {
-      const { uri, status } = await FileSystem.downloadAsync(url, FileSystem.cacheDirectory + 'temp.sqlite');
-      if (status !== 200) {
+      const blob = await response.blob();
+      const { decdata } = await decFile(blob, key);
+      if (decdata === undefined) {
+        return { isOK: false, message: t('firebase.message.failGetDictionary') };
+      }
+      //blobをarrayBufferに変換
+      const arrayBuffer = await new Response(decdata).arrayBuffer();
+      return { isOK: true, message: '', data: arrayBuffer };
+    }
+  } else {
+    const { uri, status } = await FileSystem.downloadAsync(url, FileSystem.cacheDirectory + 'temp.sqlite');
+    if (status !== 200) {
+      await FileSystem.deleteAsync(uri);
+      return { isOK: false, message: t('firebase.message.failGetDictionary') };
+    } else {
+      const { decUri } = await decFileRN(uri, key);
+      if (decUri === undefined) {
         await FileSystem.deleteAsync(uri);
         return { isOK: false, message: t('firebase.message.failGetDictionary') };
-      } else {
-        const { decUri } = await decFileRN(uri, key);
-        if (decUri === undefined) {
-          await FileSystem.deleteAsync(uri);
-          return { isOK: false, message: t('firebase.message.failGetDictionary') };
-        }
-        const dbPath = `${FileSystem.documentDirectory}SQLite/temp.sqlite`;
-        await FileSystem.copyAsync({ from: 'file://' + decUri, to: dbPath });
-        return { isOK: true, message: '', data: '' };
       }
+      const dbPath = `${FileSystem.documentDirectory}SQLite/temp.sqlite`;
+      await FileSystem.copyAsync({ from: 'file://' + decUri, to: dbPath });
+      return { isOK: true, message: '', data: '' };
     }
+  }
+};
+
+/**
+ * 辞書を取得する。version があれば版付きのパスを読み、読めなければ旧形式のパスを試す。
+ * 更新前のアプリの管理者が保存すると、旧形式のパスと dictionaryKey だけが新しくなり、設定には古い
+ * dictionaryVersion が残る（そのアプリはこの項目を知らないので書き換えない）。その場合も読めるようにする
+ */
+export const downloadDictionary = async (
+  projectId: string,
+  layerId: string,
+  key: string,
+  version?: string
+): Promise<{ isOK: boolean; message: string; data?: ArrayBuffer | string }> => {
+  const fail = { isOK: false, message: t('firebase.message.failGetDictionary') };
+  // 版は管理者が書き込める設定から来るので、パスの区切りを作れる値は使わない
+  if (version !== undefined && !isSafePathSegment(version)) return fail;
+  if (version !== undefined) {
+    try {
+      const res = await downloadDictionaryAt(dictionaryStoragePath(projectId, layerId, version), key);
+      if (res.isOK) return res;
+    } catch (error) {
+      console.log('downloadDictionary Error:', error);
+    }
+  }
+  try {
+    return await downloadDictionaryAt(dictionaryStoragePath(projectId, layerId), key);
   } catch (error) {
     console.log('downloadDictionary Error:', error);
-    return { isOK: false, message: t('firebase.message.failGetDictionary') };
+    return fail;
   }
 };
 export const uploadPDF = async (projectId: string, tileMapId: string) => {

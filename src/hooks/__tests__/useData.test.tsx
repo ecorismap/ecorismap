@@ -844,4 +844,154 @@ describe('useData', () => {
       expect(visibilityOf(store)).toEqual({ r1: true, r2: false, r3: true });
     });
   });
+
+  describe('_group でぶら下がる子を親と一緒に扱う（同期監査 M14）', () => {
+    beforeEach(() => {
+      clearAllVisibilitySnapshots();
+    });
+
+    //親・子ともレイヤ定義の Name を持たせ、絞り込みの対象を親だけにできるようにする
+    const parentRecord = (id: string, name: string, extra: Record<string, string> = {}): RecordType => ({
+      id,
+      userId: 'user1',
+      displayName: 'Test User',
+      visible: true,
+      redraw: false,
+      coords: [
+        { latitude: 0, longitude: 0 },
+        { latitude: 1, longitude: 1 },
+      ],
+      field: { Name: name, ...extra },
+      updatedAt: 1,
+    });
+    const childRecord = (id: string, parentId: string): RecordType => ({
+      ...parentRecord(id, ''),
+      field: { _group: parentId, _stamp: 'arrow' },
+    });
+
+    const setup = (records: RecordType[]) => {
+      const store = createTestStore(records, { type: 'LINE' });
+      const wrapper = ({ children }: { children: React.ReactNode }) => <Provider store={store}>{children}</Provider>;
+      const { result, rerender } = renderHook(() => useData('layer1'), { wrapper });
+      return { store, result, rerender };
+    };
+    const idsInStore = (store: ReturnType<typeof createTestStore>) =>
+      store.getState().dataSet[0].data.map((r: RecordType) => r.id);
+    const visibilityOf = (store: ReturnType<typeof createTestStore>) =>
+      Object.fromEntries(store.getState().dataSet[0].data.map((r: RecordType) => [r.id, r.visible]));
+
+    it('マップメモの親を一覧から削除すると、子ストロークも消える', () => {
+      const memo = parentRecord('m1', 'メモ', { _strokeColor: '#ff0000' });
+      const other = parentRecord('m2', '別メモ', { _strokeColor: '#00ff00' });
+      const { store, result } = setup([memo, childRecord('c1', 'm1'), childRecord('c2', 'm1'), other]);
+      expect(result.current.isMapMemoLayer).toBe(true);
+      //一覧には子が出ない
+      expect(result.current.sortedRecordSet.map((r) => r.id)).toEqual(['m1', 'm2']);
+
+      act(() => {
+        result.current.changeChecked(0, true);
+      });
+      act(() => {
+        result.current.deleteRecords();
+      });
+      expect(idsInStore(store)).toEqual(['m2']);
+    });
+
+    it('マップメモでない作図レイヤ（飛翔図の行動記号）でも、親の線と一緒に子が消える', () => {
+      const line = parentRecord('l1', '飛翔1');
+      const { store, result } = setup([line, childRecord('c1', 'l1'), parentRecord('l2', '飛翔2')]);
+      expect(result.current.isMapMemoLayer).toBe(false);
+
+      act(() => {
+        result.current.changeChecked(0, true);
+      });
+      act(() => {
+        result.current.deleteRecords();
+      });
+      expect(idsInStore(store)).toEqual(['l2']);
+    });
+
+    it('アップロード済みの子は墓標になり、削除がクラウドにも届く', () => {
+      const line = { ...parentRecord('l1', '飛翔1'), uploaded: true };
+      const child = { ...childRecord('c1', 'l1'), uploaded: true };
+      const { store, result } = setup([line, child]);
+
+      act(() => {
+        result.current.changeChecked(0, true);
+      });
+      act(() => {
+        result.current.deleteRecords();
+      });
+      const data = store.getState().dataSet[0].data as RecordType[];
+      expect(data.map((r) => [r.id, r.deleted])).toEqual([
+        ['l1', true],
+        ['c1', true],
+      ]);
+    });
+
+    it('表示の切り替えは子にも及ぶ', () => {
+      const line = parentRecord('l1', '飛翔1');
+      const { store, result } = setup([line, childRecord('c1', 'l1'), parentRecord('l2', '飛翔2')]);
+
+      act(() => {
+        result.current.changeVisible(result.current.sortedRecordSet[0]);
+      });
+      expect(visibilityOf(store)).toEqual({ l1: false, c1: false, l2: true });
+    });
+
+    it('別の名義の子は表示切り替えで親の集合に複製しない', () => {
+      const store = configureStore({
+        reducer: { dataSet: dataSetReducer, layers: layersReducer, settings: settingsReducer, user: userReducer },
+        preloadedState: {
+          ...createTestStore([], { type: 'LINE' }).getState(),
+          dataSet: [
+            { layerId: 'layer1', userId: 'user1', data: [parentRecord('l1', '飛翔1')] },
+            { layerId: 'layer1', userId: 'user2', data: [{ ...childRecord('c9', 'l1'), userId: 'user2' }] },
+          ],
+        },
+      });
+      const wrapper = ({ children }: { children: React.ReactNode }) => <Provider store={store}>{children}</Provider>;
+      const { result } = renderHook(() => useData('layer1'), { wrapper });
+
+      act(() => {
+        result.current.changeVisible(result.current.sortedRecordSet[0]);
+      });
+      expect(store.getState().dataSet[0].data.map((r: RecordType) => r.id)).toEqual(['l1']);
+    });
+
+    it('絞り込み結果だけ表示すると子も表示され、解除すると子も元の表示に戻る', () => {
+      const hiddenChild = { ...childRecord('c2', 'l2'), visible: false };
+      const { store, result, rerender } = setup([
+        parentRecord('l1', 'スギ'),
+        childRecord('c1', 'l1'),
+        parentRecord('l2', 'ミズナラ'),
+        hiddenChild,
+      ]);
+      act(() => {
+        result.current.setFilter('スギ', 'Name');
+      });
+      rerender();
+      act(() => {
+        result.current.showOnlyFilteredRecords();
+      });
+      expect(visibilityOf(store)).toEqual({ l1: true, c1: true, l2: false, c2: false });
+
+      rerender();
+      act(() => {
+        result.current.clearFilter();
+      });
+      expect(visibilityOf(store)).toEqual({ l1: true, c1: true, l2: true, c2: false });
+    });
+
+    it('書き出し用に、選んだ親の後ろへ子を付ける（子は一覧に出ないので全レコードから探す）', () => {
+      const { result } = setup([
+        parentRecord('l1', '飛翔1'),
+        parentRecord('l2', '飛翔2'),
+        childRecord('c1', 'l1'),
+        childRecord('c2', 'l2'),
+      ]);
+      const [l1] = result.current.sortedRecordSet;
+      expect(result.current.withChildRecords([l1]).map((r) => r.id)).toEqual(['l1', 'c1']);
+    });
+  });
 });

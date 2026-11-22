@@ -741,7 +741,9 @@
     },
     "message": {
       "pleaseLogin": "Please login",
+      "cloudDataChangedByOtherDevice": "Your data in the cloud was updated on another device, so the upload was stopped so as not to overwrite it. Please upload again.",
       "cannotVerifyCloudData": "Upload was stopped so as not to overwrite your data in the cloud, because it could not be checked. Check your connection and try again.",
+      "someDataUndecryptable": "{{count}} data set(s) (per member and layer) could not be decrypted. The copies already on this device were kept as they were. Ask the administrator to share the encryption key again, then download again.",
       "skippedUnreadableLayers": "Your data in the cloud could not be read, so these layers were left as they are instead of being overwritten: {{names}}. Ask the administrator to share the encryption key again, then upload again.",
       "cannotUploadData": "Layer settings have been updated. Issues may occur, but would you like to upload anyway? (Please consult with the administrator)",
       "unknownError": "Unknown error.",
@@ -840,6 +842,7 @@
       "failLoadFile": "Failed to load file. \nMake sure the coordinate system is latitude and longitude.",
       "cannotOpenDB": "Unable to open database.",
       "failUploadDictionary": "Failed to upload dictionary",
+      "failDownloadDictionaries": "Could not download the dictionary for these layers: {{names}}. Input suggestions will not be shown. Check your connection and open the project again.",
       "successSaveFile": "File saved.",
       "successExportData": "Your data has been saved.",
       "successExportMaps": "Map settings have been saved.",

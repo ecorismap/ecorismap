@@ -34,6 +34,7 @@ import {
   getDocsFromServer,
   httpsCallable,
   query,
+  runTransaction,
   setDoc,
   Timestamp,
   updateDoc,
@@ -652,6 +653,31 @@ export const deleteOtherUsersData = async (
  *   平文の encryptedAt と暗号化ペイロード内の updatedAt は必ず同じ値にすること
  *   （アップロード時の衝突検知が両者の一致を前提にしているため。useRepository の uploadDataToRepository 参照）。
  */
+/** 設定を暗号化して、settings/default に書く形にする（書き込みはしない）。updatedAt の形式は uploadProjectSettings 参照 */
+const buildProjectSettingsFS = async (
+  projectId: string,
+  editorUid: string,
+  settings: ProjectSettingsType,
+  timestamp: Timestamp
+): Promise<ProjectSettingsFS> => {
+  // 暗号化ペイロードの updatedAt は旧 toDate（nanoseconds/100000）と同じ値で書く。
+  // 旧クライアントは「暗号内のupdatedAt == 旧toDate(平文encryptedAt)」で設定の変更を検知するため、
+  // ここで正しい値を書くと旧クライアント側だけが常に不一致になり誤警告が出る（新旧混在中はこの形式を維持する）。
+  // 新クライアントは isSettingsUpdatedAtCurrent で新旧どちらの値も受け付ける。
+  // TODO: 全クライアントが更新されたら toDate(timestamp) に戻し、isSettingsUpdatedAtCurrent の legacy 判定も削除する。
+  const encdata = await enc({ ...settings, updatedAt: toLegacyDate(timestamp) }, editorUid, projectId);
+  return { editorUid, encdata, encryptedAt: timestamp };
+};
+
+/** settings/default の内容を復号する。復号できなければ例外 */
+const decryptProjectSettingsFS = async (projectId: string, settings: ProjectSettingsFS): Promise<ProjectSettingsType> => {
+  const data = await dec(toDate(settings.encryptedAt), settings.encdata, settings.editorUid, projectId);
+  if (data === undefined) {
+    throw new Error('復号化できません');
+  }
+  return data;
+};
+
 export const uploadProjectSettings = async (
   projectId: string,
   editorUid: string,
@@ -660,13 +686,7 @@ export const uploadProjectSettings = async (
 ) => {
   try {
     const timestamp = timestampOverride ?? Timestamp.now();
-    // 暗号化ペイロードの updatedAt は旧 toDate（nanoseconds/100000）と同じ値で書く。
-    // 旧クライアントは「暗号内のupdatedAt == 旧toDate(平文encryptedAt)」で設定の変更を検知するため、
-    // ここで正しい値を書くと旧クライアント側だけが常に不一致になり誤警告が出る（新旧混在中はこの形式を維持する）。
-    // 新クライアントは isSettingsUpdatedAtCurrent で新旧どちらの値も受け付ける。
-    // TODO: 全クライアントが更新されたら toDate(timestamp) に戻し、isSettingsUpdatedAtCurrent の legacy 判定も削除する。
-    const encdata = await enc({ ...settings, updatedAt: toLegacyDate(timestamp) }, editorUid, projectId);
-    const settingsFS: ProjectSettingsFS = { editorUid, encdata, encryptedAt: timestamp };
+    const settingsFS = await buildProjectSettingsFS(projectId, editorUid, settings, timestamp);
     await setDoc(doc(firestore, 'projects', projectId, 'settings', 'default'), settingsFS);
     return { isOK: true, message: '', timestamp: toDate(timestamp) };
   } catch (error) {
@@ -762,17 +782,8 @@ export const downloadProjectSettings = async (
     // ドキュメントを取得
     const snap = await getDoc(settingsRef);
 
-    // データを型付きで取得
-    const settings = snap.data() as ProjectSettingsFS;
-
-    // encryptedAt を Date に変換
-    const encryptedAtDate = toDate(settings.encryptedAt);
-
-    // 復号化を実行
-    const data = await dec(encryptedAtDate, settings.encdata, settings.editorUid, projectId);
-    if (data === undefined) {
-      throw new Error('復号化できません');
-    }
+    // データを型付きで取得して復号する
+    const data = await decryptProjectSettingsFS(projectId, snap.data() as ProjectSettingsFS);
 
     return { isOK: true, message: '', data };
   } catch (error) {
@@ -784,19 +795,32 @@ export const downloadProjectSettings = async (
   }
 };
 
-const projectDataSetToDataSet = async (projectId: string, projectDataSet: any) => {
-  // layerId と userId の組み合わせをキーとしてグループ化するための Map
+/** 取得したが復号できなかったグループ（layerId×userId×permission）。取得結果から除いたことを呼び出し側へ伝えるために使う */
+export type UndecryptableGroupType = { layerId: string; userId: string; permission: PermissionType | 'TEMPLATE' };
+
+/**
+ * @param undecryptable 渡すと、復号できずに結果から除いたグループをここへ積む。除いたことが呼び出し側に分からないと、
+ *   「クラウドに無い」と「読めなかった」の区別がつかず、手元の写しを消してよいか判断できないため
+ */
+const projectDataSetToDataSet = async (
+  projectId: string,
+  projectDataSet: any,
+  undecryptable?: UndecryptableGroupType[]
+) => {
+  // layerId・userId・permission の組み合わせをキーとしてグループ化するための Map。
+  // permission を含めるのは、管理者は自分の userId でテンプレート(TEMPLATE)も保存するため。
+  // layerId_userId だけだと同じ管理者の TEMPLATE と PUBLIC 等の chunk が1つに混ざり、chunkIndex が
+  // 上書きし合って片方が欠ける（全件取得するエクスポートで起きる）。返す DataType の形は変えない。
   const dataMap = new Map<string, { [index: number]: string[] }>();
-  const metadataMap = new Map<string, { layerId: string; userId: string; encryptedAt: Timestamp }>();
+  const metadataMap = new Map<string, { layerId: string; userId: string; encryptedAt: Timestamp; permission: PermissionType | 'TEMPLATE' }>();
 
   // 世代方式アップロードの残骸（不完全な新世代・削除し損ねた旧世代）を除外し、最新の完全世代のみ処理する
   const selectedDocs = selectCompleteGenerationDocs<{ data: () => unknown }>(projectDataSet.docs);
 
   // 各ドキュメントを処理
   selectedDocs.forEach((v: any) => {
-    const { encdata, layerId, chunkIndex, userId, encryptedAt } = v.data() as DataFS;
-    // コンポジットキーを生成: layerId_userId の形式
-    const compositeKey = `${layerId}_${userId}`;
+    const { encdata, layerId, chunkIndex, userId, encryptedAt, permission } = v.data() as DataFS;
+    const compositeKey = `${layerId}_${userId}_${permission}`;
 
     // compositeKey でグループがなければ作成
     if (!dataMap.has(compositeKey)) {
@@ -808,14 +832,14 @@ const projectDataSetToDataSet = async (projectId: string, projectDataSet: any) =
 
     // メタデータは最初に見つかった情報を保存する
     if (!metadataMap.has(compositeKey)) {
-      metadataMap.set(compositeKey, { layerId, userId, encryptedAt });
+      metadataMap.set(compositeKey, { layerId, userId, encryptedAt, permission });
     }
   });
 
   // 各グループごとにチャンクを結合し、復号を試みる
   const dataSet = await Promise.all(
     Array.from(dataMap.entries()).map(async ([compositeKey, chunkMap]) => {
-      const { layerId, userId, encryptedAt } = metadataMap.get(compositeKey)!;
+      const { layerId, userId, encryptedAt, permission } = metadataMap.get(compositeKey)!;
 
       // チャンクのキーを数値順にソートし、正しい順序で結合
       const encdata = Object.keys(chunkMap)
@@ -835,6 +859,7 @@ const projectDataSetToDataSet = async (projectId: string, projectDataSet: any) =
         } as DataType;
       } else {
         // 復号できない場合は null を返す
+        undecryptable?.push({ layerId, userId, permission });
         return null;
       }
     })
@@ -845,7 +870,13 @@ const projectDataSetToDataSet = async (projectId: string, projectDataSet: any) =
 };
 
 /** 自己DEK移行(Phase iii)の対象グループ。cryptoScheme印の無いチャンクを含む userId×layerId。 */
-export type UnmarkedDekGroupType = { userId: string; layerId: string; permission: 'PRIVATE' | 'PUBLIC' };
+export type UnmarkedDekGroupType = {
+  userId: string;
+  layerId: string;
+  permission: 'PRIVATE' | 'PUBLIC';
+  /** ダウンロード時点のこのグループの encryptedAt(ms)。書き戻す直前に変わっていないかの照合に使う */
+  encryptedAt?: number;
+};
 
 /**
  * ダウンロード済みのdata docスナップショットから、cryptoScheme印の無いチャンクを含むグループを集める。
@@ -863,6 +894,16 @@ export const collectUnmarkedDekGroups = (
     if (d.cryptoScheme === 'dek') return;
     groups.set(`${d.userId}_${d.layerId}`, { userId: d.userId, layerId: d.layerId, permission });
   });
+  // 移行の書き戻しは、このダウンロード時点の内容で上書きする。その間に別の端末が同じグループを書いていたら
+  // その変更を消してしまうので、照合用にダウンロード時点の版（getMyDataUpdatedAt と同じ求め方）を持たせる
+  for (const [key, group] of groups) {
+    const groupDocs = docs.filter((docSnap) => {
+      const d = docSnap.data() as DataFS;
+      return `${d.userId}_${d.layerId}` === key;
+    });
+    const encryptedAt = latestGenerationMillis(groupDocs);
+    if (encryptedAt !== undefined) group.encryptedAt = encryptedAt;
+  }
   return [...groups.values()];
 };
 
@@ -954,6 +995,24 @@ export const selectCompleteGenerationDocs = <T extends { data: () => unknown }>(
   return result;
 };
 
+/** Timestamp を toDate() と同じミリ秒値にする（衝突検知の基準値・期待値はすべてこの値で比べる）。 */
+const timestampMillis = (ts: { seconds: number; nanoseconds: number } | undefined): number | undefined =>
+  ts ? ts.seconds * 1000 + Math.floor(ts.nanoseconds / 1000000) : undefined;
+
+/**
+ * 1グループ（layerId×userId×permission）の docs から、採用される最新の完全世代の encryptedAt(ms) を返す。
+ * docs が無ければ undefined（クラウドにデータが無い）。getMyDataUpdatedAt の値と同じ求め方にしてあり、
+ * その値を期待値として uploadDataHelper に渡せば、書く直前に変わっていないかを照合できる。
+ */
+const latestGenerationMillis = (docs: { data: () => unknown }[]): number | undefined => {
+  let latest: number | undefined;
+  for (const docSnap of selectCompleteGenerationDocs(docs)) {
+    const ms = timestampMillis((docSnap.data() as DataFS).encryptedAt);
+    if (ms !== undefined && (latest === undefined || ms > latest)) latest = ms;
+  }
+  return latest;
+};
+
 const chunkData = (encdataArray: string[], chunkSize: number): string[][] => {
   let currentChunk: string[] = [];
   let currentChunkSize = 0;
@@ -991,10 +1050,18 @@ const deleteDocsInBatches = async (docSnaps: { ref: any }[]) => {
   }
 };
 
+/**
+ * 期待値の照合。expected を渡すと、書く直前のクラウドの最新の完全世代の encryptedAt(ms) が
+ * expected.encryptedAt（undefined はクラウドにデータが無い）と違えば何も書かずに失敗を返す（staleExpectation: true）。
+ * 衝突を判定してから書くまでの間に、同じアカウントの別端末が同じグループを書いた場合に、確認なしに上書きしないため。
+ */
+export type UploadDataExpectation = { expected?: { encryptedAt: number | undefined } };
+
 export const uploadDataHelper = async (
   projectId: string,
-  data: ProjectDataType
-): Promise<{ isOK: boolean; message: string; encryptedAt?: number }> => {
+  data: ProjectDataType,
+  options: UploadDataExpectation = {}
+): Promise<{ isOK: boolean; message: string; encryptedAt?: number; staleExpectation?: boolean }> => {
   const { userId, layerId, permission, ...others } = data;
   const encdataArray = await enc(others, userId, projectId);
   const KBytes = sizeof(encdataArray) / 1024;
@@ -1019,8 +1086,22 @@ export const uploadDataHelper = async (
   );
   const existing = await getDocs(q);
 
-  // 全チャンクで同一の encryptedAt を使う（楽観的ロックの基準値を決定的にするため + 世代IDを兼ねる）
-  const encryptedAt = Timestamp.now();
+  if (options.expected !== undefined && latestGenerationMillis(existing.docs) !== options.expected.encryptedAt) {
+    return { isOK: false, message: t('hooks.message.cloudDataChangedByOtherDevice'), staleExpectation: true };
+  }
+
+  // 全チャンクで同一の encryptedAt を使う（楽観的ロックの基準値を決定的にするため + 世代IDを兼ねる）。
+  // 既存のどの doc（削除し損ねた旧世代を含む）よりも必ず大きくする。端末の時計が遅れていると、新しい世代の
+  // encryptedAt が残った旧世代より小さくなり、読み側（selectCompleteGenerationDocs は新しい方を採る）が旧世代を採ってしまう。
+  // 残った旧世代はこのスナップショットに入っているので、下の削除で今回まとめて片付く
+  const now = Timestamp.now();
+  let existingMax: number | undefined;
+  for (const docSnap of existing.docs) {
+    const ms = timestampMillis((docSnap.data() as DataFS).encryptedAt);
+    if (ms !== undefined && (existingMax === undefined || ms > existingMax)) existingMax = ms;
+  }
+  const encryptedAt =
+    existingMax !== undefined && now.toMillis() <= existingMax ? Timestamp.fromMillis(existingMax + 1) : now;
   const makeDataFS = (chunk: string[], index: number): DataFS => ({
     userId,
     layerId,
@@ -1174,12 +1255,13 @@ export const downloadPublicData = async (projectId: string, { excludeUserId }: {
     }
 
     // 5. フィルタ後の docs 配列をユーティリティ関数に渡す
-    const dataSet = await projectDataSetToDataSet(projectId, { docs });
+    const undecryptableGroups: UndecryptableGroupType[] = [];
+    const dataSet = await projectDataSetToDataSet(projectId, { docs }, undecryptableGroups);
 
     // 自己DEK移行(Phase iii)用: 印なしチャンクを含むグループを取得済みdocsから算出（追加クエリなし）
     const unmarkedDekGroups = collectUnmarkedDekGroups(docs, 'PUBLIC');
 
-    return { isOK: true, message: '', data: dataSet, unmarkedDekGroups };
+    return { isOK: true, message: '', data: dataSet, unmarkedDekGroups, undecryptableGroups };
   } catch (error) {
     console.error('データダウンロードエラー:', error);
     return {
@@ -1214,11 +1296,13 @@ export const downloadPrivateData = async (
     const projectDataSet = await getDocs(q);
 
     // 5. スナップショットをアプリ用データ形式に変換
-    let dataSet = await projectDataSetToDataSet(projectId, projectDataSet);
+    let undecryptableGroups: UndecryptableGroupType[] = [];
+    let dataSet = await projectDataSetToDataSet(projectId, projectDataSet, undecryptableGroups);
 
     // 6. excludeUserId があれば結果から除外
     if (excludeUserId) {
       dataSet = dataSet.filter((item) => item.userId !== excludeUserId);
+      undecryptableGroups = undecryptableGroups.filter((g) => g.userId !== excludeUserId);
     }
 
     // 自己DEK移行(Phase iii)用: 印なしチャンクを含むグループを取得済みdocsから算出（追加クエリなし）
@@ -1227,7 +1311,7 @@ export const downloadPrivateData = async (
       unmarkedDekGroups = unmarkedDekGroups.filter((g) => g.userId !== excludeUserId);
     }
 
-    return { isOK: true, message: '', data: dataSet, unmarkedDekGroups };
+    return { isOK: true, message: '', data: dataSet, unmarkedDekGroups, undecryptableGroups };
   } catch (error) {
     console.error('プライベートデータダウンロードエラー:', error);
     return {
@@ -1244,8 +1328,9 @@ export const downloadTemplateData = async (projectId: string) => {
     const projectDataSet = await getDocs(q);
 
     // 取得したスナップショットをアプリ用データ形式に変換
-    const dataSet = await projectDataSetToDataSet(projectId, projectDataSet);
-    return { isOK: true, message: '', data: dataSet };
+    const undecryptableGroups: UndecryptableGroupType[] = [];
+    const dataSet = await projectDataSetToDataSet(projectId, projectDataSet, undecryptableGroups);
+    return { isOK: true, message: '', data: dataSet, undecryptableGroups };
   } catch (error) {
     console.error('テンプレートデータダウンロードエラー:', error);
     return { isOK: false, message: t('firebase.message.failDownloadData') };
@@ -1257,7 +1342,12 @@ type SharedDataForDEK = {
   settings?: { data: ProjectSettingsType; editorUid: string; encryptedAt: Timestamp };
   common: DataType[];
   template: DataType[];
+  /** 読んだ時点の各グループの encryptedAt(ms)。キーは sharedVersionKey。書き戻す直前の照合に使う */
+  versions: Map<string, number | undefined>;
 };
+
+const sharedVersionKey = (permission: 'COMMON' | 'TEMPLATE', userId: string, layerId: string) =>
+  `${permission}_${userId}_${layerId}`;
 
 const isDecryptableWithDEK = async (encdata: string[], dekPrivateKey: string): Promise<boolean> => {
   try {
@@ -1295,11 +1385,19 @@ const collectSharedDataForDEK = async (projectId: string, dekPrivateKey?: string
     }
   }
 
+  const versions = new Map<string, number | undefined>();
   const collectData = async (permission: 'COMMON' | 'TEMPLATE'): Promise<DataType[]> => {
     const snap = await getDocs(
       query(collection(firestore, 'projects', projectId, 'data'), where('permission', '==', permission))
     );
     let docs: { data: () => unknown }[] = snap.docs;
+    const byGroup = new Map<string, { data: () => unknown }[]>();
+    docs.forEach((d) => {
+      const { userId, layerId } = d.data() as DataFS;
+      const key = sharedVersionKey(permission, userId, layerId);
+      byGroup.set(key, [...(byGroup.get(key) ?? []), d]);
+    });
+    byGroup.forEach((groupDocs, key) => versions.set(key, latestGenerationMillis(groupDocs)));
     if (dekPrivateKey !== undefined) {
       const groupKey = (d: { data: () => unknown }) => {
         const { userId, layerId } = d.data() as DataFS;
@@ -1316,13 +1414,27 @@ const collectSharedDataForDEK = async (projectId: string, dekPrivateKey?: string
     return projectDataSetToDataSet(projectId, { docs });
   };
 
-  return { settings, common: await collectData('COMMON'), template: await collectData('TEMPLATE') };
+  const common = await collectData('COMMON');
+  const template = await collectData('TEMPLATE');
+  return { settings, common, template, versions };
 };
 
 /** 共有データをDEKで再暗号化して書き戻す。1件でも失敗すれば false（移行は未完了として扱う）。 */
 const writeSharedDataWithDEK = async (projectId: string, shared: SharedDataForDEK): Promise<boolean> => {
   if (shared.settings !== undefined) {
     const { data, editorUid, encryptedAt } = shared.settings;
+    // 読んでから書き戻すまでの間に管理者が設定を保存していたら、読んだ時点の内容で上書きするとその保存が消える。
+    // 書き戻しは更新日時を据え置くので、encryptedAt が読んだ時点のままなら誰も保存していない。
+    // 違えば（または確かめられなければ）書かずに移行を失敗にする。再実行で、そのとき残っている分だけを再暗号化する
+    const current = await getProjectSettingsMeta(projectId, true);
+    if (
+      current === undefined ||
+      current.encryptedAt.seconds !== encryptedAt.seconds ||
+      current.encryptedAt.nanoseconds !== encryptedAt.nanoseconds
+    ) {
+      console.warn('[writeSharedDataWithDEK] 設定が読んだ後に更新されたため書き戻さない:', projectId);
+      return false;
+    }
     const res = await uploadProjectSettings(projectId, editorUid, data, encryptedAt);
     if (!res.isOK) return false;
   }
@@ -1333,7 +1445,12 @@ const writeSharedDataWithDEK = async (projectId: string, shared: SharedDataForDE
   for (const [list, permission] of targets) {
     for (const d of list) {
       if (d.userId === undefined) continue;
-      const res = await uploadDataHelper(projectId, { userId: d.userId, layerId: d.layerId, data: d.data, permission });
+      // COMMON/TEMPLATE も同じく、読んだ後に管理者が保存していたら上書きしない（その保存の内容は残し、移行は失敗にする）
+      const res = await uploadDataHelper(
+        projectId,
+        { userId: d.userId, layerId: d.layerId, data: d.data, permission },
+        { expected: { encryptedAt: shared.versions.get(sharedVersionKey(permission, d.userId, d.layerId)) } }
+      );
       if (!res.isOK) return false;
     }
   }
@@ -1470,10 +1587,14 @@ export const migrateSelfDataToDEK = async (
 
     // プロジェクトを開く際のダウンロードで算出済みの印なしグループから、自分の分だけを対象化。
     // 判定・復号ともダウンロード済みの情報で完結するため、この関数からの追加ダウンロードはゼロ。
-    const targets = new Map<string, { layerId: string; permission: 'PRIVATE' | 'PUBLIC' }>();
+    const targets = new Map<string, { layerId: string; permission: 'PRIVATE' | 'PUBLIC'; encryptedAt?: number }>();
     input.unmarkedGroups.forEach((g) => {
       if (g.userId !== uid) return;
-      targets.set(`${g.layerId}_${g.permission}`, { layerId: g.layerId, permission: g.permission });
+      targets.set(`${g.layerId}_${g.permission}`, {
+        layerId: g.layerId,
+        permission: g.permission,
+        encryptedAt: g.encryptedAt,
+      });
     });
     if (targets.size === 0) return { isOK: true, message: '', migratedCount: 0, failedCount: 0 };
 
@@ -1488,7 +1609,7 @@ export const migrateSelfDataToDEK = async (
     let migratedCount = 0;
     let failedCount = 0;
     const targetList = [...targets.values()];
-    for (const [index, { layerId, permission }] of targetList.entries()) {
+    for (const [index, { layerId, permission, encryptedAt }] of targetList.entries()) {
       onProgress?.(index + 1, targetList.length);
       const source = permission === 'PRIVATE' ? input.privateData : input.publicData;
       const d = source.find((v) => v.layerId === layerId && v.userId === uid);
@@ -1497,8 +1618,16 @@ export const migrateSelfDataToDEK = async (
         failedCount++;
         continue;
       }
-      const res = await uploadDataHelper(projectId, { userId: uid, layerId, permission, data: d.data });
+      // 書き戻すのはダウンロード時点の内容。その後に別の端末がこのグループを書いていたら、上書きするとその変更が消える。
+      // ダウンロード時点の版と違えばこのグループは飛ばす（失敗には数えない。新しい版を書いた端末が印を付けているか、
+      // 付いていなければ次に開いたときにその版で移行し直す）
+      const res = await uploadDataHelper(
+        projectId,
+        { userId: uid, layerId, permission, data: d.data },
+        { expected: { encryptedAt } }
+      );
       if (res.isOK) migratedCount++;
+      else if (res.staleExpectation === true) console.info('[migrateSelfDataToDEK] 別の端末で更新されたため飛ばす:', layerId);
       else failedCount++;
     }
     return { isOK: true, message: '', migratedCount, failedCount };
@@ -1710,6 +1839,11 @@ export const getMyDataUpdatedAt = async (
 /**
  * プロジェクト設定から指定したレイヤ定義を削除
  * クラウドデータ管理画面で使用
+ *
+ * 読みと書きを1つのトランザクションにまとめる。別々に行うと、読んでから書き戻すまでの間に入った別の保存
+ * （他の管理者の設定の保存や、もう一つのレイヤ削除）を、読んだ時点の内容で上書きして消してしまう
+ * （相手が足したレイヤが消える・相手が消したレイヤが戻る）。トランザクションなら、間に書き込みがあれば
+ * 読み直してからやり直す
  */
 export const deleteLayerFromSettings = async (
   projectId: string,
@@ -1717,27 +1851,27 @@ export const deleteLayerFromSettings = async (
   layerIdsToDelete: string[]
 ): Promise<{ isOK: boolean; message: string; timestamp?: Date }> => {
   try {
-    // 1. 現在のプロジェクト設定を取得
-    const settingsResult = await downloadProjectSettings(projectId);
-    if (!settingsResult.isOK || !settingsResult.data) {
-      return { isOK: false, message: t('CloudDataManagement.message.failDeleteLayer') };
-    }
+    const settingsRef = doc(firestore, 'projects', projectId, 'settings', 'default');
+    const timestamp = await runTransaction(firestore, async (transaction) => {
+      // 1. 現在のプロジェクト設定を取得（やり直しのたびに最新を読む）
+      const snap = await transaction.get(settingsRef);
+      const settingsFS = snap.data() as ProjectSettingsFS | undefined;
+      if (settingsFS === undefined) throw new Error('settings not found');
+      const current = await decryptProjectSettingsFS(projectId, settingsFS);
 
-    // 2. 削除対象レイヤをフィルタリング
-    const updatedLayers = settingsResult.data.layers.filter((layer) => !layerIdsToDelete.includes(layer.id));
+      // 2. 削除対象レイヤをフィルタリング
+      const updatedSettings: ProjectSettingsType = {
+        ...current,
+        layers: current.layers.filter((layer) => !layerIdsToDelete.includes(layer.id)),
+      };
 
-    // 3. 更新した設定を保存
-    const updatedSettings: ProjectSettingsType = {
-      ...settingsResult.data,
-      layers: updatedLayers,
-    };
+      // 3. 更新した設定を保存
+      const ts = Timestamp.now();
+      transaction.set(settingsRef, await buildProjectSettingsFS(projectId, editorUid, updatedSettings, ts));
+      return ts;
+    });
 
-    const result = await uploadProjectSettings(projectId, editorUid, updatedSettings);
-    if (!result.isOK) {
-      return { isOK: false, message: t('CloudDataManagement.message.failDeleteLayer') };
-    }
-
-    return { isOK: true, message: '', timestamp: result.timestamp };
+    return { isOK: true, message: '', timestamp: toDate(timestamp) };
   } catch (error) {
     console.error('deleteLayerFromSettings Error:', error);
     return { isOK: false, message: t('CloudDataManagement.message.failDeleteLayer') };

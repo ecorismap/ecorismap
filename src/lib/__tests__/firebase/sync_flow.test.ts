@@ -15,6 +15,8 @@ import * as rulesTesting from '@firebase/rules-unit-testing';
 import { collection, doc, getDocs, setDoc, Timestamp } from 'firebase/firestore';
 
 const mockActor: { db: unknown; uid: string } = { db: undefined, uid: '' };
+// 暗号化の直前に一度だけ割り込む処理（L10: 設定を読んでから書き戻すまでの間に、別の保存を入れるため）
+const mockEncryptHook: { before?: () => Promise<void> } = {};
 
 jest.mock('../../firebase/firebase', () => {
   const fsMod = jest.requireActual('firebase/firestore');
@@ -45,7 +47,14 @@ jest.mock('../../virgilsecurity/e3kit', () => {
   const gzip = (str: string) => Buffer.from(pako.deflate(str)).toString('base64');
   const unzip = (value: string) => Buffer.from(pako.inflate(new Uint8Array(Buffer.from(value, 'base64')))).toString('utf-8');
   return {
-    encryptEThree: async (data: unknown) => [gzip(JSON.stringify(data))],
+    encryptEThree: async (data: unknown) => {
+      const hook = mockEncryptHook.before;
+      if (hook !== undefined) {
+        mockEncryptHook.before = undefined;
+        await hook();
+      }
+      return [gzip(JSON.stringify(data))];
+    },
     // 本物と同じく、復号できないデータは例外にせず undefined を返す
     decryptEThree: async (_at: Date, encdata: string[]) => {
       try {
@@ -334,5 +343,135 @@ describe('S1: アップロード前の衝突確認に使う取得', () => {
     const res = await projectStore.deleteOtherUsersData(P, 'C', 'COMMON', M1, [OWNER]);
     expect(res.isOK).toBe(false);
     expect(await rawDocs('C')).toEqual([{ userId: OWNER, permission: 'COMMON' }]);
+  });
+});
+
+describe('M9・L5・L7: 書き込みと読み出しの版', () => {
+  test('M9: 同じ管理者が同じレイヤに書いた TEMPLATE と PUBLIC を、エクスポートの全件取得で両方取り出す', async () => {
+    await upload(OWNER, 'L', 'TEMPLATE', [rec('T', OWNER)]);
+    await upload(OWNER, 'L', 'PUBLIC', [rec('P', OWNER)]);
+    as(OWNER);
+    const all = await projectStore.downloadAllData(P);
+    expect(all.isOK).toBe(true);
+    expect(ids((all.data ?? []).filter((d) => d.layerId === 'L'))).toEqual(['P', 'T']);
+  });
+
+  test('L5: 判定のあとに同じアカウントの別端末が書いていたら、期待値の照合で書かずに残す', async () => {
+    await upload(M1, 'L', 'PRIVATE', [rec('v1', M1)]);
+    // 端末A: 衝突判定でクラウドの版を見る
+    as(M1);
+    const judged = await projectStore.getMyDataUpdatedAt(P, M1);
+    expect(judged.isOK).toBe(true);
+    const expected = judged.data?.get('L_PRIVATE');
+    expect(expected).toBeDefined();
+    // 端末B: その間に同じレイヤを書く
+    await upload(M1, 'L', 'PRIVATE', [rec('fromB', M1)]);
+    // 端末A: 判定した版を期待値にして書く → 書かない
+    as(M1);
+    const stale = await projectStore.uploadDataHelper(
+      P,
+      { layerId: 'L', userId: M1, permission: 'PRIVATE', data: [rec('fromA', M1)] },
+      { expected: { encryptedAt: expected } }
+    );
+    expect(stale.isOK).toBe(false);
+    expect(stale.staleExpectation).toBe(true);
+    const priv = await projectStore.downloadPrivateData(P, { userId: M1 });
+    expect(ids(priv.data ?? [])).toEqual(['fromB']);
+
+    // 判定し直した版なら書ける（getMyDataUpdatedAt の値と書く直前の値が、実際の Timestamp でも一致する）
+    const rejudged = await projectStore.getMyDataUpdatedAt(P, M1);
+    const ok = await projectStore.uploadDataHelper(
+      P,
+      { layerId: 'L', userId: M1, permission: 'PRIVATE', data: [rec('fromA', M1)] },
+      { expected: { encryptedAt: rejudged.data?.get('L_PRIVATE') } }
+    );
+    expect(ok.isOK).toBe(true);
+    expect(ids((await projectStore.downloadPrivateData(P, { userId: M1 })).data ?? [])).toEqual(['fromA']);
+  });
+
+  test('L7: 時計の進んだ端末が書いた世代が削除し損ねで残っていても、次に書いた世代が採られ、残りは消える', async () => {
+    // 1時間先の時刻で書かれた世代（gzip の平文。FUNC_ENCRYPTION=false の経路で読める）
+    const future = Timestamp.fromMillis(Date.now() + 60 * 60 * 1000);
+    const { encryptEThree } = jest.requireMock('../../virgilsecurity/e3kit');
+    const encdata = await encryptEThree({ data: [rec('stale', M1)] });
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await setDoc(doc(context.firestore(), `projects/${P}/data/futureGen`), {
+        userId: M1,
+        layerId: 'L',
+        permission: 'PRIVATE',
+        encdata,
+        encryptedAt: future,
+        chunkIndex: 0,
+        chunkCount: 1,
+      });
+    });
+    const res = await upload(M1, 'L', 'PRIVATE', [rec('fresh', M1)]);
+    expect(res.encryptedAt).toBeGreaterThan(future.toMillis());
+    as(M1);
+    expect(ids((await projectStore.downloadPrivateData(P, { userId: M1 })).data ?? [])).toEqual(['fresh']);
+    expect(await rawDocs('L')).toEqual([{ userId: M1, permission: 'PRIVATE' }]);
+  });
+});
+
+describe('L10: クラウドデータ管理のレイヤ削除', () => {
+  const settingsOf = (layerIds: string[]) =>
+    ({
+      layers: layerIds.map((id) => layer(id, 'PUBLIC')),
+      tileMaps: [],
+      mapType: 'none',
+      mapRegion: { latitude: 35, longitude: 135, latitudeDelta: 0.01, longitudeDelta: 0.01, zoom: 15 },
+      plugins: {},
+      updatedAt: '',
+    } as never);
+  const layerIdsOf = async (uid: string) => {
+    as(uid);
+    const res = await projectStore.downloadProjectSettings(P);
+    expect(res.isOK).toBe(true);
+    return (res.data?.layers ?? []).map((l) => l.id).sort();
+  };
+
+  afterEach(() => {
+    mockEncryptHook.before = undefined;
+  });
+
+  test('指定したレイヤだけを設定から外す', async () => {
+    as(OWNER);
+    expect((await projectStore.uploadProjectSettings(P, OWNER, settingsOf(['A', 'B']))).isOK).toBe(true);
+    const res = await projectStore.deleteLayerFromSettings(P, OWNER, ['A']);
+    expect(res.isOK).toBe(true);
+    expect(res.timestamp).toBeInstanceOf(Date);
+    expect(await layerIdsOf(M1)).toEqual(['B']);
+  });
+
+  test('読んでから書き戻すまでの間に別の管理者が保存しても、その変更を消さない（読み直してやり直す）', async () => {
+    as(OWNER);
+    expect((await projectStore.uploadProjectSettings(P, OWNER, settingsOf(['A', 'B']))).isOK).toBe(true);
+    const { encryptEThree } = jest.requireMock('../../virgilsecurity/e3kit');
+    // 削除の書き戻しの暗号化の直前に、もう一人の管理者がレイヤ C を足した設定を保存する（Rules を通さずに直接書く）
+    const concurrent = await encryptEThree({ ...(settingsOf(['A', 'B', 'C']) as object), updatedAt: '' });
+    mockEncryptHook.before = async () => {
+      await testEnv.withSecurityRulesDisabled(async (context) => {
+        await setDoc(doc(context.firestore(), `projects/${P}/settings/default`), {
+          editorUid: ADMIN2,
+          encdata: concurrent,
+          encryptedAt: Timestamp.now(),
+        });
+      });
+    };
+    as(OWNER);
+    const res = await projectStore.deleteLayerFromSettings(P, OWNER, ['A']);
+    expect(res.isOK).toBe(true);
+    expect(mockEncryptHook.before).toBeUndefined();
+    // A だけが外れ、もう一人の管理者が足した C は残る
+    expect(await layerIdsOf(M1)).toEqual(['B', 'C']);
+  });
+
+  test('一般メンバーは設定からレイヤを外せない', async () => {
+    as(OWNER);
+    expect((await projectStore.uploadProjectSettings(P, OWNER, settingsOf(['A', 'B']))).isOK).toBe(true);
+    as(M1);
+    const res = await projectStore.deleteLayerFromSettings(P, M1, ['A']);
+    expect(res.isOK).toBe(false);
+    expect(await layerIdsOf(M1)).toEqual(['A', 'B']);
   });
 });

@@ -82,6 +82,7 @@ export default function DataContainer() {
     changeOrder,
     addDefaultRecord,
     deleteRecords,
+    withChildRecords,
     updateRecordSetOrder,
   } = useData(params?.targetLayer?.id ?? '');
   const { changeActiveLayer } = useLayers();
@@ -116,16 +117,8 @@ export default function DataContainer() {
     // }
 
     try {
-      let exportedRecords: RecordType[] = [];
-      if (isMapMemoLayer) {
-        checkedRecords.forEach((record) => {
-          if (record.field._group && record.field._group !== '') return; //自身がsubGroupの場合はスキップ
-          const subGroupRecords = sortedRecordSet.filter((r) => r.field._group === record.id);
-          exportedRecords = [...exportedRecords, record, ...subGroupRecords];
-        });
-      } else {
-        exportedRecords = checkedRecords;
-      }
+      //_group でぶら下がる子（マップメモの子ストロークや飛翔図の行動記号）は一覧に出ないので、全レコードから探して親と一緒に書き出す
+      const exportedRecords: RecordType[] = withChildRecords(checkedRecords);
 
       const time = dayjs().format('YYYY-MM-DD_HH-mm-ss');
       // レイヤ名はzip名（=Windows展開時のフォルダ名）と内部ファイル名の2か所に入るため、
@@ -159,7 +152,7 @@ export default function DataContainer() {
       setExportProgress('');
       setIsExporting(false);
     }
-  }, [checkedRecords, sortedRecordSet, generateExportGeoData, isExporting, isMapMemoLayer, params?.targetLayer]);
+  }, [checkedRecords, withChildRecords, generateExportGeoData, isExporting, params?.targetLayer]);
 
   const pressDeleteData = useCallback(async () => {
     if (!params?.targetLayer || !liveTargetLayer) return;

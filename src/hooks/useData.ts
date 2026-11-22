@@ -15,7 +15,7 @@ import { filterRecords, getDefaultField, getFilterCandidates, sortData, SortOrde
 
 import { setDataFilterForLayerAction } from '../modules/settings';
 import { updateLayerAction } from '../modules/layers';
-import { selectNonDeletedAllUserRecordSet } from '../modules/selectors';
+import { selectNonDeletedAllUserRecordSet, selectNonDeletedLayerRecordSetWithChildren } from '../modules/selectors';
 import { deleteRecordPhotos } from '../utils/Photo';
 import { useProject } from './useProject';
 
@@ -45,6 +45,7 @@ export type UseDataReturnType = {
     currentLocation?: { latitude: number; longitude: number; altitude?: number }
   ) => RecordType;
   deleteRecords: () => void;
+  withChildRecords: (records: RecordType[]) => RecordType[];
   updateRecordSetOrder: (sortedRecordSet_: RecordType[]) => void;
 };
 
@@ -85,6 +86,39 @@ export const useData = (layerId: string): UseDataReturnType => {
   );
 
   const allUserRecordSet = useSelector((state: RootState) => selectNonDeletedAllUserRecordSet(state, targetLayer?.id));
+  //一覧（allUserRecordSet）は _group でぶら下がる子を除くので、子はこちらから探す
+  const layerRecordSetWithChildren = useSelector((state: RootState) =>
+    selectNonDeletedLayerRecordSetWithChildren(state, targetLayer?.id)
+  );
+
+  //親ごとに、その親へ _group でぶら下がる子を後ろに付けて返す（マップメモの子ストローク、飛翔図の行動記号）。
+  //子を一覧（絞り込み・ソート済み）から探すと、一覧は子を除いているので必ず空になり、
+  //親だけ消える・隠れる・書き出されて、孤立した子が残ったり他のメンバーへ配られたりする。
+  //子自身が渡されたときは親の処理で拾うので二重に入れない
+  const withChildRecords = useCallback(
+    (records: RecordType[]) => {
+      const childrenByParent = new Map<string, RecordType[]>();
+      layerRecordSetWithChildren.forEach((r) => {
+        const group = r.field._group;
+        if (typeof group !== 'string' || group === '') return;
+        const list = childrenByParent.get(group);
+        if (list) list.push(r);
+        else childrenByParent.set(group, [r]);
+      });
+      const result: RecordType[] = [];
+      const added = new Set<string>();
+      records.forEach((record) => {
+        if (record.field._group && record.field._group !== '') return;
+        [record, ...(childrenByParent.get(record.id) ?? [])].forEach((r) => {
+          if (added.has(r.id)) return;
+          added.add(r.id);
+          result.push(r);
+        });
+      });
+      return result;
+    },
+    [layerRecordSetWithChildren]
+  );
 
   const isFiltering = useMemo(() => filterText.trim() !== '', [filterText]);
 
@@ -156,14 +190,10 @@ export const useData = (layerId: string): UseDataReturnType => {
 
   const changeVisible = useCallback(
     (record: RecordType) => {
-      let updatedRecords;
-      if (isMapMemoLayer) {
-        //同じグループのレコードを取得
-        const subGroupRecords = sortedRecordSet.filter((r) => r.field._group === record.id);
-        updatedRecords = [record, ...subGroupRecords].map((r) => ({ ...r, visible: !record.visible }));
-      } else {
-        updatedRecords = [{ ...record, visible: !record.visible }];
-      }
+      //子も親と同じ表示にする。updateRecordsAction は集合に無い id を追加してしまうため、親と同じ名義の子だけを渡す
+      const updatedRecords = withChildRecords([record])
+        .filter((r) => r.userId === record.userId)
+        .map((r) => ({ ...r, visible: !record.visible }));
       dispatch(
         updateRecordsAction({
           layerId: targetLayer.id,
@@ -172,7 +202,7 @@ export const useData = (layerId: string): UseDataReturnType => {
         })
       );
     },
-    [sortedRecordSet, dispatch, isMapMemoLayer, targetLayer]
+    [withChildRecords, dispatch, targetLayer]
   );
 
   const changeCheckedAll = useCallback(
@@ -237,11 +267,12 @@ export const useData = (layerId: string): UseDataReturnType => {
   const showOnlyFilteredRecords = useCallback(() => {
     //連続で押しても最初の状態を保つ（2回目に控えると絞り込み後の状態を覚えてしまう）
     if (visibilitySnapshots[layerId] === undefined) {
-      visibilitySnapshots[layerId] = Object.fromEntries(allUserRecordSet.map((r) => [r.id, r.visible]));
+      //子も全件非表示にされるので、解除で戻せるよう子の状態も控える
+      visibilitySnapshots[layerId] = Object.fromEntries(layerRecordSetWithChildren.map((r) => [r.id, r.visible]));
     }
     dispatch(setAllRecordsVisibilityAction({ layerId: targetLayer.id, visible: false }));
-    dispatchVisibility(sortedRecordSet.map((record) => ({ ...record, visible: true })));
-  }, [allUserRecordSet, dispatch, dispatchVisibility, layerId, sortedRecordSet, targetLayer]);
+    dispatchVisibility(withChildRecords(sortedRecordSet).map((record) => ({ ...record, visible: true })));
+  }, [dispatch, dispatchVisibility, layerId, layerRecordSetWithChildren, sortedRecordSet, targetLayer, withChildRecords]);
 
   //解除は対象列も一緒に戻す（列だけ残るとヘッダのフィルタアイコンが消えない）
   const clearFilter = useCallback(() => {
@@ -251,11 +282,11 @@ export const useData = (layerId: string): UseDataReturnType => {
     if (snapshot === undefined) return;
     delete visibilitySnapshots[layerId];
     //スナップショット後に追加されたレコードは対象外。変化した分だけ戻す
-    const restored = allUserRecordSet
+    const restored = layerRecordSetWithChildren
       .filter((r) => snapshot[r.id] !== undefined && r.visible !== snapshot[r.id])
       .map((r) => ({ ...r, visible: snapshot[r.id] }));
     if (restored.length > 0) dispatchVisibility(restored);
-  }, [allUserRecordSet, dispatch, dispatchVisibility, layerId]);
+  }, [dispatch, dispatchVisibility, layerId, layerRecordSetWithChildren]);
 
   //絞り込みモーダルの候補。別の値へ切り替えられるよう、絞り込み後ではなく全レコードから作る
   const getFieldCandidates = useCallback(
@@ -302,17 +333,15 @@ export const useData = (layerId: string): UseDataReturnType => {
   );
 
   const deleteRecords = useCallback(() => {
-    let deletedRecords: RecordType[] = [];
+    //子はマップメモに限らず親と一緒に消す（飛翔図の行動記号も _group でぶら下がる）。残すと地図に孤立して残り、
+    //一覧に出ないので消す手段も無く、アップロードで他のメンバーにも配られる
+    const deletedRecords = withChildRecords(checkedRecords);
+    //写真の削除は従来どおりマップメモのときだけ（挙動を変えない）
     if (isMapMemoLayer) {
-      //同じグループのレコードを取得
       checkedRecords.forEach((record) => {
-        if (record.field._group && record.field._group !== '') return; //自身がsubGroupの場合はスキップ
-        const subGroupRecords = sortedRecordSet.filter((r) => r.field._group === record.id);
-        deletedRecords = [...deletedRecords, record, ...subGroupRecords];
+        if (record.field._group && record.field._group !== '') return;
         deleteRecordPhotos(targetLayer, record);
       });
-    } else {
-      deletedRecords = checkedRecords;
     }
     setCheckList([]);
     dispatch(
@@ -322,7 +351,7 @@ export const useData = (layerId: string): UseDataReturnType => {
         data: deletedRecords,
       })
     );
-  }, [sortedRecordSet, checkedRecords, dataUser.uid, dispatch, isMapMemoLayer, targetLayer]);
+  }, [withChildRecords, checkedRecords, dataUser.uid, dispatch, isMapMemoLayer, targetLayer]);
 
   useEffect(() => {
     if (targetLayer === undefined) return;
@@ -354,6 +383,7 @@ export const useData = (layerId: string): UseDataReturnType => {
     changeOrder,
     addDefaultRecord,
     deleteRecords,
+    withChildRecords,
     updateRecordSetOrder,
   } as const;
 };

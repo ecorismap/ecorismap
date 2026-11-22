@@ -108,8 +108,22 @@ export default function ProjectEditContainer({ navigation, route }: Props_Projec
         privateData: privateRes.data,
         publicData: publicRes.data,
         templateData: templateRes.data,
+        // 他人の PRIVATE を取得するのは管理者として全員分を取ったときだけ
+        // 管理者が全員分を取らなかったときは、他人の分を消さない（PRIVATE から PUBLIC に変えた直後の写しを守る）
+        fetchedScope: {
+          permissions: isAdmin ? ['PUBLIC', 'PRIVATE'] : ['PUBLIC'],
+          template: true,
+          pruneOthers: isAdmin || !isOwnerAdmin,
+        },
+        undecryptableGroups: [
+          ...(publicRes.undecryptableGroups ?? []),
+          ...(privateRes.undecryptableGroups ?? []),
+          ...(templateRes.undecryptableGroups ?? []),
+        ],
       });
       if (!mergedDataResult.isOK) throw new Error(mergedDataResult.message);
+      // 一部を復号できなかったことを知らせる。黙っていると、読めなかった記録が「無い」ように見える
+      if (mergedDataResult.warning) await AlertAsync(mergedDataResult.warning);
 
       // 自己DEK移行(Phase iii)の入力。ここで取得済みの判定情報と復号済みデータを返すことで、
       // 移行処理からの追加ダウンロードをゼロにする
@@ -119,7 +133,7 @@ export default function ProjectEditContainer({ navigation, route }: Props_Projec
         publicData: publicRes.data,
       };
     },
-    [createMergedDataSet, downloadCommonData, fetchPrivateData, fetchPublicData, fetchTemplateData, targetProject]
+    [createMergedDataSet, downloadCommonData, fetchPrivateData, fetchPublicData, fetchTemplateData, isOwnerAdmin, targetProject]
   );
 
   // 端末にE3Kitのローカル鍵がない復帰セッション（機種変更等）は、

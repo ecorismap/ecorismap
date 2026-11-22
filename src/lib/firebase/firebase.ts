@@ -39,6 +39,7 @@ export {
   setDoc,
   getDocsFromServer,
   updateDoc,
+  runTransaction,
 } from '@react-native-firebase/firestore';
 export { httpsCallable } from '@react-native-firebase/functions';
 export { ref, uploadBytes, uploadString, getDownloadURL, deleteObject, listAll } from '@react-native-firebase/storage';

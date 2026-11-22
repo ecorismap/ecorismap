@@ -11,11 +11,12 @@ import {
 } from '../types';
 import { TILE_FOLDER } from '../constants/AppConstants';
 import * as projectStore from '../lib/firebase/firestore';
-import type { UnmarkedDekGroupType } from '../lib/firebase/firestore';
+import type { UndecryptableGroupType, UnmarkedDekGroupType } from '../lib/firebase/firestore';
 import * as projectStorage from '../lib/firebase/storage';
 import { shallowEqual, useDispatch, useSelector, useStore } from 'react-redux';
 import { RootState } from '../store';
 import { saveProjectBackup } from '../utils/projectBackup';
+import { markLayerUploaded } from '../utils/unsyncedChanges';
 import { deleteDataAction, setDataSetAction, updateDataAction, updateRecordsAction } from '../modules/dataSet';
 import { setDataSyncTimestampsAction, dataSyncKey } from '../modules/dataSync';
 import { layersInitialState, setLayersAction } from '../modules/layers';
@@ -31,7 +32,8 @@ import { CommonAbsorption, getTargetRecordSet, mergeLayerData } from '../utils/D
 import { Platform } from 'react-native';
 import { t } from '../i18n/config';
 import { AlertAsync, ConfirmAsync, DataConflictConfirmAsync } from '../components/molecules/AlertAsync';
-import { exportDatabase, importDictionary } from '../utils/SQLite';
+import { exportDatabase, hasDictionaryTables, importDictionary } from '../utils/SQLite';
+import { ulid } from 'ulid';
 import { db } from '../utils/db';
 import * as FileSystem from 'expo-file-system/legacy';
 
@@ -42,6 +44,32 @@ export type UploadDataOptions = {
    * クラウドの他人名義の doc（内容を持っている人の分だけ）とテンプレートを片付け、手元も1つのバケットにそろえる
    */
   commonAbsorption?: CommonAbsorption;
+};
+
+/**
+ * createMergedDataSet に渡す「今回クラウドから取り直した範囲」。この範囲のレイヤでは、取得結果に無い他人のバケットを
+ * クラウドから消えたものとして手元から消し、テンプレートも取得結果にそろえる。範囲外（取得していない権限のレイヤ）は
+ * クラウドの状態が分からないので手元をそのまま残す
+ */
+export type FetchedScope = {
+  /** 他人の分まで取得した権限。PRIVATE は管理者として全員分を取得したときだけ含める */
+  permissions: ('PUBLIC' | 'PRIVATE')[];
+  /** テンプレートを取得したか */
+  template: boolean;
+  /**
+   * 取得結果に無い他人のバケットを手元から消すか（省略時は消す）。管理者が PRIVATE を取得しなかったときは false にする
+   * （PRIVATE から PUBLIC に変えた直後のレイヤでは、メンバーの記録が PUBLIC の取得に現れず、手元の写しだけが消えるため）
+   */
+  pruneOthers?: boolean;
+};
+
+/** 設定の保存で新しい版を書いた辞書。設定の書き込みに成功してから、旧形式のパスへ写し、古い版を消すために持つ */
+type DictionaryUpload = {
+  layerId: string;
+  version: string;
+  encdata: Blob;
+  /** 保存前のクラウドの設定が指していた版（旧形式なら undefined） */
+  previousVersion?: string;
 };
 
 export type UseRepositoryReturnType = {
@@ -114,6 +142,7 @@ export type UseRepositoryReturnType = {
     message: string;
     data: DataType[];
     unmarkedDekGroups?: UnmarkedDekGroupType[];
+    undecryptableGroups?: UndecryptableGroupType[];
   }>;
   fetchPrivateData: (
     project: ProjectType,
@@ -124,6 +153,7 @@ export type UseRepositoryReturnType = {
     message: string;
     data: DataType[];
     unmarkedDekGroups?: UnmarkedDekGroupType[];
+    undecryptableGroups?: UndecryptableGroupType[];
   }>;
   fetchTemplateData: (
     project_: ProjectType,
@@ -132,6 +162,7 @@ export type UseRepositoryReturnType = {
     isOK: boolean;
     message: string;
     data: DataType[];
+    undecryptableGroups?: UndecryptableGroupType[];
   }>;
 
   uploadDataToRepository: (
@@ -156,13 +187,19 @@ export type UseRepositoryReturnType = {
     privateData,
     publicData,
     templateData,
+    fetchedScope,
+    undecryptableGroups,
   }: {
     privateData: DataType[];
     publicData: DataType[];
     templateData: DataType[];
+    fetchedScope?: FetchedScope;
+    undecryptableGroups?: UndecryptableGroupType[];
   }) => Promise<{
     isOK: boolean;
     message: string;
+    /** 取り込めたが、一部を復号できなかったときの利用者向け警告 */
+    warning?: string;
   }>;
   handleSelect: (selected: any) => void;
   handleBulkSelect: (mode: 'self' | 'latest') => void;
@@ -291,27 +328,65 @@ export const useRepository = (): UseRepositoryReturnType & {
       privateData,
       publicData,
       templateData,
+      fetchedScope,
+      undecryptableGroups = [],
     }: {
       privateData: DataType[];
       publicData: DataType[];
       templateData: DataType[];
+      fetchedScope?: FetchedScope;
+      undecryptableGroups?: UndecryptableGroupType[];
     }) => {
       // 一括解決の指定は、押したときの取得の残りにだけ効かせる。持ち越すと、アプリを再起動するまで以後の取得の
       // 競合がすべて黙って自動で解決され、利用者は競合があったことにも、どちらかの版が捨てられたことにも気づけない
       const resetConflictState = () => setConflictState({ queue: [], bulkMode: null, visible: false });
       resetConflictState();
       try {
+        // 取り直した範囲のレイヤ。設定は取得の直前に読み込み直されることがある（開く処理）ので、描画時点の layers ではなく
+        // ストアの今の値を使う
+        const scopePermissions = new Set<string>(fetchedScope?.permissions ?? []);
+        // 他人の PRIVATE の写しを持ちうる人（管理者）が PRIVATE を取得しなかったときは、他人の分を消さない。
+        // レイヤを PRIVATE から PUBLIC に変えた直後は、メンバーの記録がまだ PRIVATE の doc のままで PUBLIC の取得に
+        // 現れないため、消すと手元の写しだけが消える（クラウドには残っている）
+        const scopeLayerIds =
+          fetchedScope?.pruneOthers === false
+            ? new Set<string>()
+            : new Set(
+                store
+                  .getState()
+                  .layers.filter((l) => scopePermissions.has(l.permission))
+                  .map((l) => l.id)
+              );
+        const localTemplateLayerIds = fetchedScope?.template
+          ? store
+              .getState()
+              .dataSet.filter((d) => d.userId === 'template')
+              .map((d) => d.layerId)
+          : [];
+        // 復号できなかったバケットは、クラウドに有るのに読めなかっただけなので、手元の写し（前回読めた版）を消さない。
+        // 消すと、鍵の再共有を待つ間その人の記録が画面から消え、消えたのか読めないのか利用者に区別がつかない
+        const isUndecryptable = (layerId: string, userId: string | undefined, template: boolean) =>
+          undecryptableGroups.some(
+            (g) => g.layerId === layerId && (template ? g.permission === 'TEMPLATE' : g.permission !== 'TEMPLATE' && g.userId === userId)
+          );
+
         // すべてのlayerIdを抽出
         const allLayerIds = Array.from(
           new Set([
             ...privateData.map((d) => d.layerId),
             ...publicData.map((d) => d.layerId),
             ...templateData.map((d) => d.layerId),
+            ...scopeLayerIds,
+            ...localTemplateLayerIds,
           ])
         );
 
         for (const layerId of allLayerIds) {
           const templateItem = templateData.find((d) => d.layerId === layerId);
+          // マージで残ったテンプレート。マージしたときだけ値を持つ（undefined は「すべて利用者の版に置き換わった」）
+          let mergedTemplateResult: { merged: boolean; data: DataType | undefined } = { merged: false, data: undefined };
+          // マージ結果に現れた利用者。範囲内のレイヤで、ここに無い他人のバケットはクラウドから消えたものとして片付ける
+          const mergedUserIds = new Set<string | undefined>();
           const privateItems = privateData.filter((d) => d.layerId === layerId);
           if (privateItems.length > 0) {
             //privateItemsは基本的には一つだが、Admin用だと複数人の可能性がある。
@@ -328,9 +403,8 @@ export const useRepository = (): UseRepositoryReturnType & {
             if (mergedPrivate.length > 0) {
               dispatch(updateDataAction(mergedPrivate));
             }
-            if (mergedTemplate && templateItem) {
-              dispatch(updateDataAction([mergedTemplate]));
-            }
+            mergedPrivate.forEach((d) => mergedUserIds.add(d.userId));
+            mergedTemplateResult = { merged: true, data: mergedTemplate };
           }
           const publicItems = publicData.filter((d) => d.layerId === layerId);
           if (publicItems.length > 0) {
@@ -344,6 +418,7 @@ export const useRepository = (): UseRepositoryReturnType & {
             });
 
             dispatch(updateDataAction(mergedPublic));
+            mergedPublic.forEach((d) => mergedUserIds.add(d.userId));
 
             // 2) マージ結果に自分(user.uid)が含まれなければ、空配列をセットしてローカルデータをクリア
             const hasSelf = mergedPublic.some((dt) => dt.userId === user.uid);
@@ -358,22 +433,59 @@ export const useRepository = (): UseRepositoryReturnType & {
                 ])
               );
             }
+            mergedTemplateResult = { merged: true, data: mergedTemplate };
+          }
 
-            if (mergedTemplate && templateItem) {
-              dispatch(updateDataAction([mergedTemplate]));
+          // 取り直した範囲のレイヤで、マージ結果に無い他人のバケット（管理者が消した・その人のデータが無くなった）を消す。
+          // 残すと、クラウドから消えた記録がいつまでも表示される。自分・未ログイン時のバケット・テンプレートは対象外
+          if (scopeLayerIds.has(layerId)) {
+            const staleBuckets = store
+              .getState()
+              .dataSet.filter(
+                (d) =>
+                  d.layerId === layerId &&
+                  d.userId !== undefined &&
+                  d.userId !== user.uid &&
+                  d.userId !== 'template' &&
+                  !mergedUserIds.has(d.userId) &&
+                  !isUndecryptable(layerId, d.userId, false)
+              );
+            if (staleBuckets.length > 0) dispatch(deleteDataAction(staleBuckets));
+          }
+
+          if (templateItem) {
+            if (mergedTemplateResult.merged) {
+              // テンプレートの記録がすべて利用者の版に置き換わると undefined になる。そのとき何も送らないと、手元の古い
+              // テンプレートが残り、同じ記録が利用者の版と二重に表示される。空のテンプレートで置き換える
+              dispatch(updateDataAction([mergedTemplateResult.data ?? { layerId, userId: 'template', data: [] }]));
+            } else {
+              // private/publicがなくtemplateのみの場合
+              dispatch(updateDataAction([templateItem]));
+            }
+          } else if (fetchedScope?.template && !isUndecryptable(layerId, undefined, true)) {
+            // テンプレートを取得したのにこのレイヤの分が無い＝クラウドで消された。手元の古いテンプレートも消す
+            // （復号できなかっただけのときは、上の判定で残す）
+            const localTemplate = store
+              .getState()
+              .dataSet.find((d) => d.layerId === layerId && d.userId === 'template');
+            if (localTemplate !== undefined && localTemplate.data.length > 0) {
+              dispatch(updateDataAction([{ layerId, userId: 'template', data: [] }]));
             }
           }
-          // private/publicがなくtemplateのみの場合
-          if (privateItems.length === 0 && publicItems.length === 0 && templateItem) {
-            dispatch(updateDataAction([templateItem]));
-          }
+        }
+        if (undecryptableGroups.length > 0) {
+          return {
+            isOK: true,
+            message: '',
+            warning: t('hooks.message.someDataUndecryptable', { count: undecryptableGroups.length }),
+          };
         }
         return { isOK: true, message: '' };
       } finally {
         resetConflictState();
       }
     },
-    [dispatch, user.uid, conflictsResolver]
+    [dispatch, store, user.uid, conflictsResolver]
   );
 
   const fetchProjectSettings = useCallback(async (project: ProjectType) => {
@@ -542,6 +654,8 @@ export const useRepository = (): UseRepositoryReturnType & {
       if (!isLoggedIn(user)) {
         return { isOK: false, message: t('hooks.message.pleaseLogin') };
       }
+      // Web版の離脱確認（L14）の基準時刻。送る集合はこれより前の手元の記録なので、これより後の編集は未アップロードとして残す
+      const uploadStartedAt = Date.now();
       // 開いた時点の設定がクラウドの現在の設定と同じかを確認する。
       // 旧 toDate() の不具合で書かれた updatedAt も同一とみなすため、判定は firestore 側に寄せてある。
       const isSettingsCurrent =
@@ -572,6 +686,10 @@ export const useRepository = (): UseRepositoryReturnType & {
 
       const baselines = dataSyncBaselines[project.id] ?? {};
       const candidateLayers: LayerType[] = [];
+      // 判定に使ったクラウドの版（encryptedAt。undefined はクラウドにデータが無い）。書く直前に変わっていないかを
+      // uploadDataHelper で照合する。判定から書き込みまでの間に同じアカウントの別端末が同じレイヤを書いていたら、
+      // その変更を確認なしに上書きしないため
+      const judgedCloudVersions = new Map<string, number | undefined>();
       // 衝突を確かめる取得に失敗したときは「衝突なし」ではなく「判定できない」なので、上書きせずに中止する。
       // 素通りさせると、別端末の変更や、開く途中の失敗・復号失敗で手元に無いだけのクラウドのデータを全置換で消す
       const cannotVerify = { isOK: false, message: t('hooks.message.cannotVerifyCloudData') };
@@ -581,6 +699,7 @@ export const useRepository = (): UseRepositoryReturnType & {
         for (const l of conflictTargetLayers) {
           const baseline = baselines[dataSyncKey(l.id, l.permission)];
           const cloudVer = cloudRes.data.get(dataSyncKey(l.id, l.permission));
+          judgedCloudVersions.set(dataSyncKey(l.id, l.permission), cloudVer);
           // 基準値==クラウド → 衝突なし。それ以外でクラウドにデータがあれば内容比較の候補にする。
           if (baseline === cloudVer) continue;
           if (cloudVer !== undefined) candidateLayers.push(l);
@@ -631,6 +750,14 @@ export const useRepository = (): UseRepositoryReturnType & {
       }
 
       const newBaselineEntries: { [key: string]: number | undefined } = {};
+      // 書き込めたレイヤの基準値を保存する。途中のレイヤで失敗して中止するときも、先に書き込めたレイヤの分は保存する。
+      // 保存しないと、クラウドは新しい版なのに基準値は古いままになり、次のアップロードで自分の書いた版との衝突として
+      // 確認が出る（別端末の変更が無いのに利用者を迷わせる）
+      const saveBaselines = () => {
+        if (Object.keys(newBaselineEntries).length > 0) {
+          dispatch(setDataSyncTimestampsAction({ projectId: project.id, entries: newBaselineEntries }));
+        }
+      };
       let failedPhotoCount = 0;
       const countFailedPhoto = () => {
         failedPhotoCount += 1;
@@ -681,18 +808,31 @@ export const useRepository = (): UseRepositoryReturnType & {
           }
         }
 
-        const { isOK, message, encryptedAt } = await projectStore.uploadDataHelper(project.id, {
-          layerId: layer.id,
-          userId: user.uid,
-          permission: uploadType === 'Template' ? 'TEMPLATE' : layer.permission,
-          data: dataToUpload,
-        });
+        const { isOK, message, encryptedAt, staleExpectation } = await projectStore.uploadDataHelper(
+          project.id,
+          {
+            layerId: layer.id,
+            userId: user.uid,
+            permission: uploadType === 'Template' ? 'TEMPLATE' : layer.permission,
+            data: dataToUpload,
+          },
+          isConflictTarget(layer) && judgedCloudVersions.has(key)
+            ? { expected: { encryptedAt: judgedCloudVersions.get(key) } }
+            : {}
+        );
+        if (staleExpectation === true) {
+          // 判定のあとに別の端末が同じレイヤを書いた。そのまま書くと確認なしに上書きするので中止し、やり直してもらう
+          // （やり直すと、その版との衝突として改めて判定される）
+          saveBaselines();
+          return { isOK: false, message: `${t('hooks.message.cloudDataChangedByOtherDevice')} (${layer.name})` };
+        }
         if (!isOK) {
           //ToDo 処理続けるかどうか？
           const guidance =
             layer.id === 'track' && message === t('hooks.message.dataSizeTooLarge')
               ? `\n${t('hooks.message.deleteOldTracks')}`
               : '';
+          saveBaselines();
           return { isOK: false, message: `${message} (${layer.name})${guidance}` };
         }
 
@@ -728,10 +868,19 @@ export const useRepository = (): UseRepositoryReturnType & {
             user.uid,
             representedUserIds
           );
-          if (!cleanup.isOK) return { isOK: false, message: `${cleanup.message} (${layer.name})` };
+          if (!cleanup.isOK) {
+            saveBaselines();
+            return { isOK: false, message: `${cleanup.message} (${layer.name})` };
+          }
           const templateCleanup = await projectStore.deleteData(project.id, layer.id, 'TEMPLATE');
-          if (!templateCleanup.isOK) return { isOK: false, message: `${templateCleanup.message} (${layer.name})` };
+          if (!templateCleanup.isOK) {
+            saveBaselines();
+            return { isOK: false, message: `${templateCleanup.message} (${layer.name})` };
+          }
         }
+
+        // このレイヤはアップロード済み。Web版で、これより後に変えた自分の記録だけを離脱確認の対象にする（ネイティブでは何もしない）
+        markLayerUploaded(project.id, layer.id, uploadStartedAt);
 
         // PRIVATE/PUBLIC は基準値を更新（次回以降の衝突検知に使用。空アップロード時は undefined＝未確立）
         if (isConflictTarget(layer)) {
@@ -750,9 +899,7 @@ export const useRepository = (): UseRepositoryReturnType & {
       }
 
       // 基準値をまとめて保存
-      if (Object.keys(newBaselineEntries).length > 0) {
-        dispatch(setDataSyncTimestampsAction({ projectId: project.id, entries: newBaselineEntries }));
-      }
+      saveBaselines();
 
       const warnings = [
         ...(unreadableLayers.length > 0
@@ -811,33 +958,92 @@ export const useRepository = (): UseRepositoryReturnType & {
   );
 
   const uploadDictionary = useCallback(
-    async (projectId: string) => {
+    async (projectId: string, cloudLayers: LayerType[]) => {
       //Dictionary
       const uploadedLayers: LayerType[] = [];
+      // 新しい版を書けたレイヤ。設定の書き込みに成功してから、旧形式のパスへの写しと古い版の削除を行う
+      const uploads: DictionaryUpload[] = [];
       for (const layer of layers) {
         const hasDictionaryFieald = layer.field.some((field) => field.format === 'STRING_DICTIONARY');
         if (!hasDictionaryFieald) {
           uploadedLayers.push(layer);
           continue;
         }
-        const dictionaryData = await exportDatabase(layer.id);
+        const cloudLayer = cloudLayers.find((l) => l.id === layer.id);
+        // 上げられないときは、クラウドにある今の辞書ファイルを指したままにする（手元の値より、いま保存されている
+        // 設定の値の方が実在するファイルと合っている）。鍵や版を落とすと、メンバーの辞書候補が空になる
+        const keepExisting = (): LayerType =>
+          cloudLayer === undefined
+            ? layer
+            : { ...layer, dictionaryKey: cloudLayer.dictionaryKey, dictionaryVersion: cloudLayer.dictionaryVersion };
+        // 手元に辞書表が無い（辞書を取得できなかった端末など）ときは上げない。書き出すと空の辞書を上げてしまう
+        let hasLocalTables = false;
+        try {
+          hasLocalTables = await hasDictionaryTables(layer.id);
+        } catch (e) {
+          console.warn('hasDictionaryTables Error:', e);
+        }
+        if (!hasLocalTables) {
+          uploadedLayers.push(keepExisting());
+          continue;
+        }
+        let dictionaryData: string | undefined;
+        try {
+          dictionaryData = await exportDatabase(layer.id);
+        } catch (e) {
+          console.warn('exportDatabase Error:', e);
+        }
         if (dictionaryData === undefined) {
           await AlertAsync(t('hooks.message.failUploadDictionary'));
-          uploadedLayers.push(layer);
+          uploadedLayers.push(keepExisting());
           continue;
         }
-        const { isOK, message, key } = await projectStorage.uploadDictionary(projectId, layer.id, dictionaryData);
-        if (!isOK) {
+        const version = ulid();
+        const { isOK, message, key, encdata } = await projectStorage.uploadDictionary(
+          projectId,
+          layer.id,
+          dictionaryData,
+          version
+        );
+        if (!isOK || key === undefined || encdata === undefined) {
           await AlertAsync(message);
-          uploadedLayers.push(layer);
+          uploadedLayers.push(keepExisting());
           continue;
         }
-        uploadedLayers.push({ ...layer, dictionaryKey: key });
+        uploadedLayers.push({ ...layer, dictionaryKey: key, dictionaryVersion: version });
+        uploads.push({ layerId: layer.id, version, encdata, previousVersion: cloudLayer?.dictionaryVersion });
       }
-      return uploadedLayers;
+      return { layers: uploadedLayers, uploads };
     },
     [layers]
   );
+
+  /**
+   * 設定の書き込みに成功したあとの辞書ファイルの片付け。失敗しても設定はすでに新しい版を指しているので、
+   * 利用者には知らせずに続ける（古い版が残るか、更新前のアプリのメンバーが新しい辞書を読めないだけ）
+   */
+  const finalizeDictionaryUploads = useCallback(async (projectId: string, uploads: DictionaryUpload[]) => {
+    for (const upload of uploads) {
+      await projectStorage.uploadDictionaryLegacyCopy(projectId, upload.layerId, upload.encdata);
+      if (upload.previousVersion !== undefined && upload.previousVersion !== upload.version) {
+        await projectStorage.deleteDictionaryFile(projectId, upload.layerId, upload.previousVersion);
+      }
+    }
+  }, []);
+
+  /**
+   * 設定から消えたレイヤのクラウドのデータ（全員の doc・写真・辞書）を片付ける。クラウドデータ管理のレイヤ削除と同じ。
+   * 片付けに失敗しても設定はすでに保存できているので中止はしない（残りはクラウドデータ管理から消せる）
+   */
+  const deleteRemovedLayersData = useCallback(async (projectId: string, removedLayers: LayerType[]) => {
+    for (const removed of removedLayers) {
+      const dataResult = await projectStore.deleteData(projectId, removed.id);
+      if (!dataResult.isOK) console.warn('deleteRemovedLayersData: data', removed.id, dataResult.message);
+      const photoResult = await projectStorage.deleteLayerPhotos(projectId, removed.id);
+      if (!photoResult.isOK) console.warn('deleteRemovedLayersData: photo', removed.id, photoResult.message);
+      await projectStorage.deleteLayerDictionaries(projectId, removed.id);
+    }
+  }, []);
 
   const uploadProjectSettings = useCallback(
     async (project_: ProjectType) => {
@@ -847,12 +1053,23 @@ export const useRepository = (): UseRepositoryReturnType & {
       // 旧レイヤ設定を取得してpermissionの変更を検知
       const oldSettingsRes = await projectStore.downloadProjectSettings(project_.id);
       const oldLayers = oldSettingsRes.isOK && oldSettingsRes.data ? oldSettingsRes.data.layers : [];
+      // 消えたレイヤのデータを片付けてよいのは、取得した旧設定が、この端末が開いた（または前回保存した）設定そのもの
+      // のときだけ。開いた後に別の管理者が足したレイヤも「旧設定にあって新設定に無い」になるので、そのまま消すと
+      // 利用者が削除していないレイヤのデータを消してしまう。確かめられないときも消さない
+      let isOldSettingsOwn = false;
+      if (oldSettingsRes.isOK) {
+        try {
+          isOldSettingsOwn = await projectStore.isSettingsUpdatedAtCurrent(project_.id, updatedAt);
+        } catch (e) {
+          isOldSettingsOwn = false;
+        }
+      }
       // 変更後のレイヤ設定をアップロード前に作成
       const excludeItems = tileMaps.map((tileMap) => tileMap.id);
       await projectStorage.deleteProjectPDF(project_.id, excludeItems);
       await projectStorage.deleteProjectStyle(project_.id, excludeItems);
       const updatedTileMaps = await uploadTileMaps(project_.id);
-      const updatedLayers = await uploadDictionary(project_.id);
+      const { layers: updatedLayers, uploads: dictionaryUploads } = await uploadDictionary(project_.id, oldLayers);
       // permission変更があればサーバーデータも一括更新
       for (const newLayer of updatedLayers) {
         const oldLayer = oldLayers.find((l) => l.id === newLayer.id);
@@ -876,6 +1093,8 @@ export const useRepository = (): UseRepositoryReturnType & {
         updatedAt,
       });
       if (!isOK) {
+        // 新しく書いた辞書の版は消さない。書き込みが実は届いていた（応答だけ失われた）場合に、設定が指すファイルを
+        // 消すことになるため。古い版はそのまま残っているので、メンバーは今までの辞書を読める
         return { isOK: false, message };
       }
       dispatch(editSettingsAction({ updatedAt: timestamp?.toISOString() }));
@@ -883,9 +1102,30 @@ export const useRepository = (): UseRepositoryReturnType & {
         // プロジェクト一覧の「更新日時」を再取得なしで反映する
         dispatch(updateProjectAction({ ...project_, settingsEncryptedAt: timestamp }));
       }
+      await finalizeDictionaryUploads(project_.id, dictionaryUploads);
+      if (isOldSettingsOwn) {
+        // 旧設定にあって新設定に無いレイヤ＝この端末で削除したレイヤ。グループは入れ物でデータを持たない。
+        // 軌跡（track）は開くときに初期状態から補われる特別なレイヤで、設定に無くても記録が使われるので消さない
+        const removedLayers = oldLayers.filter(
+          (l) => l.type !== 'LAYERGROUP' && l.id !== 'track' && !updatedLayers.some((n) => n.id === l.id)
+        );
+        await deleteRemovedLayersData(project_.id, removedLayers);
+      }
       return { isOK: true, message: '' };
     },
-    [dispatch, mapRegion, mapType, plugins, tileMaps, updatedAt, uploadDictionary, uploadTileMaps, user]
+    [
+      deleteRemovedLayersData,
+      dispatch,
+      finalizeDictionaryUploads,
+      mapRegion,
+      mapType,
+      plugins,
+      tileMaps,
+      updatedAt,
+      uploadDictionary,
+      uploadTileMaps,
+      user,
+    ]
   );
 
   const uploadDefaultProjectSettings = useCallback(
@@ -958,15 +1198,29 @@ export const useRepository = (): UseRepositoryReturnType & {
   );
 
   const downloadDictionaries = useCallback(async (projectId: string, layers_: LayerType[]) => {
+    // 取得できなかったレイヤ。黙って続けると、入力候補が空のまま利用者が気づけない
+    const failedLayerNames: string[] = [];
     for (const layer of layers_) {
       if (layer.dictionaryKey === undefined) continue;
-      const { isOK, data } = await projectStorage.downloadDictionary(projectId, layer.id, layer.dictionaryKey);
-      if (!isOK) {
-        //メッセージは出ないようにする
-        //await AlertAsync(message);
+      const { isOK, data } = await projectStorage.downloadDictionary(
+        projectId,
+        layer.id,
+        layer.dictionaryKey,
+        layer.dictionaryVersion
+      );
+      if (!isOK || data === undefined) {
+        failedLayerNames.push(layer.name);
         continue;
       }
-      await importDictionary(data);
+      try {
+        await importDictionary(data);
+      } catch (e) {
+        console.warn('importDictionary Error:', e);
+        failedLayerNames.push(layer.name);
+      }
+    }
+    if (failedLayerNames.length > 0) {
+      await AlertAsync(t('hooks.message.failDownloadDictionaries', { names: failedLayerNames.join(', ') }));
     }
   }, []);
 
@@ -1158,7 +1412,10 @@ export const useRepository = (): UseRepositoryReturnType & {
       if (mode === 'others') {
         options.excludeUserId = user.uid;
       }
-      const { isOK, message, data, unmarkedDekGroups } = await projectStore.downloadPublicData(project_.id, options);
+      const { isOK, message, data, unmarkedDekGroups, undecryptableGroups } = await projectStore.downloadPublicData(
+        project_.id,
+        options
+      );
 
       if (!isOK || data === undefined) {
         return { isOK: false, message, data: [] };
@@ -1166,7 +1423,8 @@ export const useRepository = (): UseRepositoryReturnType & {
       const updatedData = shouldPhotoDownload ? await downloadPhotos(layers, data, project_) : data;
 
       // unmarkedDekGroupsは自己DEK移行(Phase iii)用。ダウンロード済みdocから算出済みのため追加通信なしで返せる
-      return { isOK: true, message: '', data: updatedData, unmarkedDekGroups };
+      // undecryptableGroupsは、復号できずに結果から除いたもの（createMergedDataSet が手元の写しを消さないために使う）
+      return { isOK: true, message: '', data: updatedData, unmarkedDekGroups, undecryptableGroups };
     },
     [downloadPhotos, layers, user]
   );
@@ -1184,14 +1442,14 @@ export const useRepository = (): UseRepositoryReturnType & {
         options.excludeUserId = user.uid;
       }
       const res = await projectStore.downloadPrivateData(project_.id, options);
-      const { isOK, message, data, unmarkedDekGroups } = res;
+      const { isOK, message, data, unmarkedDekGroups, undecryptableGroups } = res;
 
       if (!isOK || data === undefined) {
         return { isOK: false, message, data: [] };
       }
       const updatedData = shouldPhotoDownload ? await downloadPhotos(layers, data, project_) : data;
       // unmarkedDekGroupsは自己DEK移行(Phase iii)用。ダウンロード済みdocから算出済みのため追加通信なしで返せる
-      return { isOK: true, message: '', data: updatedData, unmarkedDekGroups };
+      return { isOK: true, message: '', data: updatedData, unmarkedDekGroups, undecryptableGroups };
     },
     [downloadPhotos, layers, user]
   );
@@ -1201,7 +1459,7 @@ export const useRepository = (): UseRepositoryReturnType & {
       if (!isLoggedIn(user)) {
         return { isOK: false, message: t('hooks.message.pleaseLogin'), data: [] };
       }
-      const { isOK, message, data } = await projectStore.downloadTemplateData(project_.id);
+      const { isOK, message, data, undecryptableGroups } = await projectStore.downloadTemplateData(project_.id);
 
       if (!isOK || data === undefined) {
         return { isOK: false, message, data: [] };
@@ -1212,7 +1470,12 @@ export const useRepository = (): UseRepositoryReturnType & {
       } else {
         updatedData = data;
       }
-      return { isOK: true, message: '', data: updatedData.map((d) => ({ ...d, userId: 'template' })) };
+      return {
+        isOK: true,
+        message: '',
+        data: updatedData.map((d) => ({ ...d, userId: 'template' })),
+        undecryptableGroups,
+      };
     },
     [downloadPhotos, layers, user]
   );

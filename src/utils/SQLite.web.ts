@@ -278,6 +278,18 @@ export async function deleteDatabase(dbName: string = 'dictionary.sqlite'): Prom
   }
 }
 
+/**
+ * レイヤの辞書表（`_${layerId}_${fieldId}`）が手元にあるか。設定の保存で辞書を上げる前に確かめる。
+ * 辞書を取得できなかった端末には表が無く、そのまま書き出すと空の辞書を上げてクラウドの辞書を消してしまうため
+ */
+export async function hasDictionaryTables(layerId: string): Promise<boolean> {
+  const db = await getDatabase();
+  const tables = db.getAllSync("SELECT name FROM sqlite_master WHERE type='table'") as { name: string }[];
+  // LIKEだと _ がワイルドカードになるためJS側で前方一致で絞る（exportDatabaseForLayer と同じ）
+  const layerTablePrefix = `_${layerId}_`;
+  return tables.some(({ name }) => name.startsWith(layerTablePrefix));
+}
+
 export async function exportDatabase(layerId: string) {
   try {
     const db = await getDatabase();
