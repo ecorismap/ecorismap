@@ -918,3 +918,167 @@ describe('同期の high 修正', () => {
     });
   });
 });
+
+// ---------------------------------------------------------------------------
+// 同期監査 2026-11 の medium（M3・M4・M5）
+describe('同期の medium 修正', () => {
+  const project = { id: 'proj1' } as any;
+  const rec = (id: string, extra: Record<string, unknown> = {}) => ({
+    id,
+    userId: 'test-user',
+    displayName: 'U',
+    visible: true,
+    redraw: false,
+    coords: [],
+    field: {},
+    updatedAt: 100,
+    ...extra,
+  });
+  const makeStore = (opts: { layers: any[]; dataSet: any[]; dataSync?: any }) => {
+    const initialState = {
+      user: { uid: 'test-user', email: 'a@b.c', displayName: 'U' },
+      dataSet: opts.dataSet,
+      layers: opts.layers,
+      settings: { isSettingProject: false, updatedAt: undefined },
+      tileMaps: [],
+      dataSync: opts.dataSync ?? {},
+    };
+    const store = configureStore({
+      reducer: {
+        user: (state = initialState.user) => state,
+        dataSet: (state = initialState.dataSet) => state,
+        layers: (state = initialState.layers) => state,
+        settings: (state = initialState.settings) => state,
+        tileMaps: (state = initialState.tileMaps) => state,
+        dataSync: (state = initialState.dataSync) => state,
+      } as any,
+      preloadedState: initialState,
+    });
+    store.dispatch = jest.fn();
+    return store;
+  };
+  const renderWithStore = (store: any) =>
+    renderHook(() => useRepository(), {
+      wrapper: (props: any) => <Provider store={store}>{props.children}</Provider>,
+    });
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    jest.spyOn(projectStore, 'isSettingsUpdatedAtCurrent').mockResolvedValue(true);
+  });
+
+  describe('M5: 一括解決の指定は、その取得の残りにだけ効く', () => {
+    test('「残りは自分優先」を押した後でも、次の取得の競合は利用者に尋ねる', async () => {
+      const { result } = renderWithStore(makeStore({ layers: [], dataSet: [] }));
+      const candidates = [rec('x', { userId: 'other', updatedAt: 300 }), rec('x', { updatedAt: 100 })];
+      let first: any;
+      act(() => {
+        first = result.current.conflictsResolver(candidates, 'x');
+      });
+      expect(result.current.conflictState.queue).toHaveLength(1);
+      act(() => {
+        result.current.handleBulkSelect('self');
+      });
+      await expect(first).resolves.toMatchObject({ userId: 'test-user' });
+      // 次の取得（createMergedDataSet）を始めると一括の指定は解除される
+      await act(async () => {
+        await result.current.createMergedDataSet({ privateData: [], publicData: [], templateData: [] });
+      });
+      act(() => {
+        result.current.conflictsResolver(candidates, 'x');
+      });
+      expect(result.current.conflictState.queue).toHaveLength(1);
+      expect(result.current.conflictState.bulkMode).toBeNull();
+    });
+
+    test('「自分優先」で自分の候補が無いときは最新を、更新日時の無い候補は最も古いものとして選ぶ', async () => {
+      const { result } = renderWithStore(makeStore({ layers: [], dataSet: [] }));
+      let chosen: any;
+      act(() => {
+        chosen = result.current.conflictsResolver(
+          [rec('x', { userId: 'a', updatedAt: undefined }), rec('x', { userId: 'b', updatedAt: 50 })],
+          'x'
+        );
+      });
+      act(() => {
+        result.current.handleBulkSelect('self');
+      });
+      await expect(chosen).resolves.toMatchObject({ userId: 'b' });
+    });
+  });
+
+  describe('M3: 写真は書き込みに成功してから、要らないものだけ消す', () => {
+    const layer = { id: 'l1', name: 'L1', permission: 'PRIVATE', field: [{ id: 'f', name: '写真', format: 'PHOTO' }] } as any;
+    const photo = { id: 'ph1', name: 'a.jpg', uri: null, url: 'https://x/ph1', key: 'k', width: 1, height: 1, thumbnail: null };
+
+    test('削除したレコードの写真でも、マージで採られた版が参照していれば消さない', async () => {
+      const local = rec('X', { deleted: true, updatedAt: 150, field: { 写真: [photo] } });
+      const cloud = rec('X', { updatedAt: 200, field: { 写真: [photo] } });
+      jest.spyOn(projectStore, 'getMyDataUpdatedAt').mockResolvedValue({ isOK: true, message: '', data: new Map([['l1_PRIVATE', 5]]) });
+      jest
+        .spyOn(projectStore, 'downloadPrivateData')
+        .mockResolvedValue({ isOK: true, message: '', data: [{ layerId: 'l1', userId: 'test-user', data: [cloud] }], unmarkedDekGroups: [] } as any);
+      jest.spyOn(AlertAsyncModule, 'DataConflictConfirmAsync').mockResolvedValue('merge');
+      (DataUtils.mergeLayerData as jest.Mock).mockImplementationOnce((args: any) => realMergeLayerData(args));
+      jest.spyOn(projectStore, 'uploadDataHelper').mockResolvedValue({ isOK: true, message: '', encryptedAt: 9 });
+      const deleteSpy = jest.spyOn(projectStorage, 'deleteStoragePhoto').mockResolvedValue({ isOK: true, message: '' });
+      const { result } = renderWithStore(makeStore({ layers: [layer], dataSet: [{ layerId: 'l1', userId: 'test-user', data: [local] }] }));
+      await act(async () => {
+        await result.current.uploadDataToRepository(project, 'All');
+      });
+      expect(deleteSpy).not.toHaveBeenCalled();
+    });
+
+    test('参照されなくなった写真は、書き込みの成功後に消す。書き込みに失敗したら消さない', async () => {
+      const removed = rec('Y', { deleted: true, field: { 写真: [photo] } });
+      jest.spyOn(projectStore, 'getMyDataUpdatedAt').mockResolvedValue({ isOK: true, message: '', data: new Map() });
+      const uploadSpy = jest.spyOn(projectStore, 'uploadDataHelper').mockResolvedValueOnce({ isOK: false, message: 'fail' } as any);
+      const deleteSpy = jest.spyOn(projectStorage, 'deleteStoragePhoto').mockResolvedValue({ isOK: true, message: '' });
+      const store = makeStore({ layers: [layer], dataSet: [{ layerId: 'l1', userId: 'test-user', data: [removed] }] });
+      const { result } = renderWithStore(store);
+      await act(async () => {
+        await result.current.uploadDataToRepository(project, 'All');
+      });
+      expect(deleteSpy).not.toHaveBeenCalled();
+
+      uploadSpy.mockResolvedValueOnce({ isOK: true, message: '', encryptedAt: 9 });
+      await act(async () => {
+        await result.current.uploadDataToRepository(project, 'All');
+      });
+      expect(deleteSpy).toHaveBeenCalledWith('proj1', 'l1', 'test-user', 'ph1');
+    });
+  });
+
+  describe('M4: 他人の写真は持ち主のフォルダに id 付きで保存する', () => {
+    test('同じ名前の写真でも、他人の記録の写真は自分の写真とすり替わらない', async () => {
+      const layer = { id: 'l1', name: 'L1', permission: 'PUBLIC', field: [{ id: 'f', name: '写真', format: 'PHOTO' }] } as any;
+      const photo = {
+        id: 'ph9',
+        name: 'EMAP_1.jpg',
+        uri: null,
+        url: 'https://firebasestorage.googleapis.com/v0/b/b/o/projects%2Fproj1%2FPHOTO%2Fl1%2Fother%2Fph9?alt=media',
+        key: 'k',
+        width: 1,
+        height: 1,
+        thumbnail: null,
+      };
+      const ownUrl = 'https://firebasestorage.googleapis.com/v0/b/b/o/projects%2Fproj1%2FPHOTO%2Fl1%2Ftest-user%2Fph1?alt=media';
+      const dlSpy = jest.spyOn(projectStorage, 'downloadPhoto').mockResolvedValue({ isOK: true, message: '', uri: 'file:///x' });
+      jest.spyOn(projectStore, 'downloadPublicAndCommonData').mockResolvedValue({
+        isOK: true,
+        message: '',
+        data: [
+          { layerId: 'l1', userId: 'other', data: [rec('o', { userId: 'other', field: { 写真: [photo] } })] },
+          { layerId: 'l1', userId: 'test-user', data: [rec('m', { field: { 写真: [{ ...photo, id: 'ph1', url: ownUrl }] } })] },
+        ],
+      } as any);
+      const { result } = renderWithStore(makeStore({ layers: [layer], dataSet: [] }));
+      await act(async () => {
+        await result.current.downloadPublicAndCommonData(project, true);
+      });
+      const calls = dlSpy.mock.calls.map((c) => [c[2], c[3]]);
+      expect(calls).toContainEqual(['ph9_EMAP_1.jpg', expect.stringMatching(/\/proj1\/l1\/other$/)]);
+      expect(calls).toContainEqual(['EMAP_1.jpg', expect.stringMatching(/\/proj1\/l1\/test-user$/)]);
+    });
+  });
+});

@@ -23,6 +23,7 @@ import { DataEditModalPhotoView } from '../components/organisms/DataEditModalPho
 import { useLayers } from '../hooks/useLayers';
 import { addToDynamicDictionary } from '../hooks/useDynamicDictionaryInput';
 import { editSettingsAction } from '../modules/settings';
+import { photoDownloadTarget } from '../utils/photoDownloadPath';
 
 export default function DataEditContainer() {
   const { navigate, navigateToHome } = useBottomSheetNavigation();
@@ -319,12 +320,29 @@ export default function DataEditContainer() {
       //   return;
       // }
 
-      const { url, key, name, fieldName, index } = selectedPhoto;
+      const { url, key, name, fieldName, index, id } = selectedPhoto;
       if (url === null || key === null) {
         await AlertAsync(t('hooks.message.unknownURL'));
         return;
       }
-      const { isOK, message, uri } = await projectStorage.downloadPhoto(url, key, name, photoFolder);
+      // 他人の記録の写真は持ち主のフォルダに id 付きの名前で置く（同じ秒に撮った別人の写真とすり替わらないように）
+      const target =
+        projectId !== undefined && user.uid !== undefined
+          ? photoDownloadTarget({
+              projectId,
+              layerId: targetLayer.id,
+              ownUid: user.uid,
+              recordUserId: targetRecord.userId,
+              photoId: id,
+              photoName: name,
+              photoUrl: url,
+            })
+          : { folder: photoFolder, filename: name };
+      if (target === undefined) {
+        await AlertAsync(t('firebase.message.failGetPhoto'));
+        return;
+      }
+      const { isOK, message, uri } = await projectStorage.downloadPhoto(url, key, target.filename, target.folder);
       if (!isOK || uri === null) {
         await AlertAsync(message);
         return;
@@ -332,7 +350,7 @@ export default function DataEditContainer() {
       updatePhoto(fieldName, index, uri);
     }
     setPhotoEditorOpen(false);
-  }, [photoFolder, selectedPhoto, updatePhoto]);
+  }, [photoFolder, projectId, selectedPhoto, targetLayer.id, targetRecord.userId, updatePhoto, user.uid]);
 
   const onChangeRecord = useCallback(
     async (value: number) => {

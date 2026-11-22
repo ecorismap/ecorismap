@@ -515,6 +515,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     syncPosition,
     clearProject,
     saveProjectSetting,
+    isProjectSettingCurrent,
   } = useProject();
 
   const [isShowingProjectButtons, setIsShowingProjectButtons] = useState(false);
@@ -2231,6 +2232,19 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     try {
       const ret = await ConfirmAsync(t('Home.confirm.saveProject'));
       if (!ret) return;
+      // 開いた後に別の端末（別の管理者、同じ管理者のスマホとWeb）が設定を保存していたら、黙って上書きせずに確かめる。
+      // そのまま保存すると、相手が足したレイヤ・地図・共通データの変更が後勝ちで消える
+      setIsLoading(true);
+      const isCurrent = await isProjectSettingCurrent();
+      setIsLoading(false);
+      if (!isCurrent) {
+        await waitForModalTransition();
+        const overwrite = await ConfirmAsync(t('Home.confirm.settingsChangedElsewhere'), {
+          true: t('Home.confirm.overwriteSettings'),
+          false: t('common.cancel'),
+        });
+        if (!overwrite) return;
+      }
       setIsLoading(true);
       const warning = await saveProjectSetting();
       setIsLoading(false);
@@ -2242,7 +2256,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       setIsLoading(false);
       await AlertAsync(e.message);
     }
-  }, [clearProject, navigateToSplit, navigation, project, saveProjectSetting]);
+  }, [clearProject, isProjectSettingCurrent, navigateToSplit, navigation, project, saveProjectSetting]);
 
   const pressDiscardProjectSetting = useCallback(async () => {
     const ret = await ConfirmAsync(t('Home.confirm.discardProject'));

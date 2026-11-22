@@ -20,6 +20,7 @@ const mockRepo = {
 jest.mock('../useRepository', () => ({ useRepository: () => mockRepo }));
 jest.mock('../../lib/firebase/firestore', () => ({
   downloadCommonData: jest.fn(),
+  isSettingsUpdatedAtCurrent: jest.fn(),
   uploadCurrentPosition: jest.fn(),
   deleteCurrentPosition: jest.fn(),
 }));
@@ -92,4 +93,20 @@ test('COMMON のレイヤが無ければクラウドから取り込まない', a
   });
   expect(projectStore.downloadCommonData).not.toHaveBeenCalled();
   expect(mockRepo.uploadDataToRepository).toHaveBeenCalledWith(expect.anything(), 'Common', { commonAbsorption: undefined });
+});
+
+describe('M2: 設定モードで開いた後に別の端末で保存されたかを確かめる', () => {
+  test('開いたときの更新日時でクラウドの設定と比べる', async () => {
+    mockState.settings.updatedAt = '2026-11-22T00:00:00.000Z';
+    (projectStore.isSettingsUpdatedAtCurrent as jest.Mock).mockResolvedValue(false);
+    const { result } = renderHook(() => useProject());
+    await expect(result.current.isProjectSettingCurrent()).resolves.toBe(false);
+    expect(projectStore.isSettingsUpdatedAtCurrent).toHaveBeenCalledWith('p1', '2026-11-22T00:00:00.000Z');
+  });
+
+  test('確かめられない（通信できない）ときは、別の端末で保存されたかもしれないとして扱う', async () => {
+    (projectStore.isSettingsUpdatedAtCurrent as jest.Mock).mockRejectedValue(new Error('offline'));
+    const { result } = renderHook(() => useProject());
+    await expect(result.current.isProjectSettingCurrent()).resolves.toBe(false);
+  });
 });

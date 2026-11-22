@@ -9,7 +9,7 @@ import {
   RegionType,
   TileMapType,
 } from '../types';
-import { PHOTO_FOLDER, TILE_FOLDER } from '../constants/AppConstants';
+import { TILE_FOLDER } from '../constants/AppConstants';
 import * as projectStore from '../lib/firebase/firestore';
 import type { UnmarkedDekGroupType } from '../lib/firebase/firestore';
 import * as projectStorage from '../lib/firebase/storage';
@@ -21,7 +21,7 @@ import { setDataSyncTimestampsAction, dataSyncKey } from '../modules/dataSync';
 import { layersInitialState, setLayersAction } from '../modules/layers';
 import { tileMapsInitialState, setTileMapsAction } from '../modules/tileMaps';
 import { dropUnsafeTileMaps } from '../utils/tileMapId';
-import { isSafePathSegment } from '../utils/safePath';
+import { photoDownloadTarget } from '../utils/photoDownloadPath';
 import { editSettingsAction } from '../modules/settings';
 import { addProjectAction, deleteProjectAction, updateProjectAction } from '../modules/projects';
 import { cloneDeep } from 'lodash';
@@ -216,6 +216,19 @@ export const useRepository = (): UseRepositoryReturnType & {
   const updatedAt = useSelector((state: RootState) => state.settings.updatedAt, shallowEqual);
   const dataSyncBaselines = useSelector((state: RootState) => state.dataSync);
 
+  /**
+   * 一括解決（「残りは自分優先／最新優先」）の選び方。自分優先で自分の候補が無いときは最新を採る（先頭を採ると、
+   * 誰の版でもない並び順で決まる）。更新日時の無い候補は最も古いとみなす（片方に無いと比較できず先頭が残っていた）
+   */
+  const chooseByBulkMode = useCallback(
+    (mode: 'self' | 'latest', candidates: RecordType[]): RecordType => {
+      const latest = candidates.reduce((a, b) => ((b.updatedAt ?? 0) > (a.updatedAt ?? 0) ? b : a));
+      if (mode === 'self') return candidates.find((c) => c.userId === user.uid) ?? latest;
+      return latest;
+    },
+    [user.uid]
+  );
+
   const [conflictState, setConflictState] = useState<ConflictState>({
     queue: [],
     bulkMode: null,
@@ -228,11 +241,7 @@ export const useRepository = (): UseRepositoryReturnType & {
         setConflictState((prev) => {
           // bulkMode が設定済みなら即時解決
           if (prev.bulkMode) {
-            const chosen =
-              prev.bulkMode === 'self'
-                ? candidates.find((c) => c.userId === user.uid) || candidates[0]
-                : candidates.reduce((a, b) => (a.updatedAt && b.updatedAt && b.updatedAt > a.updatedAt ? b : a));
-            resolve(chosen);
+            resolve(chooseByBulkMode(prev.bulkMode, candidates));
             return prev;
           }
           // まだ bulkMode なし → モーダルキューに積む
@@ -243,7 +252,7 @@ export const useRepository = (): UseRepositoryReturnType & {
           };
         });
       }),
-    [user.uid]
+    [chooseByBulkMode]
   );
 
   // 競合解決: 選択された候補を resolve してキューから取り除く
@@ -269,18 +278,12 @@ export const useRepository = (): UseRepositoryReturnType & {
     (mode: 'self' | 'latest') => {
       setConflictState((prev) => {
         // 1) いまキューにある全件を一括解決
-        prev.queue.forEach(({ candidates, resolve }) => {
-          const chosen =
-            mode === 'self'
-              ? candidates.find((c) => c.userId === user.uid) || candidates[0]
-              : candidates.reduce((a, b) => (a.updatedAt && b.updatedAt && b.updatedAt > a.updatedAt ? b : a));
-          resolve(chosen);
-        });
-        // 2) 今後はこのモードで自動解決
+        prev.queue.forEach(({ candidates, resolve }) => resolve(chooseByBulkMode(mode, candidates)));
+        // 2) この取得の残りはこのモードで自動解決（次の取得の前に createMergedDataSet が解除する）
         return { queue: [], bulkMode: mode, visible: false };
       });
     },
-    [user.uid]
+    [chooseByBulkMode]
   );
 
   const createMergedDataSet = useCallback(
@@ -293,74 +296,82 @@ export const useRepository = (): UseRepositoryReturnType & {
       publicData: DataType[];
       templateData: DataType[];
     }) => {
-      // すべてのlayerIdを抽出
-      const allLayerIds = Array.from(
-        new Set([
-          ...privateData.map((d) => d.layerId),
-          ...publicData.map((d) => d.layerId),
-          ...templateData.map((d) => d.layerId),
-        ])
-      );
+      // 一括解決の指定は、押したときの取得の残りにだけ効かせる。持ち越すと、アプリを再起動するまで以後の取得の
+      // 競合がすべて黙って自動で解決され、利用者は競合があったことにも、どちらかの版が捨てられたことにも気づけない
+      const resetConflictState = () => setConflictState({ queue: [], bulkMode: null, visible: false });
+      resetConflictState();
+      try {
+        // すべてのlayerIdを抽出
+        const allLayerIds = Array.from(
+          new Set([
+            ...privateData.map((d) => d.layerId),
+            ...publicData.map((d) => d.layerId),
+            ...templateData.map((d) => d.layerId),
+          ])
+        );
 
-      for (const layerId of allLayerIds) {
-        const templateItem = templateData.find((d) => d.layerId === layerId);
-        const privateItems = privateData.filter((d) => d.layerId === layerId);
-        if (privateItems.length > 0) {
-          //privateItemsは基本的には一つだが、Admin用だと複数人の可能性がある。
+        for (const layerId of allLayerIds) {
+          const templateItem = templateData.find((d) => d.layerId === layerId);
+          const privateItems = privateData.filter((d) => d.layerId === layerId);
+          if (privateItems.length > 0) {
+            //privateItemsは基本的には一つだが、Admin用だと複数人の可能性がある。
 
-          // プライベートとテンプレートのマージ
-          const [mergedPrivate, mergedTemplate] = await mergeLayerData({
-            layerData: privateItems,
-            templateData: templateItem,
-            ownUserId: user.uid,
-            strategy: 'manual',
-            conflictsResolver,
-          });
+            // プライベートとテンプレートのマージ
+            const [mergedPrivate, mergedTemplate] = await mergeLayerData({
+              layerData: privateItems,
+              templateData: templateItem,
+              ownUserId: user.uid,
+              strategy: 'manual',
+              conflictsResolver,
+            });
 
-          if (mergedPrivate.length > 0) {
-            dispatch(updateDataAction(mergedPrivate));
+            if (mergedPrivate.length > 0) {
+              dispatch(updateDataAction(mergedPrivate));
+            }
+            if (mergedTemplate && templateItem) {
+              dispatch(updateDataAction([mergedTemplate]));
+            }
           }
-          if (mergedTemplate && templateItem) {
-            dispatch(updateDataAction([mergedTemplate]));
+          const publicItems = publicData.filter((d) => d.layerId === layerId);
+          if (publicItems.length > 0) {
+            // 複数人のパブリックとテンプレートのマージ
+            const [mergedPublic, mergedTemplate] = await mergeLayerData({
+              layerData: publicItems,
+              templateData: templateItem,
+              ownUserId: user.uid,
+              strategy: 'manual',
+              conflictsResolver,
+            });
+
+            dispatch(updateDataAction(mergedPublic));
+
+            // 2) マージ結果に自分(user.uid)が含まれなければ、空配列をセットしてローカルデータをクリア
+            const hasSelf = mergedPublic.some((dt) => dt.userId === user.uid);
+            if (!hasSelf) {
+              dispatch(
+                updateDataAction([
+                  {
+                    layerId,
+                    userId: user.uid,
+                    data: [], // 空にすることで既存の自分データを消去
+                  },
+                ])
+              );
+            }
+
+            if (mergedTemplate && templateItem) {
+              dispatch(updateDataAction([mergedTemplate]));
+            }
+          }
+          // private/publicがなくtemplateのみの場合
+          if (privateItems.length === 0 && publicItems.length === 0 && templateItem) {
+            dispatch(updateDataAction([templateItem]));
           }
         }
-        const publicItems = publicData.filter((d) => d.layerId === layerId);
-        if (publicItems.length > 0) {
-          // 複数人のパブリックとテンプレートのマージ
-          const [mergedPublic, mergedTemplate] = await mergeLayerData({
-            layerData: publicItems,
-            templateData: templateItem,
-            ownUserId: user.uid,
-            strategy: 'manual',
-            conflictsResolver,
-          });
-
-          dispatch(updateDataAction(mergedPublic));
-
-          // 2) マージ結果に自分(user.uid)が含まれなければ、空配列をセットしてローカルデータをクリア
-          const hasSelf = mergedPublic.some((dt) => dt.userId === user.uid);
-          if (!hasSelf) {
-            dispatch(
-              updateDataAction([
-                {
-                  layerId,
-                  userId: user.uid,
-                  data: [], // 空にすることで既存の自分データを消去
-                },
-              ])
-            );
-          }
-
-          if (mergedTemplate && templateItem) {
-            dispatch(updateDataAction([mergedTemplate]));
-          }
-        }
-        // private/publicがなくtemplateのみの場合
-        if (privateItems.length === 0 && publicItems.length === 0 && templateItem) {
-          dispatch(updateDataAction([templateItem]));
-        }
+        return { isOK: true, message: '' };
+      } finally {
+        resetConflictState();
       }
-      return { isOK: true, message: '' };
     },
     [dispatch, user.uid, conflictsResolver]
   );
@@ -415,7 +426,10 @@ export const useRepository = (): UseRepositoryReturnType & {
       project: ProjectType,
       layerId: string,
       photoField: LayerType['field'],
-      onPhotoUploadFailed?: () => void
+      onPhotoUploadFailed?: () => void,
+      // Storage から消す写真の id はここに積むだけで、まだ消さない（消すのはマージ後のデータで要らないと分かり、
+      // データの書き込みに成功してから。先に消すと、マージで採られた版が参照する写真まで消える）
+      pendingPhotoDeletes?: Set<string>
     ) => {
       if (user.uid === undefined) return data;
       const uid = user.uid;
@@ -424,8 +438,8 @@ export const useRepository = (): UseRepositoryReturnType & {
       for (const { name } of photoField) {
         const photos = (data.field[name] as PhotoType[]).map(async (photo) => {
           if (data.deleted) {
-            //データごと削除された写真をストレージから削除
-            await projectStorage.deleteStoragePhoto(project.id, layerId, uid, photo.id);
+            //データごと削除された写真をストレージから削除（書き込みの成功後）
+            pendingPhotoDeletes?.add(photo.id);
           } else if (photo.uri !== null && photo.uri !== undefined && photo.url === null) {
             //アップロード
             const { isOK, url, key } = await projectStorage.uploadPhoto(project.id, layerId, uid, photo.id, photo.uri);
@@ -443,8 +457,8 @@ export const useRepository = (): UseRepositoryReturnType & {
               return { ...photo, url, key };
             }
           } else if (photo.uri === undefined && photo.url !== null) {
-            //写真削除したものは、クラウド削除して、photoのフィールドの値も消す(undefinedで返す)
-            await projectStorage.deleteStoragePhoto(project.id, layerId, uid, photo.id);
+            //写真削除したものは、クラウド削除して（書き込みの成功後）、photoのフィールドの値も消す(undefinedで返す)
+            pendingPhotoDeletes?.add(photo.id);
             return undefined;
           } else {
             //すでにアップロードしてある場合はなにもしない
@@ -638,9 +652,10 @@ export const useRepository = (): UseRepositoryReturnType & {
             );
 
         //写真の更新
+        const pendingPhotoDeletes = new Set<string>();
         const updatedData = await Promise.all(
           targetRecordSet.map((d: RecordType) => {
-            return updateStoragePhoto(d, project, layer.id, photoFields, countFailedPhoto);
+            return updateStoragePhoto(d, project, layer.id, photoFields, countFailedPhoto, pendingPhotoDeletes);
           })
         );
 
@@ -679,6 +694,21 @@ export const useRepository = (): UseRepositoryReturnType & {
               ? `\n${t('hooks.message.deleteOldTracks')}`
               : '';
           return { isOK: false, message: `${message} (${layer.name})${guidance}` };
+        }
+
+        // 書き込めたので、要らなくなった写真を Storage から消す。マージで採られた版がまだ参照している写真は消さない
+        if (pendingPhotoDeletes.size > 0) {
+          const referenced = new Set(
+            dataToUpload
+              .filter((record) => record.deleted !== true)
+              .flatMap((record) => photoFields.flatMap(({ name }) => (record.field[name] as PhotoType[] | undefined) ?? []))
+              .map((photo) => photo.id)
+          );
+          await Promise.all(
+            Array.from(pendingPhotoDeletes)
+              .filter((photoId) => !referenced.has(photoId))
+              .map((photoId) => projectStorage.deleteStoragePhoto(project.id, layer.id, user.uid, photoId))
+          );
         }
 
         if (layer.permission === 'COMMON' && consolidatedLayerIds.has(layer.id) && !isTemplate) {
@@ -1032,10 +1062,19 @@ export const useRepository = (): UseRepositoryReturnType & {
       for (const { name } of photoFields) {
         const photos = (data.field[name] as PhotoType[]).map(async (photo) => {
           if (photo.url !== null && photo.key !== null) {
-            // 写真名・IDは他メンバーのレコードやクラウド設定由来。パス区切りや`..`を含むものは保存しない
-            if (![project_.id, layerId, uid, photo.name].every(isSafePathSegment)) return photo;
-            const folder = `${PHOTO_FOLDER}/${project_.id}/${layerId}/${uid}`;
-            const { isOK, uri } = await projectStorage.downloadPhoto(photo.url, photo.key, photo.name, folder);
+            // 写真名・IDは他メンバーのレコードやクラウド設定由来。パス区切りや`..`を含むものは保存しない。
+            // 他人の写真は持ち主のフォルダに id 付きの名前で置く（同じ秒に撮った別人の写真とすり替わらないように）
+            const target = photoDownloadTarget({
+              projectId: project_.id,
+              layerId,
+              ownUid: uid,
+              recordUserId: data.userId,
+              photoId: photo.id,
+              photoName: photo.name,
+              photoUrl: photo.url,
+            });
+            if (target === undefined) return photo;
+            const { isOK, uri } = await projectStorage.downloadPhoto(photo.url, photo.key, target.filename, target.folder);
             if (!isOK || uri === null) {
               //console.log(message);
               return photo;
