@@ -1,5 +1,5 @@
 import React, { useContext, useMemo } from 'react';
-import { View, StyleSheet, KeyboardAvoidingView } from 'react-native';
+import { View, StyleSheet, KeyboardAvoidingView, Text } from 'react-native';
 
 import { DataEditButtons } from '../organisms/DataEditButtons';
 import { DataEditPhoto } from '../organisms/DataEditPhoto';
@@ -43,6 +43,7 @@ export default function DataEditScreen() {
     maxRecordNumber,
     isEditingRecord,
     projectId,
+    modifyBlockMessage,
     pressSaveData,
     changeLatLonType,
     changeLatLon,
@@ -106,6 +107,12 @@ export default function DataEditScreen() {
         >
           {projectId && data.displayName && layer.permission !== 'COMMON' && (
             <DataEditUserName value={data.displayName} />
+          )}
+          {/* 他のメンバー・テンプレートの記録で変えられないときは、入力しても保存できない理由を先に示す */}
+          {modifyBlockMessage !== undefined && layer.permission !== 'COMMON' && (
+            <Text testID="dataedit-modify-block" style={styles.modifyBlockNotice}>
+              {modifyBlockMessage}
+            </Text>
           )}
           <DataEditLayerName value={layer.name} />
 
@@ -368,5 +375,11 @@ const styles = StyleSheet.create({
   //最後の項目が下端に貼り付かないよう、少し余白を残す
   scrollContent: {
     paddingBottom: 20,
+  },
+  modifyBlockNotice: {
+    color: COLOR.GRAY4,
+    fontSize: 13,
+    marginHorizontal: 10,
+    marginVertical: 6,
   },
 });

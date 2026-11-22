@@ -361,6 +361,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     generateRecord,
     findLayer,
     findRecord,
+    checkRecordsModifiable,
   } = useRecord();
 
   // 初期化時にcurrentInfoToolを'ALL_INFO'に強制設定
@@ -1407,11 +1408,16 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     if (!isOK || layer === undefined) {
       return { isOK: false, message };
     }
+    //テンプレートなど他人の名義の記録を消せるのは管理者だけ（同期監査 M8）。一部だけ消すと、どれが残ったのか
+    //分からないので、消せないものが1つでもあれば何も消さない（ストアでも受け付けないが、理由をここで返す）
+    const targets = drawLine.current.flatMap((line) => (line.record === undefined ? [] : [line.record]));
+    const modifiable = checkRecordsModifiable(layer, targets, 'delete');
+    if (!modifiable.isOK) return { isOK: false, message: modifiable.message };
     deleteDrawRecord(layer.id);
     resetDrawTools();
     setDrawTool('NONE');
     return { isOK: true, message: '', layer };
-  }, [deleteDrawRecord, featureButton, getEditableLayerAndRecordSetWithCheck, resetDrawTools]);
+  }, [checkRecordsModifiable, deleteDrawRecord, featureButton, getEditableLayerAndRecordSetWithCheck, resetDrawTools]);
 
   const undoDraw = useCallback(() => {
     //console.log(undoLine.current);
@@ -2212,6 +2218,8 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
           const isStamp = record.field._stamp !== undefined && record.field._stamp !== '';
           const xy = latLonObjectsToXYArray(record.coords, mapRegion, mapSize, mapViewRef);
           if (!isHit(xy, isStamp)) continue;
+          //テンプレートなど他人の名義の記号は、管理者でなければ消せない（同期監査 M8。ストアでも受け付けない）
+          if (!checkRecordsModifiable(layer, [record], 'delete').isOK) return;
           pushUndo({
             index: -1,
             latlon: [],
@@ -2223,7 +2231,16 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
         }
       }
     },
-    [dispatch, getEditableLayerAndRecordSetWithCheck, lineDataSet, mapRegion, mapSize, mapViewRef, pushUndo]
+    [
+      checkRecordsModifiable,
+      dispatch,
+      getEditableLayerAndRecordSetWithCheck,
+      lineDataSet,
+      mapRegion,
+      mapSize,
+      mapViewRef,
+      pushUndo,
+    ]
   );
 
   const handleGrantHandwriting = useCallback(

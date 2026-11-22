@@ -21,6 +21,7 @@ import { createLayerFromPreset, PresetDictionary } from '../utils/Preset';
 import { geoJson2Data } from '../utils/Geometry';
 import {
   applyColorStyle,
+  getRenamedOrRetypedFieldNames,
   hasCodeLink,
   isCodeTargetFormat,
   renameRecordFields,
@@ -38,6 +39,8 @@ export type UseLayerEditReturnType = {
   isEdited: boolean;
   isNewLayer: boolean;
   canChangePermission: boolean;
+  /** 共有プロジェクトで名前か型を変えた既存属性（変更前の名前）。メンバーのクラウドデータは移行されないので保存前に警告する */
+  unmigratedCloudFieldNames: string[];
   saveLayer: () => void;
   deleteLayer: () => Promise<void>;
   deleteLayerPhotos: () => Promise<void>;
@@ -98,6 +101,14 @@ export const useLayerEdit = (
     () => isNewLayer || !hasAnyRecord || isSettingProject,
     [hasAnyRecord, isNewLayer, isSettingProject]
   );
+
+  //クラウドのプロジェクトを開いているときだけ。個人（ローカル）では手元のデータが移行されるので対象外
+  const unmigratedCloudFieldNames = useMemo(() => {
+    if (projectId === undefined || isNewLayer) return [];
+    const oldLayer = layers.find((l) => l.id === targetLayer.id);
+    if (oldLayer === undefined) return [];
+    return getRenamedOrRetypedFieldNames(oldLayer.field, targetLayer.field);
+  }, [isNewLayer, layers, projectId, targetLayer.field, targetLayer.id]);
 
   useEffect(() => {
     setTargetLayer(layer);
@@ -529,6 +540,7 @@ export const useLayerEdit = (
     isEdited,
     isNewLayer,
     canChangePermission,
+    unmigratedCloudFieldNames,
     saveLayer,
     deleteLayer,
     deleteLayerPhotos,

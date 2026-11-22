@@ -644,7 +644,8 @@
   "LayerEdit": {
     "confirm": {
       "deleteLayer": "Do you want to delete the layer? \nThe data in the layer is also deleted.",
-      "gotoBack": "Would you like to discard your changes and return?"
+      "gotoBack": "Would you like to discard your changes and return?",
+      "unmigratedCloudFields": "Members' cloud data will not be migrated for the fields whose name or type you changed ({{fields}}). Values under the old names will no longer appear on screen or in CSV, and values of changed types will stay unconverted. Save anyway?"
     },
     "navigation": {
       "title": "Layer settings"
@@ -660,6 +661,7 @@
   "Data": {
     "alert": {
       "exportData": "Members cannot export data.",
+      "cannotDeleteOthersRecords": "Nothing was deleted because the selection includes other members' records or template records that you cannot delete.",
       "checkFieldInput": "Please enter the following values ​​correctly.",
       "addWithoutLocation": "GPS is off, so the record is added without coordinates.",
       "noLocationData": "There are no records with a location."
@@ -743,8 +745,14 @@
       "pleaseLogin": "Please login",
       "cloudDataChangedByOtherDevice": "Your data in the cloud was updated on another device, so the upload was stopped so as not to overwrite it. Please upload again.",
       "cannotVerifyCloudData": "Upload was stopped so as not to overwrite your data in the cloud, because it could not be checked. Check your connection and try again.",
+      "cannotVerifyOwnCloudDataForDownload": "Download was stopped because your data in the cloud could not be checked. Check your connection and try again.",
       "someDataUndecryptable": "{{count}} data set(s) (per member and layer) could not be decrypted. The copies already on this device were kept as they were. Ask the administrator to share the encryption key again, then download again.",
       "skippedUnreadableLayers": "Your data in the cloud could not be read, so these layers were left as they are instead of being overwritten: {{names}}. Ask the administrator to share the encryption key again, then upload again.",
+      "skippedLayersSettingsChanged": "These layers were not uploaded because their settings (such as who can see them) were changed in the cloud. Your data on this device was kept: {{names}}. Reopen the project to load the new settings, then upload again. Reopening removes the changes in these layers that have not been uploaded, so export them first if needed.",
+      "confirmReuploadDeletedData": "Your data that you uploaded before is no longer in the cloud: {{names}}. The administrator may have deleted it. Upload the data on this device again?",
+      "reuploadDeletedData": "Upload again",
+      "keepDeletedDataLocal": "Do not upload",
+      "skippedDeletedLayers": "These layers were not uploaded because they were no longer in the cloud. Your data on this device was kept: {{names}}. Check with the administrator if needed.",
       "cannotUploadData": "Layer settings have been updated. Issues may occur, but would you like to upload anyway? (Please consult with the administrator)",
       "unknownError": "Unknown error.",
       "cannotAddProject": "Cannot be added while editing a project",
@@ -803,6 +811,8 @@
       "invalidEmail": "Invalid email address.",
       "invalidEmailOrPassword": "The email or password is incorrect.",
       "lockProject": "This layer cannot be edited.",
+      "recordModifyAdminOnly": "Only administrators can change or delete other members' records or template records.",
+      "recordModifyPrivateLayer": "In a private layer, other members' records and template records cannot be changed or deleted, because the change would not reach the members' devices. Change templates in settings mode.",
       "noActivate": "Your account has not been activated.",
       "noEditMode": "You are not in edit mode.",
       "noLayerToEdit": "There are no layers to edit.",
@@ -886,6 +896,10 @@
       "gps": "Please turn on GPS",
       "gpsWeb": "Not available in the web version",
       "gpsWithTrack": "Stop recording the track to turn off GPS.",
+      "stopTrackingForLogout": "To log out, track recording will be stopped and the track so far will be saved to the track layer of {{dest}}.",
+      "stopTrackingUploadFailed": "Recording was stopped and the track was saved to the track layer on this device, but it could not be uploaded, so the operation was canceled. Upload when you are online, then try again.",
+      "stopTrackingSaveFailed": "The track could not be saved, so the operation was canceled.",
+      "stopTrackingSaveFailedForced": "The track could not be saved. You will be asked whether to save the unsaved track the next time you start recording.",
       "saveProject": "Project settings have been changed.",
       "sync": "Share your current location.",
       "trackWeb": "Track logs are not available in the web version",
@@ -918,6 +932,13 @@
       "overwriteSettings": "Overwrite and save",
       "track": "Do you want to stop recording the track?",
       "track_start": "Do you want to start recording the track?",
+      "stopTrackingBeforeOpenProject": "A track is being recorded. Stop recording and save the track so far to the track layer of {{dest}} before opening the project?",
+      "stopTrackingBeforeCloseProject": "A track is being recorded. Stop recording and save the track so far to the track layer of {{dest}} before finishing the project?",
+      "stopTrackingBeforeLogout": "A track is being recorded. Stop recording and save the track so far to the track layer of {{dest}} before logging out?",
+      "stopTrackingUploadNote": "The saved track is uploaded before continuing. If it cannot be uploaded, the operation is canceled.",
+      "stopTrackingSettingNote": "A track saved while editing settings is not uploaded and is discarded when the settings are closed.",
+      "stopTrackingCancelNote": "If you cancel, recording continues and nothing else happens.",
+      "stopTrackingAndSave": "Stop and save",
       "download": "Do you want to retrieve updated data?",
       "upload": "Do you want to send data?",
       "reOpenProject": "Would you like to open a project? \nData from the current project that you have not saved will be discarded.",
@@ -995,6 +1016,8 @@
     "label": {
       "maps": "maps",
       "track": "track",
+      "trackSaveDestProject": "the project \"{{name}}\"",
+      "trackSaveDestLocal": "the data on this device",
       "layers": "layers",
       "point": "point",
       "line": "line",

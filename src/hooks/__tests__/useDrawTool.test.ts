@@ -107,6 +107,7 @@ const mockGenerateRecord = jest.fn();
 const mockFindLayer = jest.fn();
 const mockFindRecord = jest.fn();
 const mockGetEditableLayerAndRecordSetWithCheck = jest.fn();
+const mockCheckRecordsModifiable = jest.fn(() => ({ isOK: true, message: '' }));
 const mockPointDataSet: { layerId: string; userId: string; data: unknown[] }[] = [];
 const mockLineDataSet: { layerId: string; userId: string; data: unknown[] }[] = [];
 const mockPolygonDataSet: { layerId: string; userId: string; data: unknown[] }[] = [];
@@ -122,6 +123,7 @@ jest.mock('../useRecord', () => ({
     generateRecord: mockGenerateRecord,
     findLayer: mockFindLayer,
     findRecord: mockFindRecord,
+    checkRecordsModifiable: mockCheckRecordsModifiable,
   }),
 }));
 

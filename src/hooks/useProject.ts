@@ -23,7 +23,8 @@ export type UseProjectReturnType = {
   isOwnerAdmin: boolean;
   project: ProjectType | undefined;
   projectRegion: RegionType;
-  uploadData: () => Promise<{
+  /** layerIds を渡すと、そのレイヤだけを送る（軌跡の記録を止めてプロジェクトを離れるときの軌跡のアップロード） */
+  uploadData: (options?: { layerIds?: string[] }) => Promise<{
     isOK: boolean;
     message: string;
     warning?: string;
@@ -51,10 +52,13 @@ export const useProject = (): UseProjectReturnType => {
 
   const { uploadDataToRepository, uploadProjectSettings, deleteCommonAndTemplateData } = useRepository();
 
-  const uploadData = useCallback(async () => {
-    if (project === undefined) throw new Error(t('hooks.message.unknownError'));
-    return await uploadDataToRepository(project, 'PublicAndPrivate');
-  }, [project, uploadDataToRepository]);
+  const uploadData = useCallback(
+    async (options: { layerIds?: string[] } = {}) => {
+      if (project === undefined) throw new Error(t('hooks.message.unknownError'));
+      return await uploadDataToRepository(project, 'PublicAndPrivate', { onlyLayerIds: options.layerIds });
+    },
+    [project, uploadDataToRepository]
+  );
 
   const syncPosition = useCallback(
     (shouldSync: boolean) => {

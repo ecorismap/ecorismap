@@ -11,12 +11,18 @@ export const DataEditButtons = () => {
     layer,
     isEditingRecord,
     isEditable,
+    modifyBlockMessage,
+    deleteBlockMessage,
     pressCopyData,
     pressDeleteData,
     pressJumpToData,
     gotoGoogleMaps,
     pressEditPosition,
   } = useContext(DataEditContext);
+
+  //他のメンバー・テンプレートの記録で変更・削除できないときは、位置と削除のボタンを無効にする（複製は自分の記録になるので残す）
+  const canEditPosition = isEditable && modifyBlockMessage === undefined;
+  const canDelete = isEditable && deleteBlockMessage === undefined;
 
   return (
     <View style={styles.buttonContainer}>
@@ -38,8 +44,8 @@ export const DataEditButtons = () => {
         <Button
           name={DATAEDIT_BTN.EDIT}
           onPress={pressEditPosition}
-          backgroundColor={isEditingRecord || !isEditable ? COLOR.LIGHTBLUE : COLOR.BLUE}
-          disabled={isEditingRecord || !isEditable}
+          backgroundColor={isEditingRecord || !canEditPosition ? COLOR.LIGHTBLUE : COLOR.BLUE}
+          disabled={isEditingRecord || !canEditPosition}
           labelText={t('DataEdit.label.edit')}
         />
       )}
@@ -54,8 +60,8 @@ export const DataEditButtons = () => {
         testID="dataedit-delete"
         name={DATAEDIT_BTN.DELETE}
         onPress={pressDeleteData}
-        backgroundColor={isEditingRecord || !isEditable ? COLOR.LIGHTBLUE : COLOR.BLUE}
-        disabled={isEditingRecord || !isEditable}
+        backgroundColor={isEditingRecord || !canDelete ? COLOR.LIGHTBLUE : COLOR.BLUE}
+        disabled={isEditingRecord || !canDelete}
         labelText={t('DataEdit.label.delete')}
       />
     </View>

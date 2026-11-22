@@ -3,6 +3,7 @@ import { LayerType } from '../../types';
 import { getColor, getColorRule, changeLayerId, applyColorStyle, getLineWidth, getLineWidthAtZoom, toIndividualColorLayer, restoreColorStyleFromIndividual, resolveCodeField, toCodeFieldValue, checkLayerInputs,
   renameRecordFields,
   updateFieldReferences,
+  getRenamedOrRetypedFieldNames,
   getMapMemoSymbolScaleAtZoom,
   SYMBOL_BASE_ZOOM,
   isGnssQualityColored,
@@ -1014,5 +1015,30 @@ describe('測位品質の色分け（軌跡レイヤ）', () => {
     expect(toGnssQualityColorLayer(userLayer, gnssPoints)).toBeUndefined();
     expect(toGnssQualityColorLayer(gnssLayer, gnssPoints)).toBeUndefined();
     expect(toGnssQualityColorLayer({ ...trackLayer, id: 'other' }, gnssPoints)).toBeUndefined();
+  });
+});
+
+describe('getRenamedOrRetypedFieldNames', () => {
+  const before = [
+    { id: 'a', name: 'name', format: 'STRING' as const },
+    { id: 'b', name: 'count', format: 'INTEGER' as const },
+    { id: 'c', name: 'kind', format: 'LIST' as const, list: [{ value: 'A', isOther: false, customFieldValue: '' }] },
+    { id: 'd', name: 'memo', format: 'STRING' as const },
+  ];
+
+  it('名前か型を変えた既存属性だけを変更前の名前で返す', () => {
+    const after = [
+      { id: 'a', name: '名前', format: 'STRING' as const },
+      { id: 'b', name: 'count', format: 'DECIMAL' as const },
+      //選択肢だけの変更は対象外
+      { id: 'c', name: 'kind', format: 'LIST' as const, list: [{ value: 'B', isOther: false, customFieldValue: '' }] },
+      //dは削除、eは追加
+      { id: 'e', name: 'new', format: 'STRING' as const },
+    ];
+    expect(getRenamedOrRetypedFieldNames(before, after)).toEqual(['name', 'count']);
+  });
+
+  it('変更が無ければ空', () => {
+    expect(getRenamedOrRetypedFieldNames(before, before)).toEqual([]);
   });
 });

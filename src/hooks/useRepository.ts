@@ -29,6 +29,8 @@ import { cloneDeep } from 'lodash';
 import { getPhotoFields, getTargetLayers } from '../utils/Layer';
 import { isLoggedIn } from '../utils/Account';
 import { CommonAbsorption, getTargetRecordSet, mergeLayerData } from '../utils/Data';
+import { applyTakeoversToDataSet, dropRecordsResolvedAway } from '../utils/recordTakeover';
+import { findSettingsMismatchedLayers, mergeOwnCloudRecords } from '../utils/ownDataSync';
 import { Platform } from 'react-native';
 import { t } from '../i18n/config';
 import { AlertAsync, ConfirmAsync, DataConflictConfirmAsync } from '../components/molecules/AlertAsync';
@@ -44,6 +46,8 @@ export type UploadDataOptions = {
    * クラウドの他人名義の doc（内容を持っている人の分だけ）とテンプレートを片付け、手元も1つのバケットにそろえる
    */
   commonAbsorption?: CommonAbsorption;
+  /** 指定したレイヤだけを送る（省略時は uploadType の対象をすべて送る） */
+  onlyLayerIds?: string[];
 };
 
 /**
@@ -61,6 +65,22 @@ export type FetchedScope = {
    * （PRIVATE から PUBLIC に変えた直後のレイヤでは、メンバーの記録が PUBLIC の取得に現れず、手元の写しだけが消えるため）
    */
   pruneOthers?: boolean;
+};
+
+/**
+ * createMergedDataSet に渡す、クラウドの自分のデータ（L4: ホームの「データ取得」で別端末の自分の変更を取り込む）。
+ * 手元の自分のバケット（privateData/publicData に含めて渡すもの）と、既存の競合解決で合わせる
+ */
+export type OwnCloudData = {
+  projectId: string;
+  /** 取得を始めた時刻。手元がクラウドと同じになったレイヤを、Web版でこの時刻までアップロード済みとして記録する */
+  fetchedAt: number;
+  /** 取得の前に読んだ自分のデータの版（getMyDataUpdatedAt。`${layerId}_${permission}` → encryptedAt） */
+  versions: Map<string, number>;
+  /** クラウドの自分の PRIVATE のデータ */
+  privateData: DataType[];
+  /** クラウドの自分の PUBLIC のデータ */
+  publicData: DataType[];
 };
 
 /** 設定の保存で新しい版を書いた辞書。設定の書き込みに成功してから、旧形式のパスへ写し、古い版を消すために持つ */
@@ -189,18 +209,22 @@ export type UseRepositoryReturnType = {
     templateData,
     fetchedScope,
     undecryptableGroups,
+    ownCloud,
   }: {
     privateData: DataType[];
     publicData: DataType[];
     templateData: DataType[];
     fetchedScope?: FetchedScope;
     undecryptableGroups?: UndecryptableGroupType[];
+    ownCloud?: OwnCloudData;
   }) => Promise<{
     isOK: boolean;
     message: string;
     /** 取り込めたが、一部を復号できなかったときの利用者向け警告 */
     warning?: string;
   }>;
+  /** クラウドの自分のデータの版（レイヤ×権限ごとの encryptedAt）。取得できなければ undefined */
+  fetchOwnDataVersions: (project: ProjectType) => Promise<Map<string, number> | undefined>;
   handleSelect: (selected: any) => void;
   handleBulkSelect: (mode: 'self' | 'latest') => void;
 };
@@ -323,19 +347,94 @@ export const useRepository = (): UseRepositoryReturnType & {
     [chooseByBulkMode]
   );
 
-  const createMergedDataSet = useCallback(
+  /**
+   * クラウドの自分のデータを、手元の自分のバケットと合わせる（L4）。合わせるのは、クラウドに自分のデータがあり、
+   * 前回の同期のあとに変わった（基準値と版が違う）レイヤだけ。
+   * - クラウドに自分のデータが無いレイヤは手元のまま（前回同期したのに無いなら、アップロードのときに確認する: L11）
+   * - 基準値と版が同じレイヤは、手元にもう反映されているので触らない（未アップロードの変更をそのまま残す）
+   * - 読めなかった（復号できなかった）レイヤは手元のまま
+   * 合わせたレイヤは、取得の前に読んだ版を基準値にする（手元はその版を取り込み済み。取得の間に更に変わっていれば、
+   * 次のアップロードで版が違うので内容を比べ直す）
+   */
+  const mergeOwnCloudBuckets = useCallback(
     async ({
+      ownCloud,
       privateData,
       publicData,
+      undecryptableGroups,
+    }: {
+      ownCloud: OwnCloudData;
+      privateData: DataType[];
+      publicData: DataType[];
+      undecryptableGroups: UndecryptableGroupType[];
+    }) => {
+      const uid = user.uid;
+      const state = store.getState();
+      const baselines = state.dataSync[ownCloud.projectId] ?? {};
+      let nextPrivate = privateData;
+      let nextPublic = publicData;
+      const baselineEntries: { [key: string]: number } = {};
+      const inSyncLayerIds: string[] = [];
+      if (uid === undefined) return { privateData, publicData, baselineEntries, inSyncLayerIds };
+      const isOwnBucket = (d: DataType, layerId: string) => d.layerId === layerId && d.userId === uid;
+
+      for (const layer of state.layers) {
+        if (layer.permission !== 'PRIVATE' && layer.permission !== 'PUBLIC') continue;
+        const key = dataSyncKey(layer.id, layer.permission);
+        const cloudVer = ownCloud.versions.get(key);
+        if (cloudVer === undefined || baselines[key] === cloudVer) continue;
+        if (
+          undecryptableGroups.some(
+            (g) => g.layerId === layer.id && g.userId === uid && g.permission === layer.permission
+          )
+        ) {
+          continue;
+        }
+        const isPrivate = layer.permission === 'PRIVATE';
+        const cloudBucket = (isPrivate ? ownCloud.privateData : ownCloud.publicData).find((d) =>
+          isOwnBucket(d, layer.id)
+        );
+        if (cloudBucket === undefined) continue;
+        const target = isPrivate ? nextPrivate : nextPublic;
+        const localBucket = target.find((d) => isOwnBucket(d, layer.id));
+        // 管理者が引き継いだ版などに打ち消される自分の古い版は取り込まない（アップロードの衝突判定と同じ）
+        const others = [...nextPrivate, ...nextPublic, ...state.dataSet].filter(
+          (d) => d.layerId === layer.id && d.userId !== uid && d.userId !== undefined
+        );
+        const cloudRecords = dropRecordsResolvedAway(layer.id, uid, cloudBucket.data, others);
+        const { records, hasLocalOnly } = await mergeOwnCloudRecords({
+          localRecords: localBucket?.data ?? [],
+          cloudRecords,
+          resolve: conflictsResolver,
+          now: Date.now(),
+        });
+        const mergedBucket: DataType = { layerId: layer.id, userId: uid, data: records };
+        const replaced = [...target.filter((d) => !isOwnBucket(d, layer.id)), mergedBucket];
+        if (isPrivate) nextPrivate = replaced;
+        else nextPublic = replaced;
+        baselineEntries[key] = cloudVer;
+        if (!hasLocalOnly) inSyncLayerIds.push(layer.id);
+      }
+      return { privateData: nextPrivate, publicData: nextPublic, baselineEntries, inSyncLayerIds };
+    },
+    [conflictsResolver, store, user.uid]
+  );
+
+  const createMergedDataSet = useCallback(
+    async ({
+      privateData: privateDataArg,
+      publicData: publicDataArg,
       templateData,
       fetchedScope,
       undecryptableGroups = [],
+      ownCloud,
     }: {
       privateData: DataType[];
       publicData: DataType[];
       templateData: DataType[];
       fetchedScope?: FetchedScope;
       undecryptableGroups?: UndecryptableGroupType[];
+      ownCloud?: OwnCloudData;
     }) => {
       // 一括解決の指定は、押したときの取得の残りにだけ効かせる。持ち越すと、アプリを再起動するまで以後の取得の
       // 競合がすべて黙って自動で解決され、利用者は競合があったことにも、どちらかの版が捨てられたことにも気づけない
@@ -369,6 +468,23 @@ export const useRepository = (): UseRepositoryReturnType & {
           undecryptableGroups.some(
             (g) => g.layerId === layerId && (template ? g.permission === 'TEMPLATE' : g.permission !== 'TEMPLATE' && g.userId === userId)
           );
+
+        // クラウドの自分のデータを、手元の自分のバケットと合わせてから、他人の分とのマージに渡す（L4）
+        let privateData = privateDataArg;
+        let publicData = publicDataArg;
+        if (ownCloud !== undefined && user.uid !== undefined) {
+          const merged = await mergeOwnCloudBuckets({ ownCloud, privateData, publicData, undecryptableGroups });
+          privateData = merged.privateData;
+          publicData = merged.publicData;
+          if (Object.keys(merged.baselineEntries).length > 0) {
+            dispatch(setDataSyncTimestampsAction({ projectId: ownCloud.projectId, entries: merged.baselineEntries }));
+          }
+          // 手元がクラウドと同じになったレイヤは、Web版の離脱確認の対象から外す（別端末で付いた新しい更新日時で、
+          // 未アップロードの変更があるように見えないため）。ネイティブでは何もしない
+          merged.inSyncLayerIds.forEach((layerId) =>
+            markLayerUploaded(ownCloud.projectId, layerId, ownCloud.fetchedAt)
+          );
+        }
 
         // すべてのlayerIdを抽出
         const allLayerIds = Array.from(
@@ -451,6 +567,22 @@ export const useRepository = (): UseRepositoryReturnType & {
                   !isUndecryptable(layerId, d.userId, false)
               );
             if (staleBuckets.length > 0) dispatch(deleteDataAction(staleBuckets));
+          } else {
+            // 範囲外（管理者が PRIVATE を取得しなかったときの PUBLIC など）でも、マージ結果に現れなかった他人のバケットから、
+            // 引き継ぎで打ち消された記録（別の管理者が引き継いで直した・消した記録の古い版）は外す。その人の記録が
+            // すべて引き継がれていると、マージ結果にその人が現れずバケットが置き換わらないので、古い版が表示され続ける
+            const layerBuckets = store.getState().dataSet.filter((d) => d.layerId === layerId);
+            const untouched = layerBuckets.filter(
+              (d) => d.userId !== undefined && d.userId !== user.uid && d.userId !== 'template' && !mergedUserIds.has(d.userId)
+            );
+            if (untouched.length > 0) {
+              const resolved = applyTakeoversToDataSet(
+                untouched,
+                layerBuckets.filter((d) => !untouched.includes(d))
+              );
+              const changed = resolved.filter((d, i) => d !== untouched[i]);
+              if (changed.length > 0) dispatch(updateDataAction(changed));
+            }
           }
 
           if (templateItem) {
@@ -485,7 +617,16 @@ export const useRepository = (): UseRepositoryReturnType & {
         resetConflictState();
       }
     },
-    [dispatch, store, user.uid, conflictsResolver]
+    [dispatch, store, user.uid, conflictsResolver, mergeOwnCloudBuckets]
+  );
+
+  const fetchOwnDataVersions = useCallback(
+    async (project: ProjectType): Promise<Map<string, number> | undefined> => {
+      if (!isLoggedIn(user)) return undefined;
+      const res = await projectStore.getMyDataUpdatedAt(project.id, user.uid);
+      return res.isOK ? res.data : undefined;
+    },
+    [user]
   );
 
   const fetchProjectSettings = useCallback(async (project: ProjectType) => {
@@ -630,7 +771,8 @@ export const useRepository = (): UseRepositoryReturnType & {
           });
         });
 
-      return Array.from(merged.values()).map((record) => ({
+      // テンプレートは誰かから引き継いだ記録ではないので、引き継ぎ元は持たせない（getTargetRecordSet と同じ）
+      return Array.from(merged.values()).map(({ takenOverFrom: _takenOverFrom, ...record }) => ({
         ...record,
         userId: 'template',
         displayName: t('common.admin'),
@@ -656,19 +798,36 @@ export const useRepository = (): UseRepositoryReturnType & {
       }
       // Web版の離脱確認（L14）の基準時刻。送る集合はこれより前の手元の記録なので、これより後の編集は未アップロードとして残す
       const uploadStartedAt = Date.now();
+      const onlyLayerIds = options.onlyLayerIds === undefined ? undefined : new Set(options.onlyLayerIds);
+      const isRequestedLayer = (l: LayerType) => onlyLayerIds === undefined || onlyLayerIds.has(l.id);
       // 開いた時点の設定がクラウドの現在の設定と同じかを確認する。
       // 旧 toDate() の不具合で書かれた updatedAt も同一とみなすため、判定は firestore 側に寄せてある。
       const isSettingsCurrent =
         uploadType === 'PublicAndPrivate' ? await projectStore.isSettingsUpdatedAtCurrent(project.id, updatedAt) : true;
+      // 開いたあとに設定が変わっていたら、クラウドの設定と権限が食い違うレイヤだけ止め、他のレイヤはそのまま上げる（M10）。
+      // 古い権限のまま上げると、旧権限の doc が二重にでき、開き直すと新しい版が古い版に戻る
+      let settingsMismatchedLayers: LayerType[] = [];
       if (uploadType === 'PublicAndPrivate' && !isSettingsCurrent) {
-        const confirmMessage = t('hooks.message.cannotUploadData');
-        const shouldContinue = await ConfirmAsync(confirmMessage);
-        if (!shouldContinue) {
-          return { isOK: false, message: '' };
+        const cloudSettings = await projectStore.downloadProjectSettings(project.id);
+        if (cloudSettings.isOK) {
+          settingsMismatchedLayers = findSettingsMismatchedLayers(
+            getTargetLayers(layers, uploadType).filter(isRequestedLayer),
+            cloudSettings.data.layers
+          );
+        } else {
+          // クラウドの設定を読めず、どのレイヤが食い違うか分からないときは従来どおり確かめる
+          const confirmMessage = t('hooks.message.cannotUploadData');
+          const shouldContinue = await ConfirmAsync(confirmMessage);
+          if (!shouldContinue) {
+            return { isOK: false, message: '' };
+          }
         }
       }
+      const settingsMismatchedIds = new Set(settingsMismatchedLayers.map((l) => l.id));
 
-      const targetLayers = getTargetLayers(layers, uploadType);
+      const targetLayers = getTargetLayers(layers, uploadType).filter(
+        (l) => isRequestedLayer(l) && !settingsMismatchedIds.has(l.id)
+      );
 
       // --- 同一アカウント・複数端末での上書き消失防止（衝突検知→確認→対処） ---
       // アップロードは (userId, layerId, permission) 単位の「全削除→全置換」のため、別端末で更新された
@@ -693,6 +852,9 @@ export const useRepository = (): UseRepositoryReturnType & {
       // 衝突を確かめる取得に失敗したときは「衝突なし」ではなく「判定できない」なので、上書きせずに中止する。
       // 素通りさせると、別端末の変更や、開く途中の失敗・復号失敗で手元に無いだけのクラウドのデータを全置換で消す
       const cannotVerify = { isOK: false, message: t('hooks.message.cannotVerifyCloudData') };
+      // 前回同期した（基準値がある）のに、クラウドから自分のデータが消えているレイヤ（L11）。管理者がクラウドデータ管理で
+      // 消した可能性があるので、確認なしには上げ直さない
+      const vanishedLayers: LayerType[] = [];
       if (conflictTargetLayers.length > 0) {
         const cloudRes = await projectStore.getMyDataUpdatedAt(project.id, user.uid);
         if (!cloudRes.isOK || cloudRes.data === undefined) return cannotVerify;
@@ -700,10 +862,26 @@ export const useRepository = (): UseRepositoryReturnType & {
           const baseline = baselines[dataSyncKey(l.id, l.permission)];
           const cloudVer = cloudRes.data.get(dataSyncKey(l.id, l.permission));
           judgedCloudVersions.set(dataSyncKey(l.id, l.permission), cloudVer);
+          if (
+            baseline !== undefined &&
+            cloudVer === undefined &&
+            getTargetRecordSet(fullDataSet, l, user).some((r) => r.deleted !== true)
+          ) {
+            vanishedLayers.push(l);
+          }
           // 基準値==クラウド → 衝突なし。それ以外でクラウドにデータがあれば内容比較の候補にする。
           if (baseline === cloudVer) continue;
           if (cloudVer !== undefined) candidateLayers.push(l);
         }
+      }
+      // 上げ直さないと決めたレイヤ。手元のデータはそのまま残し、基準値も変えない（次のアップロードでも改めて確認する）
+      const keptVanishedIds = new Set<string>();
+      if (vanishedLayers.length > 0) {
+        const reupload = await ConfirmAsync(
+          t('hooks.message.confirmReuploadDeletedData', { names: vanishedLayers.map((l) => l.name).join('、') }),
+          { true: t('hooks.message.reuploadDeletedData'), false: t('hooks.message.keepDeletedDataLocal') }
+        );
+        if (!reupload) vanishedLayers.forEach((l) => keptVanishedIds.add(l.id));
       }
 
       // 候補があればクラウドの自分データを取得（マージにも再利用）し、内容比較で本当の衝突を判定する
@@ -712,6 +890,16 @@ export const useRepository = (): UseRepositoryReturnType & {
       // クラウドに自分のデータがあるのに読めない（復号できない）レイヤ。上書きすると読めないだけのデータを消すので
       // そのレイヤだけ送らずに残し、他のレイヤは送る（全体を止めると、問題のないレイヤの記録まで上げられなくなる）
       const unreadableLayers: LayerType[] = [];
+      // クラウドの自分の記録のうち、手元の他の名義にある引き継いだ版（管理者が直した・消した）や、元の持ち主が
+      // 後から直した版に打ち消されるもの。取得で手元の自分の名義から外れたものなので、衝突の判定にもマージにも使わない。
+      // 使うと、引き継がれた記録が「クラウドにだけある変更」として確認が出たり、マージで自分の名義に戻ったりする
+      const cloudOwnResolved = (cloudOwn: DataType) =>
+        dropRecordsResolvedAway(
+          cloudOwn.layerId,
+          cloudOwn.userId,
+          cloudOwn.data,
+          fullDataSet.filter((d) => d.layerId === cloudOwn.layerId && d.userId !== user.uid && d.userId !== undefined)
+        );
       if (candidateLayers.length > 0) {
         if (candidateLayers.some((l) => l.permission === 'PRIVATE')) {
           const res = await projectStore.downloadPrivateData(project.id, { userId: user.uid });
@@ -733,7 +921,7 @@ export const useRepository = (): UseRepositoryReturnType & {
             continue;
           }
           const localOwn = getTargetRecordSet(fullDataSet, l, user);
-          if (hasCloudOnlyChanges(cloudOwn?.data ?? [], localOwn)) {
+          if (hasCloudOnlyChanges(cloudOwnResolved(cloudOwn), localOwn)) {
             conflictedKeys.add(dataSyncKey(l.id, l.permission));
           }
         }
@@ -766,6 +954,7 @@ export const useRepository = (): UseRepositoryReturnType & {
       const unreadableIds = new Set(unreadableLayers.map((l) => l.id));
       for (const layer of targetLayers) {
         if (unreadableIds.has(layer.id) && isConflictTarget(layer)) continue;
+        if (keptVanishedIds.has(layer.id) && isConflictTarget(layer)) continue;
         const photoFields = layer.field.filter((f) => f.format === 'PHOTO');
         const isTemplate = uploadType === 'Template';
         const targetRecordSet = isTemplate
@@ -798,7 +987,7 @@ export const useRepository = (): UseRepositoryReturnType & {
             // 更新日時が同じときは、先に渡した方が採られる。旧版で作図した記録のように時刻が進んでいない
             // 手元の編集がクラウドの版に負けないよう、手元を先に渡す
             const [mergedUserData] = await mergeLayerData({
-              layerData: [localOwn, cloudOwn],
+              layerData: [localOwn, { ...cloudOwn, data: cloudOwnResolved(cloudOwn) }],
               templateData: undefined,
               ownUserId: user.uid,
               strategy: 'latest',
@@ -902,6 +1091,23 @@ export const useRepository = (): UseRepositoryReturnType & {
       saveBaselines();
 
       const warnings = [
+        ...(settingsMismatchedLayers.length > 0
+          ? [
+              t('hooks.message.skippedLayersSettingsChanged', {
+                names: settingsMismatchedLayers.map((l) => l.name).join('、'),
+              }),
+            ]
+          : []),
+        ...(keptVanishedIds.size > 0
+          ? [
+              t('hooks.message.skippedDeletedLayers', {
+                names: vanishedLayers
+                  .filter((l) => keptVanishedIds.has(l.id))
+                  .map((l) => l.name)
+                  .join('、'),
+              }),
+            ]
+          : []),
         ...(unreadableLayers.length > 0
           ? [t('hooks.message.skippedUnreadableLayers', { names: unreadableLayers.map((l) => l.name).join('、') })]
           : []),
@@ -1379,10 +1585,12 @@ export const useRepository = (): UseRepositoryReturnType & {
       } else {
         updatedData = data;
       }
-      dispatch(updateDataAction(updatedData));
+      // 引き継ぎで打ち消される版（管理者が引き継いだ記録の、元の持ち主の名義に残る古い版など）は手元に入れない。
+      // 入れると同じ記録が2人の名義に並んで表示され、管理者が消した記録も戻る
+      dispatch(updateDataAction(applyTakeoversToDataSet(updatedData, store.getState().dataSet)));
       return { isOK: true, message: '' };
     },
-    [dispatch, downloadPhotos, layers]
+    [dispatch, downloadPhotos, layers, store]
   );
 
   const downloadCommonData = useCallback(
@@ -1397,10 +1605,12 @@ export const useRepository = (): UseRepositoryReturnType & {
       } else {
         updatedData = data;
       }
-      dispatch(updateDataAction(updatedData));
+      // 引き継ぎで打ち消される版（管理者が引き継いだ記録の、元の持ち主の名義に残る古い版など）は手元に入れない。
+      // 入れると同じ記録が2人の名義に並んで表示され、管理者が消した記録も戻る
+      dispatch(updateDataAction(applyTakeoversToDataSet(updatedData, store.getState().dataSet)));
       return { isOK: true, message: '' };
     },
-    [dispatch, downloadPhotos, layers]
+    [dispatch, downloadPhotos, layers, store]
   );
 
   const fetchPublicData = useCallback(
@@ -1511,6 +1721,7 @@ export const useRepository = (): UseRepositoryReturnType & {
     setConflictState,
     conflictsResolver,
     createMergedDataSet,
+    fetchOwnDataVersions,
     downloadTemplateData,
     handleBulkSelect,
     handleSelect,

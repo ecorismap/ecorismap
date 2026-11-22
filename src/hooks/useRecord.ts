@@ -19,10 +19,11 @@ import { editSettingsAction } from '../modules/settings';
 import { t } from '../i18n/config';
 import { ulid } from 'ulid';
 import { getDefaultField } from '../utils/Data';
-import { addRecordsAction, deleteRecordsAction, updateRecordsAction } from '../modules/dataSet';
+import { addRecordsAction, moveRecordsToUserAction, updateRecordsAction } from '../modules/dataSet';
 
 import { calcCentroid, calcLineMidPoint } from '../utils/Coords';
 import { usePermission } from './usePermission';
+import { getRecordModifyBlock, RecordModifyAction, recordModifyBlockMessageKey } from '../utils/recordTakeover';
 import { selectLineDataSet, selectPointDataSet, selectPolygonDataSet } from '../modules/selectors';
 import { addLayerAction, layersInitialState, MEMO_LAYER_ID, updateLayerAction } from '../modules/layers';
 import { toGnssQualityColorLayer } from '../utils/Layer';
@@ -97,6 +98,18 @@ export type UseRecordReturnType = {
     isOK: boolean;
     message: string;
   };
+  /**
+   * 記録を変更・削除してよいか。他のメンバー・テンプレートの記録を変えられるのは管理者だけ
+   * （同期監査 M8・L1。utils/recordTakeover の getRecordModifyBlock）
+   */
+  checkRecordsModifiable: (
+    targetLayer: LayerType,
+    records: RecordType[],
+    action: RecordModifyAction
+  ) => {
+    isOK: boolean;
+    message: string;
+  };
   calculateStorageSize: () => Promise<number>;
   setIsEditingRecord: (value: boolean) => void;
 };
@@ -115,7 +128,7 @@ export const useRecord = (): UseRecordReturnType => {
   const selectedRecord = useSelector((state: RootState) => state.settings.selectedRecord, shallowEqual);
   const trackGnssColorAutoApplied = useSelector((state: RootState) => state.settings.trackGnssColorAutoApplied === true);
 
-  const { isRunningProject } = usePermission();
+  const { isRunningProject, isOwnerAdmin } = usePermission();
   const activePointLayer = useMemo(() => layers.find((d) => d.active && d.type === 'POINT'), [layers]);
   //メモは専用レイヤなので、アクティブにされてもラインの作図先にはしない
   const activeLineLayer = useMemo(
@@ -225,6 +238,24 @@ export const useRecord = (): UseRecordReturnType => {
     [isRunningProject, layers]
   );
 
+  const checkRecordsModifiable = useCallback(
+    (targetLayer: LayerType, records: RecordType[], action: RecordModifyAction) => {
+      for (const record of records) {
+        const block = getRecordModifyBlock({
+          layer: targetLayer,
+          recordUserId: record.userId,
+          action,
+          ownUserId: dataUser.uid,
+          isOwnerAdmin,
+          isRunningProject,
+        });
+        if (block !== undefined) return { isOK: false, message: t(recordModifyBlockMessageKey(block)) };
+      }
+      return { isOK: true, message: '' };
+    },
+    [dataUser.uid, isOwnerAdmin, isRunningProject]
+  );
+
   const isLayerEditable = useCallback(
     (type: FeatureType, layer: LayerType) => {
       if (type === 'POINT') {
@@ -300,24 +331,29 @@ export const useRecord = (): UseRecordReturnType => {
 
   const updateRecord = useCallback(
     (layer: LayerType, record: RecordType) => {
-      //テンプレートや未設定ユーザーのデータを編集したら自分のデータとして持ち替える。
-      //元の集合に残すと同じレコードが二重に表示されるため削除する（データ一覧の編集と同じ扱い）
-      if (record.userId !== dataUser.uid) {
-        dispatch(
-          deleteRecordsAction({
-            layerId: layer.id,
-            userId: record.userId,
-            data: [record],
-          })
-        );
-      }
       // 作図での変形・色や太さの変更・行動記号の集約などもここを通る。updatedAt を更新しないと、
       // 同期の「最新優先」や衝突の判定で編集前の版と同じ時刻になり、古い版に負けて編集が消える
+      const updated = { ...record, updatedAt: Date.now() };
+      //テンプレートや未設定ユーザーのデータを編集したら自分のデータとして持ち替える。
+      //元の集合に残すと同じレコードが二重に表示されるため、元の集合からは消す（データ一覧の編集と同じ扱い）。
+      //他のメンバーの記録は、ストアの所有権の規則（modules/recordOwnership）が管理者なら引き継ぎ、一般メンバーなら受け付けない
+      if (record.userId !== dataUser.uid) {
+        dispatch(
+          moveRecordsToUserAction({
+            layerId: layer.id,
+            fromUserId: record.userId,
+            toUserId: dataUser.uid,
+            toDisplayName: dataUser.displayName,
+            data: [updated],
+          })
+        );
+        return;
+      }
       dispatch(
         updateRecordsAction({
           layerId: layer.id,
           userId: dataUser.uid,
-          data: [{ ...record, userId: dataUser.uid, displayName: dataUser.displayName, updatedAt: Date.now() }],
+          data: [{ ...updated, userId: dataUser.uid, displayName: dataUser.displayName }],
         })
       );
     },
@@ -439,6 +475,7 @@ export const useRecord = (): UseRecordReturnType => {
     findLayer,
     isLayerEditable,
     checkRecordEditable,
+    checkRecordsModifiable,
     calculateStorageSize,
     setIsEditingRecord,
   } as const;

@@ -23,6 +23,7 @@ export default function LayerEditContainer() {
     isEdited,
     isNewLayer,
     canChangePermission,
+    unmigratedCloudFieldNames,
     saveLayer,
     deleteLayer,
     deleteLayerPhotos,
@@ -51,7 +52,7 @@ export default function LayerEditContainer() {
   const { isRunningProject } = usePermission();
   const { generateExportGeoData } = useGeoFile();
 
-  const pressSaveLayer = useCallback(() => {
+  const pressSaveLayer = useCallback(async () => {
     if (isRunningProject) {
       AlertAsync(t('hooks.message.cannotInRunningProject'));
       return;
@@ -61,8 +62,15 @@ export default function LayerEditContainer() {
       Alert.alert('', checkLayerInputsResult.message);
       return;
     }
+    //属性の値は名前をキーに持つ。改名・型変更は手元のデータにしか反映されず、メンバーのクラウドデータは移行されない
+    if (unmigratedCloudFieldNames.length > 0) {
+      const ret = await ConfirmAsync(
+        t('LayerEdit.confirm.unmigratedCloudFields', { fields: unmigratedCloudFieldNames.join(', ') })
+      );
+      if (!ret) return;
+    }
     saveLayer();
-  }, [isRunningProject, saveLayer, targetLayer]);
+  }, [isRunningProject, saveLayer, targetLayer, unmigratedCloudFieldNames]);
 
   const pressDeleteLayer = useCallback(async () => {
     if (isRunningProject) {

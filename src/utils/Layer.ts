@@ -175,6 +175,18 @@ export const updateFieldReferences = (
 };
 
 /**
+ * 既存の属性のうち、名前か型を変えたものの名前（変更前の名前）を返す。追加・削除・選択肢だけの変更は含めない。
+ * 共有プロジェクトでは保存時に手元のデータだけが移行され、メンバーのクラウドデータは移行されないため、
+ * 保存前の警告に使う（同期監査 M12）
+ */
+export const getRenamedOrRetypedFieldNames = (initialFields: FieldType[], updatedFields: FieldType[]): string[] =>
+  initialFields.flatMap((before) => {
+    const after = updatedFields.find((f) => f.id === before.id);
+    if (after === undefined) return [];
+    return after.name !== before.name || after.format !== before.format ? [before.name] : [];
+  });
+
+/**
  * 属性名の変更に合わせてレコードの値のキーを付け替える（元の値を読み切ってから書くので入れ替えにも対応）
  */
 export const renameRecordFields = (field: RecordType['field'], renames: Map<string, string>): RecordType['field'] => {

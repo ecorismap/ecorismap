@@ -1,7 +1,7 @@
 import { shallowEqual, useDispatch, useSelector } from 'react-redux';
 import { DMSKey, LatLonDMSKey, LatLonDMSType, LayerType, PhotoType, RecordType, SelectedPhotoType } from '../types';
 import { RootState } from '../store';
-import { addRecordsAction, deleteRecordsAction, updateRecordsAction } from '../modules/dataSet';
+import { addRecordsAction, deleteRecordsAction, moveRecordsToUserAction, updateRecordsAction } from '../modules/dataSet';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { LatLonDMSEmptyTemplate, LatLonDMSTemplate, PHOTO_FOLDER, SelectedPhotoTemplate } from '../constants/AppConstants';
 import { cloneDeep } from 'lodash';
@@ -17,6 +17,9 @@ import { resolveCodeField, toCodeFieldValue } from '../utils/Layer';
 import { selectNonDeletedDataSet, selectNonDeletedAllUserRecordSet } from '../modules/selectors';
 import { useProject } from './useProject';
 import { addToDynamicDictionary } from './useDynamicDictionaryInput';
+import { usePermission } from './usePermission';
+import { t } from '../i18n/config';
+import { getRecordModifyBlock, RecordModifyAction, recordModifyBlockMessageKey } from '../utils/recordTakeover';
 
 export type UseDataEditReturnType = {
   targetRecord: RecordType;
@@ -29,6 +32,10 @@ export type UseDataEditReturnType = {
   maxRecordNumber: number;
   photoFolder: string;
   isEditable: boolean;
+  /** この記録を変更できない理由（他のメンバー・テンプレートの記録で、管理者でないときなど）。変更できれば undefined */
+  modifyBlockMessage: string | undefined;
+  /** この記録を削除できない理由。削除できれば undefined */
+  deleteBlockMessage: string | undefined;
   changeRecord: (value: number) => void;
   saveData: () => {
     isOK: boolean;
@@ -47,7 +54,7 @@ export type UseDataEditReturnType = {
   updatePhoto: (fieldName: string, index: number, uri: string) => void;
   removePhoto: (photo: SelectedPhotoType) => void;
   selectPhoto: (fieldName: string, photo: PhotoType, index: number) => Promise<void>;
-  deleteRecord: () => void;
+  deleteRecord: () => { isOK: boolean; message: string };
   copyRecord: (originalRecord: RecordType) => RecordType;
   changeLatLonType: () => void;
   changeField: (name: string, value: string | number) => void;
@@ -59,6 +66,7 @@ export type UseDataEditReturnType = {
 export const useDataEdit = (record: RecordType, layer: LayerType): UseDataEditReturnType => {
   const dispatch = useDispatch();
   const { isSettingProject } = useProject();
+  const { isOwnerAdmin, isRunningProject } = usePermission();
   const projectId = useSelector((state: RootState) => state.settings.projectId, shallowEqual);
   const user = useSelector((state: RootState) => state.user);
   const isEditingRecord = useSelector((state: RootState) => state.settings.isEditingRecord, shallowEqual);
@@ -103,6 +111,24 @@ export const useDataEdit = (record: RecordType, layer: LayerType): UseDataEditRe
   );
 
   const maxRecordNumber = targetRecordSet.length;
+
+  //他のメンバー・テンプレートの記録を変更・削除できるのは管理者だけ（同期監査 M8・L1。utils/recordTakeover）
+  const recordModifyBlockMessage = useCallback(
+    (action: RecordModifyAction) => {
+      const block = getRecordModifyBlock({
+        layer: targetLayer,
+        recordUserId: targetRecord.userId,
+        action,
+        ownUserId: dataUser.uid,
+        isOwnerAdmin,
+        isRunningProject,
+      });
+      return block === undefined ? undefined : t(recordModifyBlockMessageKey(block));
+    },
+    [dataUser.uid, isOwnerAdmin, isRunningProject, targetLayer, targetRecord.userId]
+  );
+  const modifyBlockMessage = useMemo(() => recordModifyBlockMessage('edit'), [recordModifyBlockMessage]);
+  const deleteBlockMessage = useMemo(() => recordModifyBlockMessage('delete'), [recordModifyBlockMessage]);
 
   useEffect(() => {
     //changeRecordが呼ばれた場合、targetRecordを変更する
@@ -248,6 +274,8 @@ export const useDataEdit = (record: RecordType, layer: LayerType): UseDataEditRe
   );
 
   const saveData = useCallback(() => {
+    //他のメンバー・テンプレートの記録を変えてよいか（同期監査 L1）。だめなら何も変えずに理由を返す
+    if (modifyBlockMessage !== undefined) return { isOK: false, message: modifyBlockMessage };
     temporaryDeletePhotoList.forEach(({ uri }) => deleteLocalPhoto(uri));
     setTemporaryDeletePhotoList([]);
     setTemporaryAddedPhotoList([]);
@@ -269,30 +297,35 @@ export const useDataEdit = (record: RecordType, layer: LayerType): UseDataEditRe
       }
     });
 
-    //データの更新。userIdが変更される場合は、元のデータを削除して新しいデータを追加する
+    //データの更新。userIdが変更される場合は、元の集合から自分の集合へ持ち替える
+    //（他のメンバーの記録は、ストアの所有権の規則 modules/recordOwnership が管理者なら引き継ぎにする）
     if (targetRecord.userId !== dataUser.uid) {
       dispatch(
-        deleteRecordsAction({
+        moveRecordsToUserAction({
           layerId: targetLayer.id,
-          userId: targetRecord.userId,
-          data: [targetRecord],
+          fromUserId: targetRecord.userId,
+          toUserId: dataUser.uid,
+          toDisplayName: dataUser.displayName,
+          data: [updatedRecord],
+        })
+      );
+    } else {
+      updatedRecord.userId = dataUser.uid;
+      updatedRecord.displayName = dataUser.displayName;
+      dispatch(
+        updateRecordsAction({
+          layerId: targetLayer.id,
+          userId: dataUser.uid,
+          data: [updatedRecord],
         })
       );
     }
-    updatedRecord.userId = dataUser.uid;
-    updatedRecord.displayName = dataUser.displayName;
-    dispatch(
-      updateRecordsAction({
-        layerId: targetLayer.id,
-        userId: dataUser.uid,
-        data: [updatedRecord],
-      })
-    );
 
     setIsEditingRecord(false);
     setIsLatLonDirty(false);
     return { isOK: true, message: '' };
   }, [
+    modifyBlockMessage,
     temporaryDeletePhotoList,
     targetLayer,
     targetRecord,
@@ -325,7 +358,12 @@ export const useDataEdit = (record: RecordType, layer: LayerType): UseDataEditRe
   );
 
   const deleteRecord = useCallback(() => {
+    //他のメンバー・テンプレートの記録を消してよいか（同期監査 M8）。だめなら写真も含めて何も消さずに理由を返す
+    if (deleteBlockMessage !== undefined) return { isOK: false, message: deleteBlockMessage };
+    //編集中のまま消すときは、編集を保存せずに元の記録を消す。写真は、編集で足したもの（targetRecord に入っている）と
+    //編集で外したもの（temporaryDeletePhotoList。保存済みの記録にはまだ入っている）の両方を消す
     deleteRecordPhotos(targetLayer, targetRecord);
+    temporaryDeletePhotoList.forEach(({ uri }) => deleteLocalPhoto(uri));
     setTemporaryDeletePhotoList([]);
     setTemporaryAddedPhotoList([]);
 
@@ -347,7 +385,20 @@ export const useDataEdit = (record: RecordType, layer: LayerType): UseDataEditRe
         data: deletedRecords,
       })
     );
-  }, [targetLayer, targetRecord, isMapMemoLayer, dispatch, dataSet, layer.id]);
+    setIsEditingRecord(false);
+    setIsLatLonDirty(false);
+    return { isOK: true, message: '' };
+  }, [
+    deleteBlockMessage,
+    targetLayer,
+    targetRecord,
+    temporaryDeletePhotoList,
+    isMapMemoLayer,
+    dispatch,
+    dataSet,
+    layer.id,
+    setIsEditingRecord,
+  ]);
 
   const changeField = useCallback(
     (name: string, value: string | number) => {
@@ -418,8 +469,10 @@ export const useDataEdit = (record: RecordType, layer: LayerType): UseDataEditRe
     (originalRecord: RecordType) => {
       const id = ulid();
 
+      //複製は新しい id の自分の記録なので、元の記録の引き継ぎ元（takenOverFrom）は持ち越さない
+      const { takenOverFrom: _takenOverFrom, ...rest } = originalRecord;
       const newData: RecordType = {
-        ...originalRecord,
+        ...rest,
         id: id,
         userId: dataUser.uid,
         displayName: dataUser.displayName,
@@ -442,6 +495,8 @@ export const useDataEdit = (record: RecordType, layer: LayerType): UseDataEditRe
     maxRecordNumber,
     photoFolder,
     isEditable,
+    modifyBlockMessage,
+    deleteBlockMessage,
     addPhoto,
     removePhoto,
     selectPhoto,

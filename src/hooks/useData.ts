@@ -18,6 +18,8 @@ import { updateLayerAction } from '../modules/layers';
 import { selectNonDeletedAllUserRecordSet, selectNonDeletedLayerRecordSetWithChildren } from '../modules/selectors';
 import { deleteRecordPhotos } from '../utils/Photo';
 import { useProject } from './useProject';
+import { getRecordModifyBlock, recordModifyBlockMessageKey } from '../utils/recordTakeover';
+import { t } from '../i18n/config';
 
 export type UseDataReturnType = {
   sortedRecordSet: RecordType[];
@@ -44,7 +46,8 @@ export type UseDataReturnType = {
     fields?: { [key: string]: string | number | PhotoType[] },
     currentLocation?: { latitude: number; longitude: number; altitude?: number }
   ) => RecordType;
-  deleteRecords: () => void;
+  /** チェックした記録を消す。他のメンバー・テンプレートの記録を含み、消せないときは何も消さずに理由を返す */
+  deleteRecords: () => { isOK: boolean; message: string };
   withChildRecords: (records: RecordType[]) => RecordType[];
   updateRecordSetOrder: (sortedRecordSet_: RecordType[]) => void;
 };
@@ -66,7 +69,7 @@ export const useData = (layerId: string): UseDataReturnType => {
   const projectId = useSelector((state: RootState) => state.settings.projectId, shallowEqual);
   const user = useSelector((state: RootState) => state.user, shallowEqual);
   // console.log('🔍 route.params:', route.params);
-  const { isSettingProject } = useProject();
+  const { isSettingProject, isOwnerAdmin } = useProject();
   const [sortedRecordSet, setSortedRecordSet] = useState<RecordType[]>([]);
   const [checkList, setCheckList] = useState<CheckListItem[]>([]);
   const [sortedOrder, setSortedOrder] = useState<SortOrderType>('UNSORTED');
@@ -336,6 +339,22 @@ export const useData = (layerId: string): UseDataReturnType => {
     //子はマップメモに限らず親と一緒に消す（飛翔図の行動記号も _group でぶら下がる）。残すと地図に孤立して残り、
     //一覧に出ないので消す手段も無く、アップロードで他のメンバーにも配られる
     const deletedRecords = withChildRecords(checkedRecords);
+    //他のメンバー・テンプレートの記録を消せるのは管理者だけ（同期監査 M8）。一部だけ消すと、どれが残ったのか
+    //利用者に分からないので、消せないものが1つでもあれば何も消さずに理由を返す
+    const isRunningProject = !isClosedProject && !isSettingProject;
+    for (const record of deletedRecords) {
+      const block = getRecordModifyBlock({
+        layer: targetLayer,
+        recordUserId: record.userId,
+        action: 'delete',
+        ownUserId: dataUser.uid,
+        isOwnerAdmin,
+        isRunningProject,
+      });
+      if (block !== undefined) {
+        return { isOK: false, message: `${t('Data.alert.cannotDeleteOthersRecords')}\n${t(recordModifyBlockMessageKey(block))}` };
+      }
+    }
     //写真の削除は従来どおりマップメモのときだけ（挙動を変えない）
     if (isMapMemoLayer) {
       checkedRecords.forEach((record) => {
@@ -344,14 +363,30 @@ export const useData = (layerId: string): UseDataReturnType => {
       });
     }
     setCheckList([]);
-    dispatch(
-      deleteRecordsAction({
-        layerId: targetLayer.id,
-        userId: dataUser.uid,
-        data: deletedRecords,
-      })
-    );
-  }, [withChildRecords, checkedRecords, dataUser.uid, dispatch, isMapMemoLayer, targetLayer]);
+    //記録のある集合（名義）ごとに消す。以前は自分の集合だけを指定していたので、テンプレートや他のメンバーの記録は
+    //チェックしても消えなかった。他のメンバーの記録は、ストアの所有権の規則（modules/recordOwnership）が
+    //管理者の引き継いだ墓標に置き換える
+    const byBucket = new Map<string | undefined, RecordType[]>();
+    deletedRecords.forEach((record) => {
+      const list = byBucket.get(record.userId);
+      if (list === undefined) byBucket.set(record.userId, [record]);
+      else list.push(record);
+    });
+    byBucket.forEach((data, userId) => {
+      dispatch(deleteRecordsAction({ layerId: targetLayer.id, userId, data }));
+    });
+    return { isOK: true, message: '' };
+  }, [
+    withChildRecords,
+    checkedRecords,
+    isClosedProject,
+    isSettingProject,
+    targetLayer,
+    dataUser.uid,
+    isOwnerAdmin,
+    isMapMemoLayer,
+    dispatch,
+  ]);
 
   useEffect(() => {
     if (targetLayer === undefined) return;

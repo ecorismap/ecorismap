@@ -12,6 +12,10 @@ interface DataEditContextType {
   maxRecordNumber: number;
   projectId: string | undefined;
   isEditable: boolean;
+  /** この記録を変更できない理由（他のメンバー・テンプレートの記録など）。変更できれば undefined */
+  modifyBlockMessage: string | undefined;
+  /** この記録を削除できない理由。削除できれば undefined */
+  deleteBlockMessage: string | undefined;
   changeLatLonType: () => void;
   changeLatLon: (val: string, latlonType: 'latitude' | 'longitude', dmsType: 'decimal' | 'deg' | 'min' | 'sec') => void;
   changeField: (name: string, value: string | number) => void;
