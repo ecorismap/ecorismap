@@ -32,6 +32,8 @@ export type UseProjectReturnType = {
   clearProject: () => void;
   /** 一部の写真をアップロードできなかったときは警告文を返す */
   saveProjectSetting: () => Promise<string | undefined>;
+  /** 設定モードで開いた後に、別の端末（別の管理者）が設定を保存していないか */
+  isProjectSettingCurrent: () => Promise<boolean>;
 };
 
 export const useProject = (): UseProjectReturnType => {
@@ -103,6 +105,16 @@ export const useProject = (): UseProjectReturnType => {
     clearAllVisibilitySnapshots();
   }, [dispatch, store]);
 
+  const isProjectSettingCurrent = useCallback(async () => {
+    if (project === undefined) return true;
+    try {
+      return await projectStore.isSettingsUpdatedAtCurrent(project.id, store.getState().settings.updatedAt);
+    } catch (e) {
+      // 確かめられないときは「別の端末で保存されたかもしれない」として利用者に選ばせる
+      return false;
+    }
+  }, [project, store]);
+
   const saveProjectSetting = useCallback(async () => {
     //コモンデータの写真はあればアップロードする
     if (project === undefined) throw new Error(t('hooks.message.unknownError'));
@@ -143,5 +155,6 @@ export const useProject = (): UseProjectReturnType => {
     syncPosition,
     clearProject,
     saveProjectSetting,
+    isProjectSettingCurrent,
   } as const;
 };
