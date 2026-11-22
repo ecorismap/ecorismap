@@ -3,6 +3,7 @@ import {
   confirmTrackingLeave,
   finishTrackingBeforeLeave,
   isTrackingActive,
+  leaveHomeWithTrackingGuard,
   leaveWithTrackingGuard,
   registerTrackingLeaveHandler,
   stopAndSaveTrack,
@@ -11,11 +12,16 @@ import {
   TrackingLeaveResult,
   waitUntil,
 } from '../trackingLeaveGuard';
+import { trackLogMMKV } from '../mmkvStorage';
+import { Platform } from 'react-native';
 
 jest.mock('../../components/molecules/AlertAsync', () => ({
   AlertAsync: jest.fn(async () => true),
   ConfirmAsync: jest.fn(async () => true),
   waitForModalTransition: jest.fn(async () => undefined),
+}));
+jest.mock('../mmkvStorage', () => ({
+  trackLogMMKV: { getTrackingState: jest.fn(() => 'off') },
 }));
 jest.mock('../../i18n/config', () => ({
   t: jest.fn((key: string, opts?: Record<string, string>) => (opts ? `${key}:${JSON.stringify(opts)}` : key)),
@@ -23,6 +29,9 @@ jest.mock('../../i18n/config', () => ({
 
 const mockConfirm = ConfirmAsync as jest.MockedFunction<typeof ConfirmAsync>;
 const mockAlert = AlertAsync as jest.MockedFunction<typeof AlertAsync>;
+const mockGetTrackingState = trackLogMMKV.getTrackingState as jest.MockedFunction<
+  typeof trackLogMMKV.getTrackingState
+>;
 
 type ResultFn = jest.Mock<Promise<TrackingLeaveResult>, []>;
 const ok = (): ResultFn => jest.fn(async () => ({ isOK: true, message: '' }));
@@ -49,9 +58,15 @@ const register = (h: TrackingLeaveHandler) => {
   unregister = registerTrackingLeaveHandler(h);
 };
 
+const setPlatform = (os: string) => {
+  (Platform as { OS: string }).OS = os;
+};
+
 beforeEach(() => {
   jest.clearAllMocks();
+  setPlatform('android');
   mockConfirm.mockResolvedValue(true);
+  mockGetTrackingState.mockReturnValue('off');
 });
 afterEach(() => {
   unregister?.();
@@ -286,5 +301,194 @@ describe('waitUntil', () => {
     let n = 0;
     await expect(waitUntil(() => ++n >= 3, { timeoutMs: 1000, intervalMs: 1 })).resolves.toBe(true);
     await expect(waitUntil(() => false, { timeoutMs: 10, intervalMs: 1 })).resolves.toBe(false);
+  });
+});
+
+describe('leaveHomeWithTrackingGuard（ホームから別の画面へ移る、軌跡監査 T-H1）', () => {
+  it('記録していなければ（GPS だけ ON を含む）確認なしに1回だけ移る', async () => {
+    const { handler, stopAndSave } = makeHandler({ isTracking: () => false });
+    register(handler);
+    const navigate = jest.fn();
+    await expect(leaveHomeWithTrackingGuard(navigate)).resolves.toBe(true);
+    expect(navigate).toHaveBeenCalledTimes(1);
+    expect(mockConfirm).not.toHaveBeenCalled();
+    expect(mockAlert).not.toHaveBeenCalled();
+    expect(stopAndSave).not.toHaveBeenCalled();
+  });
+
+  it('記録中は画面を移る確認を出し、了承したら止めて保存し、通常利用中のプロジェクトではアップロードし終えてから移る', async () => {
+    const order: string[] = [];
+    const { handler, stopAndSave, uploadTrack } = makeHandler({
+      stopAndSave: jest.fn(async () => {
+        order.push('stopAndSave');
+        return { isOK: true, message: '' };
+      }),
+      uploadTrack: jest.fn(async () => {
+        order.push('upload');
+        return { isOK: true, message: '' };
+      }),
+    });
+    register(handler);
+    const navigate = jest.fn(() => {
+      order.push('navigate');
+    });
+    await expect(leaveHomeWithTrackingGuard(navigate)).resolves.toBe(true);
+    expect(mockConfirm).toHaveBeenCalledTimes(1);
+    expect(mockConfirm.mock.calls[0][0]).toContain('Home.confirm.stopTrackingBeforeLeaveHome');
+    expect(mockConfirm.mock.calls[0][0]).toContain('Home.confirm.stopTrackingUploadNote');
+    expect(stopAndSave).toHaveBeenCalledTimes(1);
+    expect(uploadTrack).toHaveBeenCalledTimes(1);
+    expect(order).toEqual(['stopAndSave', 'upload', 'navigate']);
+  });
+
+  it('キャンセルしたら記録を続けたまま移らない', async () => {
+    const { handler, stopAndSave } = makeHandler();
+    register(handler);
+    mockConfirm.mockResolvedValueOnce(false);
+    const navigate = jest.fn();
+    await expect(leaveHomeWithTrackingGuard(navigate)).resolves.toBe(false);
+    expect(stopAndSave).not.toHaveBeenCalled();
+    expect(navigate).not.toHaveBeenCalled();
+  });
+
+  it('アップロードできなければ移らない（軌跡は端末内に保存済み）', async () => {
+    const { handler, stopAndSave } = makeHandler({
+      uploadTrack: jest.fn(async () => ({ isOK: false, message: 'offline' })),
+    });
+    register(handler);
+    const navigate = jest.fn();
+    await expect(leaveHomeWithTrackingGuard(navigate)).resolves.toBe(false);
+    expect(stopAndSave).toHaveBeenCalledTimes(1);
+    expect(mockAlert.mock.calls[0][0]).toContain('Home.alert.stopTrackingUploadFailed');
+    expect(navigate).not.toHaveBeenCalled();
+  });
+
+  it('保存できなければ移らない', async () => {
+    const { handler } = makeHandler({
+      stopAndSave: jest.fn(async () => ({ isOK: false, message: 'disk' })),
+    });
+    register(handler);
+    const navigate = jest.fn();
+    await expect(leaveHomeWithTrackingGuard(navigate)).resolves.toBe(false);
+    expect(navigate).not.toHaveBeenCalled();
+  });
+
+  it('設定の編集中は保存だけしてアップロードせずに移る', async () => {
+    const { handler, stopAndSave, uploadTrack } = makeHandler({
+      getContext: () => ({ projectName: 'P1', isRunningProject: false }),
+    });
+    register(handler);
+    const navigate = jest.fn();
+    await expect(leaveHomeWithTrackingGuard(navigate)).resolves.toBe(true);
+    expect(stopAndSave).toHaveBeenCalledTimes(1);
+    expect(uploadTrack).not.toHaveBeenCalled();
+    expect(navigate).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('記録ガードの二重実行の防止', () => {
+  it('保存・アップロードの途中で2回目が来ても、記録が off に見えることで素通りせず、移らない', async () => {
+    let tracking = true;
+    let releaseUpload: () => void = () => undefined;
+    const uploadGate = new Promise<void>((resolve) => {
+      releaseUpload = resolve;
+    });
+    const { handler, stopAndSave, uploadTrack } = makeHandler({
+      isTracking: () => tracking,
+      stopAndSave: jest.fn(async () => {
+        // toggleTracking('off') が先に記録の状態を off にする
+        tracking = false;
+        return { isOK: true, message: '' };
+      }),
+      uploadTrack: jest.fn(async () => {
+        await uploadGate;
+        return { isOK: true, message: '' };
+      }),
+    });
+    register(handler);
+    const first = jest.fn();
+    const second = jest.fn();
+    const firstCall = leaveHomeWithTrackingGuard(first);
+    // アップロード待ちに入るまで進める
+    await waitUntil(() => uploadTrack.mock.calls.length > 0, { timeoutMs: 1000, intervalMs: 1 });
+    await expect(leaveHomeWithTrackingGuard(second)).resolves.toBe(false);
+    const closeConfirm = jest.fn(async () => true);
+    await expect(leaveWithTrackingGuard('closeProject', closeConfirm)).resolves.toBe(false);
+    expect(second).not.toHaveBeenCalled();
+    expect(closeConfirm).not.toHaveBeenCalled();
+    expect(first).not.toHaveBeenCalled();
+
+    releaseUpload();
+    await expect(firstCall).resolves.toBe(true);
+    expect(first).toHaveBeenCalledTimes(1);
+    expect(stopAndSave).toHaveBeenCalledTimes(1);
+  });
+
+  it('終わったあと（キャンセル・失敗・例外を含む）は、次の呼び出しを受け付ける', async () => {
+    const { handler } = makeHandler();
+    register(handler);
+    mockConfirm.mockResolvedValueOnce(false);
+    await expect(leaveHomeWithTrackingGuard(jest.fn())).resolves.toBe(false);
+    await expect(
+      leaveWithTrackingGuard('closeProject', async () => {
+        throw new Error('boom');
+      })
+    ).rejects.toThrow('boom');
+    const navigate = jest.fn();
+    await expect(leaveHomeWithTrackingGuard(navigate)).resolves.toBe(true);
+    expect(navigate).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('ホームがいない（handler が無い）のに記録の意図が残っているときの防御', () => {
+  it('handler が無く記録の意図も off なら、従来どおり記録していないとみなす', async () => {
+    const confirmLeave = jest.fn(async () => true);
+    await expect(leaveWithTrackingGuard('openProject', confirmLeave)).resolves.toBe(true);
+    await expect(stopTrackingBeforeForcedLogout()).resolves.toBe(true);
+    expect(confirmLeave).toHaveBeenCalledTimes(1);
+    expect(mockAlert).not.toHaveBeenCalled();
+  });
+
+  it('記録の意図が on なら、プロジェクトを開く前に案内を出して進めない（操作の確認も出さない）', async () => {
+    mockGetTrackingState.mockReturnValue('on');
+    const confirmLeave = jest.fn(async () => true);
+    await expect(leaveWithTrackingGuard('openProject', confirmLeave)).resolves.toBe(false);
+    expect(confirmLeave).not.toHaveBeenCalled();
+    expect(mockConfirm).not.toHaveBeenCalled();
+    expect(mockAlert).toHaveBeenCalledWith('Home.alert.stopTrackingFromHome');
+  });
+
+  it('取りやめられないログアウトでは通知だけ出して進める', async () => {
+    mockGetTrackingState.mockReturnValue('on');
+    await expect(stopTrackingBeforeForcedLogout()).resolves.toBe(true);
+    expect(mockAlert).toHaveBeenCalledWith('Home.alert.trackingContinuesAfterForcedLogout');
+  });
+
+  it('handler があるときは MMKV ではなく handler の状態で判断する', async () => {
+    mockGetTrackingState.mockReturnValue('on');
+    const { handler } = makeHandler({ isTracking: () => false });
+    register(handler);
+    await expect(leaveHomeWithTrackingGuard(jest.fn())).resolves.toBe(true);
+    expect(mockAlert).not.toHaveBeenCalled();
+    expect(mockConfirm).not.toHaveBeenCalled();
+  });
+
+  it('iOS ではホームに戻ると記録が止まり保存を尋ねられるので、その確認に従うよう案内する', async () => {
+    setPlatform('ios');
+    mockGetTrackingState.mockReturnValue('on');
+    await expect(leaveWithTrackingGuard('openProject', jest.fn(async () => true))).resolves.toBe(false);
+    expect(mockAlert).toHaveBeenCalledWith('Home.alert.stopTrackingFromHomeIos');
+    mockAlert.mockClear();
+    await expect(stopTrackingBeforeForcedLogout()).resolves.toBe(true);
+    expect(mockAlert).toHaveBeenCalledWith('Home.alert.trackingContinuesAfterForcedLogoutIos');
+  });
+
+  it('Web は記録しないので、記録の意図が残っていても素通りする', async () => {
+    setPlatform('web');
+    mockGetTrackingState.mockReturnValue('on');
+    const confirmLeave = jest.fn(async () => true);
+    await expect(leaveWithTrackingGuard('openProject', confirmLeave)).resolves.toBe(true);
+    expect(confirmLeave).toHaveBeenCalledTimes(1);
+    expect(mockAlert).not.toHaveBeenCalled();
   });
 });

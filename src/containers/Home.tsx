@@ -41,6 +41,7 @@ import {
 import { isExternalFixActive } from '../lib/gnss/externalGnssStore';
 import { buildHomeDownloadMergeInput, getHomeDownloadFetchModes } from '../utils/homeDownload';
 import {
+  leaveHomeWithTrackingGuard,
   leaveWithTrackingGuard,
   registerTrackingLeaveHandler,
   stopAndSaveTrack,
@@ -2383,20 +2384,26 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
   }, [clearProject, navigateToSplit, navigation, project]);
   /****************** goto ****************************/
 
+  // 別の画面へ移るとこの画面がアンマウントされ、軌跡の記録（useLocation）の購読と記録ガードの handler が外れる。
+  // 記録中は移る前に止めて保存させ、キャンセルや保存・アップロードの失敗なら移らない（軌跡監査 T-H1）
   const gotoProjects = useCallback(async () => {
-    navigation.navigate('Projects');
+    await leaveHomeWithTrackingGuard(() => navigation.navigate('Projects'));
   }, [navigation]);
 
   const gotoAccount = useCallback(async () => {
-    navigation.navigate('AccountSettings', {
-      previous: 'Home',
-    });
+    await leaveHomeWithTrackingGuard(() =>
+      navigation.navigate('AccountSettings', {
+        previous: 'Home',
+      })
+    );
   }, [navigation]);
 
-  const gotoLogin = useCallback(() => {
-    navigation.navigate('Account', {
-      accountFormState: 'selectLoginMethod',
-    });
+  const gotoLogin = useCallback(async () => {
+    await leaveHomeWithTrackingGuard(() =>
+      navigation.navigate('Account', {
+        accountFormState: 'selectLoginMethod',
+      })
+    );
   }, [navigation]);
 
   const gotoLayers = useCallback(async () => {

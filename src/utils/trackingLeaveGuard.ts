@@ -1,5 +1,7 @@
+import { Platform } from 'react-native';
 import { AlertAsync, ConfirmAsync, waitForModalTransition } from '../components/molecules/AlertAsync';
 import { t } from '../i18n/config';
+import { trackLogMMKV } from './mmkvStorage';
 
 /**
  * 軌跡の記録中にプロジェクトを切り替える・閉じる・ログアウトするときの確認と、記録の停止・保存・アップロード（同期監査 M13）。
@@ -14,9 +16,14 @@ import { t } from '../i18n/config';
  *
  * 確認と実行は分ける。軌跡の確認 → 操作そのものの確認（「アップロードしていないデータは破棄されます」など）→
  * 停止・保存・アップロード の順にし、どちらかの確認でキャンセルしたら記録を続けたまま何もしない（leaveWithTrackingGuard）。
+ *
+ * ホームから別の画面（プロジェクト一覧・アカウント設定・ログイン）へ移るときもここを通す（'leaveHome'、軌跡監査 T-H1）。
+ * 画面は今の1つだけを描くので、移るとホームがアンマウントされ、記録（useLocation）の購読とこの handler が外れる。
+ * そのまま記録を続けると、移った先の画面にいる間の点が軌跡から抜け、プロジェクト編集画面やアカウント画面の
+ * ガードも「記録していない」とみなして素通りする。そのため、記録中はホームを離れる前に止めて保存させる。
  */
 
-export type TrackingLeaveAction = 'openProject' | 'closeProject' | 'logout';
+export type TrackingLeaveAction = 'openProject' | 'closeProject' | 'logout' | 'leaveHome';
 
 export type TrackingLeaveContext = {
   /** いま開いているプロジェクトの名前。開いていなければ undefined（端末内のデータ） */
@@ -38,6 +45,14 @@ export type TrackingLeaveHandler = {
 
 let handler: TrackingLeaveHandler | null = null;
 
+/**
+ * leaveWithTrackingGuard が実行中か。停止・保存の途中で toggleTracking('off') が記録の状態を先に 'off' にするため、
+ * 保存やアップロードが終わる前に2回目の呼び出し（ボタンの押し直しなど）が来ると「記録していない」とみなして
+ * 素通りし、1回目の保存・アップロードが終わらないうちに画面を移ったりデータを捨てたりしてしまう。実行中の
+ * 呼び出しは何もせず false を返す（1回目が終われば、1回目の呼び出し元が続きを行う）
+ */
+let leaving = false;
+
 export const registerTrackingLeaveHandler = (next: TrackingLeaveHandler): (() => void) => {
   handler = next;
   return () => {
@@ -46,6 +61,27 @@ export const registerTrackingLeaveHandler = (next: TrackingLeaveHandler): (() =>
 };
 
 export const isTrackingActive = (): boolean => handler?.isTracking() ?? false;
+
+/**
+ * ホームがいない（handler が無い）のに記録の意図が 'on' のまま残っているか。ホームを離れる前に必ず止めるので
+ * 通常は起きないが、取りこぼした経路があっても「記録していない」とみなして素通りしないための防御。
+ * Web はホームが handler を登録せず記録もしないので対象外
+ */
+const isTrackingWithoutHandler = (): boolean => Platform.OS !== 'web' && trackLogMMKV.getTrackingState() === 'on';
+
+/**
+ * ホームがいない画面で記録の意図だけが残っているときの案内。Android はホームに戻ると記録が再開するので、そこで止めて
+ * もらう。iOS はホームの再マウントで記録の状態を 'off' に書き換えて止め、未保存の軌跡を保存するか尋ねる
+ * （useLocation の初期化）ので、「ホームで止める」操作はできない。その確認に従ってもらう
+ */
+const withoutHandlerMessage = (kind: 'blocked' | 'forcedLogout') =>
+  Platform.OS === 'ios'
+    ? kind === 'blocked'
+      ? t('Home.alert.stopTrackingFromHomeIos')
+      : t('Home.alert.trackingContinuesAfterForcedLogoutIos')
+    : kind === 'blocked'
+      ? t('Home.alert.stopTrackingFromHome')
+      : t('Home.alert.trackingContinuesAfterForcedLogout');
 
 const shouldUpload = (context: TrackingLeaveContext) => context.projectName !== undefined && context.isRunningProject;
 
@@ -58,15 +94,22 @@ const CONFIRM_KEYS: Record<TrackingLeaveAction, string> = {
   openProject: 'Home.confirm.stopTrackingBeforeOpenProject',
   closeProject: 'Home.confirm.stopTrackingBeforeCloseProject',
   logout: 'Home.confirm.stopTrackingBeforeLogout',
+  leaveHome: 'Home.confirm.stopTrackingBeforeLeaveHome',
 };
 
 /**
  * 記録中なら、止めて保存（通常利用中のプロジェクトではアップロードも）してよいかを尋ねる。ここでは何も止めない。
- * 戻り値が true なら呼び出し元は続けてよい（記録していないときも true）
+ * 戻り値が true なら呼び出し元は続けてよい（記録していないときも true）。
+ * ホームがいない画面から呼ばれ、記録の意図だけが残っているときは、ここでは止められないので案内を出して false を返す
  */
 export const confirmTrackingLeave = async (action: TrackingLeaveAction): Promise<boolean> => {
   const current = handler;
-  if (current === null || !current.isTracking()) return true;
+  if (current === null) {
+    if (!isTrackingWithoutHandler()) return true;
+    await AlertAsync(withoutHandlerMessage('blocked'));
+    return false;
+  }
+  if (!current.isTracking()) return true;
   const context = current.getContext();
   const dest = buildDestination(context);
   const notes = [
@@ -150,18 +193,41 @@ export const leaveWithTrackingGuard = async (
   action: TrackingLeaveAction,
   confirmLeave: () => Promise<boolean>
 ): Promise<boolean> => {
-  if (!(await confirmTrackingLeave(action))) return false;
-  if (!(await confirmLeave())) return false;
-  return await finishTrackingBeforeLeave();
+  // 実行中なら何もしない（leaving の説明を参照）
+  if (leaving) return false;
+  leaving = true;
+  try {
+    if (!(await confirmTrackingLeave(action))) return false;
+    if (!(await confirmLeave())) return false;
+    return await finishTrackingBeforeLeave();
+  } finally {
+    leaving = false;
+  }
+};
+
+/**
+ * ホームから別の画面へ移る（'leaveHome'）。記録中なら止めて保存（通常利用中のプロジェクトではアップロードも）して
+ * よいかを尋ね、了承されて止め終わってから navigate を1回だけ呼ぶ。キャンセルや保存・アップロードの失敗、
+ * 別の記録ガードの実行中なら navigate を呼ばずに false を返す。記録していない（GPS だけ ON を含む）ときは確認なしに移る。
+ * 移る処理を引数で受け取るのは、ガードを通さずに移る・待たずに移る、という配線の誤りを起こしにくくするため
+ */
+export const leaveHomeWithTrackingGuard = async (navigate: () => void): Promise<boolean> => {
+  if (!(await leaveWithTrackingGuard('leaveHome', async () => true))) return false;
+  navigate();
+  return true;
 };
 
 /**
  * 取りやめられないログアウト（暗号化キーの登録中断など）の前に、記録中なら通知を出して止めて保存する。
- * 保存に失敗しても true を返す
+ * 保存に失敗しても true を返す。ホームがいない画面で記録の意図だけが残っているときは、止められないので通知だけ出す
  */
 export const stopTrackingBeforeForcedLogout = async (): Promise<boolean> => {
   const current = handler;
-  if (current === null || !current.isTracking()) return true;
+  if (current === null) {
+    if (isTrackingWithoutHandler()) await AlertAsync(withoutHandlerMessage('forcedLogout'));
+    return true;
+  }
+  if (!current.isTracking()) return true;
   await AlertAsync(t('Home.alert.stopTrackingForLogout', { dest: buildDestination(current.getContext()) }));
   return await finishTrackingBeforeLeave({ force: true });
 };
