@@ -273,8 +273,29 @@ describe('stopAndSaveTrack', () => {
       onSaved,
     });
     expect(order).toEqual(['tracking:off', 'gps:off', 'save']);
-    expect(result).toEqual({ isOK: true, message: 'note' });
+    // 保存の結果をそのまま返す（ボタン側はサマリーを開くのに layer と record を使う）
+    expect(result).toEqual({ isOK: true, message: 'note', layer: { id: 'track' } });
     expect(onSaved).toHaveBeenCalledWith('track');
+  });
+
+  it('軌跡ボタンからは onSaved なしで使え、保存より先に止める（停止の途中に届いた点を消さない。T-L2）', async () => {
+    const order: string[] = [];
+    const record = { id: 'r1', userId: 'u1' };
+    const result = await stopAndSaveTrack({
+      toggleTracking: async (state) => {
+        order.push(`tracking:${state}`);
+      },
+      toggleGPS: async (state) => {
+        order.push(`gps:${state}`);
+      },
+      saveTrackLog: async () => {
+        order.push('save');
+        return { isOK: true, message: '', layer: { id: 'track' }, record };
+      },
+    });
+    expect(order).toEqual(['tracking:off', 'gps:off', 'save']);
+    expect(result.record).toBe(record);
+    expect(result.layer).toEqual({ id: 'track' });
   });
 
   it('点が足りず保存しなかった・保存に失敗したときは、アップロードの対象を残さない', async () => {

@@ -19,7 +19,7 @@ import { saveProjectBackup } from '../utils/projectBackup';
 import { markLayerUploaded } from '../utils/unsyncedChanges';
 import { deleteDataAction, setDataSetAction, updateDataAction, updateRecordsAction } from '../modules/dataSet';
 import { setDataSyncTimestampsAction, dataSyncKey } from '../modules/dataSync';
-import { layersInitialState, setLayersAction } from '../modules/layers';
+import { layersInitialState, setLayersAction, TRACK_LAYER_ID } from '../modules/layers';
 import { tileMapsInitialState, setTileMapsAction } from '../modules/tileMaps';
 import { dropUnsafeTileMaps } from '../utils/tileMapId';
 import { photoDownloadTarget } from '../utils/photoDownloadPath';
@@ -825,8 +825,12 @@ export const useRepository = (): UseRepositoryReturnType & {
       }
       const settingsMismatchedIds = new Set(settingsMismatchedLayers.map((l) => l.id));
 
+      // 軌跡はテンプレートとして配らない（T-M9）。設定の編集中に記録した管理者の軌跡が、userId:'template' として
+      // 全メンバーの地図に出てしまうため。削除（deleteCommonAndTemplateData）の対象には軌跡を残してあるので、
+      // 以前に配ってしまった軌跡のテンプレートは次の「設定を保存」で消える
+      const isTemplateExcluded = (l: LayerType) => uploadType === 'Template' && l.id === TRACK_LAYER_ID;
       const targetLayers = getTargetLayers(layers, uploadType).filter(
-        (l) => isRequestedLayer(l) && !settingsMismatchedIds.has(l.id)
+        (l) => isRequestedLayer(l) && !settingsMismatchedIds.has(l.id) && !isTemplateExcluded(l)
       );
 
       // --- 同一アカウント・複数端末での上書き消失防止（衝突検知→確認→対処） ---

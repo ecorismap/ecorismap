@@ -38,7 +38,7 @@ import {
   ConfirmAsync,
   waitForModalTransition,
 } from '../components/molecules/AlertAsync';
-import { isExternalFixActive } from '../lib/gnss/externalGnssStore';
+import { dropInactiveExternalLocation, isExternalFixActive } from '../lib/gnss/externalGnssStore';
 import { buildHomeDownloadMergeInput, getHomeDownloadFetchModes } from '../utils/homeDownload';
 import {
   leaveHomeWithTrackingGuard,
@@ -72,6 +72,7 @@ import {
   isPolygonTool,
 } from '../utils/General';
 import { getEventTimestamp } from '../utils/OneEuroFilter';
+import { runTrackingPress } from '../utils/trackingPress';
 import { t } from '../i18n/config';
 import { COLOR, TILE_FOLDER } from '../constants/AppConstants';
 import * as FileSystem from 'expo-file-system/legacy';
@@ -1573,9 +1574,12 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     // 記録中に getCurrentPosition を呼ぶとiOSで古い位置（軌跡開始地点）が返る不具合の回避。
     // 衛星捕捉中（stale=キャッシュ位置表示中）は古い座標を登録しないよう渡さない
     // （従来この時間帯はcurrentLocationがnullだったため挙動維持）。
+    // 外部GNSS受信機の切断・途絶後に残った外部位置も渡さず、測り直す（軌跡監査 T-L11）。
     const preferred =
       averaged ??
-      ((gpsState !== 'off' || trackingState === 'on') && !isLocationStale ? currentLocation : undefined);
+      ((gpsState !== 'off' || trackingState === 'on') && !isLocationStale
+        ? dropInactiveExternalLocation(currentLocation)
+        : undefined);
     if (editTarget) {
       const location = preferred ?? (await getCurrentPoint());
       if (!location) {
@@ -1991,49 +1995,50 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     });
   }, [headingUp, toggleHeadingUp]);
 
+  // 軌跡ボタンの処理中フラグ（runTrackingPress を参照）。開始は再入を防ぎ、停止は開始の処理中でも受け付ける
+  const trackingPressFlagsRef = useRef({ starting: { current: false }, stopping: { current: false } });
+
   const pressTracking = useCallback(async () => {
     if (Platform.OS === 'web') {
       await AlertAsync(t('Home.alert.trackWeb'));
       return;
     }
     //runTutrial('HOME_BTN_TRACK');
-    if (trackingState === 'off') {
-      const result = await checkUnsavedTrackLog();
-      if (!result.isOK) {
-        await AlertAsync(result.message);
-        return;
-      }
-      const ret = await ConfirmAsync(t('Home.confirm.track_start'));
-      if (!ret) return;
-      if ((await confirmLocationPermission()) !== 'granted') return;
-      await toggleGPS('follow');
-      await toggleTracking('on');
-      //描きかけがあるときはタブを閉じない。閉じると描きかけが黙って破棄されるうえ、
-      //ツール状態だけ残って操作不能にもなる。軌跡の記録と作図は同時にできるので、
-      //そのまま描き続けて確定してもらう
-      if (!hasUnsavedDrawing()) selectFeatureButton('NONE');
-    } else if (trackingState === 'on') {
-      const ret = await ConfirmAsync(t('Home.confirm.track'));
-      if (ret) {
-        const result = await saveTrackLog();
-        if (!result.isOK) {
-          await AlertAsync(result.message);
-        }
-        await toggleTracking('off');
-        await toggleGPS('off');
-        // 保存に成功したら軌跡サマリーを表示する
-        if (result.isOK && result.layer !== undefined && result.record !== undefined) {
-          openSheet(isLandscape ? 2 : 1);
-          navigateToSplit('TrackSummary', {
-            layerId: result.layer.id,
-            recordId: result.record.id,
-            userId: result.record.userId,
-            previous: 'Home',
-          });
-        }
-      }
-    }
-  }, [openSheet, 
+    await runTrackingPress({
+      trackingState,
+      flags: trackingPressFlagsRef.current,
+      messages: {
+        confirmStart: t('Home.confirm.track_start'),
+        confirmStop: t('Home.confirm.track'),
+        busy: t('Home.alert.trackBusy'),
+      },
+      checkUnsavedTrackLog,
+      confirm: ConfirmAsync,
+      alert: AlertAsync,
+      waitForModalTransition,
+      confirmLocationPermission,
+      toggleGPS,
+      toggleTracking,
+      saveTrackLog,
+      onStarted: () => {
+        //描きかけがあるときはタブを閉じない。閉じると描きかけが黙って破棄されるうえ、
+        //ツール状態だけ残って操作不能にもなる。軌跡の記録と作図は同時にできるので、
+        //そのまま描き続けて確定してもらう
+        if (!hasUnsavedDrawing()) selectFeatureButton('NONE');
+      },
+      // 保存に成功したら軌跡サマリーを表示する
+      onSaved: (layer, record) => {
+        openSheet(isLandscape ? 2 : 1);
+        navigateToSplit('TrackSummary', {
+          layerId: layer.id,
+          recordId: record.id,
+          userId: record.userId,
+          previous: 'Home',
+        });
+      },
+    });
+  }, [
+    openSheet,
     checkUnsavedTrackLog,
     confirmLocationPermission,
     isLandscape,

@@ -1,5 +1,11 @@
 import BackgroundGeolocation from './lib/backgroundGeolocation';
-import { checkAndStoreLocations, toLocationObject, resetTrackLogCache, flushTrackLog } from './utils/Location';
+import {
+  checkAndStoreLocations,
+  toLocationObject,
+  resetTrackLogCache,
+  flushTrackLog,
+  flushPendingTrackLog,
+} from './utils/Location';
 import { trackLogMMKV } from './utils/mmkvStorage';
 
 const RETRY_DELAY_MS = 3000;
@@ -56,8 +62,11 @@ BackgroundGeolocation.registerHeadlessTask(async (event) => {
 
     // トラッキング中だけ軌跡を保存（GPSのみONの場合はスキップ）
     if (trackLogMMKV.getTrackingState() === 'on') {
-      // headlessはメインとは別のJSコンテキスト。Location.tsのメモリ内キャッシュは共有されないため、
-      // タスク先頭でキャッシュを破棄してMMKVから読み込み、末尾で必ずMMKVへ書き戻す（毎回read-modify-write）。
+      // headlessは毎回MMKVから読み、末尾で必ずMMKVへ書き戻す（read-modify-write）。キャッシュを捨てる前に
+      // 未書き込みの点を確定させる: Activityだけが破棄されプロセスが生き残った場合（Android）は、メインと同じ
+      // JSランタイムでキャッシュを共有しており、メインが書き込む前の点がメモリにだけ残っている（軌跡監査 T-L3）。
+      // 別ランタイムでは未書き込みの点がないので何もしない
+      flushPendingTrackLog();
       resetTrackLogCache();
       checkAndStoreLocations([normalized]);
       flushTrackLog();

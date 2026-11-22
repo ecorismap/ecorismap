@@ -180,7 +180,7 @@ final class GnssSession {
         }
         if current { self.emitStatus() }
       },
-      onCorrection: { [weak self] data in self?.relayCorrection(data) },
+      onCorrection: { [weak self] data in self?.relayCorrection(data, generation: generation) },
       latestGga: { [weak self] in
         guard let self else { return nil }
         return self.locked { self.lastGga }
@@ -190,16 +190,19 @@ final class GnssSession {
     client.start()
   }
 
-  private func relayCorrection(_ data: Data) {
+  private func relayCorrection(_ data: Data, generation: Int) {
     let now = nowMs()
-    let (target, shouldEmit): (GnssLink?, Bool) = locked {
+    let (current, target, shouldEmit): (Bool, GnssLink?, Bool) = locked {
+      // 止めた古いクライアントが読み終えていた補正は、新しい接続の受信量に数えず受信機へも流さない
+      guard ntripGeneration == generation, ntrip != nil else { return (false, nil, false) }
       rtcmBytes += Double(data.count)
       lastCorrectionAt = now
       // 受信量の表示を更新する（補正は秒間数回届くので、通知は1秒に1回に間引く）
       let emit = now - lastCorrectionStatusAt >= Self.correctionStatusIntervalMs
       if emit { lastCorrectionStatusAt = now }
-      return (link, emit)
+      return (true, link, emit)
     }
+    if !current { return }
     if shouldEmit { emitStatus() }
     target?.write(data)
   }

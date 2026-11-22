@@ -248,6 +248,7 @@
     "alert": {
       "gps": "GPSをオンにしてください",
       "gpsWeb": "Web版では使用できません",
+      "trackBusy": "軌跡の記録を開始または停止している途中です。終わってからもう一度押してください。",
       "trackWeb": "Web版では軌跡の記録は使用できません",
       "download": "データを取得しました。",
       "upload": "データをアップロードしました。",
@@ -1064,7 +1065,8 @@
       "recordModifyPrivateLayer": "非公開レイヤでは、他のメンバーやテンプレートの記録を変更・削除できません（変更がメンバーの端末に届かないため）。テンプレートは設定モードで変更してください。",
       "cannotGetFileSize": "ファイルサイズを取得できません",
       "cannotImportData": "データのサイズが大きいためインポートできません。",
-      "permitAccessGPS": "GPSを使用するには位置情報と通知のアクセス権限を許可してください。",
+      "permitAccessGPS": "GPSを使用するには位置情報のアクセス権限を許可してください。",
+      "permitNotificationForGPS": "GPSと軌跡の記録には通知の許可が必要です。設定で通知を許可してください。",
       "noLayerToEdit": "編集できるレイヤがありません。",
       "turnOnGPS": "GPSをオンにしてください。",
       "failLoadE3kitGroup": "グループを読み込めません。",
@@ -1261,7 +1263,7 @@
       "title": "GPSの設定"
     },
     "sectionTitle": "位置精度とバッテリー消費",
-    "note": "設定はGPSの起動時に反映されます。",
+    "note": "設定は変更するとすぐに反映されます（GPSや軌跡の記録中も含む）。",
     "accuracy": {
       "high": {
         "title": "高精度",
