@@ -208,6 +208,20 @@ describe('DICTIONARY', () => {
     await seedFile(dictionaryPath('dictionary.sqlite'), sqliteType);
     await assertSucceeds(ctx(uid3).storage().ref(dictionaryPath('dictionary.sqlite')).getDownloadURL());
   });
+
+  // M11: 辞書は版付きのパス（dictionary_{版}.sqlite）に置き、設定の保存に成功してから古い版を消す
+  const versioned = 'dictionary_01JABCDEFGHJKMNPQRSTVWXYZ0.sqlite';
+  test('版付きのパス: 管理者は作成・削除でき、メンバーは取得できる', async () => {
+    await assertSucceeds(ctx(uid2).storage().ref(dictionaryPath(versioned)).put(png(), sqliteType).then());
+    await assertSucceeds(ctx(uid3).storage().ref(dictionaryPath(versioned)).getDownloadURL());
+    await assertSucceeds(ctx(uid2).storage().ref(dictionaryPath(versioned)).delete());
+  });
+  test('版付きのパス: 一般メンバーは作成・削除できず、非メンバーは取得できない', async () => {
+    await assertFails(ctx(uid3).storage().ref(dictionaryPath(versioned)).put(png(), sqliteType).then());
+    await seedFile(dictionaryPath(versioned), sqliteType);
+    await assertFails(ctx(uid3).storage().ref(dictionaryPath(versioned)).delete());
+    await assertFails(ctx(uid5).storage().ref(dictionaryPath(versioned)).getDownloadURL());
+  });
 });
 
 describe('list（一括削除用）', () => {

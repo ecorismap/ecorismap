@@ -33,6 +33,7 @@ export {
   setDoc,
   getDocsFromServer,
   updateDoc,
+  runTransaction,
 } from 'firebase/firestore';
 
 export { httpsCallable } from 'firebase/functions';

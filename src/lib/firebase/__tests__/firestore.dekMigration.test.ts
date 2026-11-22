@@ -145,6 +145,14 @@ beforeEach(() => {
       .map((d) => ({ data: () => d, ref: `ref-${d.layerId}` }));
     return { docs, empty: docs.length === 0 };
   });
+  // 設定の書き戻しの直前に、サーバーの設定の encryptedAt が読んだ時点のままかを確かめる（L9）
+  mockedGetDocsFromServer.mockImplementation(async (q: string) => {
+    if (q.startsWith(`projects/${PID}/settings|`)) {
+      const docs = settingsDoc === undefined ? [] : [{ data: () => settingsDoc }];
+      return { docs, empty: docs.length === 0 };
+    }
+    return { docs: [], empty: true };
+  });
   mockedWriteBatch.mockImplementation(() => {
     const b: Batch = { update: jest.fn(), set: jest.fn(), delete: jest.fn(), commit: jest.fn() };
     b.commit.mockImplementation(() => commitImpl(b));
@@ -390,6 +398,49 @@ describe('migrateProjectToDEK: 途中失敗と再実行', () => {
     const res = await migrateProjectToDEK(project);
     expect(res.isOK).toBe(false);
     expect(mockedSetDoc).not.toHaveBeenCalled();
+  });
+});
+
+describe('L9: DEK移行の書き戻しは、読んだ後の設定・共有データの保存を上書きしない', () => {
+  const NEW_TS = { seconds: 50, nanoseconds: 0, toMillis: () => 50000 };
+
+  it('読んだ後に設定が保存されていたら、設定を書き戻さずに移行を失敗にする', async () => {
+    commitImpl = async (b) => {
+      // 方式を確定するバッチの最中に、別の管理者が設定を保存した
+      if (b.update.mock.calls.length > 0) settingsDoc = { editorUid: OWNER, encdata: ['SETTINGS_G2'], encryptedAt: NEW_TS };
+    };
+
+    const res = await migrateProjectToDEK(project);
+
+    expect(res.isOK).toBe(false);
+    expect(mockedSetDoc).not.toHaveBeenCalled();
+  });
+
+  it('設定を確かめられなければ書き戻さない', async () => {
+    mockedGetDocsFromServer.mockRejectedValue(new Error('unavailable'));
+    const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => undefined);
+
+    const res = await migrateProjectToDEK(project);
+    errorSpy.mockRestore();
+
+    expect(res.isOK).toBe(false);
+    expect(mockedSetDoc).not.toHaveBeenCalled();
+  });
+
+  it('読んだ後に COMMON が保存されていたら、読んだ時点の内容で上書きせずに移行を失敗にする', async () => {
+    commitImpl = async (b) => {
+      if (b.update.mock.calls.length > 0) {
+        dataDocs = dataDocs.map((d) => (d.permission === 'COMMON' ? { ...d, encdata: ['COMMON_G2'], encryptedAt: NEW_TS } : d));
+      }
+    };
+
+    const res = await migrateProjectToDEK(project);
+
+    expect(res.isOK).toBe(false);
+    const rewritten = batches
+      .flatMap((b) => b.set.mock.calls)
+      .filter(([path]: [string]) => !String(path).includes('/keys/'));
+    expect(rewritten).toHaveLength(0);
   });
 });
 

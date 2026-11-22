@@ -49,7 +49,11 @@ jest.mock('../firebase', () => ({
   updateDoc: jest.fn(),
   where: jest.fn(),
   writeBatch: jest.fn(),
-  Timestamp: { now: jest.fn(() => ({ seconds: 0, nanoseconds: 0, toMillis: () => 0 })) },
+  Timestamp: {
+    now: jest.fn(() => ({ seconds: 0, nanoseconds: 0, toMillis: () => 0 })),
+    // 既存の世代より時計が遅れているとき（L7）に使われる
+    fromMillis: jest.fn((ms: number) => ({ seconds: Math.floor(ms / 1000), nanoseconds: (ms % 1000) * 1000000, toMillis: () => ms })),
+  },
 }));
 
 const mockedGetDoc = getDoc as jest.Mock;
@@ -231,6 +235,66 @@ describe('migrateSelfDataToDEK (自己DEK移行)', () => {
     );
 
     expect(res).toEqual({ isOK: true, message: '', migratedCount: 1, failedCount: 1 });
+    expect(allSetCalls()).toHaveLength(1);
+  });
+});
+
+describe('L8: 自己DEK移行はダウンロード後に別端末が書いたグループを上書きしない', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    clearProjectCryptoCache();
+    setupDekProject();
+    setupWriteBatch();
+    mockedEncryptWithDEK.mockResolvedValue(['ENC_DEK_DATA']);
+  });
+
+  it('collectUnmarkedDekGroups はダウンロード時点のグループの encryptedAt(ms) を持たせる', () => {
+    const docs = [
+      dataDoc({ userId: UID, layerId: 'layer-1', permission: 'PRIVATE', chunkIndex: 0, chunkCount: 1, encryptedAt: { seconds: 100, nanoseconds: 5000000 } }),
+    ];
+    expect(collectUnmarkedDekGroups(docs, 'PRIVATE')).toEqual([
+      { userId: UID, layerId: 'layer-1', permission: 'PRIVATE', encryptedAt: 100005 },
+    ]);
+  });
+
+  it('書き戻す直前の版がダウンロード時と違えば、そのグループは書かずに飛ばし、失敗にも数えない', async () => {
+    // ダウンロード時は 100 秒の版。その後に別端末が 200 秒の版を書いた
+    mockedGetDocs.mockResolvedValueOnce({
+      docs: [
+        dataDoc({ userId: UID, layerId: 'layer-1', permission: 'PRIVATE', chunkIndex: 0, chunkCount: 1, encryptedAt: { seconds: 200, nanoseconds: 0 }, cryptoScheme: 'dek' }),
+      ],
+    });
+    const infoSpy = jest.spyOn(console, 'info').mockImplementation(() => undefined);
+
+    const res = await migrateSelfDataToDEK(
+      PROJECT_ID,
+      inputWith({
+        unmarkedGroups: [{ userId: UID, layerId: 'layer-1', permission: 'PRIVATE', encryptedAt: 100000 }],
+        privateData: [{ userId: UID, layerId: 'layer-1', data: [{ id: 'stale' }] as any }],
+      })
+    );
+    infoSpy.mockRestore();
+
+    expect(res).toEqual({ isOK: true, message: '', migratedCount: 0, failedCount: 0 });
+    expect(mockedWriteBatch).not.toHaveBeenCalled();
+  });
+
+  it('ダウンロード時と同じ版なら書き戻す', async () => {
+    mockedGetDocs.mockResolvedValueOnce({
+      docs: [
+        dataDoc({ userId: UID, layerId: 'layer-1', permission: 'PRIVATE', chunkIndex: 0, chunkCount: 1, encryptedAt: { seconds: 100, nanoseconds: 0 } }),
+      ],
+    });
+
+    const res = await migrateSelfDataToDEK(
+      PROJECT_ID,
+      inputWith({
+        unmarkedGroups: [{ userId: UID, layerId: 'layer-1', permission: 'PRIVATE', encryptedAt: 100000 }],
+        privateData: [{ userId: UID, layerId: 'layer-1', data: [{ id: 'r1' }] as any }],
+      })
+    );
+
+    expect(res).toEqual({ isOK: true, message: '', migratedCount: 1, failedCount: 0 });
     expect(allSetCalls()).toHaveLength(1);
   });
 });

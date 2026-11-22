@@ -12,6 +12,7 @@ import { StatusBarOverlay } from './components/atoms/StatusBarOverlay';
 import { ExportDestinationModal } from './components/organisms/ExportDestinationModal';
 import { StyledDialog } from './components/molecules/StyledDialog';
 import { TileSignatureSync } from './components/atoms/TileSignatureSync';
+import { UnsyncedChangesGuard } from './components/atoms/UnsyncedChangesGuard';
 import { runDemSourceMigration } from './utils/demSourceMigration';
 import { runPhotoUriRebase } from './utils/photoUriRebase';
 import { setTileMapsAction } from './modules/tileMaps';
@@ -52,6 +53,7 @@ export default function App() {
             <>
               <Routes />
               <TileSignatureSync />
+              <UnsyncedChangesGuard />
               <StatusBarOverlay />
               <ExportDestinationModal />
               <StyledDialog />

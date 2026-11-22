@@ -277,6 +277,8 @@ export interface LayerType {
   expanded?: boolean;
   dictionaryFieldId?: string;
   dictionaryKey?: string;
+  //クラウドの辞書ファイルの版（保存先 DICTIONARY/{layerId}/dictionary_{版}.sqlite）。無ければ旧形式の dictionary.sqlite
+  dictionaryVersion?: string;
   sortedOrder?: SortedOrderType;
   sortedName?: string;
   //レイヤの用途。ツールパレットと色分け「個別」の可否をこれで決める（未設定＝通常のレイヤ）

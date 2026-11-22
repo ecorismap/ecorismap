@@ -287,8 +287,9 @@ const isMacMetadataEntry = (path: string) =>
   path.split('/').includes('__MACOSX') || getBaseName(path).startsWith('._');
 
 // dictionaryKeyはプロジェクトのクラウド辞書を復号する鍵。ファイルとして持ち出したレイヤに付けておく理由が無い
+// （dictionaryVersionも、元のプロジェクトのクラウドにある辞書ファイルを指すだけなので一緒に外す）
 const withoutDictionaryKey = (layer: LayerType): LayerType => {
-  const { dictionaryKey: _dictionaryKey, ...rest } = layer;
+  const { dictionaryKey: _dictionaryKey, dictionaryVersion: _dictionaryVersion, ...rest } = layer;
   return rest;
 };
 

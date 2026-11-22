@@ -648,8 +648,16 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
           privateData: [...privateRes.data, ...ownPrivateData],
           publicData: [...publicRes.data, ...ownPublicData],
           templateData: templateRes.data,
+          // 他人の PUBLIC・PRIVATE とテンプレートを取り直したので、そこに無い他人の分は手元からも消す
+          fetchedScope: { permissions: ['PUBLIC', 'PRIVATE'], template: true },
+          undecryptableGroups: [
+            ...(publicRes.undecryptableGroups ?? []),
+            ...(privateRes.undecryptableGroups ?? []),
+            ...(templateRes.undecryptableGroups ?? []),
+          ],
         });
         if (!mergedDataResult.isOK) throw new Error(mergedDataResult.message);
+        return { warning: mergedDataResult.warning };
       } else {
         //自分以外のPUBLICデータをサーバーから取得する
         const [publicRes, templateRes] = await Promise.all([
@@ -667,11 +675,16 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
           privateData: [],
           publicData: [...publicRes.data, ...ownPublicData],
           templateData: templateRes.data,
+          // PRIVATE は取得していないので範囲に含めない。以前に管理者として取得した他人の PRIVATE は、クラウドで
+          // どうなったか分からないので消さずに残す（消すと、取得しない選択をしただけで手元の写しを失う）
+          fetchedScope: { permissions: ['PUBLIC'], template: true, pruneOthers: !isOwnerAdmin },
+          undecryptableGroups: [...(publicRes.undecryptableGroups ?? []), ...(templateRes.undecryptableGroups ?? [])],
         });
         if (!mergedDataResult.isOK) throw new Error(mergedDataResult.message);
+        return { warning: mergedDataResult.warning };
       }
     },
-    [createMergedDataSet, fetchPrivateData, fetchPublicData, fetchTemplateData, fullDataSet, layers, project, user.uid]
+    [createMergedDataSet, fetchPrivateData, fetchPublicData, fetchTemplateData, fullDataSet, isOwnerAdmin, layers, project, user.uid]
   );
 
   /*************** onXXXXMapView *********************/
@@ -2158,9 +2171,9 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       }
       setIsLoading(true);
       //写真はひとまずダウンロードしない。（プロジェクトの一括か個別で十分）
-      await downloadData({ isAdmin, shouldPhotoDownload: false });
+      const { warning } = await downloadData({ isAdmin, shouldPhotoDownload: false });
       setIsLoading(false);
-      await AlertAsync(t('Home.alert.download'));
+      await AlertAsync(warning ? `${t('Home.alert.download')}\n${warning}` : t('Home.alert.download'));
     } catch (e: any) {
       setIsLoading(false);
       await AlertAsync(e.message);
