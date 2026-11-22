@@ -3,7 +3,9 @@ import { shallowEqual, useDispatch, useSelector, useStore } from 'react-redux';
 import { RootState } from '../store';
 import { saveProjectBackup } from '../utils/projectBackup';
 import { editSettingsAction } from '../modules/settings';
+import { clearDataSyncProjectAction } from '../modules/dataSync';
 import { ProjectType, RegionType } from '../types';
+import { buildCommonAbsorption, CommonAbsorption } from '../utils/Data';
 import { layersInitialState, setLayersAction } from '../modules/layers';
 import { dataSetInitialState, setDataSetAction } from '../modules/dataSet';
 import { useRepository } from './useRepository';
@@ -81,6 +83,9 @@ export const useProject = (): UseProjectReturnType => {
       },
       'projectClose'
     );
+    // 手元のデータを捨てるので、そのプロジェクトの同期の基準値も捨てる（残すと、次に開いた後の
+    // アップロードが「同期済み」とみなされ、確認なしにクラウドを置き換えうる）。バックアップには上で保存済み
+    if (state.settings.projectId !== undefined) dispatch(clearDataSyncProjectAction(state.settings.projectId));
     dispatch(
       editSettingsAction({
         role: undefined,
@@ -101,16 +106,32 @@ export const useProject = (): UseProjectReturnType => {
   const saveProjectSetting = useCallback(async () => {
     //コモンデータの写真はあればアップロードする
     if (project === undefined) throw new Error(t('hooks.message.unknownError'));
-    const deleteDataResult = await deleteCommonAndTemplateData(project);
-    if (!deleteDataResult.isOK) throw new Error(deleteDataResult.message);
     const projectSettingsResult = await uploadProjectSettings(project);
     if (!projectSettingsResult.isOK) throw new Error(projectSettingsResult.message);
-    const dataToRepositoryResult = await uploadDataToRepository(project, 'Common');
+    // COMMON は、クラウドにあって手元に無い記録（PUBLIC/PRIVATE から付け替えたメンバーと自分の記録、途中で失敗した
+    // 保存のやり直しで残っている記録、開いた後に他の管理者が足した記録）を取り込んでから、自分の名義にまとめて送る
+    const state = store.getState();
+    const commonLayerIds = state.layers.filter((layer) => layer.permission === 'COMMON').map((layer) => layer.id);
+    let commonAbsorption: CommonAbsorption | undefined;
+    if (commonLayerIds.length > 0 && user.uid !== undefined) {
+      const commonRes = await projectStore.downloadCommonData(project.id);
+      if (!commonRes.isOK || commonRes.data === undefined) throw new Error(commonRes.message);
+      commonAbsorption = buildCommonAbsorption({
+        localDataSet: state.dataSet,
+        cloudCommonDataSet: commonRes.data,
+        layerIds: commonLayerIds,
+        ownUserId: user.uid,
+      });
+    }
+    const dataToRepositoryResult = await uploadDataToRepository(project, 'Common', { commonAbsorption });
     if (!dataToRepositoryResult.isOK) throw new Error(dataToRepositoryResult.message);
+    // PUBLIC/PRIVATE のテンプレートは、送る直前に古いものを消す（途中の手順が失敗したときに消えたまま残る時間を短くする）
+    const deleteDataResult = await deleteCommonAndTemplateData(project);
+    if (!deleteDataResult.isOK) throw new Error(deleteDataResult.message);
     const uploadTemplateResult = await uploadDataToRepository(project, 'Template');
     if (!uploadTemplateResult.isOK) throw new Error(uploadTemplateResult.message);
     return dataToRepositoryResult.warning ?? uploadTemplateResult.warning;
-  }, [deleteCommonAndTemplateData, project, uploadDataToRepository, uploadProjectSettings]);
+  }, [deleteCommonAndTemplateData, project, store, uploadDataToRepository, uploadProjectSettings, user.uid]);
 
   return {
     isSettingProject,

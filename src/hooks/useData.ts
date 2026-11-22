@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { shallowEqual, useDispatch, useSelector } from 'react-redux';
+import { shallowEqual, useDispatch, useSelector, useStore } from 'react-redux';
 import { CheckListItem, PhotoType, RecordType } from '../types';
 
 import { RootState } from '../store';
@@ -59,6 +59,7 @@ export const clearAllVisibilitySnapshots = () => {
 export const useData = (layerId: string): UseDataReturnType => {
   // console.log('🔍 useData called with layerId:', layerId);
   const dispatch = useDispatch();
+  const store = useStore<RootState>();
   const targetLayer = useSelector((state: RootState) => state.layers.find((l) => l.id === layerId)!, shallowEqual);
   // console.log('🔍 targetLayer:', targetLayer?.name, 'type:', targetLayer?.type);
   const projectId = useSelector((state: RootState) => state.settings.projectId, shallowEqual);
@@ -199,13 +200,19 @@ export const useData = (layerId: string): UseDataReturnType => {
         if (!userMap[key]) userMap[key] = [];
         userMap[key].push(record);
       });
+      // 一覧に出ないレコード（削除の墓標、_group でぶら下がる行動記号・子ストローク）も同じ集合にある。
+      // 一覧の並びだけで置き換えるとそれらが消え、子はクラウドからも消え、墓標が消えると別端末から削除したものが戻る。
+      // 一覧に出るものだけを並べ替え、出ないものは元の並びのまま後ろに残す
+      const currentDataSet = store.getState().dataSet;
       Object.entries(userMap).forEach(([userId, data]) => {
-        dispatch(
-          setRecordSetAction({ layerId: targetLayer.id, userId: userId === 'undefined' ? undefined : userId, data })
-        );
+        const bucketUserId = userId === 'undefined' ? undefined : userId;
+        const current = currentDataSet.find((d) => d.layerId === targetLayer.id && d.userId === bucketUserId)?.data ?? [];
+        const listedIds = new Set(data.map((record) => record.id));
+        const hidden = current.filter((record) => !listedIds.has(record.id));
+        dispatch(setRecordSetAction({ layerId: targetLayer.id, userId: bucketUserId, data: [...data, ...hidden] }));
       });
     },
-    [changeCheckedAll, dispatch, isFiltering, sortedOrder, targetLayer]
+    [changeCheckedAll, dispatch, isFiltering, sortedOrder, store, targetLayer]
   );
 
   //レコードのvisibleをまとめて更新する（userIdごとにdispatchが必要）

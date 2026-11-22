@@ -311,11 +311,13 @@ export const useRecord = (): UseRecordReturnType => {
           })
         );
       }
+      // 作図での変形・色や太さの変更・行動記号の集約などもここを通る。updatedAt を更新しないと、
+      // 同期の「最新優先」や衝突の判定で編集前の版と同じ時刻になり、古い版に負けて編集が消える
       dispatch(
         updateRecordsAction({
           layerId: layer.id,
           userId: dataUser.uid,
-          data: [{ ...record, userId: dataUser.uid, displayName: dataUser.displayName }],
+          data: [{ ...record, userId: dataUser.uid, displayName: dataUser.displayName, updatedAt: Date.now() }],
         })
       );
     },

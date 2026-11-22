@@ -539,4 +539,20 @@ describe('useRecord', () => {
       expect(templateData?.data.find((d: any) => d.id === 'template-record1')?.deleted).toBe(true);
     });
   });
+
+  it('updateRecord は更新日時を進める（作図の変形が同期で編集前の版に負けないように。同期監査 S4）', () => {
+    const { result } = renderHook(() => useRecord(), { wrapper });
+    const layer = result.current.findLayer('layer2')!;
+    const record = result.current.findRecord('layer2', 'user1', 'record2', 'LINE') as RecordType;
+    const before = Date.now();
+    act(() => {
+      result.current.updateRecord(layer, { ...record, updatedAt: 1, coords: [{ latitude: 1, longitude: 1 }] } as RecordType);
+    });
+    const saved = store
+      .getState()
+      .dataSet.find((d: any) => d.layerId === 'layer2' && d.userId === 'user1')
+      .data.find((d: any) => d.id === 'record2');
+    expect(saved.updatedAt).toBeGreaterThanOrEqual(before);
+    expect(saved.coords).toEqual([{ latitude: 1, longitude: 1 }]);
+  });
 });

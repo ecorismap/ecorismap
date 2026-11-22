@@ -453,7 +453,8 @@ describe('2. 辞書SQLite', () => {
     mockMainTables.set(oldTable, ['古い値']);
     await actualSQLite.importDictionary(bytes, layerIdMap, fieldIdMap);
     expect(mockMainTables.get(oldTable)).toEqual(['ススキ', 'チガヤ', '日本語😀']);
-    expect(actions().some((a) => a.type.endsWith('deleteDataAction'))).toBe(true);
+    // 既存データは置き換える（消える記録のうちアップロード済みのものは墓標で残す。同期監査 S3 の再レビュー）
+    expect(actions().some((a) => a.type.endsWith('replaceRecordsKeepingTombstonesAction'))).toBe(true);
   });
 
   test('重複確認でキャンセルしたら何も取り込まない', async () => {

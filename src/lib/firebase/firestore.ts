@@ -583,6 +583,9 @@ export const deleteData = async (
     if (permission === 'TEMPLATE') {
       // テンプレートを含めて削除
       q = query(dataCol, where('layerId', '==', layerId), where('permission', '==', 'TEMPLATE'));
+    } else if (permission !== undefined && userId === undefined) {
+      // 全員の、指定した権限のデータだけを削除（他の権限のメンバーのデータは残す）
+      q = query(dataCol, where('layerId', '==', layerId), where('permission', '==', permission));
     } else if (permission !== undefined && userId !== undefined) {
       // 特定ユーザー＆権限のデータを削除
       q = query(
@@ -605,6 +608,36 @@ export const deleteData = async (
     // バッチ上限に収まるよう分割して一括削除
     await deleteDocsInBatches(snapshot.docs);
 
+    return { isOK: true, message: '' };
+  } catch (error) {
+    console.error('データ削除エラー:', error);
+    return { isOK: false, message: t('CloudDataManagement.message.failDeleteData') };
+  }
+};
+
+/**
+ * 指定レイヤ・権限のデータのうち、targetUserIds に含まれる人（keepUserId を除く）の doc を削除する。
+ * COMMON を自分の名義にまとめてアップロードしたあと、元の doc が残って同じ記録が2人の名義に重複しないよう片付ける。
+ * 内容を取り込めなかった人（復号できなかった等）の doc を消さないよう、対象は呼び出し側が明示する
+ */
+export const deleteOtherUsersData = async (
+  projectId: string,
+  layerId: string,
+  permission: PermissionType,
+  keepUserId: string,
+  targetUserIds: string[]
+) => {
+  try {
+    const dataCol = collection(firestore, 'projects', projectId, 'data');
+    const q = query(dataCol, where('layerId', '==', layerId), where('permission', '==', permission));
+    const snapshot = await getDocs(q);
+    const targetSet = new Set(targetUserIds);
+    const targets = snapshot.docs.filter((docSnap) => {
+      const userId = (docSnap.data() as DataFS).userId;
+      return userId !== keepUserId && targetSet.has(userId);
+    });
+    if (targets.length === 0) return { isOK: true, message: '' };
+    await deleteDocsInBatches(targets);
     return { isOK: true, message: '' };
   } catch (error) {
     console.error('データ削除エラー:', error);

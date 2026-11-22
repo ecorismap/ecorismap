@@ -16,7 +16,7 @@ import * as projectStorage from '../lib/firebase/storage';
 import { shallowEqual, useDispatch, useSelector, useStore } from 'react-redux';
 import { RootState } from '../store';
 import { saveProjectBackup } from '../utils/projectBackup';
-import { setDataSetAction, updateDataAction, updateRecordsAction } from '../modules/dataSet';
+import { deleteDataAction, setDataSetAction, updateDataAction, updateRecordsAction } from '../modules/dataSet';
 import { setDataSyncTimestampsAction, dataSyncKey } from '../modules/dataSync';
 import { layersInitialState, setLayersAction } from '../modules/layers';
 import { tileMapsInitialState, setTileMapsAction } from '../modules/tileMaps';
@@ -27,13 +27,22 @@ import { addProjectAction, deleteProjectAction, updateProjectAction } from '../m
 import { cloneDeep } from 'lodash';
 import { getPhotoFields, getTargetLayers } from '../utils/Layer';
 import { isLoggedIn } from '../utils/Account';
-import { getTargetRecordSet, mergeLayerData } from '../utils/Data';
+import { CommonAbsorption, getTargetRecordSet, mergeLayerData } from '../utils/Data';
 import { Platform } from 'react-native';
 import { t } from '../i18n/config';
 import { AlertAsync, ConfirmAsync, DataConflictConfirmAsync } from '../components/molecules/AlertAsync';
 import { exportDatabase, importDictionary } from '../utils/SQLite';
 import { db } from '../utils/db';
 import * as FileSystem from 'expo-file-system/legacy';
+
+export type UploadDataOptions = {
+  /**
+   * 設定の保存で COMMON をまとめて送るための取り込み結果（utils/Data の buildCommonAbsorption）。
+   * これがあるレイヤは、手元の全バケットと取り込んだ記録を自分の名義の1つにまとめて送り、成功したら
+   * クラウドの他人名義の doc（内容を持っている人の分だけ）とテンプレートを片付け、手元も1つのバケットにそろえる
+   */
+  commonAbsorption?: CommonAbsorption;
+};
 
 export type UseRepositoryReturnType = {
   createProject: (project: ProjectType) => Promise<{
@@ -127,7 +136,8 @@ export type UseRepositoryReturnType = {
 
   uploadDataToRepository: (
     project_: ProjectType,
-    uploadType: 'All' | 'PublicAndPrivate' | 'Common' | 'Template'
+    uploadType: 'All' | 'PublicAndPrivate' | 'Common' | 'Template',
+    options?: UploadDataOptions
   ) => Promise<{
     isOK: boolean;
     message: string;
@@ -455,11 +465,9 @@ export const useRepository = (): UseRepositoryReturnType & {
         return { isOK: false, message: t('hooks.message.pleaseLogin') };
       }
 
-      const commonLayers = getTargetLayers(layers, 'Common');
-      for (const layer of commonLayers) {
-        //コモンレイヤと同じidのデータ（テンプレートと全員のデータ）を一旦すべて削除
-        await projectStore.deleteData(project.id, layer.id);
-      }
+      // COMMON のデータはここでは消さない。以前は layerId だけの条件で全員分を先に消していたため、
+      // PUBLIC/PRIVATE から COMMON へ変えるとメンバー全員の記録が消え、途中で失敗すると共通データが消えたままになった。
+      // COMMON は Common のアップロード（commonAbsorption）で、全員分をまとめて書けたあとに他人名義の doc を片付ける
       const templateLayers = getTargetLayers(layers, 'Template');
       for (const layer of templateLayers) {
         //テンプレートレイヤを一旦すべて削除。データは残す。
@@ -507,7 +515,13 @@ export const useRepository = (): UseRepositoryReturnType & {
   );
 
   const uploadDataToRepository = useCallback(
-    async (project: ProjectType, uploadType: 'All' | 'PublicAndPrivate' | 'Common' | 'Template') => {
+    async (
+      project: ProjectType,
+      uploadType: 'All' | 'PublicAndPrivate' | 'Common' | 'Template',
+      options: UploadDataOptions = {}
+    ) => {
+      const extraCommonDataSet = options.commonAbsorption?.extraCommonDataSet ?? [];
+      const consolidatedLayerIds = new Set(Object.keys(options.commonAbsorption?.representedUserIds ?? {}));
       //ToDo バッチアップロード?
       //firestore上の対象レイヤの自分のデータを一旦すべて削除
 
@@ -544,36 +558,47 @@ export const useRepository = (): UseRepositoryReturnType & {
 
       const baselines = dataSyncBaselines[project.id] ?? {};
       const candidateLayers: LayerType[] = [];
+      // 衝突を確かめる取得に失敗したときは「衝突なし」ではなく「判定できない」なので、上書きせずに中止する。
+      // 素通りさせると、別端末の変更や、開く途中の失敗・復号失敗で手元に無いだけのクラウドのデータを全置換で消す
+      const cannotVerify = { isOK: false, message: t('hooks.message.cannotVerifyCloudData') };
       if (conflictTargetLayers.length > 0) {
         const cloudRes = await projectStore.getMyDataUpdatedAt(project.id, user.uid);
-        if (cloudRes.isOK && cloudRes.data) {
-          for (const l of conflictTargetLayers) {
-            const baseline = baselines[dataSyncKey(l.id, l.permission)];
-            const cloudVer = cloudRes.data.get(dataSyncKey(l.id, l.permission));
-            // 基準値==クラウド → 衝突なし。それ以外でクラウドにデータがあれば内容比較の候補にする。
-            if (baseline === cloudVer) continue;
-            if (cloudVer !== undefined) candidateLayers.push(l);
-          }
+        if (!cloudRes.isOK || cloudRes.data === undefined) return cannotVerify;
+        for (const l of conflictTargetLayers) {
+          const baseline = baselines[dataSyncKey(l.id, l.permission)];
+          const cloudVer = cloudRes.data.get(dataSyncKey(l.id, l.permission));
+          // 基準値==クラウド → 衝突なし。それ以外でクラウドにデータがあれば内容比較の候補にする。
+          if (baseline === cloudVer) continue;
+          if (cloudVer !== undefined) candidateLayers.push(l);
         }
       }
 
       // 候補があればクラウドの自分データを取得（マージにも再利用）し、内容比較で本当の衝突を判定する
       let cloudOwnDataSet: DataType[] = [];
       const conflictedKeys = new Set<string>();
+      // クラウドに自分のデータがあるのに読めない（復号できない）レイヤ。上書きすると読めないだけのデータを消すので
+      // そのレイヤだけ送らずに残し、他のレイヤは送る（全体を止めると、問題のないレイヤの記録まで上げられなくなる）
+      const unreadableLayers: LayerType[] = [];
       if (candidateLayers.length > 0) {
         if (candidateLayers.some((l) => l.permission === 'PRIVATE')) {
           const res = await projectStore.downloadPrivateData(project.id, { userId: user.uid });
-          if (res.isOK && res.data) cloudOwnDataSet = cloudOwnDataSet.concat(res.data);
+          if (!res.isOK || !res.data) return cannotVerify;
+          cloudOwnDataSet = cloudOwnDataSet.concat(res.data);
         }
         if (candidateLayers.some((l) => l.permission === 'PUBLIC')) {
           // PUBLICは自分限定取得APIが無いため全件取得し、自分のuserId分のみ抽出する。
           const res = await projectStore.downloadPublicData(project.id);
-          if (res.isOK && res.data) {
-            cloudOwnDataSet = cloudOwnDataSet.concat(res.data.filter((d) => d.userId === user.uid));
-          }
+          if (!res.isOK || !res.data) return cannotVerify;
+          cloudOwnDataSet = cloudOwnDataSet.concat(res.data.filter((d) => d.userId === user.uid));
         }
         for (const l of candidateLayers) {
           const cloudOwn = cloudOwnDataSet.find((d) => d.layerId === l.id && d.userId === user.uid);
+          // クラウドに自分のデータがある（getMyDataUpdatedAt が更新時刻を返した）のに読めない＝復号できなかった。
+          // 空とみなして比べると、読めないだけのデータを上書きで消してしまう
+          if (cloudOwn === undefined) {
+            unreadableLayers.push(l);
+            continue;
+          }
           const localOwn = getTargetRecordSet(fullDataSet, l, user);
           if (hasCloudOnlyChanges(cloudOwn?.data ?? [], localOwn)) {
             conflictedKeys.add(dataSyncKey(l.id, l.permission));
@@ -597,10 +622,20 @@ export const useRepository = (): UseRepositoryReturnType & {
         failedPhotoCount += 1;
       };
 
+      const unreadableIds = new Set(unreadableLayers.map((l) => l.id));
       for (const layer of targetLayers) {
+        if (unreadableIds.has(layer.id) && isConflictTarget(layer)) continue;
         const photoFields = layer.field.filter((f) => f.format === 'PHOTO');
         const isTemplate = uploadType === 'Template';
-        const targetRecordSet = isTemplate ? mergeTemplateRecords(layer.id) : getTargetRecordSet(fullDataSet, layer, user);
+        const targetRecordSet = isTemplate
+          ? mergeTemplateRecords(layer.id)
+          : getTargetRecordSet(
+              layer.permission === 'COMMON' && consolidatedLayerIds.has(layer.id)
+                ? [...fullDataSet, ...extraCommonDataSet]
+                : fullDataSet,
+              layer,
+              user
+            );
 
         //写真の更新
         const updatedData = await Promise.all(
@@ -618,8 +653,10 @@ export const useRepository = (): UseRepositoryReturnType & {
           const cloudOwn = cloudOwnDataSet.find((d) => d.layerId === layer.id && d.userId === user.uid);
           if (cloudOwn) {
             const localOwn: DataType = { layerId: layer.id, userId: user.uid, data: updatedData };
+            // 更新日時が同じときは、先に渡した方が採られる。旧版で作図した記録のように時刻が進んでいない
+            // 手元の編集がクラウドの版に負けないよう、手元を先に渡す
             const [mergedUserData] = await mergeLayerData({
-              layerData: [cloudOwn, localOwn],
+              layerData: [localOwn, cloudOwn],
               templateData: undefined,
               ownUserId: user.uid,
               strategy: 'latest',
@@ -644,6 +681,28 @@ export const useRepository = (): UseRepositoryReturnType & {
           return { isOK: false, message: `${message} (${layer.name})${guidance}` };
         }
 
+        if (layer.permission === 'COMMON' && consolidatedLayerIds.has(layer.id) && !isTemplate) {
+          // 自分の名義の doc に全員分をまとめて書けたので、クラウドに残る他人名義の doc（内容を持っている人の分）と
+          // COMMON では使わないテンプレートを片付ける。残すと同じ記録が2人の名義に並び、取得のたびに競合になる。
+          // 書き込みに失敗したときはここに来ないので、元の doc は残る（先に消す方式だと失敗で消えたままになる）。
+          // 手元は先に自分の名義の1つにそろえる（片付けが失敗して保存し直したとき、取り込み済みの記録を手元にあるものとして
+          // 扱い、二重に取り込まないため。他のバケットを残すと同じ記録が二重に表示される）
+          const otherBuckets = fullDataSet.filter((d) => d.layerId === layer.id && d.userId !== user.uid);
+          if (otherBuckets.length > 0) dispatch(deleteDataAction(otherBuckets));
+          dispatch(updateDataAction([{ layerId: layer.id, userId: user.uid, data: dataToUpload }]));
+          const representedUserIds = options.commonAbsorption?.representedUserIds[layer.id] ?? [];
+          const cleanup = await projectStore.deleteOtherUsersData(
+            project.id,
+            layer.id,
+            'COMMON',
+            user.uid,
+            representedUserIds
+          );
+          if (!cleanup.isOK) return { isOK: false, message: `${cleanup.message} (${layer.name})` };
+          const templateCleanup = await projectStore.deleteData(project.id, layer.id, 'TEMPLATE');
+          if (!templateCleanup.isOK) return { isOK: false, message: `${templateCleanup.message} (${layer.name})` };
+        }
+
         // PRIVATE/PUBLIC は基準値を更新（次回以降の衝突検知に使用。空アップロード時は undefined＝未確立）
         if (isConflictTarget(layer)) {
           newBaselineEntries[key] = encryptedAt;
@@ -665,12 +724,14 @@ export const useRepository = (): UseRepositoryReturnType & {
         dispatch(setDataSyncTimestampsAction({ projectId: project.id, entries: newBaselineEntries }));
       }
 
-      if (failedPhotoCount > 0) {
-        return {
-          isOK: true,
-          message: '',
-          warning: t('hooks.message.failUploadSomePhotos', { count: failedPhotoCount }),
-        };
+      const warnings = [
+        ...(unreadableLayers.length > 0
+          ? [t('hooks.message.skippedUnreadableLayers', { names: unreadableLayers.map((l) => l.name).join('、') })]
+          : []),
+        ...(failedPhotoCount > 0 ? [t('hooks.message.failUploadSomePhotos', { count: failedPhotoCount })] : []),
+      ];
+      if (warnings.length > 0) {
+        return { isOK: true, message: '', warning: warnings.join('\n') };
       }
       return { isOK: true, message: '' };
     },
@@ -766,12 +827,14 @@ export const useRepository = (): UseRepositoryReturnType & {
       for (const newLayer of updatedLayers) {
         const oldLayer = oldLayers.find((l) => l.id === newLayer.id);
         if (oldLayer && oldLayer.permission !== newLayer.permission) {
-          await projectStore.updateLayerDataPermission(
+          const permissionResult = await projectStore.updateLayerDataPermission(
             project_.id,
             newLayer.id,
             oldLayer.permission,
             newLayer.permission
           );
+          // 付け替えに失敗したまま続けると、COMMON の保存でメンバーの記録を取り込めない
+          if (!permissionResult.isOK) return { isOK: false, message: `${permissionResult.message} (${newLayer.name})` };
         }
       }
       const { isOK, message, timestamp } = await projectStore.uploadProjectSettings(project_.id, user.uid, {

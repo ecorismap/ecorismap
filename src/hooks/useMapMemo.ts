@@ -1,7 +1,15 @@
 import { Dispatch, RefObject, SetStateAction, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowStyleType, LayerType, LineRecordType, MapMemoToolGroupType, MapMemoToolType, PenWidthType } from '../types';
+import {
+  ArrowStyleType,
+  LayerType,
+  LineRecordType,
+  MapMemoToolGroupType,
+  MapMemoToolType,
+  PenWidthType,
+  RecordType,
+} from '../types';
 import { useWindow } from './useWindow';
-import { shallowEqual, useDispatch, useSelector } from 'react-redux';
+import { shallowEqual, useDispatch, useSelector, useStore } from 'react-redux';
 import { RootState } from '../store';
 import { ulid } from 'ulid';
 import {
@@ -133,6 +141,37 @@ const MIN_POINTS_FOR_REFINE = 5;
 /**
  * Custom hook to manage map memo functionality
  */
+/**
+ * Undo/Redo で作った画面の線（削除済みを除いたもの）を、ストアの集合へ確定する形にする。
+ * - 消えた線: アップロード済みなら墓標にする（通常の削除と同じ）。未アップロードなら物理削除
+ * - 戻した・変えた線: 更新日時を進める（同期で墓標や編集前の版に負けないように）
+ * - もとからある墓標: 戻した線と同じ id のもの以外は残す（消すと別端末から削除した線が戻る）
+ */
+export const mergeMemoHistoryResult = (
+  before: LineRecordType[],
+  after: LineRecordType[],
+  fullBucket: RecordType[],
+  now: number
+): RecordType[] => {
+  const beforeById = new Map(before.map((line) => [line.id, line]));
+  const afterIds = new Set(after.map((line) => line.id));
+  const storedById = new Map(fullBucket.map((record) => [record.id, record]));
+  // 履歴の線はアップロード前に取ったコピーのことがある。ストアの同じ線（墓標を含む）がアップロード済みなら
+  // その印を引き継ぐ（抜けると、次の Undo で墓標にならず物理削除され、クラウドに残った線が戻ってくる）
+  const stamped: RecordType[] = after.map((line) =>
+    beforeById.get(line.id) === line
+      ? line
+      : { ...line, updatedAt: now, ...(storedById.get(line.id)?.uploaded === true ? { uploaded: true } : {}) }
+  );
+  // LineRecordType には同期の印が無いので、ストアのレコードで判定する
+  const removedIds = new Set(before.filter((line) => !afterIds.has(line.id)).map((line) => line.id));
+  const newTombstones = fullBucket
+    .filter((record) => removedIds.has(record.id) && record.uploaded === true && record.deleted !== true)
+    .map((record) => ({ ...record, deleted: true, updatedAt: now }));
+  const keptTombstones = fullBucket.filter((record) => record.deleted === true && !afterIds.has(record.id));
+  return [...stamped, ...keptTombstones, ...newTombstones];
+};
+
 export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoReturnType => {
   const dispatch = useDispatch();
   const { mapSize, mapRegion } = useWindow();
@@ -145,6 +184,7 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
 
   const layers = useSelector((state: RootState) => state.layers);
   const dataSet = useSelector(selectNonDeletedDataSet);
+  const store = useStore<RootState>();
 
   // State management
   const [history, setHistory] = useState<HistoryType[]>([]);
@@ -1006,6 +1046,29 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
   }, []);
 
   /**
+   * Undo/Redo の結果をストアへ確定する。画面の線（削除済みを除いたもの）だけで集合を置き換えると、
+   * 削除の墓標が消えて別端末から削除した線が戻り、アップロード済みの線を Undo で消しても墓標が残らない。
+   * 消えた線は通常の削除と同じく墓標（アップロード済み）か物理削除にし、戻した・変えた線は更新日時を進める
+   */
+  const commitMemoLines = useCallback(
+    (before: LineRecordType[], after: LineRecordType[]) => {
+      if (!activeMemoRecordSet) return;
+      const fullBucket =
+        store
+          .getState()
+          .dataSet.find((d) => d.layerId === activeMemoRecordSet.layerId && d.userId === activeMemoRecordSet.userId)
+          ?.data ?? [];
+      dispatch(
+        setRecordSetAction({
+          ...activeMemoRecordSet,
+          data: mergeMemoHistoryResult(before, after, fullBucket, Date.now()),
+        })
+      );
+    },
+    [activeMemoRecordSet, dispatch, store]
+  );
+
+  /**
    * Undoes the last map memo operation
    */
   const pressUndoMapMemo = useCallback(() => {
@@ -1042,13 +1105,8 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
       });
     }
 
-    dispatch(
-      setRecordSetAction({
-        ...activeMemoRecordSet,
-        data: newDrawLine,
-      })
-    );
-  }, [history, activeMemoRecordSet, future, dispatch, flushPendingSave]);
+    commitMemoLines(memoLines, newDrawLine);
+  }, [history, activeMemoRecordSet, future, flushPendingSave, commitMemoLines, memoLines]);
 
   /**
    * Redoes the last undone map memo operation
@@ -1090,13 +1148,8 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
       newDrawLine = [...newDrawLine, ...added];
     }
 
-    dispatch(
-      setRecordSetAction({
-        ...activeMemoRecordSet,
-        data: newDrawLine,
-      })
-    );
-  }, [future, activeMemoRecordSet, history, memoLines, dispatch]);
+    commitMemoLines(memoLines, newDrawLine);
+  }, [future, activeMemoRecordSet, history, memoLines, commitMemoLines]);
 
   /**
    * Changes the active layer's color type to individual
