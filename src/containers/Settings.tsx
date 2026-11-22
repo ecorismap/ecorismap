@@ -73,12 +73,21 @@ export default function SettingsContainers() {
     const includePhoto = true;
 
     setIsLoading(true);
-    const time = dayjs().format('YYYY-MM-DD_HH-mm-ss');
-    const fileName = `ecorismap_${time}`;
-    const data = { dataSet, layers, settings: createExportSettings(), maps };
-    const exportData = await generateEcorisMapData(data, { includePhoto, fromProject: false });
-    const result = await exportGeoFile(exportData, fileName, 'zip', destination);
-    setIsLoading(false);
+    // 書き出しデータの生成・ZIP作成が例外を投げても（大きすぎるデータの文字列長・メモリの上限など）、
+    // ローディングを消して失敗を伝える。捕まえないとローディングが出たまま何も表示されない
+    let result: Awaited<ReturnType<typeof exportGeoFile>> | 'error';
+    try {
+      const time = dayjs().format('YYYY-MM-DD_HH-mm-ss');
+      const fileName = `ecorismap_${time}`;
+      const data = { dataSet, layers, settings: createExportSettings(), maps };
+      const exportData = await generateEcorisMapData(data, { includePhoto, fromProject: false });
+      result = await exportGeoFile(exportData, fileName, 'zip', destination);
+    } catch (e) {
+      console.error('saveFileToLocal failed', e);
+      result = 'error';
+    } finally {
+      setIsLoading(false);
+    }
     if (result === 'error') {
       await AlertAsync(t('hooks.message.failSaveFile'));
     } else if (result === 'saved') {
@@ -100,8 +109,16 @@ export default function SettingsContainers() {
         return;
       }
       setIsLoading(true);
-      const { isOK, message, region } = await openEcorisMapFile(file.assets[0].uri);
-      setIsLoading(false);
+      let opened: Awaited<ReturnType<typeof openEcorisMapFile>>;
+      try {
+        opened = await openEcorisMapFile(file.assets[0].uri);
+      } catch (e) {
+        console.error('openFileFromLocal failed', e);
+        opened = { isOK: false, message: t('hooks.message.failGetData') };
+      } finally {
+        setIsLoading(false);
+      }
+      const { isOK, message, region } = opened;
       if (!isOK && message !== '') {
         await AlertAsync(message);
       } else if (isOK) {
