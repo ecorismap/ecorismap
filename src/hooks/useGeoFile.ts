@@ -917,7 +917,10 @@ export const useGeoFile = (): UseGeoFileReturnType => {
             targetLayer.field,
             geometryType,
             targetLayer.name,
-            targetLayer.permission
+            targetLayer.permission,
+            undefined,
+            // 軌跡の点ごとの時刻・標高・精度等も出し、取り込み直したときに戻せるようにする（軌跡監査 T-M7）
+            { trackPointAttributes: true }
           );
           return JSON.stringify(geojson);
         });

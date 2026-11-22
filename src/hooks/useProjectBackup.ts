@@ -12,6 +12,7 @@ import { setProjectsAction } from '../modules/projects';
 import { setDataSyncAllAction } from '../modules/dataSync';
 import {
   BackupMetaType,
+  BackupSnapshotType,
   listBackups,
   loadBackup,
   saveProjectBackup,
@@ -27,6 +28,8 @@ export type UseProjectBackupReturnType = {
   isBackupAvailable: boolean;
   backupList: BackupMetaType[];
   refreshBackupList: () => void;
+  /** 復元できるか（スナップショットが読めるか・別ユーザーのものでないか）だけを確かめる。状態は変えない */
+  canRestoreBackup: (id: string) => RestoreBackupResultType;
   restoreBackup: (id: string) => RestoreBackupResultType;
   deleteBackup: (id: string) => void;
   clearAllBackups: () => void;
@@ -57,21 +60,36 @@ export const useProjectBackup = (): UseProjectBackupReturnType => {
     refreshBackupList();
   }, [refreshBackupList]);
 
-  const restoreBackup = useCallback(
-    (id: string) => {
+  /**
+   * 復元の可否の判定。復元の前（記録を止める前、軌跡監査 T-M8）にも呼べるよう restoreBackup から分ける。
+   * 読めないときは一覧が古いので更新する
+   */
+  const checkRestorable = useCallback(
+    (id: string): { result: RestoreBackupResultType; snapshot?: BackupSnapshotType } => {
       const snapshot = loadBackup(id);
       if (snapshot === undefined) {
         refreshBackupList();
-        return { isOK: false };
+        return { result: { isOK: false } };
       }
-
       //別ユーザーのログイン中に他ユーザーのスナップショットを復元すると、認証uidとRedux上の
       //uidが食い違い、管理者権限では他人名義でCOMMON/TEMPLATEを上書きできてしまうためブロックする
       const authUid = getAuthUid();
       const snapshotUid = snapshot.state.user.uid;
       if (authUid !== undefined && snapshotUid !== undefined && snapshotUid !== authUid) {
-        return { isOK: false, reason: 'differentUser' as const };
+        return { result: { isOK: false, reason: 'differentUser' } };
       }
+      return { result: { isOK: true }, snapshot };
+    },
+    [refreshBackupList]
+  );
+
+  const canRestoreBackup = useCallback((id: string) => checkRestorable(id).result, [checkRestorable]);
+
+  const restoreBackup = useCallback(
+    (id: string): RestoreBackupResultType => {
+      //事前に canRestoreBackup で確かめていても、その間に消えた・ログインが変わった場合に備えてもう一度確かめる
+      const { result, snapshot } = checkRestorable(id);
+      if (snapshot === undefined) return result;
 
       //復元で現在のデータが失われないよう、復元前の状態も自動バックアップする
       const current = store.getState();
@@ -103,7 +121,7 @@ export const useProjectBackup = (): UseProjectBackupReturnType => {
       const region = state.settings.projectId !== undefined ? state.settings.projectRegion : state.settings.mapRegion;
       return { isOK: true, region };
     },
-    [dispatch, refreshBackupList, store]
+    [checkRestorable, dispatch, refreshBackupList, store]
   );
 
   const deleteBackup = useCallback(
@@ -119,5 +137,13 @@ export const useProjectBackup = (): UseProjectBackupReturnType => {
     refreshBackupList();
   }, [refreshBackupList]);
 
-  return { isBackupAvailable, backupList, refreshBackupList, restoreBackup, deleteBackup, clearAllBackups } as const;
+  return {
+    isBackupAvailable,
+    backupList,
+    refreshBackupList,
+    canRestoreBackup,
+    restoreBackup,
+    deleteBackup,
+    clearAllBackups,
+  } as const;
 };

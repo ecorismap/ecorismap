@@ -18,6 +18,7 @@ jest.mock('react-native-background-geolocation', () => {
   const constants = {
     DesiredAccuracy: { Navigation: -2, High: -1, Medium: 10, Low: 100, VeryLow: 1000, Lowest: 3000 },
     AuthorizationStatus: { NotDetermined: 0, Restricted: 1, Denied: 2, Always: 3, WhenInUse: 4 },
+    AccuracyAuthorization: { Full: 0, Reduced: 1 },
   };
   const subscription = { remove: jest.fn() };
   const mock = {
@@ -33,6 +34,10 @@ jest.mock('react-native-background-geolocation', () => {
     stopWatchPosition: jest.fn(),
     onLocation: jest.fn().mockImplementation(() => subscription),
     changePace: jest.fn(),
+    // 精度の許可（T-M5）。既定は正確な位置。clearAllMocksは実装を消さないので、テストで変えたら戻す
+    getProviderState: jest.fn(() => Promise.resolve({ accuracyAuthorization: 0 })),
+    requestTemporaryFullAccuracy: jest.fn(() => Promise.resolve(0)),
+    onProviderChange: jest.fn(() => subscription),
   };
 
   return {
@@ -2050,6 +2055,262 @@ describe('軌跡監査の安全な修正（T-M1/T-M2/T-M3/T-L16）', () => {
       expect(AlertAsync).toHaveBeenCalledTimes(2);
       warnSpy.mockRestore();
       restore();
+    });
+  });
+});
+
+describe('軌跡監査の判断項目（T-M4/T-M5/T-L6）', () => {
+  const originalPlatformOS = Platform.OS;
+  const flushPromises = () => new Promise((resolve) => setImmediate(resolve));
+  const { trackLogMMKV } = jest.requireMock('../../utils/mmkvStorage');
+  const LocationUtils = jest.requireMock('../../utils/Location');
+  const { formatTrackTime } = jest.requireActual('../../utils/trackRecordingNotice');
+  const emptyMetadata = () => ({ totalChunks: 0, totalPoints: 0, lastChunkIndex: 0, lastTimeStamp: 0 });
+  let openSettingsSpy: jest.SpyInstance;
+
+  const render = async () => {
+    const rendered = renderHook(() => useLocation(createMockMapRef() as any), { wrapper: createWrapper(createTestStore()) });
+    await act(async () => {
+      await flushPromises();
+    });
+    return rendered;
+  };
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    (ConfirmAsync as jest.Mock).mockResolvedValue(false);
+    (AlertAsync as jest.Mock).mockResolvedValue(undefined);
+    openSettingsSpy = jest.spyOn(Linking, 'openSettings').mockResolvedValue(undefined);
+    mockBackgroundGeolocation.ready.mockResolvedValue({ enabled: false } as any);
+    mockBackgroundGeolocation.getState.mockResolvedValue({ enabled: false } as any);
+    mockBackgroundGeolocation.removeListeners.mockResolvedValue(undefined);
+    mockBackgroundGeolocation.requestPermission.mockResolvedValue(BackgroundGeolocation.AuthorizationStatus.Always);
+    mockBackgroundGeolocation.getCurrentPosition.mockResolvedValue({
+      coords: { latitude: 35.0, longitude: 135.0, altitude: 0, accuracy: 10, altitudeAccuracy: 5, heading: 0, speed: 0 },
+      timestamp: Date.now(),
+    } as any);
+    mockBackgroundGeolocation.start.mockResolvedValue(undefined);
+    mockBackgroundGeolocation.stop.mockResolvedValue(undefined);
+    mockBackgroundGeolocation.setConfig.mockResolvedValue(undefined);
+    mockBackgroundGeolocation.changePace.mockResolvedValue(undefined);
+    mockBackgroundGeolocation.onLocation.mockReturnValue({ remove: jest.fn() } as any);
+    mockBackgroundGeolocation.onProviderChange.mockReturnValue({ remove: jest.fn() } as any);
+    mockBackgroundGeolocation.getProviderState.mockResolvedValue({ accuracyAuthorization: 0 });
+    mockBackgroundGeolocation.requestTemporaryFullAccuracy.mockResolvedValue(0);
+    mockLocation.watchHeadingAsync.mockResolvedValue({ remove: jest.fn() });
+    mockLocation.getForegroundPermissionsAsync.mockResolvedValue({ granted: true } as any);
+    mockNotifications.getPermissionsAsync.mockResolvedValue({ status: 'granted', canAskAgain: true } as any);
+    (AppState as any).currentState = 'active';
+    trackLogMMKV.getGpsState.mockReturnValue('off');
+    trackLogMMKV.getTrackingState.mockReturnValue('off');
+    trackLogMMKV.getCurrentLocation.mockReturnValue(null);
+    LocationUtils.getTrackMetadata.mockImplementation(emptyMetadata);
+  });
+
+  afterEach(() => {
+    Platform.OS = originalPlatformOS;
+    (AppState as any).currentState = 'active';
+    openSettingsSpy.mockRestore();
+    LocationUtils.getTrackMetadata.mockImplementation(emptyMetadata);
+  });
+
+  describe('T-L6: 途中経過の位置（sample:true）', () => {
+    it('記録中でも軌跡には入れず、現在地の表示には使う', async () => {
+      const { result } = await render();
+      await act(async () => {
+        await result.current.toggleTracking('on');
+      });
+      const onLocationCallback = mockBackgroundGeolocation.onLocation.mock.calls[0][0];
+      LocationUtils.checkAndStoreLocations.mockClear();
+
+      act(() => {
+        onLocationCallback({
+          coords: { latitude: 36.1, longitude: 136.1, accuracy: 20 },
+          timestamp: Date.now(),
+          sample: true,
+        });
+      });
+      expect(LocationUtils.checkAndStoreLocations).not.toHaveBeenCalled();
+      expect(result.current.currentLocation).toEqual(expect.objectContaining({ latitude: 36.1, longitude: 136.1 }));
+
+      act(() => {
+        onLocationCallback({ coords: { latitude: 36.2, longitude: 136.2, accuracy: 20 }, timestamp: Date.now() + 1000 });
+      });
+      expect(LocationUtils.checkAndStoreLocations).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('T-M5: 精度で捨てられ続けたら知らせる', () => {
+    it('記録中に精度100m超の点が10点・60秒以上続いたら1回だけ知らせる', async () => {
+      const { result } = await render();
+      await act(async () => {
+        await result.current.toggleTracking('on');
+      });
+      const onLocationCallback = mockBackgroundGeolocation.onLocation.mock.calls[0][0];
+      (AlertAsync as jest.Mock).mockClear();
+      const start = Date.now();
+
+      act(() => {
+        for (let i = 0; i < 15; i++) {
+          onLocationCallback({ coords: { latitude: 35, longitude: 135, accuracy: 3000 }, timestamp: start + i * 10_000 });
+        }
+      });
+
+      expect(AlertAsync).toHaveBeenCalledTimes(1);
+      expect(AlertAsync).toHaveBeenCalledWith(t('hooks.message.trackPointsDiscardedByAccuracy'));
+    });
+
+    it('バックグラウンド中は知らせを保留し、前面に戻ってから出す', async () => {
+      const addEventListenerSpy = jest.spyOn(AppState, 'addEventListener');
+      const { result } = await render();
+      await act(async () => {
+        await result.current.toggleTracking('on');
+      });
+      const onLocationCallback = mockBackgroundGeolocation.onLocation.mock.calls[0][0];
+      const handler = () =>
+        addEventListenerSpy.mock.calls.filter(([type]) => type === 'change').at(-1)?.[1] as (
+          state: string
+        ) => Promise<void>;
+      await act(async () => {
+        await handler()('background');
+      });
+      (AppState as any).currentState = 'background';
+      (AlertAsync as jest.Mock).mockClear();
+      const start = Date.now();
+      act(() => {
+        for (let i = 0; i < 12; i++) {
+          onLocationCallback({ coords: { latitude: 35, longitude: 135, accuracy: 3000 }, timestamp: start + i * 10_000 });
+        }
+      });
+      expect(AlertAsync).not.toHaveBeenCalled();
+
+      (AppState as any).currentState = 'active';
+      await act(async () => {
+        await handler()('active');
+      });
+      expect(AlertAsync).toHaveBeenCalledWith(t('hooks.message.trackPointsDiscardedByAccuracy'));
+      addEventListenerSpy.mockRestore();
+    });
+  });
+
+  describe('T-M5: 精度の許可の確認', () => {
+    it('正確な位置なら何も尋ねずに続ける', async () => {
+      const { result } = await render();
+      let proceed: boolean | undefined;
+      await act(async () => {
+        proceed = await result.current.confirmLocationAccuracy('tracking');
+      });
+      expect(proceed).toBe(true);
+      expect(ConfirmAsync).not.toHaveBeenCalled();
+      expect(mockBackgroundGeolocation.requestTemporaryFullAccuracy).not.toHaveBeenCalled();
+    });
+
+    it('iOS: おおよその位置なら一時的な正確な位置を求め、許可されたら続ける', async () => {
+      Platform.OS = 'ios';
+      mockBackgroundGeolocation.getProviderState.mockResolvedValue({ accuracyAuthorization: 1 });
+      mockBackgroundGeolocation.requestTemporaryFullAccuracy.mockResolvedValue(0);
+      const { result } = await render();
+      let proceed: boolean | undefined;
+      await act(async () => {
+        proceed = await result.current.confirmLocationAccuracy('tracking');
+      });
+      expect(mockBackgroundGeolocation.requestTemporaryFullAccuracy).toHaveBeenCalledWith('TrackRecording');
+      expect(proceed).toBe(true);
+      expect(ConfirmAsync).not.toHaveBeenCalled();
+    });
+
+    it('iOS: 一時的な正確な位置も断られたら設定を開くか尋ね、開いたら false（開始をやめる）', async () => {
+      Platform.OS = 'ios';
+      mockBackgroundGeolocation.getProviderState.mockResolvedValue({ accuracyAuthorization: 1 });
+      mockBackgroundGeolocation.requestTemporaryFullAccuracy.mockResolvedValue(1);
+      (ConfirmAsync as jest.Mock).mockResolvedValue(true);
+      const { result } = await render();
+      let proceed: boolean | undefined;
+      await act(async () => {
+        proceed = await result.current.confirmLocationAccuracy('tracking');
+      });
+      expect(ConfirmAsync).toHaveBeenCalledWith(
+        `${t('hooks.message.reducedAccuracyIos')}\n${t('hooks.message.reducedAccuracyTracking')}`,
+        { true: t('hooks.message.openLocationSettings'), false: t('hooks.message.continueReducedAccuracy') }
+      );
+      expect(openSettingsSpy).toHaveBeenCalledTimes(1);
+      expect(proceed).toBe(false);
+    });
+
+    it('Android: 一時的な正確な位置は求めず設定へ案内する。このまま続けるなら true', async () => {
+      Platform.OS = 'android';
+      mockBackgroundGeolocation.getProviderState.mockResolvedValue({ accuracyAuthorization: 1 });
+      const { result } = await render();
+      let proceed: boolean | undefined;
+      await act(async () => {
+        proceed = await result.current.confirmLocationAccuracy('gps');
+      });
+      expect(mockBackgroundGeolocation.requestTemporaryFullAccuracy).not.toHaveBeenCalled();
+      expect(ConfirmAsync).toHaveBeenCalledWith(
+        `${t('hooks.message.reducedAccuracyAndroid')}\n${t('hooks.message.reducedAccuracyGps')}`,
+        expect.anything()
+      );
+      expect(openSettingsSpy).not.toHaveBeenCalled();
+      expect(proceed).toBe(true);
+    });
+
+    it('GPS ON中に許可がおおよその位置へ変わったら知らせる（前面のときだけ。OFFなら何もしない）', async () => {
+      Platform.OS = 'android';
+      const { result } = await render();
+      const providerCallback = mockBackgroundGeolocation.onProviderChange.mock.calls[0][0];
+
+      // GPS OFF
+      await act(async () => {
+        providerCallback({ accuracyAuthorization: 1 });
+        await flushPromises();
+      });
+      expect(ConfirmAsync).not.toHaveBeenCalled();
+
+      await act(async () => {
+        await result.current.toggleGPS('follow');
+      });
+      mockBackgroundGeolocation.getProviderState.mockResolvedValue({ accuracyAuthorization: 1 });
+      await act(async () => {
+        providerCallback({ accuracyAuthorization: 0 });
+        providerCallback({ accuracyAuthorization: 1 });
+        await flushPromises();
+      });
+      expect(ConfirmAsync).toHaveBeenCalledTimes(1);
+
+      // 同じ状態のまま（GPSの入切などで）届いても繰り返さない
+      await act(async () => {
+        providerCallback({ accuracyAuthorization: 1 });
+        await flushPromises();
+      });
+      expect(ConfirmAsync).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('T-M4: iOSで記録中に終了されたあとの保存確認', () => {
+    const lastTimeStamp = new Date(2026, 10, 22, 9, 5).getTime();
+
+    it('iOS: 記録中だったら、止めたうえで中断の時刻を示して保存を尋ねる', async () => {
+      Platform.OS = 'ios';
+      trackLogMMKV.getTrackingState.mockReturnValue('on');
+      mockBackgroundGeolocation.getState.mockResolvedValue({ enabled: true } as any);
+      LocationUtils.getTrackMetadata.mockImplementation(() => ({ ...emptyMetadata(), totalPoints: 5, lastTimeStamp }));
+
+      await render();
+
+      expect(ConfirmAsync).toHaveBeenCalledWith(
+        t('hooks.message.saveInterruptedTracking', { time: formatTrackTime(lastTimeStamp) })
+      );
+      expect(mockBackgroundGeolocation.stop).toHaveBeenCalled();
+    });
+
+    it('iOS: 記録していなかったら従来の文言で尋ねる', async () => {
+      Platform.OS = 'ios';
+      trackLogMMKV.getTrackingState.mockReturnValue('off');
+      LocationUtils.getTrackMetadata.mockImplementation(() => ({ ...emptyMetadata(), totalPoints: 5, lastTimeStamp }));
+
+      await render();
+
+      expect(ConfirmAsync).toHaveBeenCalledWith(t('hooks.message.saveTracking'));
     });
   });
 });

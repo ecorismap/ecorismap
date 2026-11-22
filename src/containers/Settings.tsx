@@ -27,6 +27,13 @@ import { editSettingsAction } from '../modules/settings';
 import { AppLanguageType, ProximityAlertSettingsType } from '../types';
 import { selectNonDeletedDataSet } from '../modules/selectors';
 import dayjs from '../i18n/dayjs';
+import { replaceDataWithTrackingGuard } from '../utils/trackingLeaveGuard';
+
+const alertRestoreFailed = async (reason: 'differentUser' | undefined) => {
+  await AlertAsync(
+    reason === 'differentUser' ? t('Settings.alert.restoreBackupDifferentUser') : t('Settings.alert.restoreBackupFailed')
+  );
+};
 
 export default function SettingsContainers() {
   const { navigate, navigateToHome } = useBottomSheetNavigation();
@@ -42,7 +49,8 @@ export default function SettingsContainers() {
   const { clearEcorisMap, generateEcorisMapData, openEcorisMapFile, createExportSettings } = useEcorisMapFile();
   const { mapListURL, saveMapListURL, clearTileCache } = useMaps();
   const store = useStore<RootState>();
-  const { backupList, refreshBackupList, restoreBackup, deleteBackup, clearAllBackups } = useProjectBackup();
+  const { backupList, refreshBackupList, canRestoreBackup, restoreBackup, deleteBackup, clearAllBackups } =
+    useProjectBackup();
 
   const [isMapListURLOpen, setIsMapListURLOpen] = useState(false);
   const [isProximityAlertSettingsOpen, setIsProximityAlertSettingsOpen] = useState(false);
@@ -96,40 +104,50 @@ export default function SettingsContainers() {
   }, [createExportSettings, dataSet, generateEcorisMapData, layers, maps]);
 
   const openFileFromLocal = useCallback(async () => {
-    const ret = await ConfirmAsync(t('Settings.confirm.fileOpen'));
-    if (ret) {
-      //確認ダイアログのdismiss完了前だとピッカーの表示に失敗する
-      await waitForModalTransition();
-      const file = await DocumentPicker.getDocumentAsync({});
-      if (file.assets === null) return;
+    // 記録中なら、読み込む前に止めて保存させる（軌跡監査 T-M8）。止めずに読み込むと、ここまでの軌跡が
+    // 読み込んだ別のデータの軌跡レイヤへ保存される。ファイルの選択までを確認の側に入れ、ピッカーで
+    // 取りやめたり拡張子が違ったりしたときは記録を止めない
+    await replaceDataWithTrackingGuard(
+      'openFile',
+      async () => {
+        const ret = await ConfirmAsync(t('Settings.confirm.fileOpen'));
+        if (!ret) return undefined;
+        //確認ダイアログのdismiss完了前だとピッカーの表示に失敗する
+        await waitForModalTransition();
+        const file = await DocumentPicker.getDocumentAsync({});
+        if (file.assets === null) return undefined;
 
-      const ext = getExt(file.assets[0].name);
-      if (!(ext?.toLowerCase() === 'zip' || ext?.toLowerCase() === 'ecorismap')) {
-        await AlertAsync(t('hooks.message.wrongExtension'));
-        return;
+        const ext = getExt(file.assets[0].name);
+        if (!(ext?.toLowerCase() === 'zip' || ext?.toLowerCase() === 'ecorismap')) {
+          await AlertAsync(t('hooks.message.wrongExtension'));
+          return undefined;
+        }
+        return file.assets[0].uri;
+      },
+      async (uri) => {
+        setIsLoading(true);
+        let opened: Awaited<ReturnType<typeof openEcorisMapFile>>;
+        try {
+          opened = await openEcorisMapFile(uri);
+        } catch (e) {
+          console.error('openFileFromLocal failed', e);
+          opened = { isOK: false, message: t('hooks.message.failGetData') };
+        } finally {
+          setIsLoading(false);
+        }
+        const { isOK, message, region } = opened;
+        if (!isOK && message !== '') {
+          await AlertAsync(message);
+        } else if (isOK) {
+          await AlertAsync(t('Settings.alert.loadEcorisMapFile'));
+          navigateToHome?.({
+            jumpTo: region,
+            previous: 'Settings',
+            mode: 'openEcorisMap',
+          });
+        }
       }
-      setIsLoading(true);
-      let opened: Awaited<ReturnType<typeof openEcorisMapFile>>;
-      try {
-        opened = await openEcorisMapFile(file.assets[0].uri);
-      } catch (e) {
-        console.error('openFileFromLocal failed', e);
-        opened = { isOK: false, message: t('hooks.message.failGetData') };
-      } finally {
-        setIsLoading(false);
-      }
-      const { isOK, message, region } = opened;
-      if (!isOK && message !== '') {
-        await AlertAsync(message);
-      } else if (isOK) {
-        await AlertAsync(t('Settings.alert.loadEcorisMapFile'));
-        navigateToHome?.({
-          jumpTo: region,
-          previous: 'Settings',
-          mode: 'openEcorisMap',
-        });
-      }
-    }
+    );
   }, [navigateToHome, openEcorisMapFile]);
 
   const pressFileSave = useCallback(() => {
@@ -166,30 +184,35 @@ export default function SettingsContainers() {
   }, []);
 
   const pressClearData = useCallback(async () => {
-    const ret = await ConfirmAsync(t('Settings.confirm.fileNew'));
-    if (ret) {
-      //データ全消去の直前に自動バックアップ
-      const state = store.getState();
-      saveProjectBackup(
-        {
-          settings: state.settings,
-          layers: state.layers,
-          tileMaps: state.tileMaps,
-          dataSet: state.dataSet,
-          user: state.user,
-          projects: state.projects,
-          dataSync: state.dataSync,
-        },
-        'fileNew'
-      );
-      const { isOK, message } = await clearEcorisMap();
+    // 記録中なら、クリアの前に止めて保存させる（軌跡監査 T-M8）。新規は projectId を外すので、止めずに進めると
+    // ここまでの軌跡が名義のない端末内データへ保存される。通常利用中のプロジェクトではアップロードしてから進む
+    await replaceDataWithTrackingGuard(
+      'clearData',
+      async () => ((await ConfirmAsync(t('Settings.confirm.fileNew'))) ? true : undefined),
+      async () => {
+        //データ全消去の直前に自動バックアップ（止めて保存した軌跡もここに入る）
+        const state = store.getState();
+        saveProjectBackup(
+          {
+            settings: state.settings,
+            layers: state.layers,
+            tileMaps: state.tileMaps,
+            dataSet: state.dataSet,
+            user: state.user,
+            projects: state.projects,
+            dataSync: state.dataSync,
+          },
+          'fileNew'
+        );
+        const { isOK, message } = await clearEcorisMap();
 
-      if (!isOK) {
-        await AlertAsync(message);
-      } else {
-        navigateToHome?.({ previous: 'Settings', mode: 'clearEcorisMap' });
+        if (!isOK) {
+          await AlertAsync(message);
+        } else {
+          navigateToHome?.({ previous: 'Settings', mode: 'clearEcorisMap' });
+        }
       }
-    }
+    );
   }, [clearEcorisMap, navigateToHome, store]);
 
   const pressBackupRestoreOpen = useCallback(() => {
@@ -207,28 +230,41 @@ export default function SettingsContainers() {
 
   const pressBackupSelect = useCallback(
     async (id: string) => {
-      const ret = await confirmWithBackupSelectClosed(t('Settings.confirm.restoreBackup'));
-      if (!ret) {
+      //iOSはRN Modalを兄弟で2枚同時に表示できないため、軌跡と復元の確認の前に選択モーダルを閉じる
+      setIsBackupSelectOpen(false);
+      await waitForModalTransition();
+      // 復元できないもの（読めない・別ユーザーのもの）は、軌跡の確認より前に断る。記録の確認で「止めて保存」を
+      // 選ばせてから断ると、復元はされないのに記録だけが止まる
+      const restorable = canRestoreBackup(id);
+      if (!restorable.isOK) {
+        await alertRestoreFailed(restorable.reason);
         setIsBackupSelectOpen(true);
         return;
       }
-      const { isOK, region, reason } = restoreBackup(id);
-      if (!isOK) {
-        await AlertAsync(
-          reason === 'differentUser'
-            ? t('Settings.alert.restoreBackupDifferentUser')
-            : t('Settings.alert.restoreBackupFailed')
-        );
-        return;
-      }
-      await AlertAsync(t('Settings.alert.restoreBackupDone'));
-      navigateToHome?.({
-        jumpTo: region,
-        previous: 'Settings',
-        mode: 'openEcorisMap',
-      });
+      // 記録中なら、復元の前に止めて保存させる（軌跡監査 T-M8）。復元は settings（projectId を含む）・user まで
+      // 置き換えるので、止めずに進めると、ここまでの軌跡が復元先のプロジェクトの軌跡レイヤに入り、そこへアップロードされる
+      const proceeded = await replaceDataWithTrackingGuard(
+        'restoreBackup',
+        async () => ((await ConfirmAsync(t('Settings.confirm.restoreBackup'))) ? true : undefined),
+        async () => {
+          // 確認の間に消えた・ログインが変わった場合の防御として、restoreBackup の中でも確かめる
+          const { isOK, region, reason } = restoreBackup(id);
+          if (!isOK) {
+            await alertRestoreFailed(reason);
+            return;
+          }
+          await AlertAsync(t('Settings.alert.restoreBackupDone'));
+          navigateToHome?.({
+            jumpTo: region,
+            previous: 'Settings',
+            mode: 'openEcorisMap',
+          });
+        }
+      );
+      //取りやめたとき（軌跡の保存・アップロードの失敗を含む）は一覧へ戻す
+      if (!proceeded) setIsBackupSelectOpen(true);
     },
-    [confirmWithBackupSelectClosed, navigateToHome, restoreBackup]
+    [canRestoreBackup, navigateToHome, restoreBackup]
   );
 
   const pressBackupSelectCancel = useCallback(() => {

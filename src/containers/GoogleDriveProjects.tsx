@@ -10,6 +10,7 @@ import { DriveProjectItem } from '../lib/googledrive/types';
 import { RootState } from '../store';
 import { t } from '../i18n/config';
 import dayjs from '../i18n/dayjs';
+import { replaceDataWithTrackingGuard } from '../utils/trackingLeaveGuard';
 
 export default function GoogleDriveProjectsContainers() {
   const { goBack, navigateToHome } = useBottomSheetNavigation();
@@ -101,19 +102,25 @@ export default function GoogleDriveProjectsContainers() {
         await AlertAsync(t('hooks.message.cannotInRunningProject'));
         return;
       }
-      const ret = await ConfirmAsync(t('GoogleDriveProjects.confirm.load'));
-      if (!ret) return;
-      const { isOK, message, region } = await loadFromDrive(item);
-      if (isOK && message === '') {
-        await AlertAsync(t('Settings.alert.loadEcorisMapFile'));
-        navigateToHome?.({
-          jumpTo: region,
-          previous: 'Settings',
-          mode: 'openEcorisMap',
-        });
-      } else if (message !== '') {
-        await AlertAsync(message);
-      }
+      // 記録中なら、読み込む前に止めて保存させる（軌跡監査 T-M8）。止めずに読み込むと、ここまでの軌跡が
+      // 読み込んだ別のデータの軌跡レイヤへ保存される
+      await replaceDataWithTrackingGuard(
+        'openFile',
+        async () => ((await ConfirmAsync(t('GoogleDriveProjects.confirm.load'))) ? true : undefined),
+        async () => {
+          const { isOK, message, region } = await loadFromDrive(item);
+          if (isOK && message === '') {
+            await AlertAsync(t('Settings.alert.loadEcorisMapFile'));
+            navigateToHome?.({
+              jumpTo: region,
+              previous: 'Settings',
+              mode: 'openEcorisMap',
+            });
+          } else if (message !== '') {
+            await AlertAsync(message);
+          }
+        }
+      );
     },
     [isRunningProject, loadFromDrive, navigateToHome]
   );

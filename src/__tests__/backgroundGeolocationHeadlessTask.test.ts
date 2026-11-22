@@ -210,6 +210,16 @@ describe('backgroundGeolocationHeadlessTask', () => {
       expect(checkAndStoreLocations).not.toHaveBeenCalled();
     });
 
+    it('途中経過の位置（sample:true）は現在地にだけ使い、軌跡には入れない（T-L6）', async () => {
+      (trackLogMMKV.getTrackingState as jest.Mock).mockReturnValue('on');
+
+      await headlessTask({ ...locationEvent, params: { ...locationEvent.params, sample: true } });
+
+      expect(trackLogMMKV.setCurrentLocation).toHaveBeenCalledTimes(1);
+      expect(checkAndStoreLocations).not.toHaveBeenCalled();
+      expect(resetTrackLogCache).not.toHaveBeenCalled();
+    });
+
     it('locationイベントではchangePaceを呼ばない', async () => {
       (trackLogMMKV.getTrackingState as jest.Mock).mockReturnValue('on');
 

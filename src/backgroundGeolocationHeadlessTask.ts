@@ -7,6 +7,7 @@ import {
   flushPendingTrackLog,
 } from './utils/Location';
 import { trackLogMMKV } from './utils/mmkvStorage';
+import { isSampleLocation } from './utils/trackRecordingNotice';
 
 const RETRY_DELAY_MS = 3000;
 
@@ -60,8 +61,9 @@ BackgroundGeolocation.registerHeadlessTask(async (event) => {
     // 現在地は常に保存（起動直後に地図へ反映するため）
     trackLogMMKV.setCurrentLocation(latest);
 
-    // トラッキング中だけ軌跡を保存（GPSのみONの場合はスキップ）
-    if (trackLogMMKV.getTrackingState() === 'on') {
+    // トラッキング中だけ軌跡を保存（GPSのみONの場合はスキップ）。boot/terminate 後の changePace などの
+    // 途中経過の位置（sample:true）は現在地にだけ使い、軌跡には入れない（軌跡監査 T-L6）
+    if (trackLogMMKV.getTrackingState() === 'on' && !isSampleLocation(event.params)) {
       // headlessは毎回MMKVから読み、末尾で必ずMMKVへ書き戻す（read-modify-write）。キャッシュを捨てる前に
       // 未書き込みの点を確定させる: Activityだけが破棄されプロセスが生き残った場合（Android）は、メインと同じ
       // JSランタイムでキャッシュを共有しており、メインが書き込む前の点がメモリにだけ残っている（軌跡監査 T-L3）。

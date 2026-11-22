@@ -58,7 +58,14 @@ import { useRecord } from './useRecord';
 import { Linking } from 'react-native';
 import { isLocationType } from '../utils/General';
 import { useProximityAlert } from './useProximityAlert';
-import { STALE_LOCATION_AGE_MS } from '../constants/AppConstants';
+import { STALE_LOCATION_AGE_MS, TRACK_ACCURACY } from '../constants/AppConstants';
+import {
+  formatTrackTime,
+  initialTrackDiscardWatchState,
+  isSampleLocation,
+  observeTrackAccuracy,
+  TrackDiscardWatchState,
+} from '../utils/trackRecordingNotice';
 
 const openSettings = () => {
   Linking.openSettings().catch(() => {
@@ -76,6 +83,13 @@ type FlatConfig = Partial<BackgroundConfig> & { notification: NotificationConfig
 type FlatServiceConfig = FlatConfig & { desiredAccuracy: number; distanceFilter: number };
 
 type AuthorizationStatusValue = Awaited<ReturnType<typeof BackgroundGeolocation.requestPermission>>;
+
+// iOSの一時的な正確な位置（requestTemporaryFullAccuracy）の目的キー。
+// Info.plistのNSLocationTemporaryUsageDescriptionDictionaryに同じキーで説明文を置く（ないとiOSが要求を拒否する）
+export const TEMPORARY_FULL_ACCURACY_PURPOSE_KEY = 'TrackRecording';
+
+/** 精度の許可を確かめる操作の種類（案内の文言を分ける） */
+export type LocationAccuracyPurpose = 'gps' | 'tracking';
 
 // disableStopDetection等もv5の型ではgeolocation/activity配下にネストされているが、
 // ネイティブAPIはフラットなトップレベルキーを要求する（notificationと同様の不整合）。
@@ -251,7 +265,8 @@ export type UseLocationReturnType = {
   toggleHeadingUp: (headingUp_: boolean, resetHeading?: boolean) => Promise<void>;
   toggleGPS: (gpsState: LocationStateType) => Promise<void>;
   toggleTracking: (trackingState: TrackingStateType) => Promise<void>;
-  checkUnsavedTrackLog: () => Promise<{ isOK: boolean; message: string }>;
+  /** interrupted: iOSで記録中にアプリが終了されたあとの確認（最後の点の時刻を示す。軌跡監査 T-M4） */
+  checkUnsavedTrackLog: (options?: { interrupted?: boolean }) => Promise<{ isOK: boolean; message: string }>;
   saveTrackLog: () => Promise<{
     isOK: boolean;
     message: string;
@@ -259,6 +274,11 @@ export type UseLocationReturnType = {
     record?: RecordType;
   }>;
   confirmLocationPermission: () => Promise<'granted' | undefined>;
+  /**
+   * 位置の精度の許可を確かめる（軌跡監査 T-M5）。「おおよその位置」なら iOS は一時的な正確な位置を求め、
+   * それでも正確でなければ設定を開くか尋ねる。false は設定を開いた（呼び出し側は開始をやめる）
+   */
+  confirmLocationAccuracy: (purpose: LocationAccuracyPurpose) => Promise<boolean>;
   // Web専用: maplibre GeolocateControl（地図の現在地ボタン）のイベントからアプリのGPS状態を同期する
   updateLocationFromWebGeolocate: (coords: LocationType) => void;
   endWebGeolocate: () => void;
@@ -308,6 +328,14 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
   };
   const gpsStateRef = useRef<LocationStateType>('off');
   const locationSubscription = useRef<BackgroundSubscription | null>(null);
+  const providerSubscription = useRef<BackgroundSubscription | null>(null);
+  // 記録中に精度で捨てられる点が続いているか（軌跡監査 T-M5）。知らせをバックグラウンドで出せないときは前面復帰で出す
+  const trackDiscardWatchRef = useRef<TrackDiscardWatchState>(initialTrackDiscardWatchState);
+  const pendingDiscardNoticeRef = useRef(false);
+  // 精度の許可の確認（ダイアログ）を重ねないための実行中のPromise。許可の変更をバックグラウンドで受けたら前面復帰で確かめる
+  const accuracyCheckRef = useRef<Promise<boolean> | null>(null);
+  const pendingAccuracyCheckRef = useRef(false);
+  const lastAccuracyAuthorizationRef = useRef<number | null>(null);
   const gpsAccuracy = useSelector((state: RootState) => state.settings.gpsAccuracy);
   const appState = useRef(RNAppState.currentState);
   // トラックメタデータ(=軌跡ライン再描画)の更新を約1秒にスロットルする。
@@ -510,13 +538,95 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
     await AlertAsync(t('hooks.message.permitAccessGPS'));
   }, [ensureHeadingSubscription]);
 
+  // 位置の精度の許可（「おおよその位置」かどうか）を確かめる（軌跡監査 T-M5）。おおよその位置では精度が km 単位になり、
+  // 軌跡の点が checkLocations の精度条件で1点も保存されない。iOS は一時的な正確な位置を求め（OSのダイアログ）、
+  // それでも正確でなければ、Android ははじめから、設定を開くか尋ねる。確認の途中で重ねて呼ばれたら同じ結果を待つ
+  const confirmLocationAccuracy = useCallback((purpose: LocationAccuracyPurpose): Promise<boolean> => {
+    if (Platform.OS === 'web') return Promise.resolve(true);
+    // ready() の前はプラグインの状態を読めない（初期化の途中に押されたときだけ。許可の変更は onProviderChange で拾う）
+    if (!bgReadyRef.current) return Promise.resolve(true);
+    if (accuracyCheckRef.current !== null) return accuracyCheckRef.current;
+    const run = async (): Promise<boolean> => {
+      try {
+        const { Full, Reduced } = BackgroundGeolocation.AccuracyAuthorization;
+        const provider = await BackgroundGeolocation.getProviderState();
+        lastAccuracyAuthorizationRef.current = provider.accuracyAuthorization;
+        if (provider.accuracyAuthorization !== Reduced) return true;
+        if (Platform.OS === 'ios') {
+          try {
+            const granted = await BackgroundGeolocation.requestTemporaryFullAccuracy(TEMPORARY_FULL_ACCURACY_PURPOSE_KEY);
+            lastAccuracyAuthorizationRef.current = granted;
+            if (granted === Full) return true;
+          } catch (error) {
+            console.warn('[gps] requestTemporaryFullAccuracy failed', error);
+          }
+        }
+        const key = Platform.OS === 'ios' ? 'reducedAccuracyIos' : 'reducedAccuracyAndroid';
+        const openSettingsChosen = await ConfirmAsync(
+          `${t(`hooks.message.${key}`)}\n${t(
+            purpose === 'tracking' ? 'hooks.message.reducedAccuracyTracking' : 'hooks.message.reducedAccuracyGps'
+          )}`,
+          { true: t('hooks.message.openLocationSettings'), false: t('hooks.message.continueReducedAccuracy') }
+        );
+        if (openSettingsChosen) {
+          openSettings();
+          return false;
+        }
+        return true;
+      } catch (error) {
+        // 状態を読めないときは開始を妨げない（記録中の精度の見張りが代わりに知らせる）
+        console.warn('[gps] failed to check location accuracy authorization', error);
+        return true;
+      }
+    };
+    const promise = run().finally(() => {
+      accuracyCheckRef.current = null;
+    });
+    accuracyCheckRef.current = promise;
+    return promise;
+  }, []);
+
+  // GPS ON・記録中に許可が「おおよその位置」へ変わった、または起動時の復元で GPS・記録を続けるときに確かめる。
+  // 動いているものは止めない（設定を開いたかどうかの結果は使わない）
+  const checkLocationAccuracyWhileRunning = useCallback(async () => {
+    if (gpsStateRef.current === 'off' && trackingStateRef.current !== 'on') return;
+    await confirmLocationAccuracy(trackingStateRef.current === 'on' ? 'tracking' : 'gps');
+  }, [confirmLocationAccuracy]);
+
+  // onProviderChange はプラグインの購読（ensureBackgroundGeolocation）で1回だけ登録するので、最新の処理を ref で呼ぶ
+  const handleProviderChangeRef = useRef<(accuracyAuthorization: number) => void>(() => undefined);
+  handleProviderChangeRef.current = (accuracyAuthorization: number) => {
+    const previous = lastAccuracyAuthorizationRef.current;
+    lastAccuracyAuthorizationRef.current = accuracyAuthorization;
+    // GPSや位置サービスの入切でも届くので、「おおよその位置」へ変わったときだけ扱う
+    if (accuracyAuthorization !== BackgroundGeolocation.AccuracyAuthorization.Reduced || previous === accuracyAuthorization) {
+      return;
+    }
+    if (gpsStateRef.current === 'off' && trackingStateRef.current !== 'on') return;
+    if (RNAppState.currentState !== 'active') {
+      pendingAccuracyCheckRef.current = true;
+      return;
+    }
+    checkLocationAccuracyWhileRunning().catch((error) => console.warn('[gps] accuracy check failed', error));
+  };
+
+  // 記録中に精度で捨てられる点が続いたら知らせる（軌跡監査 T-M5）。applyLocation は同期処理なので待たない
+  const showTrackDiscardNotice = useCallback(() => {
+    pendingDiscardNoticeRef.current = false;
+    AlertAsync(t('hooks.message.trackPointsDiscardedByAccuracy')).catch(() => undefined);
+  }, []);
+
   // 内蔵GPS・外部GNSS受信機の両方の位置がここに合流する。
   // gnssは外部受信機の位置のときだけ渡され、現在地（ポイント記録に使われる）にだけ載せる。軌跡には残さない。
+  // isSample: プラグインの途中経過の位置（sample:true）。現在地の表示にだけ使い、軌跡には入れない（軌跡監査 T-L6）
   const applyLocation = useCallback(
-    (normalized: LocationObjectInput, isStaleLocation: boolean, gnss?: GnssMetaType) => {
+    (normalized: LocationObjectInput, isStaleLocation: boolean, gnss?: GnssMetaType, isSample = false) => {
       const isTracking = trackingStateRef.current === 'on';
       const isGpsOn = gpsStateRef.current !== 'off';
-      if (!isTracking) lastTrackPointRef.current = null;
+      if (!isTracking) {
+        lastTrackPointRef.current = null;
+        trackDiscardWatchRef.current = initialTrackDiscardWatchState;
+      }
 
       // トラッキング中でもGPSオンでもない場合は何もしない
       if (!isTracking && !isGpsOn) {
@@ -538,7 +648,24 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
         const skipTrackPoint =
           gnss !== undefined &&
           !shouldRecordGnssTrackPoint(lastTrackPointRef.current, latest, thinning.mode, thinning.distance);
-        if (isTracking && !skipTrackPoint) {
+        if (isTracking && !isSample) {
+          // 精度で捨てられる点が続いているかを見る（間引きの前に、届いたすべての点で数える）
+          const watched = observeTrackAccuracy(
+            trackDiscardWatchRef.current,
+            normalized.coords.accuracy,
+            normalized.timestamp,
+            TRACK_ACCURACY.RECORD
+          );
+          trackDiscardWatchRef.current = watched.state;
+          if (watched.notify) {
+            if (isInBackground) {
+              pendingDiscardNoticeRef.current = true;
+            } else {
+              showTrackDiscardNotice();
+            }
+          }
+        }
+        if (isTracking && !skipTrackPoint && !isSample) {
           // checkAndStoreLocationsが更新後のmetadata/現在チャンクを返すため、ここでの再読み込みは不要。
           // 外部GNSS受信機の点には測位品質（軌跡の色分け用）と楕円体高だけを付けて保存する
           const trackInput =
@@ -612,7 +739,7 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
         console.error('[tracking] Failed to persist location', error);
       }
     },
-    [mapViewRef, setLocationStale]
+    [mapViewRef, setLocationStale, showTrackDiscardNotice]
   );
 
   const handleBackgroundLocation = useCallback(
@@ -629,7 +756,7 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
       if (getExternalGnssSnapshot().status.link === 'connected') {
         normalized.coords = { ...normalized.coords, altitude: null, altitudeAccuracy: null };
       }
-      applyLocation(normalized, isStaleLocation);
+      applyLocation(normalized, isStaleLocation, undefined, isSampleLocation(location));
     },
     [applyLocation]
   );
@@ -699,6 +826,17 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
           console.error('[tracking] location error', error);
         }
       );
+    }
+
+    // 位置の許可（精度を含む）の変更。GPS ON・記録中に「おおよその位置」へ変わったら知らせる（軌跡監査 T-M5）
+    if (!providerSubscription.current) {
+      try {
+        providerSubscription.current = BackgroundGeolocation.onProviderChange((event) =>
+          handleProviderChangeRef.current(event.accuracyAuthorization)
+        );
+      } catch (error) {
+        console.warn('[gps] Failed to subscribe provider changes', error);
+      }
     }
 
     bgReadyRef.current = true;
@@ -840,6 +978,8 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
       // （toggleTracking('on')がここより前にrefを'on'にするので、refでは区別できない）
       if (trackLogMMKV.getTrackingState() !== 'on') {
         clearStoredLocations();
+        trackDiscardWatchRef.current = initialTrackDiscardWatchState;
+        pendingDiscardNoticeRef.current = false;
       }
 
       // トラッキング状態を先にMMKVへ確定する（kill後の復帰での復元と、checkAndStoreLocationsの
@@ -1226,14 +1366,21 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
     }
   }, [addTrackRecord, setLocationStale]);
 
-  const checkUnsavedTrackLog = useCallback(async () => {
+  const checkUnsavedTrackLog = useCallback(async (options?: { interrupted?: boolean }) => {
     // メタデータからデータの有無を確認
     const metadata = getTrackMetadata();
     const totalPoints = Math.max(metadata.totalPoints, trackMetadata.totalPoints);
     const hasData = totalPoints > 1;
 
     if (hasData) {
-      const ans = await ConfirmAsync(t('hooks.message.saveTracking'));
+      // iOSで記録中にアプリが終了されたあとは、記録が止まったことと最後の点の時刻を示す（軌跡監査 T-M4）。
+      // iOSには常駐通知がなく、終了から次に開くまで記録されていないことに気づけないため
+      const lastTimeStamp = Math.max(metadata.lastTimeStamp, trackMetadata.lastTimeStamp);
+      const message =
+        options?.interrupted === true && lastTimeStamp > 0
+          ? t('hooks.message.saveInterruptedTracking', { time: formatTrackTime(lastTimeStamp) })
+          : t('hooks.message.saveTracking');
+      const ans = await ConfirmAsync(message);
       if (ans) {
         const ret = await saveTrackLog();
         if (!ret.isOK) return ret;
@@ -1256,7 +1403,7 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
       }
     }
     return { isOK: true, message: '' };
-  }, [saveTrackLog, trackMetadata.totalPoints, setLocationStale]);
+  }, [saveTrackLog, trackMetadata.totalPoints, trackMetadata.lastTimeStamp, setLocationStale]);
 
   useEffect(() => {
     if (Platform.OS === 'web') return;
@@ -1273,6 +1420,9 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
       const savedTrackingState = Platform.OS === 'android' ? trackLogMMKV.getTrackingState() : 'off';
       const savedGpsState = Platform.OS === 'android' ? trackLogMMKV.getGpsState() : 'off';
       const wasTracking = savedTrackingState === 'on';
+      // iOSは記録中にアプリが終了されたあと、開き直すと記録を止める（意図した方針）。止める前に、記録中だったかを
+      // MMKVから読んでおき、保存の確認で「中断された」ことと最後の点の時刻を示す（軌跡監査 T-M4）
+      const wasInterruptedOnIos = Platform.OS === 'ios' && trackLogMMKV.getTrackingState() === 'on';
 
       if (savedGpsState !== 'off') {
         setGpsState(savedGpsState);
@@ -1338,15 +1488,17 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
           // 最新の位置を設定して軌跡を表示（CurrentTrackLogは currentLocation の変更をトリガーに再レンダリングする）。
           // キャッシュが古ければstale（灰色マーカー）として表示する。
           showLastKnownLocation(false);
+          // 終了している間に許可が「おおよその位置」へ変わっていれば知らせる（軌跡監査 T-M5）
+          await checkLocationAccuracyWhileRunning();
         } else {
           await stopTracking();
-          const { isOK, message } = await checkUnsavedTrackLog();
+          const { isOK, message } = await checkUnsavedTrackLog({ interrupted: wasInterruptedOnIos });
           if (!isOK) {
             await AlertAsync(message);
           }
         }
       } else {
-        const { isOK, message } = await checkUnsavedTrackLog();
+        const { isOK, message } = await checkUnsavedTrackLog({ interrupted: wasInterruptedOnIos });
         if (!isOK) {
           await AlertAsync(message);
         }
@@ -1366,6 +1518,7 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
           if (known === 'none' && wasTracking) {
             await moveCurrentPosition();
           }
+          await checkLocationAccuracyWhileRunning();
         }
       }
 
@@ -1382,6 +1535,10 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
       if (locationSubscription.current) {
         locationSubscription.current.remove();
         locationSubscription.current = null;
+      }
+      if (providerSubscription.current) {
+        providerSubscription.current.remove();
+        providerSubscription.current = null;
       }
     };
     // 初期化はマウント時に1回だけ実行する（本体はinitializedRefで多重実行を防いでいる）。
@@ -1440,6 +1597,15 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
         }
 
         if (headingUp) toggleHeadingUp(true);
+
+        // バックグラウンドで受けた許可の変更・精度の知らせを、前面に戻ってから出す（軌跡監査 T-M5）
+        if (pendingAccuracyCheckRef.current) {
+          pendingAccuracyCheckRef.current = false;
+          checkLocationAccuracyWhileRunning().catch((error) => console.warn('[gps] accuracy check failed', error));
+        }
+        if (pendingDiscardNoticeRef.current && trackingStateRef.current === 'on') {
+          showTrackDiscardNotice();
+        }
       } else if (appState.current === 'active' && nextAppState.match(/inactive|background/)) {
         // バックグラウンド移行時
         // BackgroundGeolocationは継続（onLocationで位置更新を続ける）
@@ -1469,6 +1635,8 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
     resubscribeHeadingForService,
     ensureHeadingSubscriptionIfPermitted,
     syncBackgroundService,
+    checkLocationAccuracyWhileRunning,
+    showTrackDiscardNotice,
   ]);
 
   useEffect(() => {
@@ -1502,6 +1670,7 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
     checkUnsavedTrackLog,
     saveTrackLog,
     confirmLocationPermission,
+    confirmLocationAccuracy,
     updateLocationFromWebGeolocate,
     endWebGeolocate,
   } as const;

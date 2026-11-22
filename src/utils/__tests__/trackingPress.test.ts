@@ -95,6 +95,7 @@ const makeDeps = (
     calls.push('waitForModalTransition');
   }),
   confirmLocationPermission: jest.fn(async () => 'granted' as const),
+  confirmLocationAccuracy: jest.fn(async () => true),
   toggleGPS: jest.fn(async (s: string) => {
     calls.push(`toggleGPS:${s}`);
   }),
@@ -121,6 +122,30 @@ describe('runTrackingPress（Home の軌跡ボタン）', () => {
     await runTrackingPress(deps);
     expect(calls).toEqual(['confirm:confirmStart', 'toggleGPS:follow', 'toggleTracking:on', 'onStarted']);
     expect(deps.flags.starting.current).toBe(false);
+  });
+
+  it('プロジェクト設定の編集中は開始せず、案内だけ出す（T-M9）', async () => {
+    const calls: string[] = [];
+    const deps = makeDeps(calls, { startBlockedMessage: 'blocked' });
+    await runTrackingPress(deps);
+    expect(calls).toEqual(['alert:blocked']);
+    expect(deps.checkUnsavedTrackLog).not.toHaveBeenCalled();
+    expect(deps.flags.starting.current).toBe(false);
+  });
+
+  it('開始を止める案内があっても、記録中なら停止はできる（T-M9）', async () => {
+    const calls: string[] = [];
+    const deps = makeDeps(calls, { trackingState: 'on', startBlockedMessage: 'blocked' });
+    await runTrackingPress(deps);
+    expect(calls).toEqual(['confirm:confirmStop', 'toggleTracking:off', 'toggleGPS:off', 'saveTrackLog', 'onSaved:L1:R1']);
+  });
+
+  it('精度の確認で設定を開いたら（false）記録を始めない（T-M5）', async () => {
+    const calls: string[] = [];
+    const deps = makeDeps(calls, { confirmLocationAccuracy: jest.fn(async () => false) });
+    await runTrackingPress(deps);
+    expect(calls).toEqual(['confirm:confirmStart']);
+    expect(deps.confirmLocationAccuracy).toHaveBeenCalledTimes(1);
   });
 
   it('開始の処理中に開始側へ入った押し直しは、二重に始めず処理中であることを知らせる（T-M2）', async () => {

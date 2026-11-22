@@ -20,7 +20,7 @@ export const toConnectionConfig = (ntrip: NtripSettingsType, password: string): 
 /** iOSはMFi以外のUSB機器を扱えないので、受信機はBLEでだけつなぐ */
 export const isUsbSupported = Platform.OS === 'android';
 
-const canStartNtrip = (ntrip: NtripSettingsType) => ntrip.enabled && ntrip.host !== '' && ntrip.mountpoint !== '';
+export const canStartNtrip = (ntrip: NtripSettingsType) => ntrip.enabled && ntrip.host !== '' && ntrip.mountpoint !== '';
 
 /** NTRIPがONで設定がそろっていれば接続し、そうでなければ止める */
 export const startNtripIfEnabled = async (ntrip: NtripSettingsType, password: string) => {

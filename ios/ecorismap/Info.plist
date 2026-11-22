@@ -94,6 +94,11 @@
 	<string>Give $(PRODUCT_NAME) permission to access your camera</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 	<string>Turning on location services allows us to show your current location and record your tracks.</string>
+	<key>NSLocationTemporaryUsageDescriptionDictionary</key>
+	<dict>
+		<key>TrackRecording</key>
+		<string>Precise location is needed to record your track and show your exact position.</string>
+	</dict>
 	<key>NSLocationAlwaysUsageDescription</key>
 	<string>Allow $(PRODUCT_NAME) to use your location</string>
 	<key>NSLocationUsageDescription</key>
