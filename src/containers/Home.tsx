@@ -39,9 +39,16 @@ import {
   waitForModalTransition,
 } from '../components/molecules/AlertAsync';
 import { isExternalFixActive } from '../lib/gnss/externalGnssStore';
+import { buildHomeDownloadMergeInput, getHomeDownloadFetchModes } from '../utils/homeDownload';
+import {
+  leaveWithTrackingGuard,
+  registerTrackingLeaveHandler,
+  stopAndSaveTrack,
+  waitUntil,
+} from '../utils/trackingLeaveGuard';
 import { requestGnssAveragingAsync } from '../hooks/useGnssAveraging';
 import { useExternalGnssAutoConnect } from '../hooks/useExternalGnssAutoConnect';
-import { shallowEqual, useSelector, useDispatch } from 'react-redux';
+import { shallowEqual, useSelector, useDispatch, useStore } from 'react-redux';
 import { RootState, AppDispatch } from '../store';
 import { useTiles } from '../hooks/useTiles';
 import { useRecord } from '../hooks/useRecord';
@@ -143,7 +150,7 @@ import { HomeModalInfoPicker } from '../components/organisms/HomeModalInfoPicker
 import { HomeModalLayerSelect } from '../components/organisms/HomeModalLayerSelect';
 import { useEditableLayerSelection } from '../hooks/useEditableLayerSelection';
 import { TEMPLATE_LAYER, updateLayerAction } from '../modules/layers';
-import { updateRecordsAction } from '../modules/dataSet';
+import { updateRecordsAction, updateRecordsLocallyAction } from '../modules/dataSet';
 import { ulid } from 'ulid';
 import { Position } from 'geojson';
 import { useMaps } from '../hooks/useMaps';
@@ -361,6 +368,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     selectRecord,
     unselectRecord,
     checkRecordEditable,
+    checkRecordsModifiable,
     activePointLayer,
     activeLineLayer,
     activePolygonLayer,
@@ -555,6 +563,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     fetchPrivateData,
     fetchTemplateData,
     createMergedDataSet,
+    fetchOwnDataVersions,
   } = useRepository();
 
   const { vectorTileInfo, getVectorTileInfo, openVectorTileInfo, closeVectorTileInfo } = useVectorTile();
@@ -627,64 +636,54 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
           );
         }
       }
-      if (isAdmin) {
-        //自分以外のPUBLICとPRIVATEデータをサーバーから取得する
-        const [publicRes, privateRes, templateRes] = await Promise.all([
-          fetchPublicData(project, shouldPhotoDownload, 'others'),
-          fetchPrivateData(project, shouldPhotoDownload, 'others'),
-          fetchTemplateData(project, shouldPhotoDownload),
-        ]);
-        if (!publicRes.isOK || !privateRes.isOK || !templateRes.isOK) {
-          throw new Error(publicRes.message || privateRes.message || templateRes.message);
-        }
-        //自分のPRIVATEデータをローカルから取得する。（編集されている可能性のため）
-        const privateLayerIds = layers.filter((layer) => layer.permission === 'PRIVATE').map((layer) => layer.id);
-        const ownPrivateData = fullDataSet.filter((d) => privateLayerIds.includes(d.layerId) && d.userId === user.uid);
-
-        //自分のPUBLICデータをローカルから取得する。（編集されている可能性のため）
-        const publicLayerIds = layers.filter((layer) => layer.permission === 'PUBLIC').map((layer) => layer.id);
-        const ownPublicData = fullDataSet.filter((d) => publicLayerIds.includes(d.layerId) && d.userId === user.uid);
-        const mergedDataResult = await createMergedDataSet({
-          privateData: [...privateRes.data, ...ownPrivateData],
-          publicData: [...publicRes.data, ...ownPublicData],
-          templateData: templateRes.data,
-          // 他人の PUBLIC・PRIVATE とテンプレートを取り直したので、そこに無い他人の分は手元からも消す
-          fetchedScope: { permissions: ['PUBLIC', 'PRIVATE'], template: true },
-          undecryptableGroups: [
-            ...(publicRes.undecryptableGroups ?? []),
-            ...(privateRes.undecryptableGroups ?? []),
-            ...(templateRes.undecryptableGroups ?? []),
-          ],
-        });
-        if (!mergedDataResult.isOK) throw new Error(mergedDataResult.message);
-        return { warning: mergedDataResult.warning };
-      } else {
-        //自分以外のPUBLICデータをサーバーから取得する
-        const [publicRes, templateRes] = await Promise.all([
-          fetchPublicData(project, shouldPhotoDownload, 'others'),
-          fetchTemplateData(project, shouldPhotoDownload),
-        ]);
-        if (!publicRes.isOK || !templateRes.isOK) {
-          throw new Error(publicRes.message || templateRes.message);
-        }
-        //自分のPUBLICデータをローカルから取得する。（編集されている可能性のため）
-        const publicLayerIds = layers.filter((layer) => layer.permission === 'PUBLIC').map((layer) => layer.id);
-        const ownPublicData = fullDataSet.filter((d) => publicLayerIds.includes(d.layerId) && d.userId === user.uid);
-
-        const mergedDataResult = await createMergedDataSet({
-          privateData: [],
-          publicData: [...publicRes.data, ...ownPublicData],
-          templateData: templateRes.data,
-          // PRIVATE は取得していないので範囲に含めない。以前に管理者として取得した他人の PRIVATE は、クラウドで
-          // どうなったか分からないので消さずに残す（消すと、取得しない選択をしただけで手元の写しを失う）
-          fetchedScope: { permissions: ['PUBLIC'], template: true, pruneOthers: !isOwnerAdmin },
-          undecryptableGroups: [...(publicRes.undecryptableGroups ?? []), ...(templateRes.undecryptableGroups ?? [])],
-        });
-        if (!mergedDataResult.isOK) throw new Error(mergedDataResult.message);
-        return { warning: mergedDataResult.warning };
+      // 自分のクラウドのデータも取り、同じアカウントの別端末の変更を取り込む（同期監査 L4）。手元の自分のデータとは
+      // createMergedDataSet の競合解決で合わせる（手元にしか無い・手元の方が新しい記録は残す）。
+      // 版は取得の前に読む（取得の後に読むと、取り込んでいない新しい版を基準値にしてしまう）
+      const fetchedAt = Date.now();
+      const ownVersions = await fetchOwnDataVersions(project);
+      if (ownVersions === undefined) throw new Error(t('hooks.message.cannotVerifyOwnCloudDataForDownload'));
+      //PUBLICは全員分、PRIVATEは管理者が全員分を取るとき以外は自分の分だけを取得する
+      const modes = getHomeDownloadFetchModes(isAdmin);
+      const [publicRes, privateRes, templateRes] = await Promise.all([
+        fetchPublicData(project, shouldPhotoDownload, modes.public),
+        fetchPrivateData(project, shouldPhotoDownload, modes.private),
+        fetchTemplateData(project, shouldPhotoDownload),
+      ]);
+      if (!publicRes.isOK || !privateRes.isOK || !templateRes.isOK) {
+        throw new Error(publicRes.message || privateRes.message || templateRes.message);
       }
+      //自分の分は手元の版を渡し、クラウドの自分の分は ownCloud として手元と合わせる。管理者が全員分を取らなかったときは
+      //他人の分を消さない（utils/homeDownload）
+      const mergedDataResult = await createMergedDataSet(
+        buildHomeDownloadMergeInput({
+          projectId: project.id,
+          fetchedAt,
+          ownVersions,
+          publicRes,
+          privateRes,
+          templateRes,
+          localDataSet: fullDataSet,
+          layers,
+          ownUserId: user.uid,
+          isAdmin,
+          isOwnerAdmin,
+        })
+      );
+      if (!mergedDataResult.isOK) throw new Error(mergedDataResult.message);
+      return { warning: mergedDataResult.warning };
     },
-    [createMergedDataSet, fetchPrivateData, fetchPublicData, fetchTemplateData, fullDataSet, isOwnerAdmin, layers, project, user.uid]
+    [
+      createMergedDataSet,
+      fetchOwnDataVersions,
+      fetchPrivateData,
+      fetchPublicData,
+      fetchTemplateData,
+      fullDataSet,
+      isOwnerAdmin,
+      layers,
+      project,
+      user.uid,
+    ]
   );
 
   /*************** onXXXXMapView *********************/
@@ -1082,8 +1081,12 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
         .forEach((d) => {
           const targets = d.data.filter((record) => record.field[fieldName] === oldValue);
           if (targets.length === 0) return;
+          // 他人・テンプレートの名義の写しは手元の表示をそろえるだけ（アップロードされず、取得で元に戻る）。
+          // 所有権の規則（modules/recordOwnership）を通すと、管理者なら区分名の変更だけで全員分を引き継いでしまう
+          const updateAction =
+            d.userId === undefined || d.userId === user.uid ? updateRecordsAction : updateRecordsLocallyAction;
           dispatch(
-            updateRecordsAction({
+            updateAction({
               layerId: d.layerId,
               userId: d.userId,
               // 値を書き換えたので更新日時も進める（同期で書き換え前の版に負けないように）
@@ -1096,7 +1099,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
           );
         });
     },
-    [dispatch, editingLayer, fullDataSet]
+    [dispatch, editingLayer, fullDataSet, user.uid]
   );
 
   //区分を選択肢から消す。保存済みのレコードの値はそのまま残す（消すとデータが失われるため）
@@ -1537,6 +1540,15 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       route.params?.mode === 'editPosition' && route.params.layer !== undefined && route.params.record !== undefined
         ? { layer: route.params.layer, record: route.params.record }
         : undefined;
+    if (editTarget) {
+      //他のメンバー・テンプレートの記録の位置は、管理者以外は変えられない（同期監査 L1。データ編集の「位置」と同じ扱い）
+      const modifiable = checkRecordsModifiable(editTarget.layer, [editTarget.record], 'edit');
+      if (!modifiable.isOK) {
+        await AlertAsync(modifiable.message);
+        finishEditPosition(true);
+        return;
+      }
+    }
     const confirmMessage = t(editTarget ? 'Home.confirm.updateLocationPoint' : 'Home.confirm.addLocationPoint');
 
     // 確認アラートを表示（スマホでは平均化測位も選べる。外部GNSS受信機の使用中はその位置、それ以外は内蔵GPSを平均する）
@@ -1599,6 +1611,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     getCurrentPoint,
     updatePointPosition,
     finishEditPosition,
+    checkRecordsModifiable,
   ]);
 
   const handleAddLocationPoint = useCallback(async () => {
@@ -2032,6 +2045,86 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     trackingState,
   ]);
 
+  // 軌跡の記録中にプロジェクトの切替・終了・ログアウトをするときの停止・保存・アップロード（trackingLeaveGuard、同期監査 M13）。
+  // 他の画面からも呼ばれるため、最新の状態と関数をrefで渡す
+  const store = useStore<RootState>();
+  const uploadSavedTrackLayer = useCallback(
+    async (layerId: string) => {
+      if (project === undefined) return { isOK: false, message: t('hooks.message.unknownError') };
+      if (isConnected === false) return { isOK: false, message: t('Home.alert.noInternet') };
+      if (user.uid && !hasAuthSession()) return { isOK: false, message: t('hooks.message.reloginRequired') };
+      if (!e3kit.isInitialized() && user.uid) {
+        const { isOK: initE3kitOK, message: initE3kitMessage } = await e3kit.initializeUser(user.uid);
+        if (!initE3kitOK) {
+          return {
+            isOK: false,
+            message: `${t('hooks.message.failedInitializeEncrypt')}${initE3kitMessage ? `: ${initE3kitMessage}` : ''}`,
+          };
+        }
+      }
+      setIsLoading(true);
+      try {
+        const result = await uploadData({ layerIds: [layerId] });
+        // 軌跡レイヤを送らなかった知らせ（設定の食い違い・クラウドから消えたレイヤを上げ直さない等）は、
+        // 軌跡がクラウドに無いままなので失敗として扱う（軌跡レイヤに写真は無いので写真の警告は出ない）
+        if (result.isOK && result.warning) return { isOK: false, message: result.warning };
+        return { isOK: result.isOK, message: result.message };
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [isConnected, project, uploadData, user.uid]
+  );
+  const savedTrackLayerIdRef = useRef<string | undefined>(undefined);
+  const trackingLeaveRef = useRef({
+    trackingState,
+    projectName,
+    isSettingProject,
+    saveTrackLog,
+    toggleTracking,
+    toggleGPS,
+    fullDataSet,
+    uploadSavedTrackLayer,
+  });
+  trackingLeaveRef.current = {
+    trackingState,
+    projectName,
+    isSettingProject,
+    saveTrackLog,
+    toggleTracking,
+    toggleGPS,
+    fullDataSet,
+    uploadSavedTrackLayer,
+  };
+  useEffect(() => {
+    if (Platform.OS === 'web') return;
+    return registerTrackingLeaveHandler({
+      isTracking: () => trackingLeaveRef.current.trackingState === 'on',
+      getContext: () => ({
+        projectName: trackingLeaveRef.current.projectName,
+        isRunningProject: !trackingLeaveRef.current.isSettingProject,
+      }),
+      stopAndSave: () =>
+        stopAndSaveTrack({
+          toggleTracking: trackingLeaveRef.current.toggleTracking,
+          toggleGPS: trackingLeaveRef.current.toggleGPS,
+          saveTrackLog: trackingLeaveRef.current.saveTrackLog,
+          onSaved: (layerId) => {
+            savedTrackLayerIdRef.current = layerId;
+          },
+        }),
+      uploadTrack: async () => {
+        const layerId = savedTrackLayerIdRef.current;
+        savedTrackLayerIdRef.current = undefined;
+        if (layerId === undefined) return { isOK: true, message: '' };
+        // アップロードは描画時点の手元のデータを送るので、保存した軌跡がこの画面の描画に反映されるのを待つ
+        const synced = await waitUntil(() => trackingLeaveRef.current.fullDataSet === store.getState().dataSet);
+        if (!synced) return { isOK: false, message: t('hooks.message.unknownError') };
+        return await trackingLeaveRef.current.uploadSavedTrackLayer(layerId);
+      },
+    });
+  }, [store]);
+
   const pressGPS = useCallback(async () => {
     //runTutrial('HOME_BTN_GPS');
     if (gpsState === 'off') {
@@ -2095,15 +2188,18 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
   }, []);
 
   const pressLogout = useCallback(async () => {
-    if (isSettingProject) {
-      const ret = await ConfirmAsync(t('Home.confirm.discardLogout'));
-      if (!ret) return;
-    } else {
-      const message =
-        googleAccountEmail !== undefined ? t('Home.confirm.logoutWithGoogle') : t('Home.confirm.logout');
-      const ret = await ConfirmAsync(message);
-      if (!ret) return;
-    }
+    // 記録中なら、ログアウトの確認まで了承されてから止めて今の名義・プロジェクトへ保存・アップロードする
+    // （キャンセルなら記録を続けたまま何もしない）
+    const ret = await leaveWithTrackingGuard('logout', () =>
+      ConfirmAsync(
+        isSettingProject
+          ? t('Home.confirm.discardLogout')
+          : googleAccountEmail !== undefined
+            ? t('Home.confirm.logoutWithGoogle')
+            : t('Home.confirm.logout')
+      )
+    );
+    if (!ret) return;
 
     // ローカルの暗号化鍵一式を削除（uidを参照するためlogoutより前に実行。エラーでも続行）
     await deleteLocalEncryptKeys();
@@ -2232,7 +2328,8 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
   }, [isSynced, syncPosition]);
 
   const pressCloseProject = useCallback(async () => {
-    const ret = await ConfirmAsync(t('Home.confirm.closeProject'));
+    // 記録中なら、終了の確認まで了承されてから止めて保存・アップロードする（キャンセルなら記録を続けたまま何もしない）
+    const ret = await leaveWithTrackingGuard('closeProject', () => ConfirmAsync(t('Home.confirm.closeProject')));
     if (ret) {
       //Layersに戻らないとwebでエラー（白く）なる
       navigateToSplit?.('Layers');
@@ -2243,21 +2340,26 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
 
   const pressSaveProjectSetting = useCallback(async () => {
     try {
-      const ret = await ConfirmAsync(t('Home.confirm.saveProject'));
-      if (!ret) return;
-      // 開いた後に別の端末（別の管理者、同じ管理者のスマホとWeb）が設定を保存していたら、黙って上書きせずに確かめる。
-      // そのまま保存すると、相手が足したレイヤ・地図・共通データの変更が後勝ちで消える
-      setIsLoading(true);
-      const isCurrent = await isProjectSettingCurrent();
-      setIsLoading(false);
-      if (!isCurrent) {
-        await waitForModalTransition();
-        const overwrite = await ConfirmAsync(t('Home.confirm.settingsChangedElsewhere'), {
-          true: t('Home.confirm.overwriteSettings'),
-          false: t('common.cancel'),
-        });
-        if (!overwrite) return;
-      }
+      // 記録中なら、保存の確認まで了承されてから止めて保存する（キャンセルなら記録を続けたまま何もしない）
+      const proceed = await leaveWithTrackingGuard('closeProject', async () => {
+        const ret = await ConfirmAsync(t('Home.confirm.saveProject'));
+        if (!ret) return false;
+        // 開いた後に別の端末（別の管理者、同じ管理者のスマホとWeb）が設定を保存していたら、黙って上書きせずに確かめる。
+        // そのまま保存すると、相手が足したレイヤ・地図・共通データの変更が後勝ちで消える
+        setIsLoading(true);
+        const isCurrent = await isProjectSettingCurrent();
+        setIsLoading(false);
+        if (!isCurrent) {
+          await waitForModalTransition();
+          const overwrite = await ConfirmAsync(t('Home.confirm.settingsChangedElsewhere'), {
+            true: t('Home.confirm.overwriteSettings'),
+            false: t('common.cancel'),
+          });
+          if (!overwrite) return false;
+        }
+        return true;
+      });
+      if (!proceed) return;
       setIsLoading(true);
       const warning = await saveProjectSetting();
       setIsLoading(false);
@@ -2272,7 +2374,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
   }, [clearProject, isProjectSettingCurrent, navigateToSplit, navigation, project, saveProjectSetting]);
 
   const pressDiscardProjectSetting = useCallback(async () => {
-    const ret = await ConfirmAsync(t('Home.confirm.discardProject'));
+    const ret = await leaveWithTrackingGuard('closeProject', () => ConfirmAsync(t('Home.confirm.discardProject')));
     if (ret) {
       navigateToSplit?.('Layers');
       clearProject();
@@ -2493,6 +2595,14 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     async (e: any, layer: LayerType, feature: RecordType) => {
       const coordinate =
         Platform.OS === 'web' ? { longitude: e.lngLat.lng, latitude: e.lngLat.lat } : e.nativeEvent.coordinate;
+      //他のメンバー・テンプレートの記録を動かしてよいか（同期監査 L1）。だめなら元の位置に戻して理由を出す。
+      //戻さないと、ストアは変わらない（modules/recordOwnership が受け付けない）のにマーカーだけが動いた位置に残る
+      const modifiable = checkRecordsModifiable(layer, [feature], 'edit');
+      if (!modifiable.isOK) {
+        resetPointPosition(layer, feature);
+        await AlertAsync(modifiable.message);
+        return;
+      }
       const ret = await ConfirmAsync(t('Home.confirm.drag'));
       if (!ret) {
         resetPointPosition(layer, feature);
@@ -2521,6 +2631,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     [
       changeActiveLayer,
       checkRecordEditable,
+      checkRecordsModifiable,
       finishEditPosition,
       resetPointPosition,
       route.params?.mode,

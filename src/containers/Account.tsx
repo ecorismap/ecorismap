@@ -9,6 +9,7 @@ import { useEncryptKeyResetConfirm } from '../hooks/useEncryptKeyResetConfirm';
 import { signInGoogleDrive } from '../lib/googledrive/auth';
 import { setGoogleDriveConnectedEmailAction } from '../modules/googleDrive';
 import { t } from '../i18n/config';
+import { stopTrackingBeforeForcedLogout } from '../utils/trackingLeaveGuard';
 import { Props_Account } from '../routes';
 
 export default function AccountContainers({ navigation, route }: Props_Account) {
@@ -29,7 +30,7 @@ export default function AccountContainers({ navigation, route }: Props_Account) 
     initializeEncript,
     sendConfirmEMail,
     login,
-    logout,
+    logout: logoutAccount,
     signUp,
     updateUserProfile,
     changeUserPassword,
@@ -44,6 +45,14 @@ export default function AccountContainers({ navigation, route }: Props_Account) 
     deleteAllProjects,
   } = useAccount();
   const confirmEncryptKeyReset = useEncryptKeyResetConfirm();
+
+  // この画面のログアウトはどれも取りやめられない（キー登録の中断・失敗、退会など）。軌跡を記録中なら、
+  // 確認ではなく通知を出して止め、ログアウトする前の名義・プロジェクトへ保存する（別の名義で保存させない）。
+  // この経路のログアウトは手元のデータを消さないので、保存した軌跡は再ログイン後にアップロードできる
+  const logout = useCallback(async () => {
+    await stopTrackingBeforeForcedLogout();
+    await logoutAccount();
+  }, [logoutAccount]);
 
   useEffect(() => {
     // パラメータが存在する場合のみ処理（無限ループ防止）

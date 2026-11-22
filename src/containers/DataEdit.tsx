@@ -42,6 +42,8 @@ export default function DataEditContainer() {
     maxRecordNumber,
     photoFolder,
     isEditable,
+    modifyBlockMessage,
+    deleteBlockMessage,
     addPhoto,
     updatePhoto,
     selectPhoto,
@@ -120,6 +122,11 @@ export default function DataEditContainer() {
   ]);
 
   const pressSaveData = useCallback(async () => {
+    //他のメンバー・テンプレートの記録は管理者だけが変えられる（同期監査 L1）
+    if (modifyBlockMessage !== undefined) {
+      Alert.alert('', modifyBlockMessage);
+      return;
+    }
     const checkResult = checkRecordEditable(targetLayer);
 
     if (!checkResult.isOK) {
@@ -146,7 +153,7 @@ export default function DataEditContainer() {
     }
 
     finalizeSave();
-  }, [changeActiveLayer, checkRecordEditable, finalizeSave, keyboardShown, targetLayer]);
+  }, [changeActiveLayer, checkRecordEditable, finalizeSave, keyboardShown, modifyBlockMessage, targetLayer]);
 
   useEffect(() => {
     if (!isSavePending) return;
@@ -199,6 +206,11 @@ export default function DataEditContainer() {
   ]);
 
   const pressDeleteData = useCallback(async () => {
+    //他のメンバー・テンプレートの記録は管理者だけが消せる（同期監査 M8）
+    if (deleteBlockMessage !== undefined) {
+      Alert.alert('', deleteBlockMessage);
+      return;
+    }
     const ret = await ConfirmAsync(t('DataEdit.confirm.deleteData'));
     if (ret) {
       const checkResult = checkRecordEditable(targetLayer);
@@ -217,8 +229,14 @@ export default function DataEditContainer() {
         }
       }
 
-      if (isEditingRecord) saveData();
-      deleteRecord();
+      // 編集中でも保存はしない。保存すると他のメンバーの記録は管理者の名義へ引き継がれて元の集合から移り、続く削除が
+      // 元の名義に向いて空振りして、削除したつもりの記録が編集版のまま残る（同期監査 M8）。deleteRecord は保存済みの
+      // 記録（ストアにある版）を消し、編集中の状態も片付ける
+      const deleted = deleteRecord();
+      if (!deleted.isOK) {
+        Alert.alert('', deleted.message);
+        return;
+      }
 
       if (params?.previous === 'Data') {
         navigate('Data', {
@@ -239,29 +257,36 @@ export default function DataEditContainer() {
   }, [
     changeActiveLayer,
     checkRecordEditable,
+    deleteBlockMessage,
     deleteRecord,
-    isEditingRecord,
     navigate,
     params?.mainData,
     params?.mainLayer,
     params?.previous,
-    saveData,
     targetLayer,
   ]);
 
   const pressPickPhoto = useCallback(
     async (fieldName: string) => {
+      if (modifyBlockMessage !== undefined) {
+        Alert.alert('', modifyBlockMessage);
+        return;
+      }
       const photo = await pickImage(photoFolder);
       if (photo === undefined) return;
       addPhoto(fieldName, photo);
     },
-    [addPhoto, photoFolder]
+    [addPhoto, modifyBlockMessage, photoFolder]
   );
 
   const pressTakePhoto = useCallback(
     async (fieldName: string) => {
       if (Platform.OS === 'web') {
         await AlertAsync(t('DataEdit.confirm.takePhoto'));
+        return;
+      }
+      if (modifyBlockMessage !== undefined) {
+        Alert.alert('', modifyBlockMessage);
         return;
       }
       const folder =
@@ -281,7 +306,7 @@ export default function DataEditContainer() {
       if (photo === undefined) return;
       addPhoto(fieldName, photo);
     },
-    [addPhoto, dispatch, projectId, targetLayer.id, targetRecord.id, user.uid]
+    [addPhoto, dispatch, modifyBlockMessage, projectId, targetLayer.id, targetRecord.id, user.uid]
   );
 
   const pressPhoto = useCallback(
@@ -558,6 +583,10 @@ export default function DataEditContainer() {
       Alert.alert('', t('DataEdit.alert.saveChangesFirst'));
       return;
     }
+    if (modifyBlockMessage !== undefined) {
+      Alert.alert('', modifyBlockMessage);
+      return;
+    }
     const checkResult = checkRecordEditable(targetLayer);
 
     if (!checkResult.isOK) {
@@ -589,6 +618,7 @@ export default function DataEditContainer() {
     isEditingRecord,
     isLandscape,
     mapRegion,
+    modifyBlockMessage,
     navigateToHome,
     targetLayer,
     targetRecord,
@@ -630,6 +660,8 @@ export default function DataEditContainer() {
       maxRecordNumber,
       projectId,
       isEditable,
+      modifyBlockMessage,
+      deleteBlockMessage,
       pressSaveData,
       changeLatLonType,
       changeLatLon,
@@ -666,6 +698,8 @@ export default function DataEditContainer() {
       latlon,
       maxRecordNumber,
       isEditable,
+      modifyBlockMessage,
+      deleteBlockMessage,
       onChangeRecord,
       pressAddReferenceData,
       pressAddReferenceDataByDictionary,

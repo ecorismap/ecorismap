@@ -6,7 +6,7 @@ import { t } from '../i18n/config';
 import { useRecord } from './useRecord';
 import { cloneDeep } from 'lodash';
 import { shallowEqual, useDispatch, useSelector } from 'react-redux';
-import { deleteRecordsAction, updateRecordsAction } from '../modules/dataSet';
+import { moveRecordsToUserAction, updateRecordsAction } from '../modules/dataSet';
 import { LatLng } from 'react-native-maps';
 import { RootState } from '../store';
 import { getActiveExternalFix } from '../lib/gnss/externalGnssStore';
@@ -129,15 +129,19 @@ export const usePointTool = (): UsePointToolReturnType => {
       targetRecord.coords = coordinate === undefined ? undefined : toPointCoords(coordinate);
       //unixTimeを更新
       targetRecord.updatedAt = Date.now();
-      //データの更新。userIdが変更される場合は、元のデータを削除して新しいデータを追加する
+      //データの更新。userIdが変更される場合は、元の集合から自分の集合へ持ち替える
+      //（他のメンバーの記録は、ストアの所有権の規則 modules/recordOwnership が管理者なら引き継ぎ、一般メンバーなら受け付けない）
       if (targetRecord.userId !== dataUser.uid) {
         dispatch(
-          deleteRecordsAction({
+          moveRecordsToUserAction({
             layerId: targetLayer.id,
-            userId: targetRecord.userId,
+            fromUserId: targetRecord.userId,
+            toUserId: dataUser.uid,
+            toDisplayName: dataUser.displayName,
             data: [targetRecord],
           })
         );
+        return;
       }
       targetRecord.userId = dataUser.uid;
       targetRecord.displayName = dataUser.displayName;

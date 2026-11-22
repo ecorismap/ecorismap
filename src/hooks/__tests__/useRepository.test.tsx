@@ -1549,3 +1549,81 @@ describe('同期の low 修正（ダウンロード時のマージ）', () => {
     });
   });
 });
+
+describe('M8・L1: 管理者が引き継いだ記録と、元の持ち主のアップロード', () => {
+  const project = { id: 'proj1' } as any;
+  const layer = { id: 'l1', name: 'L1', permission: 'PUBLIC', field: [] } as any;
+  const conflictKey = 'l1_PUBLIC';
+  const base = { displayName: 'U', visible: true, redraw: false, coords: [], field: {} };
+  const kept = { ...base, id: 'kept', userId: 'test-user', updatedAt: 100 };
+  const takenOriginal = { ...base, id: 'taken', userId: 'test-user', updatedAt: 100 };
+  const adminTombstone = {
+    ...base,
+    id: 'taken',
+    userId: 'admin',
+    updatedAt: 200,
+    deleted: true,
+    takenOverFrom: ['test-user'],
+  };
+
+  const makeStore = () => {
+    const initialState = {
+      user: { uid: 'test-user', email: 'a@b.c', displayName: 'U' },
+      // 取得で、管理者が引き継いで消した記録は自分の名義から外れ、管理者の墓標が手元にある
+      dataSet: [
+        { layerId: 'l1', userId: 'test-user', data: [kept] },
+        { layerId: 'l1', userId: 'admin', data: [adminTombstone] },
+      ],
+      layers: [layer],
+      settings: { isSettingProject: false, updatedAt: undefined },
+      tileMaps: [],
+      dataSync: {},
+    };
+    const store = configureStore({
+      reducer: {
+        user: (state = initialState.user) => state,
+        dataSet: (state = initialState.dataSet) => state,
+        layers: (state = initialState.layers) => state,
+        settings: (state = initialState.settings) => state,
+        tileMaps: (state = initialState.tileMaps) => state,
+        dataSync: (state = initialState.dataSync) => state,
+      } as any,
+      preloadedState: initialState,
+    });
+    store.dispatch = jest.fn();
+    return store;
+  };
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    jest.spyOn(projectStore, 'isSettingsUpdatedAtCurrent').mockResolvedValue(true);
+  });
+
+  test('クラウドの自分の doc に残る引き継がれた記録を「クラウドにだけある変更」とみなさず、送り直さない', async () => {
+    jest
+      .spyOn(projectStore, 'getMyDataUpdatedAt')
+      .mockResolvedValue({ isOK: true, message: '', data: new Map([[conflictKey, 555]]) });
+    const dialogSpy = jest.spyOn(AlertAsyncModule, 'DataConflictConfirmAsync');
+    jest.spyOn(projectStore, 'downloadPublicData').mockResolvedValue({
+      isOK: true,
+      message: '',
+      data: [{ layerId: 'l1', userId: 'test-user', data: [kept, takenOriginal] }],
+      unmarkedDekGroups: [],
+      undecryptableGroups: [],
+    } as any);
+    const uploadSpy = jest
+      .spyOn(projectStore, 'uploadDataHelper')
+      .mockResolvedValue({ isOK: true, message: '', encryptedAt: 999 });
+
+    const { result } = renderHook(() => useRepository(), {
+      wrapper: (props: any) => <Provider store={makeStore()}>{props.children}</Provider>,
+    });
+    await act(async () => {
+      await result.current.uploadDataToRepository(project, 'PublicAndPrivate');
+    });
+
+    expect(dialogSpy).not.toHaveBeenCalled();
+    expect(uploadSpy).toHaveBeenCalledTimes(1);
+    expect((uploadSpy.mock.calls[0][1] as any).data.map((r: any) => r.id)).toEqual(['kept']);
+  });
+});

@@ -44,12 +44,14 @@ const record = {
   field: { name: '地点A', description: '説明A', memo: 'メモA' },
 } as RecordType;
 
-const setup = () => {
+const setup = (projectId?: string) => {
+  const baseSettings = settingsReducer(undefined, { type: '@@init' });
   const store = configureStore({
     reducer: { dataSet: dataSetReducer, layers: layersReducer, settings: settingsReducer, user: userReducer },
     preloadedState: {
       dataSet: [{ layerId: 'layer1', userId: undefined, data: [record] }],
       layers: [layer],
+      settings: { ...baseSettings, projectId },
     },
   });
   const wrapper = ({ children }: { children: React.ReactNode }) => <Provider store={store}>{children}</Provider>;
@@ -102,5 +104,43 @@ describe('useLayerEdit 属性の削除と名前変更を同時に行う', () => 
     act(() => result.current.changeFieldFormat(2, 'STRING_MULTI'));
     act(() => result.current.saveLayer());
     expect(saved().field).toEqual({ name: '地点A', description: '説明A', 備考: 'メモA' });
+  });
+});
+
+describe('useLayerEdit 共有プロジェクトで移行されない属性変更（同期監査 M12）', () => {
+  it('個人（ローカル）プロジェクトでは改名・型変更しても警告対象にしない', () => {
+    const { result } = setup();
+    act(() => result.current.changeFieldName(0, '名前'));
+    act(() => result.current.changeFieldFormat(1, 'STRING_MULTI'));
+    expect(result.current.unmigratedCloudFieldNames).toEqual([]);
+  });
+
+  it('共有プロジェクトでは改名と型変更をした属性を変更前の名前で返す', () => {
+    const { result } = setup('project1');
+    act(() => result.current.changeFieldName(0, '名前'));
+    act(() => result.current.changeFieldFormat(1, 'STRING_MULTI'));
+    expect(result.current.unmigratedCloudFieldNames).toEqual(['name', 'description']);
+  });
+
+  it('共有プロジェクトでも、追加・削除・未変更の属性は対象にしない', () => {
+    const { result } = setup('project1');
+    expect(result.current.unmigratedCloudFieldNames).toEqual([]);
+    act(() => result.current.addField());
+    act(() => result.current.deleteField(2));
+    expect(result.current.unmigratedCloudFieldNames).toEqual([]);
+  });
+
+  it('名前を変えて元に戻した属性は対象にしない', () => {
+    const { result } = setup('project1');
+    act(() => result.current.changeFieldName(0, '名前'));
+    act(() => result.current.changeFieldName(0, 'name'));
+    expect(result.current.unmigratedCloudFieldNames).toEqual([]);
+  });
+
+  it('保存後は保存済みの設定が基準になり、対象が無くなる', () => {
+    const { result } = setup('project1');
+    act(() => result.current.changeFieldName(0, '名前'));
+    act(() => result.current.saveLayer());
+    expect(result.current.unmigratedCloudFieldNames).toEqual([]);
   });
 });

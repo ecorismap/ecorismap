@@ -1,6 +1,7 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import ProjectEdit from '../components/pages/ProjectEdit';
 import { AlertAsync, ConfirmAsync } from '../components/molecules/AlertAsync';
+import { leaveWithTrackingGuard } from '../utils/trackingLeaveGuard';
 import { useProjectEdit } from '../hooks/useProjectEdit';
 import { Props_ProjectEdit } from '../routes';
 import { Platform } from 'react-native';
@@ -157,17 +158,23 @@ export default function ProjectEditContainer({ navigation, route }: Props_Projec
   const pressOpenProject = useCallback(
     async (isSetting: boolean) => {
       try {
-        if (isProjectOpen) {
-          const ret = await ConfirmAsync(t('Home.confirm.reOpenProject'));
-          if (!ret) return false;
-        }
-
         //通常はユーザーとして自分のデータのみ取得する。管理者は取得時に全てのデータを取得できる。
         //ただしWeb版は集計・確認作業が中心のため、管理者には開く時点で他メンバーのプライベートデータも取得するか確認する。
         let isAdmin = false;
-        if (!isSetting && Platform.OS === 'web' && isOwnerAdmin) {
-          isAdmin = await ConfirmAsync(t('ProjectEdit.confirm.downloadAllUserData'));
-        }
+        // 軌跡の記録中なら、開く確認まで了承されてから、今のプロジェクト（開いていなければ端末内のデータ）へ止めて保存・
+        // アップロードする。止めずに開くと、記録中の軌跡が開いた先のプロジェクトに保存される。どちらかの確認で
+        // キャンセルしたら記録を続けたまま何もしない（同期監査 M13）
+        const proceed = await leaveWithTrackingGuard('openProject', async () => {
+          if (isProjectOpen) {
+            const ret = await ConfirmAsync(t('Home.confirm.reOpenProject'));
+            if (!ret) return false;
+          }
+          if (!isSetting && Platform.OS === 'web' && isOwnerAdmin) {
+            isAdmin = await ConfirmAsync(t('ProjectEdit.confirm.downloadAllUserData'));
+          }
+          return true;
+        });
+        if (!proceed) return false;
 
         setIsLoading(true);
         // 開く処理は手元のデータを捨ててクラウドから取り直す。途中で失敗したり自分のデータを復号できなかったりして

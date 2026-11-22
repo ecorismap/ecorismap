@@ -175,7 +175,9 @@ export default function DataContainer() {
         return;
       }
     }
-    deleteRecords();
+    const result = deleteRecords();
+    //他のメンバー・テンプレートの記録を含み、消せなかったときは理由を示す（同期監査 M8）
+    if (!result.isOK) Alert.alert('', result.message);
   }, [changeActiveLayer, checkRecordEditable, deleteRecords, liveTargetLayer, params?.targetLayer]);
 
   const pressAddData = useCallback(async () => {

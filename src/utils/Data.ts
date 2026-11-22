@@ -22,6 +22,7 @@ import { ulid } from 'ulid';
 import { boundingBoxFromCoords, latLonDMS } from './Coords';
 import { t } from '../i18n/config';
 import { isLocationType } from './General';
+import { applyTakeoversToDataSet, resolveTakeoverCandidates, separateTemplateDeletionTombstones } from './recordTakeover';
 import * as wanakana from 'wanakana';
 
 export type SortOrderType = 'ASCENDING' | 'DESCENDING' | 'UNSORTED';
@@ -469,7 +470,12 @@ export const updateRecordCoords = (
  * テンプレート（userId='template'）は別にアップロードするので含めない
  */
 export const mergeCommonRecords = (dataSet: DataType[], layerId: string, ownUserId: string | undefined): RecordType[] => {
-  const buckets = dataSet.filter((d) => d.layerId === layerId && d.userId !== 'template');
+  // 引き継ぎで打ち消される版（引き継いだ版より古い、元の持ち主の名義の版など）は先に除く。除かないと、
+  // 削除されていないものを優先する規則で、管理者が引き継いで削除した記録が元の持ち主の古い版で戻る
+  const buckets = applyTakeoversToDataSet(
+    dataSet.filter((d) => d.layerId === layerId && d.userId !== 'template'),
+    dataSet.filter((d) => d.layerId === layerId && d.userId === 'template')
+  );
   const chosen = new Map<string, { record: RecordType; own: boolean }>();
   const order: string[] = [];
   const score = (record: RecordType, own: boolean) => [record.deleted === true ? 0 : 1, record.updatedAt ?? 0, own ? 1 : 0];
@@ -538,9 +544,12 @@ export const buildCommonAbsorption = ({
     const localRecords = localBuckets.flatMap((d) => d.data);
     const localIds = new Set(localRecords.map((r) => r.id));
     const knownVersions = new Set(localRecords.map(versionOf));
-    // 自分の doc（前回の保存で取り込んだ分を含む）を先に見て、他人の doc の同じ版を重ねないようにする
-    const cloudBuckets = cloudCommonDataSet
-      .filter((d) => d.layerId === layerId)
+    // 自分の doc（前回の保存で取り込んだ分を含む）を先に見て、他人の doc の同じ版を重ねないようにする。
+    // 引き継ぎで打ち消される版（管理者が引き継いだ記録の、元の持ち主の doc に残る古い版）は取り込まない
+    const cloudBuckets = applyTakeoversToDataSet(
+      cloudCommonDataSet.filter((d) => d.layerId === layerId),
+      localDataSet.filter((d) => d.layerId === layerId)
+    )
       .sort((a, b) => Number(b.userId === ownUserId) - Number(a.userId === ownUserId));
     const absorbed: RecordType[] = [];
     const usedIds = new Set(localIds);
@@ -607,8 +616,15 @@ export const getTargetRecordSet = (
     targetDataSet = dataSet.find((d) => d.layerId === layer.id && (d.userId === undefined || d.userId === user.uid));
   }
   const recordSet: RecordType[] = cloneDeep(targetDataSet?.data ?? []);
+  // テンプレートは誰かから引き継いだ記録ではない。引き継ぎ元を持たせたまま送ると、テンプレートの版が利用者の版を
+  // 打ち消してしまう
   return isTemplate
-    ? recordSet.map((d) => ({ ...d, userId: 'template', displayName: t('common.admin'), uploaded: true }))
+    ? recordSet.map(({ takenOverFrom: _takenOverFrom, ...d }) => ({
+        ...d,
+        userId: 'template',
+        displayName: t('common.admin'),
+        uploaded: true,
+      }))
     : recordSet.map((d) => ({ ...d, userId: user.uid, displayName: user.displayName, uploaded: true }));
 };
 
@@ -677,7 +693,17 @@ export async function mergeLayerData({
   const resolvedMap = new Map<string, RecordType[]>();
 
   for (const id of idSet) {
-    const candidates = combinedRecords.filter((r) => r.id === id);
+    // 管理者が引き継いだ（編集・削除した）版と、引き継ぎ元の名義に残る版が並ぶときは、updatedAt で片方に絞る。
+    // 絞らないと同じ記録が2人の名義に並び、取得のたびに競合になる（同期監査 M8・L1。utils/recordTakeover）
+    // テンプレートの削除の墓標は、テンプレートを自分の記録にしたメンバーの版と競合させず、横に残す（同期監査 L1）
+    const { candidates, tombstones: sideTombstones } = separateTemplateDeletionTombstones(
+      resolveTakeoverCandidates(combinedRecords.filter((r) => r.id === id))
+    );
+    sideTombstones.forEach((tombstone) => {
+      const list = resolvedMap.get(tombstone.userId!) ?? [];
+      list.push(tombstone);
+      resolvedMap.set(tombstone.userId!, list);
+    });
     let chosen: RecordType;
 
     // ユーザー候補のみ抽出 (template を除外)

@@ -194,6 +194,12 @@ export interface RecordType {
   updatedAt?: number;
   deleted?: boolean;
   uploaded?: boolean;
+  /**
+   * 管理者が他のメンバー（またはテンプレート）の記録を編集・削除して自分の名義へ引き継いだときの、引き継ぎ元の userId
+   * （'template' を含む。引き継ぎが重なれば順に足す）。同じ id の記録が引き継ぎ元の名義にもあれば、updatedAt が
+   * 新しくない方を打ち消す（utils/recordTakeover）。暗号化した中身に入るだけで、Rules からは見えない
+   */
+  takenOverFrom?: string[];
 }
 
 export interface PointRecordType {
