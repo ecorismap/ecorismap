@@ -72,6 +72,7 @@ import { RootState } from '../store';
 import { getTerrain3DRegion } from '../utils/terrain3d/regionSyncStore';
 import { toMemoZoom } from '../utils/memoZoom';
 import { webVistaExitRegion } from '../utils/terrain3d/webVista';
+import { isDragDistance } from '../utils/tapDragTracker';
 
 //ピンチ開始時にGrant以降の移動距離がこの値未満なら描画意図なしとみなして破棄する
 const PINCH_DISCARD_DISTANCE_PX = 10;
@@ -89,6 +90,8 @@ const SYMBOL_SELECT_RADIUS = 2500;
 //編集選択で「なげなわ（ドラッグ）」と「タップ」を見分ける移動量。
 //点の数で見ると指のわずかな揺れでタップがなげなわ扱いになり、選択できない
 const LASSO_THRESHOLD_PX = 10;
+//既存ノードを「タップ」とみなす移動イベント数の上限（editingLineXYは掴んだ元位置＋移動の数）
+const NODE_TAP_MAX_EVENTS = 5;
 
 //色分けが「個別（_strokeColor参照）」のレイヤか。
 //このレイヤでは手書き以外（プロット・フリーハンド）で作る新規レコードにも現在の色・太さを書き込む
@@ -305,7 +308,7 @@ export type UseDrawToolReturnType = {
   cancelPlotGrant: () => void;
   redoDraw: () => void;
   handleReleasePlotPoint: () => void;
-  handleReleasePlotLinePolygon: () => boolean;
+  handleReleasePlotLinePolygon: (releaseXY?: Position) => boolean;
   selectObjectByFeature: (layer: LayerType, feature: RecordType, shouldRefreshCoordinates?: boolean) => void;
   handleGrantSplitLine: (pXY: Position) => void;
   checkSplitLine: (pXY: Position) => boolean;
@@ -338,6 +341,9 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
   //最後の生タッチ位置（終点キャッチアップ用）
   const lastTouchXY = useRef<Position | null>(null);
   const editingLineXY = useRef<Position[]>([]);
+  //既存ノードを掴んだ指の位置と、そこからの最大変位（px）。タップ（削除・確定）とドラッグ（移動）の判定に使う
+  const nodeGrantXY = useRef<Position | null>(null);
+  const nodeMaxDisplacement = useRef(0);
   const undoLine = useRef<UndoLineType[]>([]);
   const editingObjectIndex = useRef(-1);
   const selectLine = useRef<Position[]>([]);
@@ -715,6 +721,8 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
         editingNodeIndex.current = nodeIndex;
         editingNodeState.current = 'MOVE';
         editingLineXY.current = [lineXY[nodeIndex]];
+        nodeGrantXY.current = pXY;
+        nodeMaxDisplacement.current = 0;
       } else {
         //console.log('make interporate node');
         const { index: idx } = getSnappedPositionWithLine(pXY, lineXY, {
@@ -744,6 +752,13 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     [drawLine, editingObjectIndex]
   );
 
+  const updateNodeDisplacement = useCallback((pXY: Position) => {
+    const grant = nodeGrantXY.current;
+    if (grant === null) return;
+    const distance = Math.hypot(pXY[0] - grant[0], pXY[1] - grant[1]);
+    if (distance > nodeMaxDisplacement.current) nodeMaxDisplacement.current = distance;
+  }, []);
+
   const moveNode = useCallback(
     (pXY: Position) => {
       //nodeを動かす。
@@ -751,15 +766,25 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
       const index = editingObjectIndex.current;
       drawLine.current[index].xy.splice(editingNodeIndex.current, 1, pXY);
       editingLineXY.current.push(pXY);
+      updateNodeDisplacement(pXY);
     },
-    [drawLine, editingLineXY, editingObjectIndex]
+    [drawLine, editingLineXY, editingObjectIndex, updateNodeDisplacement]
+  );
+
+  //既存ノードへの操作がタップ（その場で離した）か。
+  //移動イベントの数だけで判定すると、素早いドラッグ（Webのpointermoveはフレーム単位にまとめられ、
+  //100ms程度のドラッグでは数回しか届かない）がタップ扱いになり、ノードが削除・ポリゴンが確定されてしまう。
+  //そのため掴んだ位置からの最大変位がタップの範囲内であることも条件にする
+  const isNodeTapGesture = useCallback(
+    () => editingLineXY.current.length <= NODE_TAP_MAX_EVENTS && !isDragDistance(nodeMaxDisplacement.current),
+    [editingLineXY]
   );
 
   const tryDeleteLineNode = useCallback(() => {
     //console.log('tryDeleteLineNode');
     if (editingNodeState.current === 'NEW') return false;
     if (editingNodeIndex.current === 0) return false;
-    if (editingLineXY.current.length > 5) return false;
+    if (!isNodeTapGesture()) return false;
     const index = editingObjectIndex.current;
     pushUndo({
       index: index,
@@ -772,7 +797,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     drawLine.current[index].latlon = drawLine.current[index].latlon.filter((_, i) => i !== deleteIndex);
     editingLineXY.current = [];
     return true;
-  }, [pushUndo, editingLineXY, editingObjectIndex, drawLine]);
+  }, [pushUndo, isNodeTapGesture, editingLineXY, editingObjectIndex, drawLine]);
 
   const fixLittleMovement = useCallback(() => {
     //タッチでズレるので、タッチ前の位置に戻す。
@@ -786,7 +811,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     if (currentDrawTool === 'PLOT_LINE') return false;
     if (editingNodeState.current === 'NEW') return false;
     if (editingNodeIndex.current !== 0) return false;
-    if (editingLineXY.current.length > 5) return false;
+    if (!isNodeTapGesture()) return false;
     fixLittleMovement();
     const index = editingObjectIndex.current;
     const lineXY = drawLine.current[index].xy;
@@ -808,7 +833,16 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     isEditingObject.current = false;
     editingLineXY.current = [];
     return true;
-  }, [pushUndo, editingLineXY, fixLittleMovement, editingObjectIndex, drawLine, currentDrawTool, isEditingObject]);
+  }, [
+    pushUndo,
+    isNodeTapGesture,
+    editingLineXY,
+    fixLittleMovement,
+    editingObjectIndex,
+    drawLine,
+    currentDrawTool,
+    isEditingObject,
+  ]);
 
   const finishEditObject = useCallback(() => {
     if (!isEditingObject.current) return false;
@@ -2242,6 +2276,8 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
         startFeaturesTransform(pXY);
         return;
       }
+      nodeGrantXY.current = null;
+      nodeMaxDisplacement.current = 0;
       //手書きセッションから切り替えた直後はisEditingObjectでも編集対象indexが無い（-1）。
       //その場合は既存ストロークに触らず新規プロットの作成を開始する
       if (!isEditingObject.current || editingObjectIndex.current === -1) {
@@ -2290,25 +2326,30 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     setRedraw(ulid());
   }, [finishFeaturesTransform, updateNodePosition]);
 
-  const handleReleasePlotLinePolygon = useCallback(() => {
-    if (isAreaSelected.current) {
-      //複数選択中は一括変形の確定のみ（ノード編集・確定判定はしない）
-      finishFeaturesTransform();
-      isEditingDraw.current = true;
+  const handleReleasePlotLinePolygon = useCallback(
+    (releaseXY?: Position) => {
+      if (isAreaSelected.current) {
+        //複数選択中は一括変形の確定のみ（ノード編集・確定判定はしない）
+        finishFeaturesTransform();
+        isEditingDraw.current = true;
+        setRedraw(ulid());
+        return false;
+      }
+      let finished = false;
+
+      //離した位置も変位に含める（離す直前の移動がmoveイベントとして届かないことがあるため）
+      if (releaseXY) updateNodeDisplacement(releaseXY);
+      const isDeleted = tryDeleteLineNode();
+      if (!isDeleted) {
+        finished = tryFinishEditObject();
+        if (!finished) updateNodePosition();
+      }
+
       setRedraw(ulid());
-      return false;
-    }
-    let finished = false;
-
-    const isDeleted = tryDeleteLineNode();
-    if (!isDeleted) {
-      finished = tryFinishEditObject();
-      if (!finished) updateNodePosition();
-    }
-
-    setRedraw(ulid());
-    return finished;
-  }, [finishFeaturesTransform, tryDeleteLineNode, tryFinishEditObject, updateNodePosition]);
+      return finished;
+    },
+    [finishFeaturesTransform, tryDeleteLineNode, tryFinishEditObject, updateNodeDisplacement, updateNodePosition]
+  );
 
   /**
    * ピンチ開始時にGrantで加えられたプロット操作を取り消す。

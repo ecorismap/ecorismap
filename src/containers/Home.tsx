@@ -3258,7 +3258,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       } else if (currentDrawTool === 'PLOT_POINT' || currentDrawTool === 'ADD_LOCATION_POINT') {
         handleReleasePlotPoint();
       } else if (currentDrawTool === 'PLOT_LINE' || currentDrawTool === 'PLOT_POLYGON') {
-        const finished = handleReleasePlotLinePolygon();
+        const finished = handleReleasePlotLinePolygon(pXY);
         if (finished) {
           if (route.params?.mode === 'editPosition') {
             const result = currentDrawTool === 'PLOT_LINE' ? saveLine(currentDrawStyle) : savePolygon(currentDrawStyle);
