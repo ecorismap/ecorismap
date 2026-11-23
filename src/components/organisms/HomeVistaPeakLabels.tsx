@@ -9,6 +9,7 @@
  */
 import React, { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLOR } from '../../constants/AppConstants';
 import { useWindow } from '../../hooks/useWindow';
 import { useHomeTopLayout } from '../../hooks/useHomeTopLayout';
@@ -26,6 +27,7 @@ import {
 } from '../../utils/peaks/peakLabelLayout';
 import { PeakProjector } from '../../utils/peaks/peakProjector';
 import { peakLabelsStore } from '../../utils/peaks/peakLabelsStore';
+import { peakAttributionPosition } from '../../utils/peaks/peakAttributionLayout';
 
 interface Props {
   projector: PeakProjector | null;
@@ -57,6 +59,11 @@ export const HomeVistaPeakLabels = React.memo(({ projector }: Props) => {
   const active = vistaActive && enabled && projector !== null;
   const { windowWidth, windowHeight } = useWindow();
   const { editControlTop } = useHomeTopLayout();
+  const insets = useSafeAreaInsets();
+  const attributionStyle = useMemo(
+    () => [styles.attribution, peakAttributionPosition(insets.bottom, Platform.OS === 'web')],
+    [insets.bottom]
+  );
   const [index, setIndex] = useState<PeakIndex | null>(null);
   const [labels, setLabels] = useState<PlacedPeakLabel[]>([]);
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
@@ -195,7 +202,7 @@ export const HomeVistaPeakLabels = React.memo(({ projector }: Props) => {
       {/* 詳細は隣の山名や引き出し線より手前に出すため、全ラベルの後に置く */}
       {selected !== undefined && <PeakDetail label={selected} width={windowWidth} />}
       {index !== null && (
-        <Text style={styles.attribution} pointerEvents="none">
+        <Text style={attributionStyle} pointerEvents="none">
           {t('Home.vista.peakAttribution')}
         </Text>
       )}
@@ -269,11 +276,9 @@ const textShadow = Platform.select({
 
 const styles = StyleSheet.create({
   attribution: {
-    bottom: 4,
     color: COLOR.WHITE,
     fontSize: 10,
     position: 'absolute',
-    right: 6,
     ...textShadow,
   },
   column: {

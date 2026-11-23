@@ -105,14 +105,23 @@ export const useFieldList = (
   const [dictionaryData, setDictionaryData] = useState<string[]>([]);
 
   useEffect(() => {
+    //辞書の一覧を表示するのは辞書型の項目だけ。他の型は表が無いので照会すると毎回 no such table になる
+    if (fieldItem.format !== 'STRING_DICTIONARY') return;
     (async () => {
       try {
         setIsLoading(true);
         const tableName = `_${targetLayer.id}_${fieldItem.id}`;
         if (!isValidTableName(tableName)) return;
         const db = await getDatabase();
-        const allRows = db.getAllSync(`SELECT value FROM "${tableName}"`);
-        //@ts-ignore
+        //辞書型にしたばかりで CSV をまだ取り込んでいない項目は表が無い。空の一覧として扱う
+        const tables = db.getAllSync("SELECT name FROM sqlite_master WHERE type='table' AND name=?", [
+          tableName,
+        ]) as { name: string }[];
+        if (tables.length === 0) {
+          setDictionaryData([]);
+          return;
+        }
+        const allRows = db.getAllSync(`SELECT value FROM "${tableName}"`) as { value: string }[];
         setDictionaryData(allRows.map((row) => row.value));
       } catch (e) {
         console.log(e);
@@ -120,7 +129,7 @@ export const useFieldList = (
         setIsLoading(false);
       }
     })();
-  }, [fieldItem.id, targetLayer.id, redraw]);
+  }, [fieldItem.format, fieldItem.id, targetLayer.id, redraw]);
 
   useEffect(() => {
     setIsEdited(isEdited_);
