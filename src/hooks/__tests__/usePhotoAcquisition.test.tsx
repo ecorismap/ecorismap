@@ -152,6 +152,72 @@ describe('usePhotoAcquisition', () => {
     expect(addPhoto).not.toHaveBeenCalled();
     expect(mockDeleteLocalPhoto).not.toHaveBeenCalled();
   });
+  describe('表示と押下の判定を同じ印から決める（PHOTO-10）', () => {
+    it('印を下ろしても「処理中...」が描画から消えるまでは押下の判定も処理中のまま', async () => {
+      const { result } = renderHook((props: Props) => usePhotoAcquisition(props), {
+        initialProps: { recordKey: 'L/r1', addPhoto: jest.fn() },
+      });
+      const d = deferred();
+      let pending: Promise<PhotoAcquisitionResult> = Promise.resolve('none');
+      act(() => {
+        pending = result.current.acquirePhoto('写真', () => d.promise);
+      });
+      const guard = result.current.isPhotoProcessingRef;
+      //描画前の取り込み完了（act の外で待つので、state の反映は次の描画まで遅れる）
+      d.resolve(undefined);
+      await pending;
+      expect(result.current.isPhotoProcessing).toBe(true);
+      expect(guard.current).toBe(true);
+      //描画が確定すると表示と判定が同時に下りる
+      await act(async () => undefined);
+      expect(result.current.isPhotoProcessing).toBe(false);
+      expect(result.current.isPhotoProcessingRef.current).toBe(false);
+    });
+
+    it('写真は印を下ろす前に付ける（写真の表示と「処理中...」の消去が同じ描画）', async () => {
+      let processingWhenAdded: boolean | undefined;
+      const holder: { ref?: { readonly current: boolean } } = {};
+      const addPhoto = jest.fn(() => {
+        processingWhenAdded = holder.ref?.current;
+      });
+      const { result } = renderHook((props: Props) => usePhotoAcquisition(props), {
+        initialProps: { recordKey: 'L/r1', addPhoto },
+      });
+      holder.ref = result.current.isPhotoProcessingRef;
+      await act(async () => {
+        await result.current.acquirePhoto('写真', async () => captured);
+      });
+      expect(addPhoto).toHaveBeenCalledWith('写真', captured);
+      expect(processingWhenAdded).toBe(true);
+      expect(result.current.isPhotoProcessing).toBe(false);
+    });
+
+    it('付け先が変わって捨てるときも、ファイルを消し終えるまで処理中のまま', async () => {
+      let processingWhenDeleted: boolean | undefined;
+      const holder: { ref?: { readonly current: boolean } } = {};
+      mockDeleteLocalPhoto.mockImplementationOnce(async () => {
+        processingWhenDeleted = holder.ref?.current;
+        return undefined;
+      });
+      const { result, rerender } = renderHook((props: Props) => usePhotoAcquisition(props), {
+        initialProps: { recordKey: 'L/r1', addPhoto: jest.fn() },
+      });
+      holder.ref = result.current.isPhotoProcessingRef;
+      const d = deferred();
+      let pending: Promise<PhotoAcquisitionResult> = Promise.resolve('none');
+      act(() => {
+        pending = result.current.acquirePhoto('写真', () => d.promise);
+      });
+      rerender({ recordKey: 'L/r2', addPhoto: jest.fn() });
+      await act(async () => {
+        d.resolve(captured);
+        await pending;
+      });
+      expect(processingWhenDeleted).toBe(true);
+      expect(result.current.isPhotoProcessing).toBe(false);
+    });
+  });
+
   describe('Web（取り込み中も操作を止めない）', () => {
     type WebProps = Props & { blockWhileAcquiring: boolean };
 

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Platform } from 'react-native';
 import { deleteLocalPhoto } from '../utils/Photo';
 
@@ -31,9 +31,32 @@ interface Params {
 // ただし Web では止めない。expo-image-picker の Web 実装はキャンセルを input の 'cancel' イベントでしか返さず、
 // それを出さないブラウザ（Safari 16.4 未満など）ではキャンセルしても待ちが終わらない。止めると保存・戻る・
 // 記録の切り替えが二度と効かなくなり、未保存の入力を失う。Web でも付け先の照合はするので、取り違えは起きない
+//
+// 「処理中...」の表示・ボタンの無効化・押されたときの受け付け判定は、同じ isPhotoProcessing から決める（PHOTO-10）。
+// 以前は押下の判定だけが即座に切り替わる ref を見ていたため、表示と判定が描画1回分ずれた。
+// - 終わり: ref は finally で即 false になるが、表示（state）が消えるのは次の描画。その間「処理中...」が出たまま
+//   戻る・記録の切り替えなどの押下が通っていた
+// - 写真を付ける addPhoto と、付け先が変わったときのファイル削除（await）が、印を下ろした後に走っていた
+// そこで、押下の判定は「描画に反映済みの isPhotoProcessing」または「今まさに始めた取り込み」のどちらかで止め、
+// 印は写真を付け終える（または捨て終える）まで下ろさない。これで「処理中...」が消える描画と同時にボタンも押せるようになる
 export const usePhotoAcquisition = ({ recordKey, addPhoto, blockWhileAcquiring = Platform.OS !== 'web' }: Params) => {
   const [isPhotoProcessing, setIsPhotoProcessing] = useState(false);
+  //取り込みの重複開始を止める錠。setState の描画を待たずに即座に立つ
   const isProcessingRef = useRef(false);
+  //画面に反映済みの isPhotoProcessing。描画の確定時（画面に出る前）に合わせる
+  const isProcessingShownRef = useRef(false);
+  useLayoutEffect(() => {
+    isProcessingShownRef.current = isPhotoProcessing;
+  }, [isPhotoProcessing]);
+  //押下の受け付け判定用。「処理中...」が画面に出ている間、または取り込みを始めた直後（描画前）は true
+  const isPhotoProcessingRef = useMemo<{ readonly current: boolean }>(
+    () => ({
+      get current() {
+        return isProcessingRef.current || isProcessingShownRef.current;
+      },
+    }),
+    []
+  );
   const isMountedRef = useRef(true);
   const recordKeyRef = useRef(recordKey);
   const addPhotoRef = useRef(addPhoto);
@@ -54,33 +77,33 @@ export const usePhotoAcquisition = ({ recordKey, addPhoto, blockWhileAcquiring =
 
   const acquirePhoto = useCallback(
     async (fieldName: string, acquire: () => Promise<AcquiredPhoto | undefined>): Promise<PhotoAcquisitionResult> => {
-      if (isProcessingRef.current) return 'busy';
+      if (isPhotoProcessingRef.current) return 'busy';
       const blocks = blockWhileAcquiringRef.current;
       if (blocks) {
         isProcessingRef.current = true;
         setIsPhotoProcessing(true);
       }
       const startKey = recordKeyRef.current;
-      let photo: AcquiredPhoto | undefined;
       try {
-        photo = await acquire();
+        const photo = await acquire();
+        if (photo === undefined) return 'none';
+        if (!isMountedRef.current || recordKeyRef.current !== startKey) {
+          //付け先がもうないので、作った写真は孤児になる
+          await deleteLocalPhoto(photo.uri).catch(() => undefined);
+          return 'stale';
+        }
+        //印を下ろす前に付ける。写真の表示と「処理中...」の消去が同じ描画になる
+        addPhotoRef.current(fieldName, photo);
+        return 'added';
       } finally {
         if (blocks) {
           isProcessingRef.current = false;
           if (isMountedRef.current) setIsPhotoProcessing(false);
         }
       }
-      if (photo === undefined) return 'none';
-      if (!isMountedRef.current || recordKeyRef.current !== startKey) {
-        //付け先がもうないので、作った写真は孤児になる
-        await deleteLocalPhoto(photo.uri).catch(() => undefined);
-        return 'stale';
-      }
-      addPhotoRef.current(fieldName, photo);
-      return 'added';
     },
-    []
+    [isPhotoProcessingRef]
   );
 
-  return { isPhotoProcessing, isPhotoProcessingRef: isProcessingRef, acquirePhoto };
+  return { isPhotoProcessing, isPhotoProcessingRef, acquirePhoto };
 };
