@@ -9,10 +9,16 @@ import {
   estimateDownloadTileCount,
   getTileType,
   getZoomRange,
+  isDownloadableTileMap,
   listExistingTiles,
   markRegionsPaused,
+  rasterPmtileTilePath,
   removeIncompleteRegions,
+  removeLegacyRasterPmtilePngs,
+  resolvePmtileIsVector,
+  tileMapsForDownloadScreen,
   toCompletedRegion,
+  writeRasterPmtileTile,
 } from '../tileDownloadHelpers';
 import { tileGridForRegion } from '../Tile';
 import * as FileSystem from 'expo-file-system/legacy';
@@ -20,6 +26,9 @@ import * as FileSystem from 'expo-file-system/legacy';
 jest.mock('expo-file-system/legacy', () => ({
   documentDirectory: 'file:///test/',
   readDirectoryAsync: jest.fn(),
+  writeAsStringAsync: jest.fn(() => Promise.resolve()),
+  deleteAsync: jest.fn(() => Promise.resolve()),
+  EncodingType: { UTF8: 'utf8', Base64: 'base64' },
 }));
 
 const baseMap: TileMapType = {
@@ -94,7 +103,11 @@ describe('getZoomRange', () => {
   });
 
   it('terrariumの陰影起伏は1段粗い標高タイルから描くので最も細かい段は取らない', () => {
-    const relief = { ...baseMap, url: 'hillshade://https://tiles.mapterhorn.com/{z}/{x}/{y}.webp', overzoomThreshold: 15 };
+    const relief = {
+      ...baseMap,
+      url: 'hillshade://https://tiles.mapterhorn.com/{z}/{x}/{y}.webp',
+      overzoomThreshold: 15,
+    };
     expect(getZoomRange('hillshade', relief, 11)).toEqual({ minZoom: 0, maxZoom: 14 });
     const gebco = { ...baseMap, url: 'relief://https://example.com/{z}/{y}/{x}.png#style=gebco', overzoomThreshold: 9 };
     expect(getZoomRange('hillshade', gebco, 11)).toEqual({ minZoom: 0, maxZoom: 9 });
@@ -224,12 +237,24 @@ describe('listExistingTiles', () => {
     (FileSystem.readDirectoryAsync as jest.Mock).mockImplementation((path: string) => {
       if (path.endsWith('/M1')) return Promise.resolve(['10', 'metadata.json', 'style.json']);
       if (path.endsWith('/M1/10')) return Promise.resolve(['5']);
-      if (path.endsWith('/M1/10/5')) return Promise.resolve(['1.pbf', '2.png', '3', 'junk.txt']);
+      if (path.endsWith('/M1/10/5')) return Promise.resolve(['1.pbf', '3', '4.webp', 'junk.txt']);
       return Promise.reject(new Error('not found'));
     });
 
     const existing = await listExistingTiles('M1');
-    expect(existing).toEqual(new Set(['10/5/1', '10/5/2', '10/5/3']));
+    expect(existing).toEqual(new Set(['10/5/1', '10/5/3', '10/5/4']));
+  });
+
+  it('旧版のラスタPMTilesが書いた{y}.pngは保存済みとみなさない（ネイティブが読まないため取り直す）', async () => {
+    (FileSystem.readDirectoryAsync as jest.Mock).mockImplementation((path: string) => {
+      if (path.endsWith('/M1')) return Promise.resolve(['10']);
+      if (path.endsWith('/M1/10')) return Promise.resolve(['5']);
+      if (path.endsWith('/M1/10/5')) return Promise.resolve(['1.png', '2']);
+      return Promise.reject(new Error('not found'));
+    });
+
+    const existing = await listExistingTiles('M1');
+    expect(existing).toEqual(new Set(['10/5/2']));
   });
 
   it('フォルダが存在しない場合は空のSetを返す', async () => {
@@ -261,5 +286,128 @@ describe('region状態のヘルパー', () => {
     const result = removeIncompleteRegions([downloading, completed], ['A', 'B']);
     expect(result).toHaveLength(1);
     expect(result[0].id).toBe('B');
+  });
+});
+
+describe('isDownloadableTileMap', () => {
+  it('通常のタイル地図・PMTiles・pbfは対象', () => {
+    expect(isDownloadableTileMap(baseMap)).toBe(true);
+    expect(isDownloadableTileMap({ ...baseMap, url: 'https://example.com/a.pmtiles' })).toBe(true);
+    expect(isDownloadableTileMap({ ...baseMap, url: 'pmtiles://https://example.com/a.pmtiles' })).toBe(true);
+    expect(isDownloadableTileMap({ ...baseMap, url: 'https://example.com/{z}/{x}/{y}.pbf' })).toBe(true);
+  });
+
+  it('グループ・Google地図・山名は対象外', () => {
+    expect(isDownloadableTileMap({ ...baseMap, isGroup: true })).toBe(false);
+    expect(isDownloadableTileMap({ ...baseMap, id: 'standard' })).toBe(false);
+    expect(isDownloadableTileMap({ ...baseMap, id: 'hybrid' })).toBe(false);
+    expect(isDownloadableTileMap({ ...baseMap, url: 'peaks://gsi' })).toBe(false);
+  });
+
+  it('PDF地図と端末内・blobの取り込み地図は対象外', () => {
+    expect(isDownloadableTileMap({ ...baseMap, url: 'https://example.com/map.pdf' })).toBe(false);
+    expect(isDownloadableTileMap({ ...baseMap, url: 'https://example.com/map.PDF' })).toBe(false);
+    expect(isDownloadableTileMap({ ...baseMap, url: 'pdf://map' })).toBe(false);
+    expect(isDownloadableTileMap({ ...baseMap, url: 'file://map.pdf' })).toBe(false);
+    expect(isDownloadableTileMap({ ...baseMap, url: 'file://page2' })).toBe(false);
+    expect(isDownloadableTileMap({ ...baseMap, url: 'pmtiles://blob:http://localhost/abc' })).toBe(false);
+  });
+});
+
+describe('ラスタPMTilesの保存', () => {
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('拡張子なしの{z}/{x}/{y}に、Base64エンコーディングで生バイトとして書く', async () => {
+    const bytes = new Uint8Array([0x89, 0x50, 0x4e, 0x47]);
+    await writeRasterPmtileTile('M1', { z: 10, x: 5, y: 3 }, bytes.buffer);
+
+    const path = rasterPmtileTilePath('M1', { z: 10, x: 5, y: 3 });
+    expect(path).toMatch(/\/M1\/10\/5\/3$/);
+    expect(FileSystem.writeAsStringAsync).toHaveBeenCalledWith(path, 'iVBORw==', { encoding: 'base64' });
+  });
+
+  it('書き込み失敗は呼び出し元へ伝わる（errorCountに数えるため）', async () => {
+    (FileSystem.writeAsStringAsync as jest.Mock).mockRejectedValueOnce(new Error('disk full'));
+    await expect(writeRasterPmtileTile('M1', { z: 1, x: 0, y: 0 }, new Uint8Array([1]).buffer)).rejects.toThrow(
+      'disk full'
+    );
+  });
+
+  it('旧版の{y}.pngだけを消し、正しいタイル・style.json等は残す', async () => {
+    (FileSystem.readDirectoryAsync as jest.Mock).mockImplementation((path: string) => {
+      if (path.endsWith('/M1')) return Promise.resolve(['10', 'style.json', 'boundary.json']);
+      if (path.endsWith('/M1/10')) return Promise.resolve(['5']);
+      if (path.endsWith('/M1/10/5')) return Promise.resolve(['1.png', '2', '3.pbf']);
+      return Promise.reject(new Error('not found'));
+    });
+
+    await removeLegacyRasterPmtilePngs('M1');
+
+    const deleted = (FileSystem.deleteAsync as jest.Mock).mock.calls.map(([p]) => p);
+    expect(deleted).toHaveLength(1);
+    expect(deleted[0]).toMatch(/\/M1\/10\/5\/1\.png$/);
+  });
+
+  it('フォルダが無くても例外を投げない', async () => {
+    (FileSystem.readDirectoryAsync as jest.Mock).mockRejectedValue(new Error('not found'));
+    await expect(removeLegacyRasterPmtilePngs('M1')).resolves.toBeUndefined();
+    expect(FileSystem.deleteAsync).not.toHaveBeenCalled();
+  });
+});
+
+describe('tileMapsForDownloadScreen', () => {
+  const dem: TileMapType = {
+    ...baseMap,
+    id: 'dem_mapterhorn',
+    name: 'DEM',
+    url: 'https://tiles.mapterhorn.com/{z}/{x}/{y}.webp',
+  };
+  const pdfUrl: TileMapType = { ...baseMap, id: 'P1', url: 'https://example.com/map.pdf' };
+  const pdfLocal: TileMapType = { ...baseMap, id: 'P2', url: 'file://map.pdf' };
+  const group: TileMapType = { ...baseMap, id: 'G1', url: '', isGroup: true };
+  const peaks: TileMapType = { ...baseMap, id: 'K1', url: 'peaks://gsi' };
+  const standard: TileMapType = { ...baseMap, id: 'standard', url: '' };
+  const all = [baseMap, pdfUrl, pdfLocal, group, peaks, standard];
+
+  it('「すべての地図」では選択画面に出る地図と標高タイルだけを対象にする（PDF地図を含めない）', () => {
+    expect(tileMapsForDownloadScreen(all, [], dem).map((m) => m.id)).toEqual(['M1', 'dem_mapterhorn']);
+  });
+
+  it('個別選択でもダウンロード対象外の地図は除く', () => {
+    expect(tileMapsForDownloadScreen(all, ['M1', 'P1'], dem).map((m) => m.id)).toEqual(['M1']);
+  });
+
+  it('標高タイルは明示選択されたときだけ足す', () => {
+    expect(tileMapsForDownloadScreen(all, ['dem_mapterhorn'], dem).map((m) => m.id)).toEqual(['dem_mapterhorn']);
+  });
+
+  it('見積もりにPDF地図の枚数を含めない', () => {
+    const bounds = { minLon: 139.7, minLat: 35.6, maxLon: 139.71, maxLat: 35.61 };
+    const withPdf = estimateDownloadTileCount(bounds, tileMapsForDownloadScreen([baseMap, pdfUrl], [], dem), 12);
+    const withoutPdf = estimateDownloadTileCount(bounds, tileMapsForDownloadScreen([baseMap], [], dem), 12);
+    expect(withPdf).toBe(withoutPdf);
+  });
+});
+
+describe('resolvePmtileIsVector', () => {
+  const withType = (tileType: number) => ({ getHeader: jest.fn(() => Promise.resolve({ tileType })) });
+
+  test('ヘッダーが MVT なら isVector の付け忘れでもベクタとして扱う', async () => {
+    expect(await resolvePmtileIsVector(withType(1), false)).toBe(true);
+  });
+
+  test('ヘッダーが画像（PNG/JPEG/WebP/AVIF）ならラスタとして扱う', async () => {
+    for (const type of [2, 3, 4, 5]) {
+      expect(await resolvePmtileIsVector(withType(type), true)).toBe(false);
+    }
+  });
+
+  test('種別不明やヘッダー取得の失敗では地図の isVector に従う', async () => {
+    expect(await resolvePmtileIsVector(withType(0), true)).toBe(true);
+    const failing = { getHeader: jest.fn(() => Promise.reject(new Error('offline'))) };
+    expect(await resolvePmtileIsVector(failing, false)).toBe(false);
+    expect(await resolvePmtileIsVector(failing, true)).toBe(true);
   });
 });

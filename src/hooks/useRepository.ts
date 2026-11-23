@@ -44,7 +44,7 @@ import { t } from '../i18n/config';
 import { AlertAsync, ConfirmAsync, DataConflictConfirmAsync } from '../components/molecules/AlertAsync';
 import { exportDatabase, hasDictionaryTables, importDictionary } from '../utils/SQLite';
 import { ulid } from 'ulid';
-import { db } from '../utils/db';
+import { saveStyleToPmtilesDb } from '../utils/pmtilesLocalStore';
 import * as FileSystem from 'expo-file-system/legacy';
 import {
   collectPhotoReferences,
@@ -1528,7 +1528,7 @@ export const useRepository = (): UseRepositoryReturnType & {
       try {
         // console.log('importStyleFile', uri, name, id);
         if (Platform.OS === 'web') {
-          db.pmtiles.put({ mapId: tileMap.id, blob: undefined, boundary: '', style: styleJson });
+          await saveStyleToPmtilesDb(tileMap.id, styleJson);
         } else {
           const styleUri = `${TILE_FOLDER}/${tileMap.id}/style.json`;
           await FileSystem.makeDirectoryAsync(`${TILE_FOLDER}/${tileMap.id}`, { intermediates: true });

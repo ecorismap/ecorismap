@@ -268,7 +268,8 @@ export default function MapContainer() {
         let boundaryJson;
         if (item.url.includes('pmtiles')) {
           boundaryJson = (await db.pmtiles.get(item.id))?.boundary;
-          if (boundaryJson === undefined) {
+          // スタイルだけのレコードや配信元の変更直後は '' が入っている
+          if (!boundaryJson) {
             const result = await getPmtilesBoundary(item.url);
             boundary = result.boundary;
             if (boundary === undefined) {
@@ -281,7 +282,7 @@ export default function MapContainer() {
           }
         } else if (item.url.endsWith('.pdf') || item.url.startsWith('pdf://') || item.url.startsWith('file://')) {
           boundaryJson = (await db.geotiff.get(item.id))?.boundary;
-          if (boundaryJson === undefined) return undefined;
+          if (!boundaryJson) return undefined;
           boundary = JSON.parse(boundaryJson);
         }
       } else {

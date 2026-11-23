@@ -14,6 +14,7 @@ import * as FileSystem from 'expo-file-system/legacy';
 import { db } from '../utils/db';
 import { TILE_FOLDER } from '../constants/AppConstants';
 import { isPeaksUrl } from '../utils/peaks/peak2dLabels';
+import { cleanupPmtilesOnSave, getPmtilesSaveCleanup } from '../utils/pmtilesLocalStore';
 
 export default function MapEditContainer() {
   const { goBack: navigationGoBack } = useBottomSheetNavigation();
@@ -57,14 +58,8 @@ export default function MapEditContainer() {
 
     // pmTilesの場合、boundaryを取得して保存する
     if (map.url.includes('pmtiles')) {
-      // urlが変更された場合、boundaryとcacheを削除する
-      if (params?.targetMap && (params.targetMap.url !== map.url || params.targetMap.styleURL !== map.styleURL)) {
-        if (Platform.OS === 'web') {
-          await db.pmtiles.delete(map.id);
-        } else {
-          await FileSystem.deleteAsync(`${TILE_FOLDER}/${map.id}`, { idempotent: true });
-        }
-      }
+      // urlやスタイルが変わったら古くなったタイルやboundaryを捨てる。使い続けるstyle.jsonは残す
+      await cleanupPmtilesOnSave(map.id, getPmtilesSaveCleanup(params?.targetMap ?? undefined, map));
       
       const { header, boundary } = await getPmtilesBoundary(map.url);
       // boundaryが取得できた場合のみ保存処理を行う
@@ -116,9 +111,11 @@ export default function MapEditContainer() {
       await AlertAsync(t('hooks.message.wrongExtension'));
       return;
     }
-    const { message } = await importStyleFile(uri, name, map);
+    const { isOK, message } = await importStyleFile(uri, name, map);
     if (message !== '') await AlertAsync(message);
-    
+    // 失敗時に style:// へ切り替えると、置かれていないスタイルを指したまま保存されてしまう
+    if (!isOK) return;
+
     // スタイルファイルのインポート後、styleURLを更新
     if (Platform.OS === 'web') {
       changeStyleURL('style://' + name);

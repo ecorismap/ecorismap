@@ -53,6 +53,7 @@ import { RootState } from '../../store';
 import { getMapGesturesEnabled } from '../../utils/General';
 import { withTileSignature } from '../../utils/TileSignature';
 import { getPmtileMaximumNativeZ } from '../../utils/pmtileProps';
+import { getPmtileKey } from '../../utils/pmtileKey';
 import { TileMapType, PaperOrientationType, PaperSizeType, ScaleType } from '../../types';
 import { MapViewContext } from '../../contexts/MapView';
 import { DrawingToolsContext } from '../../contexts/DrawingTools';
@@ -110,11 +111,7 @@ const TileMaps = React.memo(({ tileMaps, isOffline }: TileMapsProps) => {
             tileMap.url.includes('.pmtiles') ||
             tileMap.url.includes('.pbf') ? (
               <PMTile
-                key={
-                  Platform.OS === 'ios'
-                    ? `${tileMap.url}-${isOffline}-${tileMap.styleURL}`
-                    : `${tileMap.id}-${tileMap.styleURL}`
-                } //オンラインとオフラインでキーを変更しないとキャッシュがクリアされない。urlの変更でキーを変更すると、キャッシュがクリアされる。
+                key={getPmtileKey(tileMap, isOffline, Platform.OS)}
                 urlTemplate={withTileSignature(tileMap.url, tileSignatures).replace('pmtiles://', '')}
                 styleURL={tileMap.styleURL ? withTileSignature(tileMap.styleURL, tileSignatures) : tileMap.styleURL}
                 flipY={false}

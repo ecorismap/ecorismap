@@ -94,12 +94,12 @@ import { TileManagementContext } from '../contexts/TileManagement';
 import {
   boundsFromCoords,
   estimateDownloadTileCount,
+  tileMapsForDownloadScreen,
   DOWNLOAD_TILE_COUNT_CONFIRM,
   DOWNLOAD_TILE_COUNT_LIMIT,
   ESTIMATED_TILE_SIZE_MB,
 } from '../utils/tileDownloadHelpers';
 import { getDemTileMap } from '../utils/demTileDownload';
-import { DEM_MAPTERHORN_MAP_ID } from '../constants/DemSources';
 import { MapMemoContext } from '../contexts/MapMemo';
 import { DataSelectionContext } from '../contexts/DataSelection';
 import { InfoToolContext } from '../contexts/InfoTool';
@@ -166,7 +166,6 @@ import { TrackPhotoProvider, TrackPhotoContext } from '../contexts/TrackPhoto';
 import { MeasureContext, MeasureProvider } from '../contexts/Measure';
 import { ViewshedContext, ViewshedProvider } from '../contexts/Viewshed';
 import { useLayers } from '../hooks/useLayers';
-import { isPeaksUrl } from '../utils/peaks/peak2dLabels';
 import { usePendingPhotoCapture } from '../hooks/usePendingPhotoCapture';
 import { createTapDragTracker, isDragDistance, shouldHandleAsTap } from '../utils/tapDragTracker';
 
@@ -1866,20 +1865,9 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
   // ダウンロード対象の地図リスト（選択地図 > 全地図 > 従来の単一地図）
   // 可視領域用DEM（疑似地図・Redux tileMaps非登録）は、明示選択時と「すべての地図」時に合成して含める
   const downloadTargetMaps = useMemo(() => {
-    if (selectedTileMapIds.length > 0) {
-      const maps = tileMaps.filter((map) => selectedTileMapIds.includes(map.id) && !isPeaksUrl(map.url));
-      if (selectedTileMapIds.includes(DEM_MAPTERHORN_MAP_ID)) maps.push(getDemTileMap());
-      return maps;
-    }
-    if (route.params?.mode === 'download') {
-      // 「すべての地図」が選択されている場合、ダウンロード可能な全ての地図
-      return [
-        // 山名（peaks://）はアプリに同梱のデータなのでダウンロードするものがない
-        ...tileMaps.filter(
-          (map) => !map.isGroup && map.id !== 'standard' && map.id !== 'hybrid' && !isPeaksUrl(map.url)
-        ),
-        getDemTileMap(),
-      ];
+    if (selectedTileMapIds.length > 0 || route.params?.mode === 'download') {
+      // 選択画面と同じ条件（isDownloadableTileMap）で絞る。「すべての地図」はダウンロード可能な全ての地図
+      return tileMapsForDownloadScreen(tileMaps, selectedTileMapIds, getDemTileMap());
     }
     return route.params?.tileMap !== undefined ? [route.params.tileMap] : [];
   }, [route.params?.mode, route.params?.tileMap, selectedTileMapIds, tileMaps]);
@@ -2163,15 +2151,9 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     let mapsToDelete: TileMapType[] = [];
 
     // 選択された地図を削除
-    if (selectedTileMapIds.length > 0) {
-      mapsToDelete = tileMaps.filter((map) => selectedTileMapIds.includes(map.id));
-      if (selectedTileMapIds.includes(DEM_MAPTERHORN_MAP_ID)) mapsToDelete.push(getDemTileMap());
-    } else if (downloadMode && route.params?.mode === 'download') {
-      // ダウンロードモードで「すべての地図」が選択されている場合、ダウンロード可能な全ての地図を削除
-      mapsToDelete = [
-        ...tileMaps.filter((map) => !map.isGroup && map.id !== 'standard' && map.id !== 'hybrid'),
-        getDemTileMap(),
-      ];
+    // 選択肢に出ていない地図（PDF・取り込み地図など）は対象にしない（選択画面と同じ条件）
+    if (selectedTileMapIds.length > 0 || (downloadMode && route.params?.mode === 'download')) {
+      mapsToDelete = tileMapsForDownloadScreen(tileMaps, selectedTileMapIds, getDemTileMap());
     } else if (route.params?.tileMap !== undefined) {
       // 従来の単一地図削除（後方互換性のため）
       mapsToDelete = [route.params.tileMap];

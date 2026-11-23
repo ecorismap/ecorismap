@@ -21,6 +21,7 @@ import { unlink, exportFileFromData } from '../utils/File';
 import { withTileSignature } from '../utils/TileSignature';
 import { convertPDFToGeoTiff } from '../utils/PDF';
 import { db } from '../utils/db';
+import { saveStyleToPmtilesDb } from '../utils/pmtilesLocalStore';
 import { generateTilesFromPDF } from '../utils/PDF';
 import * as pmtiles from 'pmtiles';
 import * as projectStorage from '../lib/firebase/storage';
@@ -597,7 +598,7 @@ export const useMaps = (): UseMapsReturnType => {
       // console.log('importStyleFile', uri, name, id);
       if (Platform.OS === 'web') {
         const jsonStrings = await decodeUri(uri);
-        db.pmtiles.put({ mapId: tileMap.id, blob: undefined, boundary: '', style: jsonStrings });
+        await saveStyleToPmtilesDb(tileMap.id, jsonStrings);
         setEditedMap({ ...tileMap, styleURL: 'style://' + name });
       } else {
         const styleUri = `${TILE_FOLDER}/${tileMap.id}/style.json`;

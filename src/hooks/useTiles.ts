@@ -20,14 +20,17 @@ import {
   downloadTileGrid,
   getTileType,
   getZoomRange,
+  isDownloadableTileMap,
   listExistingTiles,
   markRegionsPaused,
   removeIncompleteRegions,
+  removeLegacyRasterPmtilePngs,
+  resolvePmtileIsVector,
   toCompletedRegion,
+  writeRasterPmtileTile,
 } from '../utils/tileDownloadHelpers';
 import { downloadDemTile, getDemTileMap } from '../utils/demTileDownload';
 import { DEM_MAPTERHORN_MAP_ID } from '../constants/DemSources';
-import { isPeaksUrl } from '../utils/peaks/peak2dLabels';
 
 export type UseTilesReturnType = {
   isDownloading: boolean;
@@ -111,9 +114,7 @@ export const useTiles = (
     }
     // tileMapsが渡されている場合（ダウンロードモード）は、ダウンロード可能な地図のsavedAreaのみ返す
     if (tileMaps && tileMaps.length > 0) {
-      const downloadableMapIds = tileMaps
-        .filter((map) => !map.isGroup && map.id !== 'standard' && map.id !== 'hybrid' && !isPeaksUrl(map.url))
-        .map((map) => map.id);
+      const downloadableMapIds = tileMaps.filter(isDownloadableTileMap).map((map) => map.id);
       // 標高タイル（疑似地図）は「すべての地図」に常に含める
       downloadableMapIds.push(DEM_MAPTERHORN_MAP_ID);
       return tileRegions.filter(({ tileMapId }) => downloadableMapIds.includes(tileMapId));
@@ -201,9 +202,11 @@ export const useTiles = (
           : undefined;
       setProgress('0');
       setIsDownloading(true);
+      let pmtileIsVector = tileMap.isVector === true;
+      if (pmtile !== undefined) pmtileIsVector = await resolvePmtileIsVector(pmtile, pmtileIsVector);
 
       //ベクタータイルの場合はmetadataとスタイルをダウンロード
-      if (tileType === 'pmtiles' && tileMap.isVector) {
+      if (tileType === 'pmtiles' && pmtileIsVector) {
         const folder = `${TILE_FOLDER}/${tileMap.id}`;
         await FileSystem.makeDirectoryAsync(folder, {
           intermediates: true,
@@ -274,7 +277,9 @@ export const useTiles = (
         }
       }
 
-      const { minZoom, maxZoom } = getZoomRange(tileType, tileMap, zoom);
+      if (tileType === 'pmtiles' && !pmtileIsVector) await removeLegacyRasterPmtilePngs(tileMap.id);
+
+      const { minZoom, maxZoom } = getZoomRange(tileType, { ...tileMap, isVector: pmtileIsVector }, zoom);
 
       const tiles = downloadTileGrid(tileType, downloadRegion, minZoom, maxZoom);
 
@@ -310,7 +315,7 @@ export const useTiles = (
         }
 
         let tilePromise;
-        if (tileType === 'pmtiles' && tileMap.isVector && pmtile !== undefined) {
+        if (tileType === 'pmtiles' && pmtileIsVector && pmtile !== undefined) {
           const localLocation = `${TILE_FOLDER}/${tileMap.id}/${tile.z}/${tile.x}/${tile.y}.pbf`;
           tilePromise = pmtile
             .getZxy(tile.z, tile.x, tile.y)
@@ -325,20 +330,15 @@ export const useTiles = (
               console.log(e);
               //errorCount++;
             });
-        } else if (tileType === 'pmtiles' && !tileMap.isVector && pmtile !== undefined) {
-          const localLocation = `${TILE_FOLDER}/${tileMap.id}/${tile.z}/${tile.x}/${tile.y}.png`;
+        } else if (tileType === 'pmtiles' && !pmtileIsVector && pmtile !== undefined) {
           tilePromise = pmtile
             .getZxy(tile.z, tile.x, tile.y)
             .then(async (resp) => {
               if (resp === undefined) return;
-              const base64String = Buffer.from(resp.data).toString('base64');
-              FileSystem.writeAsStringAsync(localLocation, base64String, {
-                encoding: FileSystem.EncodingType.UTF8,
-              });
+              await writeRasterPmtileTile(tileMap.id, tile, resp.data);
             })
-            .catch((e) => {
-              console.log(e);
-              //errorCount++;
+            .catch(() => {
+              errorCount++;
             });
         } else if (tileType === 'pbf') {
           const fetchUrl = withTileSignature(tileMap.url, tileSignatures)
@@ -526,9 +526,11 @@ export const useTiles = (
           tileType === 'pmtiles'
             ? new pmtiles.PMTiles(withTileSignature(currentTileMap.url, tileSignatures).replace('pmtiles://', ''))
             : undefined;
+        let pmtileIsVector = currentTileMap.isVector === true;
+        if (pmtile !== undefined) pmtileIsVector = await resolvePmtileIsVector(pmtile, pmtileIsVector);
 
         // メタデータとスタイルのダウンロード
-        if (tileType === 'pmtiles' && currentTileMap.isVector) {
+        if (tileType === 'pmtiles' && pmtileIsVector) {
           const folder = `${TILE_FOLDER}/${currentTileMap.id}`;
           await FileSystem.makeDirectoryAsync(folder, { intermediates: true });
 
@@ -585,7 +587,13 @@ export const useTiles = (
             });
         }
 
-        const { minZoom, maxZoom } = getZoomRange(tileType, currentTileMap, tileRegion.zoom ?? zoom);
+        if (tileType === 'pmtiles' && !pmtileIsVector) await removeLegacyRasterPmtilePngs(currentTileMap.id);
+
+        const { minZoom, maxZoom } = getZoomRange(
+          tileType,
+          { ...currentTileMap, isVector: pmtileIsVector },
+          tileRegion.zoom ?? zoom
+        );
 
         // 再開時は現在の地図表示ではなく、保存された領域からタイル集合を復元する
         const tiles = downloadTileGrid(tileType, boundsFromCoords(tileRegion.coords), minZoom, maxZoom);
@@ -632,7 +640,7 @@ export const useTiles = (
           }
 
           let tilePromise;
-          if (tileType === 'pmtiles' && currentTileMap.isVector && pmtile !== undefined) {
+          if (tileType === 'pmtiles' && pmtileIsVector && pmtile !== undefined) {
             const localLocation = `${TILE_FOLDER}/${currentTileMap.id}/${tile.z}/${tile.x}/${tile.y}.pbf`;
             tilePromise = pmtile
               .getZxy(tile.z, tile.x, tile.y)
@@ -646,19 +654,15 @@ export const useTiles = (
               .catch((e) => {
                 console.log(e);
               });
-          } else if (tileType === 'pmtiles' && !currentTileMap.isVector && pmtile !== undefined) {
-            const localLocation = `${TILE_FOLDER}/${currentTileMap.id}/${tile.z}/${tile.x}/${tile.y}.png`;
+          } else if (tileType === 'pmtiles' && !pmtileIsVector && pmtile !== undefined) {
             tilePromise = pmtile
               .getZxy(tile.z, tile.x, tile.y)
               .then(async (resp) => {
                 if (resp === undefined) return;
-                const base64String = Buffer.from(resp.data).toString('base64');
-                FileSystem.writeAsStringAsync(localLocation, base64String, {
-                  encoding: FileSystem.EncodingType.UTF8,
-                });
+                await writeRasterPmtileTile(currentTileMap.id, tile, resp.data);
               })
-              .catch((e) => {
-                console.log(e);
+              .catch(() => {
+                errorCount++;
               });
           } else if (tileType === 'pbf') {
             const fetchUrl = withTileSignature(currentTileMap.url, tileSignatures)
@@ -857,7 +861,7 @@ export const useTiles = (
       const idsToCheck =
         selectedTileMapIds && selectedTileMapIds.length > 0
           ? selectedTileMapIds
-          : [...tileMaps.map((m) => m.id), DEM_MAPTERHORN_MAP_ID];
+          : [...tileMaps.filter(isDownloadableTileMap).map((m) => m.id), DEM_MAPTERHORN_MAP_ID];
 
       let totalSize = 0;
       for (const id of idsToCheck) {
