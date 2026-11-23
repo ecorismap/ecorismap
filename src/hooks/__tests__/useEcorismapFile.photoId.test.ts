@@ -254,6 +254,20 @@ describe('バックアップZIPの写真 × photo.id', () => {
     expect(mockFiles.get(mockNorm(p.uri as string))?.toString()).toBe('OLD-JPEG');
   });
 
+  test('末尾ドットの写真名（以前のWebの名前）でも、末尾ドットが落ちたZIP内の写真を戻す（写真監査 P-M3）', async () => {
+    const dotted = 'EMAP_20261101_101010_.';
+    const zip = new JSZip();
+    zip.file('local_2026.json', backupJson([record({ ...photo('PID1', 'blob:old'), name: dotted })]));
+    //書き出しは sanitize-filename で末尾の「.」を落として入れる
+    zip.file(`写真レイヤ_${LAYER_ID}/PID1/EMAP_20261101_101010_`, 'WEB-JPEG');
+    const base64 = await zip.generateAsync({ type: 'base64' });
+
+    const [p] = await openBackup(base64);
+    expect(p.uri).not.toBe('blob:old');
+    expect(isUriInsideFolder(p.uri, PHOTO_FOLDER)).toBe(true);
+    expect(mockFiles.get(mockNorm(p.uri as string))?.toString()).toBe('WEB-JPEG');
+  });
+
   test('パスに使えない photo.id はフォルダを分けず、写真フォルダの外にも書かない', async () => {
     const zip = new JSZip();
     zip.file('local_2026.json', backupJson([record(photo('..', 'file:///old/device/path.jpg'))]));

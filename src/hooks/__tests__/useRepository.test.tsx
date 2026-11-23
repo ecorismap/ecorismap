@@ -9,13 +9,15 @@ import { renderHook, act } from '@testing-library/react-hooks';
 import { Provider } from 'react-redux';
 import { configureStore } from '@reduxjs/toolkit';
 import { useRepository } from '../useRepository';
-import { updateDataAction } from '../../modules/dataSet';
+import { applyUploadedPhotosAction, updateDataAction } from '../../modules/dataSet';
+import { PHOTO_FOLDER } from '../../constants/AppConstants';
 import { setDataSyncTimestampsAction } from '../../modules/dataSync';
 
 import * as DataUtils from '../../utils/Data';
 import * as projectStore from '../../lib/firebase/firestore';
 import * as projectStorage from '../../lib/firebase/storage';
 import * as unsyncedChanges from '../../utils/unsyncedChanges';
+import * as photoUpload from '../../utils/photoUpload';
 import * as AlertAsyncModule from '../../components/molecules/AlertAsync';
 
 // spy を仕掛ける前にオリジナルを退避
@@ -628,7 +630,17 @@ describe('uploadDataToRepository（写真のアップロード失敗）', () => 
     permission: 'PRIVATE',
     field: [{ id: 'f1', name: '写真', format: 'PHOTO' }],
   } as any;
-  const photo = { id: 'p1', name: 'a.jpg', uri: 'file:///photos/a.jpg', url: null, key: null, width: 1, height: 1, thumbnail: null };
+  // 自分の写真フォルダの配下（それ以外は上げない。写真監査 P-M13）
+  const photo = {
+    id: 'p1',
+    name: 'a.jpg',
+    uri: `${PHOTO_FOLDER}/proj1/l1/test-user/a.jpg`,
+    url: null,
+    key: null,
+    width: 1,
+    height: 1,
+    thumbnail: null,
+  };
   const record = {
     id: 'r1',
     userId: 'test-user',
@@ -640,10 +652,10 @@ describe('uploadDataToRepository（写真のアップロード失敗）', () => 
     updatedAt: 100,
   };
 
-  const makeStore = () => {
+  const makeStore = (dataSet: any[] = [{ layerId: 'l1', userId: 'test-user', data: [record] }]) => {
     const initialState = {
       user: { uid: 'test-user', email: 'a@b.c', displayName: 'U' },
-      dataSet: [{ layerId: 'l1', userId: 'test-user', data: [record] }],
+      dataSet,
       layers: [layer],
       settings: { isSettingProject: false, updatedAt: undefined },
       tileMaps: [],
@@ -706,6 +718,213 @@ describe('uploadDataToRepository（写真のアップロード失敗）', () => 
     expect(res).toEqual({ isOK: true, message: '' });
     const savedPhoto = (uploadSpy.mock.calls[0][1] as any).data[0].field['写真'][0];
     expect(savedPhoto).toMatchObject({ url: 'https://x/p1', key: 'k' });
+  });
+
+  // 写真監査 P-M13・P-M12: 他のメンバーの端末のパス（自分の写真フォルダの外）は読まず、失敗にも数えない
+  test.each([
+    ['他人の端末のパス', 'file:///var/mobile/Containers/Data/Application/OTHER/Documents/projects/proj1/l1/other/a.jpg'],
+    ['自分の端末の別の名義のフォルダ', `${PHOTO_FOLDER}/proj1/l1/other/a.jpg`],
+    ['自分の端末の別のプロジェクトのフォルダ', `${PHOTO_FOLDER}/proj2/l1/test-user/a.jpg`],
+  ])('自分の写真フォルダの外の uri（%s）はアップロードせず、警告も出さない', async (_label, uri) => {
+    const uploadPhotoSpy = jest
+      .spyOn(projectStorage, 'uploadPhoto')
+      .mockResolvedValue({ isOK: true, message: '', url: 'https://x/p1', key: 'k' });
+    const uploadSpy = jest.spyOn(projectStore, 'uploadDataHelper').mockResolvedValue({ isOK: true, message: '', encryptedAt: 1 });
+    const foreign = { ...record, field: { 写真: [{ ...photo, uri }] } };
+
+    const { result } = renderWithStore(makeStore([{ layerId: 'l1', userId: 'test-user', data: [foreign] }]));
+    let res: any;
+    await act(async () => {
+      res = await result.current.uploadDataToRepository(project, 'All');
+    });
+
+    expect(uploadPhotoSpy).not.toHaveBeenCalled();
+    expect(res).toEqual({ isOK: true, message: '' });
+    // 写真は url:null のまま残す（元の持ち主が上げれば、取得時に url/key を受け継ぐ）
+    const savedPhoto = (uploadSpy.mock.calls[0][1] as any).data[0].field['写真'][0];
+    expect(savedPhoto).toEqual({ ...photo, uri });
+  });
+
+  test('ログイン前（LOCAL）のこのレイヤの写真はアップロードする', async () => {
+    const uri = `${PHOTO_FOLDER}/LOCAL/l1/OWNER/a.jpg`;
+    const uploadPhotoSpy = jest
+      .spyOn(projectStorage, 'uploadPhoto')
+      .mockResolvedValue({ isOK: true, message: '', url: 'https://x/p1', key: 'k' });
+    jest.spyOn(projectStore, 'uploadDataHelper').mockResolvedValue({ isOK: true, message: '', encryptedAt: 1 });
+    const local = { ...record, field: { 写真: [{ ...photo, uri }] } };
+
+    const { result } = renderWithStore(makeStore([{ layerId: 'l1', userId: 'test-user', data: [local] }]));
+    await act(async () => {
+      await result.current.uploadDataToRepository(project, 'All');
+    });
+
+    expect(uploadPhotoSpy).toHaveBeenCalledWith('proj1', 'l1', 'test-user', 'p1', uri, 'a.jpg');
+  });
+
+  // 写真監査 P-M12・P-M13: Android の LOCAL はどの端末でも同じパスになるので、他人から引き継いだ記録では上げない
+  test('他のメンバーから引き継いだ記録の LOCAL の写真はアップロードせず、警告も出さない', async () => {
+    const uri = `${PHOTO_FOLDER}/LOCAL/l1/OWNER/a.jpg`;
+    const uploadPhotoSpy = jest
+      .spyOn(projectStorage, 'uploadPhoto')
+      .mockResolvedValue({ isOK: true, message: '', url: 'https://x/p1', key: 'k' });
+    jest.spyOn(projectStore, 'uploadDataHelper').mockResolvedValue({ isOK: true, message: '', encryptedAt: 1 });
+    const takenOver = { ...record, takenOverFrom: ['other'], field: { 写真: [{ ...photo, uri }] } };
+
+    const { result } = renderWithStore(makeStore([{ layerId: 'l1', userId: 'test-user', data: [takenOver] }]));
+    let res: any;
+    await act(async () => {
+      res = await result.current.uploadDataToRepository(project, 'All');
+    });
+
+    expect(uploadPhotoSpy).not.toHaveBeenCalled();
+    expect(res).toEqual({ isOK: true, message: '' });
+  });
+
+  // 写真監査 P-M13: COMMON の統合は全員分を自分の名義に書き換えて送るので、書き換える前の名義で判定する
+  describe('COMMON の統合での他人の記録の LOCAL の写真', () => {
+    const common = { ...layer, permission: 'COMMON' };
+    const uri = `${PHOTO_FOLDER}/LOCAL/l1/OWNER/a.jpg`;
+    const run = async (dataSet: any[], commonAbsorption?: any) => {
+      const uploadPhotoSpy = jest
+        .spyOn(projectStorage, 'uploadPhoto')
+        .mockResolvedValue({ isOK: true, message: '', url: 'https://x/p1', key: 'k' });
+      const uploadSpy = jest.spyOn(projectStore, 'uploadDataHelper').mockResolvedValue({ isOK: true, message: '', encryptedAt: 1 });
+      jest.spyOn(projectStore, 'deleteOtherUsersData').mockResolvedValue({ isOK: true, message: '' });
+      jest.spyOn(projectStore, 'deleteData').mockResolvedValue({ isOK: true, message: '' });
+      const initialState = {
+        user: { uid: 'test-user', email: 'a@b.c', displayName: 'U' },
+        dataSet,
+        layers: [common],
+        settings: { isSettingProject: true, updatedAt: undefined },
+        tileMaps: [],
+        dataSync: {},
+      };
+      const store = configureStore({
+        reducer: {
+          user: (state = initialState.user) => state,
+          dataSet: (state = initialState.dataSet) => state,
+          layers: (state = initialState.layers) => state,
+          settings: (state = initialState.settings) => state,
+          tileMaps: (state = initialState.tileMaps) => state,
+          dataSync: (state = initialState.dataSync) => state,
+        } as any,
+        preloadedState: initialState,
+      });
+      store.dispatch = jest.fn();
+      const { result } = renderWithStore(store);
+      let res: any;
+      await act(async () => {
+        res = await result.current.uploadDataToRepository(project, 'Common', commonAbsorption ? { commonAbsorption } : undefined);
+      });
+      return { res, uploadPhotoSpy, uploadSpy };
+    };
+
+    test('他のメンバーの集合にある記録の LOCAL の写真は、自分の名義で送っても上げない', async () => {
+      const others = { ...record, id: 'r2', userId: 'member', field: { 写真: [{ ...photo, uri }] } };
+      const { res, uploadPhotoSpy, uploadSpy } = await run([
+        { layerId: 'l1', userId: 'test-user', data: [] },
+        { layerId: 'l1', userId: 'member', data: [others] },
+      ]);
+      expect(res.isOK).toBe(true);
+      expect(uploadPhotoSpy).not.toHaveBeenCalled();
+      const sent = (uploadSpy.mock.calls[0][1] as any).data;
+      expect(sent[0].userId).toBe('test-user');
+      expect(sent[0].field['写真'][0]).toMatchObject({ uri, url: null });
+    });
+
+    test('取り込んだ他人の記録（自分の名義の集合に入る）の LOCAL の写真も上げない', async () => {
+      const absorbed = { ...record, id: 'r3', userId: 'member', field: { 写真: [{ ...photo, uri }] } };
+      const { uploadPhotoSpy } = await run([{ layerId: 'l1', userId: 'test-user', data: [] }], {
+        extraCommonDataSet: [{ layerId: 'l1', userId: 'test-user', data: [absorbed] }],
+        representedUserIds: { l1: ['member'] },
+      });
+      expect(uploadPhotoSpy).not.toHaveBeenCalled();
+    });
+
+    test('自分の記録の LOCAL の写真は上げる', async () => {
+      const mine = { ...record, field: { 写真: [{ ...photo, uri }] } };
+      const { uploadPhotoSpy } = await run([{ layerId: 'l1', userId: 'test-user', data: [mine] }]);
+      expect(uploadPhotoSpy).toHaveBeenCalledWith('proj1', 'l1', 'test-user', 'p1', uri, 'a.jpg');
+    });
+
+    test('他のメンバーの記録でも、自分の写真フォルダの写真（自分が足した写真）は上げる', async () => {
+      const others = { ...record, id: 'r2', userId: 'member', field: { 写真: [photo] } };
+      const { uploadPhotoSpy } = await run([
+        { layerId: 'l1', userId: 'test-user', data: [] },
+        { layerId: 'l1', userId: 'member', data: [others] },
+      ]);
+      expect(uploadPhotoSpy).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  test('パスの判定を通っても原画が読めない写真はアップロードせず、警告も出さない', async () => {
+    jest.spyOn(photoUpload, 'canReadPhotoForUpload').mockResolvedValue(false);
+    const uploadPhotoSpy = jest
+      .spyOn(projectStorage, 'uploadPhoto')
+      .mockResolvedValue({ isOK: false, message: 'firebase.message.failUploadPhoto', url: null, key: null });
+    const uploadSpy = jest.spyOn(projectStore, 'uploadDataHelper').mockResolvedValue({ isOK: true, message: '', encryptedAt: 1 });
+
+    const { result } = renderWithStore(makeStore());
+    let res: any;
+    await act(async () => {
+      res = await result.current.uploadDataToRepository(project, 'All');
+    });
+
+    expect(uploadPhotoSpy).not.toHaveBeenCalled();
+    expect(res).toEqual({ isOK: true, message: '' });
+    expect((uploadSpy.mock.calls[0][1] as any).data[0].field['写真'][0]).toEqual(photo);
+    (photoUpload.canReadPhotoForUpload as jest.Mock).mockRestore();
+  });
+
+  // 写真監査 P-M16: 写真を上げたあとでデータの書き込みに失敗しても、上げた url/key は手元に残す
+  test.each([
+    ['書き込みの失敗', { isOK: false, message: 'network' }],
+    ['他の端末の更新（staleExpectation）', { isOK: false, message: '', staleExpectation: true }],
+  ])('写真を上げたあとの%sでも、url/key を手元へ反映する（uri は残す）', async (_label, uploadResult) => {
+    jest.spyOn(projectStorage, 'uploadPhoto').mockResolvedValue({ isOK: true, message: '', url: 'https://x/p1', key: 'k' });
+    jest.spyOn(projectStore, 'uploadDataHelper').mockResolvedValue(uploadResult as any);
+
+    const store = makeStore();
+    const { result } = renderWithStore(store);
+    let res: any;
+    await act(async () => {
+      res = await result.current.uploadDataToRepository(project, 'All');
+    });
+
+    expect(res.isOK).toBe(false);
+    expect(store.dispatch).toHaveBeenCalledWith(
+      applyUploadedPhotosAction({ layerId: 'l1', records: { r1: { p1: { url: 'https://x/p1', key: 'k' } } } })
+    );
+  });
+
+  test('上げ終えて url/key のある写真は、次のアップロードで上げ直さない', async () => {
+    const uploadPhotoSpy = jest.spyOn(projectStorage, 'uploadPhoto');
+    jest.spyOn(projectStore, 'uploadDataHelper').mockResolvedValue({ isOK: true, message: '', encryptedAt: 1 });
+    const uploaded = { ...record, field: { 写真: [{ ...photo, url: 'https://x/p1', key: 'k' }] } };
+
+    const store = makeStore([{ layerId: 'l1', userId: 'test-user', data: [uploaded] }]);
+    const { result } = renderWithStore(store);
+    await act(async () => {
+      await result.current.uploadDataToRepository(project, 'All');
+    });
+
+    expect(uploadPhotoSpy).not.toHaveBeenCalled();
+    expect(store.dispatch).not.toHaveBeenCalledWith(expect.objectContaining({ type: applyUploadedPhotosAction.type }));
+  });
+
+  test('写真の上げに失敗したときは手元の写真を変えない', async () => {
+    jest
+      .spyOn(projectStorage, 'uploadPhoto')
+      .mockResolvedValue({ isOK: false, message: 'firebase.message.failUploadPhoto', url: null, key: null });
+    jest.spyOn(projectStore, 'uploadDataHelper').mockResolvedValue({ isOK: false, message: 'network' });
+
+    const store = makeStore();
+    const { result } = renderWithStore(store);
+    await act(async () => {
+      await result.current.uploadDataToRepository(project, 'All');
+    });
+
+    expect(store.dispatch).not.toHaveBeenCalledWith(expect.objectContaining({ type: applyUploadedPhotosAction.type }));
   });
 });
 
@@ -1046,6 +1265,86 @@ describe('同期の medium 修正', () => {
       await act(async () => {
         await result.current.uploadDataToRepository(project, 'All');
       });
+      expect(deleteSpy).toHaveBeenCalledWith('proj1', 'l1', 'test-user', 'ph1');
+    });
+  });
+
+  describe('写真監査 P-M9・P-M10: 消す写真のパスと、送らない集合の参照', () => {
+    const layer = { id: 'l1', name: 'L1', permission: 'PUBLIC', field: [{ id: 'f', name: '写真', format: 'PHOTO' }] } as any;
+    const urlOf = (uid: string, photoId: string) =>
+      `https://firebasestorage.googleapis.com/v0/b/b/o/projects%2Fproj1%2FPHOTO%2Fl1%2F${uid}%2F${photoId}?alt=media&token=t`;
+    const photoOf = (id: string, uid: string, extra: Record<string, unknown> = {}) => ({
+      id,
+      name: 'a.jpg',
+      uri: 'file:///p.jpg',
+      url: urlOf(uid, id),
+      key: 'k',
+      width: 1,
+      height: 1,
+      thumbnail: null,
+      ...extra,
+    });
+    const upload = async (dataSet: any[], uploadType: 'All' | 'Template' = 'All') => {
+      jest.spyOn(projectStore, 'getMyDataUpdatedAt').mockResolvedValue({ isOK: true, message: '', data: new Map() });
+      jest.spyOn(projectStore, 'uploadDataHelper').mockResolvedValue({ isOK: true, message: '', encryptedAt: 9 });
+      const deleteSpy = jest.spyOn(projectStorage, 'deleteStoragePhoto').mockResolvedValue({ isOK: true, message: '' });
+      const { result } = renderWithStore(makeStore({ layers: [layer], dataSet }));
+      await act(async () => {
+        await result.current.uploadDataToRepository(project, uploadType);
+      });
+      return deleteSpy;
+    };
+
+    test('管理者が引き継いだ他人の記録の写真を外すと、撮った人の uid のパスを消す', async () => {
+      const taken = rec('X', { takenOverFrom: ['other'], field: { 写真: [photoOf('ph1', 'other', { uri: undefined })] } });
+      const deleteSpy = await upload([{ layerId: 'l1', userId: 'test-user', data: [taken] }]);
+      expect(deleteSpy).toHaveBeenCalledWith('proj1', 'l1', 'other', 'ph1');
+    });
+
+    test('url が別のプロジェクトや別の写真を指すときは、自分の uid のパスにする', async () => {
+      const odd = photoOf('ph1', 'other', {
+        uri: undefined,
+        url: 'https://firebasestorage.googleapis.com/v0/b/b/o/projects%2Fproj2%2FPHOTO%2Fl1%2Fother%2Fph1?alt=media',
+      });
+      const deleteSpy = await upload([{ layerId: 'l1', userId: 'test-user', data: [rec('X', { field: { 写真: [odd] } })] }]);
+      expect(deleteSpy).toHaveBeenCalledWith('proj1', 'l1', 'test-user', 'ph1');
+    });
+
+    test('テンプレートの写しで写真を外しても、手元のテンプレート（墓標でも）が同じ写真を持っていれば消さない', async () => {
+      const shared = photoOf('ph1', 'test-user');
+      const copy = rec('T', { field: { 写真: [{ ...shared, uri: undefined }] } });
+      const template = rec('T', { userId: 'template', deleted: true, field: { 写真: [shared] } });
+      const deleteSpy = await upload([
+        { layerId: 'l1', userId: 'test-user', data: [copy] },
+        { layerId: 'l1', userId: 'template', data: [template] },
+      ]);
+      expect(deleteSpy).not.toHaveBeenCalled();
+    });
+
+    test('他のメンバーの記録が同じ url を参照していれば、id が違っても消さない', async () => {
+      const mine = rec('A', { deleted: true, field: { 写真: [photoOf('ph1', 'test-user')] } });
+      const theirs = rec('B', { userId: 'other', field: { 写真: [photoOf('ph-other', 'test-user', { url: urlOf('test-user', 'ph1') })] } });
+      const deleteSpy = await upload([
+        { layerId: 'l1', userId: 'test-user', data: [mine] },
+        { layerId: 'l1', userId: 'other', data: [theirs] },
+      ]);
+      expect(deleteSpy).not.toHaveBeenCalled();
+    });
+
+    test('テンプレートの写真を外すと、他のメンバーの写しが参照していれば消さず、参照がなければ消す', async () => {
+      const shared = photoOf('ph1', 'test-user');
+      const template = rec('T', { userId: 'template', field: { 写真: [{ ...shared, uri: undefined }] } });
+      const memberCopy = rec('T', { userId: 'other', field: { 写真: [shared] } });
+      let deleteSpy = await upload(
+        [
+          { layerId: 'l1', userId: 'template', data: [template] },
+          { layerId: 'l1', userId: 'other', data: [memberCopy] },
+        ],
+        'Template'
+      );
+      expect(deleteSpy).not.toHaveBeenCalled();
+
+      deleteSpy = await upload([{ layerId: 'l1', userId: 'template', data: [template] }], 'Template');
       expect(deleteSpy).toHaveBeenCalledWith('proj1', 'l1', 'test-user', 'ph1');
     });
   });

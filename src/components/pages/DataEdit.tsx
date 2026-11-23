@@ -44,6 +44,7 @@ export default function DataEditScreen() {
     isEditingRecord,
     projectId,
     modifyBlockMessage,
+    isSaving,
     pressSaveData,
     changeLatLonType,
     changeLatLon,
@@ -80,8 +81,8 @@ export default function DataEditScreen() {
       testID="dataedit-save"
       name={DATAEDIT_BTN.SAVE}
       onPress={pressSaveData}
-      backgroundColor={isEditingRecord ? COLOR.BLUE : COLOR.LIGHTBLUE}
-      disabled={!isEditingRecord}
+      backgroundColor={isEditingRecord && isSaving !== true ? COLOR.BLUE : COLOR.LIGHTBLUE}
+      disabled={!isEditingRecord || isSaving === true}
       labelText={t('DataEdit.label.save')}
     />
   );

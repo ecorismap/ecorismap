@@ -324,7 +324,7 @@ describe('useDataEdit', () => {
   });
 
   describe('saveData関数', () => {
-    it('saveData時にtargetRecordが更新される', () => {
+    it('saveData時にtargetRecordが更新される', async () => {
       const initialRecord = createMockRecord('record1', 35.6762, 139.6503);
       const store = createTestStore([initialRecord]);
 
@@ -340,8 +340,8 @@ describe('useDataEdit', () => {
       });
 
       // 保存
-      act(() => {
-        const saveResult = result.current.saveData();
+      await act(async () => {
+        const saveResult = await result.current.saveData();
         expect(saveResult.isOK).toBe(true);
       });
 
@@ -350,6 +350,38 @@ describe('useDataEdit', () => {
     });
   });
 });
+describe('getPhotoCaptureDraft（P-M1）', () => {
+  it('撮影前の下書きに、先に付けた写真と未保存の入力・足した写真の一覧が入る', () => {
+    const initialRecord = {
+      ...createMockRecord('record1', 35.6762, 139.6503),
+      field: { Name: 'Test Point', Value: 100, photo: [] },
+    } as unknown as RecordType;
+    const store = createTestStore([initialRecord]);
+    const wrapper = ({ children }: { children: React.ReactNode }) => <Provider store={store}>{children}</Provider>;
+    const { result } = renderHook(() => useDataEdit(initialRecord, mockLayer), { wrapper });
+
+    act(() => {
+      result.current.changeField('Name', 'unsaved');
+    });
+    act(() => {
+      result.current.addPhoto('photo', {
+        uri: 'file:///photos/EMAP_0.jpeg',
+        thumbnail: null,
+        width: 10,
+        height: 10,
+        name: 'EMAP_0.jpeg',
+      });
+    });
+
+    const draft = result.current.getPhotoCaptureDraft();
+    expect(draft.record.id).toBe('record1');
+    expect(draft.record.field.Name).toBe('unsaved');
+    expect((draft.record.field.photo as { uri: string }[]).map((p) => p.uri)).toEqual(['file:///photos/EMAP_0.jpeg']);
+    expect(draft.temporaryAddedPhotoList.map((p) => p.uri)).toEqual(['file:///photos/EMAP_0.jpeg']);
+    expect(draft.temporaryDeletePhotoList).toEqual([]);
+  });
+});
+
 describe('changeFieldのコード連動', () => {
   const codeLayer = (codeFormat: 'STRING' | 'INTEGER', listFormat: 'LIST' | 'RADIO' = 'LIST'): LayerType =>
     ({

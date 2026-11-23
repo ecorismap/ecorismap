@@ -469,14 +469,40 @@ export const updateRecordCoords = (
  * - どちらも同じ状態なら updatedAt が新しい方、同じなら自分のバケットの方を採る
  * テンプレート（userId='template'）は別にアップロードするので含めない
  */
-export const mergeCommonRecords = (dataSet: DataType[], layerId: string, ownUserId: string | undefined): RecordType[] => {
+export const mergeCommonRecords = (dataSet: DataType[], layerId: string, ownUserId: string | undefined): RecordType[] =>
+  mergeCommonRecordsWithOwner(dataSet, layerId, ownUserId).map(({ record }) => record);
+
+/**
+ * COMMON の統合で選ばれた記録ごとに、元の集合の名義（userId）を返す。送るときは全記録を自分の名義に書き換えるので、
+ * 写真を上げてよいか（他人の記録の LOCAL のパスを自分の写真として上げないか。写真監査 P-M13）は、書き換える前の
+ * 名義で判定する。名義のない記録（ログイン前に作ったもの）は undefined
+ */
+export const getCommonRecordOwners = (
+  dataSet: DataType[],
+  layerId: string,
+  ownUserId: string | undefined
+): Map<string, string | undefined> =>
+  new Map(
+    mergeCommonRecordsWithOwner(dataSet, layerId, ownUserId).map(({ record, ownerUserId }) => [
+      record.id,
+      // 他人の集合にある記録はその人のもの。自分の集合でも、取り込んだ他人の記録（buildCommonAbsorption は自分の
+      // 名義の集合に入れる）は記録の名義が元の持ち主のままなので、記録の名義を見る
+      ownerUserId !== undefined && ownerUserId !== ownUserId ? ownerUserId : record.userId ?? ownerUserId,
+    ])
+  );
+
+const mergeCommonRecordsWithOwner = (
+  dataSet: DataType[],
+  layerId: string,
+  ownUserId: string | undefined
+): { record: RecordType; ownerUserId: string | undefined }[] => {
   // 引き継ぎで打ち消される版（引き継いだ版より古い、元の持ち主の名義の版など）は先に除く。除かないと、
   // 削除されていないものを優先する規則で、管理者が引き継いで削除した記録が元の持ち主の古い版で戻る
   const buckets = applyTakeoversToDataSet(
     dataSet.filter((d) => d.layerId === layerId && d.userId !== 'template'),
     dataSet.filter((d) => d.layerId === layerId && d.userId === 'template')
   );
-  const chosen = new Map<string, { record: RecordType; own: boolean }>();
+  const chosen = new Map<string, { record: RecordType; own: boolean; ownerUserId: string | undefined }>();
   const order: string[] = [];
   const score = (record: RecordType, own: boolean) => [record.deleted === true ? 0 : 1, record.updatedAt ?? 0, own ? 1 : 0];
   const isBetter = (a: number[], b: number[]) => {
@@ -489,13 +515,16 @@ export const mergeCommonRecords = (dataSet: DataType[], layerId: string, ownUser
       const current = chosen.get(record.id);
       if (current === undefined) {
         order.push(record.id);
-        chosen.set(record.id, { record, own });
+        chosen.set(record.id, { record, own, ownerUserId: bucket.userId });
       } else if (isBetter(score(record, own), score(current.record, current.own))) {
-        chosen.set(record.id, { record, own });
+        chosen.set(record.id, { record, own, ownerUserId: bucket.userId });
       }
     }
   }
-  return order.map((id) => chosen.get(id)!.record);
+  return order.map((id) => {
+    const { record, ownerUserId } = chosen.get(id)!;
+    return { record, ownerUserId };
+  });
 };
 
 export type CommonAbsorption = {

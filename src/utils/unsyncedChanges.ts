@@ -1,5 +1,5 @@
 import { Platform } from 'react-native';
-import { DataType } from '../types';
+import { DataType, RecordType } from '../types';
 
 /**
  * Web版で「アップロードしていない変更」があるかを判定するための目印。
@@ -115,6 +115,66 @@ export const clearUnsyncedMarks = () => {
 };
 
 /**
+ * このページで作った blob: URL（写真監査 P-M4）。
+ *
+ * blob: URL は作ったページ（document）の中でしか読めず、再読み込みで無効になる。一方で記録は IndexedDB から戻るので、
+ * 再読み込みの後も写真の uri には前のページの blob: が残る。その原画はもう取り戻せず、上げても必ず失敗するので、
+ * 「未同期あり」に数えると、利用者が写真を外さない限り離脱確認が出続ける。
+ * 離脱確認（beforeunload）の判定は同期で行う必要があり、fetch で読めるかを確かめられない。そこで起動時に
+ * URL.createObjectURL を包み、このページで作った blob: を覚えておく（このモジュールは App から UnsyncedChangesGuard
+ * 経由で起動時に読み込まれるので、利用者の操作で blob を作るより前に包める）。
+ * 包めない環境（ネイティブ・URL.createObjectURL のない環境）では、すべての blob: を読めるものとして扱う（確認を出す側に倒す）
+ */
+const pageBlobUrls = new Set<string>();
+let isTrackingPageBlobUrls = false;
+
+export const trackPageBlobUrls = () => {
+  if (isTrackingPageBlobUrls) return;
+  if (typeof URL === 'undefined' || typeof URL.createObjectURL !== 'function') return;
+  const create = URL.createObjectURL.bind(URL);
+  URL.createObjectURL = (obj: Blob | MediaSource) => {
+    const url = create(obj);
+    pageBlobUrls.add(url);
+    return url;
+  };
+  if (typeof URL.revokeObjectURL === 'function') {
+    const revoke = URL.revokeObjectURL.bind(URL);
+    URL.revokeObjectURL = (url: string) => {
+      //破棄した blob: も読めなくなる
+      pageBlobUrls.delete(url);
+      revoke(url);
+    };
+  }
+  isTrackingPageBlobUrls = true;
+};
+
+if (Platform.OS === 'web') trackPageBlobUrls();
+
+/** blob: URL がこのページで読めるか（前のページの blob: は false）。覚えられない環境では true */
+export const isLivePageBlobUrl = (uri: string) => !isTrackingPageBlobUrls || pageBlobUrls.has(uri);
+
+/**
+ * 記録に、まだアップロードしていない（url が null）で原画が blob: URL にしかない写真があるか（写真監査 P-M4 の当面の策）。
+ * 写真欄はレイヤの定義を見なくても、{ uri, url } を持つ要素の配列として見分けられる。
+ * 前のページの blob:（再読み込みで無効になったもの）は、もう失われていて同期しても取り戻せないので数えない
+ */
+export const hasUnuploadedBlobPhoto = (record: RecordType): boolean =>
+  Object.values(record.field ?? {}).some(
+    (value) =>
+      Array.isArray(value) &&
+      value.some((item: unknown) => {
+        if (typeof item !== 'object' || item === null) return false;
+        const photo = item as { uri?: unknown; url?: unknown };
+        return (
+          photo.url === null &&
+          typeof photo.uri === 'string' &&
+          photo.uri.startsWith('blob:') &&
+          isLivePageBlobUrl(photo.uri)
+        );
+      })
+  );
+
+/**
  * アップロードしていない変更があるか。判定に迷う場合は「ある」に倒す（確認が1回多く出るだけで、記録は消えない）。
  *
  * - プロジェクトを開いていないとき: 記録はクラウドへ上げる先が無く、タブを閉じると必ず消える。削除済みでない記録が
@@ -123,6 +183,7 @@ export const clearUnsyncedMarks = () => {
  *   - uploaded が true でない記録（新しく作ったもの）があれば「ある」
  *   - 自分の記録（自分の名義・名義なし・テンプレート）で、そのレイヤの基準時刻より後に更新・削除したものがあれば「ある」。
  *     他のメンバーの記録は取得したものなので見ない（取得のたびに、相手の更新時刻で確認が出てしまうため）
+ *   - 自分の記録に、まだアップロードしていない blob: の写真があれば「ある」（記録は上がっていても写真の原画はこのタブにしかない）
  */
 export const hasUnsyncedChanges = (
   dataSet: DataType[],
@@ -142,6 +203,9 @@ export const hasUnsyncedChanges = (
     return d.data.some((record) => {
       //アップロードしていない記録を消したものは手元からも消えている（墓標を作らない）ので、ここには来ない
       if (record.uploaded !== true) return record.deleted !== true;
+      //写真だけアップロードに失敗した記録は、記録自体は uploaded で基準時刻も進むが、写真の原画は
+      //このタブの blob: URL にしかなく、再読み込みやタブの破棄で失われる。上がっていない写真があれば「ある」とする
+      if (record.deleted !== true && hasUnuploadedBlobPhoto(record)) return true;
       //基準時刻が分からないときは、アップロード後に変えたかを判定できないので「ある」に倒す
       if (reference === undefined) return true;
       return (record.updatedAt ?? 0) > reference;

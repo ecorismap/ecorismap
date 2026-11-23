@@ -1,6 +1,6 @@
 import { createSlice, PayloadAction, createAction } from '@reduxjs/toolkit';
 import { ulid } from 'ulid';
-import { DataType, RecordType } from '../types';
+import { DataType, PhotoType, RecordType } from '../types';
 import { produce } from 'immer'; // Immerをインポート
 import { addTakenOverFrom } from '../utils/recordTakeover';
 
@@ -37,6 +37,12 @@ export interface TransferRecordsPayload {
   toUserId: string | undefined;
   toDisplayName: string | null;
   data: RecordType[];
+}
+
+/** applyUploadedPhotosAction の payload。記録 id → 写真 id → 上げた先の url/key */
+export interface UploadedPhotosPayload {
+  layerId: string;
+  records: { [recordId: string]: { [photoId: string]: { url: string; key: string } } };
 }
 
 export interface TakeOverRecordsPayload extends TransferRecordsPayload {
@@ -206,6 +212,33 @@ const reducers = {
     });
     state[idx].data = [...data, ...tombstones];
   },
+  /**
+   * 上げ終えた写真の url/key だけを手元の記録へ書き込む（写真監査 P-M16）。uri はそのまま残す。
+   * 写真はデータの書き込みより先に上がるので、書き込みが失敗（他端末の更新・サイズ超過・通信失敗）しても、
+   * 上がった事実は手元に残しておく。残さないと次回に同じ写真を全部上げ直すことになる。
+   * 記録はどの名義の集合にあってもよい（COMMON は全員分をまとめて送る）。url が既に入っている写真は変えない
+   */
+  applyUploadedPhotosAction: (state: DataType[], action: PayloadAction<UploadedPhotosPayload>) => {
+    const { layerId, records } = action.payload;
+    state.forEach((bucket) => {
+      if (bucket.layerId !== layerId) return;
+      bucket.data.forEach((record) => {
+        const uploaded = records[record.id];
+        if (uploaded === undefined) return;
+        Object.values(record.field).forEach((value) => {
+          if (!Array.isArray(value)) return;
+          (value as unknown[]).forEach((item) => {
+            if (typeof item !== 'object' || item === null) return;
+            const photo = item as PhotoType;
+            const result = typeof photo.id === 'string' ? uploaded[photo.id] : undefined;
+            if (result === undefined || photo.url !== null) return;
+            photo.url = result.url;
+            photo.key = result.key;
+          });
+        });
+      });
+    });
+  },
   deleteRecordsAction: (state: DataType[], action: PayloadAction<DataType>) => {
     const { layerId, userId, data: toDelete } = action.payload;
     const idx = state.findIndex((d) => d.layerId === layerId && d.userId === userId);
@@ -275,6 +308,7 @@ export const {
   addRecordsAction,
   updateRecordsAction,
   updateRecordsLocallyAction,
+  applyUploadedPhotosAction,
   deleteRecordsAction,
   replaceRecordsKeepingTombstonesAction,
   moveRecordsToUserAction,

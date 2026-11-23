@@ -20,6 +20,8 @@ import {
   truncateMiddle,
   getBaseName,
   findPhotoFileKey,
+  normalizePhotoZipName,
+  photoContentTypeFromName,
   findDictionaryFileKey,
   MAX_FILENAME_LABEL_LENGTH,
   MAX_BACKUP_LABEL_LENGTH,
@@ -393,6 +395,38 @@ describe('findPhotoFileKey / findDictionaryFileKey (zip import compatibility)', 
   it('returns undefined when there is no sqlite for the layer', () => {
     const keysWithoutSqlite = newFormatKeys.filter((k) => !k.endsWith('.sqlite'));
     expect(findDictionaryFileKey(keysWithoutSqlite, layerId)).toBeUndefined();
+  });
+});
+
+describe('写真名の正規化（Webの末尾ドット名: 写真監査 P-M3）', () => {
+  const layerId = '01H8XYZABCDEFGHIJKLMNOPQRS';
+
+  it('書き出しと同じく末尾の「.」を落とす', () => {
+    expect(normalizePhotoZipName('EMAP_20261101_101010_.')).toBe('EMAP_20261101_101010_');
+    expect(normalizePhotoZipName('EMAP_20261101_101010.jpeg')).toBe('EMAP_20261101_101010.jpeg');
+  });
+
+  it('NFDの名前もNFCにそろえる', () => {
+    expect(normalizePhotoZipName('か\u3099.jpg')).toBe('が.jpg');
+  });
+
+  it('記録の名前が末尾ドット付きでも、ZIP内の末尾ドットが落ちた写真を見つける', () => {
+    const keys = [`レイヤ_${layerId}/PH1/EMAP_20261101_101010_`, `レイヤ_${layerId}/PH2/EMAP_20261101_101011_`];
+    expect(findPhotoFileKey(keys, layerId, 'EMAP_20261101_101010_.', 'PH1')).toBe(keys[0]);
+    expect(findPhotoFileKey(keys, layerId, 'EMAP_20261101_101011_.', 'PH2')).toBe(keys[1]);
+    //旧形式（IDのフォルダなし）でも名前だけで拾う
+    expect(findPhotoFileKey([`レイヤ_${layerId}/EMAP_1_`], layerId, 'EMAP_1_.')).toBe(`レイヤ_${layerId}/EMAP_1_`);
+  });
+});
+
+describe('写真名からの種類（写真監査 P-M5）', () => {
+  it('jpg/jpeg/pngは種類を返し、分からなければundefined', () => {
+    expect(photoContentTypeFromName('EMAP_1.jpg')).toBe('image/jpeg');
+    expect(photoContentTypeFromName('EMAP_1.JPEG')).toBe('image/jpeg');
+    expect(photoContentTypeFromName('a/b/EMAP_1.png')).toBe('image/png');
+    expect(photoContentTypeFromName('EMAP_1_.')).toBeUndefined();
+    expect(photoContentTypeFromName('EMAP_1.heic')).toBeUndefined();
+    expect(photoContentTypeFromName(undefined)).toBeUndefined();
   });
 });
 

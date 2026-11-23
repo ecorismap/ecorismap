@@ -72,7 +72,7 @@ const setup = (role: RoleType) => {
 const bucket = (dataSet: DataType[], userId: string) => dataSet.find((d) => d.userId === userId)?.data ?? [];
 
 describe('useDataEdit と他のメンバーの記録', () => {
-  it('一般メンバーには変更・削除できない理由を示し、保存も削除もしない', () => {
+  it('一般メンバーには変更・削除できない理由を示し、保存も削除もしない', async () => {
     const { store, result } = setup('MEMBER');
     expect(result.current.modifyBlockMessage).toBe(t('hooks.message.recordModifyAdminOnly'));
     expect(result.current.deleteBlockMessage).toBe(t('hooks.message.recordModifyAdminOnly'));
@@ -80,8 +80,8 @@ describe('useDataEdit と他のメンバーの記録', () => {
       result.current.changeField('name', 'edited');
     });
     let saved: { isOK: boolean; message: string } | undefined;
-    act(() => {
-      saved = result.current.saveData();
+    await act(async () => {
+      saved = await result.current.saveData();
     });
     expect(saved?.isOK).toBe(false);
     let deleted: { isOK: boolean; message: string } | undefined;
@@ -93,14 +93,14 @@ describe('useDataEdit と他のメンバーの記録', () => {
     expect(bucket(store.getState().dataSet, 'me')).toEqual([]);
   });
 
-  it('管理者が編集すると、引き継ぎ元付きで自分の名義へ移す（元の持ち主の名義には残さない）', () => {
+  it('管理者が編集すると、引き継ぎ元付きで自分の名義へ移す（元の持ち主の名義には残さない）', async () => {
     const { store, result } = setup('ADMIN');
     expect(result.current.modifyBlockMessage).toBeUndefined();
     act(() => {
       result.current.changeField('name', 'edited');
     });
-    act(() => {
-      expect(result.current.saveData().isOK).toBe(true);
+    await act(async () => {
+      expect((await result.current.saveData()).isOK).toBe(true);
     });
     expect(bucket(store.getState().dataSet, 'owner')).toEqual([]);
     expect(bucket(store.getState().dataSet, 'me')[0]).toMatchObject({

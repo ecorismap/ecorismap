@@ -176,3 +176,58 @@ describe('separateTemplateDeletionTombstones', () => {
   });
 });
 
+
+// 写真監査 P-M12: 引き継いだ版の url:null の写真は、打ち消した元の版で上がっていればそれを受け継ぐ
+describe('引き継ぎで元の版の上がっている写真を受け継ぐ', () => {
+  const photo = (extra: Record<string, unknown> = {}) => ({
+    id: 'p1',
+    name: 'a.jpg',
+    uri: 'file:///member-device/a.jpg',
+    url: null,
+    key: null,
+    width: 1,
+    height: 1,
+    thumbnail: null,
+    ...extra,
+  });
+  const uploaded = photo({ url: 'https://x/member/p1', key: 'k1' });
+  // 管理者が引き継いだ版（写真は撮影者の端末で上がる前のまま）と、撮影者が後から写真を上げた版
+  const taken = rec('r1', 'admin', 200, { takenOverFrom: ['member'], field: { 写真: [photo()], memo: 'edited' } });
+  const original = rec('r1', 'member', 100, { field: { 写真: [uploaded], memo: 'orig' } });
+
+  it('resolveTakeoverCandidates は引き継いだ版を残し、写真の url/key だけを元の版から写す（uri と他の欄は引き継いだ版のまま）', () => {
+    const [kept] = resolveTakeoverCandidates([taken, original]);
+    expect(kept.userId).toBe('admin');
+    expect(kept.field.memo).toBe('edited');
+    expect(kept.field['写真']).toEqual([photo({ url: 'https://x/member/p1', key: 'k1' })]);
+    // 元の記録は変えない
+    expect(taken.field['写真']).toEqual([photo()]);
+  });
+
+  it('引き継いだ版に url があれば変えない。元の版にも url が無ければそのまま返す', () => {
+    const takenUploaded = { ...taken, field: { 写真: [photo({ url: 'https://x/admin/p1', key: 'ka' })] } };
+    expect(resolveTakeoverCandidates([takenUploaded, original])[0]).toBe(takenUploaded);
+    const originalNotUploaded = { ...original, field: { 写真: [photo()] } };
+    expect(resolveTakeoverCandidates([taken, originalNotUploaded])[0]).toBe(taken);
+  });
+
+  it('元の持ち主が後から直した版が勝つときは、その版をそのまま返す', () => {
+    const newer = { ...original, updatedAt: 300 };
+    expect(resolveTakeoverCandidates([taken, newer])).toEqual([newer]);
+  });
+
+  it('applyTakeoversToDataSet は inheritUploadedPhotos を指定したときだけ受け継いだ版に差し替える', () => {
+    const target: DataType[] = [
+      { layerId: 'l1', userId: 'admin', data: [taken] },
+      { layerId: 'l1', userId: 'member', data: [original] },
+    ];
+    const withInherit = applyTakeoversToDataSet(target, [], { inheritUploadedPhotos: true });
+    expect(withInherit[0].data[0].field['写真']).toEqual([photo({ url: 'https://x/member/p1', key: 'k1' })]);
+    expect(withInherit[1].data).toEqual([]);
+
+    // 版の中身を比べる処理（COMMON の統合など）では差し替えない（同じ参照のまま）
+    const plain = applyTakeoversToDataSet(target);
+    expect(plain[0]).toBe(target[0]);
+    expect(plain[1].data).toEqual([]);
+  });
+});

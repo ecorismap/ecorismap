@@ -130,6 +130,8 @@ describe('攻撃: PHOTO', () => {
   });
   // 期待値を反転: エミュレータ(firebase-tools lib/emulator/storage/files.js)は既存ファイルへの上書きも
   // 常にcreateとして評価する。本人の再アップロード(useRepositoryの同一photoId)は正当なので許可が正しい。
+  // ただし本番でも上書きがcreateとして通るかは未確認（写真監査 P-M16）。アプリは上げた写真の url/key を
+  // その場で手元に残し、url/key のある写真は上げ直さないので、同じパスへの上書きには頼っていない。
   test('[A-STO-07] メンバーは自分の既存写真を再アップロード(上書き)できる（上書きはcreateで評価される）', async () => {
     await seedFile(photoPath(uid3, 'photo1'));
     await assertSucceeds(ctx(uid3).storage().ref(photoPath(uid3, 'photo1')).put(png(), jpegType).then());
@@ -284,6 +286,26 @@ describe('正当: クライアントが依存する操作', () => {
     const owner = ctx(uid1).storage();
     await assertSucceeds(owner.ref(`projects/${projectId}`).listAll());
     await assertSucceeds(owner.ref(otherPath('x.png')).delete());
+  });
+  test('[L-STO-05b] オーナーはサブフォルダを再帰的に一覧し、実際の配置のファイルを全て削除できる（deleteProjectStorageData・写真監査 P-M7）', async () => {
+    // 実体は PHOTO/・PDF/・STYLE/・DICTIONARY/ のサブフォルダにある（直下には何も置かれない）
+    const files = [
+      photoPath(uid1, 'own'),
+      photoPath(uid3, 'member'),
+      pdfPath('tilemap1'),
+      stylePath('tilemap1'),
+      dictionaryPath('dictionary_v1.sqlite'),
+    ];
+    for (const path of files) await seedFile(path);
+    const owner = ctx(uid1).storage();
+    const listRecursive = async (path: string): Promise<string[]> => {
+      const result = await owner.ref(path).listAll();
+      const nested = await Promise.all(result.prefixes.map((p) => listRecursive(p.fullPath)));
+      return [...result.items.map((i) => i.fullPath), ...nested.flat()];
+    };
+    const listed = await assertSucceeds(listRecursive(`projects/${projectId}`));
+    expect([...listed].sort()).toEqual([...files].sort());
+    for (const path of listed) await assertSucceeds(owner.ref(path).delete());
   });
   test('[L-STO-06] 管理者はPDFをアップロード後にURLを取得できる（uploadPDF）', async () => {
     const ref = ctx(uid2).storage().ref(pdfPath('tilemap1'));
