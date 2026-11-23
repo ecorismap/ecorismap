@@ -83,21 +83,28 @@ export default function MapContainer() {
   );
 
   //PDFの取り込み（変換・タイル生成）の間は必ず処理中表示を出し、成功・失敗・例外のどれでも消す
-  const runPdfImport = useCallback(async (task: () => Promise<{ message: string }>): Promise<string> => {
-    if (busyRef.current) return '';
-    busyRef.current = true;
-    setLoadingMessage(t('Maps.message.importingPdf'));
-    try {
-      const { message } = await task();
-      return message;
-    } catch (e) {
-      console.error('PDF import error:', e);
-      return t('hooks.message.failReceiveFile');
-    } finally {
-      busyRef.current = false;
-      setLoadingMessage(null);
-    }
-  }, []);
+  // loadingText: ダウンロードから取り込む経路は前半が通信なので「変換しています」ではなく汎用の処理中にする
+  const runPdfImport = useCallback(
+    async (
+      task: () => Promise<{ message: string }>,
+      loadingText: string = t('Maps.message.importingPdf')
+    ): Promise<string> => {
+      if (busyRef.current) return '';
+      busyRef.current = true;
+      setLoadingMessage(loadingText);
+      try {
+        const { message } = await task();
+        return message;
+      } catch (e) {
+        console.error('PDF import error:', e);
+        return t('hooks.message.failReceiveFile');
+      } finally {
+        busyRef.current = false;
+        setLoadingMessage(null);
+      }
+    },
+    []
+  );
 
   const pressDownloadMap = useCallback(
     async (item: TileMapType) => {
@@ -126,7 +133,10 @@ export default function MapContainer() {
       if (Platform.OS === 'web' && (item.url.startsWith('pdf://') || item.url.startsWith('http'))) {
         const ext = getExt(item.url)?.toLowerCase();
         if (ext === 'pdf' || item.url.startsWith('pdf://')) {
-          const message = await runPdfImport(() => importMapFile(item.url, item.name, ext, item.id, item.encryptKey));
+          const message = await runPdfImport(
+            () => importMapFile(item.url, item.name, ext, item.id, item.encryptKey),
+            t('common.processing')
+          );
           if (message !== '') await AlertAsync(message);
           return;
         }
@@ -147,7 +157,10 @@ export default function MapContainer() {
       ) {
         const ext = getExt(item.url)?.toLowerCase();
         if (ext === 'pdf' || item.url.startsWith('pdf://')) {
-          const message = await runPdfImport(() => importMapFile(item.url, item.name, ext, item.id, item.encryptKey));
+          const message = await runPdfImport(
+            () => importMapFile(item.url, item.name, ext, item.id, item.encryptKey),
+            t('common.processing')
+          );
           if (message !== '') await AlertAsync(message);
         } else {
           navigateToHome?.({

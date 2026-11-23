@@ -253,11 +253,16 @@ export const useTiles = (
       // バッチを待つ。停止が押されたら取得中のタイルを待たずにすぐ確認を出し、
       // 「続ける」なら残りを待ってから次のバッチへ進む（同時に取得する枚数を増やさない）。trueなら呼び出し元はreturnする
       const awaitBatchOrPause = async (batchToWait: Promise<void>[]): Promise<boolean> => {
-        if ((await waitForBatchOrStop(batchToWait, stopSignal.current.promise)) === 'stopped' && pause.current) {
+        // 「続ける」を選んだ後も、残りを待つ間に再び停止されたらすぐ確認を出す（handlePause が合図を作り直す）
+        for (;;) {
+          const result = await waitForBatchOrStop(batchToWait, stopSignal.current.promise);
+          if (result === 'done') return false;
+          if (!pause.current) {
+            await Promise.all(batchToWait);
+            return false;
+          }
           if (await handlePause()) return true;
         }
-        await Promise.all(batchToWait);
-        return false;
       };
 
       const tileType = getTileType(tileMap);
@@ -498,11 +503,16 @@ export const useTiles = (
       // バッチを待つ。停止が押されたら取得中のタイルを待たずにすぐ確認を出し、
       // 「続ける」なら残りを待ってから次のバッチへ進む（同時に取得する枚数を増やさない）。trueなら呼び出し元はreturnする
       const awaitBatchOrPause = async (batchToWait: Promise<void>[]): Promise<boolean> => {
-        if ((await waitForBatchOrStop(batchToWait, stopSignal.current.promise)) === 'stopped' && pause.current) {
+        // 「続ける」を選んだ後も、残りを待つ間に再び停止されたらすぐ確認を出す（handlePause が合図を作り直す）
+        for (;;) {
+          const result = await waitForBatchOrStop(batchToWait, stopSignal.current.promise);
+          if (result === 'done') return false;
+          if (!pause.current) {
+            await Promise.all(batchToWait);
+            return false;
+          }
           if (await handlePause()) return true;
         }
-        await Promise.all(batchToWait);
-        return false;
       };
 
       for (let i = 0; i < tileMapsToDownload.length; i++) {
@@ -514,7 +524,12 @@ export const useTiles = (
         const tileRegion = regions[i];
         const isResume = resumeRegions?.[i] !== undefined;
         setProgress(
-          t('hooks.progress.downloadingMap', { current: i + 1, total: totalMaps, name: currentTileMap.name, progress: 0 })
+          t('hooks.progress.downloadingMap', {
+            current: i + 1,
+            total: totalMaps,
+            name: currentTileMap.name,
+            progress: 0,
+          })
         );
 
         const tileType = getTileType(currentTileMap);
@@ -572,7 +587,11 @@ export const useTiles = (
 
         if (tileType === 'pmtiles' && !pmtileIsVector) await removeLegacyRasterPmtilePngs(currentTileMap.id);
 
-        const { minZoom, maxZoom } = getZoomRange(tileType, { ...currentTileMap, isVector: pmtileIsVector }, archiveZoom);
+        const { minZoom, maxZoom } = getZoomRange(
+          tileType,
+          { ...currentTileMap, isVector: pmtileIsVector },
+          archiveZoom
+        );
 
         // 再開時は現在の地図表示ではなく、保存された領域からタイル集合を復元する
         const tiles = downloadTileGrid(tileType, boundsFromCoords(tileRegion.coords), minZoom, maxZoom);
