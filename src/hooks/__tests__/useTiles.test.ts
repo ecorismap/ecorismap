@@ -964,6 +964,91 @@ describe('useTiles', () => {
     });
   });
 
+  describe('停止の即時反映', () => {
+    const manyTiles = Array.from({ length: 25 }, (_, i) => ({ x: i, y: 0, z: 10 }));
+    const flush = async () => {
+      for (let i = 0; i < 50; i++) await new Promise((r) => setTimeout(r, 0));
+    };
+
+    afterEach(() => {
+      (FileSystem.downloadAsync as jest.Mock).mockImplementation(() =>
+        Promise.resolve({ uri: 'file://tile', status: 200 })
+      );
+      (StopDownloadConfirmAsync as jest.Mock).mockResolvedValue('discard');
+    });
+
+    // 取得中のバッチを止めておき、その間に停止を押す。戻り値の release で止めたタイルを返す
+    const holdDownloads = () => {
+      const releases: (() => void)[] = [];
+      (FileSystem.downloadAsync as jest.Mock).mockImplementation(
+        (_url: string, uri: string) =>
+          new Promise((resolve) => {
+            releases.push(() => resolve({ uri, status: 200 }));
+          })
+      );
+      return {
+        count: () => releases.length,
+        releaseAll: () => releases.splice(0).forEach((r) => r()),
+      };
+    };
+
+    test('取得中のバッチが終わらなくても停止確認がすぐ出て、一時停止なら次のタイルを取りに行かない', async () => {
+      (StopDownloadConfirmAsync as jest.Mock).mockResolvedValue('pause');
+      (mockedDownloadTileGrid as jest.Mock).mockReturnValueOnce(manyTiles);
+      const held = holdDownloads();
+      const { result } = renderHook(() => useTiles(tileMaps[0]));
+      let running: Promise<void> | undefined;
+      await act(async () => {
+        running = result.current.downloadTiles(11);
+        await flush();
+      });
+      // 1バッチ（10枚）が取得中で止まっている
+      expect(held.count()).toBe(10);
+
+      await act(async () => {
+        result.current.stopDownloadTiles();
+        // 取得中のタイルを返さないまま終わる
+        await running;
+      });
+
+      expect(StopDownloadConfirmAsync).toHaveBeenCalledTimes(1);
+      expect(FileSystem.downloadAsync).toHaveBeenCalledTimes(10);
+      const dispatched = getDispatchedTileRegions();
+      expect(dispatched[dispatched.length - 1][0].status).toBe('paused');
+      held.releaseAll();
+    });
+
+    test('「続ける」なら取得中のバッチを待ってから残りを取り、完了する', async () => {
+      (StopDownloadConfirmAsync as jest.Mock).mockResolvedValue('continue');
+      (mockedDownloadTileGrid as jest.Mock).mockReturnValueOnce(manyTiles);
+      const held = holdDownloads();
+      const { result } = renderHook(() => useTiles(tileMaps[0]));
+      let running: Promise<void> | undefined;
+      await act(async () => {
+        running = result.current.downloadTiles(11);
+        await flush();
+      });
+      await act(async () => {
+        result.current.stopDownloadTiles();
+        await flush();
+      });
+      expect(StopDownloadConfirmAsync).toHaveBeenCalledTimes(1);
+      // 確認後もバッチが終わるまでは次を取りに行かない（同時取得数を増やさない）
+      expect(held.count()).toBe(10);
+
+      await act(async () => {
+        for (let i = 0; i < 10 && held.count() > 0; i++) {
+          held.releaseAll();
+          await flush();
+        }
+        await running;
+      });
+
+      expect(FileSystem.downloadAsync).toHaveBeenCalledTimes(25);
+      expect(AlertAsync).toHaveBeenLastCalledWith('hooks.alert.completeDownload');
+    });
+  });
+
   describe('ベクタ地図のスタイル（M-L15）とクエリ付き pbf（M-L6）', () => {
     const originalFetch = global.fetch;
     const pbfResponse = { ok: true, status: 200, arrayBuffer: async () => new Uint8Array([1]).buffer };
@@ -1017,7 +1102,9 @@ describe('useTiles', () => {
       });
 
       expect(fetchMock).toHaveBeenCalledWith('https://example.com/style.json?key=abc');
-      expect(fetchMock).toHaveBeenCalledWith('https://example.com/3/3/1.pbf?key=abc');
+      expect(fetchMock).toHaveBeenCalledWith('https://example.com/3/3/1.pbf?key=abc', {
+        signal: expect.any(AbortSignal),
+      });
       const written = (FileSystem.writeAsStringAsync as jest.Mock).mock.calls.map((call) => String(call[0]));
       expect(written).toContain('file:///test/tiles/VQ/style.json');
       expect(written).toContain('file:///test/tiles/VQ/3/3/1.pbf');
