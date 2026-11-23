@@ -1337,6 +1337,41 @@ export const downloadTemplateData = async (projectId: string) => {
   }
 };
 
+export type LayerDataGroup = { permission: PermissionType | 'TEMPLATE'; userId: string; records: RecordType[] };
+
+/**
+ * 1つのレイヤのデータを、permission と持ち主ごとに復号して返す（クラウドデータ管理で写真を消す前の照合用）。
+ * 他人の PRIVATE も含めて全部読む（Rules 上、管理者は全員のデータを読める。読めなければ isOK=false）。
+ * complete=false は、復号できなかった doc があり、参照している写真を全部は把握できていないこと
+ */
+export const downloadLayerDataGroups = async (
+  projectId: string,
+  layerId: string
+): Promise<{ isOK: boolean; groups: LayerDataGroup[]; complete: boolean }> => {
+  try {
+    const dataCol = collection(firestore, 'projects', projectId, 'data');
+    const queries: { permission: PermissionType | 'TEMPLATE'; q: ReturnType<typeof query> }[] = [
+      ...(['PUBLIC', 'COMMON', 'TEMPLATE', 'PRIVATE'] as const).map((permission) => ({
+        permission,
+        q: query(dataCol, where('layerId', '==', layerId), where('permission', '==', permission)),
+      })),
+    ];
+    const groups: LayerDataGroup[] = [];
+    let complete = true;
+    for (const { permission, q } of queries) {
+      const snapshot = await getDocs(q);
+      const undecryptableGroups: UndecryptableGroupType[] = [];
+      const dataSet = await projectDataSetToDataSet(projectId, snapshot, undecryptableGroups);
+      if (undecryptableGroups.length > 0) complete = false;
+      dataSet.forEach((d) => groups.push({ permission, userId: d.userId ?? '', records: d.data }));
+    }
+    return { isOK: true, groups, complete };
+  } catch (error) {
+    console.error('downloadLayerDataGroups Error:', error);
+    return { isOK: false, groups: [], complete: false };
+  }
+};
+
 /** DEK移行で再暗号化する共有データ（設定・COMMON・TEMPLATE）を復号したもの。 */
 type SharedDataForDEK = {
   settings?: { data: ProjectSettingsType; editorUid: string; encryptedAt: Timestamp };

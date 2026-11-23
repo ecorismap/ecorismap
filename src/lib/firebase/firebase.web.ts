@@ -37,7 +37,7 @@ export {
 } from 'firebase/firestore';
 
 export { httpsCallable } from 'firebase/functions';
-export { ref, uploadBytes, uploadString, getDownloadURL, deleteObject, listAll } from 'firebase/storage';
+export { ref, uploadBytes, uploadString, getDownloadURL, deleteObject, listAll, getMetadata } from 'firebase/storage';
 import { initializeAppCheck, ReCaptchaV3Provider } from 'firebase/app-check';
 
 import { firebaseConfig, reCaptureSiteKey } from '../../constants/APIKeys';
