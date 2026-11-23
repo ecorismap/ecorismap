@@ -1,0 +1,20 @@
+plugins {
+  id 'com.android.library'
+  id 'expo-module-gradle-plugin'
+}
+
+group = 'expo.modules.photoconverter'
+version = '0.1.0'
+
+android {
+  namespace "expo.modules.photoconverter"
+  defaultConfig {
+    versionCode 1
+    versionName "0.1.0"
+  }
+}
+
+dependencies {
+  // expo-image-picker と同じ版（HEIFのEXIF読み取りに対応）
+  implementation "androidx.exifinterface:exifinterface:1.4.1"
+}
