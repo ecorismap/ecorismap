@@ -1,5 +1,8 @@
 import { getAccessToken } from './auth';
 import { APP_FOLDER_NAME, DriveApiError, DriveFileMeta } from './types';
+import { clearAppFolderCache, getCachedAppFolderId, setCachedAppFolderId } from './appFolderCache';
+
+export { clearAppFolderCache };
 
 const DRIVE_API = 'https://www.googleapis.com/drive/v3';
 const DRIVE_UPLOAD = 'https://www.googleapis.com/upload/drive/v3';
@@ -73,22 +76,17 @@ export async function listFiles(params: { q: string; fields?: string }): Promise
   return files;
 }
 
-let appFolderIdCache: string | undefined;
-
-export function clearAppFolderCache() {
-  appFolderIdCache = undefined;
-}
-
 export async function ensureAppFolder(): Promise<string> {
-  if (appFolderIdCache !== undefined) return appFolderIdCache;
+  const cached = getCachedAppFolderId();
+  if (cached !== undefined) return cached;
   const escapedName = APP_FOLDER_NAME.replace(/'/g, "\\'");
   const found = await listFiles({
     q: `mimeType='${FOLDER_MIME}' and name='${escapedName}' and trashed=false`,
     fields: 'id,name',
   });
   if (found.length > 0) {
-    appFolderIdCache = found[0].id;
-    return appFolderIdCache;
+    setCachedAppFolderId(found[0].id);
+    return found[0].id;
   }
   const res = await driveFetch(`${DRIVE_API}/files?fields=id`, {
     method: 'POST',
@@ -100,8 +98,8 @@ export async function ensureAppFolder(): Promise<string> {
     }),
   });
   const body = (await res.json()) as { id: string };
-  appFolderIdCache = body.id;
-  return appFolderIdCache;
+  setCachedAppFolderId(body.id);
+  return body.id;
 }
 
 export async function getFileMetadata(fileId: string, fields?: string): Promise<DriveFileMeta> {

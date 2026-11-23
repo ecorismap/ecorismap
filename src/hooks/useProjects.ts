@@ -175,8 +175,8 @@ export const useProjects = (): UseProjectsReturnType => {
         // console.log(`[PERF] e3kit already initialized`);
       }
 
-      dispatch(setProjectsAction([]));
-
+      // 取得の前に一覧を空にしない。圏外などで取得に失敗すると空のまま残り（永続化される）、開いている
+      // プロジェクトが一覧から引けなくなって送信・受信などがすべて失敗する。成功したときだけ置き換える
       const {
         isOK,
         projects: updatedProjects,

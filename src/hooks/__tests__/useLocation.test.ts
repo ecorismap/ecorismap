@@ -653,6 +653,36 @@ describe('heading購読のライフサイクル', () => {
     expect(mockLocation.watchHeadingAsync.mock.calls.length).toBe(callsAfterGpsOn + 2);
   });
 
+  it('地図がアンマウントされていてもヘディングアップの解除は購読を外す（2D→3D切替直後）', async () => {
+    const removeMock = jest.fn();
+    let headingCallback: ((pos: { trueHeading: number }) => void) | null = null;
+    mockLocation.watchHeadingAsync.mockImplementation(async (cb: any) => {
+      headingCallback = cb;
+      return { remove: removeMock };
+    });
+    const animateCamera = jest.fn();
+    const mockMapRef: { current: { animateCamera: jest.Mock } | null } = { current: { animateCamera } };
+    const { result } = renderHook(() => useLocation(mockMapRef as any), { wrapper });
+
+    await act(async () => {
+      await result.current.toggleHeadingUp(true);
+    });
+    expect(result.current.headingUp).toBe(true);
+    removeMock.mockClear();
+
+    // 3Dへ切り替わって2DのMapViewが外れた状態
+    mockMapRef.current = null;
+    // 解除前に方位が来ても例外にならない
+    expect(() => headingCallback?.({ trueHeading: 90 })).not.toThrow();
+
+    await act(async () => {
+      await result.current.toggleHeadingUp(false);
+    });
+    expect(removeMock).toHaveBeenCalled();
+    expect(result.current.headingUp).toBe(false);
+    expect(animateCamera).not.toHaveBeenCalledWith({ heading: 0 }, expect.anything());
+  });
+
   it('トラッキング停止後もheading購読を維持する（方位盤をGPS OFFでも回すため）', async () => {
     const removeMock = jest.fn();
     mockLocation.watchHeadingAsync.mockResolvedValue({ remove: removeMock });

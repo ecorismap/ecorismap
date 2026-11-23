@@ -136,8 +136,9 @@ export const confirmTrackingLeave = async (action: TrackingLeaveAction): Promise
     shouldUpload(context)
       ? t('Home.confirm.stopTrackingUploadNote')
       : REPLACE_DATA_ACTIONS.has(action)
-        ? // 端末内のデータや設定の編集中は、保存した軌跡も置き換えで消える。直前の自動バックアップには残る
-          t('Home.confirm.stopTrackingBackupNote')
+        ? // 端末内のデータや設定の編集中は、保存した軌跡も置き換えで消える。直前の自動バックアップには残るが、
+          // 大きすぎる・保存に失敗したときは作られないので、無条件には約束しない（設定監査 S-L2）
+          t('Home.confirm.stopTrackingBackupNoteUnlessFailed')
         : context.projectName !== undefined
           ? t('Home.confirm.stopTrackingSettingNote')
           : undefined,

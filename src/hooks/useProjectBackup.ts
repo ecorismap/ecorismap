@@ -22,6 +22,7 @@ import {
 } from '../utils/projectBackup';
 import { getAuthUid } from '../lib/firebase/sign-in';
 import { runPhotoUriRebase } from '../utils/photoUriRebase';
+import { flushPersistence } from '../utils/persistFlush';
 
 export type RestoreBackupResultType = { isOK: boolean; region?: RegionType; reason?: 'differentUser' };
 
@@ -114,12 +115,19 @@ export const useProjectBackup = (): UseProjectBackupReturnType => {
       //保存先フォルダ（TILE_FOLDER/{id}）の外を指すIDの地図は復元しない
       dispatch(setTileMapsAction(dropUnsafeTileMaps(state.tileMaps)));
       dispatch(setDataSetAction(state.dataSet));
-      dispatch(setUserAction(state.user));
-      dispatch(setProjectsAction(state.projects));
+      //ログイン中に未ログイン時（uid なし）のスナップショットを戻すと、Redux だけがログアウト状態になり、
+      //認証と鍵は残ったまま鍵削除付きのログアウトもできなくなる。今のユーザーとプロジェクト一覧を残す（設定監査 S-L1）
+      const keepCurrentUser = getAuthUid() !== undefined && state.user.uid == null;
+      if (!keepCurrentUser) {
+        dispatch(setUserAction(state.user));
+        dispatch(setProjectsAction(state.projects));
+      }
       dispatch(setDataSyncAllAction(state.dataSync ?? {}));
       //iOSはアプリ更新でコンテナUUIDが変わる。更新前の自動バックアップの写真uriは古いコンテナを指すので、
       //次の起動を待たずにここで付け替える（冪等。iOS以外は何もしない。写真監査 P-L10）
       runPhotoUriRebase(store);
+      // 置き換えた複数のスライスを揃えて書く（設定監査 S-L3）
+      flushPersistence();
 
       refreshBackupList();
       const region = state.settings.projectId !== undefined ? state.settings.projectRegion : state.settings.mapRegion;

@@ -125,8 +125,15 @@ export const updateFieldReferences = (
     colorStyle.savedLabel = resolveLabel(colorStyle.savedLabel, colorStyle.savedLabel !== originalStyle.savedLabel);
   if (layer.customLabel !== undefined && layer.customLabel === original.customLabel)
     newLayer.customLabel = renameList(layer.customLabel);
-  if (layer.sortedName !== undefined && layer.sortedName === original.sortedName)
-    newLayer.sortedName = renames.get(layer.sortedName) ?? layer.sortedName;
+  if (layer.sortedName !== undefined && layer.sortedName === original.sortedName) {
+    if (deleted.has(layer.sortedName)) {
+      //消えた列のソートが残ると、並べ替えないのにソート中の扱いになってドラッグもできなくなる
+      delete newLayer.sortedName;
+      newLayer.sortedOrder = 'UNSORTED';
+    } else {
+      newLayer.sortedName = renames.get(layer.sortedName) ?? layer.sortedName;
+    }
+  }
 
   //色分けの参照先。__CUSTOMは複数の属性を「|」でつないだもの
   const resolveColorField = (fieldName: string, customFieldValue: string, edited: boolean) => {
@@ -375,6 +382,56 @@ export const toCodeFieldValue = (code: string | undefined, format: FormatType): 
     return isNaN(num) ? 0 : num;
   }
   return value;
+};
+
+/**
+ * 値設定の画面で入れた数値の既定値。数値にならない（空欄や「abc」）ときは既定値なしにする。
+ * NaNを既定値にすると、そのセッションで作る記録にNaNが入り、データ編集で保存できなくなる
+ */
+export const parseNumberDefaultValue = (value: string, format: 'INTEGER' | 'DECIMAL'): number | undefined => {
+  const parsed = format === 'INTEGER' ? parseInt(value, 10) : parseFloat(value);
+  return Number.isFinite(parsed) ? parsed : undefined;
+};
+
+/**
+ * 属性の形式を変えたときに、既定値を新しい形式で使えるなら残し、使えないなら外す。
+ * 形式に合わない既定値が残ると、作図で作る記録に不正な値が入り、データ編集で保存できなくなる。
+ * 既定値を入れる欄の無い形式（TIMESTRINGなど）では利用者が消すこともできない
+ */
+export const adaptDefaultValueToFormat = (
+  value: string | number | undefined,
+  from: FormatType,
+  to: FormatType,
+  options?: {
+    list?: { value: string }[];
+    //保存済みのレイヤでの形式と既定値。形式を行き来して元へ戻したとき、途中で外れた既定値を戻すため
+    saved?: { format: FormatType; defaultValue?: string | number };
+  }
+): string | number | undefined => {
+  if (from === to) return value;
+  const text = String(value ?? '').trim();
+  const adapted = (() => {
+    if (value === undefined) return undefined;
+    switch (to) {
+      case 'STRING':
+      case 'STRING_MULTI':
+        return value;
+      case 'INTEGER':
+        return /^[+-]?\d+$/.test(text) ? parseInt(text, 10) : undefined;
+      case 'DECIMAL':
+        return /^[+-]?\d+(?:\.\d+)?$/.test(text) ? parseFloat(text) : undefined;
+      case 'LIST':
+      case 'RADIO':
+        //選択肢の既定値（区分パレットで選んだ区分など）は選択肢の形式どうしか、選択肢にある値なら引き継ぐ
+        if (from === 'LIST' || from === 'RADIO') return value;
+        return options?.list?.some((item) => item.value === String(value)) ? value : undefined;
+      default:
+        return undefined;
+    }
+  })();
+  if (adapted !== undefined) return adapted;
+  const saved = options?.saved;
+  return saved !== undefined && saved.format === to ? saved.defaultValue : undefined;
 };
 
 export const checkLayerInputs = (layer: LayerType) => {

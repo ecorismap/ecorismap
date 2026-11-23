@@ -1592,6 +1592,235 @@ describe('useMapMemo', () => {
     expect(endPoint[1]).toBeCloseTo(35 - 200 * 0.00001, 10);
   });
 
+  it('保存待ちの線があるときのUndoは、その線だけを取り消し、1つ前の線は残ること', () => {
+    const mockMapViewRef = { current: {} } as any;
+    const { result } = renderHook(() => useMapMemo(mockMapViewRef), { wrapper });
+    jest.useFakeTimers();
+
+    act(() => {
+      result.current.setMapMemoTool('PEN');
+    });
+    const makeEvent = (x: number, y: number) =>
+      ({
+        nativeEvent: { locationX: x, locationY: y, pageX: x, pageY: y, touches: [{}] },
+        persist: jest.fn(),
+      } as any);
+    const drawStroke = (x: number) => {
+      act(() => {
+        result.current.handleGrantMapMemo(makeEvent(x, 100));
+      });
+      act(() => {
+        result.current.handleMoveMapMemo(makeEvent(x + 50, 150));
+      });
+      act(() => {
+        result.current.handleReleaseMapMemo(makeEvent(x + 50, 150));
+      });
+    };
+
+    //線Aを描いて保存まで待つ
+    drawStroke(100);
+    act(() => {
+      jest.runAllTimers();
+    });
+    expect(getMemoData().length).toBe(1);
+    expect(result.current.isUndoable).toBe(true);
+
+    //線Bを描き、保存待ち（1秒以内）のうちにUndo
+    drawStroke(300);
+    expect(result.current.mapMemoLines.length).toBe(1);
+    act(() => {
+      result.current.pressUndoMapMemo();
+    });
+    act(() => {
+      jest.runAllTimers();
+    });
+    //Bは保存されずに消え、Aは残る。Aの履歴も残っている
+    expect(result.current.mapMemoLines.length).toBe(0);
+    expect(getMemoData().length).toBe(1);
+    expect(result.current.isUndoable).toBe(true);
+    //保存待ちで取り消したBもRedoで戻せる
+    expect(result.current.isRedoable).toBe(true);
+
+    //もう一度UndoするとAが取り消され、RedoでAが戻る
+    act(() => {
+      result.current.pressUndoMapMemo();
+    });
+    expect(getMemoData().length).toBe(0);
+    act(() => {
+      result.current.pressRedoMapMemo();
+    });
+    expect(getMemoData().length).toBe(1);
+  });
+
+  describe('保存待ちタイマーとUndo/Redo（作図監査 E-M14 再レビュー）', () => {
+    const makeEvent = (x: number, y: number) =>
+      ({
+        nativeEvent: { locationX: x, locationY: y, pageX: x, pageY: y, touches: [{}] },
+        persist: jest.fn(),
+      } as any);
+    const setup = () => {
+      const mockMapViewRef = { current: {} } as any;
+      const { result } = renderHook(() => useMapMemo(mockMapViewRef), { wrapper });
+      jest.useFakeTimers();
+      act(() => {
+        result.current.setMapMemoTool('PEN');
+      });
+      const drawStroke = (x: number) => {
+        act(() => {
+          result.current.handleGrantMapMemo(makeEvent(x, 100));
+        });
+        act(() => {
+          result.current.handleMoveMapMemo(makeEvent(x + 50, 150));
+        });
+        act(() => {
+          result.current.handleReleaseMapMemo(makeEvent(x + 50, 150));
+        });
+      };
+      return { result, drawStroke };
+    };
+
+    it('保存が済んだ後の最初のUndoで線が取り消されること（空振りしない）', () => {
+      const { result, drawStroke } = setup();
+      drawStroke(100);
+      act(() => {
+        jest.runAllTimers();
+      });
+      expect(getMemoData().length).toBe(1);
+
+      act(() => {
+        result.current.pressUndoMapMemo();
+      });
+      expect(getMemoData().length).toBe(0);
+      expect(result.current.isRedoable).toBe(true);
+    });
+
+    it('保存待ちで取り消した線をRedoで保存待ちへ戻し、タイマーで保存されること', () => {
+      const { result, drawStroke } = setup();
+      drawStroke(100);
+      act(() => {
+        result.current.pressUndoMapMemo();
+      });
+      expect(result.current.mapMemoLines.length).toBe(0);
+      expect(result.current.isRedoable).toBe(true);
+
+      act(() => {
+        result.current.pressRedoMapMemo();
+      });
+      expect(result.current.mapMemoLines.length).toBe(1);
+      expect(result.current.isRedoable).toBe(false);
+      act(() => {
+        jest.runAllTimers();
+      });
+      expect(getMemoData().length).toBe(1);
+      expect(result.current.isUndoable).toBe(true);
+    });
+
+    it('取り消し後に新しい線を保存するとRedoできなくなること', () => {
+      const { result, drawStroke } = setup();
+      drawStroke(100);
+      act(() => {
+        result.current.pressUndoMapMemo();
+      });
+      drawStroke(300);
+      act(() => {
+        jest.runAllTimers();
+      });
+      expect(getMemoData().length).toBe(1);
+      expect(result.current.isRedoable).toBe(false);
+    });
+
+    it('離脱の確認待ちの間にタイマーで保存された線を、古い閉包の flushMapMemoBeforeLeave が二重に保存しないこと', () => {
+      const { result, drawStroke } = setup();
+      drawStroke(100);
+      //タップ時点の関数を控える（Home は確認ダイアログの後でこれを呼ぶ）
+      const flushCapturedAtTap = result.current.flushMapMemoBeforeLeave;
+      act(() => {
+        jest.runAllTimers();
+      });
+      expect(getMemoData().length).toBe(1);
+
+      act(() => {
+        flushCapturedAtTap();
+      });
+      expect(getMemoData().length).toBe(1);
+    });
+  });
+
+  describe('flushMapMemoBeforeLeave（ホームを離れる直前の保存）', () => {
+    const makeEvent = (x: number, y: number) =>
+      ({
+        nativeEvent: { locationX: x, locationY: y, pageX: x, pageY: y, touches: [{}] },
+        persist: jest.fn(),
+      } as any);
+
+    it('ピンチで中断中の線をタイマーを待たずに保存すること', () => {
+      const mockMapViewRef = { current: {} } as any;
+      const { result } = renderHook(() => useMapMemo(mockMapViewRef), { wrapper });
+      jest.useFakeTimers();
+      act(() => {
+        result.current.setMapMemoTool('PEN');
+      });
+      act(() => {
+        result.current.handleGrantMapMemo(makeEvent(100, 100));
+      });
+      act(() => {
+        result.current.handleMoveMapMemo(makeEvent(150, 150));
+      });
+      act(() => {
+        result.current.pauseMapMemoDrawing();
+      });
+
+      act(() => {
+        result.current.flushMapMemoBeforeLeave();
+      });
+      //タイマーを進めなくても保存済み（アンマウントでタイマーが止められても消えない）
+      expect(getMemoData().length).toBe(1);
+      expect(result.current.mapMemoEditingLineLatLon.current.length).toBe(0);
+      expect(result.current.isUndoable).toBe(true);
+    });
+
+    it('保存待ちの線をその場で保存し、後からタイマーで二重に保存しないこと', () => {
+      const mockMapViewRef = { current: {} } as any;
+      const { result } = renderHook(() => useMapMemo(mockMapViewRef), { wrapper });
+      jest.useFakeTimers();
+      act(() => {
+        result.current.setMapMemoTool('PEN');
+      });
+      act(() => {
+        result.current.handleGrantMapMemo(makeEvent(100, 100));
+      });
+      act(() => {
+        result.current.handleMoveMapMemo(makeEvent(150, 150));
+      });
+      act(() => {
+        result.current.handleReleaseMapMemo(makeEvent(150, 150));
+      });
+      expect(getMemoData().length).toBe(0);
+
+      act(() => {
+        result.current.flushMapMemoBeforeLeave();
+      });
+      expect(getMemoData().length).toBe(1);
+      act(() => {
+        jest.runAllTimers();
+      });
+      expect(getMemoData().length).toBe(1);
+    });
+
+    it('描きかけも保存待ちも無ければ何も保存しないこと', () => {
+      const mockMapViewRef = { current: {} } as any;
+      const { result } = renderHook(() => useMapMemo(mockMapViewRef), { wrapper });
+      jest.useFakeTimers();
+      act(() => {
+        result.current.setMapMemoTool('PEN');
+      });
+      act(() => {
+        result.current.flushMapMemoBeforeLeave();
+      });
+      expect(getMemoData().length).toBe(0);
+    });
+  });
+
   //部分消去テスト用のヘルパー
   //新しいメモは_stamp/_groupを書き込まない。未設定でもペンのストロークとして扱えること
   const makeParentRecordWithoutSymbolFields = () => {

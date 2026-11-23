@@ -1,4 +1,4 @@
-import React, { useCallback, useContext, useMemo, useState } from 'react';
+import React, { useCallback, useContext, useMemo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Pressable } from '../atoms/Pressable';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -6,7 +6,7 @@ import { COLOR } from '../../constants/AppConstants';
 import { Button } from '../atoms';
 import { RecordType, FormatType, LayerType } from '../../types';
 import { DataContext } from '../../contexts/Data';
-import { SortOrderType, getFieldDisplayValue } from '../../utils/Data';
+import { SortOrderType, getFieldDisplayValue, getHeaderToggleState } from '../../utils/Data';
 import DraggableFlatList, { RenderItemParams } from 'react-native-draggable-flatlist';
 
 // メモ化されたデータ行コンポーネント
@@ -16,7 +16,7 @@ const DataRow = React.memo(
     getIndex,
     drag,
     isActive,
-    checkList,
+    checked,
     projectId,
     layer,
     isMapMemoLayer,
@@ -30,11 +30,11 @@ const DataRow = React.memo(
     drag: () => void;
     isActive: boolean;
     isDragDisabled: boolean;
-    checkList: { id: number; checked: boolean }[];
+    checked: boolean;
     projectId: string | undefined;
     layer: LayerType;
     isMapMemoLayer: boolean;
-    changeChecked: (index: number, checked: boolean) => void;
+    changeChecked: (recordId: string, checked: boolean) => void;
     changeVisible: (item: RecordType) => void;
     gotoDataEdit: (index: number) => void;
   }) => {
@@ -60,8 +60,8 @@ const DataRow = React.memo(
             color={COLOR.GRAY4}
             style={{ backgroundColor }}
             borderRadius={0}
-            name={checkList[index]?.checked ? 'checkbox-marked-outline' : 'checkbox-blank-outline'}
-            onPress={() => changeChecked(index, !checkList[index]?.checked)}
+            name={checked ? 'checkbox-marked-outline' : 'checkbox-blank-outline'}
+            onPress={() => changeChecked(item.id, !checked)}
             size={20}
           />
         </View>
@@ -136,7 +136,8 @@ const DataRow = React.memo(
       isItemEqual &&
       prevProps.isActive === nextProps.isActive &&
       prevProps.isDragDisabled === nextProps.isDragDisabled &&
-      prevProps.checkList[prevIndex]?.checked === nextProps.checkList[nextIndex]?.checked
+      //getIndexは最新の位置を返すため前後の比較では並び替えを検知できない。チェックは記録のidで引いた値で比べる
+      prevProps.checked === nextProps.checked
     );
   }
 );
@@ -163,17 +164,15 @@ export const DataTable = React.memo(() => {
     openFilterDialog,
   } = useContext(DataContext);
 
-  const [checkedAll, setCheckedAll] = useState(false);
-  const [visibleAll, setVisibleAll] = useState(true);
-  const onCheckAll = useCallback(() => {
-    setCheckedAll(!checkedAll);
-    changeCheckedAll(!checkedAll);
-  }, [changeCheckedAll, checkedAll]);
-
-  const onVisibleAll = useCallback(() => {
-    setVisibleAll(!visibleAll);
-    changeVisibleAll(!visibleAll);
-  }, [changeVisibleAll, visibleAll]);
+  //見出しの全選択・全表示は実際の状態から決める。画面内で反転だけを覚えると、削除・追加・行ごとの操作の後に
+  //表示が食い違い、1回目のタップが空振りする
+  const { checkedAll, visibleAll } = useMemo(() => getHeaderToggleState(checkList, sortedRecordSet), [
+    checkList,
+    sortedRecordSet,
+  ]);
+  const onCheckAll = useCallback(() => changeCheckedAll(!checkedAll), [changeCheckedAll, checkedAll]);
+  const onVisibleAll = useCallback(() => changeVisibleAll(!visibleAll), [changeVisibleAll, visibleAll]);
+  const checkedIds = useMemo(() => new Set(checkList.filter((c) => c.checked).map((c) => c.recordId)), [checkList]);
 
   const onChangeOrder = useCallback(
     (colName: string, format: FormatType | '_user_') => {
@@ -199,7 +198,7 @@ export const DataTable = React.memo(() => {
           getIndex={getIndex}
           drag={drag}
           isActive={isActive}
-          checkList={checkList}
+          checked={checkedIds.has(item.id)}
           projectId={projectId}
           layer={layer}
           isMapMemoLayer={isMapMemoLayer}
@@ -211,7 +210,7 @@ export const DataTable = React.memo(() => {
         />
       );
     },
-    [changeChecked, changeVisible, checkList, gotoDataEdit, isFiltering, isMapMemoLayer, layer, projectId, sortedOrder]
+    [changeChecked, changeVisible, checkedIds, gotoDataEdit, isFiltering, isMapMemoLayer, layer, projectId, sortedOrder]
   );
   const keyExtractor = useCallback((item: RecordType) => item.id, []);
 

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ColorStyle, FeatureType, FieldType, FormatType, LayerType, PermissionType, ToolPaletteType } from '../types';
 import { COLOR, PHOTO_FOLDER } from '../constants/AppConstants';
 import { getUserColor } from '../utils/Color';
@@ -14,14 +14,16 @@ import { Platform } from 'react-native';
 import * as FileSystem from 'expo-file-system/legacy';
 import { addDataAction, deleteDataAction, updateDataAction } from '../modules/dataSet';
 import { addLayerAction, deleteLayerAction, setLayersAction, updateLayerAction } from '../modules/layers';
-import { editSettingsAction } from '../modules/settings';
+import { editSettingsAction, setDataFilterForLayerAction } from '../modules/settings';
 import { changeFieldValue, getBlankFieldValue } from '../utils/Data';
 import { LAYER_PRESETS, PRESET_LAYER_DATA } from '../constants/Presets';
 import { createLayerFromPreset, PresetDictionary } from '../utils/Preset';
 import { geoJson2Data } from '../utils/Geometry';
 import {
+  adaptDefaultValueToFormat,
   applyColorStyle,
   getRenamedOrRetypedFieldNames,
+  parseNumberDefaultValue,
   hasCodeLink,
   isCodeTargetFormat,
   renameRecordFields,
@@ -59,6 +61,16 @@ export type UseLayerEditReturnType = {
   applyLayerPreset: (presetId: string) => void;
 };
 
+//プリセット適用で保留中の辞書語彙と同梱データ。値設定やスタイルの画面へ移るとLayerEditはアンマウントされ、
+//戻ると新しく作られるので、useRefに置くと保存前に失われる。レイヤidをキーにモジュールに置き、保存したら消す
+type PendingPreset = { dictionaries: PresetDictionary[]; geojson: FeatureCollection | undefined };
+const pendingPresets = new Map<string, PendingPreset>();
+
+/** 保存せずにレイヤ設定を離れたとき、保留中のプリセットの辞書・データを捨てる */
+export const discardPendingLayerPreset = (layerId: string) => {
+  pendingPresets.delete(layerId);
+};
+
 export const useLayerEdit = (
   layer: LayerType,
   isStyleEdited: boolean,
@@ -78,10 +90,15 @@ export const useLayerEdit = (
 
   const [targetLayer, setTargetLayer] = useState<LayerType>(layer);
   const [isEdited, setIsEdited] = useState(isStyleEdited);
-  // プリセット適用で発生した辞書語彙。保存時に辞書DBへ登録する（保存せず戻った場合は破棄）
-  const pendingPresetDictionariesRef = useRef<PresetDictionary[]>([]);
-  // プリセット同梱のデータ（島名・海底地形名など）。保存時に投入する（保存せず戻った場合は破棄）
-  const pendingPresetGeojsonRef = useRef<FeatureCollection | undefined>(undefined);
+  const dataFilter = useSelector((state: RootState) => state.settings.dataFilterPerLayer?.[layer.id], shallowEqual);
+
+  //一覧から開き直した（未編集の）ときは、前回保存せずに離れたプリセットの保留分を捨てる。
+  //値設定・スタイルの画面から戻ったときは編集中なので残す
+  useEffect(() => {
+    if (!isStyleEdited) pendingPresets.delete(layer.id);
+    //マウント時の1回だけ。編集の途中で消すとプリセットの辞書が登録されなくなる
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const dataUser = useMemo(
     () => (projectId === undefined ? { ...user, uid: undefined, displayName: null } : user),
@@ -147,10 +164,10 @@ export const useLayerEdit = (
         targetFormat === 'DATESTRING'
       ) {
         newTargetLayer.field[fieldIndex].defaultValue = itemValues[0] ? itemValues[0].value : undefined;
-      } else if (targetFormat === 'INTEGER') {
-        newTargetLayer.field[fieldIndex].defaultValue = itemValues[0] ? parseInt(itemValues[0].value, 10) : undefined;
-      } else if (targetFormat === 'DECIMAL') {
-        newTargetLayer.field[fieldIndex].defaultValue = itemValues[0] ? parseFloat(itemValues[0].value) : undefined;
+      } else if (targetFormat === 'INTEGER' || targetFormat === 'DECIMAL') {
+        newTargetLayer.field[fieldIndex].defaultValue = itemValues[0]
+          ? parseNumberDefaultValue(itemValues[0].value, targetFormat)
+          : undefined;
       } else {
         newTargetLayer.field[fieldIndex].list = itemValues;
       }
@@ -222,32 +239,44 @@ export const useLayerEdit = (
     //追加されたフィールドのデータを初期化し、削除されたフィールドをデータからも削除
     updateDataOfTheLayer(initialFields, addedFields, changedFields, deletedFields, renames);
 
+    //データ一覧の絞り込みは列名で持つので、改名に追従させる。消した列の絞り込みは解除する
+    //（解除しないと、同じ名前を別の列に付けたときにその列で絞り込まれてしまう）
+    if (dataFilter !== undefined && dataFilter.fieldName !== '' && dataFilter.fieldName !== '_user_') {
+      const renamedTo = renames.get(dataFilter.fieldName);
+      if (renamedTo !== undefined) {
+        dispatch(setDataFilterForLayerAction({ layerId: savedLayer.id, text: dataFilter.text, fieldName: renamedTo }));
+      } else if (deletedNames.has(dataFilter.fieldName)) {
+        dispatch(setDataFilterForLayerAction({ layerId: savedLayer.id, text: '', fieldName: '' }));
+      }
+    }
+
+    const pendingPreset = pendingPresets.get(savedLayer.id);
+    pendingPresets.delete(savedLayer.id);
+
     if (isNewLayer) {
       dispatch(addLayerAction(savedLayer));
       // プリセット同梱データがあれば投入する。フィールド名で対応付けるので、
       // ユーザーが保存前にフィールドを消していてもその項目が空になるだけで壊れない
-      const presetGeojson = pendingPresetGeojsonRef.current;
+      const presetGeojson = pendingPreset?.geojson;
       const presetData =
         presetGeojson !== undefined && savedLayer.type === 'POINT'
           ? geoJson2Data(presetGeojson, savedLayer, 'POINT', dataUser.uid, dataUser.displayName)
           : undefined;
-      pendingPresetGeojsonRef.current = undefined;
       dispatch(addDataAction([{ layerId: savedLayer.id, userId: dataUser.uid, data: presetData ?? [] }]));
     } else {
       dispatch(updateLayerAction(savedLayer));
     }
 
     // プリセット適用時の辞書語彙を登録（フィールドが削除されていたら除外）
-    const dictionaries = pendingPresetDictionariesRef.current.filter((d) =>
+    const dictionaries = (pendingPreset?.dictionaries ?? []).filter((d) =>
       savedLayer.field.some((f) => f.id === d.fieldId)
     );
     if (dictionaries.length > 0) {
-      pendingPresetDictionariesRef.current = [];
       importPresetDictionaries(savedLayer.id, dictionaries).catch((e) => console.log(e));
     }
 
     setIsEdited(false);
-  }, [dataUser.uid, dataUser.displayName, dispatch, isNewLayer, layers, targetLayer, updateDataOfTheLayer]);
+  }, [dataFilter, dataUser.uid, dataUser.displayName, dispatch, isNewLayer, layers, targetLayer, updateDataOfTheLayer]);
 
   const deleteLayerPhotos = useCallback(async () => {
     if (Platform.OS === 'web') return;
@@ -353,7 +382,12 @@ export const useLayerEdit = (
           codeField = { id: ulid(), name: codeName, format: 'STRING' };
           m.field.push(codeField);
         }
-        if (categoryField.codeFieldId === undefined && isCodeTargetFormat(codeField.format)) {
+        //区分が選択肢の形式でないとコードの入れ先は不正な設定になり、値設定の画面にも選び直す欄が無いので結ばない
+        if (
+          categoryField.codeFieldId === undefined &&
+          hasCodeLink(categoryField.format) &&
+          isCodeTargetFormat(codeField.format)
+        ) {
           categoryField.codeFieldId = codeField.id;
         }
         m.colorStyle = {
@@ -462,12 +496,23 @@ export const useLayerEdit = (
             if (f.codeFieldId === m.field[index].id) f.codeFieldId = undefined;
           });
         }
+        //形式に合わない既定値（STRINGの「未確認」をINTEGERへ、など）は外す
+        //形式を行き来して保存済みの形式へ戻したときは、途中で外れた既定値（区分パレットの既定の区分など）を戻す
+        const savedField = layers
+          .find((l) => l.id === m.id)
+          ?.field.find((f) => f.id === m.field[index].id);
+        const adaptedDefault = adaptDefaultValueToFormat(m.field[index].defaultValue, m.field[index].format, itemValue, {
+          list: m.field[index].list,
+          saved: savedField,
+        });
+        if (adaptedDefault === undefined) delete m.field[index].defaultValue;
+        else m.field[index].defaultValue = adaptedDefault;
         m.field[index].format = itemValue;
         setTargetLayer(m);
         setIsEdited(true);
       }
     },
-    [targetLayer]
+    [layers, targetLayer]
   );
 
   const changeOption = useCallback(
@@ -528,8 +573,10 @@ export const useLayerEdit = (
       if (preset === undefined) return;
       const { layer: presetLayer, dictionaries } = createLayerFromPreset(preset, layer.id);
       setTargetLayer(presetLayer);
-      pendingPresetDictionariesRef.current = dictionaries;
-      pendingPresetGeojsonRef.current = preset.dataKey !== undefined ? PRESET_LAYER_DATA[preset.dataKey] : undefined;
+      pendingPresets.set(layer.id, {
+        dictionaries,
+        geojson: preset.dataKey !== undefined ? PRESET_LAYER_DATA[preset.dataKey] : undefined,
+      });
       setIsEdited(true);
     },
     [layer.id]

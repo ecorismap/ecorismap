@@ -38,6 +38,8 @@ export const signUpWithEmail = async (email: string, password: string, displayNa
     await createUserWithEmailAndPassword(auth, email, password);
     const { isOK, message, authUser } = await FBupdateProfile(displayName, '');
     if (!isOK || authUser === undefined) {
+      // 作成済みの未確認アカウントのセッションを残さない（未ログイン表示のまま getAuthUid が返してしまう）
+      await FBsignOut();
       return { isOK: false, message, authUser: undefined };
     }
     return { isOK: true, message: '', authUser };
@@ -87,7 +89,8 @@ export const changePassword = async (oldPassword: string, password: string) => {
     return { isOK: true, message: '' };
   } catch (error: any) {
     console.log(error);
-    return { isOK: false, message: error };
+    // 呼び出し側が通信エラー・回数制限をパスワード違いと区別できるよう、コードを返す
+    return { isOK: false, message: typeof error?.code === 'string' ? (error.code as string) : '' };
   }
 };
 
@@ -103,7 +106,8 @@ export const checkPassword = async (password: string) => {
     return { isOK: true, message: '' };
   } catch (error: any) {
     console.log(error);
-    return { isOK: false, message: error };
+    // 呼び出し側が通信エラー・回数制限をパスワード違いと区別できるよう、コードを返す
+    return { isOK: false, message: typeof error?.code === 'string' ? (error.code as string) : '' };
   }
 };
 

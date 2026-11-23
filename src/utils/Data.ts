@@ -52,6 +52,33 @@ const sortDatetimeData = (data: RecordType[], fieldName: string, order: SortOrde
   return { data: sorted.map((item) => item.d), idx: sorted.map((item) => item.idx) };
 };
 
+//比較のたびにlocaleCompareへオプションを渡すと照合器が毎回作られ、大量データで遅い。順序は同じ
+const SORT_COLLATOR = new Intl.Collator(undefined, { numeric: true });
+
+type SortableValue = string | number | PhotoType[] | null | undefined;
+
+const toSortNumber = (value: SortableValue): number => {
+  if (typeof value === 'number') return value;
+  if (typeof value !== 'string' || value.trim() === '') return NaN;
+  return Number(value);
+};
+
+//キーの無い記録（後から属性を追加した記録など）やnullは空欄として比べる
+const toSortText = (value: SortableValue) => (value === undefined || value === null ? '' : value.toString());
+
+//numericな照合は数字の並びを整数として比べるため、小数・負の数は数値順にならない。
+//数値の列で両方が数値になるときだけ数値で比べ、それ以外は従来どおり文字列で比べる
+const compareFieldValues = (a: SortableValue, b: SortableValue, isNumberFormat: boolean) => {
+  if (isNumberFormat) {
+    const na = toSortNumber(a);
+    const nb = toSortNumber(b);
+    if (Number.isFinite(na) && Number.isFinite(nb)) return na - nb;
+  }
+  return SORT_COLLATOR.compare(toSortText(a), toSortText(b));
+};
+
+const isSameSortValue = (a: SortableValue, b: SortableValue) => toSortText(a) === toSortText(b);
+
 export const sortData = (
   data: RecordType[],
   fieldName: string,
@@ -65,21 +92,23 @@ export const sortData = (
     return { data: [], idx: [] };
   }
   //DATETIMEは文字列比較だとISOとロケール形式が混在したときに時系列にならないため、時刻値で比べる
-  if (format === 'DATETIME' && fieldName !== '_user_' && data[0].field[fieldName] !== undefined) {
+  if (format === 'DATETIME' && fieldName !== '_user_' && data.some((d) => d.field[fieldName] !== undefined)) {
     return sortDatetimeData(data, fieldName, order);
   }
 
   let sortedDataWithIdx;
   if (fieldName === '_user_') {
     sortedDataWithIdx = [...dataWithIdx].sort((a, b) =>
-      (a.displayName || '').toString().localeCompare((b.displayName || '').toString(), undefined, { numeric: true })
+      SORT_COLLATOR.compare((a.displayName || '').toString(), (b.displayName || '').toString())
     );
   } else {
-    if (data[0].field[fieldName] === undefined) {
+    //どの記録にも列が無い（削除済みの列など）ときは並べ替えない
+    if (data.every((d) => d.field[fieldName] === undefined)) {
       return { data, idx };
     }
+    const isNumberFormat = format === 'INTEGER' || format === 'DECIMAL' || format === 'SERIAL';
     sortedDataWithIdx = [...dataWithIdx].sort((a, b) =>
-      a.field[fieldName].toString().localeCompare(b.field[fieldName].toString(), undefined, { numeric: true })
+      compareFieldValues(a.field[fieldName], b.field[fieldName], isNumberFormat)
     );
   }
 
@@ -94,7 +123,7 @@ export const sortData = (
       }
       return 0;
     } else {
-      if (a.field[fieldName] === b.field[fieldName]) {
+      if (isSameSortValue(a.field[fieldName], b.field[fieldName])) {
         return a.idx - b.idx;
       }
       return 0;
@@ -117,11 +146,20 @@ const isTextValueFormat = (format: FormatType) =>
   format === 'CHECK';
 
 export const changeFieldValue = (
-  originalData: string | number | PhotoType[],
+  originalData: string | number | PhotoType[] | undefined | null,
   originalFormat: FormatType,
   changedFormat: FormatType,
   list?: { value: string; isOther: boolean }[]
 ): string | number | PhotoType[] => {
+  //キーの無い記録（後から属性を追加した記録・propertiesがnullの取り込み）は未入力として扱う。
+  //そのままだとtoString()で例外になり、レイヤ設定を保存できない
+  if (originalData === undefined || originalData === null) {
+    return getBlankFieldValue(changedFormat);
+  }
+  //形式が同じなら値は変えない。TABLE・LISTTABLEは列（選択肢）を編集しただけで全記録の値が消えていた
+  if (originalFormat === changedFormat) {
+    return originalData;
+  }
   //文字列をそのまま持つ形式（辞書・動的辞書・選択肢系を含む）への変更は値を残す。
   //ここで拾わないと形式を変えたときに既存の値が消えてしまう
   if (isTextValueFormat(changedFormat) && !Array.isArray(originalData)) {
@@ -151,12 +189,13 @@ export const changeFieldValue = (
     return originalData;
   } else if (originalFormat === 'NUMBERRANGE' && (changedFormat === 'STRING' || changedFormat === 'STRING_MULTI')) {
     return originalData;
-  } else if (originalFormat === 'STRING' && changedFormat === 'INTEGER') {
-    return parseInt(originalData as string, 10);
-  } else if (originalFormat === 'STRING' && changedFormat === 'DECIMAL') {
-    return parseFloat(originalData as string);
-  } else if (originalFormat === 'STRING' && changedFormat === 'SERIAL') {
-    return parseInt(originalData as string, 10);
+  } else if (
+    originalFormat === 'STRING' &&
+    (changedFormat === 'INTEGER' || changedFormat === 'DECIMAL' || changedFormat === 'SERIAL')
+  ) {
+    //空欄はNaNにせず空欄のまま残す（NaNは一覧に「NaN」と出て、データ編集の保存も止まる）
+    if (typeof originalData === 'string' && originalData.trim() === '') return getBlankFieldValue(changedFormat);
+    return changedFormat === 'DECIMAL' ? parseFloat(originalData as string) : parseInt(originalData as string, 10);
   } else if (originalFormat === 'STRING' && changedFormat === 'DATETIME') {
     return originalData;
   } else if (originalFormat === 'STRING' && changedFormat === 'LIST') {
@@ -385,6 +424,10 @@ export const getDefaultField = (
     .reduce((obj, userObj) => Object.assign(obj, userObj), {});
   return updateReferenceFieldValue(layer, defaultField, id);
 };
+
+//データ編集の←→で、実際に別の記録へ移るか。同じ番号・範囲外は切り替えない
+export const isRecordNumberChangeable = (value: number, current: number, max: number) =>
+  value !== current && value >= 1 && value <= max;
 
 export const checkFieldInput = (layer: LayerType, record: RecordType) => {
   for (const l of layer.field) {
@@ -803,9 +846,24 @@ export const FILTER_NOT_BLANK = '__NOT_BLANK__';
  * データ一覧の絞り込み。filterFieldNameが空文字なら全フィールド横断で部分一致する。
  * '_user_'はレイヤのフィールドではなくプロジェクト時のUser列(displayName)を指す。
  */
+//一覧の見出しの「全選択」「全表示」ボタンの状態。一覧が空のときは全表示を既定（目のアイコン）にする
+export const getHeaderToggleState = (
+  checkList: { checked: boolean }[],
+  records: { visible: boolean }[]
+): { checkedAll: boolean; visibleAll: boolean } => ({
+  checkedAll: checkList.length > 0 && checkList.every((c) => c.checked),
+  visibleAll: records.every((r) => r.visible),
+});
+
+//絞り込みの対象列が今も絞り込める状態か。''（すべての列）と'_user_'（User列）は常に有効
+export const isFilterTargetAvailable = (fields: FieldType[], filterFieldName: string): boolean =>
+  filterFieldName === '' ||
+  filterFieldName === '_user_' ||
+  fields.some((f) => f.name === filterFieldName && !UNFILTERABLE_FORMATS.includes(f.format));
+
 export const filterRecords = (
   records: RecordType[],
-  layer: LayerType,
+  layer: Pick<LayerType, 'field'>,
   filterText: string,
   filterFieldName: string
 ): RecordType[] => {

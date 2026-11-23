@@ -34,10 +34,54 @@ export const toMapterhornDemUrl = (url: string): string => {
   return `${prefix}${MAPTERHORN_URL}${hash < 0 ? '' : url.slice(hash)}`;
 };
 
-/** 地図ID（または疑似地図ID）の保存済みタイルを削除する。Webは保存を持たないので何もしない */
-type RemoveTiles = (tileMapId: string) => void;
+/**
+ * 保存済みタイルの操作（Webは保存を持たないので、印は常に無し・削除は何もしない）。
+ * 旧タイルを捨てるのは地図ごとに一度だけにし、済んだ印を残す。印が無いと、プロジェクトを開き直すたびに
+ * クラウドの旧URLが入って移行が再び走り、移行後にダウンロードしたMapterhorn形式のタイルまで消してしまう（設定監査 S-M3）
+ */
+export type DemMigrationIO = {
+  /** 地図ID（または疑似地図ID）の保存済みタイルを削除する */
+  removeTiles: (tileMapId: string) => Promise<void>;
+  /** 旧タイルを捨て終えた印があるか */
+  isMigrated: (tileMapId: string) => Promise<boolean>;
+  /** 旧タイルを捨て終えた印を書く */
+  markMigrated: (tileMapId: string) => Promise<void>;
+};
 
-const migrateTileMaps = (store: StoreLike, removeTiles: RemoveTiles): void => {
+// 同じ地図の後始末を並行させない（起動時と購読からの呼び出しが重なりうる）
+let queue: Promise<unknown> = Promise.resolve();
+
+/** 済んでいない地図だけ、保存範囲の記録とタイルを捨ててから印を書く。印は削除を待ってから書く（途中で落ちたら次回やり直す） */
+const discardLegacyTilesOnce = (store: StoreLike, io: DemMigrationIO, tileMapIds: Iterable<string>): Promise<void> => {
+  const ids = [...tileMapIds];
+  const run = queue.then(async () => {
+    for (const id of ids) {
+      try {
+        if (await io.isMigrated(id)) continue;
+        dropTileRegions(store, [id]);
+        await io.removeTiles(id);
+        await io.markMigrated(id);
+      } catch (e) {
+        console.warn('discardLegacyDemTiles failed:', id, e);
+      }
+    }
+  });
+  queue = run.catch(() => undefined);
+  return run;
+};
+
+/** テスト用: 進行中の後始末を待つ */
+export const waitForDemSourceMigration = (): Promise<unknown> => queue;
+
+/**
+ * 地図一覧のうち旧形式の陰影起伏・汎用段彩のURLを、移行後のMapterhornのURLに置き換えた一覧を返す。
+ * 取得元の変更判定（discardStaleTileSources）の前に通す。手元は移行済みでクラウドは旧URLのままのとき、
+ * 「取得元が変わった」と誤判定してMapterhorn形式で取り直したタイルを消さないように（設定監査 S-M3）
+ */
+export const withMapterhornDemUrls = <T extends Pick<TileMapType, 'url'>>(maps: T[]): T[] =>
+  maps.map((map) => (needsMapterhornUrl(map.url) ? { ...map, url: toMapterhornDemUrl(map.url) } : map));
+
+const migrateTileMaps = (store: StoreLike, io: DemMigrationIO): void => {
   const tileMaps = store.getState().tileMaps;
   const targets = tileMaps.filter((map) => needsMapterhornUrl(map.url));
   if (targets.length === 0) return;
@@ -51,30 +95,29 @@ const migrateTileMaps = (store: StoreLike, removeTiles: RemoveTiles): void => {
         }
       : map
   );
+  // URLの書き換えは同期のまま（旧URLで描画・ダウンロードさせない）。タイルを捨てるかは印を見て後から決める
   store.dispatch(setTileMapsAction(updated));
-  // 取得元を差し替えた地図の後始末は、地図編集・取り込みでの URL 変更と同じ（tileSourceChange.ts）
-  dropTileRegions(store, targetIds);
-  targetIds.forEach(removeTiles);
+  discardLegacyTilesOnce(store, io, targetIds).catch(() => undefined);
 };
 
-const removeLegacyViewshedDownloads = (store: StoreLike, removeTiles: RemoveTiles): void => {
+const removeLegacyViewshedDownloads = (store: StoreLike, io: DemMigrationIO): void => {
   dropTileRegions(store, [LEGACY_DEM_VIEWSHED_MAP_ID]);
-  removeTiles(LEGACY_DEM_VIEWSHED_MAP_ID);
+  io.removeTiles(LEGACY_DEM_VIEWSHED_MAP_ID).catch(() => undefined);
 };
 
 let unsubscribe: (() => void) | null = null;
 
 /** 起動時（永続化データの復元後）に呼ぶ。以後もtileMapsの変化を見張って書き換える */
-export const runDemSourceMigrationWith = (store: StoreLike, removeTiles: RemoveTiles): void => {
-  removeLegacyViewshedDownloads(store, removeTiles);
-  migrateTileMaps(store, removeTiles);
+export const runDemSourceMigrationWith = (store: StoreLike, io: DemMigrationIO): void => {
+  removeLegacyViewshedDownloads(store, io);
+  migrateTileMaps(store, io);
   if (unsubscribe !== null || store.subscribe === undefined) return;
   let lastTileMaps = store.getState().tileMaps;
   unsubscribe = store.subscribe(() => {
     const tileMaps = store.getState().tileMaps;
     if (tileMaps === lastTileMaps) return;
     lastTileMaps = tileMaps;
-    migrateTileMaps(store, removeTiles);
+    migrateTileMaps(store, io);
     lastTileMaps = store.getState().tileMaps;
   });
 };

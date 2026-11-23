@@ -66,8 +66,10 @@ import { useRecord } from './useRecord';
 import { isBrushTool, isPlotTool, isPointTool, isStampTool } from '../utils/General';
 import { getHisyouBehavior } from '../constants/HisyouBehavior';
 import { PositionFilter } from '../utils/OneEuroFilter';
+import { followHolesToRigidRingTransform } from '../utils/polygonHoles';
 import { Position } from 'geojson';
 import { RootState } from '../store';
+import { getTerrain3DRegion } from '../utils/terrain3d/regionSyncStore';
 
 //ピンチ開始時にGrant以降の移動距離がこの値未満なら描画意図なしとみなして破棄する
 const PINCH_DISCARD_DISTANCE_PX = 10;
@@ -121,6 +123,19 @@ const applyBehaviorField = (record: RecordType, layer: LayerType, line: DrawLine
   Object.entries(line.fieldValues ?? {}).forEach(([name, value]) => {
     if (layer.field.some((f) => f.name === name)) record.field[name] = value;
   });
+};
+
+//保存済みのポリゴンを選んで、形を変えずに確定するところか。選択時に閉じ点を外しているので、
+//残りの頂点が記録の閉じた外周の先頭から順に一致していれば形は変わっていない
+const isUnchangedExistingPolygon = (line: DrawLineType): boolean => {
+  if (line.record === undefined) return false;
+  const coords = (line.record as PolygonRecordType).coords;
+  if (!Array.isArray(coords) || coords.length !== line.latlon.length + 1) return false;
+  const original = latLonObjectsToLatLonArray(coords);
+  const first = original[0];
+  const last = original[original.length - 1];
+  if (first === undefined || last === undefined || first[0] !== last[0] || first[1] !== last[1]) return false;
+  return line.latlon.every((p, i) => p[0] === original[i][0] && p[1] === original[i][1]);
 };
 
 //CHECK形式の値（カンマ区切り）へ値を1つ足す。既に入っていれば変更なし（undefined）
@@ -970,12 +985,30 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
 
   ////////////////////////////////////////////////////
 
+  /**
+   * 確定で書き戻す元のレコード。選んだ時点の版（line.record）ではなく、ストアにある今の版を使う。
+   * 選択中にデータ一覧で属性を変えたり、同期で他の端末の変更が入ったりしても、形とスタイル以外を古い版で
+   * 上書きしないため。ストアに無い（分割でできた線・削除済み）ときは従来どおり選んだ時点の版を使う
+   */
+  const latestRecordOf = useCallback(
+    (line: DrawLineType, type: 'POINT' | 'LINE' | 'POLYGON'): RecordType => {
+      const selected = line.record as RecordType;
+      if (line.layerId === undefined) return selected;
+      const latest: RecordType | undefined = findRecord(line.layerId, selected.userId, selected.id, type);
+      return latest !== undefined && latest.deleted !== true ? latest : selected;
+    },
+    [findRecord]
+  );
+
   const deleteDrawRecord = useCallback(
-    (layerId: string) => {
-      const deletedIds: string[] = [];
+    (fallbackLayerId: string) => {
+      //選択した要素は選んだ時点のレイヤに属する。選択中に編集レイヤを切り替えても、
+      //今の編集レイヤではなく要素自身のレイヤから消す（保存・移動の経路と同じ）
+      const deletedIdsByLayer = new Map<string, string[]>();
       drawLine.current.forEach((line) => {
         if (line.record !== undefined) {
-          deletedIds.push(line.record.id);
+          const layerId = line.layerId ?? fallbackLayerId;
+          deletedIdsByLayer.set(layerId, [...(deletedIdsByLayer.get(layerId) ?? []), line.record.id]);
           dispatch(
             deleteRecordsAction({
               layerId: layerId,
@@ -986,19 +1019,20 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
           );
         }
       });
-      if (deletedIds.length === 0) return;
       //行動記号（ブラシ・スタンプ）は_groupで親の線にぶら下がるので一緒に消す。
       //残すと親のない記号が地図に残り、消す手段も無くなる
-      lineDataSet
-        .filter((d) => d.layerId === layerId)
-        .forEach((d) => {
-          const children = d.data.filter((record) => {
-            const group = record.field._group;
-            return typeof group === 'string' && group !== '' && deletedIds.includes(group);
+      deletedIdsByLayer.forEach((deletedIds, layerId) => {
+        lineDataSet
+          .filter((d) => d.layerId === layerId)
+          .forEach((d) => {
+            const children = d.data.filter((record) => {
+              const group = record.field._group;
+              return typeof group === 'string' && group !== '' && deletedIds.includes(group);
+            });
+            if (children.length === 0) return;
+            dispatch(deleteRecordsAction({ layerId, userId: d.userId, data: children }));
           });
-          if (children.length === 0) return;
-          dispatch(deleteRecordsAction({ layerId, userId: d.userId, data: children }));
-        });
+      });
     },
     [dispatch, drawLine, lineDataSet]
   );
@@ -1029,7 +1063,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
       }
       if (line.record !== undefined && line.layerId !== undefined) {
         const coords = latlonArrayToLatLonObjects(line.latlon)[0];
-        const updatedRecord: RecordType = { ...line.record, coords };
+        const updatedRecord: RecordType = { ...latestRecordOf(line, 'POINT'), coords };
         const recordLayer = findLayer(line.layerId);
         if (recordLayer === undefined) continue;
         updateRecord(recordLayer, updatedRecord);
@@ -1048,6 +1082,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     findLayer,
     generateRecord,
     getEditableLayerAndRecordSetWithCheck,
+    latestRecordOf,
     mapRegion,
     mapSize,
     mapViewRef,
@@ -1128,7 +1163,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
       if (line.record !== undefined && line.layerId !== undefined) {
         const coords = latlonArrayToLatLonObjects(line.latlon);
         const centroid = calcLineMidPoint(coords);
-        const updatedRecord: RecordType = { ...line.record, coords, centroid };
+        const updatedRecord: RecordType = { ...latestRecordOf(line, 'LINE'), coords, centroid };
         const recordLayer = findLayer(line.layerId);
         if (recordLayer === undefined) continue;
         //編集選択中に操作した項目（色・太さ・矢印）だけを個別色レイヤの選択レコードへ反映する。
@@ -1208,6 +1243,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     findRecord,
     generateRecord,
     getEditableLayerAndRecordSetWithCheck,
+    latestRecordOf,
     mapRegion,
     mapSize,
     mapViewRef,
@@ -1215,6 +1251,37 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     resetDrawTools,
     updateRecord,
   ]);
+
+  const followHolesOfMovedPolygon = useCallback(
+    (record: PolygonRecordType, movedCoords: LocationType[]): PolygonRecordType['holes'] | undefined => {
+      const holes = record.holes;
+      const originalCoords = record.coords;
+      if (holes === undefined || originalCoords === undefined) return undefined;
+      const keys = Object.keys(holes);
+      if (keys.length === 0) return undefined;
+      //動かしていなければ穴も触らない（画面座標を往復させて精度を落とさない）
+      const isSame =
+        originalCoords.length === movedCoords.length &&
+        originalCoords.every(
+          (c, i) => c.latitude === movedCoords[i].latitude && c.longitude === movedCoords[i].longitude
+        );
+      if (isSame) return undefined;
+      const toXY = (c: LocationType[]) => latLonObjectsToXYArray(c, mapRegion, mapSize, mapViewRef);
+      const followed = followHolesToRigidRingTransform(
+        toXY(originalCoords),
+        toXY(movedCoords),
+        keys.map((key) => toXY(holes[key]))
+      );
+      if (followed === undefined) return undefined;
+      return Object.fromEntries(
+        keys.map((key, i) => [
+          key,
+          latlonArrayToLatLonObjects(xyArrayToLatLonArray(followed[i], mapRegion, mapSize, mapViewRef)),
+        ])
+      );
+    },
+    [mapRegion, mapSize, mapViewRef]
+  );
 
   const savePolygon = useCallback((defaultStyle?: DrawLineStyleType, applyStyleToSelected?: { color: boolean; width: boolean; arrow?: boolean }) => {
     //削除したものを取り除く
@@ -1226,7 +1293,13 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
       if (lineXY.length >= 3 && (lineXY[0][0] !== lineXY[lineXY.length - 1][0] || lineXY[0][1] !== lineXY[lineXY.length - 1][1])) {
         //手書きかどうかはオブジェクト自身で判定する。ツール名だと地図移動ツールへ
         //持ち替えてから確定した場合に平滑化されず、閉じ目の形が変わってしまう
-        if (line.properties.includes('HANDWRITING') && line.latlon.length === lineXY.length) {
+        //形を変えていない保存済みの面は平滑化しない（タップ選択で手書き扱いになっただけで閉じ目の角が丸まり、
+        //確定のたびに閉じ目の位置もずれていくため）
+        if (
+          line.properties.includes('HANDWRITING') &&
+          line.latlon.length === lineXY.length &&
+          !isUnchangedExistingPolygon(line)
+        ) {
           //フリーハンドは閉じ目をなぞり方の角度に応じて平滑化して閉じる（急角度ならかくっと閉じる）
           const closed = closeFreehandPolygonSeam(lineXY, line.latlon, (p) =>
             xyToLatLon(p, mapRegion, mapSize, mapViewRef)
@@ -1262,9 +1335,13 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
       if (line.record !== undefined && line.layerId !== undefined) {
         const coords = latlonArrayToLatLonObjects(line.latlon);
         const centroid = calcCentroid(coords);
-        const updatedRecord: RecordType = { ...line.record, coords, centroid };
+        const updatedRecord: RecordType = { ...latestRecordOf(line, 'POLYGON'), coords, centroid };
         const recordLayer = findLayer(line.layerId);
         if (recordLayer === undefined) continue;
+        //穴（内側のリング）は編集中に持っていないので、外周を移動・回転しただけなら同じ変換で穴も動かす。
+        //しないと穴が元の位置に残り、外周の外へずれた形が保存される
+        const followedHoles = followHolesOfMovedPolygon(line.record as PolygonRecordType, coords);
+        if (followedHoles !== undefined) updatedRecord.holes = followedHoles;
         //編集選択中に操作した項目（色・太さ）だけを個別色レイヤの選択レコードへ反映する。
         //操作していない項目は元の値を保持する（太さだけ変えたのに色が変わる事故を防ぐ）
         if (
@@ -1302,7 +1379,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
 
     resetDrawTools();
     return { isOK: true, message: '', layer: layer, recordSet: savedRecordSet };
-  }, [addRecord, findLayer, generateRecord, getEditableLayerAndRecordSetWithCheck, mapRegion, mapSize, mapViewRef, resetDrawTools, updateRecord]);
+  }, [addRecord, findLayer, followHolesOfMovedPolygon, generateRecord, getEditableLayerAndRecordSetWithCheck, latestRecordOf, mapRegion, mapSize, mapViewRef, resetDrawTools, updateRecord]);
 
   const selectSingleFeatureByLatLon = useCallback(
     (latlon: Position) => {
@@ -1409,15 +1486,35 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
       return { isOK: false, message };
     }
     //テンプレートなど他人の名義の記録を消せるのは管理者だけ（同期監査 M8）。一部だけ消すと、どれが残ったのか
-    //分からないので、消せないものが1つでもあれば何も消さない（ストアでも受け付けないが、理由をここで返す）
-    const targets = drawLine.current.flatMap((line) => (line.record === undefined ? [] : [line.record]));
-    const modifiable = checkRecordsModifiable(layer, targets, 'delete');
-    if (!modifiable.isOK) return { isOK: false, message: modifiable.message };
+    //分からないので、消せないものが1つでもあれば何も消さない（ストアでも受け付けないが、理由をここで返す）。
+    //権限は要素自身のレイヤで判定する（選択中に編集レイヤを切り替えた場合に別レイヤで判定しない）
+    const targetsByLayer = new Map<string, RecordType[]>();
+    drawLine.current.forEach((line) => {
+      if (line.record === undefined) return;
+      const layerId = line.layerId ?? layer.id;
+      targetsByLayer.set(layerId, [...(targetsByLayer.get(layerId) ?? []), line.record]);
+    });
+    let targetLayer: LayerType | undefined;
+    for (const [layerId, targets] of targetsByLayer) {
+      const recordLayer = layerId === layer.id ? layer : findLayer(layerId);
+      if (recordLayer === undefined) return { isOK: false, message: t('hooks.message.noLayerToEdit') };
+      const modifiable = checkRecordsModifiable(recordLayer, targets, 'delete');
+      if (!modifiable.isOK) return { isOK: false, message: modifiable.message };
+      if (targetLayer === undefined) targetLayer = recordLayer;
+    }
     deleteDrawRecord(layer.id);
     resetDrawTools();
     setDrawTool('NONE');
-    return { isOK: true, message: '', layer };
-  }, [checkRecordsModifiable, deleteDrawRecord, featureButton, getEditableLayerAndRecordSetWithCheck, resetDrawTools]);
+    //削除後に開くデータ一覧も、消した要素のレイヤにする
+    return { isOK: true, message: '', layer: targetLayer ?? layer };
+  }, [
+    checkRecordsModifiable,
+    deleteDrawRecord,
+    featureButton,
+    findLayer,
+    getEditableLayerAndRecordSetWithCheck,
+    resetDrawTools,
+  ]);
 
   const undoDraw = useCallback(() => {
     //console.log(undoLine.current);
@@ -1635,8 +1732,11 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
         if (Platform.OS === 'web') {
           (mapViewRef as MapRef).getMap().setTerrain(null);
         }
+        // ネイティブ3DはmapRegionへの同期を間引いているので、抜ける時点のカメラ位置を直接読む
+        // （古いmapRegionのままだと2Dが慣性移動・ズーム前の位置で開く）
+        const latestRegion = Platform.OS === 'web' ? null : getTerrain3DRegion();
         // Terrain が有効のままだとピッチやベアリングが保持され、ライン変換の精度が落ちるためリセットする
-        dispatch(editSettingsAction({ mapRegion: { ...mapRegion, pitch: 0, bearing: 0 } }));
+        dispatch(editSettingsAction({ mapRegion: { ...(latestRegion ?? mapRegion), pitch: 0, bearing: 0 } }));
         setIsTerrainActive(false);
       }
     },
@@ -2505,9 +2605,10 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
       //スタンプは1点で座標・スタイルともGrant/Moveで確定済み
       if (drawLine.current.length > 0) isEditingDraw.current = true;
       //飛翔図は行動ごとに属性のフィールドが分かれているので、置いた記号の行動へ印を付ける。
-      //中身が分かれる行動（どのとまりか等）は記号だけでは決まらないので、続けて選んでもらう
+      //中身が分かれる行動（どのとまりか等）は記号だけでは決まらないので、続けて選んでもらう。
+      //置き直し（既存の記号の移動）では選び済みの詳細を既定値へ戻さない
       const behavior = getHisyouBehavior(subTool);
-      if (behavior !== undefined) {
+      if (wasNew && behavior !== undefined) {
         const { layer } = getEditableLayerAndRecordSetWithCheck(featureButton === 'POLYGON' ? 'POLYGON' : 'LINE');
         const field = layer?.field.find((f) => f.name === behavior.fieldName && f.list !== undefined);
         if (field !== undefined) {

@@ -18,6 +18,10 @@ export const isWeakPin = (pin: string): boolean => {
   return allSame || ascending || descending;
 };
 
+//属性を後から追加した記録（他の端末・取り込み）はキー自体が無く、永続化でNaNがnullになることもある。
+//これらを空欄と同じく未入力として扱わないと、toString()で例外になり保存が黙って止まる
+const isBlankNumberInput = (value: unknown) => value === '' || value === undefined || value === null;
+
 //入力時は文字列を受け取ってtypeに沿った値を返す。
 //save時はそれぞれのtypeになっているが、入力後すぐsavedだと文字列
 export const formattedInputs = (
@@ -79,8 +83,8 @@ export const formattedInputs = (
     }
     case 'SERIAL': {
       //列を後から追加した既存レコードなど、未入力は許可する（INTEGER/DECIMALと同じ扱い）
-      if (value === '') {
-        result = value;
+      if (isBlankNumberInput(value)) {
+        result = '';
         break;
       }
       const pattern = /^\d+$/g;
@@ -97,8 +101,8 @@ export const formattedInputs = (
     case 'INTEGER': {
       //ToDo 未入力チェエク
       // 現在は未入力は許可している
-      if (value === '') {
-        result = value;
+      if (isBlankNumberInput(value)) {
+        result = '';
         break;
       }
       const pattern = /^[+-]?\d+$/g;
@@ -115,8 +119,8 @@ export const formattedInputs = (
     case 'DECIMAL': {
       //ToDo 未入力チェエク
       // 現在は未入力は許可している
-      if (value === '') {
-        result = value;
+      if (isBlankNumberInput(value)) {
+        result = '';
         break;
       }
       const pattern = /^[+-]?\d+(?:\.\d+)?$/g;

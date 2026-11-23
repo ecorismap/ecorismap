@@ -200,6 +200,20 @@ describe('discardStaleTileSources', () => {
     expect(deleted.some((p) => p.startsWith(`${TILE_FOLDER}/b/`) || p.includes('/b_'))).toBe(false);
   });
 
+  it('手元が移行済みの陰影起伏で、入ってくる地図が旧形式のURLなら取得元の変更とみなさない（設定監査 S-M3）', async () => {
+    const MAPTERHORN = 'hillshade://https://tiles.mapterhorn.com/{z}/{x}/{y}.webp';
+    const GSJ = 'hillshade://https://tiles.gsj.jp/tiles/elev/mixed/{z}/{y}/{x}.png';
+    const { store, state, dispatch } = createStore([tileMap('h', MAPTERHORN)], [region('r1', 'h')]);
+    mockDirs[`${TILE_FOLDER}/h`] = ['14'];
+
+    const changes = await discardStaleTileSources(store, [tileMap('h', GSJ)]);
+
+    expect(changes).toEqual([]);
+    expect(dispatch).not.toHaveBeenCalled();
+    expect(state.settings.tileRegions.map(({ id }) => id)).toEqual(['r1']);
+    expect(mockedFS.deleteAsync).not.toHaveBeenCalled();
+  });
+
   it('署名の付け外しだけなら何も消さない', async () => {
     const { store, dispatch } = createStore([tileMap('a', V2023)], [region('r1', 'a')]);
     const changes = await discardStaleTileSources(store, [tileMap('a', `${V2023}?expires=1&sig=x`)]);

@@ -31,6 +31,7 @@ import type { PeakProjector } from '../peaks/peakProjector';
 import { isSightBlocked } from '../peaks/sightline';
 import { createTerrainSampler } from './webCamera';
 import { createDistanceTileZoom } from './webTerrainView';
+import { footDemStatus, FootDemStatus, footGroundElevation, TerrainTileInternals } from './webVistaGround';
 
 /** 通常時のmaxPitch（Home.web.tsxのMapと同じ値） */
 export const WEB_NORMAL_MAX_PITCH_DEG = 85;
@@ -199,16 +200,34 @@ const queryGround = (map: MaplibreMap, latitude: number, longitude: number): num
   return elevation === null || !Number.isFinite(elevation) ? null : elevation;
 };
 
+const footStatus = (map: MaplibreMap, latitude: number, longitude: number): FootDemStatus => {
+  const internals = (map as unknown as { terrain?: { tileManager?: TerrainTileInternals } | null }).terrain
+    ?.tileManager;
+  return footDemStatus(internals, map.getZoom(), latitude, longitude);
+};
+
+/**
+ * 目を置く足元の標高（誇張込み・海面より下は0）。足元のDEMタイルが必要な細かさで未着ならnull。
+ * queryTerrainElevationはDEMが無くても0や粗い親タイルの値を返すので、そのままでは待てない
+ */
+const queryFootGround = (map: MaplibreMap, latitude: number, longitude: number): number | null => {
+  if (footStatus(map, latitude, longitude) !== 'loaded') return null;
+  const ground = queryGround(map, latitude, longitude);
+  return ground === null ? null : footGroundElevation(ground);
+};
+
 const waitForGround = async (map: MaplibreMap, latitude: number, longitude: number): Promise<number | null> => {
   const startMs = Date.now();
   while (Date.now() - startMs < ELEVATION_WAIT_MS) {
-    const ground = queryGround(map, latitude, longitude);
+    const ground = queryFootGround(map, latitude, longitude);
     if (ground !== null) return ground;
+    // 足元のDEMが無いと確定した（外洋など）なら、待っても来ないので標高APIへ進む
+    if (footStatus(map, latitude, longitude) === 'missing') break;
     await new Promise((resolve) => setTimeout(resolve, 200));
   }
   // 地形タイルが来ない場合は標高APIの値を描画と同じ誇張に合わせて使う
   const elevation = await getDemElevation(latitude, longitude);
-  return elevation === null ? null : elevation * TERRAIN_EXAGGERATION;
+  return elevation === null ? null : footGroundElevation(elevation * TERRAIN_EXAGGERATION);
 };
 
 /**
@@ -239,14 +258,23 @@ const attachLookAround = (map: MaplibreMap): (() => void) => {
     }
   };
   // より細かい標高タイルが届いたら足元の高さを取り直す
-  const onIdle = () => {
+  const refreshGround = () => {
     if (vista === null) return;
-    applyVistaTileZoom(map);
-    const ground = queryGround(map, vista.latitude, vista.longitude);
+    const ground = queryFootGround(map, vista.latitude, vista.longitude);
     if (ground !== null && Math.abs(ground - vista.ground) > GROUND_UPDATE_THRESHOLD_M) {
       vista.ground = ground;
       applyCamera(vista);
     }
+  };
+  const onIdle = () => {
+    if (vista === null) return;
+    applyVistaTileZoom(map);
+    refreshGround();
+  };
+  // 眺望は300km先まで読むのでidleまで長くかかる。足元のDEMが届いた時点で取り直す
+  const onSourceData = (e: { sourceId?: string; tile?: unknown }) => {
+    if (e.tile === undefined || e.sourceId !== map.getTerrain()?.source) return;
+    refreshGround();
   };
   // ホイール＝画角のズーム（眺望中は地図のスクロールズームを止めているので、こちらで受ける）
   const onWheel = (e: WheelEvent) => {
@@ -260,6 +288,7 @@ const attachLookAround = (map: MaplibreMap): (() => void) => {
   window.addEventListener('pointerup', onUp);
   window.addEventListener('pointercancel', onUp);
   map.on('idle', onIdle);
+  map.on('sourcedata', onSourceData);
   return () => {
     lookingAround = false;
     container.removeEventListener('wheel', onWheel);
@@ -268,16 +297,28 @@ const attachLookAround = (map: MaplibreMap): (() => void) => {
     window.removeEventListener('pointerup', onUp);
     window.removeEventListener('pointercancel', onUp);
     map.off('idle', onIdle);
+    map.off('sourcedata', onSourceData);
   };
 };
 
 /** 指定地点の地上1.7mから真北を水平に見る視点へ移す。地形表示中に呼ぶこと */
 export const startWebVista = async (map: MaplibreMap, latitude: number, longitude: number): Promise<boolean> => {
   const current = ++generation;
+  // 眺望中の乗り換えでは、待つ間に古い眺望の見回し・足元の取り直しが新地点へのjumpToを
+  // 戻してしまうので、先に外す（眺望の状態そのものは残す）
+  const previous = vista;
+  if (previous !== null) {
+    previous.detach();
+    previous.detach = () => undefined;
+  }
   // 足元の地形タイルを読ませるため、先に注視点を寄せる
   map.jumpTo({ center: [longitude, latitude] });
   const ground = await waitForGround(map, latitude, longitude);
-  if (current !== generation || ground === null || map.getTerrain() === null) return false;
+  if (current !== generation || ground === null || map.getTerrain() === null) {
+    // 乗り換えに失敗して古い眺望が残るなら、操作を付け直す（別の開始・解除に追い越された場合は任せる）
+    if (current === generation && vista !== null && vista === previous) vista.detach = attachLookAround(map);
+    return false;
+  }
 
   if (vista !== null) vista.detach();
   // 水平（90度）より上も向けるよう上限を広げる。注視点が地表に吸着すると
@@ -286,7 +327,8 @@ export const startWebVista = async (map: MaplibreMap, latitude: number, longitud
   map.setCenterClampedToGround(false);
   // 視野角をネイティブ（60度）に合わせる。maplibre既定の約37度だと、
   // 傾きボタン1回（20度）で地平線が画面の外へ出て空しか見えなくなる
-  const previousFovDeg = map.getVerticalFieldOfView();
+  // 眺望中の乗り換えでは、いまの画角は眺望の画角なので、眺望に入る前の値を引き継ぐ
+  const previousFovDeg = vista?.previousFovDeg ?? map.getVerticalFieldOfView();
   map.setVerticalFieldOfView(CAMERA_FOV_DEG);
   vista = {
     map,

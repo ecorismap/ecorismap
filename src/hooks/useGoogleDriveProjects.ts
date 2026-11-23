@@ -1,9 +1,10 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '../store';
 import { useEcorisMapFile } from './useEcorismapFile';
 import { generateEcorisMapZip, unlink } from '../utils/File';
 import {
+  getAccessToken,
   getConnectedEmail,
   signInGoogleDrive,
   signOutGoogleDrive,
@@ -34,10 +35,13 @@ export type UseGoogleDriveProjectsReturnType = {
   isConnected: boolean;
   connectedEmail: string | undefined;
   driveProjects: DriveProjectItem[];
-  initialize: () => Promise<void>;
+  /** 接続中のアカウントの一覧を取得できているか。false の間は driveProjects を同名判定に使えない */
+  isListLoaded: boolean;
+  /** 画面を開いたときのサイレント再接続。接続後の一覧取得に失敗したときだけ message にエラー文が入る */
+  initialize: () => Promise<{ isOK: boolean; message: string }>;
   connect: () => Promise<{ isOK: boolean; message: string }>;
   disconnect: () => Promise<void>;
-  reloadProjects: () => Promise<{ isOK: boolean; message: string }>;
+  reloadProjects: () => Promise<{ isOK: boolean; message: string; items?: DriveProjectItem[] }>;
   saveToDrive: (name: string, existing?: DriveProjectItem) => Promise<{ isOK: boolean; message: string }>;
   loadFromDrive: (item: DriveProjectItem) => Promise<{ isOK: boolean; message: string; region?: RegionType }>;
   removeFromDrive: (item: DriveProjectItem) => Promise<{ isOK: boolean; message: string }>;
@@ -69,17 +73,22 @@ export const useGoogleDriveProjects = (): UseGoogleDriveProjectsReturnType => {
   const [isConnected, setIsConnected] = useState(false);
   const [connectedEmail, setConnectedEmail] = useState<string | undefined>(undefined);
   const [driveProjects, setDriveProjects] = useState<DriveProjectItem[]>([]);
+  const [isListLoaded, setIsListLoaded] = useState(false);
+  // 接続中に重ねて押すと、2回目が処理中のトークン要求に当たって「接続できませんでした」になる
+  const isConnectingRef = useRef(false);
 
   const fetchProjects = useCallback(async () => {
     const items = await listDriveProjects();
     setDriveProjects(items);
+    setIsListLoaded(true);
+    return items;
   }, []);
 
   const reloadProjects = useCallback(async () => {
     try {
       setIsLoading(true);
-      await fetchProjects();
-      return { isOK: true, message: '' };
+      const items = await fetchProjects();
+      return { isOK: true, message: '', items };
     } catch (e) {
       return { isOK: false, message: toErrorMessage(e) };
     } finally {
@@ -88,6 +97,8 @@ export const useGoogleDriveProjects = (): UseGoogleDriveProjectsReturnType => {
   }, [fetchProjects]);
 
   const connect = useCallback(async () => {
+    if (isConnectingRef.current) return { isOK: false, message: '' };
+    isConnectingRef.current = true;
     try {
       // iOSではLoading Modalの提示中にサインインのネイティブVCを提示できずフリーズするため、
       // Loadingはサインイン完了後のfetchProjectsに対してのみ表示する
@@ -104,7 +115,31 @@ export const useGoogleDriveProjects = (): UseGoogleDriveProjectsReturnType => {
       setIsLoading(true);
       setIsConnected(true);
       setConnectedEmail(result.email);
+      // 別のアカウントで入り直した場合、取得し直すまで前の一覧で同名判定をさせない
+      setIsListLoaded(false);
       dispatch(setGoogleDriveConnectedEmailAction(result.email));
+      await fetchProjects();
+      return { isOK: true, message: '' };
+    } catch (e) {
+      return { isOK: false, message: toErrorMessage(e) };
+    } finally {
+      isConnectingRef.current = false;
+      setIsLoading(false);
+    }
+  }, [dispatch, fetchProjects]);
+
+  const initialize = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const result = await trySilentSignIn();
+      if (!result.isOK) return { isOK: false, message: '' };
+      const email = result.email ?? getConnectedEmail();
+      setIsConnected(true);
+      setConnectedEmail(email);
+      setIsListLoaded(false);
+      // Webでは接続ヒントがタブをまたいで残るため、ここで接続した場合も全体の接続状態に反映する。
+      // 反映しないとアカウントボタンが未接続表示になり、ログアウトで Google 接続が切れない
+      dispatch(setGoogleDriveConnectedEmailAction(email));
       await fetchProjects();
       return { isOK: true, message: '' };
     } catch (e) {
@@ -114,27 +149,13 @@ export const useGoogleDriveProjects = (): UseGoogleDriveProjectsReturnType => {
     }
   }, [dispatch, fetchProjects]);
 
-  const initialize = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const result = await trySilentSignIn();
-      if (!result.isOK) return;
-      setIsConnected(true);
-      setConnectedEmail(result.email ?? getConnectedEmail());
-      await fetchProjects();
-    } catch (e) {
-      console.log(e);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [fetchProjects]);
-
   const disconnect = useCallback(async () => {
     await signOutGoogleDrive();
     clearAppFolderCache();
     setIsConnected(false);
     setConnectedEmail(undefined);
     setDriveProjects([]);
+    setIsListLoaded(false);
     dispatch(setGoogleDriveConnectedEmailAction(undefined));
   }, [dispatch]);
 
@@ -143,6 +164,9 @@ export const useGoogleDriveProjects = (): UseGoogleDriveProjectsReturnType => {
       let source: string | Blob | undefined;
       try {
         setIsLoading(true);
+        // Webではトークンの再取得がポップアップになり、タップ直後でないとブロックされる。
+        // 写真を含むデータ生成の後では間に合わないため、先にアップロードに要る残寿命を確保しておく
+        await getAccessToken({ minTtlSec: 600 });
         const data = { dataSet, layers, settings: createExportSettings(), maps };
         const exportData = await generateEcorisMapData(data, { includePhoto: true, fromProject: false });
         const zip = await generateEcorisMapZip(exportData, name);
@@ -241,6 +265,7 @@ export const useGoogleDriveProjects = (): UseGoogleDriveProjectsReturnType => {
     isConnected,
     connectedEmail,
     driveProjects,
+    isListLoaded,
     initialize,
     connect,
     disconnect,

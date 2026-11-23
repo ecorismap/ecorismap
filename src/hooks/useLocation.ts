@@ -1176,8 +1176,9 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
 
   const toggleHeadingUp = useCallback(
     async (headingUp_: boolean, resetHeading = true) => {
-      // 北へ戻さない解除はカメラに触れないので、地図が無くても（3Dを抜けた直後でも）進める
-      if (mapViewRef.current === null && (headingUp_ || resetHeading)) return;
+      // 解除は地図が無くても（2D→3D切替でMapViewがアンマウントされた直後でも）購読の除去まで進める。
+      // ここで return すると購読が残り、後から入った3Dカメラをセンサーが回し続ける
+      if (mapViewRef.current === null && headingUp_) return;
 
       if (headingUp_) {
         // 位置情報権限のチェックは呼び出し元（pressCompass）の責務。
@@ -1211,10 +1212,14 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
             return;
           }
 
+          // 地図の差し替え中（2D⇔3D）は ref が一時的に null になる
+          const mapView = mapViewRef.current;
+          if (mapView === null) return;
+
           lastHeading = newHeading;
           lastUpdateTime = currentTime;
 
-          (mapViewRef.current as MapView).animateCamera(
+          (mapView as MapView).animateCamera(
             {
               heading: newHeading,
             },

@@ -2,7 +2,7 @@ import React, { useCallback } from 'react';
 import LayerEdit from '../components/pages/LayerEdit';
 import { AlertAsync, ConfirmAsync } from '../components/molecules/AlertAsync';
 import { MEMO_LAYER_ID } from '../modules/layers';
-import { useLayerEdit } from '../hooks/useLayerEdit';
+import { discardPendingLayerPreset, useLayerEdit } from '../hooks/useLayerEdit';
 import { useBottomSheetNavigation, useBottomSheetRoute } from '../contexts/BottomSheetNavigationContext';
 import { FieldType } from '../types';
 import { Alert } from '../components/atoms/Alert';
@@ -123,11 +123,14 @@ export default function LayerEditContainer() {
   const gotoBack = useCallback(async () => {
     if (isEdited) {
       const ret = await ConfirmAsync(t('LayerEdit.confirm.gotoBack'));
-      if (ret) navigate('Layers', undefined);
+      if (ret) {
+        discardPendingLayerPreset(targetLayer.id);
+        navigate('Layers', undefined);
+      }
     } else {
       navigate('Layers', undefined);
     }
-  }, [isEdited, navigate]);
+  }, [isEdited, navigate, targetLayer.id]);
 
   const layersContextValue = React.useMemo(
     () => ({

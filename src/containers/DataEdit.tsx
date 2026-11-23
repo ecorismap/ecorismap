@@ -12,7 +12,7 @@ import { DataEditContext } from '../contexts/DataEdit';
 import { shallowEqual, useDispatch, useSelector, useStore } from 'react-redux';
 import { RootState } from '../store';
 import { useKeyboard } from '@react-native-community/hooks';
-import { checkCoordsInput, checkFieldInput, isLatLonEmpty } from '../utils/Data';
+import { checkCoordsInput, checkFieldInput, isLatLonEmpty, isRecordNumberChangeable } from '../utils/Data';
 import { isPhotoPermissionDenied, pickImage, takePhoto } from '../utils/Photo';
 import * as projectStorage from '../lib/firebase/storage';
 import { PHOTO_FOLDER } from '../constants/AppConstants';
@@ -443,6 +443,9 @@ export default function DataEditContainer() {
   const onChangeRecord = useCallback(
     async (value: number) => {
       if (isPhotoProcessingRef.current) return;
+      //今と同じ番号や範囲外（1件目の←・最後の→）は何もしない。確認で「破棄」を選ぶと、記録は切り替わらないのに
+      //編集で足した写真のファイルだけが消え、破棄したはずの値が画面に残って後の保存で書き込まれてしまう
+      if (!isRecordNumberChangeable(value, recordNumber, maxRecordNumber)) return;
       if (isEditingRecord) {
         const ret = await ConfirmAsync(t('DataEdit.confirm.changeRecord'));
         if (!ret) return;
@@ -455,7 +458,7 @@ export default function DataEditContainer() {
         cancelUpdate();
       }
     },
-    [cancelUpdate, changeRecord, isEditingRecord, isPhotoProcessingRef, maxRecordNumber]
+    [cancelUpdate, changeRecord, isEditingRecord, isPhotoProcessingRef, maxRecordNumber, recordNumber]
   );
 
   const getJumpRegion = (

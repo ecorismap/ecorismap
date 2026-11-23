@@ -5,13 +5,22 @@ import { getAccessToken } from './auth';
 import { downloadFileUrl } from './driveApi';
 import { DRIVE_FILE_EXT, DriveApiError } from './types';
 
+/**
+ * ファイルパスを file:// URI にする。encodeURI は「#」「?」をエスケープしないため、ネイティブ側の URL 解釈で
+ * 「調査#1.zip」の「#1.zip」がフラグメントとして落ち、別のパスを読んでしまう。区切りごとに encodeURIComponent する
+ */
+export function toFileUri(source: string): string {
+  if (source.startsWith('file://')) return source;
+  return `file://${source.split('/').map(encodeURIComponent).join('/')}`;
+}
+
 export async function readChunk(source: string | Blob, offset: number, size: number): Promise<Blob | Uint8Array> {
   if (typeof source !== 'string') {
     throw new DriveApiError(0, 'invalidSource', 'Native upload source must be a file path');
   }
   // RNFS.read()はiOSネイティブ実装の引数型(NSInteger)がNew Architectureで変換できず例外になるため、
   // expo-file-systemの部分読み込みを使う
-  const uri = source.startsWith('file://') ? source : `file://${encodeURI(source)}`;
+  const uri = toFileUri(source);
   const base64 = await FileSystem.readAsStringAsync(uri, {
     encoding: FileSystem.EncodingType.Base64,
     position: offset,

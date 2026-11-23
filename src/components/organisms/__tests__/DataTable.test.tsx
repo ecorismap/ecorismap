@@ -167,7 +167,7 @@ describe('DataTable', () => {
           value={{
             ...mockContextValue,
             sortedRecordSet: [initialRecord],
-            checkList: [{ id: 0, checked: false }],
+            checkList: [{ id: 0, recordId: 'record1', checked: false }],
           }}
         >
           <DataTable />
@@ -184,7 +184,7 @@ describe('DataTable', () => {
           value={{
             ...mockContextValue,
             sortedRecordSet: [updatedRecord],
-            checkList: [{ id: 0, checked: false }],
+            checkList: [{ id: 0, recordId: 'record1', checked: false }],
           }}
         >
           <DataTable />
@@ -204,7 +204,7 @@ describe('DataTable', () => {
       let contextValue = {
         ...mockContextValue,
         sortedRecordSet: [record],
-        checkList: [{ id: 0, checked: false }],
+        checkList: [{ id: 0, recordId: 'record1', checked: false }],
       };
 
       const { rerender, getByText, queryByText } = await render(
@@ -230,7 +230,7 @@ describe('DataTable', () => {
       contextValue = {
         ...mockContextValue,
         sortedRecordSet: [updatedRecord],
-        checkList: [{ id: 0, checked: false }],
+        checkList: [{ id: 0, recordId: 'record1', checked: false }],
       };
 
       await rerender(
@@ -266,9 +266,9 @@ describe('DataTable', () => {
             ...mockContextValue,
             sortedRecordSet: initialRecords,
             checkList: [
-              { id: 0, checked: false },
-              { id: 1, checked: false },
-              { id: 2, checked: false },
+              { id: 0, recordId: 'record1', checked: false },
+              { id: 1, recordId: 'record2', checked: false },
+              { id: 2, recordId: 'record3', checked: false },
             ],
           }}
         >
@@ -288,9 +288,9 @@ describe('DataTable', () => {
             ...mockContextValue,
             sortedRecordSet: updatedRecords,
             checkList: [
-              { id: 0, checked: false },
-              { id: 1, checked: false },
-              { id: 2, checked: false },
+              { id: 0, recordId: 'record1', checked: false },
+              { id: 1, recordId: 'record2', checked: false },
+              { id: 2, recordId: 'record3', checked: false },
             ],
           }}
         >
@@ -313,13 +313,13 @@ describe('DataTable', () => {
       const contextWithVisible = {
         ...mockContextValue,
         sortedRecordSet: [visibleRecord],
-        checkList: [{ id: 0, checked: false }],
+        checkList: [{ id: 0, recordId: 'record1', checked: false }],
       };
 
       const contextWithHidden = {
         ...mockContextValue,
         sortedRecordSet: [hiddenRecord],
-        checkList: [{ id: 0, checked: false }],
+        checkList: [{ id: 0, recordId: 'record1', checked: false }],
       };
 
       const { rerender } = await render(
@@ -354,7 +354,7 @@ describe('DataTable', () => {
             value={{
               ...mockContextValue,
               sortedRecordSet: data,
-              checkList: [{ id: 0, checked: false }],
+              checkList: [{ id: 0, recordId: 'record1', checked: false }],
             }}
           >
             <DataTable />
@@ -444,7 +444,7 @@ describe('DataTable', () => {
           value={{
             ...mockContextValue,
             sortedRecordSet: [record],
-            checkList: [{ id: 0, checked: false }],
+            checkList: [{ id: 0, recordId: 'record1', checked: false }],
             changeChecked: changeCheckedMock,
           }}
         >
@@ -458,7 +458,7 @@ describe('DataTable', () => {
       if (buttons.length > 1) {
         // 2番目のボタンがチェックボックス
         fireEvent.press(buttons[1]);
-        expect(changeCheckedMock).toHaveBeenCalledWith(0, true);
+        expect(changeCheckedMock).toHaveBeenCalledWith('record1', true);
       }
     });
 
@@ -472,7 +472,7 @@ describe('DataTable', () => {
             ...mockContextValue,
             projectId: 'project1', // projectIdが必要
             sortedRecordSet: [record],
-            checkList: [{ id: 0, checked: false }],
+            checkList: [{ id: 0, recordId: 'record1', checked: false }],
             gotoDataEdit: gotoDataEditMock,
           }}
         >

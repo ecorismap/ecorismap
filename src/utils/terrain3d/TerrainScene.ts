@@ -83,7 +83,14 @@ import { TerrainDepthMap, TerrainRenderer, TerrainRingDraw, TileGpuResources } f
 import { TerrainTileManager, TileCone } from './TerrainTileManager';
 import { DemTextureCache } from './demTextureCache';
 import { ViewshedMask, viewshedMaskLocalRect } from './viewshedMask';
-import { buildPolygonFill, buildRibbon, OverlayBatchBuilder, overlayLiftMeters } from './overlayGeometry';
+import { marchRayToTerrain } from './rayMarch';
+import {
+  buildPolygonFill,
+  buildRibbon,
+  combinedReadyGeneration,
+  OverlayBatchBuilder,
+  overlayLiftMetersForView,
+} from './overlayGeometry';
 import { Rgba } from './colorUtils';
 import { LayerSpec, Terrain3DCameraState, TileKey } from './types';
 import { LayerTextureRef } from './layerTextureRef';
@@ -347,6 +354,10 @@ export class TerrainScene {
    * 状態ドリフトとdp/pxアスペクト差が復元誤差として混入する
    */
   private lastRayBasis: { basis: RayBasis; aspect: number } | null = null;
+  /** カメラのアニメーション・慣性が止まったときに呼ぶ（mapRegionへの同期用） */
+  onCameraSettled: (() => void) | null = null;
+  /** 直近に描いたフレームのファー面までの距離（逆投影の探索上限） */
+  private lastFarPlane = 0;
   /** 遮蔽判定用に読み戻した地形までの距離と、それを描いたときの行列 */
   private depthMap: TerrainDepthMap | null = null;
   private depthViewProj: Mat4 | null = null;
@@ -840,6 +851,8 @@ export class TerrainScene {
     if (origin === null) return;
     this.vista = null;
     this.publishVista();
+    // 眺望へ入る補間（俯角90°・北向き）が残っていると、通常3Dが水平視線のまま上限80°を超えて残る
+    this.controller.cancelAnimations();
     this.controller.animateTo(
       { center: { latitude: origin.latitude, longitude: origin.longitude }, pitch: INITIAL_PITCH_DEG },
       0,
@@ -934,40 +947,19 @@ export class TerrainScene {
     const state = this.controller.getState();
     const distance = zoomToDistance(state.zoom, this.viewportHeightDp);
 
-    const heightAt = (px: number, pz: number): number => {
+    const heightAt = (px: number, pz: number): number | null => {
       const ll = mercatorToLonLat(this.origin.mx + px, this.origin.my - pz);
-      return (this.sampleElevation(ll.latitude, ll.longitude) ?? 0) * this.elevScale;
+      const elev = this.sampleElevation(ll.latitude, ll.longitude);
+      return elev === null ? null : elev * this.elevScale;
     };
-    // レイマーチ: 地表を下回った区間を二分法で詰める
-    const maxT = distance * 8;
-    const steps = 200;
-    let prevT = 0;
-    let prevAbove = eye[1] - heightAt(eye[0], eye[2]) > 0;
-    for (let i = 1; i <= steps; i++) {
-      const t = (i / steps) * maxT;
-      const px = eye[0] + dir[0] * t;
-      const py = eye[1] + dir[1] * t;
-      const pz = eye[2] + dir[2] * t;
-      const above = py - heightAt(px, pz) > 0;
-      if (prevAbove && !above) {
-        let lo = prevT;
-        let hi = t;
-        for (let k = 0; k < 20; k++) {
-          const mid = (lo + hi) / 2;
-          const mx = eye[0] + dir[0] * mid;
-          const my = eye[1] + dir[1] * mid;
-          const mz = eye[2] + dir[2] * mid;
-          if (my - heightAt(mx, mz) > 0) lo = mid;
-          else hi = mid;
-        }
-        const hx = eye[0] + dir[0] * hi;
-        const hz = eye[2] + dir[2] * hi;
-        return mercatorToLonLat(this.origin.mx + hx, this.origin.my - hz);
-      }
-      prevAbove = above;
-      prevT = t;
-    }
-    return null;
+    // 近い範囲は従来どおり等間隔、その先は描画しているファー面まで探す。
+    // 眺望はズームを変えないので、ズーム由来の距離だけでは遠景の地形に届かない
+    const nearRangeT = distance * 8;
+    const hitT = marchRayToTerrain(eye, dir, heightAt, nearRangeT, Math.max(nearRangeT, this.lastFarPlane));
+    if (hitT === null) return null;
+    const hx = eye[0] + dir[0] * hitT;
+    const hz = eye[2] + dir[2] * hitT;
+    return mercatorToLonLat(this.origin.mx + hx, this.origin.my - hz);
   }
 
   /**
@@ -993,6 +985,7 @@ export class TerrainScene {
     const canvas = this.context.canvas as any;
     const aspect = canvas.width / canvas.height;
     const far = Math.max(fogFar * 1.5, distance * 3);
+    this.lastFarPlane = far;
     // 眺望モードは視点が地面から1.7mしかないので、通常のニア面（注視点距離の2%＝数十m）では
     // 足元から数十m手前までが切り取られ、画面下半分に地形の穴が開く
     const near = this.vista === null ? Math.max(1, distance * 0.02) : VISTA_NEAR_M;
@@ -1245,8 +1238,8 @@ export class TerrainScene {
   /**
    * オーバーレイの作り直しが必要なら、フレーム外で進む構築ジョブを起票する。
    *
-   * 標高が取れなかった頂点がある場合の再試行は、実際に新しいタイルがreadyに
-   * なったときだけ行う。時間だけで再試行すると、近景リングの外にある地物は
+   * 標高が取れなかった頂点がある場合の再試行は、いずれかのリングで実際に新しいタイルが
+   * readyになったときだけ行う。時間だけで再試行すると、どのリングにも覆われない地物は
    * 永久に標高が取れないため、2秒ごとに全地物の再構築が回り続けてしまう
    */
   private maybeRebuildOverlays(nowMs: number): void {
@@ -1263,7 +1256,8 @@ export class TerrainScene {
   /** @returns 構築ジョブを起票したか */
   private maybeRebuildOverlayChannel(channel: OverlayChannel, nowMs: number): boolean {
     const zoomChanged = channel.builtZoom !== this.texZoom;
-    const readyGen = this.tileManager.readyGeneration;
+    // 標高は全リングから引くので、遠景だけが後から届いた場合も再試行の対象にする
+    const readyGen = combinedReadyGeneration(this.allTileManagers());
     const retry =
       channel.hadMissing &&
       readyGen !== channel.lastReadyGen &&
@@ -1396,7 +1390,12 @@ export class TerrainScene {
     // 動き終わった最初のフレームは必ず描く。ここを描かないと「停止したとき」に
     // 走らせたい処理（タイル更新・距離バッファの撮り直し・ドットの再投影）が
     // 次に何かが起きるまで実行されない
-    if (this.cameraActive && !cameraActive) this.dirty = true;
+    if (this.cameraActive && !cameraActive) {
+      this.dirty = true;
+      // 慣性・アニメーションが止まった位置を外（mapRegion）へ知らせる。
+      // 指を離した時点の同期だけでは、慣性で動いた分が2Dへ戻したときに失われる
+      this.onCameraSettled?.();
+    }
     this.cameraActive = cameraActive;
     if (cameraActive) this.dirty = true;
 
@@ -1563,7 +1562,7 @@ export class TerrainScene {
         // 環境光を上げて日向と日陰のコントラストを控えめにする（地図の可読性優先）
         ambient: 0.65,
         elevScale: this.elevScale,
-        overlayLiftMeters: overlayLiftMeters(distance),
+        overlayLiftMeters: overlayLiftMetersForView(distance, this.vista !== null),
       },
       // 軌跡はレイヤデータより後に描いて前面に出す（2DのzIndex 100/101と同じ並び）
       this.collectOverlayDraws()
@@ -1588,7 +1587,8 @@ export class TerrainScene {
     distance: number
   ): void {
     if (!this.cameraSettled) return;
-    const gen = this.tileManager.readyGeneration;
+    // 遠景リングの尾根も遮蔽に効くので、全リングの到着で撮り直す
+    const gen = combinedReadyGeneration(this.allTileManagers());
     if (this.depthGen === gen && this.depthViewProj !== null && sameMat4(this.depthViewProj, viewProj)) return;
     const captured = viewProj.slice() as Mat4;
     const range = Math.max(1, fogFar * 1.5, distance * 3);
@@ -1692,6 +1692,7 @@ export class TerrainScene {
 
   dispose(): void {
     this.disposed = true;
+    this.onCameraSettled = null;
     this.vista = null;
     this.replay = null;
     terrain3dVistaStore.clear(); // 3Dを抜けたら高さ変更ボタンも消す

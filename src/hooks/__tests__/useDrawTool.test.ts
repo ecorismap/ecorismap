@@ -156,6 +156,8 @@ import { configureStore, combineReducers } from '@reduxjs/toolkit';
 import React from 'react';
 import { GestureResponderEvent } from 'react-native';
 import { useDrawTool } from '../useDrawTool';
+import MapView from 'react-native-maps';
+import { setTerrain3DRegionProvider } from '../../utils/terrain3d/regionSyncStore';
 import dataSetReducer, { addDataAction } from '../../modules/dataSet';
 import layersReducer from '../../modules/layers';
 import userReducer from '../../modules/user';
@@ -173,6 +175,7 @@ import {
   isValidLine,
   modifyLineWithSource,
   xyArrayToLatLonArray,
+  closeFreehandPolygonSeam,
 } from '../../utils/Coords';
 import { LayerType, LineRecordType, PointRecordType, RecordType } from '../../types';
 import { LAYER_PRESETS } from '../../constants/Presets';
@@ -633,6 +636,125 @@ describe('useDrawTool', () => {
       );
       expect(mockAddRecord).not.toHaveBeenCalled();
     });
+
+    describe('選択中にストアの記録が変わったとき（作図監査 E-M9）', () => {
+      const selectedLine = () => ({
+        id: mockLineRecord.id,
+        layerId: mockLineLayer.id,
+        record: mockLineRecord,
+        xy: [
+          [10, 10],
+          [20, 20],
+        ] as [number, number][],
+        latlon: [
+          [10, 10],
+          [20, 20],
+        ] as [number, number][],
+        properties: [],
+      });
+
+      it('確定ではストアの今の版に形だけを重ね、選んだ後に変えた属性を古い版で上書きしない', () => {
+        const latest = { ...mockLineRecord, field: { name: '変更後' }, updatedAt: 200 };
+        mockFindLayer.mockReturnValue(mockLineLayer);
+        mockFindRecord.mockReturnValue(latest);
+        const { result } = renderDrawTool();
+        result.current.drawLine.current = [selectedLine()];
+        act(() => {
+          result.current.saveLine();
+        });
+        const saved = mockUpdateRecord.mock.calls[0][1] as RecordType;
+        expect(saved.field).toEqual({ name: '変更後' });
+        expect(saved.coords).toEqual([
+          { longitude: 10, latitude: 10 },
+          { longitude: 20, latitude: 20 },
+        ]);
+        expect(mockFindRecord).toHaveBeenCalledWith(mockLineLayer.id, 'user1', mockLineRecord.id, 'LINE');
+      });
+
+      it('ストアに無い記録は従来どおり選んだ時点の版で保存する（削除済みの扱いは別途判断）', () => {
+        mockFindLayer.mockReturnValue(mockLineLayer);
+        mockFindRecord.mockReturnValue(undefined);
+        const { result } = renderDrawTool();
+        result.current.drawLine.current = [selectedLine()];
+        act(() => {
+          result.current.saveLine();
+        });
+        expect(mockAddRecord).toHaveBeenCalledWith(mockLineLayer, expect.objectContaining({ id: mockLineRecord.id }));
+      });
+
+      it('ポイント・ポリゴンの確定でもストアの今の版を使う', () => {
+        const latestPoint = { ...mockPointRecord, field: { name: '点の変更後' } };
+        mockFindLayer.mockReturnValue(mockPointLayer);
+        mockFindRecord.mockReturnValue(latestPoint);
+        mockGetEditableLayerAndRecordSetWithCheck.mockReturnValue({
+          isOK: true,
+          message: '',
+          layer: mockPointLayer,
+          recordSet: [],
+        });
+        const { result } = renderDrawTool();
+        result.current.drawLine.current = [
+          {
+            id: mockPointRecord.id,
+            layerId: mockPointLayer.id,
+            record: mockPointRecord,
+            xy: [[30, 40]],
+            latlon: [[30, 40]],
+            properties: [],
+          },
+        ];
+        act(() => {
+          result.current.savePoint();
+        });
+        const savedPoint = mockUpdateRecord.mock.calls[0][1] as RecordType;
+        expect(savedPoint.field).toEqual({ name: '点の変更後' });
+        expect(savedPoint.coords).toEqual({ longitude: 30, latitude: 40 });
+
+        const polygonLayer = { ...mockLineLayer, id: 'layer3', type: 'POLYGON' } as unknown as LayerType;
+        const polygonRecord = {
+          ...mockLineRecord,
+          id: 'poly-latest',
+          coords: [
+            { longitude: 0, latitude: 0 },
+            { longitude: 10, latitude: 0 },
+            { longitude: 10, latitude: 10 },
+            { longitude: 0, latitude: 0 },
+          ],
+        } as unknown as RecordType;
+        mockFindLayer.mockReturnValue(polygonLayer);
+        mockFindRecord.mockReturnValue({ ...polygonRecord, field: { name: '面の変更後' } });
+        mockGetEditableLayerAndRecordSetWithCheck.mockReturnValue({
+          isOK: true,
+          message: '',
+          layer: polygonLayer,
+          recordSet: [],
+        });
+        mockUpdateRecord.mockClear();
+        result.current.drawLine.current = [
+          {
+            id: 'poly-latest',
+            layerId: polygonLayer.id,
+            record: polygonRecord,
+            xy: [
+              [0, 0],
+              [10, 0],
+              [10, 10],
+            ],
+            latlon: [
+              [0, 0],
+              [10, 0],
+              [10, 10],
+            ],
+            properties: [],
+          },
+        ];
+        act(() => {
+          result.current.savePolygon();
+        });
+        const savedPolygon = mockUpdateRecord.mock.calls[0][1] as RecordType;
+        expect(savedPolygon.field).toEqual({ name: '面の変更後' });
+      });
+    });
   });
 
   describe('savePoint', () => {
@@ -854,6 +976,145 @@ describe('useDrawTool', () => {
       ]);
       expect(mockAddRecord).toHaveBeenCalledTimes(1);
     });
+
+    it('穴のある面をなげなわで移動して確定すると、穴も同じだけ動く', () => {
+      const polygonLayer = { ...mockLineLayer, id: 'layer3', type: 'POLYGON' } as unknown as LayerType;
+      const outer = [
+        { longitude: 0, latitude: 0 },
+        { longitude: 100, latitude: 0 },
+        { longitude: 100, latitude: 100 },
+        { longitude: 0, latitude: 100 },
+        { longitude: 0, latitude: 0 },
+      ];
+      const hole = [
+        { longitude: 40, latitude: 40 },
+        { longitude: 60, latitude: 40 },
+        { longitude: 60, latitude: 60 },
+        { longitude: 40, latitude: 40 },
+      ];
+      const polygonRecord = {
+        ...mockLineRecord,
+        id: 'holed1',
+        coords: outer,
+        holes: { h1: hole },
+      } as unknown as RecordType;
+      mockGetEditableLayerAndRecordSetWithCheck.mockReturnValue({
+        isOK: true,
+        message: '',
+        layer: polygonLayer,
+        recordSet: [polygonRecord],
+      });
+      mockFindLayer.mockReturnValue(polygonLayer);
+
+      const { result } = renderDrawTool();
+      //一括変形で外周だけが(+10, +20)動いた状態
+      const movedOuter = outer.map((c) => [c.longitude + 10, c.latitude + 20] as [number, number]);
+      result.current.drawLine.current = [
+        {
+          id: 'holed1',
+          layerId: polygonLayer.id,
+          record: polygonRecord,
+          xy: movedOuter.map((p) => [...p] as [number, number]),
+          latlon: movedOuter,
+          properties: [],
+        },
+      ];
+      act(() => {
+        result.current.savePolygon();
+      });
+      const saved = mockUpdateRecord.mock.calls[0][1] as RecordType & {
+        holes: { [key: string]: { longitude: number; latitude: number }[] };
+      };
+      saved.holes.h1.forEach((c, i) => {
+        expect(c.longitude).toBeCloseTo(hole[i].longitude + 10, 9);
+        expect(c.latitude).toBeCloseTo(hole[i].latitude + 20, 9);
+      });
+    });
+
+    it('穴のある面を動かさずに確定したときは、穴をそのまま保持する', () => {
+      const polygonLayer = { ...mockLineLayer, id: 'layer3', type: 'POLYGON' } as unknown as LayerType;
+      const outer = [
+        { longitude: 0, latitude: 0 },
+        { longitude: 100, latitude: 0 },
+        { longitude: 100, latitude: 100 },
+        { longitude: 0, latitude: 0 },
+      ];
+      const holes = { h1: [{ longitude: 40, latitude: 40 }] };
+      const polygonRecord = { ...mockLineRecord, id: 'holed2', coords: outer, holes } as unknown as RecordType;
+      mockFindLayer.mockReturnValue(polygonLayer);
+      mockGetEditableLayerAndRecordSetWithCheck.mockReturnValue({
+        isOK: true,
+        message: '',
+        layer: polygonLayer,
+        recordSet: [polygonRecord],
+      });
+      const { result } = renderDrawTool();
+      const latlon = outer.map((c) => [c.longitude, c.latitude] as [number, number]);
+      result.current.drawLine.current = [
+        { id: 'holed2', layerId: polygonLayer.id, record: polygonRecord, xy: latlon, latlon, properties: [] },
+      ];
+      act(() => {
+        result.current.savePolygon();
+      });
+      const saved = mockUpdateRecord.mock.calls[0][1] as RecordType & { holes: unknown };
+      expect(saved.holes).toBe(holes);
+    });
+
+    describe('タップ選択で手書き扱いになった保存済みの面の閉じ目', () => {
+      const polygonLayer = { ...mockLineLayer, id: 'layer3', type: 'POLYGON' } as unknown as LayerType;
+      //頂点16の閉じた面（手書き扱いの境界15以上）
+      const ring = Array.from({ length: 16 }, (_, i) => ({ longitude: i, latitude: i % 2 === 0 ? 0 : 10 }));
+      const closedCoords = [...ring, ring[0]];
+      const polygonRecord = {
+        ...mockLineRecord,
+        id: 'poly1',
+        coords: closedCoords,
+        holes: {},
+        centroid: { longitude: 0, latitude: 0 },
+      } as unknown as RecordType;
+
+      beforeEach(() => {
+        mockGetEditableLayerAndRecordSetWithCheck.mockReturnValue({
+          isOK: true,
+          message: '',
+          layer: polygonLayer,
+          recordSet: [polygonRecord],
+        });
+        mockFindLayer.mockReturnValue(polygonLayer);
+      });
+
+      //選択時に閉じ点を外した状態（changeToEditingObject 後）を再現する
+      const selectedLine = (latlon: [number, number][]) => ({
+        id: 'poly1',
+        layerId: polygonLayer.id,
+        record: polygonRecord,
+        xy: latlon.map((p) => [...p] as [number, number]),
+        latlon,
+        properties: ['HANDWRITING'],
+      });
+
+      it('形を変えずに確定すると平滑化せず、元の形のまま保存する', () => {
+        const { result } = renderDrawTool();
+        result.current.drawLine.current = [selectedLine(ring.map((c) => [c.longitude, c.latitude]))];
+        act(() => {
+          result.current.savePolygon();
+        });
+        expect(closeFreehandPolygonSeam as jest.Mock).not.toHaveBeenCalled();
+        const saved = mockUpdateRecord.mock.calls[0][1] as RecordType;
+        expect(saved.coords).toEqual(closedCoords);
+      });
+
+      it('形を変えた（なぞり修正など）ときは従来どおり閉じ目を平滑化する', () => {
+        const { result } = renderDrawTool();
+        const changed = ring.map((c) => [c.longitude, c.latitude] as [number, number]);
+        changed[3] = [3, 5];
+        result.current.drawLine.current = [selectedLine(changed)];
+        act(() => {
+          result.current.savePolygon();
+        });
+        expect(closeFreehandPolygonSeam as jest.Mock).toHaveBeenCalledTimes(1);
+      });
+    });
   });
 
   describe('deleteDraw', () => {
@@ -1073,6 +1334,55 @@ describe('useDrawTool', () => {
       //親のレコードと、その_groupを持つ記号だけが消える
       const remaining = store.getState().dataSet.find((d) => d.layerId === mockLineLayer.id)?.data ?? [];
       expect(remaining.map((d) => d.id)).toEqual(['other1']);
+    });
+
+    it('選択中に編集レイヤを別のレイヤへ切り替えても、選んだ要素のレイヤから消し、そのレイヤで権限を判定する', () => {
+      const layerB = { ...mockLineLayer, id: 'layerB', name: '別レイヤ' } as unknown as LayerType;
+      const child = {
+        ...mockLineRecord,
+        id: 'child1',
+        field: { _group: mockLineRecord.id, _stamp: 'TOMARI' },
+      };
+      mockLineDataSet.push({ layerId: mockLineLayer.id, userId: 'user1', data: [child] });
+      //今の編集レイヤはB、選んだ線はレイヤA（mockLineLayer）のもの
+      mockGetEditableLayerAndRecordSetWithCheck.mockReturnValue({ isOK: true, message: '', layer: layerB, recordSet: [] });
+      mockFindLayer.mockImplementation((id: string) => (id === mockLineLayer.id ? mockLineLayer : undefined));
+
+      const { result, store } = renderDrawTool();
+      act(() => {
+        store.dispatch(
+          addDataAction([{ layerId: mockLineLayer.id, userId: 'user1', data: [mockLineRecord, child] as RecordType[] }])
+        );
+      });
+      result.current.drawLine.current = [
+        {
+          id: mockLineRecord.id,
+          layerId: mockLineLayer.id,
+          record: mockLineRecord,
+          xy: [
+            [10, 10],
+            [20, 20],
+          ],
+          latlon: [
+            [10, 10],
+            [20, 20],
+          ],
+          properties: ['EDIT'],
+        },
+      ];
+
+      let res: ReturnType<typeof result.current.deleteDraw> | undefined;
+      act(() => {
+        res = result.current.deleteDraw();
+      });
+
+      expect(res?.isOK).toBe(true);
+      //削除後に開くデータ一覧も選んだ要素のレイヤ
+      expect(res?.layer).toBe(mockLineLayer);
+      expect(mockCheckRecordsModifiable).toHaveBeenCalledWith(mockLineLayer, [mockLineRecord], 'delete');
+      //親の線も子の記号もレイヤAから消える
+      const remaining = store.getState().dataSet.find((d) => d.layerId === mockLineLayer.id)?.data ?? [];
+      expect(remaining).toEqual([]);
     });
   });
 
@@ -2116,6 +2426,40 @@ describe('useDrawTool', () => {
 
       expect(result.current.isTerrainActive).toBe(false);
     });
+
+    it('3Dを抜けるときは間引きで未同期のカメラ位置を2Dへ渡す（V-M7）', () => {
+      const store = createTestStore();
+      const { result } = renderHook(() => useDrawTool({} as unknown as MapView), {
+        wrapper: createWrapper(store),
+      });
+      act(() => {
+        result.current.toggleTerrain();
+      });
+      expect(result.current.isTerrainActive).toBe(true);
+      const unregister = setTerrain3DRegionProvider(() => ({
+        latitude: 36,
+        longitude: 139,
+        latitudeDelta: 0.02,
+        longitudeDelta: 0.02,
+        zoom: 14,
+        pitch: 60,
+        bearing: 30,
+      }));
+      try {
+        act(() => {
+          result.current.toggleTerrain();
+        });
+      } finally {
+        unregister();
+      }
+      expect(result.current.isTerrainActive).toBe(false);
+      const region = store.getState().settings.mapRegion;
+      expect(region.latitude).toBe(36);
+      expect(region.longitude).toBe(139);
+      expect(region.zoom).toBe(14);
+      expect(region.pitch).toBe(0);
+      expect(region.bearing).toBe(0);
+    });
   });
 
   describe('手書きペン（HANDWRITING）セッション', () => {
@@ -2524,6 +2868,28 @@ describe('useDrawTool', () => {
         const saved = mockAddRecord.mock.calls.map((c) => c[1] as RecordType);
         expect(saved[0].field._stamp).toBe('TOMARI');
         expect(saved[0].field['とまり']).toBe('監視');
+      });
+
+      it('選んだ詳細は、記号を置き直しても既定値へ戻らず、詳細の選択も再び開かない', () => {
+        const { result } = renderDrawTool();
+        startHandwritingLine(result);
+        placeStamp(result);
+        act(() => {
+          result.current.selectSymbolDetail('監視');
+        });
+        const stampId = result.current.drawLine.current[0].id;
+
+        //置き直す（既存の記号の移動）
+        act(() => {
+          result.current.handleGrantHandwriting([8, 0], penStyle);
+        });
+        act(() => {
+          result.current.handleReleaseHandwriting();
+        });
+        expect(result.current.drawLine.current).toHaveLength(1);
+        expect(result.current.drawLine.current[0].id).toBe(stampId);
+        expect(result.current.symbolDetailField).toBeUndefined();
+        expect(result.current.drawLine.current[0].fieldValues?.['とまり']).toBe('監視');
       });
 
       it('中身を選ばずに閉じても、記号を置いたことは「不明」で残る', () => {

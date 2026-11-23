@@ -25,6 +25,7 @@ export default function GoogleDriveProjectsContainers() {
     isConnected,
     connectedEmail,
     driveProjects,
+    isListLoaded,
     initialize,
     connect,
     disconnect,
@@ -37,7 +38,11 @@ export default function GoogleDriveProjectsContainers() {
   const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
 
   useEffect(() => {
-    initialize();
+    (async () => {
+      // 接続できたのに一覧だけ取れなかったとき、黙っていると「0件」に見えて同名の別ファイルを作ってしまう
+      const { isOK, message } = await initialize();
+      if (!isOK && message !== '') await AlertAsync(message);
+    })();
     // 画面を開いたときに一度だけサイレント再接続を試す
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -81,7 +86,17 @@ export default function GoogleDriveProjectsContainers() {
       const trimmed = name.trim();
       if (trimmed === '') return;
       setIsSaveModalOpen(false);
-      const existing = driveProjects.find((p) => p.name === trimmed);
+      // 一覧を取れていないまま同名判定すると上書きの確認が出ず、同じ名前の別ファイルができる
+      let projects = driveProjects;
+      if (!isListLoaded) {
+        const listed = await reloadProjects();
+        if (!listed.isOK || listed.items === undefined) {
+          if (listed.message !== '') await AlertAsync(listed.message);
+          return;
+        }
+        projects = listed.items;
+      }
+      const existing = projects.find((p) => p.name === trimmed);
       if (existing !== undefined) {
         const ret = await ConfirmAsync(t('GoogleDriveProjects.confirm.overwrite'));
         if (!ret) return;
@@ -93,7 +108,7 @@ export default function GoogleDriveProjectsContainers() {
         await AlertAsync(t('GoogleDriveProjects.alert.saved'));
       }
     },
-    [driveProjects, saveToDrive]
+    [driveProjects, isListLoaded, reloadProjects, saveToDrive]
   );
 
   const pressLoadProject = useCallback(

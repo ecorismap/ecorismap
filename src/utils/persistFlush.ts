@@ -24,3 +24,34 @@ export const attachPersistFlushOnBackground = (persistor: Flushable): (() => voi
     return () => {};
   }
 };
+
+/**
+ * 永続化の書き込み待ち（redux-persist の persist:root と、分離した persist:dataSet）を、登録元を知らずに一度に書き出す。
+ * 複数のスライスを置き換える処理（プロジェクトを閉じる・バックアップの復元・ファイルを開く・データの消去）の直後に呼ぶ。
+ * 何もしないと persist:root はキー数×約1秒、dataSet は約1秒遅れて書かれ、その間に落ちると
+ * 「同期の基準値は閉じる前のまま、記録は空」のような食い違った状態で起動する（設定監査 S-L3）。
+ * 登録は store 側（store.ts・store.web.ts・dataSetStorage.ts）が行うので、フックは store を import せずに呼べる
+ */
+type PersistFlusher = () => Promise<unknown> | void;
+
+const persistFlushers = new Set<PersistFlusher>();
+
+export const registerPersistFlusher = (flusher: PersistFlusher): (() => void) => {
+  persistFlushers.add(flusher);
+  return () => {
+    persistFlushers.delete(flusher);
+  };
+};
+
+/** 登録された書き出しをすべて行う。失敗しても投げない（書き込みのタイミングを早めるだけで、本来の操作は止めない） */
+export const flushPersistence = async (): Promise<void> => {
+  await Promise.all(
+    [...persistFlushers].map(async (flusher) => {
+      try {
+        await flusher();
+      } catch (e) {
+        console.log('[persistFlush] flush error:', e);
+      }
+    })
+  );
+};

@@ -136,11 +136,6 @@ export const useDataEdit = (record: RecordType, layer: LayerType): UseDataEditRe
     [dataUser.uid, photoFolder, projectId]
   );
 
-  const isMapMemoLayer = useMemo(
-    () =>
-      dataSet.flatMap((d) => (d.layerId === layer.id ? d.data : [])).some((d) => d.field._strokeColor !== undefined),
-    [dataSet, layer.id]
-  );
   const isClosedProject = projectId === undefined;
   const isEditable = useMemo(
     () => isClosedProject || isSettingProject || targetLayer.permission !== 'COMMON',
@@ -193,13 +188,18 @@ export const useDataEdit = (record: RecordType, layer: LayerType): UseDataEditRe
 
     // allUserRecordSetをセレクタから取得
     const initialRecordNumber = allUserRecordSet.findIndex((d) => d.id === record.id) + 1;
-    selectRecord(targetLayer.id, record);
-    setTargetRecord(record);
+    //渡された記録は画面を開いた時点の写し。地図で位置を直して戻ったとき（面を始点タップで閉じる・線を分割する）は
+    //ストアの方が新しいので、ストアの版を使う。古い写しのまま保存すると形が編集前に戻る
+    const latestRecord = initialRecordNumber > 0 ? allUserRecordSet[initialRecordNumber - 1] : record;
+    selectRecord(targetLayer.id, latestRecord);
+    setTargetRecord(latestRecord);
     setTargetRecordSet(allUserRecordSet);
     setTargetLayer(layer);
     setRecordNumber(initialRecordNumber);
     if (layer.type === 'POINT') {
-      const newLatLon = isLocationType(record.coords) ? toLatLonDMS(record.coords) : LatLonDMSEmptyTemplate;
+      const newLatLon = isLocationType(latestRecord.coords)
+        ? toLatLonDMS(latestRecord.coords)
+        : LatLonDMSEmptyTemplate;
       setLatLon(newLatLon);
       setIsLatLonDirty(false);
     }
@@ -439,24 +439,21 @@ export const useDataEdit = (record: RecordType, layer: LayerType): UseDataEditRe
     setTemporaryDeletePhotoList([]);
     setTemporaryAddedPhotoList([]);
 
-    let deletedRecords: RecordType[] = [];
-    if (isMapMemoLayer) {
-      //同じグループのレコードを取得
-      const subGroupRecords = dataSet
-        .flatMap((d) => (d.layerId === layer.id ? d.data : []))
-        .filter((d) => d.field._group === targetRecord.id);
-      deletedRecords = [targetRecord, ...subGroupRecords];
-    } else {
-      deletedRecords = [targetRecord];
-    }
-
-    dispatch(
-      deleteRecordsAction({
-        layerId: targetLayer.id,
-        userId: targetRecord.userId,
-        data: deletedRecords,
-      })
-    );
+    //_group でぶら下がる子（マップメモの子ストローク、飛翔図の行動記号）は、マップメモに限らず親と一緒に消す。
+    //残すと一覧にも地図の選択にも出ないので消す手段が無く、アップロードで他のメンバーにも配られる。
+    //子は親と別の名義の集合にあることもあるので、名義ごとに消す（データ一覧からの削除と同じ）
+    const childRecords = dataSet
+      .flatMap((d) => (d.layerId === layer.id ? d.data : []))
+      .filter((d) => d.field._group === targetRecord.id);
+    const byBucket = new Map<string | undefined, RecordType[]>([[targetRecord.userId, [targetRecord]]]);
+    childRecords.forEach((child) => {
+      const list = byBucket.get(child.userId);
+      if (list === undefined) byBucket.set(child.userId, [child]);
+      else list.push(child);
+    });
+    byBucket.forEach((data, userId) => {
+      dispatch(deleteRecordsAction({ layerId: targetLayer.id, userId, data }));
+    });
     setIsEditingRecord(false);
     setIsLatLonDirty(false);
     return { isOK: true, message: '' };
@@ -465,7 +462,6 @@ export const useDataEdit = (record: RecordType, layer: LayerType): UseDataEditRe
     targetLayer,
     targetRecord,
     temporaryDeletePhotoList,
-    isMapMemoLayer,
     dispatch,
     dataSet,
     layer.id,

@@ -1,6 +1,7 @@
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import { googleDriveOAuth } from '../../constants/APIKeys';
 import { DRIVE_FILE_SCOPE, GoogleDriveAuthError, GoogleDriveAuthResult } from './types';
+import { clearAppFolderCache } from './appFolderCache';
 
 let configured = false;
 let connectedEmail: string | undefined;
@@ -45,6 +46,8 @@ export const signInGoogleDrive = async (): Promise<GoogleDriveAuthResult> => {
     }
     connectedEmail = response.data.user.email;
     cachedToken = undefined;
+    // 接続解除を経ずに別アカウントで入り直すと、前のアカウントのフォルダIDで一覧・保存してしまう
+    clearAppFolderCache();
     return { isOK: true, message: '', email: connectedEmail };
   } catch (e) {
     if (e instanceof GoogleDriveAuthError) {

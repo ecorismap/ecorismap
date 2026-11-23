@@ -1,6 +1,7 @@
 import { AppState } from 'react-native';
 import autoMergeLevel1 from 'redux-persist/lib/stateReconciler/autoMergeLevel1';
 import { storage } from './mmkvStorage';
+import { registerPersistFlusher } from './persistFlush';
 import { DataType } from '../types';
 
 // ============================================================================
@@ -108,13 +109,19 @@ export const attachDataSetPersistSubscriber = (store: DataSetStore): (() => void
     }
   });
 
+  const flushPending = () => {
+    if (timer !== null) {
+      clearTimeout(timer);
+      flush();
+    }
+  };
+  // persist:root と同時に書き出せるようにする（flushPersistence、設定監査 S-L3）
+  const unregisterFlusher = registerPersistFlusher(flushPending);
+
   try {
     AppState.addEventListener('change', (state) => {
       if (state === 'background' || state === 'inactive') {
-        if (timer !== null) {
-          clearTimeout(timer);
-          flush();
-        }
+        flushPending();
       }
     });
   } catch (e) {
@@ -122,5 +129,8 @@ export const attachDataSetPersistSubscriber = (store: DataSetStore): (() => void
     console.log('[dataSetStorage] AppState unavailable:', e);
   }
 
-  return unsubscribe;
+  return () => {
+    unsubscribe();
+    unregisterFlusher();
+  };
 };

@@ -28,6 +28,14 @@ jest.mock('../../utils/projectBackup', () => ({ saveProjectBackup: jest.fn() }))
 jest.mock('../useDynamicDictionaryInput', () => ({ clearAllDynamicDictionaries: jest.fn() }));
 jest.mock('../useData', () => ({ clearAllVisibilitySnapshots: jest.fn() }));
 jest.mock('../../i18n/config', () => ({ t: (key: string) => key }));
+// 書き出した時点で、置き換えの dispatch がどこまで済んでいたかを控える
+const mockDispatchedAtFlush: string[][] = [];
+jest.mock('../../utils/persistFlush', () => ({
+  flushPersistence: () => {
+    mockDispatchedAtFlush.push(mockDispatch.mock.calls.map(([a]) => a.type));
+    return Promise.resolve();
+  },
+}));
 jest.mock('../../modules/tileMaps', () => ({
   tileMapsInitialState: [
     { id: 'hybrid', visible: false },
@@ -56,4 +64,26 @@ test('衛星写真で閉じても、初期一覧（標準地図を表示）に�
     .map(([a]) => a)
     .find((a) => a.type === 'settings/editSettingsAction' && 'mapType' in a.payload);
   expect(settingsAction.payload.mapType).toBe('standard');
+});
+
+test('閉じたあと、置き換えたスライスがすべて揃ってから永続化の書き込み待ちを書き出す（設定監査 S-L3）', () => {
+  mockDispatch.mockClear();
+  mockDispatchedAtFlush.length = 0;
+  mockState = {
+    settings: { projectId: 'p1', isSettingProject: false, isSynced: false, mapType: 'standard' },
+    projects: [],
+    user: { uid: 'u1' },
+    layers: [],
+    dataSet: [],
+    tileMaps: [],
+    dataSync: {},
+  };
+  const { result } = renderHook(() => useProject());
+  act(() => {
+    result.current.clearProject();
+  });
+  expect(mockDispatchedAtFlush).toHaveLength(1);
+  expect(mockDispatchedAtFlush[0]).toEqual(
+    expect.arrayContaining(['settings/editSettingsAction', 'layers/set', 'dataSet/setDataSetAction', 'tileMaps/set'])
+  );
 });

@@ -4,6 +4,7 @@ import { shallowEqual, useDispatch, useSelector } from 'react-redux';
 import { getUidsByEmails } from '../lib/firebase/firestore';
 import { RootState } from '../store';
 import { editSettingsAction } from '../modules/settings';
+import { clearDataSyncProjectAction } from '../modules/dataSync';
 import { ProjectType, RegionType, UserType, VerifiedType } from '../types';
 import { checkDuplicateMember, checkEmails } from '../utils/Project';
 import { hasRegisterdUser } from '../lib/virgilsecurity/e3kit';
@@ -27,6 +28,7 @@ export type UseProjectEditReturnType = {
     project: ProjectType | undefined;
   }>;
   openProject: () => void;
+  discardSyncBaselines: () => void;
   saveProject: (updatedProject: ProjectType) => void;
   startProjectSetting: () => void;
   changeText: (name: string, value: string) => void;
@@ -77,16 +79,41 @@ export const useProjectEdit = (initialProject: ProjectType, isNew: boolean): Use
         role: role,
         projectId: targetProject.id,
         projectName: targetProject.name,
+        // 設定モードのまま通常の「開く」をすると設定モードが残り、「保存」で自分の記録がテンプレートとして
+        // 配られてしまう。設定モードの入口は開いた後に startProjectSetting で立て直す
+        isSettingProject: false,
       })
     );
   }, [dispatch, role, targetProject.id, targetProject.name, user]);
 
+  // 開く処理は手元のデータを捨ててクラウドから取り直す。途中で失敗すると手元は空や別プロジェクトの構成のまま
+  // 今のプロジェクトの名前で残るので、開く先だけでなく今開いているプロジェクトの基準値も捨て、
+  // 次のアップロードで必ず内容を比べさせる（確認なしにクラウドの自分のデータを置き換えさせない）
+  const discardSyncBaselines = useCallback(() => {
+    dispatch(clearDataSyncProjectAction(targetProject.id));
+    if (currentProjectId !== undefined && currentProjectId !== targetProject.id) {
+      dispatch(clearDataSyncProjectAction(currentProjectId));
+    }
+  }, [currentProjectId, dispatch, targetProject.id]);
+
   const updateProjectMembers = useCallback(
     (uids: (string | null)[], hasRegisterd: boolean[]): ProjectType => {
       const updatedProject = cloneDeep(targetProject);
+      // 既存プロジェクトで保存済みの有効メンバーは OK のまま残す。一律に HOLD にすると、保留の確認で
+      // キャンセルしたり保存に失敗したりしたとき全員がオレンジになり、鍵の再共有も押せなくなる。
+      // 新規作成では createE3kitGroup が HOLD を参加者の抽出に使うので HOLD にする
+      const isSavedActiveMember = (uid: string | null) =>
+        !isNew &&
+        uid !== null &&
+        originalProject.membersUid.includes(uid) &&
+        originalProject.members.some((m) => m.uid === uid && m.verified === 'OK');
       const members = updatedProject.members.map((member, idx) =>
         hasRegisterd[idx]
-          ? { ...member, uid: uids[idx], verified: 'HOLD' as VerifiedType }
+          ? {
+              ...member,
+              uid: uids[idx],
+              verified: (isSavedActiveMember(uids[idx]) ? 'OK' : 'HOLD') as VerifiedType,
+            }
           : { ...member, uid: null, verified: 'NO_ACCOUNT' as VerifiedType }
       );
       const membersUid = members.map((v) => v.uid).filter((v): v is string => v !== null);
@@ -108,7 +135,7 @@ export const useProjectEdit = (initialProject: ProjectType, isNew: boolean): Use
       //   console.log(deleteMessage);
       // }
     },
-    [targetProject]
+    [isNew, originalProject, targetProject]
   );
 
   // 保留（未登録）メンバーの登録状況を画面表示時に再チェックする。
@@ -118,30 +145,48 @@ export const useProjectEdit = (initialProject: ProjectType, isNew: boolean): Use
     if (isNew) return;
     const pendingEmails = initialProject.members.filter((m) => !m.uid).map((m) => m.email);
     if (pendingEmails.length === 0) return;
+    // 保存できるのはオーナー・管理者だけ。一般メンバーで変更ありにすると保存ボタンが無いまま
+    // 「開く」が無効になり、プロジェクトを開けなくなる
+    const myRole = initialProject.members.find((m) => m.uid === user.uid)?.role;
+    const canSave = myRole === 'OWNER' || myRole === 'ADMIN';
     let cancelled = false;
     (async () => {
-      const uids = await getUidsByEmails(pendingEmails);
-      if (cancelled || uids === undefined) return;
-      const resolved = new Map<string, string>();
-      pendingEmails.forEach((email, idx) => {
-        const uid = uids[idx];
-        if (uid) resolved.set(email, uid);
-      });
-      if (resolved.size === 0) return;
-      setTargetProject((prev) => ({
-        ...prev,
-        members: prev.members.map((m) =>
-          !m.uid && resolved.has(m.email)
-            ? { ...m, uid: resolved.get(m.email)!, verified: 'HOLD' as VerifiedType }
-            : m
-        ),
-      }));
-      setIsEdited(true);
+      try {
+        const uids = await getUidsByEmails(pendingEmails);
+        if (cancelled || uids === undefined) return;
+        // 保存時は暗号化キー（Virgil）の登録まで確かめて未登録なら保留に戻すので、ここでも同じ基準で判定する。
+        // Firebase だけで判定すると、キー未登録の人が開くたびにオレンジになり保存しても赤に戻る
+        const registered = await Promise.all(
+          pendingEmails.map(async (_email, idx) => {
+            const uid = uids[idx];
+            return uid ? hasRegisterdUser(uid) : false;
+          })
+        );
+        if (cancelled) return;
+        const resolved = new Map<string, string>();
+        pendingEmails.forEach((email, idx) => {
+          const uid = uids[idx];
+          if (uid && registered[idx]) resolved.set(email, uid);
+        });
+        if (resolved.size === 0) return;
+        setTargetProject((prev) => ({
+          ...prev,
+          members: prev.members.map((m) =>
+            !m.uid && resolved.has(m.email)
+              ? { ...m, uid: resolved.get(m.email)!, verified: 'HOLD' as VerifiedType }
+              : m
+          ),
+        }));
+        if (canSave) setIsEdited(true);
+      } catch (e) {
+        // 再チェックは表示の補助。照会に失敗しても保留表示のままにし、保存時に改めて判定させる
+        console.log('[useProjectEdit] pending member recheck failed', e);
+      }
     })();
     return () => {
       cancelled = true;
     };
-  }, [isNew, initialProject]);
+  }, [isNew, initialProject, user.uid]);
 
   const checkRegisterdUser = useCallback(async (uids: (string | null)[]) => {
     const registerd = await Promise.all(uids.map(async (uid) => hasRegisterdUser(uid)));
@@ -229,7 +274,11 @@ export const useProjectEdit = (initialProject: ProjectType, isNew: boolean): Use
   const changeMemberText = useCallback(
     (value: string, idx: number) => {
       const members = cloneDeep(targetProject.members);
-      members[idx].email = value;
+      if (members[idx].email !== value) {
+        // メールを書き換えた行は別の人になりうる。元の人の uid・バッジのまま残すと、表示や鍵の再共有が
+        // 元の人に向いてしまう。保存時に全メールを解決し直すので、それまでは未確認として扱う
+        members[idx] = { ...members[idx], email: value, uid: null, verified: 'NO_ACCOUNT' };
+      }
       setTargetProject({ ...targetProject, members: members });
       setIsEdited(true);
     },
@@ -294,6 +343,7 @@ export const useProjectEdit = (initialProject: ProjectType, isNew: boolean): Use
     projectRegion,
     checkedProject,
     openProject,
+    discardSyncBaselines,
     saveProject,
     startProjectSetting,
     changeText,

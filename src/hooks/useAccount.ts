@@ -32,6 +32,17 @@ const keyBackupFailureMessage = (message: string): string | undefined => {
   return undefined;
 };
 
+/**
+ * 認証エラーのうち、パスワード違いと区別して伝えるべきもの（通信エラー・試行回数の制限）を表示文にする。
+ * これらを「パスワードが違います」と出すと、正しいパスワードを打ち直してロックを長引かせる。
+ * それ以外は undefined を返し、呼び出し側の既定の文言（列挙対策を兼ねる）に任せる。
+ */
+export const authErrorMessage = (code: unknown): string | undefined => {
+  if (code === 'auth/network-request-failed') return t('hooks.message.authNetworkError');
+  if (code === 'auth/too-many-requests') return t('hooks.message.authTooManyRequests');
+  return undefined;
+};
+
 export type UseAccountReturnType = {
   user: UserType;
   accountMessage: string;
@@ -248,26 +259,25 @@ export const useAccount = (): UseAccountReturnType => {
           setAccountMessage(t('hooks.message.signinRestricted'));
           return { isOK: false, authUser: undefined };
         }
-        if (signInMessage === 'auth/wrong-password') {
-          //setAccountMessage('パスワードが間違っています。');
-        } else if (signInMessage === 'auth/user-not-found') {
-          //setAccountMessage('ユーザーが存在しません。');
-        } else if (signInMessage === 'auth/too-many-requests') {
-          //setAccountMessage('しばらくしてから試すかパスワードをリセットしてください。');
-        } else {
-          //setAccountMessage('不明なエラーです。');
-        }
-        setAccountMessage(t('hooks.message.invalidEmailOrPassword'));
+        // パスワード違い・未登録は区別しない（メールアドレスの列挙対策）
+        setAccountMessage(authErrorMessage(signInMessage) ?? t('hooks.message.invalidEmailOrPassword'));
         return { isOK: false, authUser: undefined };
       }
       if (!authUser.emailVerified) {
         setAccountMessage(t('hooks.message.noActivate'));
         const ret = await ConfirmAsync(t('hooks.confirm.sendMailForActivate'));
         if (ret) {
-          await firebase.confirmEmail();
-          await AlertAsync(t('hooks.alert.pleaseActivate'));
+          // 送信には未確認アカウントの認証セッションが要るため、signOut はこの後に行う
+          const sending = await firebase.confirmEmail();
+          if (sending === 'error') {
+            setAccountMessage(t('hooks.message.failSendActivationMail'));
+          } else {
+            await AlertAsync(t('hooks.alert.pleaseActivate'));
+          }
         }
-        t('hooks.message.pleaseActivate');
+        // 未確認のセッションを残すと、未ログイン表示のまま getAuthUid がこのアカウントを返し、
+        // バックアップ復元で前の利用者のバックアップが見えなくなる
+        await FBsignOut();
         return { isOK: false, authUser: undefined };
       }
       dispatch(
@@ -323,13 +333,21 @@ export const useAccount = (): UseAccountReturnType => {
     setIsLoading(true);
     // 登録の有無で応答を変えない（メールアドレスの列挙対策）。
     // Authのメール列挙保護を有効にしてあり、未登録でもuser-not-foundは返らない。
-    await FBsendPasswordResetEmail(email);
+    // 通信エラー・回数制限は登録の有無に関係なく起きるので、送れていないことだけは伝える
+    const result: unknown = await FBsendPasswordResetEmail(email);
     setIsLoading(false);
+    const failMessage = authErrorMessage(result);
+    if (failMessage !== undefined) {
+      setAccountMessage(failMessage);
+      return { isOK: false };
+    }
     return { isOK: true };
   }, []);
 
+  // 新規登録の直後にだけ呼ぶ。確認メールを送ったら（失敗しても）未確認のセッションは残さない
   const sendConfirmEMail = useCallback(async () => {
     const sending = await firebase.confirmEmail();
+    await FBsignOut();
     if (sending === 'error') {
       setAccountMessage(t('hooks.message.unknownError'));
       return { isOK: false };
@@ -402,10 +420,10 @@ export const useAccount = (): UseAccountReturnType => {
 
   const changeUserPassword = useCallback(async (oldPassword: string, password: string) => {
     setIsLoading(true);
-    const { isOK } = await firebase.changePassword(oldPassword, password);
+    const { isOK, message } = await firebase.changePassword(oldPassword, password);
     setIsLoading(false);
     if (!isOK) {
-      setAccountMessage(t('hooks.message.failUpdateLoginPassword'));
+      setAccountMessage(authErrorMessage(message) ?? t('hooks.message.failUpdateLoginPassword'));
       return { isOK: false };
     }
     return { isOK: true };
@@ -495,10 +513,10 @@ export const useAccount = (): UseAccountReturnType => {
 
   const checkUserPassword = useCallback(async (password: string) => {
     setIsLoading(true);
-    const { isOK } = await firebase.checkPassword(password);
+    const { isOK, message } = await firebase.checkPassword(password);
     setIsLoading(false);
     if (!isOK) {
-      setAccountMessage(t('hooks.message.wrongPassword'));
+      setAccountMessage(authErrorMessage(message) ?? t('hooks.message.wrongPassword'));
       return { isOK: false };
     }
     return { isOK: true };
@@ -687,7 +705,10 @@ export const useAccount = (): UseAccountReturnType => {
       if (participants.length > 0) {
         await e3kit.deleteGroupMembers(project.id, project.ownerUid, participants);
       }
-      await e3kit.deleteGroup(project.id);
+      const { isOK: deleteGroupOK } = await e3kit.deleteGroup(project.id);
+      // 失敗してもプロジェクト本体の削除は続ける（残るのはクラウドのグループチケットのみ）。掃除漏れの手がかりに残す
+      // eslint-disable-next-line no-console
+      if (!deleteGroupOK) console.log('[deleteAllProjects] failed to delete group', project.id);
     }
 
     // Storage Rulesがprojectドキュメントを参照するため、ドキュメント削除より先にStorageを削除する。
@@ -711,12 +732,34 @@ export const useAccount = (): UseAccountReturnType => {
     return { isOK: true, message: '' };
   }, [dispatch, user]);
 
+  // 「すべてのプロジェクトを削除」は数秒〜数十秒かかる。Loading で画面を覆わないと「次へ」を重ねて押せ、
+  // 同じ削除が並行して走る。deleteUserAccount からの呼び出しは呼び出し側が表示を管理するので、公開する方だけ包む
+  const deleteAllProjectsWithLoading = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      return await deleteAllProjects();
+    } finally {
+      setIsLoading(false);
+    }
+  }, [deleteAllProjects]);
+
   const deleteUserAccount = useCallback(
     async (password: string) => {
       if (!isLoggedIn(user)) {
         setAccountMessage(t('hooks.message.pleaseReLogin'));
         return { isOK: false };
       }
+      // プロジェクト（Virgilグループを含む）を先に消す。鍵を先に消すと、(1) 通信エラーでプロジェクト削除が
+      // 失敗したとき鍵だけ消えて本人の所有プロジェクトが恒久的に読めなくなる、(2) ローカル鍵が無くなった後の
+      // グループ削除が必ず失敗してチケットがクラウドに残る、(3) getAllProjects が復号できず列挙から漏れる
+      setIsLoading(true);
+      const { isOK: deleteProjectOK } = await deleteAllProjects();
+      setIsLoading(false);
+      if (!deleteProjectOK) {
+        setAccountMessage(t('hooks.message.failDeleteProject'));
+        return { isOK: false };
+      }
+      // 鍵の削除と deleteKeyData の callable は認証が要るため、アカウント削除の直前に置く
       setIsLoading(true);
       const { isOK: encryptKeyOK } = await e3kit.deleteEncryptKey();
       setIsLoading(false);
@@ -730,13 +773,6 @@ export const useAccount = (): UseAccountReturnType => {
         await keyBackup.deleteKeyData();
         await deleteIdentityPrivateKey(user.uid);
         await migration.clearMigratedMarker(user.uid);
-      }
-      setIsLoading(true);
-      const { isOK: deleteProjectOK } = await deleteAllProjects();
-      setIsLoading(false);
-      if (!deleteProjectOK) {
-        setAccountMessage(t('hooks.message.failDeleteProject'));
-        return { isOK: false };
       }
       setIsLoading(true);
       const { isOK: isDeleteOK } = await firebase.deleteUserAccount(password);
@@ -789,6 +825,6 @@ export const useAccount = (): UseAccountReturnType => {
     restoreEncryptKey,
     cleanupEncryptKey,
     resetEncryptKey,
-    deleteAllProjects,
+    deleteAllProjects: deleteAllProjectsWithLoading,
   } as const;
 };

@@ -2,6 +2,7 @@ import { useCallback, useMemo } from 'react';
 import { shallowEqual, useDispatch, useSelector, useStore } from 'react-redux';
 import { RootState } from '../store';
 import { saveProjectBackup } from '../utils/projectBackup';
+import { flushPersistence } from '../utils/persistFlush';
 import { editSettingsAction } from '../modules/settings';
 import { clearDataSyncProjectAction } from '../modules/dataSync';
 import { ProjectType, RegionType } from '../types';
@@ -107,6 +108,8 @@ export const useProject = (): UseProjectReturnType => {
     dispatch(setLayersAction(layersInitialState));
     dispatch(setDataSetAction(dataSetInitialState));
     dispatch(setTileMapsAction(tileMapsInitialState));
+    // 置き換えた複数のスライスを揃えて書く。数秒ずれた間に落ちると「基準値は閉じる前・記録は空」で起動する（設定監査 S-L3）
+    flushPersistence();
     // 動的辞書をクリア
     clearAllDynamicDictionaries();
     clearAllVisibilitySnapshots();

@@ -38,7 +38,7 @@ import { HomeTerrain3DPerf } from './HomeTerrain3DPerf';
 import { DataSelectionContext } from '../../contexts/DataSelection';
 import { AppStateContext } from '../../contexts/AppState';
 import { InfoToolContext } from '../../contexts/InfoTool';
-import { cameraToRegion } from '../../utils/terrain3d/coords';
+import { cameraToRegion, restartCameraFromScene } from '../../utils/terrain3d/coords';
 import {
   LONG_PRESS_MAX_MOVE_DP,
   LONG_PRESS_MS,
@@ -59,6 +59,8 @@ import { terrain3dHeadingStore } from '../../utils/terrain3d/headingStore';
 import { isVistaHeadingFollow, takePendingVista } from '../../utils/terrain3d/vistaStore';
 import { requestTrackReplayPause } from '../../utils/trackReplayStore';
 import { replayEyeDistanceM } from '../../utils/terrain3d/replayCamera';
+import { selectTerrain3DPoints } from '../../utils/terrain3d/terrain3dPoints';
+import { createInteractionSyncGate, setTerrain3DRegionProvider } from '../../utils/terrain3d/regionSyncStore';
 import { getTerrainDevice } from '../../utils/terrain3d/webgpuSupport';
 import MapView from 'react-native-maps';
 import { MapRef } from 'react-map-gl/maplibre';
@@ -153,7 +155,7 @@ export const HomeTerrain3D = React.memo(() => {
   // 位置・方位を含むMapViewContextではなく安定値だけのコンテキストを購読する
   // （GPS更新のたびに再レンダリングされると描画ループとジェスチャを阻害するため）
   const { onDragMapView, mapViewRef, zoom, setMapLocationInfo } = useContext(MapViewStableContext);
-  const { pointDataSet, lineDataSet, polygonDataSet } = useContext(DataSelectionContext);
+  const { pointDataSet, lineDataSet, polygonDataSet, selectedRecord } = useContext(DataSelectionContext);
   const tileMaps = useSelector((state: RootState) => state.tileMaps);
   const tileSignatures = useSelector((state: RootState) => state.tileSignatures);
   const layers = useSelector((state: RootState) => state.layers);
@@ -181,6 +183,12 @@ export const HomeTerrain3D = React.memo(() => {
   const lastSyncedCameraRef = useRef<Terrain3DCameraState | null>(null);
   /** animate()が仕掛けた同期タイマー（追従中に何重にも積まない） */
   const syncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  /** 間引きで捨てた同期の後追いタイマー（最後の位置を取りこぼさない） */
+  const trailingSyncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  /** ジェスチャ中に来た同期を指を離すまで持ち越す（操作中のdispatchがジェスチャを止めるため） */
+  const interactionSyncGateRef = useRef(createInteractionSyncGate());
+  /** context.configure 済みのデバイスとコンテキスト（デバイスロスト後の作り直しで構成し直す） */
+  const configuredGpuRef = useRef<{ device: GPUDevice; context: RNCanvasContext } | null>(null);
   // ジェスチャコールバックから最新値を参照するためのref
   const viewportRef = useRef({ width: windowWidth, height: windowHeight });
   viewportRef.current = { width: windowWidth, height: windowHeight };
@@ -303,8 +311,20 @@ export const HomeTerrain3D = React.memo(() => {
     (force = false) => {
       const scene = sceneRef.current;
       if (scene === null) return;
+      if (interactionSyncGateRef.current.shouldDefer(force, scene.interacting)) return;
       const now = Date.now();
-      if (!force && now - lastSyncRef.current < REGION_SYNC_THROTTLE_MS) return;
+      if (!force && now - lastSyncRef.current < REGION_SYNC_THROTTLE_MS) {
+        // 捨てた分は間引き明けに1回だけ同期し直す。後追いが無いと、ズームボタンや慣性の
+        // 最終位置がmapRegionへ届かず、2Dへ戻したときに古い位置で開く
+        if (trailingSyncTimerRef.current === null) {
+          trailingSyncTimerRef.current = setTimeout(() => {
+            trailingSyncTimerRef.current = null;
+            syncRegionRef.current(false);
+          }, REGION_SYNC_THROTTLE_MS - (now - lastSyncRef.current));
+        }
+        return;
+      }
+      interactionSyncGateRef.current.markSynced();
       const camera = scene.controller.getState();
       const prev = lastSyncedCameraRef.current;
       if (prev !== null) {
@@ -337,10 +357,21 @@ export const HomeTerrain3D = React.memo(() => {
         cancelAnimationFrame(rafRef.current);
         rafRef.current = null;
       }
-      sceneRef.current?.dispose();
       const layout = canvasLayoutRef.current;
-      const scene = new TerrainScene({ device, context, presentationFormat }, mapRegion, layout.height);
+      // デバイスロストからの作り直しでは、3Dに入った地点ではなく直前のカメラ位置から再開する
+      // （眺望の水平視線は通常の上限まで戻す）
+      const prevScene = sceneRef.current;
+      const prevCamera =
+        prevScene === null ? null : restartCameraFromScene(prevScene.controller.getState(), prevScene.vistaEye);
+      const initialRegion =
+        prevCamera === null
+          ? mapRegion
+          : cameraToRegion(prevCamera, viewportRef.current.width, viewportRef.current.height);
+      sceneRef.current?.dispose();
+      const scene = new TerrainScene({ device, context, presentationFormat }, initialRegion, layout.height);
       scene.setViewportSize(layout.width, layout.height);
+      // 慣性やアニメーションの止まった位置をmapRegionへ（間引きは後追いタイマーが補う）
+      scene.onCameraSettled = () => syncRegionRef.current(false);
       sceneRef.current = scene;
       setSceneState(scene);
       scene.setLayers(layersRef.current);
@@ -468,10 +499,15 @@ export const HomeTerrain3D = React.memo(() => {
     const canvas = gpu.context.canvas as any;
     const width = Math.round(layout.width * PixelRatio.get());
     const height = Math.round(layout.height * PixelRatio.get());
-    if (canvas.width === width && canvas.height === height) return;
+    const configured = configuredGpuRef.current;
+    // デバイスロスト後の作り直しは寸法が同じでも新しいデバイスで構成し直す
+    // （旧デバイスのサーフェスのまま描くと固まる）
+    const sameGpu = configured !== null && configured.device === gpu.device && configured.context === gpu.context;
+    if (sameGpu && canvas.width === width && canvas.height === height) return;
     canvas.width = width;
     canvas.height = height;
     gpu.context.configure({ device: gpu.device, format: gpu.format, alphaMode: 'opaque' });
+    configuredGpuRef.current = { device: gpu.device, context: gpu.context };
     sceneRef.current?.markDirty();
   }, []);
 
@@ -597,15 +633,25 @@ export const HomeTerrain3D = React.memo(() => {
 
   // 破棄
   useEffect(() => {
+    // 3Dを抜ける瞬間（toggleTerrain）に、間引きで未同期のカメラ位置も読めるようにする
+    const unregisterRegion = setTerrain3DRegionProvider(() => {
+      const scene = sceneRef.current;
+      if (scene === null) return null;
+      const { width, height } = viewportRef.current;
+      return cameraToRegion(scene.controller.getState(), width, height);
+    });
     return () => {
+      unregisterRegion();
       if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
       if (syncTimerRef.current !== null) clearTimeout(syncTimerRef.current);
+      if (trailingSyncTimerRef.current !== null) clearTimeout(trailingSyncTimerRef.current);
       // 自分が差し込んだファサードだけを外す（2D復帰時はMapViewのrefが上書きする）
       const refMut = mapViewRef as React.MutableRefObject<MapView | MapRef | Terrain3DHandle | null>;
       if (refMut.current === handleRef.current) refMut.current = null;
       handleRef.current = null;
       sceneRef.current?.dispose();
       sceneRef.current = null;
+      configuredGpuRef.current = null;
       // デバイスは次回の3D表示で再利用するためここでは破棄しない（webgpuSupportが保持）
       gpuRef.current = null;
     };
@@ -615,8 +661,8 @@ export const HomeTerrain3D = React.memo(() => {
   const infoRef = useRef({ getInfoOfMap, closeVectorTileInfo, getInfoOfFeatureAt });
   infoRef.current = { getInfoOfMap, closeVectorTileInfo, getInfoOfFeatureAt };
   // タップのポイント画面ピック用（ジェスチャコールバックから最新値を参照）
-  const pickDataRef = useRef({ pointDataSet, layers });
-  pickDataRef.current = { pointDataSet, layers };
+  const pickDataRef = useRef({ pointDataSet, layers, selectedRecord });
+  pickDataRef.current = { pointDataSet, layers, selectedRecord };
   // 長押しメニューの表示（ジェスチャのuseMemoを張り替えずに最新のsetterを呼ぶ）
   const longPressRef = useRef(setMapLocationInfo);
   longPressRef.current = setMapLocationInfo;
@@ -648,33 +694,32 @@ export const HomeTerrain3D = React.memo(() => {
         if (!success) return;
         const scene = sceneRef.current;
         if (!scene) return;
+        // 地形に当たらなくても（遠方・空）、描かれているドットは選べるようにする
         const latlon = scene.unprojectToLatLon(e.x, e.y);
-        if (latlon === null) return;
-        const position = [latlon.longitude, latlon.latitude];
+        const position = latlon === null ? null : [latlon.longitude, latlon.latitude];
         // ポイントは画面上の距離で先にピックする（描画と同じ投影を使うため、
-        // 俯瞰時の標高サンプル誤差で緯度経度判定が外れてもドットに確実に当たる）
+        // 俯瞰時の標高サンプル誤差で緯度経度判定が外れてもドットに確実に当たる）。
+        // 対象は表示と同じ選定（上限件数で打ち切った集合）。描いていない点を選ばない
         let pickPosition = position;
         let bestDp = 20;
-        for (const dataSet of pickDataRef.current.pointDataSet) {
-          const layer = pickDataRef.current.layers.find((v) => v.id === dataSet.layerId);
-          if (!layer?.visible) continue;
-          for (const record of dataSet.data as PointRecordType[]) {
-            if (!record.visible || record.coords === undefined) continue;
-            const screen = scene.projectToScreen(record.coords.latitude, record.coords.longitude);
-            if (screen === null) continue;
-            const d = Math.hypot(screen.x - e.x, screen.y - e.y);
-            if (d < bestDp) {
-              bestDp = d;
-              pickPosition = [record.coords.longitude, record.coords.latitude];
-            }
+        const { pointDataSet: pickPoints, layers: pickLayers, selectedRecord: pickSelected } = pickDataRef.current;
+        for (const entry of selectTerrain3DPoints(pickPoints, pickLayers, pickSelected)) {
+          const screen = scene.projectToScreen(entry.latitude, entry.longitude);
+          if (screen === null) continue;
+          const d = Math.hypot(screen.x - e.x, screen.y - e.y);
+          if (d < bestDp) {
+            bestDp = d;
+            pickPosition = [entry.longitude, entry.latitude];
           }
         }
+        if (pickPosition === null) return;
         // 2Dと同じ優先順: レイヤの地物（ポイント/ライン/ポリゴン/軌跡）を先にヒットテストし、
         // 何も見つからなければベクタタイル（PMTiles）の属性ポップアップへ
+        // （地形上の位置が無いときはベクタタイルを引かない）
         infoRef.current
           .getInfoOfFeatureAt(pickPosition)
           .then((notFound) => {
-            if (notFound) return infoRef.current.getInfoOfMap(position, [e.x, e.y]);
+            if (notFound && position !== null) return infoRef.current.getInfoOfMap(position, [e.x, e.y]);
           })
           .catch(() => undefined);
       });
@@ -685,8 +730,19 @@ export const HomeTerrain3D = React.memo(() => {
       // 消えていき、戻す手段がなくなる（動画プレイヤーと同じ挙動にする）
       requestTrackReplayPause();
       sceneRef.current?.beginInteraction();
+      // 間引き明けの後追い同期がジェスチャ中に走らないよう、指を離すまで持ち越す
+      if (trailingSyncTimerRef.current !== null) {
+        clearTimeout(trailingSyncTimerRef.current);
+        trailingSyncTimerRef.current = null;
+        interactionSyncGateRef.current.markPending();
+      }
     };
-    const markFinalize = () => sceneRef.current?.endInteraction();
+    const markFinalize = () => {
+      const scene = sceneRef.current;
+      if (scene === null) return;
+      scene.endInteraction();
+      if (interactionSyncGateRef.current.takePending(scene.interacting)) syncRegionRef.current(false);
+    };
     const pan = Gesture.Pan()
       .runOnJS(true)
       .maxPointers(1)

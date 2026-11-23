@@ -1,4 +1,4 @@
-import { hasOpened, checkDuplicateMember, checkEmails } from '../Project';
+import { hasOpened, checkDuplicateMember, checkEmails, pickNewProjectIdForSave } from '../Project';
 
 // 型定義
 type VerifiedType = 'OK' | 'HOLD' | 'NO_ACCOUNT';
@@ -114,5 +114,25 @@ describe('Project', () => {
         emails: ['user1@example.com', 'invalid@email'],
       });
     });
+  });
+});
+
+// ACCOUNT_AUDIT_2026-11 A-M3 のレビュー指摘: 後始末で消した id を作り直しに使わない
+describe('pickNewProjectIdForSave', () => {
+  it('uses the given id on the first attempt', () => {
+    const attempted = new Set<string>();
+    const gen = jest.fn(() => 'fresh');
+    expect(pickNewProjectIdForSave('p1', attempted, gen)).toBe('p1');
+    expect(gen).not.toHaveBeenCalled();
+  });
+
+  it('switches to a new id when the same id is saved again', () => {
+    const attempted = new Set<string>();
+    let n = 0;
+    const gen = () => `fresh${++n}`;
+    expect(pickNewProjectIdForSave('p1', attempted, gen)).toBe('p1');
+    expect(pickNewProjectIdForSave('p1', attempted, gen)).toBe('fresh1');
+    // 2回目の失敗の後も、それまでに試した id はどれも使わない
+    expect(pickNewProjectIdForSave('p1', attempted, gen)).toBe('fresh2');
   });
 });

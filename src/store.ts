@@ -8,7 +8,7 @@ import {
   attachDataSetPersistSubscriber,
   dataSetExcludingReconciler,
 } from './utils/dataSetStorage';
-import { attachPersistFlushOnBackground } from './utils/persistFlush';
+import { attachPersistFlushOnBackground, registerPersistFlusher } from './utils/persistFlush';
 
 // dataSet（最大データ）はpersist:rootから分離し、専用キーへカスタム購読で永続化する。
 // これによりdataSetと無関係な更新（地図パン等）でdataSet全体が再書き込みされない。
@@ -41,6 +41,8 @@ attachDataSetPersistSubscriber(store as any);
 export const persistor = persistStore(store);
 // スロットル待ちのまま kill されると直前の変更（更新情報のOK・設定・レイヤ）が失われるため
 attachPersistFlushOnBackground(persistor);
+// 複数スライスの置き換え直後に書き出せるようにする（flushPersistence、設定監査 S-L3）
+registerPersistFlusher(() => persistor.flush());
 
 // RootStateの型を明示的に定義して、undefinedを防ぐ
 export type RootState = ReturnType<typeof reducer>;

@@ -8,7 +8,7 @@
  * 見た目の凹凸比率を実距離と一致させる（maplibreと同じ扱い）。
  */
 import { RegionType } from '../../types';
-import { CAMERA_FOV_DEG, INITIAL_PITCH_DEG, MAX_CAMERA_ZOOM, MIN_CAMERA_ZOOM } from './constants';
+import { CAMERA_FOV_DEG, INITIAL_PITCH_DEG, MAX_CAMERA_ZOOM, MAX_PITCH_DEG, MIN_CAMERA_ZOOM } from './constants';
 import { Terrain3DCameraState } from './types';
 
 /** メルカトル全周[m] */
@@ -75,6 +75,19 @@ export const regionToCamera = (region: RegionType): Terrain3DCameraState => ({
   heading: region.bearing ?? 0,
   pitch: region.pitch ?? INITIAL_PITCH_DEG,
 });
+
+/**
+ * シーンを作り直すとき（デバイスロスト等）に再開するカメラ。
+ * 眺望中はカメラの注視点がズームで決まる距離だけ前方にあるので、立ち位置を中心にして
+ * 通常の俯角で抜ける（clearVistaと同じ抜け方）。眺望でなければ直前のカメラのまま、俯角だけ上限に丸める
+ */
+export const restartCameraFromScene = (
+  camera: Terrain3DCameraState,
+  vistaOrigin: { latitude: number; longitude: number } | null
+): Terrain3DCameraState =>
+  vistaOrigin === null
+    ? { ...camera, pitch: Math.min(camera.pitch, MAX_PITCH_DEG) }
+    : { ...camera, latitude: vistaOrigin.latitude, longitude: vistaOrigin.longitude, pitch: INITIAL_PITCH_DEG };
 
 /**
  * 3Dカメラ→擬似RegionType。

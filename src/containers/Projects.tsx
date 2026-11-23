@@ -102,6 +102,9 @@ export default function ProjectsContainers({ navigation, route }: Props_Projects
         await AlertAsync(message);
         return;
       }
+      // 復号できないプロジェクトがあっても取得自体は成功する。案内を出さないと、鍵をリセットした人や
+      // 再共有待ちの人には参加しているプロジェクトが理由なく消えたように見える。誘導で画面を移る前に出す
+      if (message) await AlertAsync(message);
       if (keyGuidance !== undefined) {
         // 復帰セッションでもログイン時と同じ鍵の誘導を行う（未移行=保護方式の更新、
         // リセット中断=新鍵のバックアップ、バックアップが古い=作り直し、端末の鍵が古い=最新鍵の復元）
@@ -119,7 +122,8 @@ export default function ProjectsContainers({ navigation, route }: Props_Projects
   const onToggleShowArchive = useCallback(async () => {
     try {
       const { isOK, message } = await toggleShowArchive();
-      if (!isOK) {
+      // 成功時の message は「読み込めないプロジェクトがある」案内なので、失敗時と同じく表示する
+      if (!isOK || message) {
         await AlertAsync(message);
       }
     } catch (e: any) {

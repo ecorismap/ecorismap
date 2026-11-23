@@ -417,6 +417,9 @@ export const getAllProjects = async (uid: string, excludeMember = false, include
 };
 
 export const addProject = async (project: ProjectType) => {
+  // doc を作った後で失敗したら消す。残すと、やり直しは新しいDEKで同じ doc に書くため Rules（keepsDekPublicKey）で
+  // 必ず拒否され、鍵が配られていなければ誰も復号できず一覧から開けも消せもしない doc が残る
+  let createdDocId: string | undefined;
   try {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { id, ownerUid, adminsUid, membersUid, storage, settingsEncryptedAt, ...others } = project;
@@ -439,9 +442,13 @@ export const addProject = async (project: ProjectType) => {
         dekPublicKey: dek.publicKey,
       };
       await setDoc(doc(firestore, 'projects', id), projectFS);
+      createdDocId = id;
       // プロジェクト doc 作成後に keys を配布（Rulesが project の adminsUid/membersUid を参照するため）
       const distRes = await distributeProjectDEK(id, membersUid, dek, ownerUid);
-      if (!distRes.isOK) return { isOK: false, message: distRes.message };
+      if (!distRes.isOK) {
+        await discardCreatedProject(id);
+        return { isOK: false, message: distRes.message };
+      }
       return { isOK: true, message: '' };
     }
 
@@ -461,8 +468,23 @@ export const addProject = async (project: ProjectType) => {
     return { isOK: true, message: '' };
   } catch (error) {
     console.log(error);
+    if (createdDocId !== undefined) await discardCreatedProject(createdDocId);
+    else projectCryptoCache.delete(project.id);
     return { isOK: false, message: t('firebase.message.failAddProject') };
   }
+};
+
+/**
+ * 作成途中で失敗したプロジェクトを消し、暗号情報のキャッシュも捨てる（keys は Functions が連鎖削除する）。
+ * 消せなくても呼び出し元には作成失敗を返すので、ここでは投げない。
+ */
+export const discardCreatedProject = async (projectId: string) => {
+  projectCryptoCache.delete(projectId);
+  // 削除は待たない。圏外だと Firestore の書き込みはサーバーが応答するまで resolve せず、作成画面の Loading が
+  // 回線が戻るまで消えなくなる。書き込みは端末内のキューに積まれ、回線が戻れば反映される
+  deleteDoc(doc(firestore, 'projects', projectId)).catch((e: unknown) => {
+    console.log('[addProject] failed to discard partially created project', e);
+  });
 };
 
 export const updateProject = async (project: ProjectType) => {

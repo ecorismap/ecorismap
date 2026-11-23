@@ -605,9 +605,17 @@ describe('replaceDataWithTrackingGuard（設定画面の復元・新規・ファ
     expect(replace).toHaveBeenCalledTimes(1);
     const message = mockConfirm.mock.calls[0][0];
     expect(message).toContain('Home.confirm.stopTrackingBeforeOpenFile');
-    expect(message).toContain('Home.confirm.stopTrackingBackupNote');
+    // バックアップは作れないこともあるので、作れなかったときを除くと断った文言を使う（設定監査 S-L2）
+    expect(message).toContain('Home.confirm.stopTrackingBackupNoteUnlessFailed');
     expect(message).not.toContain('Home.confirm.stopTrackingUploadNote');
     expect(message).not.toContain('Home.confirm.stopTrackingSettingNote');
+  });
+
+  it('自動バックアップの案内文は、作れなかった場合を断っている（ja/en）', () => {
+    const ja = jest.requireActual('../../i18n/ja/translation.json') as { Home: { confirm: Record<string, string> } };
+    const en = jest.requireActual('../../i18n/en/translation.json') as { Home: { confirm: Record<string, string> } };
+    expect(ja.Home.confirm.stopTrackingBackupNoteUnlessFailed).toMatch(/作れなかった/);
+    expect(en.Home.confirm.stopTrackingBackupNoteUnlessFailed).toMatch(/could not be created/);
   });
 
   it('操作ごとの文言を出し、通常利用中のプロジェクトではアップロードの案内を出す', async () => {

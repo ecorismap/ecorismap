@@ -22,6 +22,7 @@ import {
   dataSetExcludingReconciler,
 } from '../dataSetStorage';
 import dataSetReducer, { setDataSetAction } from '../../modules/dataSet';
+import { flushPersistence } from '../persistFlush';
 import { DataType } from '../../types';
 
 const DATASET_KEY = 'persist:dataSet';
@@ -174,6 +175,18 @@ describe('attachDataSetPersistSubscriber', () => {
     store.dispatch({ type: 'unrelated/action' });
     jest.advanceTimersByTime(2000);
     expect(mockKvStore.has(DATASET_KEY)).toBe(false);
+  });
+
+  it('flushPersistence で保留中の変更を1000msを待たずに書く（設定監査 S-L3）', async () => {
+    const store = createTestStore();
+    const detach = attachDataSetPersistSubscriber(store);
+
+    store.dispatch(setDataSetAction(sampleDataSet));
+    expect(mockKvStore.has(DATASET_KEY)).toBe(false);
+
+    await flushPersistence();
+    expect(mockKvStore.get(DATASET_KEY)).toBe(JSON.stringify(sampleDataSet));
+    detach();
   });
 
   it('書き込み後、さらに変更があれば再度書き込まれる', () => {

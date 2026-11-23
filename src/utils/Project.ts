@@ -26,3 +26,15 @@ export const checkEmails = (project: ProjectType) => {
     return { isOK: true, emails };
   }
 };
+
+/**
+ * 新規プロジェクトの保存で使う id を決める。一度保存を試みた id は使い回さない。
+ * 失敗の後始末で projects/{id} を消すと Functions の連鎖削除（onDocumentDeleted）が遅れて走るため、
+ * 同じ id で作り直すと、作り直したプロジェクトまで後から消されてしまう
+ */
+export const pickNewProjectIdForSave = (id: string, attemptedIds: Set<string>, generateId: () => string): string => {
+  let nextId = id;
+  while (attemptedIds.has(nextId)) nextId = generateId();
+  attemptedIds.add(nextId);
+  return nextId;
+};
