@@ -6,7 +6,7 @@
  * 1本指パン / ピンチズーム / 2本指回転 / 2本指縦ドラッグ（チルト）。
  * カメラはジェスチャ終了時にmapRegionへ同期し、2D復帰時に視点が引き継がれる。
  */
-import React, { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useContext, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { AppState, LayoutChangeEvent, PixelRatio, StyleSheet, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { Canvas, CanvasRef, RNCanvasContext } from 'react-native-webgpu';
@@ -57,7 +57,7 @@ import { deltaToZoom } from '../../utils/Coords';
 import { useWindow } from '../../hooks/useWindow';
 import { MapViewStableContext } from '../../contexts/MapViewStable';
 import { terrain3dHeadingStore } from '../../utils/terrain3d/headingStore';
-import { isVistaHeadingFollow, takePendingVista } from '../../utils/terrain3d/vistaStore';
+import { isVistaHeadingFollow, takePendingVista, terrain3dVistaStore } from '../../utils/terrain3d/vistaStore';
 import { requestTrackReplayPause } from '../../utils/trackReplayStore';
 import { replayEyeDistanceM } from '../../utils/terrain3d/replayCamera';
 import { selectTerrain3DPoints } from '../../utils/terrain3d/terrain3dPoints';
@@ -150,12 +150,25 @@ export const selectTerrainLayers = (
     });
 };
 
+const getVistaActive = () => terrain3dVistaStore.getSnapshot().active;
+
 export const HomeTerrain3D = React.memo(() => {
   const dispatch = useDispatch();
   const { mapRegion, windowHeight, windowWidth } = useWindow();
   // 位置・方位を含むMapViewContextではなく安定値だけのコンテキストを購読する
   // （GPS更新のたびに再レンダリングされると描画ループとジェスチャを阻害するため）
-  const { onDragMapView, mapViewRef, zoom, setMapLocationInfo } = useContext(MapViewStableContext);
+  const stableContext = useContext(MapViewStableContext);
+  const { onDragMapView, mapViewRef, setMapLocationInfo } = stableContext;
+  // 眺望中はカメラをmapRegionへ保存しないので、mapRegion由来のズームは眺望に入る前の値のまま残る。
+  // 線幅（メルカトルm換算）や山名・ラベルの出し分けは眺望のカメラのズームで決める
+  // （眺望前のz13〜14のままだと、地上1.7mの視点ではラインが数十m幅の帯になって視界を塞ぐ）
+  const vistaActive = useSyncExternalStore(terrain3dVistaStore.subscribe, getVistaActive);
+  const [vistaCameraZoom, setVistaCameraZoom] = useState<number | null>(null);
+  const zoom = vistaActive && vistaCameraZoom !== null ? vistaCameraZoom : stableContext.zoom;
+  const overlayStableContext = useMemo(
+    () => (zoom === stableContext.zoom ? stableContext : { ...stableContext, zoom }),
+    [stableContext, zoom]
+  );
   const { pointDataSet, lineDataSet, polygonDataSet, selectedRecord } = useContext(DataSelectionContext);
   const tileMaps = useSelector((state: RootState) => state.tileMaps);
   const tileSignatures = useSelector((state: RootState) => state.tileSignatures);
@@ -312,6 +325,13 @@ export const HomeTerrain3D = React.memo(() => {
     (force = false) => {
       const scene = sceneRef.current;
       if (scene === null) return;
+      // 眺望中のカメラ（水平近い俯角・視線の先の注視点）はmapRegionへ保存しない。
+      // 保存すると再読み込みでその位置・ズームの2Dが開く。眺望に入る前の表示範囲を残す
+      // （眺望から3Dを抜けるときはgetTerrain3DRegionが立ち位置を渡し、眺望を解けばここが再開する）
+      if (scene.isVistaActive) {
+        setVistaCameraZoom(Math.floor(scene.controller.getState().zoom));
+        return;
+      }
       if (interactionSyncGateRef.current.shouldDefer(force, scene.interacting)) return;
       const now = Date.now();
       if (!force && now - lastSyncRef.current < REGION_SYNC_THROTTLE_MS) {
@@ -451,7 +471,8 @@ export const HomeTerrain3D = React.memo(() => {
             VISTA_DURATION_MS,
             followCurrent
           );
-          // 移動後の視点をmapRegionへ反映する（ズーム表記など。2Dへ戻すときは立ち位置で開く）
+          // 眺望に入れていればsyncRegionは何もしない（眺望のカメラは保存しない）。
+          // 入れなかったときに、寄せた注視点をmapRegionへ反映する
           if (moved) setTimeout(() => syncRegionRef.current(true), VISTA_DURATION_MS + 80);
           return moved;
         },
@@ -832,28 +853,30 @@ export const HomeTerrain3D = React.memo(() => {
   }, [onDragMapView, syncRegion]);
 
   return (
-    <View style={styles.container}>
-      {/* GestureDetectorはCanvasへ直接付けるとタッチを受け取れないことがあるため、
+    <MapViewStableContext.Provider value={overlayStableContext}>
+      <View style={styles.container}>
+        {/* GestureDetectorはCanvasへ直接付けるとタッチを受け取れないことがあるため、
           素のViewを挟んでそちらにハンドラを付ける（collapsable=falseでViewを残す） */}
-      <GestureDetector gesture={gestures}>
-        <View style={styles.gl} collapsable={false} onLayout={onCanvasLayout}>
-          <Canvas ref={canvasRef} style={styles.gl} />
-        </View>
-      </GestureDetector>
-      {/* 眺望中の山名。調査データのポイントを隠さないよう、ポイントより奥に置く */}
-      <HomeVistaPeakLabels projector={peakProjector} />
-      {/* 通常の3Dの山名（地図一覧の「山名」表示中・眺望でないとき） */}
-      <HomeTerrain3DPeakLabels scene={sceneState} />
-      <HomeTerrain3DPoints scene={sceneState} />
-      {/* 軌跡はGPU（シーンのオーバーレイ系統）へ指定を流すだけで、画面出力は持たない */}
-      <HomeTerrain3DTrack scene={sceneState} />
-      <HomeTerrain3DViewshed scene={sceneState} />
-      {/* 軌跡サマリーのカーソル位置（グラフをなぞる・リプレイ中の進行位置） */}
-      <HomeTerrain3DFocusMarker scene={sceneState} />
-      {/* 現在地はポイントより手前に置く（2DのCURRENT_MARKER_ZINDEXと同じ扱い） */}
-      <HomeTerrain3DCurrentMarker scene={sceneState} />
-      {DEBUG_PERF_HUD && <HomeTerrain3DPerf />}
-    </View>
+        <GestureDetector gesture={gestures}>
+          <View style={styles.gl} collapsable={false} onLayout={onCanvasLayout}>
+            <Canvas ref={canvasRef} style={styles.gl} />
+          </View>
+        </GestureDetector>
+        {/* 眺望中の山名。調査データのポイントを隠さないよう、ポイントより奥に置く */}
+        <HomeVistaPeakLabels projector={peakProjector} />
+        {/* 通常の3Dの山名（地図一覧の「山名」表示中・眺望でないとき） */}
+        <HomeTerrain3DPeakLabels scene={sceneState} />
+        <HomeTerrain3DPoints scene={sceneState} />
+        {/* 軌跡はGPU（シーンのオーバーレイ系統）へ指定を流すだけで、画面出力は持たない */}
+        <HomeTerrain3DTrack scene={sceneState} />
+        <HomeTerrain3DViewshed scene={sceneState} />
+        {/* 軌跡サマリーのカーソル位置（グラフをなぞる・リプレイ中の進行位置） */}
+        <HomeTerrain3DFocusMarker scene={sceneState} />
+        {/* 現在地はポイントより手前に置く（2DのCURRENT_MARKER_ZINDEXと同じ扱い） */}
+        <HomeTerrain3DCurrentMarker scene={sceneState} />
+        {DEBUG_PERF_HUD && <HomeTerrain3DPerf />}
+      </View>
+    </MapViewStableContext.Provider>
   );
 });
 
