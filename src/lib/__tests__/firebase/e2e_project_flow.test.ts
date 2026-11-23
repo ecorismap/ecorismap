@@ -22,7 +22,9 @@ import { configureStore, combineReducers } from '@reduxjs/toolkit';
 import { renderHook, act } from '@testing-library/react-hooks';
 import { ulid } from 'ulid';
 
-const mockActor: { db: unknown; uid: string } = { db: undefined, uid: '' };
+const mockActor: { db: unknown; storage: unknown; uid: string } = { db: undefined, storage: undefined, uid: '' };
+// Web の IndexedDB（db.pmtiles）に取り込んである地図のスタイル（storage.uploadStyle が読む）
+const mockLocalStyles: Record<string, string> = {};
 // 圏外の再現（getDocsFromServer だけを失敗させる。一覧の再読み込み A-M2）
 const mockNet = { offline: false };
 // 暗号化を失敗させる条件（新規作成の途中失敗 A-M3）
@@ -34,8 +36,16 @@ const mockRegistered = new Set<string>();
 
 jest.mock('../../firebase/firebase', () => {
   const fsMod = jest.requireActual('firebase/firestore');
+  const st = jest.requireActual('firebase/storage');
   const mod: Record<string, unknown> = {
     ...fsMod,
+    ref: st.ref,
+    uploadBytes: st.uploadBytes,
+    uploadString: st.uploadString,
+    getDownloadURL: st.getDownloadURL,
+    deleteObject: st.deleteObject,
+    listAll: st.listAll,
+    getMetadata: st.getMetadata,
     functions: {},
     httpsCallable: (_functions: unknown, name: string) => async (payload: { emails?: string[]; email?: string }) => {
       if (name === 'getUidsByEmails') {
@@ -51,6 +61,7 @@ jest.mock('../../firebase/firebase', () => {
     firebaseReady: Promise.resolve(),
   };
   Object.defineProperty(mod, 'firestore', { get: () => mockActor.db, enumerable: true });
+  Object.defineProperty(mod, 'storage', { get: () => mockActor.storage, enumerable: true });
   Object.defineProperty(mod, 'auth', { get: () => ({ currentUser: { uid: mockActor.uid } }), enumerable: true });
   return mod;
 });
@@ -68,7 +79,11 @@ jest.mock('react-native', () => ({
   Dimensions: { get: () => ({ width: 400, height: 800 }) },
 }));
 jest.mock('expo-file-system/legacy', () => ({}));
-jest.mock('../../../utils/db', () => ({ db: {} }));
+jest.mock('../../../utils/db', () => ({
+  db: { pmtiles: { get: async (id: string) => (id in mockLocalStyles ? { style: mockLocalStyles[id] } : undefined) } },
+}));
+// storage.ts が読む写真まわり（ネイティブ変換に依存する）はこのファイルでは使わない
+jest.mock('../../../utils/Photo', () => ({ convertToUploadableJpeg: jest.fn(), deletePhotoFile: jest.fn() }));
 jest.mock('../../virgilsecurity/e3kit', () => {
   const pako = jest.requireActual('pako');
   const { Buffer } = jest.requireActual('buffer');
@@ -85,6 +100,19 @@ jest.mock('../../virgilsecurity/e3kit', () => {
       } catch (e) {
         return undefined;
       }
+    },
+    // Web のファイル暗号化の代役（1バイトの XOR。鍵は毎回変わる＝上げ直すと中身のバイト列も変わる）
+    encryptFileEThree: async (uri: string) => {
+      const json = decodeURIComponent(uri.slice(uri.indexOf(',') + 1));
+      const key = 1 + Math.floor(Math.random() * 254);
+      const bytes = Uint8Array.from(Buffer.from(json, 'utf-8'), (b: number) => b ^ key);
+      return { encdata: new Blob([bytes], { type: 'application/json' }), key: key.toString(16) };
+    },
+    decryptFileEThree: async (blob: Blob, key: string) => {
+      const k = parseInt(key, 16);
+      if (!(k > 0)) return { decdata: undefined };
+      const bytes = Uint8Array.from(new Uint8Array(await blob.arrayBuffer()), (b) => b ^ k);
+      return { decdata: new Blob([bytes]) };
     },
     hasRegisterdUser: async (uid: string | null) => uid !== null && mockRegistered.has(uid),
     isInitialized: () => true,
@@ -114,6 +142,7 @@ jest.mock('../../../utils/General', () => ({
 }));
 
 import * as projectStore from '../../firebase/firestore';
+import * as projectStorage from '../../firebase/storage';
 import { useProjectEdit } from '../../../hooks/useProjectEdit';
 import { useProjects } from '../../../hooks/useProjects';
 import settingsReducer, { editSettingsAction, settingsInitialState } from '../../../modules/settings';
@@ -145,8 +174,10 @@ let testEnv: rulesTesting.RulesTestEnvironment;
 jest.setTimeout(60000);
 
 const as = (uid: string) => {
+  const ctx = testEnv.authenticatedContext(uid, { email: emailOf(uid), email_verified: true });
   mockActor.uid = uid;
-  mockActor.db = testEnv.authenticatedContext(uid, { email: emailOf(uid), email_verified: true }).firestore();
+  mockActor.db = ctx.firestore();
+  mockActor.storage = ctx.storage();
 };
 
 const newProjectId = () => `${RUN}_${ulid()}`;
@@ -867,21 +898,54 @@ describe('M-M4 / M-M17 / M-H6 副因: 共有スタイル・地図の共有設定
       ]);
     });
 
-    // TODO(tmizu23): 方針決定後 - 保存のたびにスタイルを暗号化し直すため URL が変わる既知の不具合。直し方（内容ハッシュのパスか、内容比較で引き継ぐか）が決まるまで skip
-    test.skip('Web の管理者がスタイルを変えずに設定を保存し直しても、共有スタイルの URL は変わらない（描画済みタイルを捨てさせない）', async () => {
-      // useRepository.uploadTileMaps（Web）は style:// の地図のスタイルを保存のたびに同じパスへ上げ直し、
-      // getDownloadURL の URL を styleURL として設定に書く。URL のトークンが上げ直しで変わると、
-      // メンバーが開き直すたびにスタイルの変更とみなされ、描画済みタイルが捨てられる
+    test('Web の管理者がスタイルを変えずに設定を保存し直しても、共有スタイルの URL は変わらない（描画済みタイルを捨てさせない）', async () => {
+      // useRepository.uploadTileMaps（Web）は style:// の地図ごとに storage.uploadStyle を呼び、返った URL と鍵を設定に書く。
+      // 以前は保存のたびに同じパスへ暗号化し直して上げ直したので、ダウンロードトークン（URL）と鍵が変わり、
+      // メンバーが開き直すたびにスタイルの変更とみなされて描画済みタイルが捨てられていた
       const project = makeProject(newProjectId(), [memberRow(OWNER, 'OWNER'), memberRow(M1, 'MEMBER')]);
       await seedProject(project);
-      const firstUrl = await putStyle(OWNER, project.id, 'vec', '{"name":"same"}');
-      const secondUrl = await putStyle(OWNER, project.id, 'vec', '{"name":"same"}');
-      // 前提の確認: 同じパス・同じ内容で、違うのはダウンロードトークンだけ
-      const withoutToken = (u: string) => u.replace(/([?&])token=[^&]*/, '$1token=');
-      expect(withoutToken(secondUrl)).toBe(withoutToken(firstUrl));
-      const local = [pmtilesMap('vec', `style://${firstUrl}`, 'k')];
-      const next = [pmtilesMap('vec', `style://${secondUrl}`, 'k2')];
-      expect(findTileSourceChanges(local, next)).toEqual([]);
+      // メンバーの取得（Web の storage.downloadStyle と同じく、URL を取得して鍵で復号する。XOR は暗号化の代役と同じ）
+      const readSharedStyle = async (url: string, key: string) => {
+        const res = await fetch(url);
+        if (res.status !== 200) return undefined;
+        const k = parseInt(key, 16);
+        return Buffer.from(Uint8Array.from(new Uint8Array(await res.arrayBuffer()), (b) => b ^ k)).toString('utf-8');
+      };
+      const mapId = `vec_${ulid()}`;
+      mockLocalStyles[mapId] = '{"name":"same"}';
+      as(OWNER);
+      // 初めての共有（手元で取り込んだだけのスタイル）
+      const first = await projectStorage.uploadStyle(project.id, mapId, { styleURL: 'style://style.json' });
+      expect(first.isOK).toBe(true);
+      const shared = pmtilesMap(mapId, first.url!, first.key!);
+      // 変えずに保存し直す: 上げ直さず、同じ URL と鍵
+      const second = await projectStorage.uploadStyle(project.id, mapId, shared);
+      expect(second).toMatchObject({ isOK: true, url: first.url, key: first.key });
+      expect(findTileSourceChanges([shared], [pmtilesMap(mapId, second.url!, second.key!)])).toEqual([]);
+      // メンバーはその URL と鍵でいまのスタイルを読める
+      as(M1);
+      expect(await readSharedStyle(first.url!.replace('style://', ''), first.key!)).toBe('{"name":"same"}');
+
+      // スタイルを変えたら今までどおり上げ直し、URL が変わる（メンバー側では描画済みタイルだけを捨てる）
+      as(OWNER);
+      mockLocalStyles[mapId] = '{"name":"changed"}';
+      const third = await projectStorage.uploadStyle(project.id, mapId, shared);
+      expect(third.isOK).toBe(true);
+      expect(third.url).not.toBe(first.url);
+      expect(findTileSourceChanges([shared], [pmtilesMap(mapId, third.url!, third.key!)])).toEqual([
+        { id: mapId, cleanup: { source: false, renderedTiles: true, style: false } },
+      ]);
+      as(M1);
+      expect(await readSharedStyle(third.url!.replace('style://', ''), third.key!)).toBe(
+        '{"name":"changed"}'
+      );
+      // 保存先は地図ごとに同じパスなので、上げ直しても古いファイルは残らない
+      let names: string[] = [];
+      await testEnv.withSecurityRulesDisabled(async (context) => {
+        const list = await context.storage().ref(`projects/${project.id}/STYLE`).listAll();
+        names = list.items.map((item) => item.name);
+      });
+      expect(names).toEqual([mapId]);
     });
   });
 });

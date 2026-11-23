@@ -1257,7 +1257,10 @@ export const useRepository = (): UseRepositoryReturnType & {
             uploadedTileMaps.push({ ...tileMap, url, encryptKey: key });
           }
         } else if (Platform.OS === 'web' && tileMap.styleURL?.startsWith('style://')) {
-          const { isOK, message, url, key } = await projectStorage.uploadStyle(projectId, tileMap.id);
+          const { isOK, message, url, key } = await projectStorage.uploadStyle(projectId, tileMap.id, {
+            styleURL: tileMap.styleURL,
+            encryptKey: tileMap.encryptKey,
+          });
           if (!isOK || url === null) {
             await AlertAsync(message);
             uploadedTileMaps.push(tileMap);
