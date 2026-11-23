@@ -7,6 +7,65 @@ import { t } from '../i18n/config';
 import { isLoggedIn } from '../utils/Account';
 import { updateProjectAction } from '../modules/projects';
 import { RootState } from '../store';
+import { collectPhotoPaths, photoStoragePathFromUrl, selectPhotoPathsToDelete } from '../utils/cloudPhotoCleanup';
+
+type DeleteTarget = { layerId: string; permission: PermissionType | 'TEMPLATE'; userId?: string };
+
+/** deleteData が消す範囲に入る組か（TEMPLATE は持ち主を問わずレイヤのテンプレートを全部消す） */
+const isDeletedBy = (targets: DeleteTarget[], permission: PermissionType | 'TEMPLATE', userId: string) =>
+  targets.some(
+    (target) =>
+      target.permission === permission &&
+      (permission === 'TEMPLATE' || target.userId === undefined || target.userId === userId)
+  );
+
+/**
+ * 1つのレイヤで、消すデータの写真を Storage から消す（写真監査 P-H2）。
+ * 持ち主のフォルダを丸ごと消すと、同じ人の残すデータ（テンプレートと PUBLIC など）や、管理者が引き継いだ・
+ * 写した記録の写真まで消えるので、残すデータが参照している写真は消さない。
+ * 照合できないとき（取得・復号に失敗した、一覧にある残すデータを読めていない）は、そのレイヤの写真を消さない
+ * （孤児になるが消失はしない）。
+ * - folderPaths: 照合データを読む前に取った、消すデータの持ち主のフォルダの一覧（後から上がった写真を候補にしない）
+ * - before/after: doc を消す前と後に読んだレイヤのデータ。後者は消している間に上がった doc の参照を拾うため
+ */
+//大きいデータは複数回に分けて書くので、写真を上げてからデータを書き終えるまで時間がかかる
+const RECENT_UPLOAD_MARGIN_MS = 10 * 60 * 1000;
+
+export const deletePhotosOfDeletedData = async (
+  projectId: string,
+  layerId: string,
+  targets: DeleteTarget[],
+  allItems: { permission: PermissionType | 'TEMPLATE'; userId?: string }[],
+  folderPaths: string[],
+  before: Awaited<ReturnType<typeof projectStore.downloadLayerDataGroups>>,
+  after: Awaited<ReturnType<typeof projectStore.downloadLayerDataGroups>>,
+  startedAt?: number
+): Promise<void> => {
+  const loadedAll = [before, after].every((l) => l.isOK && l.complete);
+  const readKeys = new Set(before.groups.map((g) => `${g.permission}_${g.userId}`));
+  const unreadKept = allItems.some(
+    (i) => !isDeletedBy(targets, i.permission, i.userId ?? '') && !readKeys.has(`${i.permission}_${i.userId}`)
+  );
+  if (!loadedAll || unreadKept) {
+    console.warn('写真を照合できないため、Storage の写真は消さずに残します:', layerId);
+    return;
+  }
+  const deletedRefs = new Set<string>();
+  const keptRefs = new Set<string>();
+  before.groups.forEach((g) => {
+    const into = isDeletedBy(targets, g.permission, g.userId) ? deletedRefs : keptRefs;
+    collectPhotoPaths(g.records).forEach((path) => into.add(path));
+  });
+  //消している間に誰かが上げ直した doc も残す側
+  after.groups.forEach((g) => collectPhotoPaths(g.records).forEach((path) => keptRefs.add(path)));
+  const candidates = selectPhotoPathsToDelete(folderPaths, deletedRefs, keptRefs).filter(
+    (path) => photoStoragePathFromUrl(path) === path && path.split('/')[3] === layerId
+  );
+  //照合の少し前から後に上がった写真は、書き込み途中のデータ（照合に入らない）が参照しているかもしれないので残す
+  const createdBefore = startedAt === undefined ? undefined : startedAt - RECENT_UPLOAD_MARGIN_MS;
+  const failed = await projectStorage.deletePhotoPaths(projectId, candidates, createdBefore);
+  if (failed > 0) console.warn(`写真 ${failed} 件を Storage から消せませんでした:`, layerId);
+};
 
 interface CloudDataSummaryRaw {
   layerId: string;
@@ -265,26 +324,69 @@ export const useCloudDataManagement = (project: ProjectType, user: UserType): Us
         return { isOK: false, message: '' };
       }
 
+      const startedAt = Date.now();
+      const layerIds = Array.from(new Set(targets.map((target) => target.layerId)));
+      // 写真の候補（消すデータの持ち主のフォルダ）を先に取り、そのあとで照合データを読む。
+      // 逆だと、読んだ後に上がった写真が候補に入るのに、それを参照する doc は照合に入らない
+      const foldersByLayer = new Map<string, Map<string, string[]>>();
+      const beforeByLayer = new Map<string, Awaited<ReturnType<typeof projectStore.downloadLayerDataGroups>>>();
+      for (const layerId of layerIds) {
+        const owners = Array.from(
+          new Set(
+            targets.filter((t2) => t2.layerId === layerId && t2.userId).map((t2) => t2.userId as string)
+          )
+        );
+        const lists = await Promise.all(
+          owners.map((u) => projectStorage.listLayerPhotoPaths(project.id, layerId, u).catch(() => [] as string[]))
+        );
+        foldersByLayer.set(layerId, new Map(owners.map((u, i) => [u, lists[i]])));
+        beforeByLayer.set(layerId, await projectStore.downloadLayerDataGroups(project.id, layerId));
+      }
+
+      // 消し終えた分の写真を Storage から消す（途中で失敗しても、消せた doc の写真は片付ける）
+      const deletePhotosFor = async (done: DeleteTarget[]) => {
+        for (const layerId of layerIds) {
+          const doneInLayer = done.filter((target) => target.layerId === layerId);
+          if (doneInLayer.length === 0) continue;
+          try {
+            const after = await projectStore.downloadLayerDataGroups(project.id, layerId);
+            await deletePhotosOfDeletedData(
+              project.id,
+              layerId,
+              doneInLayer,
+              layerGroups.find((g) => g.layerId === layerId)?.dataItems ?? [],
+              //消せたデータの持ち主のフォルダだけを候補にする（消せなかった人の写真は残す）
+              Array.from(new Set(doneInLayer.map((target) => target.userId).filter((u): u is string => !!u))).flatMap(
+                (u) => foldersByLayer.get(layerId)?.get(u) ?? []
+              ),
+              beforeByLayer.get(layerId)!,
+              after,
+              startedAt
+            );
+          } catch (e) {
+            console.warn('Failed to delete photos:', e);
+          }
+        }
+      };
+
+      const done: DeleteTarget[] = [];
       for (const target of targets) {
         // Firestoreからデータを削除
         const deleteResult = await projectStore.deleteData(project.id, target.layerId, target.permission, target.userId);
         if (!deleteResult.isOK) {
+          await deletePhotosFor(done);
           return { isOK: false, message: deleteResult.message };
         }
-
-        // Storageから写真を削除
-        const photoResult = await projectStorage.deleteLayerPhotos(project.id, target.layerId, target.userId);
-        if (!photoResult.isOK) {
-          console.warn('Failed to delete photos:', photoResult.message);
-        }
+        done.push(target);
       }
+      await deletePhotosFor(done);
 
       return { isOK: true, message: '' };
     } catch (error) {
       console.error('deleteCloudData Error:', error);
       return { isOK: false, message: t('CloudDataManagement.message.failDeleteData') };
     }
-  }, [project.id, getSelectedTargets]);
+  }, [project.id, getSelectedTargets, layerGroups]);
 
   const deleteLayerDefinition = useCallback(async (): Promise<{ isOK: boolean; message: string }> => {
     try {
@@ -321,10 +423,14 @@ export const useCloudDataManagement = (project: ProjectType, user: UserType): Us
         const layer = layerGroups.find((l) => l.layerId === layerId);
         if (!layer) continue;
 
-        for (const item of layer.dataItems) {
-          await projectStore.deleteData(project.id, layerId, item.permission, item.userId);
-          await projectStorage.deleteLayerPhotos(project.id, layerId, item.userId);
+        // 画面を開いた後に上がったデータも含めて、レイヤのデータを全部消す
+        const deleteResult = await projectStore.deleteData(project.id, layerId);
+        if (!deleteResult.isOK) {
+          //データが残るので、その写真は消さない
+          return { isOK: false, message: deleteResult.message };
         }
+        // レイヤの全データを消したので、写真もレイヤのフォルダごと消す（データ管理で残した写真も含めて片付ける）
+        await projectStorage.deleteLayerPhotos(project.id, layerId);
       }
 
       return { isOK: true, message: '' };

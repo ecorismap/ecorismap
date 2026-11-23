@@ -42,7 +42,7 @@ export {
   runTransaction,
 } from '@react-native-firebase/firestore';
 export { httpsCallable } from '@react-native-firebase/functions';
-export { ref, uploadBytes, uploadString, getDownloadURL, deleteObject, listAll } from '@react-native-firebase/storage';
+export { ref, uploadBytes, uploadString, getDownloadURL, deleteObject, listAll, getMetadata } from '@react-native-firebase/storage';
 
 // RNFB v24 aligned the modular API types with firebase-js-sdk: getFirestore()/getAuth()/etc.
 // now return the modular instance types (Firestore/Auth/...), not the legacy *.Module types.

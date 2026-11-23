@@ -1,6 +1,6 @@
 import * as FileSystem from 'expo-file-system/legacy';
 import { Platform } from 'react-native';
-import { storage, ref, uploadBytes, getDownloadURL, deleteObject, listAll } from './firebase';
+import { storage, ref, uploadBytes, getDownloadURL, deleteObject, listAll, getMetadata } from './firebase';
 import { t } from '../../i18n/config';
 import {
   encryptFileEThreeRN as encFileRN,
@@ -507,6 +507,46 @@ const deleteStorageFolderRecursive = async (folderRef: ReturnType<typeof ref>): 
 
   // サブフォルダを再帰削除
   await Promise.all(listResult.prefixes.map((subFolderRef) => deleteStorageFolderRecursive(subFolderRef)));
+};
+
+const listStorageFolderRecursive = async (folderRef: ReturnType<typeof ref>): Promise<string[]> => {
+  const listResult = await listAll(folderRef);
+  const nested = await Promise.all(listResult.prefixes.map((sub) => listStorageFolderRecursive(sub)));
+  return [...listResult.items.map((item) => item.fullPath), ...nested.flat()];
+};
+
+/** 写真フォルダ（projects/{p}/PHOTO/{layer}/{uid}）にある写真のパス一覧。フォルダが無ければ空 */
+export const listLayerPhotoPaths = async (projectId: string, layerId: string, userId: string): Promise<string[]> => {
+  if (![projectId, layerId, userId].every(isSafePathSegment)) return [];
+  return listStorageFolderRecursive(ref(storage, `projects/${projectId}/PHOTO/${layerId}/${userId}`));
+};
+
+/**
+ * 写真をパスを指定して消す。写真フォルダの外は消さない。消せなかった件数を返す。
+ * createdBefore を渡すと、それより後に上がった写真は消さない（照合した後に、書き込み途中のデータが
+ * 参照する写真が上がっていることがある。照合に入っていない写真は残す）
+ */
+export const deletePhotoPaths = async (projectId: string, paths: string[], createdBefore?: number): Promise<number> => {
+  const prefix = `projects/${projectId}/PHOTO/`;
+  const results = await Promise.all(
+    paths
+      .filter((path) => path.startsWith(prefix) && !path.split('/').includes('..'))
+      .map(async (path) => {
+        const fileRef = ref(storage, path);
+        try {
+          if (createdBefore !== undefined) {
+            const meta = await getMetadata(fileRef);
+            const created = Date.parse(meta.timeCreated);
+            if (!Number.isFinite(created) || created >= createdBefore) return true;
+          }
+          await deleteObject(fileRef);
+          return true;
+        } catch (error) {
+          return (error as { code?: string })?.code === 'storage/object-not-found';
+        }
+      })
+  );
+  return results.filter((ok) => !ok).length;
 };
 
 /**
