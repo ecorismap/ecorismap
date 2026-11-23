@@ -1,4 +1,4 @@
-import React, { useMemo, useRef } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 import { useCallback } from 'react';
 import MapView, { Region } from 'react-native-maps';
 import { MapRef, ViewState } from 'react-map-gl/maplibre';
@@ -31,6 +31,15 @@ export const useMapView = (mapViewRefObj: React.RefObject<MapView | MapRef | nul
   // 眺望中に保存済みの表示範囲を読むため（changeMapRegionの依存に入れると地図が動くたびに作り直される）
   const mapRegionRef = useRef(mapRegion);
   mapRegionRef.current = mapRegion;
+
+  // Webは3Dの状態を保存しないので、起動時は必ず2Dで開く。3D（眺望を抜けた俯瞰を含む）の傾き・方位が
+  // 保存されていたら、3Dを抜けるとき（toggleTerrain）と同じく0へ戻す。残すと傾いた2Dが開く
+  useEffect(() => {
+    if (Platform.OS !== 'web') return;
+    const restored = mapRegionRef.current;
+    if (untiltedRegion(restored) === null) return;
+    dispatch(editSettingsAction({ mapRegion: { ...restored, pitch: 0, bearing: 0 } }));
+  }, [dispatch]);
 
   const zoomDecimal = useMemo(() => {
     if (mapRegion) {

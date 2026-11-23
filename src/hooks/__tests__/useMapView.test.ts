@@ -446,6 +446,51 @@ describe('useMapView', () => {
       });
     });
 
+    it('Webの起動時、3D（眺望を抜けた俯瞰など）で保存された傾き・方位を0へ戻す', () => {
+      (Platform as any).OS = 'web';
+      const { useWindow } = require('../useWindow');
+      const overview = {
+        latitude: 35.0,
+        longitude: 135.0,
+        latitudeDelta: 0.01,
+        longitudeDelta: 0.01,
+        zoom: 14,
+        bearing: 120,
+        pitch: 60,
+      };
+      useWindow.mockReturnValue({ windowWidth: 375, mapRegion: overview });
+      renderHook(() => useMapView({ current: createMockMapRef() } as any), { wrapper });
+
+      expect(store.getState().settings.mapRegion).toEqual({ ...overview, pitch: 0, bearing: 0 });
+      useWindow.mockReturnValue({
+        windowWidth: 375,
+        mapRegion: { latitude: 35.0, longitude: 135.0, latitudeDelta: 0.01, longitudeDelta: 0.01, zoom: 15 },
+      });
+    });
+
+    it('Webの起動時、傾いていない2Dの回転は残す', () => {
+      (Platform as any).OS = 'web';
+      const { useWindow } = require('../useWindow');
+      const rotated2D = {
+        latitude: 35.0,
+        longitude: 135.0,
+        latitudeDelta: 0.01,
+        longitudeDelta: 0.01,
+        zoom: 14,
+        bearing: 45,
+        pitch: 0,
+      };
+      useWindow.mockReturnValue({ windowWidth: 375, mapRegion: rotated2D });
+      const before = store.getState().settings.mapRegion;
+      renderHook(() => useMapView({ current: createMockMapRef() } as any), { wrapper });
+
+      expect(store.getState().settings.mapRegion).toEqual(before);
+      useWindow.mockReturnValue({
+        windowWidth: 375,
+        mapRegion: { latitude: 35.0, longitude: 135.0, latitudeDelta: 0.01, longitudeDelta: 0.01, zoom: 15 },
+      });
+    });
+
     it('should handle ViewState on web platform with null mapViewRef', () => {
       (Platform as any).OS = 'web';
       const { isRegionType, isViewState } = require('../../utils/Map');
