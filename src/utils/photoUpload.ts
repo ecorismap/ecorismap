@@ -53,8 +53,8 @@ export const isOwnUploadablePhotoUri = (
 /**
  * 上げる前に、原画がこの端末（Web はこのタブ）で読めるかを確かめる（写真監査 P-M12・P-M13）。
  * パスの判定を通っても、他のメンバーの端末のパスがたまたま同じ文字列だったり（Android の LOCAL）、
- * 再読み込みで無効になった blob: だったりする。読めないものは上げても必ず失敗し、送るたびに警告が出るので、
- * 試さずに失敗にも数えない（写真は未アップロードのまま残る）
+ * 再読み込みで無効になった blob: だったりする。読めないものは上げても必ず失敗するので試さない
+ * （写真は未アップロードのまま残る）。送信は止めず、読めなかった件数を送信の後に知らせる
  */
 export const canReadPhotoForUpload = async (uri: string, platform: string = Platform.OS): Promise<boolean> => {
   if (platform === 'web') {

@@ -18,6 +18,7 @@ import * as projectStore from '../../lib/firebase/firestore';
 import * as projectStorage from '../../lib/firebase/storage';
 import * as unsyncedChanges from '../../utils/unsyncedChanges';
 import * as photoUpload from '../../utils/photoUpload';
+import * as i18nConfig from '../../i18n/config';
 import * as AlertAsyncModule from '../../components/molecules/AlertAsync';
 
 // spy を仕掛ける前にオリジナルを退避
@@ -877,7 +878,7 @@ describe('uploadDataToRepository（写真のアップロード失敗）', () => 
     });
   });
 
-  test('パスの判定を通っても原画が読めない写真はアップロードせず、警告も出さない', async () => {
+  test('原画が読めない写真はアップロードせず、残りは送ったうえで読めなかった枚数を警告する', async () => {
     jest.spyOn(photoUpload, 'canReadPhotoForUpload').mockResolvedValue(false);
     const uploadPhotoSpy = jest
       .spyOn(projectStorage, 'uploadPhoto')
@@ -891,8 +892,45 @@ describe('uploadDataToRepository（写真のアップロード失敗）', () => 
     });
 
     expect(uploadPhotoSpy).not.toHaveBeenCalled();
-    expect(res).toEqual({ isOK: true, message: '' });
+    expect(res).toEqual({ isOK: true, message: '', warning: 'hooks.message.skippedUnreadablePhotos' });
+    expect(i18nConfig.t).toHaveBeenCalledWith('hooks.message.skippedUnreadablePhotos', { count: 1 });
     expect((uploadSpy.mock.calls[0][1] as any).data[0].field['写真'][0]).toEqual(photo);
+    (photoUpload.canReadPhotoForUpload as jest.Mock).mockRestore();
+  });
+
+  test('読めなかった枚数は、読めない原画だけを数える（上げ済み・上げられた・他人の写真は数えない）', async () => {
+    const unreadableUri = `${PHOTO_FOLDER}/proj1/l1/test-user/missing.jpg`;
+    jest.spyOn(photoUpload, 'canReadPhotoForUpload').mockImplementation(async (uri: string) => !uri.endsWith('missing.jpg'));
+    jest.spyOn(projectStorage, 'uploadPhoto').mockResolvedValue({ isOK: true, message: '', url: 'https://x/p', key: 'k' });
+    jest.spyOn(projectStore, 'uploadDataHelper').mockResolvedValue({ isOK: true, message: '', encryptedAt: 1 });
+
+    const mine = {
+      ...record,
+      field: {
+        写真: [
+          { ...photo, id: 'm1', uri: unreadableUri },
+          { ...photo, id: 'm2', uri: unreadableUri },
+          // 読める原画（上げられる）
+          { ...photo, id: 'ok' },
+          // 上げ済み（url あり）は確かめもしない
+          { ...photo, id: 'done', uri: unreadableUri, url: 'https://x/done', key: 'k' },
+          // 他人の写真フォルダの原画は自分の写真ではない
+          { ...photo, id: 'other', uri: `${PHOTO_FOLDER}/proj1/l1/member/missing.jpg` },
+        ],
+      },
+    };
+    const second = { ...record, id: 'r2', field: { 写真: [{ ...photo, id: 'm3', uri: unreadableUri }] } };
+
+    const { result } = renderWithStore(makeStore([{ layerId: 'l1', userId: 'test-user', data: [mine, second] }]));
+    let res: any;
+    await act(async () => {
+      res = await result.current.uploadDataToRepository(project, 'All');
+    });
+
+    expect(res.isOK).toBe(true);
+    expect(res.warning).toBe('hooks.message.skippedUnreadablePhotos');
+    expect(i18nConfig.t).toHaveBeenCalledWith('hooks.message.skippedUnreadablePhotos', { count: 3 });
+    expect(i18nConfig.t).not.toHaveBeenCalledWith('hooks.message.failUploadSomePhotos', expect.anything());
     (photoUpload.canReadPhotoForUpload as jest.Mock).mockRestore();
   });
 

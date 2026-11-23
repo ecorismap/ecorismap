@@ -890,6 +890,7 @@
       "successExportMaps": "Map settings have been saved.",
       "updateMap": "Map settings have been updated.",
       "addMap": "Map has been added.",
+      "skippedUnreadablePhotos": "{{count}} photo(s) could not be sent because they could not be read on this device. Please check whether the photo files have been deleted or moved.",
       "failUploadSomePhotos": "Your data was uploaded, but {{count}} photo(s) could not be uploaded. Please check your connection and upload again.",
       "dataSizeTooLarge": "Cannot upload data due to large size",
       "deleteOldTracks": "Please delete old tracks and try uploading again.",
