@@ -9,6 +9,8 @@ interface Props {
   disabled: boolean;
   isNew: boolean;
   isOwnerAdmin: boolean;
+  /** 削除はオーナーだけ（管理者が押すと Storage だけ消えて project doc が残る） */
+  isOwner: boolean;
   onPressOpenProject: () => void;
   onPressDeleteProject: () => void;
   onPressExportProject: () => void;
@@ -20,6 +22,7 @@ export const ProjectEditButtons = React.memo((props: Props) => {
     disabled,
     isNew,
     isOwnerAdmin,
+    isOwner,
     onPressOpenProject,
     onPressDeleteProject,
     onPressExportProject,
@@ -78,7 +81,7 @@ export const ProjectEditButtons = React.memo((props: Props) => {
           />
         </View>
       )}
-      {!isNew && isOwnerAdmin && Platform.OS === 'web' && (
+      {!isNew && isOwner && Platform.OS === 'web' && (
         <View style={{ marginHorizontal: 9 }}>
           <Button
             name={PROJECTEDIT_BTN.DELETE}

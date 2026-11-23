@@ -794,6 +794,7 @@
       "failDeleteGroup": "Failed to delete the group",
       "failDeleteGroupMembers": "Failed to delete member",
       "failDeleteProject": "Failed to delete the project. \nThis is an unexpected error.",
+      "deleteProjectOwnerOnly": "Only the project owner can delete the project.",
       "failExport": "Export failed.",
       "failGetData": "Failed to get the data.",
       "failGetDekForReshare": "Cannot obtain the project's encryption key. If you have reset your own encryption key, ask another administrator to re-share it with you.",

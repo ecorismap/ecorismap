@@ -1147,6 +1147,7 @@
       "pleaseReLogin": "ユーザーが不明です。ログインし直してください。",
       "failDeleteEncryptKey": "暗号化キーの削除に失敗しました。予期せぬエラーです。",
       "failDeleteProject": "プロジェクトの削除に失敗しました。予期せぬエラーです。",
+      "deleteProjectOwnerOnly": "プロジェクトを削除できるのはオーナーだけです。",
       "failDeleteAccount": "ユーザーアカウントの削除に失敗しました。",
       "tooManyMapList": "リストの数が多すぎます。50個以内にしてください。",
       "failInitializeUser": "セッションが切れました。ログインし直してください。",
