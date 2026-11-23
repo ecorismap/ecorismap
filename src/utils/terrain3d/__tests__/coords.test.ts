@@ -12,6 +12,7 @@ import {
   restartCameraFromScene,
   tileSizeMeters,
   tileToMercator,
+  untiltedRegion,
   zoomToDistance,
 } from '../coords';
 import { INITIAL_PITCH_DEG } from '../constants';
@@ -162,5 +163,18 @@ describe('眺望中に3Dを抜けるときのネイティブの2D範囲（V-M8�
     expect(region.latitude).toBe(standing.latitude);
     expect(region.longitude).toBe(standing.longitude);
     expect(region.zoom).toBe(16);
+  });
+});
+
+describe('untiltedRegion（眺望中の保存範囲から傾きを外す）', () => {
+  const region: RegionType = { latitude: 35, longitude: 135, latitudeDelta: 0.01, longitudeDelta: 0.01, zoom: 15 };
+
+  it('傾いていれば俯角だけ0にし、他は保つ', () => {
+    expect(untiltedRegion({ ...region, bearing: 30, pitch: 60 })).toEqual({ ...region, bearing: 30, pitch: 0 });
+  });
+
+  it('傾いていなければnull（無駄なdispatchをしない）', () => {
+    expect(untiltedRegion(region)).toBeNull();
+    expect(untiltedRegion({ ...region, pitch: 0 })).toBeNull();
   });
 });

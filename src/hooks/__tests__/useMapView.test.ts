@@ -339,6 +339,8 @@ describe('useMapView', () => {
       isRegionType.mockReturnValue(true);
       const webVista = require('../../utils/terrain3d/webVista');
       webVista.isWebVistaActive.mockReturnValue(true);
+      // 実物と同じく、解除したら眺望中でなくなる
+      webVista.clearWebVista.mockImplementationOnce(() => webVista.isWebVistaActive.mockReturnValue(false));
       const { result } = renderHook(() => useMapView({ current: null }), { wrapper });
       const target = { latitude: 36.5, longitude: 136.5, latitudeDelta: 0.02, longitudeDelta: 0.02, zoom: 16 };
 
@@ -368,6 +370,80 @@ describe('useMapView', () => {
 
       expect(webVista.clearWebVista).not.toHaveBeenCalled();
       webVista.isWebVistaActive.mockReturnValue(false);
+    });
+
+    it('Webの眺望中のカメラはmapRegionへ保存しない（再読み込みで傾いた2Dが開かない）', () => {
+      (Platform as any).OS = 'web';
+      const { isRegionType, isViewState, isMapRef } = require('../../utils/Map');
+      isRegionType.mockReturnValue(false);
+      isViewState.mockReturnValue(true);
+      isMapRef.mockReturnValue(true);
+      const webVista = require('../../utils/terrain3d/webVista');
+      webVista.isWebVistaActive.mockReturnValue(true);
+      const before = store.getState().settings.mapRegion;
+      const { result } = renderHook(() => useMapView({ current: createMockMapRef() } as any), { wrapper });
+
+      act(() => {
+        result.current.changeMapRegion({
+          latitude: 36.0,
+          longitude: 136.0,
+          zoom: 20.5,
+          bearing: 45,
+          pitch: 90,
+          padding: { top: 0, bottom: 0, left: 0, right: 0 },
+        });
+      });
+
+      expect(store.getState().settings.mapRegion).toEqual(before);
+      webVista.isWebVistaActive.mockReturnValue(false);
+    });
+
+    it('Webの眺望中は、保存済みの表示範囲（眺望前）から傾きだけを外す', () => {
+      (Platform as any).OS = 'web';
+      const { useWindow } = require('../useWindow');
+      const tilted = {
+        latitude: 35.0,
+        longitude: 135.0,
+        latitudeDelta: 0.01,
+        longitudeDelta: 0.01,
+        zoom: 15,
+        bearing: 30,
+        pitch: 60,
+      };
+      useWindow.mockReturnValue({ windowWidth: 375, mapRegion: tilted });
+      const { isRegionType, isViewState, isMapRef } = require('../../utils/Map');
+      isRegionType.mockReturnValue(false);
+      isViewState.mockReturnValue(true);
+      isMapRef.mockReturnValue(true);
+      const webVista = require('../../utils/terrain3d/webVista');
+      webVista.isWebVistaActive.mockReturnValue(true);
+      const { result } = renderHook(() => useMapView({ current: createMockMapRef() } as any), { wrapper });
+      const vistaCamera = {
+        latitude: 36.0,
+        longitude: 136.0,
+        zoom: 20.5,
+        bearing: 45,
+        pitch: 90,
+        padding: { top: 0, bottom: 0, left: 0, right: 0 },
+      };
+
+      act(() => {
+        result.current.changeMapRegion(vistaCamera);
+        result.current.changeMapRegion(vistaCamera);
+      });
+
+      expect(store.getState().settings.mapRegion).toEqual({ ...tilted, pitch: 0 });
+
+      // 眺望を抜ければ通常どおり保存する
+      webVista.isWebVistaActive.mockReturnValue(false);
+      act(() => {
+        result.current.changeMapRegion({ ...vistaCamera, zoom: 14, pitch: 60 });
+      });
+      expect(store.getState().settings.mapRegion).toMatchObject({ latitude: 36.0, longitude: 136.0, zoom: 14, pitch: 60 });
+      useWindow.mockReturnValue({
+        windowWidth: 375,
+        mapRegion: { latitude: 35.0, longitude: 135.0, latitudeDelta: 0.01, longitudeDelta: 0.01, zoom: 15 },
+      });
     });
 
     it('should handle ViewState on web platform with null mapViewRef', () => {

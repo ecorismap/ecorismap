@@ -12,6 +12,7 @@ import { isTerrain3DHandle } from '../utils/terrain3d/types';
 import { useDispatch } from 'react-redux';
 import { isMapRotated, mapHeadingStore } from '../utils/mapHeadingStore';
 import { clearWebVista, isWebVistaActive } from '../utils/terrain3d/webVista';
+import { untiltedRegion } from '../utils/terrain3d/coords';
 
 export type UseMapViewReturnType = {
   zoom: number;
@@ -27,6 +28,9 @@ export const useMapView = (mapViewRefObj: React.RefObject<MapView | MapRef | nul
   const dispatch = useDispatch();
   const regionChangeSeq = useRef(0);
   const headingRequestInFlight = useRef(false);
+  // 眺望中に保存済みの表示範囲を読むため（changeMapRegionの依存に入れると地図が動くたびに作り直される）
+  const mapRegionRef = useRef(mapRegion);
+  mapRegionRef.current = mapRegion;
 
   const zoomDecimal = useMemo(() => {
     if (mapRegion) {
@@ -109,6 +113,17 @@ export const useMapView = (mapViewRefObj: React.RefObject<MapView | MapRef | nul
         // 眺望中のMapは非制御（mapRegionを渡さない）なので、ジャンプ先をdispatchしても動かない（V-L3）。
         // 先に眺望を解いて制御側へ戻す。カメラはジャンプ先が上書きするので俯瞰への復帰はしない
         if (jumpTo && isWebVistaActive()) clearWebVista(false);
+        if (isWebVistaActive()) {
+          // 眺望中のカメラ（水平近い俯角・足元すぐ先の注視点・超拡大）はmapRegionへ保存しない。
+          // 保存すると再読み込みで傾いた2Dが開く。眺望に入る前の表示範囲を残し、傾きだけ外す。
+          // 眺望中のMapは非制御なので、mapRegionを止めても表示は動かない
+          const flattened = untiltedRegion(mapRegionRef.current);
+          if (flattened !== null) {
+            mapRegionRef.current = flattened;
+            dispatch(editSettingsAction({ mapRegion: flattened }));
+          }
+          return;
+        }
         if (isRegionType(region)) {
           dispatch(editSettingsAction({ mapRegion: region }));
         } else if (isViewState(region)) {

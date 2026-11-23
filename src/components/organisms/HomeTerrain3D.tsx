@@ -312,6 +312,10 @@ export const HomeTerrain3D = React.memo(() => {
     (force = false) => {
       const scene = sceneRef.current;
       if (scene === null) return;
+      // 眺望中のカメラ（水平近い俯角・視線の先の注視点）はmapRegionへ保存しない。
+      // 保存すると再読み込みでその位置・ズームの2Dが開く。眺望に入る前の表示範囲を残す
+      // （眺望から3Dを抜けるときはgetTerrain3DRegionが立ち位置を渡し、眺望を解けばここが再開する）
+      if (scene.isVistaActive) return;
       if (interactionSyncGateRef.current.shouldDefer(force, scene.interacting)) return;
       const now = Date.now();
       if (!force && now - lastSyncRef.current < REGION_SYNC_THROTTLE_MS) {
@@ -451,7 +455,8 @@ export const HomeTerrain3D = React.memo(() => {
             VISTA_DURATION_MS,
             followCurrent
           );
-          // 移動後の視点をmapRegionへ反映する（ズーム表記など。2Dへ戻すときは立ち位置で開く）
+          // 眺望に入れていればsyncRegionは何もしない（眺望のカメラは保存しない）。
+          // 入れなかったときに、寄せた注視点をmapRegionへ反映する
           if (moved) setTimeout(() => syncRegionRef.current(true), VISTA_DURATION_MS + 80);
           return moved;
         },

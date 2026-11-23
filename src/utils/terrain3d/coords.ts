@@ -90,6 +90,14 @@ export const restartCameraFromScene = (
     : { ...camera, latitude: vistaOrigin.latitude, longitude: vistaOrigin.longitude, pitch: INITIAL_PITCH_DEG };
 
 /**
+ * 傾き（俯角）を外した表示範囲。すでに傾いていなければnull。
+ * Webの眺望中はカメラを保存しない代わりに、保存済みの表示範囲から傾きだけを外す。
+ * 3Dの状態は保存されないので、傾きが残ると再読み込みで傾いた2Dが開く
+ */
+export const untiltedRegion = (region: RegionType): RegionType | null =>
+  region.pitch === undefined || region.pitch === 0 ? null : { ...region, pitch: 0 };
+
+/**
  * 表示範囲を別の中心・ズームへ置き直す（delta はズーム差の分だけ伸縮する）。
  * Webの眺望から3Dを抜けるとき、注視点（足元のすぐ先・超拡大）ではなく立ち位置の俯瞰で2Dを開くのに使う
  */
