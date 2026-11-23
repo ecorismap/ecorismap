@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useRef, useState } from 'react';
 import { AlertAsync, ConfirmAsync } from '../components/molecules/AlertAsync';
 import Maps from '../components/pages/Maps';
 import { MapsContext } from '../contexts/Maps';
@@ -52,7 +52,11 @@ export default function MapContainer() {
     exportSingleMap,
     saveMap,
   } = useMaps();
-  const [isLoading, setIsLoading] = useState(false);
+  //null=処理していない。文字列は処理中に出す説明（PDFの変換は数十秒かかり、何も出ないと止まったように見える）
+  const [loadingMessage, setLoadingMessage] = useState<string | null>(null);
+  const isLoading = loadingMessage !== null;
+  //処理中の二重起動を防ぐ（stateは再描画まで古い値を返すためrefで持つ）
+  const busyRef = useRef(false);
   const [groupNameDialogVisible, setGroupNameDialogVisible] = useState(false);
   const { runTutrial } = useTutrial();
 
@@ -77,6 +81,23 @@ export default function MapContainer() {
     },
     [deleteMap]
   );
+
+  //PDFの取り込み（変換・タイル生成）の間は必ず処理中表示を出し、成功・失敗・例外のどれでも消す
+  const runPdfImport = useCallback(async (task: () => Promise<{ message: string }>): Promise<string> => {
+    if (busyRef.current) return '';
+    busyRef.current = true;
+    setLoadingMessage(t('Maps.message.importingPdf'));
+    try {
+      const { message } = await task();
+      return message;
+    } catch (e) {
+      console.error('PDF import error:', e);
+      return t('hooks.message.failReceiveFile');
+    } finally {
+      busyRef.current = false;
+      setLoadingMessage(null);
+    }
+  }, []);
 
   const pressDownloadMap = useCallback(
     async (item: TileMapType) => {
@@ -105,9 +126,7 @@ export default function MapContainer() {
       if (Platform.OS === 'web' && (item.url.startsWith('pdf://') || item.url.startsWith('http'))) {
         const ext = getExt(item.url)?.toLowerCase();
         if (ext === 'pdf' || item.url.startsWith('pdf://')) {
-          setIsLoading(true);
-          const { message } = await importMapFile(item.url, item.name, ext, item.id, item.encryptKey);
-          setIsLoading(false);
+          const message = await runPdfImport(() => importMapFile(item.url, item.name, ext, item.id, item.encryptKey));
           if (message !== '') await AlertAsync(message);
           return;
         }
@@ -128,9 +147,7 @@ export default function MapContainer() {
       ) {
         const ext = getExt(item.url)?.toLowerCase();
         if (ext === 'pdf' || item.url.startsWith('pdf://')) {
-          setIsLoading(true);
-          const { message } = await importMapFile(item.url, item.name, ext, item.id, item.encryptKey);
-          setIsLoading(false);
+          const message = await runPdfImport(() => importMapFile(item.url, item.name, ext, item.id, item.encryptKey));
           if (message !== '') await AlertAsync(message);
         } else {
           navigateToHome?.({
@@ -141,7 +158,7 @@ export default function MapContainer() {
         }
       }
     },
-    [importMapFile, navigateToHome]
+    [importMapFile, navigateToHome, runPdfImport]
   );
 
   const gotoMapEdit = useCallback(
@@ -187,6 +204,8 @@ export default function MapContainer() {
   }, []);
 
   const pressImportMaps = useCallback(async () => {
+    //取り込み中に重ねて取り込むと進捗表示が入り乱れるため受け付けない
+    if (busyRef.current) return;
     const file = await DocumentPicker.getDocumentAsync({
       type: ['application/json', 'application/pdf', 'application/octet-stream', '*/*'],
     });
@@ -203,7 +222,10 @@ export default function MapContainer() {
       await AlertAsync(t('hooks.message.pmtilesNotSupportedOnMobile'));
       return;
     }
-    setIsLoading(true);
+    if (busyRef.current) return;
+    busyRef.current = true;
+    setLoadingMessage(ext === 'pdf' ? t('Maps.message.importingPdf') : t('common.processing'));
+    //処理中表示を描画させてから重い処理に入る
     setTimeout(async () => {
       let message = '';
       try {
@@ -219,7 +241,8 @@ export default function MapContainer() {
         console.error('pressImportMaps error:', e);
         message = t('hooks.message.failReceiveFile');
       } finally {
-        setIsLoading(false);
+        busyRef.current = false;
+        setLoadingMessage(null);
       }
       if (message !== '') await AlertAsync(message);
     }, 10);
@@ -368,6 +391,7 @@ export default function MapContainer() {
       value={{
         progress,
         isLoading,
+        loadingMessage: loadingMessage ?? '',
         isOffline,
         maps,
         filterdMaps,

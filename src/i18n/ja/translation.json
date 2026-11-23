@@ -719,6 +719,9 @@
     "alert": {
       "cannotDownloadOnWeb": "Web版では使用できません",
       "pdfNotFound": "PDFが見つかりません"
+    },
+    "message": {
+      "importingPdf": "PDFを地図に変換しています…\n大きさやページ数によっては数十秒かかります"
     }
   },
   "MapList": {

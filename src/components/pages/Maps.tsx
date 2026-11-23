@@ -1,5 +1,5 @@
 import React, { useContext } from 'react';
-import { View, StyleSheet, Platform, useWindowDimensions } from 'react-native';
+import { View, StyleSheet, Platform, useWindowDimensions, ActivityIndicator, Text } from 'react-native';
 import { COLOR, MAPS_BTN } from '../../constants/AppConstants';
 import { Button } from '../atoms';
 import { MapButtons } from '../organisms/MapButttons';
@@ -9,10 +9,12 @@ import { Loading } from '../molecules/Loading';
 import { t } from '../../i18n/config';
 import { BottomSheetHeader } from '../molecules/BottomSheetHeader';
 import { ScrollView } from 'react-native-gesture-handler';
+import { formatLoadingText } from '../../utils/loadingText';
 
 export default function MapScreen() {
   //console.log('render Maps');
-  const { progress, isLoading, isOffline, pressToggleOnline, gotoDownload } = useContext(MapsContext);
+  const { progress, isLoading, loadingMessage, isOffline, pressToggleOnline, gotoDownload } = useContext(MapsContext);
+  const loadingText = formatLoadingText(loadingMessage !== '' ? loadingMessage : t('common.processing'), progress);
   const { width } = useWindowDimensions();
 
   const leftComponent =
@@ -52,7 +54,15 @@ export default function MapScreen() {
         leftComponent={leftComponent}
         rightComponent={rightComponent}
       />
-      <Loading visible={isLoading} text={t('common.processing') + '\n' + progress + '%'} />
+      <Loading visible={isLoading} text={loadingText} />
+      {/* オーバーレイのModalは直前のModal（ファイル選択画面・ダイアログ）が閉じきるまで出せないことがあるため、
+          画面内にも処理中を出しておく（PDFの変換は数十秒かかり、何も出ないと取り込みが始まっていないように見える） */}
+      {isLoading && (
+        <View style={styles.busyBar}>
+          <ActivityIndicator color={COLOR.BLUE} size="small" />
+          <Text style={styles.busyText}>{loadingText}</Text>
+        </View>
+      )}
       <View style={styles.tableContainer}>
         {Platform.OS === 'web' ? (
           <ScrollView horizontal={true} contentContainerStyle={{ flexGrow: 1 }}>
@@ -75,6 +85,19 @@ export default function MapScreen() {
 }
 
 const styles = StyleSheet.create({
+  busyBar: {
+    alignItems: 'center',
+    backgroundColor: COLOR.WHITE,
+    flexDirection: 'row',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  busyText: {
+    color: COLOR.BLUE,
+    flexShrink: 1,
+    fontWeight: 'bold',
+    marginLeft: 8,
+  },
   container: {
     flex: 1,
   },
