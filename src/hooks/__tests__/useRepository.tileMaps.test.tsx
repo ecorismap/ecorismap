@@ -189,7 +189,7 @@ describe('M-M17・M-M11: 設定の保存で地図を共有用に変える', () =
     });
     expect(savedSettings().tileMaps.map((m) => m.id)).toEqual(['remote']);
     expect(uploadStyle).toHaveBeenCalledTimes(1);
-    expect(uploadStyle).toHaveBeenCalledWith('proj1', 'remote');
+    expect(uploadStyle).toHaveBeenCalledWith('proj1', 'remote', { styleURL: 'style://remote', encryptKey: undefined });
   });
 
   test('複数ページの PDF のページ地図（url が .pdf で終わらない）も PDF として上げる', async () => {

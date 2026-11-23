@@ -14,6 +14,7 @@ import { isSafePathSegment } from '../../utils/safePath';
 import { convertToUploadableJpeg, deletePhotoFile } from '../../utils/Photo';
 import { photoContentTypeFromName } from '../../utils/General';
 import { isCollisionFreePhotoFilename, photoIdFromUrl } from '../../utils/photoDownloadPath';
+import { isProjectStyleUrl } from '../../utils/sharedStyleUrl';
 import { ulid } from 'ulid';
 
 /**
@@ -492,11 +493,54 @@ export const deleteAllProjectStorageData = async (projectIds: string[]) => {
   return { isOK: true, message: '' };
 };
 
-export const uploadStyle = async (projectId: string, tileMapId: string) => {
+/** Web: 共有スタイルを取得して復号した JSON 文字列。取れなければ undefined */
+const fetchSharedStyleText = async (url: string, key: string): Promise<string | undefined> => {
+  const response = await fetch(url);
+  if (response.status !== 200) return undefined;
+  const blob = await response.blob();
+  const { decdata } = await decFile(blob, key);
+  if (decdata === undefined) return undefined;
+  return decdata.text();
+};
+
+/**
+ * いま共有しているスタイル（地図の styleURL と encryptKey）が手元のスタイルと同じ内容か。
+ * 同じなら上げ直さない。上げ直すとダウンロードトークン（URL）と鍵が変わり、メンバーが開き直すたびに
+ * スタイルの変更とみなされて描画済みタイルが捨てられる。確かめられないときは false（今までどおり上げ直す）
+ */
+const isSharedStyleUnchanged = async (
+  projectId: string,
+  tileMapId: string,
+  styleData: string,
+  shared: SharedStyleRef
+): Promise<boolean> => {
+  const { styleURL, encryptKey } = shared;
+  if (styleURL === undefined || encryptKey === undefined) return false;
+  if (!isProjectStyleUrl(styleURL, projectId, tileMapId)) return false;
+  try {
+    const sharedText = await fetchSharedStyleText(styleURL.slice('style://'.length), encryptKey);
+    return sharedText === styleData;
+  } catch (error) {
+    console.warn('isSharedStyleUnchanged Error:', error);
+    return false;
+  }
+};
+
+export type SharedStyleRef = { styleURL?: string; encryptKey?: string };
+
+/**
+ * Web: 地図のスタイルを共有する。shared（地図にいま付いている共有スタイルの URL と鍵）が同じ内容のスタイルを
+ * 指していれば、上げ直さずにそれを返す。保存先は地図ごとに同じパスなので、上げ直しても古いファイルは残らない
+ */
+export const uploadStyle = async (projectId: string, tileMapId: string, shared: SharedStyleRef = {}) => {
   try {
     const styleData = (await db.pmtiles.get(tileMapId))?.style;
     if (styleData === undefined) {
       return { isOK: false, message: t('firebase.message.failUploadStyle'), url: null, key: null };
+    }
+    const unchanged = await isSharedStyleUnchanged(projectId, tileMapId, styleData, shared);
+    if (unchanged && shared.styleURL !== undefined && shared.encryptKey !== undefined) {
+      return { isOK: true, message: '', url: shared.styleURL, key: shared.encryptKey };
     }
     const styleUri = `data:application/json;charset=utf-8,${encodeURIComponent(styleData)}`;
 
@@ -517,18 +561,11 @@ export const uploadStyle = async (projectId: string, tileMapId: string) => {
 export const downloadStyle = async (url: string, key: string) => {
   try {
     if (Platform.OS === 'web') {
-      const response = await fetch(url);
-      if (response.status !== 200) {
+      const json = await fetchSharedStyleText(url, key);
+      if (json === undefined) {
         return { isOK: false };
-      } else {
-        const blob = await response.blob();
-        const { decdata } = await decFile(blob, key);
-        if (decdata === undefined) {
-          return { isOK: false };
-        }
-        const json = await decdata.text();
-        return { isOK: true, styleJson: json };
       }
+      return { isOK: true, styleJson: json };
     } else {
       const { uri, status } = await FileSystem.downloadAsync(url, FileSystem.cacheDirectory + 'temp_style.json');
       if (status !== 200) {
