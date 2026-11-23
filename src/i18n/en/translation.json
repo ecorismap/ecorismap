@@ -554,6 +554,9 @@
     "alert": {
       "cannotDownloadOnWeb": "Cannot be used on the web version",
       "pdfNotFound": "PDF not found"
+    },
+    "message": {
+      "importingPdf": "Converting the PDF into a map…\nThis may take tens of seconds depending on its size and pages"
     }
   },
   "Projects": {

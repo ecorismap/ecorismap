@@ -17,6 +17,7 @@ import * as pmtiles from 'pmtiles';
 import { cloneDeep } from 'lodash';
 import {
   boundsFromCoords,
+  createStopSignal,
   downloadOneTile,
   downloadStyleJson,
   downloadTileGrid,
@@ -33,6 +34,7 @@ import {
   TileType,
   TileZoomRange,
   toCompletedRegion,
+  waitForBatchOrStop,
 } from '../utils/tileDownloadHelpers';
 import { downloadDemTile, getDemTileMap } from '../utils/demTileDownload';
 import { hasIrreplaceableTiles, removeTileCacheEntries } from '../utils/tileCacheCleanup';
@@ -65,7 +67,8 @@ const downloadTileOfMap = (
   tile: TileXYZ,
   pmtile: pmtiles.PMTiles | undefined,
   pmtileIsVector: boolean,
-  tileSignatures: TileSignaturesType
+  tileSignatures: TileSignaturesType,
+  signal?: AbortSignal
 ): Promise<TileDownloadResult> => {
   if (tileType === 'dem') return downloadDemTile(tile);
   const sourceUrl = tileType === 'hillshade' ? toDemUrl(tileMap.url) : tileMap.url;
@@ -77,6 +80,7 @@ const downloadTileOfMap = (
     pmtile,
     pmtileIsVector,
     tile,
+    signal,
   });
 };
 
@@ -91,6 +95,8 @@ export const useTiles = (
   const { mapRegion } = useWindow();
   const pause = useRef(false);
   const pauseReason = useRef<'user' | 'background' | null>(null);
+  // 中断要求の合図。ループはバッチの完了とこれの早い方を待ち、停止をバッチの完了まで待たせない
+  const stopSignal = useRef(createStopSignal());
   const isDownloadingRef = useRef(false);
   // バックグラウンド中断後、フォアグラウンド復帰時に再開確認を出すためのフラグ
   const pendingResumePrompt = useRef(false);
@@ -164,12 +170,16 @@ export const useTiles = (
   const clearPauseRequest = useCallback(() => {
     pause.current = false;
     pauseReason.current = null;
+    stopSignal.current = createStopSignal();
   }, []);
 
-  const stopDownloadTiles = useCallback(() => {
+  const requestPause = useCallback((reason: 'user' | 'background') => {
     pause.current = true;
-    pauseReason.current = 'user';
+    pauseReason.current = reason;
+    stopSignal.current.trigger();
   }, []);
+
+  const stopDownloadTiles = useCallback(() => requestPause('user'), [requestPause]);
 
   // 未完了（status付き）の記録をすべて破棄する（保存済みタイルのファイル自体は残る）
   const discardIncompleteDownloads = useCallback(() => {
@@ -209,12 +219,15 @@ export const useTiles = (
       ];
       dispatch(editSettingsAction({ tileRegions: updatedTileRegions }));
 
+      // 中断・一時停止で取得中の要求を打ち切る（「続ける」では打ち切らない）
+      const abortController = new AbortController();
+
       // 中断要求の処理。trueを返したら呼び出し元はreturnする。
       const handlePause = async (): Promise<boolean> => {
         const reason = pauseReason.current;
-        pause.current = false;
-        pauseReason.current = null;
+        clearPauseRequest();
         if (reason === 'background') {
+          abortController.abort();
           // バックグラウンド移行による中断: ダイアログを出さず'paused'で保存して終了し、
           // 復帰時（この時点で既にactiveなら今）に再開を確認する
           updatedTileRegions = markRegionsPaused(updatedTileRegions, [tileRegion.id]);
@@ -226,6 +239,7 @@ export const useTiles = (
         }
         const choice = await StopDownloadConfirmAsync();
         if (choice === 'continue') return false;
+        abortController.abort();
         if (choice === 'pause') {
           updatedTileRegions = markRegionsPaused(updatedTileRegions, [tileRegion.id]);
         } else {
@@ -234,6 +248,21 @@ export const useTiles = (
         dispatch(editSettingsAction({ tileRegions: updatedTileRegions }));
         setIsDownloading(false);
         return true;
+      };
+
+      // バッチを待つ。停止が押されたら取得中のタイルを待たずにすぐ確認を出し、
+      // 「続ける」なら残りを待ってから次のバッチへ進む（同時に取得する枚数を増やさない）。trueなら呼び出し元はreturnする
+      const awaitBatchOrPause = async (batchToWait: Promise<void>[]): Promise<boolean> => {
+        // 「続ける」を選んだ後も、残りを待つ間に再び停止されたらすぐ確認を出す（handlePause が合図を作り直す）
+        for (;;) {
+          const result = await waitForBatchOrStop(batchToWait, stopSignal.current.promise);
+          if (result === 'done') return false;
+          if (!pause.current) {
+            await Promise.all(batchToWait);
+            return false;
+          }
+          if (await handlePause()) return true;
+        }
       };
 
       const tileType = getTileType(tileMap);
@@ -330,22 +359,28 @@ export const useTiles = (
           if (await handlePause()) return;
         }
 
-        const tilePromise = downloadTileOfMap(tileType, tileMap, tile, pmtile, pmtileIsVector, tileSignatures).then(
-          (result) => {
-            if (result === 'saved') savedCount++;
-            else if (result === 'failed') failedCount++;
-          }
-        );
+        const tilePromise = downloadTileOfMap(
+          tileType,
+          tileMap,
+          tile,
+          pmtile,
+          pmtileIsVector,
+          tileSignatures,
+          abortController.signal
+        ).then((result) => {
+          if (result === 'saved') savedCount++;
+          else if (result === 'failed') failedCount++;
+        });
 
         batchDownload.push(tilePromise);
         if (batchDownload.length >= BATCH_SIZE) {
           d = d + BATCH_SIZE;
           setProgress(((d / tiles.length) * 100).toFixed());
-          await Promise.all(batchDownload);
+          if (await awaitBatchOrPause(batchDownload)) return;
           batchDownload = [];
         }
       }
-      await Promise.all(batchDownload);
+      if (await awaitBatchOrPause(batchDownload)) return;
       // 最後のバッチを待つ間に停止・背面移行されたら、完了と表示せずに中断として扱う
       if (pause.current) {
         if (await handlePause()) return;
@@ -435,12 +470,15 @@ export const useTiles = (
       ];
       dispatch(editSettingsAction({ tileRegions: updatedTileRegions }));
 
+      // 中断・一時停止で取得中の要求を打ち切る（「続ける」では打ち切らない）
+      const abortController = new AbortController();
+
       // 中断要求の処理。trueを返したら呼び出し元はreturnする。
       const handlePause = async (): Promise<boolean> => {
         const reason = pauseReason.current;
-        pause.current = false;
-        pauseReason.current = null;
+        clearPauseRequest();
         if (reason === 'background') {
+          abortController.abort();
           updatedTileRegions = markRegionsPaused(updatedTileRegions, regionIds);
           dispatch(editSettingsAction({ tileRegions: updatedTileRegions }));
           setIsDownloading(false);
@@ -450,6 +488,7 @@ export const useTiles = (
         }
         const choice = await StopDownloadConfirmAsync();
         if (choice === 'continue') return false;
+        abortController.abort();
         if (choice === 'pause') {
           updatedTileRegions = markRegionsPaused(updatedTileRegions, regionIds);
         } else {
@@ -461,6 +500,21 @@ export const useTiles = (
         return true;
       };
 
+      // バッチを待つ。停止が押されたら取得中のタイルを待たずにすぐ確認を出し、
+      // 「続ける」なら残りを待ってから次のバッチへ進む（同時に取得する枚数を増やさない）。trueなら呼び出し元はreturnする
+      const awaitBatchOrPause = async (batchToWait: Promise<void>[]): Promise<boolean> => {
+        // 「続ける」を選んだ後も、残りを待つ間に再び停止されたらすぐ確認を出す（handlePause が合図を作り直す）
+        for (;;) {
+          const result = await waitForBatchOrStop(batchToWait, stopSignal.current.promise);
+          if (result === 'done') return false;
+          if (!pause.current) {
+            await Promise.all(batchToWait);
+            return false;
+          }
+          if (await handlePause()) return true;
+        }
+      };
+
       for (let i = 0; i < tileMapsToDownload.length; i++) {
         if (pause.current) {
           if (await handlePause()) return;
@@ -470,7 +524,12 @@ export const useTiles = (
         const tileRegion = regions[i];
         const isResume = resumeRegions?.[i] !== undefined;
         setProgress(
-          t('hooks.progress.downloadingMap', { current: i + 1, total: totalMaps, name: currentTileMap.name, progress: 0 })
+          t('hooks.progress.downloadingMap', {
+            current: i + 1,
+            total: totalMaps,
+            name: currentTileMap.name,
+            progress: 0,
+          })
         );
 
         const tileType = getTileType(currentTileMap);
@@ -528,7 +587,11 @@ export const useTiles = (
 
         if (tileType === 'pmtiles' && !pmtileIsVector) await removeLegacyRasterPmtilePngs(currentTileMap.id);
 
-        const { minZoom, maxZoom } = getZoomRange(tileType, { ...currentTileMap, isVector: pmtileIsVector }, archiveZoom);
+        const { minZoom, maxZoom } = getZoomRange(
+          tileType,
+          { ...currentTileMap, isVector: pmtileIsVector },
+          archiveZoom
+        );
 
         // 再開時は現在の地図表示ではなく、保存された領域からタイル集合を復元する
         const tiles = downloadTileGrid(tileType, boundsFromCoords(tileRegion.coords), minZoom, maxZoom);
@@ -583,7 +646,8 @@ export const useTiles = (
             tile,
             pmtile,
             pmtileIsVector,
-            tileSignatures
+            tileSignatures,
+            abortController.signal
           ).then((result) => {
             if (result === 'saved') savedCount++;
             else if (result === 'failed') failedCount++;
@@ -601,11 +665,11 @@ export const useTiles = (
                 progress: mapProgress,
               })
             );
-            await Promise.all(batchDownload);
+            if (await awaitBatchOrPause(batchDownload)) return;
             batchDownload = [];
           }
         }
-        await Promise.all(batchDownload);
+        if (await awaitBatchOrPause(batchDownload)) return;
         // 最後のバッチを待つ間に停止・背面移行されたら、この地図を完了にせず中断として扱う
         if (pause.current) {
           if (await handlePause()) return;
@@ -684,14 +748,13 @@ export const useTiles = (
     if (Platform.OS === 'web') return;
     const subscription = AppState.addEventListener('change', (nextAppState) => {
       if (nextAppState === 'background' && isDownloadingRef.current) {
-        pause.current = true;
-        pauseReason.current = 'background';
+        requestPause('background');
       } else if (nextAppState === 'active') {
         promptResumeAfterBackground();
       }
     });
     return () => subscription.remove();
-  }, [promptResumeAfterBackground]);
+  }, [promptResumeAfterBackground, requestPause]);
 
   // 強制終了などで残った未完了ダウンロードを起動時に検出して再開を提案する
   useEffect(() => {

@@ -736,7 +736,7 @@ export const useMaps = (): UseMapsReturnType => {
     return Math.round(Math.log2(earthCircumference / coordPerPixel / 256)) - 1;
   };
 
-  const importPdfFile = useCallback(
+  const importPdfFileBody = useCallback(
     async (uri: string, name: string, id?: string) => {
       let outputFiles: warpedFileType[] = [];
       if (Platform.OS === 'web') {
@@ -905,6 +905,18 @@ export const useMaps = (): UseMapsReturnType => {
     [dispatch]
   );
 
+  //失敗・例外で途中の進捗が残ると、次の取り込みの処理中表示が最初から途中の%を出すため必ず戻す
+  const importPdfFile = useCallback(
+    async (uri: string, name: string, id?: string) => {
+      try {
+        return await importPdfFileBody(uri, name, id);
+      } finally {
+        setProgress(formatProgress(PDF_PROGRESS.idle));
+      }
+    },
+    [importPdfFileBody]
+  );
+
   const getPmtilesBoundary = useCallback(
     async (url: string): Promise<{ header: pmtiles.Header | undefined; boundary: boundaryType | undefined }> => {
       try {
@@ -1005,7 +1017,7 @@ export const useMaps = (): UseMapsReturnType => {
     },
     [dispatch, getPmtilesBoundary]
   );
-  const importMapFile = useCallback(
+  const importMapFileBody = useCallback(
     async (uri: string, name: string, ext: string, id?: string, key?: string) => {
       //設定ファイルの場合
       if (ext === 'json') return importJsonMapFile(uri);
@@ -1116,6 +1128,18 @@ export const useMaps = (): UseMapsReturnType => {
       return { isOK: false, message: '' };
     },
     [importJsonMapFile, importPdfFile, importPmtilesFile, tileSignatures]
+  );
+
+  //PDFのダウンロードに失敗して途中で戻ったときも、ダウンロードの進捗を次回へ持ち越さない
+  const importMapFile = useCallback(
+    async (uri: string, name: string, ext: string, id?: string, key?: string) => {
+      try {
+        return await importMapFileBody(uri, name, ext, id, key);
+      } finally {
+        setProgress(formatProgress(PDF_PROGRESS.idle));
+      }
+    },
+    [importMapFileBody]
   );
 
   return {

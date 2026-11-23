@@ -5,6 +5,8 @@ import { TileMapType } from '../types';
 export interface MapsContextType {
   progress: string;
   isLoading: boolean;
+  //処理中表示に出す説明（処理していないときは空）
+  loadingMessage: string;
   isOffline: boolean;
   maps: TileMapType[];
   filterdMaps: TileMapType[];
