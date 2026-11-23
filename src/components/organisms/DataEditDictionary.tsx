@@ -2,6 +2,7 @@ import React from 'react';
 import { View, StyleSheet, Text } from 'react-native';
 import { COLOR } from '../../constants/AppConstants';
 import { DictionaryTextInput } from '../molecules/DictionaryTextInput';
+import { toInputText } from '../../utils/Format';
 
 interface Props {
   name: string;
@@ -50,7 +51,7 @@ export const DataEditDictionary = (props: Props) => {
         <View style={styles.tr2}>
           {name && <Text style={styles.title}>{name}</Text>}
           <DictionaryTextInput
-            initialValue={value ? value.toString() : ''}
+            initialValue={toInputText(value)}
             table={table}
             handleSelect={(text) => onChangeText(name, text)}
             onBlure={(text) => onChangeText(name, text)}

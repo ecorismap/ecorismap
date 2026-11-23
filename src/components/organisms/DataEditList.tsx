@@ -5,6 +5,7 @@ import { Picker, TextInput } from '../atoms';
 import { COLOR } from '../../constants/AppConstants';
 import { ItemValue } from '@react-native-picker/picker/typings/Picker';
 import { t } from '../../i18n/config';
+import { toInputText } from '../../utils/Format';
 
 interface Props {
   name: string;
@@ -26,14 +27,14 @@ export const DataEditList = (props: Props) => {
   const itemValueArray = useMemo(() => listItems.map((v) => v.value), [listItems]);
 
   const selectedItem = useMemo(() => {
-    const item = value ? value.toString() : '';
+    const item = toInputText(value);
     return listItemValues.includes(item) ? item : otherItem !== undefined ? otherItem.value : '';
   }, [listItemValues, otherItem, value]);
 
   useEffect(() => {
     //選択されている値が「その他」の場合テキストの値をセットする必要がある。
     if (otherItem !== undefined && selectedItem === otherItem.value) {
-      setOtherText(value ? value.toString() : '');
+      setOtherText(toInputText(value));
       setOtherSelected(true);
     } else {
       setOtherText('');

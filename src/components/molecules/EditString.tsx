@@ -3,6 +3,7 @@ import { View, StyleSheet } from 'react-native';
 
 import { TextInput } from '../atoms';
 import { COLOR } from '../../constants/AppConstants';
+import { toInputText } from '../../utils/Format';
 
 interface Props {
   name: string;
@@ -23,7 +24,7 @@ export const EditString = (props: Props) => {
         <TextInput
           style={[styles.input, style]}
           label={name}
-          value={value ? value.toString() : ''}
+          value={toInputText(value)}
           placeholder={placeholder ?? ''}
           placeholderTextColor={COLOR.GRAY3}
           onChangeText={onChangeText}
