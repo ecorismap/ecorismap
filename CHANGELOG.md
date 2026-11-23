@@ -52,6 +52,7 @@
 - Importing a PDF map now shows a message while it is being converted, which can take tens of seconds
 - Fixed track recording issues and added guidance: when location permission is denied or only approximate location is allowed, when a track with fewer than two points is not saved, and the time recording stopped when the app was closed on iOS. An external receiver that disconnects during recording is reconnected automatically, and GeoJSON export and import keep the elevation and the time and accuracy of each track point
 - Fixed data editing issues: a shape returning to its old position when attributes were saved after editing the position, table values being cleared after editing the table's columns, checks moving to other records when the filter in the data list changed, and 0 shown as blank in text fields. Changing a field's type now asks for confirmation with the number of values that will change or be lost, and serial numbers continue from the largest number in the whole layer
+- Fixed a quick drag of a line or polygon vertex deleting the vertex instead of moving it (or finishing the polygon when dragging its first vertex)
 - Fixed project and account issues: settings mode staying on after opening another project so that the administrator's own records were distributed as templates, members being unable to open a project after the pending member check, and the project list becoming empty on reload. If a project fails to open, it is now closed with a message, signing in with a different account asks before closing the previous user's project, and an expired session is detected
 - The app now warns when data cannot be saved because the device is low on storage. On the web, opening a new tab no longer deletes PDF maps and PMTiles imported in other tabs
 - Fixed the proximity alert voice not playing while the iPhone screen is locked
@@ -109,6 +110,7 @@
 - PDF地図の取り込みで、変換中（数十秒かかります）であることを表示するようにしました
 - 軌跡の記録の問題を修正し、案内を加えました（位置の許可が無いときやおおよその位置しか許可されていないときの案内、2点未満で保存しなかったときの通知、iOSでアプリを終了したときに記録が中断した時刻の表示）。記録中に外部受信機が切れたら自動で接続し直し、GeoJSONのエクスポートとインポートで軌跡の標高と点ごとの時刻・精度を残すようにしました
 - データ編集の問題を修正しました（位置を直したあと属性を保存すると形が元に戻る、表（TABLE）の列を編集すると表の値が消える、データ一覧で絞り込みを変えるとチェックが別の記録へ移る、文字列の欄で0が空欄に見える）。属性の形式を変えるときは、値が変わる・消える件数を示して確認し、連番はレイヤ全体の最大値の次から振るようにしました
+- 線・ポリゴンの頂点を素早くドラッグすると、移動せずに頂点が消える（ポリゴンの始点では確定してしまう）問題を修正しました
 - プロジェクトとアカウントの問題を修正しました（別のプロジェクトを開いても設定モードが残り、管理者自身の記録がテンプレートとして配られる、保留メンバーの再確認のあと一般メンバーがプロジェクトを開けない、一覧の再読み込みで一覧が空になる）。プロジェクトを開くのに失敗したときは閉じて知らせ、別のアカウントでログインしたときは前のユーザーのプロジェクトを閉じる前に確認し、ログインの有効期限切れを検知するようにしました
 - 端末の空き容量不足でデータを保存できていないときに知らせるようにしました。Web版で新しいタブを開くと、ほかのタブで取り込んだPDF地図やPMTilesが消える問題を修正しました
 - iPhoneの画面ロック中に接近通知の音声が出ない問題を修正しました
