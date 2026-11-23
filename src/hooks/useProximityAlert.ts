@@ -40,6 +40,9 @@ const NOTIFICATION_STEPS = [1000, 500, 100, 50, 20, 10, 5] as const;
 // iOSでSpeech再生時に音声がレシーバー（耳元）にルーティングされるのを防ぐ
 // allowsRecording: false + playsInSilentMode: true で playback カテゴリになりスピーカーから出力される
 // AndroidではSpeech.speakがデフォルトでスピーカーから出るため不要
+// shouldPlayInBackground: true は画面ロック中・バックグラウンドでも読み上げるため
+// （Info.plistのUIBackgroundModesにaudioが必要。ないとiOSは無音にする）
+// duckOthersは使わない: セッションが有効な間ずっと他アプリの音量が下がり続けるため
 const configureAudioForSpeaker = async () => {
   if (Platform.OS !== 'ios') return;
   try {
@@ -47,7 +50,7 @@ const configureAudioForSpeaker = async () => {
       allowsRecording: false,
       playsInSilentMode: true,
       interruptionMode: 'mixWithOthers',
-      shouldPlayInBackground: false,
+      shouldPlayInBackground: true,
     });
   } catch {
     // 失敗してもアプリの動作は継続
