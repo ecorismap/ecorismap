@@ -22,6 +22,8 @@ import { withTileSignature } from '../utils/TileSignature';
 import { convertPDFToGeoTiff } from '../utils/PDF';
 import { db } from '../utils/db';
 import { saveStyleToPmtilesDb } from '../utils/pmtilesLocalStore';
+import { clearRefetchableTileCache, clearWebTileCache, regionsAfterTileCacheClear } from '../utils/tileCacheCleanup';
+import { discardStaleTileSources } from '../utils/tileSourceCleanup';
 import { generateTilesFromPDF } from '../utils/PDF';
 import * as pmtiles from 'pmtiles';
 import * as projectStorage from '../lib/firebase/storage';
@@ -191,17 +193,19 @@ export const useMaps = (): UseMapsReturnType => {
     [dispatch, tileRegions]
   );
 
+  // 取り直せるタイルだけを消す。PDF 地図のタイル・取り込んだスタイル・boundary.json・Web の取り込み実体は
+  // 取り直す経路が無く、「キャッシュ」の操作で地図が壊れるため残す（タイル監査 M-H2）
   const clearTileCache = useCallback(async () => {
     if (Platform.OS === 'web') {
-      await db.geotiff.clear();
-      await db.pmtiles.clear();
-    } else {
-      const { uri } = await FileSystem.getInfoAsync(TILE_FOLDER);
-      if (uri) {
-        await FileSystem.deleteAsync(uri);
-        dispatch(editSettingsAction({ tileRegions: [] }));
-      }
+      await clearWebTileCache();
+      return;
     }
+    await dispatch(async (thunkDispatch, getState) => {
+      const clearedIds = await clearRefetchableTileCache((getState() as RootState).tileMaps);
+      // 削除中に変わった記録を巻き戻さないよう、消し終えてから最新の記録を読む
+      const { tileRegions: latestRegions } = (getState() as RootState).settings;
+      thunkDispatch(editSettingsAction({ tileRegions: regionsAfterTileCacheClear(latestRegions, clearedIds) }));
+    });
   }, [dispatch]);
 
   const changeVisible = useCallback(
@@ -669,6 +673,12 @@ export const useMaps = (): UseMapsReturnType => {
           // 既存の地図があれば更新、なければ追加
           const existingMapIndex = maps.findIndex((m) => m.id === json.id);
           if (existingMapIndex !== -1) {
+            // 同じIDのまま取得元が変わったら、旧ソースのタイルを地図を差し替える前に捨てる（M-H6）
+            await dispatch(async (thunkDispatch, getState) => {
+              await discardStaleTileSources({ getState: () => getState() as RootState, dispatch: thunkDispatch }, [
+                json,
+              ]);
+            });
             dispatch(updateTileMapAction(json));
             return { isOK: true, message: t('hooks.message.updateMap') };
           } else {

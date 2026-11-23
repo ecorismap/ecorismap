@@ -15,6 +15,8 @@ import {
   rasterPmtileTilePath,
   removeIncompleteRegions,
   removeLegacyRasterPmtilePngs,
+  readPmtileHeaderIsVector,
+  readPmtileZoomRange,
   resolvePmtileIsVector,
   tileMapsForDownloadScreen,
   toCompletedRegion,
@@ -90,16 +92,39 @@ describe('getTileType', () => {
 
 describe('getZoomRange', () => {
   it('pngはminZoom=0、maxZoomはoverzoomThresholdと16の小さい方', () => {
-    expect(getZoomRange('png', baseMap, 11)).toEqual({ minZoom: 0, maxZoom: 16 });
-    expect(getZoomRange('png', { ...baseMap, overzoomThreshold: 14 }, 11)).toEqual({ minZoom: 0, maxZoom: 14 });
+    expect(getZoomRange('png', baseMap)).toEqual({ minZoom: 0, maxZoom: 16 });
+    expect(getZoomRange('png', { ...baseMap, overzoomThreshold: 14 })).toEqual({ minZoom: 0, maxZoom: 14 });
   });
 
-  it('ベクタタイルはminZoom=開始ズーム、maxZoom=18', () => {
-    expect(getZoomRange('pbf', { ...baseMap, isVector: true }, 11)).toEqual({ minZoom: 11, maxZoom: 18 });
+  // タイル監査 M-H3: 表示中のズームから取ると、縮小したオフライン表示で粗い段が無く白紙になる
+  it('pbfは表示中のズームに依らずz0から、maxZoomはoverzoomThresholdと18の小さい方', () => {
+    expect(getZoomRange('pbf', { ...baseMap, isVector: true })).toEqual({ minZoom: 0, maxZoom: 18 });
+    expect(getZoomRange('pbf', { ...baseMap, overzoomThreshold: 14 })).toEqual({ minZoom: 0, maxZoom: 14 });
+    expect(getZoomRange('pbf', { ...baseMap, overzoomThreshold: 22 })).toEqual({ minZoom: 0, maxZoom: 18 });
   });
 
-  it('非ベクタのpmtilesはmaxZoomがoverzoomThresholdと16の小さい方', () => {
-    expect(getZoomRange('pmtiles', baseMap, 11)).toEqual({ minZoom: 11, maxZoom: 16 });
+  it('ヘッダーを読めないpmtilesはz0から、ラスタはoverzoomThresholdと16、ベクタは18の小さい方まで', () => {
+    expect(getZoomRange('pmtiles', baseMap)).toEqual({ minZoom: 0, maxZoom: 16 });
+    expect(getZoomRange('pmtiles', { ...baseMap, isVector: true, overzoomThreshold: 20 })).toEqual({
+      minZoom: 0,
+      maxZoom: 18,
+    });
+    expect(getZoomRange('pmtiles', { ...baseMap, isVector: true, overzoomThreshold: 15 })).toEqual({
+      minZoom: 0,
+      maxZoom: 15,
+    });
+  });
+
+  it('pmtilesはヘッダーのズーム範囲の中だけを取る（範囲外を数えると見積もりが膨らみ、1枚も保存されない）', () => {
+    const contour = { ...baseMap, isVector: true, overzoomThreshold: 13 };
+    expect(getZoomRange('pmtiles', contour, { minZoom: 12, maxZoom: 13 })).toEqual({ minZoom: 12, maxZoom: 13 });
+    const plant = { ...baseMap, isVector: true, overzoomThreshold: 18 };
+    expect(getZoomRange('pmtiles', plant, { minZoom: 5, maxZoom: 15 })).toEqual({ minZoom: 5, maxZoom: 15 });
+    // overzoomThreshold より細かい段はオフラインで描かれないので取らない
+    expect(getZoomRange('pmtiles', { ...plant, overzoomThreshold: 12 }, { minZoom: 5, maxZoom: 15 })).toEqual({
+      minZoom: 5,
+      maxZoom: 12,
+    });
   });
 
   it('terrariumの陰影起伏は1段粗い標高タイルから描くので最も細かい段は取らない', () => {
@@ -108,13 +133,13 @@ describe('getZoomRange', () => {
       url: 'hillshade://https://tiles.mapterhorn.com/{z}/{x}/{y}.webp',
       overzoomThreshold: 15,
     };
-    expect(getZoomRange('hillshade', relief, 11)).toEqual({ minZoom: 0, maxZoom: 14 });
+    expect(getZoomRange('hillshade', relief)).toEqual({ minZoom: 0, maxZoom: 14 });
     const gebco = { ...baseMap, url: 'relief://https://example.com/{z}/{y}/{x}.png#style=gebco', overzoomThreshold: 9 };
-    expect(getZoomRange('hillshade', gebco, 11)).toEqual({ minZoom: 0, maxZoom: 9 });
+    expect(getZoomRange('hillshade', gebco)).toEqual({ minZoom: 0, maxZoom: 9 });
   });
 
   it('標高タイルは可視領域・3Dの参照範囲と同じz7-13固定（512px）', () => {
-    expect(getZoomRange('dem', baseMap, 11)).toEqual({ minZoom: 7, maxZoom: 13 });
+    expect(getZoomRange('dem', baseMap)).toEqual({ minZoom: 7, maxZoom: 13 });
   });
 });
 
@@ -132,30 +157,71 @@ describe('estimateDownloadTileCount', () => {
 
   it('最大z9の地図（GEBCO相当）は広域でも上限以下になる', () => {
     const gebco = { ...baseMap, url: 'relief://https://example.com/{z}/{x}/{y}.png', overzoomThreshold: 9 };
-    const count = estimateDownloadTileCount(wideBounds, [gebco], 5);
+    const count = estimateDownloadTileCount(wideBounds, [gebco]);
     expect(count).toBeGreaterThan(0);
     expect(count).toBeLessThanOrEqual(DOWNLOAD_TILE_COUNT_LIMIT);
   });
 
   it('z16まで取得するラスタ地図（地理院相当）は広域だと上限を超える', () => {
-    const count = estimateDownloadTileCount(wideBounds, [baseMap], 5);
+    const count = estimateDownloadTileCount(wideBounds, [baseMap]);
     expect(count).toBeGreaterThan(DOWNLOAD_TILE_COUNT_LIMIT);
   });
 
   it('複数地図は枚数を合算する', () => {
     const bounds = boundsFromCoords(baseRegion.coords);
-    const single = estimateDownloadTileCount(bounds, [baseMap], 11);
-    expect(estimateDownloadTileCount(bounds, [baseMap, baseMap], 11)).toBe(single * 2);
+    const single = estimateDownloadTileCount(bounds, [baseMap]);
+    expect(estimateDownloadTileCount(bounds, [baseMap, baseMap])).toBe(single * 2);
   });
 
-  it('ベクタ地図は現在ズームからz18までを見積もる', () => {
+  it('ベクタ地図はz0からz18までを見積もる', () => {
     const vector = { ...baseMap, url: 'https://example.com/{z}/{x}/{y}.pbf', isVector: true };
     const bounds = boundsFromCoords(baseRegion.coords);
-    expect(estimateDownloadTileCount(bounds, [vector], 11)).toBe(countTilesForRegion(bounds, 11, 18));
+    expect(estimateDownloadTileCount(bounds, [vector])).toBe(countTilesForRegion(bounds, 0, 18));
+  });
+
+  it('PMTilesはヘッダーのズーム範囲で見積もり、ダウンロードと同じ枚数になる', () => {
+    const pm = { ...baseMap, id: 'PM', url: 'https://example.com/contour.pmtiles', isVector: true };
+    const bounds = boundsFromCoords(baseRegion.coords);
+    const archiveZoom = { minZoom: 12, maxZoom: 13 };
+    const count = estimateDownloadTileCount(bounds, [pm], { PM: archiveZoom });
+    expect(count).toBe(countTilesForRegion(bounds, 12, 13));
+    const { minZoom, maxZoom } = getZoomRange('pmtiles', pm, archiveZoom);
+    expect(count).toBe(downloadTileGrid('pmtiles', bounds, minZoom, maxZoom).length);
+    // ヘッダー未取得なら z0〜18 で数える
+    expect(estimateDownloadTileCount(bounds, [pm])).toBe(countTilesForRegion(bounds, 0, 18));
+  });
+
+  // ダウンロード（useTiles）はヘッダーの種別で isVector を決め直してから上限を決める。
+  // 見積もりが保存済みの isVector のままだと、ベクタの付け忘れで上限（z16）が低く数えられ、
+  // 実際は z17〜18 まで取って DOWNLOAD_TILE_COUNT_LIMIT を素通りしてしまう
+  it('PMTilesはヘッダーの種別でベクタ/ラスタを決め、ダウンロードと同じ枚数になる', async () => {
+    const bounds = boundsFromCoords(baseRegion.coords);
+    const archiveZoom = { minZoom: 0, maxZoom: 18 };
+    const cases = [
+      { isVector: false, headerTileType: 1 },
+      { isVector: undefined, headerTileType: 1 },
+      { isVector: true, headerTileType: 2 },
+    ];
+    for (const { isVector, headerTileType } of cases) {
+      const pm: TileMapType = { ...baseMap, id: 'PM', url: 'https://example.com/a.pmtiles', isVector, overzoomThreshold: 18 };
+      const header = { getHeader: jest.fn(() => Promise.resolve({ tileType: headerTileType })) };
+      const downloadIsVector = await resolvePmtileIsVector(header, pm.isVector === true);
+      const { minZoom, maxZoom } = getZoomRange('pmtiles', { ...pm, isVector: downloadIsVector }, archiveZoom);
+      const headerIsVector = await readPmtileHeaderIsVector(header);
+      const isVectors: Record<string, boolean> = headerIsVector === undefined ? {} : { PM: headerIsVector };
+      const count = estimateDownloadTileCount(bounds, [pm], { PM: archiveZoom }, isVectors);
+      expect(count).toBe(downloadTileGrid('pmtiles', bounds, minZoom, maxZoom).length);
+    }
+    // ベクタの付け忘れ: ヘッダーが MVT なら z18 まで数える
+    const forgot: TileMapType = { ...baseMap, id: 'PM', url: 'https://example.com/a.pmtiles', isVector: false, overzoomThreshold: 18 };
+    expect(estimateDownloadTileCount(bounds, [forgot], { PM: archiveZoom }, { PM: true })).toBe(
+      countTilesForRegion(bounds, 0, 18)
+    );
+    expect(estimateDownloadTileCount(bounds, [forgot], { PM: archiveZoom })).toBe(countTilesForRegion(bounds, 0, 16));
   });
 
   it('対象地図がなければ0', () => {
-    expect(estimateDownloadTileCount(boundsFromCoords(baseRegion.coords), [], 11)).toBe(0);
+    expect(estimateDownloadTileCount(boundsFromCoords(baseRegion.coords), [])).toBe(0);
   });
 });
 
@@ -192,7 +258,7 @@ describe('DEMダウンロードの3D遠景用周辺幅', () => {
   it('枚数の見積もりは実列挙と一致する', () => {
     expect(countDownloadTiles('dem', small, 7, 13)).toBe(downloadTileGrid('dem', small, 7, 13).length);
     const dem = { ...baseMap, id: 'dem_mapterhorn' };
-    expect(estimateDownloadTileCount(small, [dem], 14)).toBe(downloadTileGrid('dem', small, 7, 13).length);
+    expect(estimateDownloadTileCount(small, [dem])).toBe(downloadTileGrid('dem', small, 7, 13).length);
   });
 
   it('日付変更線・高緯度でも範囲外に出ない', () => {
@@ -385,9 +451,21 @@ describe('tileMapsForDownloadScreen', () => {
 
   it('見積もりにPDF地図の枚数を含めない', () => {
     const bounds = { minLon: 139.7, minLat: 35.6, maxLon: 139.71, maxLat: 35.61 };
-    const withPdf = estimateDownloadTileCount(bounds, tileMapsForDownloadScreen([baseMap, pdfUrl], [], dem), 12);
-    const withoutPdf = estimateDownloadTileCount(bounds, tileMapsForDownloadScreen([baseMap], [], dem), 12);
+    const withPdf = estimateDownloadTileCount(bounds, tileMapsForDownloadScreen([baseMap, pdfUrl], [], dem));
+    const withoutPdf = estimateDownloadTileCount(bounds, tileMapsForDownloadScreen([baseMap], [], dem));
     expect(withPdf).toBe(withoutPdf);
+  });
+});
+
+describe('readPmtileHeaderIsVector', () => {
+  const withType = (tileType: number) => ({ getHeader: jest.fn(() => Promise.resolve({ tileType })) });
+
+  test('MVT はベクタ、画像はラスタ、種別不明や読めないときは undefined', async () => {
+    expect(await readPmtileHeaderIsVector(withType(1))).toBe(true);
+    expect(await readPmtileHeaderIsVector(withType(2))).toBe(false);
+    expect(await readPmtileHeaderIsVector(withType(0))).toBeUndefined();
+    const failing = { getHeader: jest.fn(() => Promise.reject(new Error('offline'))) };
+    expect(await readPmtileHeaderIsVector(failing)).toBeUndefined();
   });
 });
 
@@ -409,5 +487,22 @@ describe('resolvePmtileIsVector', () => {
     const failing = { getHeader: jest.fn(() => Promise.reject(new Error('offline'))) };
     expect(await resolvePmtileIsVector(failing, false)).toBe(false);
     expect(await resolvePmtileIsVector(failing, true)).toBe(true);
+  });
+});
+
+describe('readPmtileZoomRange', () => {
+  const withZoom = (minZoom: number, maxZoom: number) => ({
+    getHeader: jest.fn(() => Promise.resolve({ minZoom, maxZoom })),
+  });
+
+  test('ヘッダーの min/maxZoom を返す', async () => {
+    expect(await readPmtileZoomRange(withZoom(12, 13))).toEqual({ minZoom: 12, maxZoom: 13 });
+  });
+
+  test('読めない・値が壊れているときは undefined（既定の範囲で取る）', async () => {
+    const failing = { getHeader: jest.fn(() => Promise.reject(new Error('offline'))) };
+    expect(await readPmtileZoomRange(failing)).toBeUndefined();
+    expect(await readPmtileZoomRange(withZoom(14, 12))).toBeUndefined();
+    expect(await readPmtileZoomRange(withZoom(-1, 12))).toBeUndefined();
   });
 });

@@ -75,8 +75,7 @@ import {
 import { getEventTimestamp } from '../utils/OneEuroFilter';
 import { runTrackingPress } from '../utils/trackingPress';
 import { t } from '../i18n/config';
-import { COLOR, TILE_FOLDER } from '../constants/AppConstants';
-import * as FileSystem from 'expo-file-system/legacy';
+import { COLOR } from '../constants/AppConstants';
 import { editSettingsAction } from '../modules/settings';
 import { useTutrial } from '../hooks/useTutrial';
 import { HomeModalTermsOfUse } from '../components/organisms/HomeModalTermsOfUse';
@@ -99,6 +98,8 @@ import {
   DOWNLOAD_TILE_COUNT_LIMIT,
   ESTIMATED_TILE_SIZE_MB,
 } from '../utils/tileDownloadHelpers';
+import { hasIrreplaceableTiles, removeTileCacheEntries } from '../utils/tileCacheCleanup';
+import { usePmtilesZoomRanges } from '../hooks/usePmtilesZoomRanges';
 import { getDemTileMap } from '../utils/demTileDownload';
 import { MapMemoContext } from '../contexts/MapMemo';
 import { DataSelectionContext } from '../contexts/DataSelection';
@@ -1872,10 +1873,20 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     return route.params?.tileMap !== undefined ? [route.params.tileMap] : [];
   }, [route.params?.mode, route.params?.tileMap, selectedTileMapIds, tileMaps]);
 
+  // PMTiles はアーカイブのズーム範囲だけを、ヘッダーの種別（ベクタ/ラスタ）で決めた上限まで取るので、
+  // 見積もりもヘッダーの範囲と種別で数える
+  const pmtilesArchiveInfos = usePmtilesZoomRanges(downloadTargetMaps);
+
   // ズームレベルではなく推定タイル数でダウンロード可否を判定する（地図ごとの実際の取得範囲に自動で追従）
   const estimatedTileCount = useMemo(
-    () => estimateDownloadTileCount(boundsFromCoords(downloadArea.coords), downloadTargetMaps, zoom),
-    [downloadArea.coords, downloadTargetMaps, zoom]
+    () =>
+      estimateDownloadTileCount(
+        boundsFromCoords(downloadArea.coords),
+        downloadTargetMaps,
+        pmtilesArchiveInfos.zoomRanges,
+        pmtilesArchiveInfos.isVectors
+      ),
+    [downloadArea.coords, downloadTargetMaps, pmtilesArchiveInfos]
   );
   const isDownloadPossible = estimatedTileCount <= DOWNLOAD_TILE_COUNT_LIMIT;
 
@@ -2159,10 +2170,12 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       mapsToDelete = [route.params.tileMap];
     }
 
-    // ファイル削除
+    // 取り直せるタイルだけを消す。style.json・boundary.json は地図の表示に使い続けるので残し、
+    // 取り直す経路の無い PDF 地図のタイルは個別指定でも消さない（タイル監査 M-H2）
+    mapsToDelete = mapsToDelete.filter((map) => !hasIrreplaceableTiles(map));
     for (const map of mapsToDelete) {
       try {
-        await FileSystem.deleteAsync(`${TILE_FOLDER}/${map.id}/`);
+        await removeTileCacheEntries(map.id);
       } catch (error) {
         // エラーは無視
       }

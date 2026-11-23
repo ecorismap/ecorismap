@@ -14,11 +14,14 @@ import * as FileSystem from 'expo-file-system/legacy';
 import { db } from '../utils/db';
 import { TILE_FOLDER } from '../constants/AppConstants';
 import { isPeaksUrl } from '../utils/peaks/peak2dLabels';
-import { cleanupPmtilesOnSave, getPmtilesSaveCleanup } from '../utils/pmtilesLocalStore';
+import { discardStaleTileSources } from '../utils/tileSourceCleanup';
+import { useStore } from 'react-redux';
+import { RootState } from '../store';
 
 export default function MapEditContainer() {
   const { goBack: navigationGoBack } = useBottomSheetNavigation();
   const { params } = useBottomSheetRoute<'MapEdit'>();
+  const store = useStore<RootState>();
 
   const {
     map,
@@ -56,11 +59,12 @@ export default function MapEditContainer() {
 
     const finalMap = { ...map };
 
+    // 取得内容（URL・flipY・tileSize・スタイル）が変わったら、旧ソースのタイル・保存範囲・3Dのテクスチャを
+    // 確認なしで捨てる。プリセットの適用もここを通る。boundary.json を書く前に済ませる（M-H6）
+    await discardStaleTileSources(store, [map]);
+
     // pmTilesの場合、boundaryを取得して保存する
     if (map.url.includes('pmtiles')) {
-      // urlやスタイルが変わったら古くなったタイルやboundaryを捨てる。使い続けるstyle.jsonは残す
-      await cleanupPmtilesOnSave(map.id, getPmtilesSaveCleanup(params?.targetMap ?? undefined, map));
-      
       const { header, boundary } = await getPmtilesBoundary(map.url);
       // boundaryが取得できた場合のみ保存処理を行う
       if (boundary) {
@@ -82,7 +86,7 @@ export default function MapEditContainer() {
     }
 
     saveMapToState();
-  }, [getPmtilesBoundary, map, params?.targetMap, saveMapToState]);
+  }, [getPmtilesBoundary, map, saveMapToState, store]);
 
   const pressDeleteMap = useCallback(async () => {
     const ret = await ConfirmAsync(t('Maps.confirm.deleteMap'));
