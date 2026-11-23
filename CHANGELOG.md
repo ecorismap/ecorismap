@@ -15,11 +15,20 @@
 - Points recorded with an external receiver keep the fix type, accuracy, measured elevation (antenna height subtracted) and ellipsoidal height. They are shown in the data edit screen and exported as extra columns in CSV/GeoJSON
 - Tracks recorded with an external receiver can be thinned by accuracy or by distance and keep the fix type and ellipsoidal height (exported as geoidheight in GPX). The new track layer color type "GNSS quality" colors them by fix type (FIX green / FLOAT orange) in 2D and 3D, and is switched on automatically the first time such a track is saved. Tapping a track point shows the fix type and accuracy
 - Added PMTiles maps (vector, raster and pbf) to PDF export
+- Added the recorder's name and line color to the track popup and the track summary, so you can tell whose track it is in a shared project
+- Added bulk resharing of encryption keys: administrators can find the members who reset their key in all the projects they manage and reshare the key with them at once from the key button in the project list
+- Before the encryption key is reset, the app now shows how many shared projects will not open until the key is reshared and how many of your own projects can never be decrypted again. "Forgot your encryption password (PIN)?" is now a separate link from the login password reset
 - Improved track export: before starting, it shows the number of points and photos and lets you include photos or export the track only, and it can be cancelled with progress shown. Export from the data list also asks for confirmation, shows progress and can be cancelled
 - Improved elevation data by unifying the source to Mapterhorn and decoding it natively, which makes the 3D view, viewshed and long-press elevation much faster
 - Improved elevation data downloads to also fetch the surrounding area used for the distant view in 3D
 - Improved the project edit screen to show the progress indicator immediately after pressing Save. Previously it appeared only after the member lookup (Functions/Virgil) had finished, so the screen looked frozen for several seconds
 - Updated the background location library (react-native-background-geolocation 5.1.1 → 5.8.2, native SDK 4.1 → 4.7.8 on Android / 4.8.2 on iOS). This brings upstream fixes for a freeze (ANR) at launch on Android, and for tracking that could stop on Android (foreground service start/stop races, the activity being recreated being mistaken for app termination, duplicated event listeners, re-registering location subscriptions Play Services had dropped, memory growing with every recorded location during long tracking, and locations piling up without limit after the app was reopened while tracking continued in the background) and on iOS (a future-stamped fix blocking all later locations until restart, tracking stuck stationary after a failed location request). Only the location permission is now requested, so iOS no longer asks for Motion & Fitness
+- Changed how tiles are stored for maps with "Y-axis inversion (TMS)" turned on, so that their downloaded tiles are shown correctly offline. On iOS/Android, the tiles already downloaded or cached for these maps are deleted once after the update and their downloaded areas are removed. Likewise, hillshade and color relief maps that used the old elevation source are switched to Mapterhorn, and their downloaded or cached tiles and downloaded areas are deleted once. Download those areas again if you need them offline. PDF maps and PMTiles are not affected
+- The Delete button for a project is now shown only to the project owner, and only the owner can delete it. Deleting a project now also deletes its photos and PDF maps in the cloud
+- In shared projects, only administrators can now edit or delete other members' records and template records, and their edits and deletions now reach every member (previously a deleted record came back at the next sync)
+- While a track is being recorded, switching or closing a project, logging out, restoring or opening data in the settings screen, and moving to the Project, Settings or Login screen now ask you to stop and save the track first. Previously, moving to those screens could drop track points
+- Restoring a backup or clearing data now keeps device settings such as the GNSS antenna height and turns off location sharing. The automatic backup made before a restore is kept apart from the five backup generations, and the app asks before continuing if that backup could not be made
+- Polygons are no longer simplified on import. Only files with more than 50,000 vertices ask whether to simplify them
 - Fixed attribute values becoming blank after renaming an attribute in the layer settings. Labels, color coding and sorting that refer to the attribute are also updated, and duplicate attribute names can no longer be saved
 - Fixed vector tile styles that use expressions such as match for properties other than color: on iOS the layer disappeared and on Android the whole style fell back to the default
 - Fixed changes made just before closing the app (such as settings, layer edits, or dismissing the update info) sometimes not being saved, which made the update info appear again at every launch
@@ -30,6 +39,24 @@
 - Fixed the heading in compass-follow mode wandering on Android when the device is held upright
 - Fixed saving in the data edit screen discarding the elevation and accuracy of points recorded at the current location
 - Fixed "Current location" in "Edit position" adding a new point instead of setting the position of the point being edited
+- Fixed photos possibly being lost when ⇨ (next record) and Save were pressed in quick succession during unsaved edits and "Discard" was chosen afterwards
+- When sending data or saving project settings, photos whose files cannot be read on the device are no longer skipped silently: the rest is still sent, and the app then tells you how many photos could not be sent
+- Fixed photos not being uploaded to the cloud on iOS. Photo uploads that fail are now reported after saving and retried next time
+- Fixed HEIC photos picked from the iPhone library not uploading to the cloud. They are now converted to JPEG, keeping the location, date and orientation
+- Fixed photos on iOS showing only as thumbnails, missing from exports or failing to sync after the app was updated
+- Fixed other photo issues: deleting rows in cloud data management also deleting photos of the remaining data, clearing the map cache deleting photos, duplicated records and copied templates sharing photos with the original, and photos and input being lost when the camera screen was recreated on Android
+- Fixed several cases where shared project data could be lost silently during sync: the cloud data being replaced after a project failed to open or decrypt, edits by another administrator to common data being lost, common data being deleted for everyone when saving project settings, and child records disappearing after reordering. Saving project settings now asks before overwriting settings saved from another device
+- Fixed import and export silently changing or losing data: 0 becoming blank, CSV values with line breaks splitting records, map memo stamps and line styles not being restored, and track lines exported white in KML. Imports now report failed, skipped or missing features and photos, and replace-import deletes the existing data only after the file has been converted
+- Improved import: GPX routes, KML MultiGeometry and polygon holes, Shift_JIS CSV, points from latitude/longitude columns in CSV, and mixed GeoJSON split into layers by geometry type. ZIP files that expand to more than 500 MB are rejected
+- Fixed offline map issues: clearing the cache deleting PDF maps and imported styles, PMTiles downloads saving tiles in the wrong format or zoom range, temporary server errors deleting tiles that were already downloaded, PMTiles on Android not updating when switching between offline and online, maps not updating after their URL was changed (the old tiles are now deleted), and only the first shared style being loaded when opening a project. Downloads now report failed tiles, show incomplete areas with dashed lines and stop as soon as you press Stop. On iOS, the map tile folder, which also holds imported PDF maps, is no longer included in iCloud or device backups. After restoring an iPhone from a backup, import your PDF maps again (keep the original PDF files)
+- Importing a PDF map now shows a message while it is being converted, which can take tens of seconds
+- Fixed track recording issues and added guidance: when location permission is denied or only approximate location is allowed, when a track with fewer than two points is not saved, and the time recording stopped when the app was closed on iOS. An external receiver that disconnects during recording is reconnected automatically, and GeoJSON export and import keep the elevation and the time and accuracy of each track point
+- Fixed data editing issues: a shape returning to its old position when attributes were saved after editing the position, table values being cleared after editing the table's columns, checks moving to other records when the filter in the data list changed, and 0 shown as blank in text fields. Changing a field's type now asks for confirmation with the number of values that will change or be lost, and serial numbers continue from the largest number in the whole layer
+- Fixed project and account issues: settings mode staying on after opening another project so that the administrator's own records were distributed as templates, members being unable to open a project after the pending member check, and the project list becoming empty on reload. If a project fails to open, it is now closed with a message, signing in with a different account asks before closing the previous user's project, and an expired session is detected
+- The app now warns when data cannot be saved because the device is low on storage. On the web, opening a new tab no longer deletes PDF maps and PMTiles imported in other tabs
+- Fixed the proximity alert voice not playing while the iPhone screen is locked
+- Fixed differences between the web and mobile versions, such as date and time values saved in a locale-specific format on mobile, arrowheads and brush symbols pointing the wrong way on a rotated map on the web, and the layer edit panel on the web shifting after choosing from a picker so that Save could not be pressed
+- Fixed many other issues found in code reviews
 - Fixed several security issues found in a security review
 
 - iOS/Androidアプリに3D地形表示を追加しました。レイヤのデータとベクタのPMTilesを地形の上に描き、タップで属性を表示できます。コンパス、GPSの現在地マーカー、記録中の軌跡も3Dで表示します
@@ -45,11 +72,20 @@
 - 外部GNSS受信機で記録したポイントに、Fix種別・精度・測位標高（アンテナ高を差し引いた値）・楕円体高を残すようにしました。データ編集画面に表示し、CSV/GeoJSONのエクスポートでは列として出力します
 - 外部GNSS受信機での軌跡は、精度または距離で間引いて記録できるようにし、Fix種別と楕円体高も残すようにしました（GPXではgeoidheightとして出力）。軌跡レイヤのカラータイプに「測位品質」を追加し、2D・3DでFix種別ごとに色分け（FIXは緑、FLOATは橙）できます。外部GNSSの軌跡を初めて保存したときに自動でこのカラータイプに切り替わります。軌跡の点をタップするとFix種別と精度を表示します
 - PDF出力にPMTiles（ベクタ・ラスタ・pbf）の地図を含めるようにしました
+- 軌跡のポップアップと軌跡サマリーに、記録者の名前と線の色を表示するようにしました。共有プロジェクトで誰の軌跡か分かります
+- 暗号化キーの一括再共有を追加しました。管理者は、プロジェクト一覧の鍵ボタンから、管理している全プロジェクトで鍵をリセットしたメンバーを探し、まとめて再共有できます
+- 暗号化キーをリセットする前に、再共有されるまで開けなくなる共有プロジェクトの数と、二度と復号できなくなる自分だけのプロジェクトの数を示すようにしました。「暗号化パスワード（PIN）をお忘れですか？」をログインパスワードの再設定とは別のリンクにしました
 - 軌跡のエクスポートで、開始前に点数と写真の枚数を示し、写真を含めるか軌跡のみにするかを選べるようにしました。進捗を表示し、途中で中止もできます。データ一覧のエクスポートにも開始前の確認・進捗表示・中止を追加しました
 - 標高データの取得元をMapterhornに統一し、デコードをネイティブ化しました。3D表示・可視領域・長押しの標高表示が大幅に速くなります
 - 標高データのダウンロードで、3Dの遠景に使う周辺の範囲も取得するようにしました
 - プロジェクト編集で保存ボタンを押した直後にインジケータを出すようにしました。これまではメンバーの照会（Functions/Virgil）が終わるまで表示されず、数秒間固まったように見えていました
 - バックグラウンド位置情報ライブラリを更新しました（react-native-background-geolocation 5.1.1 → 5.8.2、ネイティブSDK 4.1 → Android 4.7.8／iOS 4.8.2）。Androidの起動時に固まる（ANR）問題、Androidで追跡が止まり得た問題（フォアグラウンドサービスの起動・停止の競合、画面の再生成をアプリ終了と誤判定、イベントリスナーの多重登録、Play Servicesが止めた位置購読の再登録、長時間の記録で位置ごとにメモリが増え続ける、バックグラウンドで記録を続けたままアプリを開き直すと位置が際限なく溜まる）と、iOSの問題（未来の時刻を持つ位置が以後の全位置を再起動まで止める、位置取得失敗後に静止状態から復帰できない）の上流修正を含みます。権限要求は位置のみにしたため、iOSでモーション（Motion & Fitness）の許可を求めなくなりました
+- 「Y軸反転（TMS形式）」をオンにした地図のタイルの保存方法を変え、ダウンロードしたタイルがオフラインで正しく表示されるようにしました。iOS/Androidでは、更新後に一度だけ、これらの地図のダウンロード済み・閲覧済みのタイルを削除し、ダウンロード範囲の記録も外します。同様に、古い標高データを使っていた陰影起伏・段彩の地図はMapterhornに切り替え、ダウンロード済み・閲覧済みのタイルとダウンロード範囲の記録を一度だけ削除します。オフラインで使う範囲はダウンロードし直してください。PDF地図とPMTilesは影響しません
+- プロジェクトの削除ボタンはオーナーにだけ表示し、削除できるのもオーナーだけにしました。プロジェクトを削除すると、クラウドの写真とPDF地図も削除します
+- 共有プロジェクトで、他のメンバーの記録やテンプレートの記録を編集・削除できるのは管理者だけにし、その編集・削除が全メンバーに反映されるようにしました（これまでは削除した記録が次の同期で戻っていました）
+- 軌跡の記録中に、プロジェクトの切り替え・閉じる・ログアウト、設定画面での復元やファイルを開く操作、「プロジェクト」「設定」「ログイン」画面への移動をすると、先に記録を止めて保存するか確認するようにしました。これまではこれらの画面へ移ると軌跡の点が欠けることがありました
+- バックアップの復元やデータのクリアで、外部GNSSのアンテナ高などの端末の設定は今の値を引き継ぎ、位置共有はオフにするようにしました。復元前の自動バックアップは5世代とは別に残し、作れなかったときは続けるか確認します
+- インポートでポリゴンを既定では簡略化しないようにしました。頂点の合計が5万点を超えるファイルだけ、簡略化するか確認します
 - レイヤ設定で属性名を変更すると、その属性の値が空白になる問題を修正しました。属性を参照するラベル・色分け・並び替えも新しい名前に付け替え、同じ属性名が重複している場合は保存できないようにしました
 - 色以外のプロパティにmatch等の式を使ったベクタタイルのスタイルで、iOSではレイヤが消え、Androidではスタイル全体が既定に戻る問題を修正しました
 - アプリを閉じる直前に行った変更（設定・レイヤの編集・更新情報のOKなど）が保存されないことがあり、起動のたびに更新情報が出る問題を修正しました
@@ -60,6 +96,24 @@
 - Androidで端末を立てると、コンパス追従の方位がふらつく問題を修正しました
 - データ編集画面で保存すると、現在地で記録したポイントの標高や精度が消える問題を修正しました
 - 「位置を編集」の現在地ボタンで、編集中のポイントの位置にならず新しいポイントが追加される問題を修正しました
+- 未保存の編集中に「⇨」（次の記録）と「保存」を続けて押し、あとから出る確認で「破棄」を選ぶと、写真が失われることがある問題を修正しました
+- 送信や設定の保存で、端末で読めなかった写真を黙って飛ばしていたのをやめ、残りを送ったあとに送れなかった写真の枚数を知らせるようにしました
+- iOSで写真がクラウドにアップロードされない問題を修正しました。写真のアップロードに失敗したときは保存後に知らせ、次回にやり直します
+- iPhoneのライブラリから選んだHEIC写真がクラウドに上がらない問題を修正しました。撮影位置・日時・向きを残したままJPEGに変換します
+- iOSでアプリを更新すると、写真がサムネイルでしか表示されない・エクスポートから落ちる・同期できなくなる問題を修正しました
+- 写真のその他の問題を修正しました（クラウドデータ管理で行を消すと残すデータの写真まで消える、地図のキャッシュのクリアで写真も消える、複製した記録やテンプレートの写しが元と写真を共有する、Androidでカメラ中に画面が作り直されると写真や入力内容が失われる）
+- 共有プロジェクトの同期で、データが黙って失われることがある問題を修正しました（プロジェクトを開けない・復号できないときにクラウドのデータが置き換わる、別の管理者による共通データの編集が消える、設定の保存で全員分の共通データが消える、並べ替えで子の記録が消える）。設定の保存では、開いた後に別の端末で設定が保存されていれば、上書きするか確認します
+- インポート/エクスポートで、データが黙って変わる・消える問題を修正しました（0が空欄になる、改行を含むCSVの値で記録が分かれる、マップメモのスタンプや線のスタイルが戻らない、KMLで軌跡の線が白くなる）。インポートで失敗・除外・欠落した地物や写真を知らせ、置き換えのインポートは変換に成功してから既存のデータを消すようにしました
+- インポートを改善しました（GPXのルート、KMLのMultiGeometryとポリゴンの穴、Shift_JISのCSV、CSVの緯度経度列からのポイント作成、種類が混在するGeoJSONの種類ごとのレイヤ分け）。展開後のサイズが500MBを超えるZIPは取り込みません
+- オフライン地図の問題を修正しました（キャッシュのクリアでPDF地図や取り込んだスタイルまで消える、PMTilesのダウンロードで保存形式やズーム範囲が誤る、サーバーの一時的なエラーでダウンロード済みのタイルが消える、Androidでオフラインとオンラインを切り替えてもPMTilesが更新されない、地図のURLを変えても表示が変わらない（古いタイルは削除するようにしました）、プロジェクトを開くと共有スタイルが最初の1つしか取り込まれない）。ダウンロードで取得に失敗したタイルの数を知らせ、未完了の範囲を破線で示し、「停止」ですぐ止まるようにしました。iOSでは、地図のタイルのフォルダをiCloud・端末のバックアップに含めないようにしました。このフォルダには取り込んだPDF地図も入るため、バックアップからiPhoneを復元したあとはPDF地図を取り込み直してください（元のPDFファイルは残しておいてください）
+- PDF地図の取り込みで、変換中（数十秒かかります）であることを表示するようにしました
+- 軌跡の記録の問題を修正し、案内を加えました（位置の許可が無いときやおおよその位置しか許可されていないときの案内、2点未満で保存しなかったときの通知、iOSでアプリを終了したときに記録が中断した時刻の表示）。記録中に外部受信機が切れたら自動で接続し直し、GeoJSONのエクスポートとインポートで軌跡の標高と点ごとの時刻・精度を残すようにしました
+- データ編集の問題を修正しました（位置を直したあと属性を保存すると形が元に戻る、表（TABLE）の列を編集すると表の値が消える、データ一覧で絞り込みを変えるとチェックが別の記録へ移る、文字列の欄で0が空欄に見える）。属性の形式を変えるときは、値が変わる・消える件数を示して確認し、連番はレイヤ全体の最大値の次から振るようにしました
+- プロジェクトとアカウントの問題を修正しました（別のプロジェクトを開いても設定モードが残り、管理者自身の記録がテンプレートとして配られる、保留メンバーの再確認のあと一般メンバーがプロジェクトを開けない、一覧の再読み込みで一覧が空になる）。プロジェクトを開くのに失敗したときは閉じて知らせ、別のアカウントでログインしたときは前のユーザーのプロジェクトを閉じる前に確認し、ログインの有効期限切れを検知するようにしました
+- 端末の空き容量不足でデータを保存できていないときに知らせるようにしました。Web版で新しいタブを開くと、ほかのタブで取り込んだPDF地図やPMTilesが消える問題を修正しました
+- iPhoneの画面ロック中に接近通知の音声が出ない問題を修正しました
+- Web版とスマホ版の違いを修正しました（スマホで日時が端末の地域の書式で保存される、Web版で回転した地図の矢印やブラシ記号の向きがずれる、Web版でピッカーを選ぶとレイヤ編集パネルがずれて保存を押せなくなる など）
+- コードレビューで見つかったそのほか多くの問題を修正しました
 - セキュリティレビューで見つかった複数の問題を修正しました
 
 ## [0.6.9]　- Unreleased
