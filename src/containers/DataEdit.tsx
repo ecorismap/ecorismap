@@ -9,7 +9,7 @@ import { Alert } from '../components/atoms/Alert';
 import { t } from '../i18n/config';
 import { useRecord } from '../hooks/useRecord';
 import { DataEditContext } from '../contexts/DataEdit';
-import { shallowEqual, useDispatch, useSelector } from 'react-redux';
+import { shallowEqual, useDispatch, useSelector, useStore } from 'react-redux';
 import { RootState } from '../store';
 import { useKeyboard } from '@react-native-community/hooks';
 import { checkCoordsInput, checkFieldInput, isLatLonEmpty } from '../utils/Data';
@@ -23,9 +23,11 @@ import { DataEditModalPhotoView } from '../components/organisms/DataEditModalPho
 import { useLayers } from '../hooks/useLayers';
 import { addToDynamicDictionary } from '../hooks/useDynamicDictionaryInput';
 import { editSettingsAction } from '../modules/settings';
-import { photoDownloadTarget } from '../utils/photoDownloadPath';
+import { findLocalPhotoUri, photoDownloadTarget } from '../utils/photoDownloadPath';
 import { copiedPhotosMessage } from '../utils/photoCopyMessage';
 import { useSingleFlight } from '../hooks/useSingleFlight';
+import { AcquiredPhoto, usePhotoAcquisition } from '../hooks/usePhotoAcquisition';
+import { discardStalePickerResult } from '../utils/discardStalePickerResult';
 
 export default function DataEditContainer() {
   const { navigate, navigateToHome } = useBottomSheetNavigation();
@@ -65,11 +67,18 @@ export default function DataEditContainer() {
   const dispatch = useDispatch();
   const projectId = useSelector((state: RootState) => state.settings.projectId, shallowEqual);
   const user = useSelector((state: RootState) => state.user);
+  const store = useStore<RootState>();
   const { checkRecordEditable, unselectRecord } = useRecord();
   const { keyboardShown } = useKeyboard();
   const { isLandscape, windowWidth, mapRegion } = useWindow();
   //console.log('####', targetLayer);
   //console.log('$$$$', targetRecord);
+
+  //写真の取り込み（撮影・選択と保存）の実行中は、撮影・選択・記録の切り替え・戻る・保存を止める（写真監査 P-L3）
+  const { isPhotoProcessing, isPhotoProcessingRef, acquirePhoto } = usePhotoAcquisition({
+    recordKey: `${targetLayer.id}/${targetRecord.id}`,
+    addPhoto,
+  });
 
   //キーボードを閉じてから保存する場合の待機フラグ
   const [isSavePending, setIsSavePending] = useState(false);
@@ -132,6 +141,8 @@ export default function DataEditContainer() {
 
   const pressSaveData = useCallback(async () => {
     if (isSavingRef.current) return;
+    //取り込み中の写真はまだ記録に付いていない。保存して画面を離れると、その写真は捨てられる
+    if (isPhotoProcessingRef.current) return;
     //他のメンバー・テンプレートの記録は管理者だけが変えられる（同期監査 L1）
     if (modifyBlockMessage !== undefined) {
       Alert.alert('', modifyBlockMessage);
@@ -163,7 +174,16 @@ export default function DataEditContainer() {
     }
 
     finalizeSave();
-  }, [changeActiveLayer, checkRecordEditable, finalizeSave, isSavingRef, keyboardShown, modifyBlockMessage, targetLayer]);
+  }, [
+    changeActiveLayer,
+    checkRecordEditable,
+    finalizeSave,
+    isPhotoProcessingRef,
+    isSavingRef,
+    keyboardShown,
+    modifyBlockMessage,
+    targetLayer,
+  ]);
 
   useEffect(() => {
     if (!isSavePending) return;
@@ -287,11 +307,12 @@ export default function DataEditContainer() {
         Alert.alert('', modifyBlockMessage);
         return;
       }
-      const photo = await pickImage(photoFolder);
-      if (photo === undefined) return;
-      addPhoto(fieldName, photo);
+      await acquirePhoto(fieldName, async () => {
+        await discardStalePickerResult();
+        return pickImage(photoFolder);
+      });
     },
-    [addPhoto, modifyBlockMessage, photoFolder]
+    [acquirePhoto, modifyBlockMessage, photoFolder]
   );
 
   const pressTakePhoto = useCallback(
@@ -308,35 +329,42 @@ export default function DataEditContainer() {
         projectId !== undefined
           ? `${PHOTO_FOLDER}/${projectId}/${targetLayer.id}/${user.uid}`
           : `${PHOTO_FOLDER}/LOCAL/${targetLayer.id}/OWNER`;
-      //Androidでカメラ起動中にActivityが破棄されると、ここには戻ってこない。
-      //復帰後にusePendingPhotoCaptureが撮影結果を回収できるよう、撮影先を残しておく。
-      //画面の状態（先に付けた写真や未保存の入力）も一緒に消えるので、編集中の下書きも残す
-      dispatch(
-        editSettingsAction({
-          pendingPhotoCapture: {
-            layerId: targetLayer.id,
-            recordId: targetRecord.id,
-            fieldName,
-            draft: getPhotoCaptureDraft(),
-          },
-        })
-      );
-      const photo = await takePhoto(folder);
-      dispatch(editSettingsAction({ pendingPhotoCapture: undefined }));
+      let isPermissionDenied = false;
+      const result = await acquirePhoto(fieldName, async (): Promise<AcquiredPhoto | undefined> => {
+        //古い保留を先に捨てる。撮影先を残した後に捨てると、この撮影の保留と区別できなくなる
+        await discardStalePickerResult();
+        //Androidでカメラ起動中にActivityが破棄されると、ここには戻ってこない。
+        //復帰後にusePendingPhotoCaptureが撮影結果を回収できるよう、撮影先を残しておく。
+        //画面の状態（先に付けた写真や未保存の入力）も一緒に消えるので、編集中の下書きも残す
+        dispatch(
+          editSettingsAction({
+            pendingPhotoCapture: {
+              layerId: targetLayer.id,
+              recordId: targetRecord.id,
+              fieldName,
+              draft: getPhotoCaptureDraft(),
+            },
+          })
+        );
+        const photo = await takePhoto(folder);
+        dispatch(editSettingsAction({ pendingPhotoCapture: undefined }));
+        if (isPhotoPermissionDenied(photo)) {
+          isPermissionDenied = true;
+          return undefined;
+        }
+        return photo;
+      });
 
-      if (photo === undefined) return;
-      if (isPhotoPermissionDenied(photo)) {
+      if (result === 'none' && isPermissionDenied) {
         //拒否したままだと何度押しても何も起きないので、理由を伝えて設定画面へ案内する
         const ret = await ConfirmAsync(t('DataEdit.alert.permitCamera'), {
           true: t('DataEdit.label.openSettings'),
           false: t('common.cancel'),
         });
         if (ret) Linking.openSettings().catch(() => undefined);
-        return;
       }
-      addPhoto(fieldName, photo);
     },
-    [addPhoto, dispatch, getPhotoCaptureDraft, modifyBlockMessage, projectId, targetLayer.id, targetRecord.id, user.uid]
+    [acquirePhoto, dispatch, getPhotoCaptureDraft, modifyBlockMessage, projectId, targetLayer.id, targetRecord.id, user.uid]
   );
 
   const pressPhoto = useCallback(
@@ -391,13 +419,18 @@ export default function DataEditContainer() {
               photoId: id,
               photoName: name,
               photoUrl: url,
+              // 記録の uri は同期で届いた送り手の端末のパスのことがあるので、手元の記録で確かめた uri だけを渡す（写真監査 P-L15）
+              localPhotoUri: findLocalPhotoUri(store.getState().dataSet, targetLayer.id, id),
             })
           : { folder: photoFolder, filename: name };
       if (target === undefined) {
         await AlertAsync(t('firebase.message.failGetPhoto'));
         return;
       }
-      const { isOK, message, uri } = await projectStorage.downloadPhoto(url, key, target.filename, target.folder);
+      const { isOK, message, uri } = await projectStorage.downloadPhoto(url, key, target.filename, target.folder, {
+        photoId: id,
+        reuseExisting: 'reuseExisting' in target ? target.reuseExisting : undefined,
+      });
       if (!isOK || uri === null) {
         await AlertAsync(message);
         return;
@@ -405,10 +438,11 @@ export default function DataEditContainer() {
       updatePhoto(fieldName, index, uri);
     }
     setPhotoEditorOpen(false);
-  }, [photoFolder, projectId, selectedPhoto, targetLayer.id, targetRecord.userId, updatePhoto, user.uid]);
+  }, [photoFolder, projectId, selectedPhoto, store, targetLayer.id, targetRecord.userId, updatePhoto, user.uid]);
 
   const onChangeRecord = useCallback(
     async (value: number) => {
+      if (isPhotoProcessingRef.current) return;
       if (isEditingRecord) {
         const ret = await ConfirmAsync(t('DataEdit.confirm.changeRecord'));
         if (!ret) return;
@@ -421,7 +455,7 @@ export default function DataEditContainer() {
         cancelUpdate();
       }
     },
-    [cancelUpdate, changeRecord, isEditingRecord, maxRecordNumber]
+    [cancelUpdate, changeRecord, isEditingRecord, isPhotoProcessingRef, maxRecordNumber]
   );
 
   const getJumpRegion = (
@@ -528,6 +562,7 @@ export default function DataEditContainer() {
   }, [targetLayer.type, targetRecord.coords, targetRecord.field]);
 
   const gotoBack = useCallback(async () => {
+    if (isPhotoProcessingRef.current) return;
     const goBack = () => {
       if (params?.previous === 'Data') {
         unselectRecord();
@@ -558,6 +593,7 @@ export default function DataEditContainer() {
   }, [
     cancelUpdate,
     isEditingRecord,
+    isPhotoProcessingRef,
     navigate,
     params?.mainData,
     params?.mainLayer,
@@ -693,6 +729,7 @@ export default function DataEditContainer() {
       modifyBlockMessage,
       deleteBlockMessage,
       isSaving,
+      isPhotoProcessing,
       pressSaveData,
       changeLatLonType,
       changeLatLon,
@@ -726,6 +763,7 @@ export default function DataEditContainer() {
       isDecimal,
       isEditingRecord,
       isPhotoViewOpen,
+      isPhotoProcessing,
       isSaving,
       latlon,
       maxRecordNumber,

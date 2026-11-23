@@ -13,6 +13,7 @@ import { blobToBase64 } from '../../utils/blob';
 import { isSafePathSegment } from '../../utils/safePath';
 import { convertToUploadableJpeg, deletePhotoFile } from '../../utils/Photo';
 import { photoContentTypeFromName } from '../../utils/General';
+import { isCollisionFreePhotoFilename, photoIdFromUrl } from '../../utils/photoDownloadPath';
 import { ulid } from 'ulid';
 
 /**
@@ -393,15 +394,39 @@ export const fetchPhoto = async (url: string, key: string) => {
   }
 };
 
-export const downloadPhoto = async (url: string, key: string, filename: string, folder: string) => {
+/**
+ * 写真を folder/filename に取得する。同名のファイルが既にあれば取得せずに使う。
+ * ただし以前の秒単位の写真名は、同じアカウントの別の端末で同じ秒に撮った写真と重なる（写真監査 P-L15）。
+ * 同じ写真のファイルだと確かめられない（reuseExisting でない）ときは、既にあるファイルを使い回さず上書きもせず、
+ * 写真 id を前に付けた名前に置く。写真 id は options か Storage のパスから読む
+ */
+export const downloadPhoto = async (
+  url: string,
+  key: string,
+  filename: string,
+  folder: string,
+  options: { photoId?: string; reuseExisting?: boolean } = {}
+) => {
   let newUri;
   // 写真名は他メンバーのレコード由来。パス区切りや`..`でフォルダの外に書き込ませない
   if (!isSafePathSegment(filename)) {
     return { isOK: false, message: t('firebase.message.failGetPhoto'), uri: null };
   }
-  const localFile = `${folder}/${filename}`;
+  let localFile = `${folder}/${filename}`;
+  let exists = await hasProjectImage(localFile);
+  const photoId = options.photoId ?? photoIdFromUrl(url);
+  if (
+    exists &&
+    options.reuseExisting !== true &&
+    photoId !== undefined &&
+    isSafePathSegment(photoId) &&
+    !isCollisionFreePhotoFilename(filename, photoId)
+  ) {
+    localFile = `${folder}/${photoId}_${filename}`;
+    exists = await hasProjectImage(localFile);
+  }
 
-  if (await hasProjectImage(localFile)) {
+  if (exists) {
     //すでにある
     return { isOK: true, message: '', uri: localFile };
   } else {

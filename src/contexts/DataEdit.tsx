@@ -23,6 +23,8 @@ interface DataEditContextType {
   onChangeRecord: (value: number) => void;
   /** 保存の実行中（保存ボタンを無効にする） */
   isSaving?: boolean;
+  /** 写真の取り込み（撮影・選択と保存）の実行中（撮影・選択・記録の切り替え・戻る・保存を止める） */
+  isPhotoProcessing?: boolean;
   pressSaveData: () => void;
   pressCopyData: () => void;
   pressPhoto: (fieldName: string, photo: PhotoType, index: number) => void;

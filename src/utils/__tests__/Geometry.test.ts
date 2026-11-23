@@ -12,6 +12,7 @@ import {
   generateGeoJson,
   escapeCSVValue,
   hasValidCoordinates,
+  exportedPhotoNames,
 } from '../Geometry';
 import { geoJsonString } from '../../__tests__/resources/geojson';
 import track_gpx from '../../__tests__/resources/track_gpx';
@@ -20,7 +21,7 @@ import point_gpx from '../../__tests__/resources/point_gpx';
 import invalid_point_gpx from '../../__tests__/resources/invalid_point_gpx';
 import { layers } from '../../__tests__/resources/layer';
 import { expectedLineGpx, expectedPointGpx, line_record, point_record } from '../../__tests__/resources/record';
-import { LayerType, LocationType } from '../../types';
+import { LayerType, LocationType, PhotoType, RecordType } from '../../types';
 //@ts-ignore
 import MockDate from 'mockdate';
 jest.mock('ulid', () => ({ ulid: () => '1234' }));
@@ -512,5 +513,52 @@ describe('trackExportRecords', () => {
   it('timestampがない軌跡はtimeが空文字', () => {
     const records = trackExportRecords([{ latitude: 35, longitude: 135 }], 'test track');
     expect(records[0].field.time).toBe('');
+  });
+});
+
+describe('編集で外した写真（uri が undefined の印）は書き出す名前に出さない（写真監査 P-L16）', () => {
+  const photo = (id: string, uri: string | null | undefined): PhotoType => ({
+    id,
+    name: `${id}.jpg`,
+    uri,
+    url: 'https://cloud/x',
+    key: 'KEY',
+    width: 10,
+    height: 10,
+    thumbnail: null,
+  });
+  //Web はアップロード後に uri を null にするので、null は書き出す
+  const photos = [photo('LOCAL', 'file:///photo/a.jpg'), photo('REMOVED', undefined), photo('WEBUP', null)];
+  const field: LayerType['field'] = [{ id: 'FP', name: '写真', format: 'PHOTO' }];
+  const layer = { ...layers[0], field } as LayerType;
+  const records = [
+    {
+      id: 'R1',
+      userId: undefined,
+      displayName: null,
+      visible: true,
+      redraw: false,
+      coords: { latitude: 35.1, longitude: 139.1 },
+      field: { 写真: photos },
+    },
+  ] as RecordType[];
+
+  it('exportedPhotoNames は厳密に undefined の写真だけを除く', () => {
+    expect(exportedPhotoNames(photos)).toBe('LOCAL.jpg,WEBUP.jpg');
+  });
+
+  it('CSV・GeoJSON・KML のどれにも外した写真の名前が出ない', () => {
+    const csv = generateCSV(records, field, 'POINT');
+    expect(csv).toContain('"LOCAL.jpg,WEBUP.jpg"');
+    expect(csv).not.toContain('REMOVED');
+
+    const geojson = generateGeoJson(records, field, 'POINT', 'test') as unknown as {
+      features: { properties: Record<string, unknown> }[];
+    };
+    expect(geojson.features[0].properties['写真']).toBe('LOCAL.jpg,WEBUP.jpg');
+
+    const kml = generateKML(records, layer);
+    expect(kml).toContain('LOCAL.jpg,WEBUP.jpg');
+    expect(kml).not.toContain('REMOVED');
   });
 });

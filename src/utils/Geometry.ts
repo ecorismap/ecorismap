@@ -184,6 +184,17 @@ const isBlankCsvRow = (row: string[]) => row.length === 1 && row[0].trim() === '
  * CSV は全て文字列なので、レイヤの項目型に合わせて戻す。
  * 文字列のままだと PHOTO の forEach/map（削除・同期）が例外になり、数値も文字列に落ちる。
  */
+/**
+ * 書き出す写真名（カンマ区切り）。uri が undefined の写真は編集で外した印（次のアップロードでクラウドから消す）で、
+ * 写真本体を同梱しないので名前も出さない。Web はアップロード後に uri を null にするので、厳密に undefined だけを除く
+ * （写真監査 P-L16）
+ */
+export const exportedPhotoNames = (photos: PhotoType[]) =>
+  photos
+    .filter((p) => p.uri !== undefined)
+    .map((p) => p.name)
+    .join(',');
+
 const convertCsvValue = (value: string, format: FormatType | undefined): string | number | PhotoType[] => {
   switch (format) {
     case 'PHOTO':
@@ -1007,7 +1018,7 @@ export const generateCSV = (dataSet: RecordType[], field: LayerType['field'], ty
       .map(({ name }) => {
         const fieldValue = record.field[name];
         if (isPhotoField(fieldValue)) {
-          return escapeCSVValue(fieldValue.map((p) => p.name).join(','));
+          return escapeCSVValue(exportedPhotoNames(fieldValue));
         } else {
           return escapeCSVValue(fieldValue);
         }
@@ -1091,7 +1102,7 @@ const generateDescription = (record: RecordType, field: FieldType[]) => {
 
 // 後から追加した項目などは値が undefined/null のことがあり、そのまま文字列にすると "undefined"/"null" と出るため空にする
 const kmlFieldValue = (fieldValue: unknown): string => {
-  if (isPhotoField(fieldValue)) return fieldValue.map((p) => p.name).join(',');
+  if (isPhotoField(fieldValue)) return exportedPhotoNames(fieldValue);
   if (fieldValue === undefined || fieldValue === null) return '';
   return String(fieldValue);
 };
@@ -1482,7 +1493,7 @@ export const generateGPX = (data: RecordType[], type: FeatureType) => {
       // 文字列の desc は取り込んだ説明文として下でそのまま書き戻す。文字列でない desc（他レイヤの数値項目など）は通常の項目として扱う
       if (fieldName !== 'name' && fieldName !== 'time' && fieldName !== 'cmt' && !(fieldName === GPX_DESC_FIELD && typeof record.field[fieldName] === 'string')) {
         if (isPhotoField(fieldValue)) {
-          descriptions.push(`${fieldName}: ${fieldValue.map((p) => p.name).join(',')}`);
+          descriptions.push(`${fieldName}: ${exportedPhotoNames(fieldValue)}`);
         } else if (fieldValue !== undefined && fieldValue !== '') {
           descriptions.push(`${fieldName}: ${fieldValue}`);
         }
@@ -1571,7 +1582,7 @@ const generateProperties = (record: RecordType, field: LayerType['field'], permi
     .map(({ name }) => {
       const fieldValue = record.field[name];
       if (isPhotoField(fieldValue)) {
-        const photoIds = fieldValue.map((p) => p.name).join(',');
+        const photoIds = exportedPhotoNames(fieldValue);
         return { [name]: photoIds };
       } else {
         return { [name]: fieldValue };

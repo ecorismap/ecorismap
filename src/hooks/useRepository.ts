@@ -30,7 +30,7 @@ import { setDataSyncTimestampsAction, dataSyncKey } from '../modules/dataSync';
 import { layersInitialState, setLayersAction, TRACK_LAYER_ID } from '../modules/layers';
 import { tileMapsInitialState, setTileMapsAction } from '../modules/tileMaps';
 import { dropUnsafeTileMaps } from '../utils/tileMapId';
-import { photoDownloadTarget } from '../utils/photoDownloadPath';
+import { findLocalPhotoUri, photoDownloadTarget } from '../utils/photoDownloadPath';
 import { editSettingsAction } from '../modules/settings';
 import { addProjectAction, deleteProjectAction, updateProjectAction } from '../modules/projects';
 import { cloneDeep } from 'lodash';
@@ -751,6 +751,10 @@ export const useRepository = (): UseRepositoryReturnType & {
           } else if (photo.uri === undefined && photo.url !== null) {
             //写真削除したものは、クラウド削除して（書き込みの成功後）、photoのフィールドの値も消す(undefinedで返す)
             pendingPhotoDeletes?.set(photo.id, { id: photo.id, url: photo.url });
+            return undefined;
+          } else if (photo.uri === undefined && photo.url === null) {
+            //上げる前に外した写真の印。クラウドに実体はないので、項目だけ取り除く。
+            //以前の版はこの印を残したので、すでに記録に入っている分もここで片付く（写真監査 P-L6）
             return undefined;
           } else {
             //すでにアップロードしてある場合はなにもしない
@@ -1599,6 +1603,9 @@ export const useRepository = (): UseRepositoryReturnType & {
       if (user.uid === undefined) return data;
       const uid = user.uid;
       const newData = cloneDeep(data);
+      // data は同期で届いた記録で、その uri は送り手の端末のパス。同じ写真がこの端末のどこにあるかは手元の記録で見る。
+      // 確かめられないと、以前の名前の自分の写真を全部取り直し、元の原画がどこからも参照されずに残る（写真監査 P-L15）
+      const localDataSet = store.getState().dataSet;
 
       for (const { name } of photoFields) {
         const photos = (data.field[name] as PhotoType[]).map(async (photo) => {
@@ -1613,9 +1620,13 @@ export const useRepository = (): UseRepositoryReturnType & {
               photoId: photo.id,
               photoName: photo.name,
               photoUrl: photo.url,
+              localPhotoUri: findLocalPhotoUri(localDataSet, layerId, photo.id),
             });
             if (target === undefined) return photo;
-            const { isOK, uri } = await projectStorage.downloadPhoto(photo.url, photo.key, target.filename, target.folder);
+            const { isOK, uri } = await projectStorage.downloadPhoto(photo.url, photo.key, target.filename, target.folder, {
+              photoId: photo.id,
+              reuseExisting: target.reuseExisting,
+            });
             if (!isOK || uri === null) {
               //console.log(message);
               return photo;
@@ -1634,7 +1645,7 @@ export const useRepository = (): UseRepositoryReturnType & {
 
       return newData;
     },
-    [user.uid]
+    [store, user.uid]
   );
 
   const downloadPhotos = useCallback(

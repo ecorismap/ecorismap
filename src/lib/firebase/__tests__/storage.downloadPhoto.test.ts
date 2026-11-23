@@ -53,3 +53,69 @@ describe('downloadPhoto (写真名によるパストラバーサル防止)', () 
     expect(mockFileSystem.copyAsync).toHaveBeenCalledWith({ from: 'file:///cache/dec.jpg', to: `${FOLDER}/IMG_0001.JPG` });
   });
 });
+
+describe('downloadPhoto: 同名のファイルがある以前の写真名（写真監査 P-L15）', () => {
+  const PHOTO_ID = '01JABCDEFGHJKMNPQRSTVWXYZ0';
+  const URL = `https://firebasestorage.googleapis.com/v0/b/bkt/o/projects%2FP1%2FPHOTO%2FL1%2FU1%2F${PHOTO_ID}?alt=media`;
+  const existing = (paths: string[]) =>
+    mockFileSystem.getInfoAsync.mockImplementation((async (uri: string) => ({
+      exists: paths.includes(uri),
+    })) as unknown as typeof FileSystem.getInfoAsync);
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    existing([]);
+  });
+
+  it('同じ写真だと確かめられなければ、既にあるファイルを使わず id 付きの名前に保存する', async () => {
+    existing([`${FOLDER}/EMAP_1.jpg`]);
+    const result = await downloadPhoto(URL, 'key', 'EMAP_1.jpg', FOLDER);
+
+    expect(result).toEqual({ isOK: true, message: '', uri: `${FOLDER}/${PHOTO_ID}_EMAP_1.jpg` });
+    expect(mockFileSystem.copyAsync).toHaveBeenCalledWith({
+      from: 'file:///cache/dec.jpg',
+      to: `${FOLDER}/${PHOTO_ID}_EMAP_1.jpg`,
+    });
+  });
+
+  it('id 付きの名前が既にあれば取得せずに使う', async () => {
+    existing([`${FOLDER}/EMAP_1.jpg`, `${FOLDER}/${PHOTO_ID}_EMAP_1.jpg`]);
+    const result = await downloadPhoto(URL, 'key', 'EMAP_1.jpg', FOLDER);
+
+    expect(result.uri).toBe(`${FOLDER}/${PHOTO_ID}_EMAP_1.jpg`);
+    expect(mockFileSystem.copyAsync).not.toHaveBeenCalled();
+  });
+
+  it('options の写真 id を URL より優先する', async () => {
+    existing([`${FOLDER}/EMAP_1.jpg`]);
+    const result = await downloadPhoto(URL, 'key', 'EMAP_1.jpg', FOLDER, { photoId: 'ph1' });
+
+    expect(result.uri).toBe(`${FOLDER}/ph1_EMAP_1.jpg`);
+  });
+
+  it('同じ写真だと確かめられたとき（reuseExisting）は既にあるファイルを使う', async () => {
+    existing([`${FOLDER}/EMAP_1.jpg`]);
+    const result = await downloadPhoto(URL, 'key', 'EMAP_1.jpg', FOLDER, { reuseExisting: true });
+
+    expect(result.uri).toBe(`${FOLDER}/EMAP_1.jpg`);
+    expect(mockFileSystem.copyAsync).not.toHaveBeenCalled();
+  });
+
+  it('同名のファイルが無ければ写真名のまま保存する', async () => {
+    const result = await downloadPhoto(URL, 'key', 'EMAP_1.jpg', FOLDER);
+
+    expect(result.uri).toBe(`${FOLDER}/EMAP_1.jpg`);
+  });
+
+  it('一意な名前・id 付きの名前は、既にあればそのまま使う', async () => {
+    existing([`${FOLDER}/EMAP_20261123_100000_7K3QZ9.jpg`, `${FOLDER}/${PHOTO_ID}_EMAP_1.jpg`]);
+
+    expect((await downloadPhoto(URL, 'key', 'EMAP_20261123_100000_7K3QZ9.jpg', FOLDER)).uri).toBe(
+      `${FOLDER}/EMAP_20261123_100000_7K3QZ9.jpg`
+    );
+    expect((await downloadPhoto(URL, 'key', `${PHOTO_ID}_EMAP_1.jpg`, FOLDER)).uri).toBe(
+      `${FOLDER}/${PHOTO_ID}_EMAP_1.jpg`
+    );
+    expect(mockFileSystem.copyAsync).not.toHaveBeenCalled();
+  });
+});

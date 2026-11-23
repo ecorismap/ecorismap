@@ -115,6 +115,13 @@ jest.mock('../useRepository', () => ({ useRepository: () => ({}) }));
 jest.mock('../useDynamicDictionaryInput', () => ({ clearAllDynamicDictionaries: jest.fn() }));
 jest.mock('../useData', () => ({ clearAllVisibilitySnapshots: jest.fn() }));
 jest.mock('../../utils/projectBackup', () => ({ saveProjectBackup: jest.fn() }));
+//付け替えは取り込んだdataSetに対して走る必要があるので、呼ばれた時点で積まれていた操作を控える
+const mockRebaseSeenActions: string[][] = [];
+jest.mock('../../utils/photoUriRebase', () => ({
+  runPhotoUriRebase: () => {
+    mockRebaseSeenActions.push(mockDispatch.mock.calls.map((c) => (c[0] as { type: string }).type));
+  },
+}));
 
 import JSZip from 'jszip';
 import { renderHook, act } from '@testing-library/react-hooks';
@@ -217,6 +224,7 @@ beforeEach(() => {
   mockMkdirs.length = 0;
   mockDispatch.mockClear();
   mockFetchPhoto.mockClear();
+  mockRebaseSeenActions.length = 0;
 });
 
 describe('バックアップZIPの写真 × photo.id', () => {
@@ -292,5 +300,54 @@ describe('バックアップZIPの写真 × photo.id', () => {
     const z = await JSZip.loadAsync(zip, { base64: true });
     expect(await z.file(entries.sort()[0])?.async('string')).toBe('CLOUD-1');
     expect(await z.file(entries.sort()[1])?.async('string')).toBe('CLOUD-2');
+  });
+});
+
+describe('編集で外した写真（uri が undefined の印、写真監査 P-L16）', () => {
+  test('ZIPには入れずクラウドからも取らないが、記録の印はJSONに残り、開いても印のまま', async () => {
+    mockCloud.set('https://cloud/p1', 'CLOUD-1');
+    mockCloud.set('https://cloud/p2', 'CLOUD-2');
+    const removed: PhotoType = { ...photo('PID2', null, 'https://cloud/p2'), uri: undefined };
+    const zip = await exportBackup([record(photo('PID1', null, 'https://cloud/p1')), record(removed)], true);
+
+    expect(await photoEntries(zip)).toEqual([`写真レイヤ_${LAYER_ID}/PID1/${NAME}`]);
+    expect(mockFetchPhoto).toHaveBeenCalledTimes(1);
+    expect(mockFetchPhoto).toHaveBeenCalledWith('https://cloud/p1', 'KEY');
+
+    //復元後の次のアップロードでクラウドから消せるよう、印（url と key は残り uri が無い）は残す
+    const z = await JSZip.loadAsync(zip, { base64: true });
+    const jsonName = Object.keys(z.files).find((k) => k.endsWith('.json')) as string;
+    const json = JSON.parse((await z.file(jsonName)?.async('string')) as string) as {
+      dataSet: { data: RecordType[] }[];
+    };
+    const kept = json.dataSet[0].data.map((r) => (r.field['写真'] as PhotoType[])[0]);
+    expect(kept[1]).toMatchObject({ id: 'PID2', url: 'https://cloud/p2', key: 'KEY' });
+    expect(kept[1].uri).toBeUndefined();
+
+    const photos = await openBackup(zip);
+    expect(photos[1]).toMatchObject({ id: 'PID2', url: 'https://cloud/p2' });
+    expect(photos[1].uri).toBeUndefined();
+  });
+});
+
+describe('ファイルを開いた後の写真uriの付け替え（写真監査 P-L10）', () => {
+  test('取り込んだdataSetを反映した後に一度だけ走らせる', async () => {
+    const zip = new JSZip();
+    zip.file('local_2026.json', backupJson([record(photo('PID1', 'file:///old/device/path.jpg'))]));
+    const base64 = await zip.generateAsync({ type: 'base64' });
+
+    await openBackup(base64);
+    expect(mockRebaseSeenActions).toHaveLength(1);
+    expect(mockRebaseSeenActions[0].some((type) => type.endsWith('setDataSetAction'))).toBe(true);
+  });
+
+  test('開けなかったときは走らせない', async () => {
+    const uri = 'file:///inbox/broken.zip';
+    mockFiles.set(mockNorm(uri), Buffer.from('not a zip'));
+    const { result } = renderHook(() => useEcorisMapFile());
+    await act(async () => {
+      await result.current.openEcorisMapFile(uri);
+    });
+    expect(mockRebaseSeenActions).toEqual([]);
   });
 });

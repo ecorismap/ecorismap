@@ -8,6 +8,16 @@ import { LayerType, PhotoType, RecordType } from '../types';
 import { PHOTO_FOLDER } from '../constants/AppConstants';
 import { isUriInsideFolder } from './safePath';
 import { convertPhotoToJpeg, isPhotoConverterAvailable } from '../../modules/photo-converter/src';
+import { ulid } from 'ulid';
+import { PHOTO_NAME_UNIQUE_LENGTH } from './photoDownloadPath';
+
+/**
+ * 撮影・選択した写真の名前。秒単位の日時だけだと、同じアカウントの2台で同じ秒に撮った写真が同じ名前・同じ保存先になり、
+ * 取得したときに片方の原画を指してしまう（写真監査 P-L15）。ULID の乱数部の末尾を足して重ならないようにする。
+ * ZIP に入れるパスが長いと Windows で解凍できないので、足すのは数文字にとどめる
+ */
+export const createPhotoName = (extension: string | undefined): string =>
+  `EMAP_${dayjs().format('YYYYMMDD_HHmmss')}_${ulid().slice(-PHOTO_NAME_UNIQUE_LENGTH)}.${extension ?? 'jpg'}`;
 
 // 写真の実ファイルが端末（Webではブラウザ）に存在するか。
 // クラウドから取得したレコードは未ダウンロードだとuriがnull、ダウンロード済みでも
@@ -233,7 +243,7 @@ export const pickImage = async (photoFolder: string) => {
         uri = converted.uri;
         extension = 'jpeg';
       }
-      name = `EMAP_${dayjs().format('YYYYMMDD_HHmmss')}.${extension}`;
+      name = createPhotoName(extension);
       const res = await fetch(uri);
       const blob = await res.blob();
       uri = URL.createObjectURL(blob);
@@ -241,7 +251,7 @@ export const pickImage = async (photoFolder: string) => {
       //iPhoneのライブラリの写真はHEICのまま返る。JPEG/PNG以外はJPEGにして保存する（写真監査 P-H1）
       const { uri: source, isConverted } = await convertToUploadableJpeg(uri);
       extension = isConverted ? 'jpg' : uri.split('.').pop();
-      name = `EMAP_${dayjs().format('YYYYMMDD_HHmmss')}.${extension}`;
+      name = createPhotoName(extension);
       uri = await saveToStorage(source, name, photoFolder);
       if (isConverted) await deletePhotoFile(source);
     }
@@ -261,7 +271,7 @@ export const saveCapturedPhoto = async (asset: ImagePicker.ImagePickerAsset, pho
   //カメラは通常JPEGを返すが、端末の設定でHEIFになることがある。その場合もJPEGにそろえる（写真監査 P-H1）
   const { uri: source, isConverted } = await convertToUploadableJpeg(asset.uri);
   const extension = isConverted ? 'jpg' : asset.uri.split('.').pop();
-  const name = `EMAP_${dayjs().format('YYYYMMDD_HHmmss')}.${extension}`;
+  const name = createPhotoName(extension);
   const uri = await saveToStorage(source, name, photoFolder, { copy: true });
   if (isConverted) await deletePhotoFile(source);
   const thumbnail = await createThumbnail(uri);

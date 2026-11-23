@@ -257,11 +257,19 @@ export const useDataEdit = (record: RecordType, layer: LayerType): UseDataEditRe
       }
       const m = cloneDeep(targetRecord);
       const photos = m.field[photo.fieldName] as PhotoType[];
-      if (projectId === undefined) {
-        photos.splice(photo.index, 1);
-      } else {
-        //アップロードする際に削除すべきものはuriをundefinedにする
-        photos[photo.index] = { ...photo, uri: undefined };
+      //表示中に一覧が変わっていても取り違えないよう、id で探す（見つからなければ従来どおり位置で）
+      const foundIndex = photos.findIndex(({ id }) => id === photo.id);
+      const index = foundIndex >= 0 ? foundIndex : photo.index;
+      const current = photos[index];
+      if (current !== undefined) {
+        if (projectId === undefined || current.url === null) {
+          //クラウドにない写真は消す印を残す理由がない。残すと見えない項目がサムネイルごと上がって消えなくなる（写真監査 P-L6）
+          photos.splice(index, 1);
+        } else {
+          //アップロードの際にクラウドから消すものは uri を undefined にする。
+          //SelectedPhoto の hasLocal・index・fieldName は記録に持ち込まない
+          photos[index] = { ...current, uri: undefined };
+        }
       }
 
       setSelectedPhoto({} as SelectedPhotoType);
