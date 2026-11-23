@@ -137,6 +137,7 @@
     "track": "track",
     "memo": "memo",
     "demAttribution": "© Mapterhorn (Japan: GSI Fundamental Geospatial Data; derived from elevation tiles)",
+    "demAttributionShort": "© Mapterhorn (Japan: GSI)",
     "polygon": "polygon",
     "message": {
       "failGetUids": "Failed to retrieve user ID",
@@ -890,7 +891,10 @@
       "googleDriveConnectFailed": "Could not connect to your Google account.",
       "googleDriveScopeDenied": "Access to Google Drive was not granted. Please check the Google Drive checkbox on the consent screen when connecting.",
       "failGetDem": "Failed to get elevation data. Check your network connection. Downloading \"Elevation tiles (for viewshed)\" in advance allows you to create viewsheds offline.",
-      "failCalcViewshed": "Failed to calculate the viewshed."
+      "failCalcViewshed": "Failed to calculate the viewshed.",
+      "mapExportExcludedSharedPdf": "The following maps are PDFs shared in a project and were not exported because they contain a decryption key:\n{{names}}",
+      "mapExportRemovedSharedStyle": "The following maps were exported without their project-shared style (they will use the default style when imported):\n{{names}}",
+      "cannotExportSharedPdfMap": "PDF maps shared in a project cannot be exported because they contain a decryption key."
     },
     "notification": {
       "inTracking": "Recording a track. \nPress the button on the track to finish.",

@@ -23,6 +23,7 @@ import { convertPDFToGeoTiff } from '../utils/PDF';
 import { db } from '../utils/db';
 import { saveStyleToPmtilesDb } from '../utils/pmtilesLocalStore';
 import { findPdfPageMaps } from '../utils/pdfTileMap';
+import { isSharedPdfMap, mapExportNotice, prepareMapsForExport } from '../utils/mapExport';
 import { clearRefetchableTileCache, clearWebTileCache, regionsAfterTileCacheClear } from '../utils/tileCacheCleanup';
 import { discardStaleTileSources } from '../utils/tileSourceCleanup';
 import { clearAllDemCaches } from '../utils/demSource';
@@ -526,8 +527,15 @@ export const useMaps = (): UseMapsReturnType => {
   );
 
   const exportSingleMap = useCallback(async (tileMap: TileMapType) => {
+    // 共有の鍵とトークン付き URL を外部へ出さない（M-L14）
+    if (isSharedPdfMap(tileMap)) {
+      return { isOK: false, message: t('hooks.message.cannotExportSharedPdfMap') };
+    }
+    const plan = prepareMapsForExport([tileMap]);
+    const notice = mapExportNotice(plan, t);
+    if (notice !== '') await AlertAsync(notice);
     const time = dayjs().format('YYYY-MM-DD_HH-mm-ss');
-    const mapData = JSON.stringify(tileMap, null, 2);
+    const mapData = JSON.stringify(plan.maps[0], null, 2);
     // ZIP処理と同様にUnicode正規化を追加
     const fileName = `map_${sanitize(tileMap.name).normalize('NFC')}_${time}.json`;
     const result = await exportFileFromData(mapData, fileName);

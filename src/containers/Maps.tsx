@@ -19,6 +19,7 @@ import { db } from '../utils/db';
 import * as FileSystem from 'expo-file-system/legacy';
 import { exportFileFromData } from '../utils/File';
 import { isPdfTileMap } from '../utils/pdfTileMap';
+import { mapExportNotice, prepareMapsForExport } from '../utils/mapExport';
 
 // Web版のexpo-document-pickerはblob: URLを返すが、PDFインポート経路(importMapFile)はdata:を想定しているため変換する
 async function blobUriToDataUri(blobUri: string): Promise<string> {
@@ -242,8 +243,12 @@ export default function MapContainer() {
   );
 
   const pressExportMaps = useCallback(async () => {
+    // 共有の鍵とトークン付き URL を外部へ出さない（M-L14）
+    const plan = prepareMapsForExport(maps);
+    const notice = mapExportNotice(plan, t);
+    if (notice !== '') await AlertAsync(notice);
     const time = dayjs().format('YYYY-MM-DD_HH-mm-ss');
-    const mapSettings = JSON.stringify(maps);
+    const mapSettings = JSON.stringify(plan.maps);
     const fileName = `maps_${time}.json`;
     const result = await exportFileFromData(mapSettings, fileName);
     if (result === 'error') {

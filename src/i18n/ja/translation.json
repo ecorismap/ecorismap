@@ -71,6 +71,7 @@
     "track": "軌跡",
     "memo": "メモ",
     "demAttribution": "© Mapterhorn（日本域は国土地理院 基盤地図情報。標高タイルを加工して作成）",
+    "demAttributionShort": "© Mapterhorn（日本域は国土地理院）",
     "polygon": "ポリゴン",
     "project": "プロジェクト",
     "user": "ユーザー",
@@ -1188,7 +1189,10 @@
       "googleDriveConnectFailed": "Googleアカウントに接続できませんでした。",
       "googleDriveScopeDenied": "Google ドライブへのアクセスが許可されませんでした。接続時の同意画面で「Google ドライブ」の項目にチェックを入れて続行してください。",
       "failGetDem": "標高データを取得できませんでした。ネットワーク接続を確認してください。「標高タイル（可視領域用）」を事前にダウンロードしておくと、オフラインでも作成できます。",
-      "failCalcViewshed": "可視領域を計算できませんでした。"
+      "failCalcViewshed": "可視領域を計算できませんでした。",
+      "mapExportExcludedSharedPdf": "次の地図はプロジェクトで共有されたPDFで、復号の鍵を含むため書き出していません。\n{{names}}",
+      "mapExportRemovedSharedStyle": "次の地図は、プロジェクトで共有されたスタイルを外して書き出しました（取り込むと既定の見た目になります）。\n{{names}}",
+      "cannotExportSharedPdfMap": "プロジェクトで共有されたPDF地図は、復号の鍵を含むため書き出せません。"
     },
     "notification": {
       "inTracking": "軌跡の記録中。終了するには、軌跡ボタンを押してください。",

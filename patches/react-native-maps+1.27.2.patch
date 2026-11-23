@@ -1552,10 +1552,10 @@ index 0000000..a60b11d
 +}
 diff --git a/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapPMTileProvider.java b/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapPMTileProvider.java
 new file mode 100644
-index 0000000..ba22e98
+index 0000000..03a3004
 --- /dev/null
 +++ b/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapPMTileProvider.java
-@@ -0,0 +1,1467 @@
+@@ -0,0 +1,1526 @@
 +package com.rnmaps.maps;
 +
 +import PMTiles.Header;
@@ -1670,6 +1670,12 @@ index 0000000..ba22e98
 +  // 直近の初期化（ヘッダー＋style.json）。同期で1枚だけ描く呼び出し元（3D・PDF のラスタライザ）が完了を待つため
 +  private volatile CompletableFuture<Void> initializationFuture = CompletableFuture.completedFuture(null);
 +
++  // API キー付き（?key=…）の URL もあるので、クエリとフラグメントを除いたパスで判定する
++  static boolean isPbfUrlTemplate(String urlTemplate) {
++    if (urlTemplate == null) return false;
++    return urlTemplate.split("[?#]", 2)[0].endsWith(".pbf");
++  }
++
 +  public MapPMTileProvider(
 +    int tileSizet,
 +    boolean doubleTileSize,
@@ -1702,7 +1708,7 @@ index 0000000..ba22e98
 +    this.customMode = customMode;
 +    this.tileType = -1;
 +
-+    if (urlTemplate.endsWith(".pbf")) {
++    if (isPbfUrlTemplate(urlTemplate)) {
 +      this.tileType = 0;
 +      this.tileSize = 512;
 +    } else if (this.offlineMode) {
@@ -1742,7 +1748,11 @@ index 0000000..ba22e98
 +
 +  private void startInitialization(VectorTileStyleManager manager, int sourceGen, int styleGen) {
 +    CompletableFuture<Void> headerFuture = CompletableFuture.runAsync(
-+      () -> resolveTileType(sourceGen, true),
++      () -> {
++        // オフラインではヘッダーもメタデータも取れない。前回オンラインで保存した metadata.json から既定スタイルを作る
++        loadSavedMetadataIfNeeded();
++        resolveTileType(sourceGen, true);
++      },
 +      INIT_EXECUTOR
 +    );
 +    CompletableFuture<Void> styleFuture = manager
@@ -1822,7 +1832,10 @@ index 0000000..ba22e98
 +      }
 +      if (sourceGen != this.sourceGeneration.get()) return false;
 +      this.pmtiles = candidate;
-+      if (resolvedMetadata != null) this.metadata = resolvedMetadata;
++      if (resolvedMetadata != null) {
++        this.metadata = resolvedMetadata;
++        saveMetadata(resolvedMetadata);
++      }
 +      this.headerFailed = false;
 +      this.tileSize = getTileSizeForType(resolvedType);
 +      // pmtiles・metadata・tileSize を揃えてから公開する（種別だけ先に見えると未準備のまま取得される）
@@ -1830,6 +1843,45 @@ index 0000000..ba22e98
 +      return true;
 +    } finally {
 +      headerLock.unlock();
++    }
++  }
++
++  private File getMetadataFile() {
++    String cachePath = this.tileCachePath;
++    if (cachePath == null || cachePath.trim().isEmpty()) return null;
++    return new File(cachePath.trim(), "metadata.json");
++  }
++
++  private void loadSavedMetadataIfNeeded() {
++    if (this.metadata != null) return;
++    File file = getMetadataFile();
++    if (file == null || !file.isFile()) return;
++    try {
++      String json = new String(java.nio.file.Files.readAllBytes(file.toPath()), StandardCharsets.UTF_8);
++      Metadata saved = new com.google.gson.Gson().fromJson(json, Metadata.class);
++      // ヘッダーから取れたメタデータを古い保存値で上書きしない
++      if (saved != null && this.metadata == null) this.metadata = saved;
++    } catch (Exception e) {
++      // 壊れた metadata.json は無いものとして扱う（タイルのレイヤ名から既定スタイルを作る）
++    }
++  }
++
++  private void saveMetadata(Metadata value) {
++    File file = getMetadataFile();
++    if (file == null || value == null || value.vectorLayers == null || value.vectorLayers.isEmpty()) return;
++    try {
++      File dir = file.getParentFile();
++      if (dir != null && !dir.exists() && !dir.mkdirs()) return;
++      // 書きかけを読まれないよう一時ファイルから置き換える
++      File tmp = new File(file.getPath() + ".tmp");
++      java.nio.file.Files.write(tmp.toPath(), value.toString().getBytes(StandardCharsets.UTF_8));
++      java.nio.file.Files.move(
++        tmp.toPath(),
++        file.toPath(),
++        java.nio.file.StandardCopyOption.REPLACE_EXISTING
++      );
++    } catch (Exception e) {
++      Log.w("urlTile", "PMTile metadata save failed: " + e);
 +    }
 +  }
 +
@@ -2649,6 +2701,13 @@ index 0000000..ba22e98
 +        styles =
 +          currentMetadata != null ? manager.getDefaultStyleLayers(currentMetadata) : manager.getLocalStyleLayers();
 +        if (styles == null || styles.size() == 0) {
++          // メタデータも style.json も無い（.pbf URL、または一度も描かずにオフラインで表示した）ときは
++          // このタイルのレイヤ名から既定スタイルを作る。何も描かないよりよく、後でスタイルが保存されれば描き直される
++          List<String> layerIds = new ArrayList<>();
++          for (VectorSource source : sources) layerIds.add(source.name);
++          styles = manager.buildDefaultStyleLayers(layerIds);
++        }
++        if (styles == null || styles.size() == 0) {
 +          markTransientMiss();
 +          return null;
 +        }
@@ -2995,7 +3054,7 @@ index 0000000..ba22e98
 +    // オンラインに戻った。オフラインで作られて pmtiles が無い、またはヘッダー取得に失敗したままなら作り直す。
 +    // UI スレッドなので headerLock は取らず（解決中の通信を待たない）、世代で古い結果を捨てる
 +    int sourceGen = this.sourceGeneration.get();
-+    boolean isPbfUrl = this.urlTemplate != null && this.urlTemplate.endsWith(".pbf");
++    boolean isPbfUrl = isPbfUrlTemplate(this.urlTemplate);
 +    if (!isPbfUrl && this.urlTemplate != null && (this.pmtiles == null || this.tileType < 0)) {
 +      sourceGen = this.sourceGeneration.incrementAndGet();
 +      this.pmtiles = new PMTiles(this.urlTemplate, null, null);
@@ -7570,10 +7629,10 @@ index 0000000..8bd6caa
 +}
 diff --git a/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/VectorStyle/VectorTileStyleManager.java b/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/VectorStyle/VectorTileStyleManager.java
 new file mode 100644
-index 0000000..b98bb7d
+index 0000000..125488f
 --- /dev/null
 +++ b/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/VectorStyle/VectorTileStyleManager.java
-@@ -0,0 +1,262 @@
+@@ -0,0 +1,287 @@
 +package VectorTileStyleManager;
 +
 +import PMTiles.Metadata;
@@ -7743,10 +7802,35 @@ index 0000000..b98bb7d
 +  }
 +
 +  public List<LayerStyle> getDefaultStyleLayers(Metadata metadata) {
-+    // System.out.println("##name: " + metadata.name);
++    List<String> layerIds = new ArrayList<>();
++    if (metadata != null && metadata.vectorLayers != null) {
++      for (VectorLayer layer : metadata.vectorLayers) {
++        if (layer != null && layer.id != null) layerIds.add(layer.id);
++      }
++    }
++    // vector_layers の無いメタデータで空の style.json を保存すると、以降の既定スタイル作りを妨げる
++    if (layerIds.isEmpty()) return new ArrayList<>();
++    String styleLayersString = buildDefaultStyleJson(layerIds);
++    try {
++      saveStyle(styleLayersString);
++    } catch (IOException e) {
++      throw new RuntimeException("Failed to save default style layers", e);
++    }
++    return parseLayers(styleLayersString);
++  }
++
++  /**
++   * メタデータも style.json も無いとき（オンラインで一度も描かずにオフラインで表示した等）に、
++   * そのタイルに含まれるレイヤ名から既定スタイルを作る。1枚分のレイヤしか分からないので保存はしない
++   */
++  public List<LayerStyle> buildDefaultStyleLayers(List<String> layerIds) {
++    if (layerIds == null || layerIds.isEmpty()) return new ArrayList<>();
++    return parseLayers(buildDefaultStyleJson(layerIds));
++  }
++
++  private static String buildDefaultStyleJson(List<String> layerIds) {
 +    StringBuilder all = new StringBuilder("[");
-+    for (VectorLayer layer : metadata.vectorLayers) {
-+      // System.out.println("##id: " + layer.id);
++    for (String layerId : layerIds) {
 +      String json = String.format(
 +        "[\n" +
 +        "  {\n" +
@@ -7789,7 +7873,7 @@ index 0000000..b98bb7d
 +        "    }\n" +
 +        "  }\n" +
 +        "]",
-+        layer.id
++        escapeJsonString(layerId)
 +      );
 +      // 先頭と末尾の [ ] を外して連結する
 +      String inner = json.trim();
@@ -7798,13 +7882,13 @@ index 0000000..b98bb7d
 +      all.append(inner);
 +    }
 +    all.append("]");
-+    String styleLayersString = all.toString();
-+    try {
-+      saveStyle(styleLayersString);
-+    } catch (IOException e) {
-+      throw new RuntimeException("Failed to save default style layers", e);
-+    }
-+    return parseLayers(styleLayersString);
++    return all.toString();
++  }
++
++  private static String escapeJsonString(String value) {
++    // レイヤ名に " や \ があると JSON が壊れて既定スタイル全体が作れなくなる
++    String quoted = new Gson().toJson(value);
++    return quoted.substring(1, quoted.length() - 1);
 +  }
 +
 +  /** 保存済みの style.json（既定スタイルを保存したものを含む）。無い・壊れていれば空 */
@@ -13270,10 +13354,10 @@ index 0000000..9faf374
 +#endif
 diff --git a/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapPMTile.m b/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapPMTile.m
 new file mode 100644
-index 0000000..506526f
+index 0000000..c0a5567
 --- /dev/null
 +++ b/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapPMTile.m
-@@ -0,0 +1,178 @@
+@@ -0,0 +1,183 @@
 +//
 +//  AIRGoogleMapPMTile.m
 +//
@@ -13300,7 +13384,8 @@ index 0000000..506526f
 +
 +- (void)setFlipY:(BOOL)flipY {
 +  _flipY = flipY;
-+  if (self.tileLayer && flipY) {
++  // NO へ戻したときも反映する（値の真偽で判定すると反転したまま取り続ける）
++  if (self.tileLayer && self.tileLayer.flipY != flipY) {
 +    [self.tileLayer setFlipY:_flipY];
 +    [self.tileLayer clearTileCache];
 +  }
@@ -13308,7 +13393,7 @@ index 0000000..506526f
 +
 +- (void)setIsVector:(BOOL)isVector {
 +  _isVector = isVector;
-+  if (self.tileLayer && isVector) {
++  if (self.tileLayer && self.tileLayer.isVector != isVector) {
 +    [self.tileLayer setIsVector:_isVector];
 +    [self.tileLayer clearTileCache];
 +    [self updateTileLayer];
@@ -13325,7 +13410,8 @@ index 0000000..506526f
 +
 +- (void)setMinimumZ:(NSInteger)minimumZ {
 +  _minimumZ = minimumZ;
-+  if (self.tileLayer && minimumZ) {
++  // 0 への変更も反映する（値の真偽で判定すると、0 に戻したときに古い範囲のまま描き続ける）
++  if (self.tileLayer && self.tileLayer.minimumZ != minimumZ) {
 +    [self.tileLayer setMinimumZ:_minimumZ];
 +    [self.tileLayer clearTileCache];
 +  }
@@ -13333,7 +13419,7 @@ index 0000000..506526f
 +
 +- (void)setMaximumZ:(NSInteger)maximumZ {
 +  _maximumZ = maximumZ;
-+  if (self.tileLayer && maximumZ) {
++  if (self.tileLayer && self.tileLayer.maximumZ != maximumZ) {
 +    [self.tileLayer setMaximumZ:_maximumZ];
 +    [self.tileLayer clearTileCache];
 +  }
@@ -13341,7 +13427,7 @@ index 0000000..506526f
 +
 +- (void)setMaximumNativeZ:(NSInteger)maximumNativeZ {
 +  _maximumNativeZ = maximumNativeZ;
-+  if (self.tileLayer && maximumNativeZ) {
++  if (self.tileLayer && self.tileLayer.maximumNativeZ != maximumNativeZ) {
 +    [self.tileLayer setMaximumNativeZ:maximumNativeZ];
 +    [self.tileLayer clearTileCache];
 +  }
@@ -13414,9 +13500,11 @@ index 0000000..506526f
 +
 +- (void)setOfflineMode:(BOOL)offlineMode {
 +  _offlineMode = offlineMode;
-+  if (self.tileLayer && offlineMode && self.urlTemplate) {
-+    self.tileLayer.offlineMode =
-+        _offlineMode && ![self.urlTemplate containsString:@"file://"];
++  if (!self.tileLayer || !self.urlTemplate) return;
++  BOOL effective = _offlineMode && ![self.urlTemplate containsString:@"file://"];
++  // オンラインへ戻したときも反映する。同じ値で updateTileLayer するとヘッダーを取り直してしまうので変化時だけ
++  if (self.tileLayer.offlineMode != effective) {
++    self.tileLayer.offlineMode = effective;
 +    [self.tileLayer clearTileCache];
 +    [self updateTileLayer];
 +  }
@@ -13434,7 +13522,8 @@ index 0000000..506526f
 +
 +- (void)setTileCacheMaxAge:(NSInteger)tileCacheMaxAge {
 +  _tileCacheMaxAge = tileCacheMaxAge;
-+  if (self.tileLayer && tileCacheMaxAge) {
++  // 0（期限なし）への変更も反映する
++  if (self.tileLayer && self.tileLayer.tileCacheMaxAge != tileCacheMaxAge) {
 +    self.tileLayer.tileCacheMaxAge = _tileCacheMaxAge;
 +    [self.tileLayer clearTileCache];
 +  }
@@ -14994,10 +15083,10 @@ index 05b2afd..83cf84e 100644
  #endif
 +
 diff --git a/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapUrlTile.m b/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapUrlTile.m
-index b2e1eea..20d98d5 100644
+index b2e1eea..35a002a 100644
 --- a/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapUrlTile.m
 +++ b/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapUrlTile.m
-@@ -6,51 +6,222 @@
+@@ -6,51 +6,226 @@
  #ifdef HAVE_GOOGLE_MAPS
  
  #import "AIRGoogleMapUrlTile.h"
@@ -15070,7 +15159,8 @@ index b2e1eea..20d98d5 100644
 -    url = [url stringByReplacingOccurrencesOfString:@"{z}" withString:[NSString stringWithFormat: @"%ld", (long)zoom]];
 +- (void)setMinimumZ:(NSInteger)minimumZ {
 +  _minimumZ = minimumZ;
-+  if (self.tileLayer && minimumZ) {
++  // 0 への変更も反映する（値の真偽で判定すると、0 に戻したときに古い範囲のまま描き続ける）
++  if (self.tileLayer && self.tileLayer.minimumZ != minimumZ) {
 +    [self.tileLayer setMinimumZ:_minimumZ];
 +    [self.tileLayer clearTileCache];
 +  }
@@ -15081,7 +15171,8 @@ index b2e1eea..20d98d5 100644
 -    }
 +- (void)setMaximumZ:(NSInteger)maximumZ {
 +  _maximumZ = maximumZ;
-+  if (self.tileLayer && maximumZ) {
++  // 0 への変更も反映する（値の真偽で判定すると、0 に戻したときに古い範囲のまま描き続ける）
++  if (self.tileLayer && self.tileLayer.maximumZ != maximumZ) {
 +    [self.tileLayer setMaximumZ:_maximumZ];
 +    [self.tileLayer clearTileCache];
 +  }
@@ -15089,7 +15180,7 @@ index b2e1eea..20d98d5 100644
 +
 +- (void)setMaximumNativeZ:(NSInteger)maximumNativeZ {
 +  _maximumNativeZ = maximumNativeZ;
-+  if (self.tileLayer && maximumNativeZ) {
++  if (self.tileLayer && self.tileLayer.maximumNativeZ != maximumNativeZ) {
 +    [self.tileLayer setMaximumNativeZ:maximumNativeZ];
 +    [self.tileLayer clearTileCache];
 +  }
@@ -15182,7 +15273,8 @@ index b2e1eea..20d98d5 100644
 +
 +- (void)setOfflineMode:(BOOL)offlineMode {
 +  _offlineMode = offlineMode;
-+  if (self.tileLayer && offlineMode) {
++  // オンラインへ戻したときも反映する（オフラインのままだと未保存範囲を取りに行かない）
++  if (self.tileLayer && self.tileLayer.offlineMode != offlineMode) {
 +    self.tileLayer.offlineMode = _offlineMode;
 +    [self.tileLayer clearTileCache];
 +  }
@@ -15203,7 +15295,8 @@ index b2e1eea..20d98d5 100644
 -  return urls;
 +- (void)setTileCacheMaxAge:(NSInteger)tileCacheMaxAge {
 +  _tileCacheMaxAge = tileCacheMaxAge;
-+  if (self.tileLayer && tileCacheMaxAge) {
++  // 0（期限なし）への変更も反映する
++  if (self.tileLayer && self.tileLayer.tileCacheMaxAge != tileCacheMaxAge) {
 +    self.tileLayer.tileCacheMaxAge = _tileCacheMaxAge;
 +    [self.tileLayer clearTileCache];
 +  }

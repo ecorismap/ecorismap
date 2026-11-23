@@ -6,10 +6,12 @@ import {
   downloadBoundsForZoom,
   downloadFileIfOk,
   downloadOneTile,
+  downloadStyleJson,
   downloadTileGrid,
   DOWNLOAD_TILE_COUNT_LIMIT,
   estimateDownloadTileCount,
   getTileType,
+  getUrlPathExt,
   getZoomRange,
   isDownloadableTileMap,
   listExistingTiles,
@@ -33,6 +35,7 @@ jest.mock('expo-file-system/legacy', () => ({
   downloadAsync: jest.fn(),
   moveAsync: jest.fn(() => Promise.resolve()),
   readDirectoryAsync: jest.fn(),
+  getInfoAsync: jest.fn(() => Promise.resolve({ exists: false })),
   writeAsStringAsync: jest.fn(() => Promise.resolve()),
   deleteAsync: jest.fn(() => Promise.resolve()),
   EncodingType: { UTF8: 'utf8', Base64: 'base64' },
@@ -92,6 +95,84 @@ describe('getTileType', () => {
 
   it('それ以外はpng', () => {
     expect(getTileType(baseMap)).toBe('png');
+  });
+
+  it('クエリや # が付いた pbf も pbf（M-L6）', () => {
+    expect(getTileType({ ...baseMap, url: 'https://example.com/{z}/{x}/{y}.pbf?key=abc.def' })).toBe('pbf');
+    expect(getTileType({ ...baseMap, url: 'https://example.com/{z}/{x}/{y}.PBF#v=1.2' })).toBe('pbf');
+    expect(getTileType({ ...baseMap, url: 'https://example.com/map.pmtiles?key=abc' })).toBe('pmtiles');
+    expect(getTileType({ ...baseMap, url: 'https://example.com/{z}/{x}/{y}.png?key=x.pbf' })).toBe('png');
+  });
+});
+
+describe('getUrlPathExt', () => {
+  it('クエリとフラグメントを除いたパスの拡張子を小文字で返す', () => {
+    expect(getUrlPathExt('https://example.com/{z}/{x}/{y}.pbf?key=a.b')).toBe('pbf');
+    expect(getUrlPathExt('https://example.com/a/b.PDF#page=2')).toBe('pdf');
+    expect(getUrlPathExt('https://example.com/{z}/{x}/{y}.png')).toBe('png');
+    expect(getUrlPathExt('noext')).toBe('');
+  });
+});
+
+describe('downloadStyleJson', () => {
+  const originalFetch = global.fetch;
+  const mockWrite = FileSystem.writeAsStringAsync as jest.Mock;
+  const mockInfo = FileSystem.getInfoAsync as jest.Mock;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  afterEach(() => {
+    global.fetch = originalFetch;
+  });
+
+  test('style:// は取得せず、端末の style.json があれば local（M-L15）', async () => {
+    const fetchMock = jest.fn();
+    global.fetch = fetchMock as unknown as typeof fetch;
+    mockInfo.mockResolvedValueOnce({ exists: true });
+    expect(await downloadStyleJson('V1', 'style://style.json', 'style://style.json')).toBe('local');
+    expect(mockInfo).toHaveBeenCalledWith('file:///test/tiles/V1/style.json');
+    mockInfo.mockResolvedValueOnce({ exists: true });
+    expect(
+      await downloadStyleJson('V1', 'style://https://example.com/s.json', 'style://https://example.com/s.json')
+    ).toBe('local');
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(mockWrite).not.toHaveBeenCalled();
+  });
+
+  test('style:// で端末に style.json が無ければ failed', async () => {
+    const fetchMock = jest.fn();
+    global.fetch = fetchMock as unknown as typeof fetch;
+    mockInfo.mockResolvedValueOnce({ exists: false });
+    expect(await downloadStyleJson('V1', 'style://style.json', 'style://style.json')).toBe('failed');
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  test('http のスタイルは取得して保存し、エラー応答や通信例外では書かない', async () => {
+    global.fetch = jest.fn(async () => ({
+      ok: true,
+      status: 200,
+      text: async () => '{"version":8}',
+    })) as unknown as typeof fetch;
+    expect(await downloadStyleJson('V1', 'https://example.com/s.json', 'https://example.com/s.json?sig=1')).toBe(
+      'saved'
+    );
+    expect(global.fetch).toHaveBeenCalledWith('https://example.com/s.json?sig=1');
+    expect(mockWrite).toHaveBeenCalledWith('file:///test/tiles/V1/style.json', '{"version":8}', { encoding: 'utf8' });
+
+    mockWrite.mockClear();
+    global.fetch = jest.fn(async () => ({
+      ok: false,
+      status: 500,
+      text: async () => '<html>',
+    })) as unknown as typeof fetch;
+    expect(await downloadStyleJson('V1', 'https://example.com/s.json', 'https://example.com/s.json')).toBe('failed');
+    global.fetch = jest.fn(async () => {
+      throw new Error('offline');
+    }) as unknown as typeof fetch;
+    expect(await downloadStyleJson('V1', 'https://example.com/s.json', 'https://example.com/s.json')).toBe('failed');
+    expect(mockWrite).not.toHaveBeenCalled();
   });
 });
 
@@ -208,7 +289,13 @@ describe('estimateDownloadTileCount', () => {
       { isVector: true, headerTileType: 2 },
     ];
     for (const { isVector, headerTileType } of cases) {
-      const pm: TileMapType = { ...baseMap, id: 'PM', url: 'https://example.com/a.pmtiles', isVector, overzoomThreshold: 18 };
+      const pm: TileMapType = {
+        ...baseMap,
+        id: 'PM',
+        url: 'https://example.com/a.pmtiles',
+        isVector,
+        overzoomThreshold: 18,
+      };
       const header = { getHeader: jest.fn(() => Promise.resolve({ tileType: headerTileType })) };
       const downloadIsVector = await resolvePmtileIsVector(header, pm.isVector === true);
       const { minZoom, maxZoom } = getZoomRange('pmtiles', { ...pm, isVector: downloadIsVector }, archiveZoom);
@@ -218,7 +305,13 @@ describe('estimateDownloadTileCount', () => {
       expect(count).toBe(downloadTileGrid('pmtiles', bounds, minZoom, maxZoom).length);
     }
     // ベクタの付け忘れ: ヘッダーが MVT なら z18 まで数える
-    const forgot: TileMapType = { ...baseMap, id: 'PM', url: 'https://example.com/a.pmtiles', isVector: false, overzoomThreshold: 18 };
+    const forgot: TileMapType = {
+      ...baseMap,
+      id: 'PM',
+      url: 'https://example.com/a.pmtiles',
+      isVector: false,
+      overzoomThreshold: 18,
+    };
     expect(estimateDownloadTileCount(bounds, [forgot], { PM: archiveZoom }, { PM: true })).toBe(
       countTilesForRegion(bounds, 0, 18)
     );
