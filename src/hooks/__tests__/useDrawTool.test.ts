@@ -1777,6 +1777,170 @@ describe('useDrawTool', () => {
     });
   });
 
+  describe('既存ノードのタップとドラッグの判定（素早いドラッグで削除されない）', () => {
+    const selectExistingLine = (result: any) => {
+      (selectLineFeatureByLatLon as jest.Mock).mockReturnValue(mockLineRecord);
+      mockGetEditableLayerAndRecordSetWithCheck.mockReturnValue({
+        isOK: true,
+        message: '',
+        layer: mockLineLayer,
+        recordSet: [mockLineRecord],
+      });
+      act(() => {
+        result.current.setFeatureButton('LINE');
+      });
+      act(() => {
+        result.current.handleReleaseSelect([135, 35]);
+      });
+    };
+
+    const grabNode = (result: any, nodeIndex: number, pXY: [number, number]) => {
+      (checkDistanceFromLine as jest.Mock).mockReturnValue({ isNear: true, distance: 1 });
+      (findNearNodeIndex as jest.Mock).mockReturnValue(nodeIndex);
+      act(() => {
+        result.current.handleGrantPlot(pXY);
+      });
+    };
+
+    afterEach(() => {
+      (checkDistanceFromLine as jest.Mock).mockReturnValue({ isNear: false, distance: 9999 });
+      (findNearNodeIndex as jest.Mock).mockReturnValue(-1);
+      (selectLineFeatureByLatLon as jest.Mock).mockReturnValue(undefined);
+    });
+
+    it('移動イベントが少なくても大きく動かしたドラッグはノードを移動し、削除しない', () => {
+      const { result } = renderDrawTool();
+      selectExistingLine(result);
+
+      //素早いドラッグ: pointermoveがフレーム単位にまとめられ2回しか届かない
+      grabNode(result, 1, [100, 100]);
+      act(() => {
+        result.current.handleMovePlot([140, 120]);
+        result.current.handleMovePlot([200, 150]);
+      });
+      act(() => {
+        result.current.handleReleasePlotLinePolygon([200, 150]);
+      });
+
+      const line = result.current.drawLine.current[0];
+      expect(line.xy.length).toBe(2);
+      expect(line.latlon.length).toBe(2);
+      expect(line.xy[1]).toEqual([200, 150]);
+      expect(line.latlon[1]).toEqual([200, 150]);
+    });
+
+    it('移動イベントが1回も届かず離した位置だけが遠い場合も削除しない', () => {
+      const { result } = renderDrawTool();
+      selectExistingLine(result);
+
+      grabNode(result, 1, [100, 100]);
+      act(() => {
+        result.current.handleReleasePlotLinePolygon([180, 100]);
+      });
+
+      expect(result.current.drawLine.current[0].xy.length).toBe(2);
+      expect(result.current.drawLine.current[0].latlon.length).toBe(2);
+    });
+
+    it('指の揺れ程度の移動で離したらタップとしてノードを削除する', () => {
+      const { result } = renderDrawTool();
+      selectExistingLine(result);
+
+      grabNode(result, 1, [100, 100]);
+      act(() => {
+        result.current.handleMovePlot([102, 101]);
+        result.current.handleMovePlot([103, 103]);
+      });
+      act(() => {
+        result.current.handleReleasePlotLinePolygon([103, 103]);
+      });
+
+      expect(result.current.drawLine.current[0].xy.length).toBe(1);
+      expect(result.current.drawLine.current[0].latlon.length).toBe(1);
+    });
+
+    it('動かして元の位置へ戻して離しても、途中で大きく動いていればドラッグ扱い', () => {
+      const { result } = renderDrawTool();
+      selectExistingLine(result);
+
+      grabNode(result, 1, [100, 100]);
+      act(() => {
+        result.current.handleMovePlot([160, 100]);
+        result.current.handleMovePlot([101, 100]);
+      });
+      act(() => {
+        result.current.handleReleasePlotLinePolygon([101, 100]);
+      });
+
+      expect(result.current.drawLine.current[0].xy.length).toBe(2);
+    });
+
+    it('ポリゴン始点の素早いドラッグは確定（閉じる）にならず、始点を移動する', () => {
+      const { result } = renderDrawTool();
+      act(() => {
+        result.current.setDrawTool('PLOT_POLYGON');
+      });
+      //3点打って編集中のポリゴンを作る
+      for (const p of [
+        [10, 10],
+        [100, 10],
+        [100, 100],
+      ] as [number, number][]) {
+        act(() => {
+          result.current.handleGrantPlot(p);
+        });
+        act(() => {
+          result.current.handleReleasePlotLinePolygon(p);
+        });
+      }
+      expect(result.current.drawLine.current[0].xy.length).toBe(3);
+
+      grabNode(result, 0, [10, 10]);
+      act(() => {
+        result.current.handleMovePlot([30, 40]);
+        result.current.handleMovePlot([50, 60]);
+      });
+      let finished = true;
+      act(() => {
+        finished = result.current.handleReleasePlotLinePolygon([50, 60]);
+      });
+
+      expect(finished).toBe(false);
+      const line = result.current.drawLine.current[0];
+      expect(line.xy.length).toBe(3);
+      expect(line.xy[0]).toEqual([50, 60]);
+      expect(line.properties).toContain('EDIT');
+    });
+
+    it('ポリゴン始点をその場でタップすると従来どおり確定する', () => {
+      const { result } = renderDrawTool();
+      act(() => {
+        result.current.setDrawTool('PLOT_POLYGON');
+      });
+      for (const p of [
+        [10, 10],
+        [100, 10],
+        [100, 100],
+      ] as [number, number][]) {
+        act(() => {
+          result.current.handleGrantPlot(p);
+        });
+        act(() => {
+          result.current.handleReleasePlotLinePolygon(p);
+        });
+      }
+
+      grabNode(result, 0, [12, 11]);
+      let finished = false;
+      act(() => {
+        finished = result.current.handleReleasePlotLinePolygon([12, 11]);
+      });
+
+      expect(finished).toBe(true);
+      expect(result.current.drawLine.current[0].xy.length).toBe(4);
+    });
+  });
+
   describe('手書きペン描画（逐次latlon化・終点キャッチアップ・ピンチ確定）', () => {
     const penStyle = {
       strokeColor: 'rgba(0,0,0,0.7)',
