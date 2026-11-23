@@ -29,6 +29,14 @@ jest.mock('../../lib/firebase/sign-in', () => ({
   getAuthUid: () => mockGetAuthUid(),
 }));
 
+//写真uriの付け替えは復元したdataSetに対して走る必要があるので、呼ばれた時点のstateを控える
+const mockRebaseSeenDataSet: unknown[] = [];
+jest.mock('../../utils/photoUriRebase', () => ({
+  runPhotoUriRebase: (store: { getState: () => { dataSet: unknown } }) => {
+    mockRebaseSeenDataSet.push(store.getState().dataSet);
+  },
+}));
+
 const createTestStore = () =>
   configureStore({
     reducer: {
@@ -99,6 +107,33 @@ describe('useProjectBackup', () => {
     expect(state.user.uid).toBe('u1');
     expect(state.projects).toEqual(snapshot.state.projects);
     expect(state.dataSync).toEqual(snapshot.state.dataSync);
+  });
+
+  test('復元後に写真uriの付け替えを復元したdataSetに対して走らせる（写真監査 P-L10）', () => {
+    mockRebaseSeenDataSet.length = 0;
+    const store = createTestStore();
+    const snapshot = createSnapshot();
+    mockLoadBackup.mockReturnValue(snapshot);
+
+    const { result } = renderHook(() => useProjectBackup(), { wrapper: createWrapper(store) });
+    act(() => {
+      result.current.restoreBackup('backup-id');
+    });
+
+    expect(mockRebaseSeenDataSet).toEqual([snapshot.state.dataSet]);
+  });
+
+  test('復元しないときは写真uriの付け替えも走らせない', () => {
+    mockRebaseSeenDataSet.length = 0;
+    const store = createTestStore();
+    mockLoadBackup.mockReturnValue(undefined);
+
+    const { result } = renderHook(() => useProjectBackup(), { wrapper: createWrapper(store) });
+    act(() => {
+      result.current.restoreBackup('missing-id');
+    });
+
+    expect(mockRebaseSeenDataSet).toEqual([]);
   });
 
   test('保存先フォルダの外を指すIDの地図は復元しない', () => {

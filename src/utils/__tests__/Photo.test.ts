@@ -48,6 +48,25 @@ describe('Photo', () => {
     jest.clearAllMocks();
   });
 
+  describe('createPhotoName（写真監査 P-L15）', () => {
+    it('同じ秒に作っても名前が重ならず、一意な名前として判定される', () => {
+      const { isUniquePhotoName } = require('../photoDownloadPath');
+      jest.useFakeTimers().setSystemTime(new Date('2026-11-23T10:00:00Z'));
+      try {
+        const names = Array.from({ length: 50 }, () => Photo.createPhotoName('jpg'));
+        expect(new Set(names).size).toBe(50);
+        names.forEach((name) => {
+          expect(name).toMatch(/^EMAP_\d{8}_\d{6}_[0-9A-HJKMNP-TV-Z]{6}\.jpg$/);
+          expect(isUniquePhotoName(name)).toBe(true);
+        });
+        //名前は短く保つ（ZIP内のパス長、Windows の MAX_PATH）
+        expect(names[0].length).toBe('EMAP_20261123_100000_ABCDEF.jpg'.length);
+      } finally {
+        jest.useRealTimers();
+      }
+    });
+  });
+
   describe('createThumbnail', () => {
     it('should create a thumbnail with base64 encoding', async () => {
       mockManipulateAsync.mockResolvedValue({
@@ -188,7 +207,7 @@ describe('Photo', () => {
       const result = await Photo.takePendingPhoto('mock://folder');
 
       expect(result).toMatchObject({ width: 640, height: 480, thumbnail: 'data:image/jpeg;base64,abc' });
-      expect(result?.name).toMatch(/^EMAP_\d{8}_\d{6}\.jpg$/);
+      expect(result?.name).toMatch(/^EMAP_\d{8}_\d{6}_[0-9A-HJKMNP-TV-Z]{6}\.jpg$/);
       expect(result?.uri).toBe(`mock://folder/${result?.name}`);
       expect(mockMediaLibrary.createAssetAsync).toHaveBeenCalledWith(result?.uri);
     });
@@ -293,7 +312,7 @@ describe('Photo', () => {
 
       const result = await Photo.pickImage('file:///photos');
 
-      expect(result?.name).toMatch(/^EMAP_\d{8}_\d{6}\.jpg$/);
+      expect(result?.name).toMatch(/^EMAP_\d{8}_\d{6}_[0-9A-HJKMNP-TV-Z]{6}\.jpg$/);
       expect(mockFileSystem.copyAsync).toHaveBeenCalledWith({ from: 'file:///cache/conv.jpg', to: `file:///photos/${result?.name}` });
       expect(mockFileSystem.deleteAsync).toHaveBeenCalledWith('file:///cache/conv.jpg', { idempotent: true });
       expect(result?.uri).toBe(`file:///photos/${result?.name}`);

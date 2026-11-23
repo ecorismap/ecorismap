@@ -720,6 +720,26 @@ describe('uploadDataToRepository（写真のアップロード失敗）', () => 
     expect(savedPhoto).toMatchObject({ url: 'https://x/p1', key: 'k' });
   });
 
+  // 写真監査 P-L6: 上げる前に外した写真の印（uri:undefined・url:null）は、送らずに取り除く。Storage からも消さない
+  test('上げる前に外した写真の印（uri:undefined・url:null）は取り除いて送る', async () => {
+    const uploadPhotoSpy = jest.spyOn(projectStorage, 'uploadPhoto');
+    const deletePhotoSpy = jest.spyOn(projectStorage, 'deleteStoragePhoto').mockResolvedValue(undefined as never);
+    const uploadSpy = jest.spyOn(projectStore, 'uploadDataHelper').mockResolvedValue({ isOK: true, message: '', encryptedAt: 1 });
+    const kept = { ...photo, id: 'p2', url: 'https://x/p2', key: 'k2' };
+    const removedMark = { ...photo, uri: undefined, thumbnail: 'data:image/jpeg;base64,AAAA' };
+    const withMark = { ...record, field: { 写真: [removedMark, kept] } };
+
+    const { result } = renderWithStore(makeStore([{ layerId: 'l1', userId: 'test-user', data: [withMark] }]));
+    await act(async () => {
+      await result.current.uploadDataToRepository(project, 'All');
+    });
+
+    expect(uploadPhotoSpy).not.toHaveBeenCalled();
+    expect(deletePhotoSpy).not.toHaveBeenCalled();
+    const savedPhotos = (uploadSpy.mock.calls[0][1] as any).data[0].field['写真'];
+    expect(savedPhotos).toEqual([kept]);
+  });
+
   // 写真監査 P-M13・P-M12: 他のメンバーの端末のパス（自分の写真フォルダの外）は読まず、失敗にも数えない
   test.each([
     ['他人の端末のパス', 'file:///var/mobile/Containers/Data/Application/OTHER/Documents/projects/proj1/l1/other/a.jpg'],
@@ -1379,6 +1399,78 @@ describe('同期の medium 修正', () => {
       const calls = dlSpy.mock.calls.map((c) => [c[2], c[3]]);
       expect(calls).toContainEqual(['ph9_EMAP_1.jpg', expect.stringMatching(/\/proj1\/l1\/other$/)]);
       expect(calls).toContainEqual(['EMAP_1.jpg', expect.stringMatching(/\/proj1\/l1\/test-user$/)]);
+    });
+  });
+
+  describe('写真監査 P-L15: この端末にある以前の名前の自分の写真', () => {
+    const layer = { id: 'l1', name: 'L1', permission: 'PUBLIC', field: [{ id: 'f', name: '写真', format: 'PHOTO' }] } as any;
+    const ownUrl = (id: string) =>
+      `https://firebasestorage.googleapis.com/v0/b/b/o/projects%2Fproj1%2FPHOTO%2Fl1%2Ftest-user%2F${id}?alt=media`;
+    const cloudPhoto = (id: string, uri: string | null) => ({
+      id,
+      name: 'EMAP_20261001_100000.jpg',
+      uri,
+      url: ownUrl(id),
+      key: 'k',
+      width: 1,
+      height: 1,
+      thumbnail: null,
+    });
+
+    const runDownload = async (localDataSet: any[], cloudUri: string | null) => {
+      const dlSpy = jest.spyOn(projectStorage, 'downloadPhoto').mockResolvedValue({ isOK: true, message: '', uri: 'file:///x' });
+      jest.spyOn(projectStore, 'downloadPublicAndCommonData').mockResolvedValue({
+        isOK: true,
+        message: '',
+        data: [{ layerId: 'l1', userId: 'test-user', data: [rec('m', { field: { 写真: [cloudPhoto('ph1', cloudUri)] } })] }],
+      } as any);
+      const { result } = renderWithStore(makeStore({ layers: [layer], dataSet: localDataSet }));
+      await act(async () => {
+        await result.current.downloadPublicAndCommonData(project, true);
+      });
+      return dlSpy.mock.calls[0];
+    };
+
+    test('手元の記録で同じ写真がそのファイルを指していれば、取り直さずに使い回す', async () => {
+      const call = await runDownload([], null);
+      const folder = call[3];
+      const localUri = `${folder}/EMAP_20261001_100000.jpg`;
+      jest.clearAllMocks();
+      const call2 = await runDownload(
+        [{ layerId: 'l1', userId: 'test-user', data: [rec('m', { field: { 写真: [cloudPhoto('ph1', localUri)] } })] }],
+        null
+      );
+      expect(call2[2]).toBe('EMAP_20261001_100000.jpg');
+      expect(call2[4]).toEqual({ photoId: 'ph1', reuseExisting: true });
+    });
+
+    test('手元に同じ写真がなければ、同期で届いた uri を信じずに確かめられないものとして渡す', async () => {
+      const call = await runDownload([], 'placeholder');
+      const localUri = `${call[3]}/EMAP_20261001_100000.jpg`;
+      jest.clearAllMocks();
+      //送り手の端末のパスが、この端末の同名ファイルと同じ文字列になっている（Android）
+      const call2 = await runDownload([], localUri);
+      expect(call2[4]).toEqual({ photoId: 'ph1', reuseExisting: undefined });
+    });
+
+    test('同じファイルを別の id の写真も指していれば（同じ秒に別の端末で撮った写真）、使い回さない', async () => {
+      const call = await runDownload([], null);
+      const localUri = `${call[3]}/EMAP_20261001_100000.jpg`;
+      jest.clearAllMocks();
+      const call2 = await runDownload(
+        [
+          {
+            layerId: 'l1',
+            userId: 'test-user',
+            data: [
+              rec('m', { field: { 写真: [cloudPhoto('ph1', localUri)] } }),
+              rec('m2', { field: { 写真: [cloudPhoto('ph2', localUri)] } }),
+            ],
+          },
+        ],
+        null
+      );
+      expect(call2[4]).toEqual({ photoId: 'ph1', reuseExisting: undefined });
     });
   });
 });

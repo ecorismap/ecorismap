@@ -21,6 +21,7 @@ import {
   clearAllBackups as clearAllBackupsStorage,
 } from '../utils/projectBackup';
 import { getAuthUid } from '../lib/firebase/sign-in';
+import { runPhotoUriRebase } from '../utils/photoUriRebase';
 
 export type RestoreBackupResultType = { isOK: boolean; region?: RegionType; reason?: 'differentUser' };
 
@@ -116,6 +117,9 @@ export const useProjectBackup = (): UseProjectBackupReturnType => {
       dispatch(setUserAction(state.user));
       dispatch(setProjectsAction(state.projects));
       dispatch(setDataSyncAllAction(state.dataSync ?? {}));
+      //iOSはアプリ更新でコンテナUUIDが変わる。更新前の自動バックアップの写真uriは古いコンテナを指すので、
+      //次の起動を待たずにここで付け替える（冪等。iOS以外は何もしない。写真監査 P-L10）
+      runPhotoUriRebase(store);
 
       refreshBackupList();
       const region = state.settings.projectId !== undefined ? state.settings.projectRegion : state.settings.mapRegion;

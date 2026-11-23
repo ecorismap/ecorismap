@@ -38,6 +38,7 @@ import { deleteDatabase, importDictionary } from '../utils/SQLite';
 import { useGeoFile } from './useGeoFile';
 import { clearAllDynamicDictionaries } from './useDynamicDictionaryInput';
 import { clearAllVisibilitySnapshots } from './useData';
+import { runPhotoUriRebase } from '../utils/photoUriRebase';
 
 export type UseEcorisMapFileReturnType = {
   isLoading: boolean;
@@ -398,6 +399,9 @@ export const useEcorisMapFile = (): UseEcorisMapFileReturnType => {
       );
       //地図IDは保存先フォルダ名（TILE_FOLDER/{id}）になるため、フォルダの外を指すIDの地図は取り込まない
       dispatch(setTileMapsAction(dropUnsafeTileMaps(loaded.maps)));
+      //写真なしで書き出したファイルを同じ端末で開くと、写真uriは書き出し時のコンテナを指したまま入る。iOSはアプリ更新で
+      //コンテナUUIDが変わるので、次の起動を待たずにここで付け替える（冪等。iOS以外は何もしない。写真監査 P-L10）
+      runPhotoUriRebase(store);
 
       return { isOK: true, message: '', region: loaded.settings.mapRegion };
     },

@@ -962,7 +962,10 @@ export const useGeoFile = (): UseGeoFileReturnType => {
           photoFields.forEach(({ name }) => {
             const photos = field[name] as PhotoType[];
             for (const photo of photos) {
-              // 写真データが存在する場合のみエクスポート
+              // 写真データが存在する場合のみエクスポート。uri が undefined の写真は編集で外した印（次のアップロードで
+              // クラウドから消す）なので、url が残っていても書き出さない。Web はアップロード後に uri を null にするので
+              // null は「外した」ではなく、厳密に undefined だけを除く（写真監査 P-L16）
+              if (photo.uri === undefined) continue;
               if (photo.uri || photo.url) {
                 // ローカルファイルがある場合はそれを使用、ない場合は空文字列
                 // Firebase URLとキーは別途渡す

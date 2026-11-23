@@ -1,5 +1,5 @@
 import React, { useContext, useMemo } from 'react';
-import { View, StyleSheet, KeyboardAvoidingView, Text } from 'react-native';
+import { View, StyleSheet, KeyboardAvoidingView, Text, ActivityIndicator } from 'react-native';
 
 import { DataEditButtons } from '../organisms/DataEditButtons';
 import { DataEditPhoto } from '../organisms/DataEditPhoto';
@@ -45,6 +45,7 @@ export default function DataEditScreen() {
     projectId,
     modifyBlockMessage,
     isSaving,
+    isPhotoProcessing,
     pressSaveData,
     changeLatLonType,
     changeLatLon,
@@ -76,13 +77,14 @@ export default function DataEditScreen() {
       />
     ) : undefined;
 
+  const isSaveDisabled = !isEditingRecord || isSaving === true || isPhotoProcessing === true;
   const rightComponent = (
     <Button
       testID="dataedit-save"
       name={DATAEDIT_BTN.SAVE}
       onPress={pressSaveData}
-      backgroundColor={isEditingRecord && isSaving !== true ? COLOR.BLUE : COLOR.LIGHTBLUE}
-      disabled={!isEditingRecord || isSaving === true}
+      backgroundColor={isSaveDisabled ? COLOR.LIGHTBLUE : COLOR.BLUE}
+      disabled={isSaveDisabled}
       labelText={t('DataEdit.label.save')}
     />
   );
@@ -96,6 +98,13 @@ export default function DataEditScreen() {
         centerComponent={centerComponent}
         rightComponent={rightComponent}
       />
+      {/* 写真の保存が終わるまで、撮影・選択・記録の切り替え・戻る・保存は受け付けない。止まっている理由を示す */}
+      {isPhotoProcessing === true && (
+        <View testID="dataedit-photo-processing" style={styles.photoProcessing}>
+          <ActivityIndicator color={COLOR.BLUE} size="small" />
+          <Text style={styles.photoProcessingText}>{t('common.processing')}</Text>
+        </View>
+      )}
       <View style={styles.contentContainer}>
         {/* ボトムシート内のスクロールはBottomSheetScrollViewを使う。素のScrollViewだと
             シートのドラッグにジェスチャーを奪われ、「引っ張ると見えるが離すと戻る」になる。
@@ -376,6 +385,17 @@ const styles = StyleSheet.create({
   //最後の項目が下端に貼り付かないよう、少し余白を残す
   scrollContent: {
     paddingBottom: 20,
+  },
+  photoProcessing: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'center',
+    paddingVertical: 6,
+  },
+  photoProcessingText: {
+    color: COLOR.GRAY4,
+    fontSize: 13,
+    marginLeft: 8,
   },
   modifyBlockNotice: {
     color: COLOR.GRAY4,
