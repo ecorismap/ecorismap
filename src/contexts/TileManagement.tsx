@@ -1,5 +1,5 @@
 import { createContext } from 'react';
-import { TileMapType } from '../types';
+import { TileMapType, TileRegionType } from '../types';
 
 export interface TileManagementContextType {
   // Tile download related
@@ -14,12 +14,8 @@ export interface TileManagementContextType {
     coords: { latitude: number; longitude: number }[];
     centroid: { latitude: number; longitude: number };
   };
-  savedArea: {
-    id: string;
-    tileMapId: string;
-    coords: { latitude: number; longitude: number }[];
-    centroid: { latitude: number; longitude: number };
-  }[];
+  // status（未完了）で描き分けるので TileRegionType のまま渡す
+  savedArea: TileRegionType[];
   downloadProgress: string;
   selectedTileMapIds: string[];
   selectedDisplayTileMapId: string | null;

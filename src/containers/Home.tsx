@@ -125,6 +125,7 @@ import { setVistaHeadingFollow, terrain3dVistaStore } from '../utils/terrain3d/v
 import { isMapRotated, mapHeadingStore } from '../utils/mapHeadingStore';
 import { isMapView } from '../utils/Map';
 import { substituteGoogleBasemaps } from '../utils/terrain3d/googleBasemapSubstitute';
+import { buildMapAttribution } from '../utils/mapAttribution';
 import { generateLabel, getColor, resolveCodeField, toCodeFieldValue } from '../utils/Layer';
 import { hex2rgba, hsv2rgbaString } from '../utils/Color';
 import { getAllTrackPoints } from '../utils/Location';
@@ -588,17 +589,16 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
   const { addViewshedResult, hasViewshedPreview } = useContext(ViewshedContext);
   const attribution = useMemo(() => {
     // 3D（ネイティブ）ではGoogleの基本地図を地理院タイルに置き換えて描くので、出典もそれに合わせる
-    const shownTileMaps = Platform.OS !== 'web' && isTerrainActive ? substituteGoogleBasemaps(tileMaps) : tileMaps;
-    const sources = Array.from(
-      new Set(
-        shownTileMaps
-          .filter((tileMap) => tileMap.visible && tileMap.url && tileMap.attribution)
-          .map((tileMap) => tileMap.attribution)
-      )
-    );
-    // 可視領域は標高タイルの加工物なので、表示中は標高データの出典も併記する
-    if (hasViewshedPreview) sources.push(t('common.demAttribution'));
-    return sources.join(', ');
+    const nativeTerrain = Platform.OS !== 'web' && !!isTerrainActive;
+    const shownTileMaps = nativeTerrain ? substituteGoogleBasemaps(tileMaps) : tileMaps;
+    // 可視領域は標高タイルの加工物、ネイティブの3D・眺望は地形を標高タイルで描くので、標高データの出典も併記する。
+    // Webの3Dはmaplibreの出典表示が raster-dem ソースの © Mapterhorn を出すので足さない
+    return buildMapAttribution(shownTileMaps, {
+      viewshed: hasViewshedPreview,
+      terrain: nativeTerrain,
+      demAttribution: t('common.demAttribution'),
+      terrainAttribution: t('common.demAttributionShort'),
+    });
   }, [tileMaps, hasViewshedPreview, isTerrainActive]);
 
   const downloadMode = useMemo(

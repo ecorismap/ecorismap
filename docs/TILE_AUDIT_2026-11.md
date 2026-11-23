@@ -260,3 +260,22 @@
 
 確認: tsc 0、lint エラー0、jest 3190件通過。react-native-maps パッチを再生成（行末空白の罠で1回目は素の版に当たらず、素の版に当て直して再生成し forward/reverse とも確認）。Android・iOS ともビルド成功し、エミュレータ/シミュレータで起動・地図と陰影起伏の表示を確認、iOS の tiles に isExcludedFromBackup が付くことを確認した。
 残り: 各件の実機での動作（flipY 地図、PDF 再ダウンロード、スタイル更新後の描き直し、DEM の一時失敗、オーバーズーム）は未確認。旧版でダウンロードした flipY 地図は更新後にダウンロードし直しが必要（周知が要る）。pbf の flipY 地図は移行対象外。Web は未確認。
+
+### low 9件（2026-11-23、fix/tile-low）
+
+直したのは害のある9件。M-L3（M-M1）・M-L7（M-H6）・M-L9（M-H5）・M-L12（M-M11）は先の修正で解消済み。M-L4（陰影と標高の二重保存）・M-L5（東南へ1列余分）・M-L8（一覧置き換えで残る孤立フォルダ）は容量だけの問題で見送った。
+
+| 番号 | 修正内容 |
+|---|---|
+| M-L1 | 停止・背面移行の中断フラグを開始時と完了時に戻し、最後のバッチ中の停止も一時停止として扱う |
+| M-L2 | 未完了の保存範囲を灰色の破線で描き、保存済み（オレンジの実線）と区別する |
+| M-L6 | 拡張子の判定でクエリと # を除く（JS の `getUrlPathExt`、Android の `isPbfUrlTemplate`） |
+| M-L10 | Android でベクタ PMTiles の metadata.json を保存・読み込みし、どちらも無ければタイルのレイヤ名から既定スタイルを作る |
+| M-L11 | Web のラスタ XYZ ソースの maxzoom を min(overzoomThreshold, maximumZ) に |
+| M-L13 | ネイティブの 3D・眺望で標高データの出典（短い文言 `common.demAttributionShort`）を出す。Mapterhorn の出典が既にあれば足さない |
+| M-L14 | 地図設定の JSON 書き出しから encryptKey を除き、共有 PDF の地図は書き出さず、共有スタイルは外して知らせる（`mapExport.ts`） |
+| M-L15 | `style://` のスタイルはダウンロード時に取得しない（端末にあるかだけ確認） |
+| M-L16 | iOS の UrlTile・PMTile の setter が偽の値への変更も反映する |
+
+確認: tsc 0、lint エラー0、jest 3218件通過。パッチ再生成（forward/reverse とも確認）、Android・iOS ともビルド成功し起動・地図表示を確認。
+残り: 破線の見え方、3D の出典の折り返し、クエリ付き pbf の地図、オフラインでの M-L10 は実機未確認。共有 PDF の地図でも書き出しボタンは押せる（押すとメッセージ）。

@@ -32,17 +32,23 @@ export const isDownloadableTileMap = (tileMap: TileMapType): boolean => {
   if (tileMap.id === 'standard' || tileMap.id === 'hybrid') return false;
   const { url } = tileMap;
   if (isPeaksUrl(url)) return false;
-  if (url.endsWith('.pdf') || getExt(url).toLowerCase() === 'pdf' || url.startsWith('pdf://')) return false;
+  if (url.endsWith('.pdf') || getUrlPathExt(url) === 'pdf' || url.startsWith('pdf://')) return false;
   if (url.includes('file://') || url.includes('blob:')) return false;
   return true;
 };
 
+/**
+ * URL のパス部分の拡張子（小文字）。`…/{y}.pbf?key=…` のように末尾にクエリや # が付くと、
+ * 最後の `.` 以降が `pbf?key=…` になって pbf と判定できず、ラスタとして拡張子なしに保存してしまう（M-L6）
+ */
+export const getUrlPathExt = (url: string): string => getExt(url.split(/[?#]/)[0]).toLowerCase();
+
 export const getTileType = (tileMap: TileMapType): TileType =>
   tileMap.id === DEM_MAPTERHORN_MAP_ID
     ? 'dem'
-    : getExt(tileMap.url) === 'pbf'
+    : getUrlPathExt(tileMap.url) === 'pbf'
     ? 'pbf'
-    : getExt(tileMap.url) === 'pmtiles' || tileMap.url.startsWith('pmtiles://')
+    : getUrlPathExt(tileMap.url) === 'pmtiles' || tileMap.url.startsWith('pmtiles://')
     ? 'pmtiles'
     : isDemProtocolUrl(tileMap.url)
     ? 'hillshade'
@@ -385,6 +391,40 @@ export const downloadOneTile = async ({
     }
   }
   return downloadFileIfOk(url, basePath);
+};
+
+/** スタイル取得の結果。local は style:// で端末に置いたスタイルがあり、取得しなかった */
+export type StyleDownloadResult = 'saved' | 'local' | 'failed';
+
+/**
+ * ベクタ地図の style.json を地図フォルダへ保存する。
+ * style:// は取り込み・共有で端末に置いたスタイルを指し、RN の fetch はこのスキームを扱えないので取得しない
+ * （取得すると必ず失敗して毎回エラーと表示される。M-L15）。その場合は置かれているかだけ確かめる。
+ * エラー応答の本文（HTML）を style.json として保存すると既存の正しいスタイルを壊すので、200 系のときだけ書く
+ */
+export const downloadStyleJson = async (
+  tileMapId: string,
+  styleURL: string,
+  fetchUrl: string
+): Promise<StyleDownloadResult> => {
+  const localLocation = `${TILE_FOLDER}/${tileMapId}/style.json`;
+  if (styleURL.startsWith('style://')) {
+    try {
+      const info = await FileSystem.getInfoAsync(localLocation);
+      return info.exists ? 'local' : 'failed';
+    } catch (e) {
+      return 'failed';
+    }
+  }
+  try {
+    const response = await fetch(fetchUrl);
+    if (!response.ok) return 'failed';
+    const data = await response.text();
+    await FileSystem.writeAsStringAsync(localLocation, data, { encoding: FileSystem.EncodingType.UTF8 });
+    return 'saved';
+  } catch (e) {
+    return 'failed';
+  }
 };
 
 // ダウンロード完了したregionからstatus/zoomを取り除く（undefined残しではなくキー自体を除去）

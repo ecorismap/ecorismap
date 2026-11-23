@@ -18,6 +18,7 @@ import { cloneDeep } from 'lodash';
 import {
   boundsFromCoords,
   downloadOneTile,
+  downloadStyleJson,
   downloadTileGrid,
   getTileType,
   getZoomRange,
@@ -158,6 +159,13 @@ export const useTiles = (
     isDownloadingRef.current = isDownloading;
   }, [isDownloading]);
 
+  // 中断要求は handlePause でしか戻らないので、最後のバッチを待つ間の停止・背面移行が
+  // 次のダウンロードに持ち越されないよう、開始時と完了時にも戻す（M-L1）
+  const clearPauseRequest = useCallback(() => {
+    pause.current = false;
+    pauseReason.current = null;
+  }, []);
+
   const stopDownloadTiles = useCallback(() => {
     pause.current = true;
     pauseReason.current = 'user';
@@ -184,6 +192,7 @@ export const useTiles = (
   const downloadTiles = useCallback(
     async (zoom: number) => {
       if (tileMap === undefined) return;
+      clearPauseRequest();
       // flipY の地図は旧規約のタイルを先に片付けて印を置く。後にすると、iOS が初めて表示したときに
       // 今回 XYZ で保存したタイルを旧規約とみなして消してしまう（M-M2）
       await migrateFlipYTileCaches(store, [tileMap]);
@@ -266,24 +275,9 @@ export const useTiles = (
         } catch (error) {
           console.error('Error fetching metadata:', error);
         }
-        const fetchUrl = tileMap.styleURL ? withTileSignature(tileMap.styleURL, tileSignatures) : '';
-        const localLocation = `${folder}/style.json`;
-
-        await fetch(fetchUrl)
-          .then((response) => {
-            if (!response.ok) {
-              throw new Error('Network response was not ok');
-            }
-            return response.text();
-          })
-          .then(async (data) => {
-            await FileSystem.writeAsStringAsync(localLocation, data, {
-              encoding: FileSystem.EncodingType.UTF8,
-            });
-          })
-          .catch(() => {
-            //console.error(error);
-          });
+        if (tileMap.styleURL) {
+          await downloadStyleJson(tileMap.id, tileMap.styleURL, withTileSignature(tileMap.styleURL, tileSignatures));
+        }
       } else if (tileType === 'pbf') {
         // PBFタイルの場合はスタイルのみダウンロード（メタデータは不要）
         const folder = `${TILE_FOLDER}/${tileMap.id}`;
@@ -292,24 +286,7 @@ export const useTiles = (
         });
 
         if (tileMap.styleURL) {
-          const fetchUrl = withTileSignature(tileMap.styleURL, tileSignatures);
-          const localLocation = `${folder}/style.json`;
-
-          await fetch(fetchUrl)
-            .then((response) => {
-              if (!response.ok) {
-                throw new Error('Network response was not ok');
-              }
-              return response.text();
-            })
-            .then(async (data) => {
-              await FileSystem.writeAsStringAsync(localLocation, data, {
-                encoding: FileSystem.EncodingType.UTF8,
-              });
-            })
-            .catch(() => {
-              //console.error(error);
-            });
+          await downloadStyleJson(tileMap.id, tileMap.styleURL, withTileSignature(tileMap.styleURL, tileSignatures));
         }
       }
 
@@ -369,6 +346,11 @@ export const useTiles = (
         }
       }
       await Promise.all(batchDownload);
+      // 最後のバッチを待つ間に停止・背面移行されたら、完了と表示せずに中断として扱う
+      if (pause.current) {
+        if (await handlePause()) return;
+      }
+      clearPauseRequest();
 
       // 1枚も保存できなかったら完了扱いにしない（保存範囲の枠が出て、保存済みと誤解される）
       if (tileType === 'pmtiles' && savedCount === 0) {
@@ -390,7 +372,16 @@ export const useTiles = (
       }
       await AlertAsync(t('hooks.alert.completeDownload'));
     },
-    [dispatch, downloadArea, downloadRegion, promptResumeAfterBackground, store, tileMap, tileSignatures]
+    [
+      clearPauseRequest,
+      dispatch,
+      downloadArea,
+      downloadRegion,
+      promptResumeAfterBackground,
+      store,
+      tileMap,
+      tileSignatures,
+    ]
   );
 
   const clearTiles = useCallback(
@@ -410,6 +401,7 @@ export const useTiles = (
 
   const downloadMultipleTiles = useCallback(
     async (zoom: number, tileMapsToDownload: TileMapType[], resumeRegions?: (TileRegionType | undefined)[]) => {
+      clearPauseRequest();
       setIsDownloading(true);
       await migrateFlipYTileCaches(store, tileMapsToDownload);
       let totalCompleted = 0;
@@ -514,42 +506,24 @@ export const useTiles = (
           }
 
           if (currentTileMap.styleURL) {
-            const localLocation = `${folder}/style.json`;
-            await fetch(withTileSignature(currentTileMap.styleURL, tileSignatures))
-              .then((response) => {
-                // エラー応答の本文（HTML）をstyle.jsonとして保存すると、既存の正しいスタイルを壊す
-                if (!response.ok) throw new Error(`Bad response code: ${response.status}`);
-                return response.text();
-              })
-              .then(async (data) => {
-                await FileSystem.writeAsStringAsync(localLocation, data, {
-                  encoding: FileSystem.EncodingType.UTF8,
-                });
-              })
-              .catch(() => {
-                // スタイルが無いとベクタ地図が表示できないため、完了時のサマリで通知する
-                errorMaps.push(`${currentTileMap.name} (style.json)`);
-              });
+            const styleResult = await downloadStyleJson(
+              currentTileMap.id,
+              currentTileMap.styleURL,
+              withTileSignature(currentTileMap.styleURL, tileSignatures)
+            );
+            // スタイルが無いとベクタ地図が表示できないため、完了時のサマリで通知する
+            if (styleResult === 'failed') errorMaps.push(`${currentTileMap.name} (style.json)`);
           }
         } else if (tileType === 'pbf' && currentTileMap.styleURL) {
           const folder = `${TILE_FOLDER}/${currentTileMap.id}`;
           await FileSystem.makeDirectoryAsync(folder, { intermediates: true });
 
-          const localLocation = `${folder}/style.json`;
-          await fetch(withTileSignature(currentTileMap.styleURL, tileSignatures))
-            .then((response) => {
-              // エラー応答の本文（HTML）をstyle.jsonとして保存すると、既存の正しいスタイルを壊す
-              if (!response.ok) throw new Error(`Bad response code: ${response.status}`);
-              return response.text();
-            })
-            .then(async (data) => {
-              await FileSystem.writeAsStringAsync(localLocation, data, {
-                encoding: FileSystem.EncodingType.UTF8,
-              });
-            })
-            .catch(() => {
-              errorMaps.push(`${currentTileMap.name} (style.json)`);
-            });
+          const styleResult = await downloadStyleJson(
+            currentTileMap.id,
+            currentTileMap.styleURL,
+            withTileSignature(currentTileMap.styleURL, tileSignatures)
+          );
+          if (styleResult === 'failed') errorMaps.push(`${currentTileMap.name} (style.json)`);
         }
 
         if (tileType === 'pmtiles' && !pmtileIsVector) await removeLegacyRasterPmtilePngs(currentTileMap.id);
@@ -632,6 +606,10 @@ export const useTiles = (
           }
         }
         await Promise.all(batchDownload);
+        // 最後のバッチを待つ間に停止・背面移行されたら、この地図を完了にせず中断として扱う
+        if (pause.current) {
+          if (await handlePause()) return;
+        }
 
         // 1枚も保存できなかったら完了扱いにしない（保存範囲の枠が出て、保存済みと誤解される）。
         // 再開で保存済みを飛ばした地図は、既に保存したタイルがあるので対象外
@@ -656,6 +634,7 @@ export const useTiles = (
         totalCompleted++;
       }
 
+      clearPauseRequest();
       setIsDownloading(false);
 
       let message = t('hooks.message.completeDownloadMaps', { total: totalCompleted });
@@ -665,7 +644,7 @@ export const useTiles = (
       }
       await AlertAsync(message);
     },
-    [dispatch, downloadArea, promptResumeAfterBackground, store, tileSignatures]
+    [clearPauseRequest, dispatch, downloadArea, promptResumeAfterBackground, store, tileSignatures]
   );
 
   const resumeDownloadTiles = useCallback(async () => {
