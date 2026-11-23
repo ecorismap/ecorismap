@@ -1,4 +1,11 @@
-import { hasOpened, checkDuplicateMember, checkEmails, pickNewProjectIdForSave } from '../Project';
+import {
+  hasOpened,
+  checkDuplicateMember,
+  checkEmails,
+  pickNewProjectIdForSave,
+  normalizeMemberEmail,
+  hasDuplicateMemberUid,
+} from '../Project';
 
 // 型定義
 type VerifiedType = 'OK' | 'HOLD' | 'NO_ACCOUNT';
@@ -134,5 +141,48 @@ describe('pickNewProjectIdForSave', () => {
     expect(pickNewProjectIdForSave('p1', attempted, gen)).toBe('fresh1');
     // 2回目の失敗の後も、それまでに試した id はどれも使わない
     expect(pickNewProjectIdForSave('p1', attempted, gen)).toBe('fresh2');
+  });
+});
+
+describe('A-L15: メールの正規化と同じ uid の重複', () => {
+  const base = {
+    id: 'p',
+    name: 'p',
+    ownerUid: 'o',
+    adminsUid: [],
+    membersUid: [],
+    abstract: '',
+    storage: { count: 0 },
+  };
+
+  it('normalizeMemberEmail は前後の空白を除き小文字にする', () => {
+    expect(normalizeMemberEmail('  Foo@Example.COM ')).toBe('foo@example.com');
+  });
+
+  it('checkDuplicateMember は大文字小文字だけの違いも重複とみなす', () => {
+    const project = {
+      ...base,
+      members: [
+        { uid: 'a', email: 'a@example.com', verified: 'OK' as const, role: 'OWNER' as const },
+        { uid: null, email: 'A@Example.com', verified: 'NO_ACCOUNT' as const, role: 'MEMBER' as const },
+      ],
+    };
+    expect(checkDuplicateMember(project, 1)).toBe(false);
+  });
+
+  it('hasDuplicateMemberUid は解決済みの uid の重複だけを見る（未解決の null・空は数えない）', () => {
+    const member = (uid: string | null, email: string) => ({
+      uid,
+      email,
+      verified: 'OK' as const,
+      role: 'MEMBER' as const,
+    });
+    expect(hasDuplicateMemberUid({ ...base, members: [member('a', 'a@x.jp'), member('a', 'b@x.jp')] })).toBe(true);
+    expect(
+      hasDuplicateMemberUid({
+        ...base,
+        members: [member('a', 'a@x.jp'), member(null, 'b@x.jp'), member(null, 'c@x.jp'), member('', 'd@x.jp')],
+      })
+    ).toBe(false);
   });
 });

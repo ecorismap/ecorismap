@@ -46,6 +46,8 @@ interface DataEditContextType {
     fields: { [key: string]: string | number | PhotoType[] },
     value: string
   ) => void;
+  /** 参照欄から参照先レイヤへ記録を足せないか（実行中プロジェクトのCOMMON） */
+  isReferenceAddLocked: (referenceLayer: LayerType) => boolean;
   pressEditPosition: () => void;
   pressJumpToData: () => void;
   gotoGoogleMaps: () => void;

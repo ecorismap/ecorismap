@@ -220,8 +220,9 @@ export const generateArrowSvg = (
       p[0] - size / 2
     },${p[1] - size / 2}) rotate(${angle}, ${size / 2}, ${size / 2})" />`;
 
-  let svg = arrowAt(p3, angleEnd);
-  if (arrowStyle === 'ARROW_BOTH') svg += arrowAt(p0, angleStart);
+  //ARROW_STARTは部分消去で始点側だけ残った矢印（作図監査 E-L9）
+  let svg = arrowStyle === 'ARROW_START' ? '' : arrowAt(p3, angleEnd);
+  if (arrowStyle === 'ARROW_BOTH' || arrowStyle === 'ARROW_START') svg += arrowAt(p0, angleStart);
   return svg;
 };
 

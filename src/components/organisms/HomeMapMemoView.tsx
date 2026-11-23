@@ -161,13 +161,15 @@ export const ArrowHeads = React.memo(
     const angleStart = (Math.atan2(p0[1] - startRef[1], p0[0] - startRef[0]) * (180 / Math.PI) + 450) % 360;
     return (
       <G>
-        <Path
-          d={d}
-          fill={strokeColor}
-          stroke="white"
-          transform={`translate(${p3[0] - size / 2},${p3[1] - size / 2}) rotate(${angleEnd}, ${size / 2}, ${size / 2})`}
-        />
-        {arrowStyle === 'ARROW_BOTH' && (
+        {arrowStyle !== 'ARROW_START' && (
+          <Path
+            d={d}
+            fill={strokeColor}
+            stroke="white"
+            transform={`translate(${p3[0] - size / 2},${p3[1] - size / 2}) rotate(${angleEnd}, ${size / 2}, ${size / 2})`}
+          />
+        )}
+        {(arrowStyle === 'ARROW_BOTH' || arrowStyle === 'ARROW_START') && (
           <Path
             d={d}
             fill={strokeColor}

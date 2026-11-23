@@ -301,6 +301,11 @@ export interface RingDrawOptions {
   layerCount: number;
   /** レイヤ毎の不透明度（長さ8。未使用スロットは0） */
   layerOpacity: Float32Array;
+  /**
+   * このリングの地形が見えている画素にオーバーレイを描くか（近景と、それより細かい望遠の扇形）。
+   * どのリングにも立っていなければ最後に描くリングだけに描く
+   */
+  drawOverlay?: boolean;
 }
 
 export interface TerrainRingDraw extends RingDrawOptions {
@@ -377,6 +382,38 @@ const ringDepthRange = (ringIndex: number, ringCount: number): [number, number] 
   if (ringCount <= DEPTH_RANGES.length) return DEPTH_RANGES[ringCount - 1][ringIndex];
   const inner = ringCount - 1 - ringIndex;
   return [inner / ringCount, (inner + 1) / ringCount];
+};
+
+/**
+ * 表示描画の深度ステンシル形式。ステンシルに「その画素に見えている地形のリング番号＋1」を書き、
+ * オーバーレイは最も細かいリングが見えている画素にだけ描く（V-M3の当面策）。
+ *
+ * オーバーレイを1つのリングの深度レンジで描くと、そのリングの外の地形とは
+ * 正しく前後を比べられず、遠景の尾根の向こうのラインや範囲円が山の上に透けて描かれていた。
+ * リングごとに、その地形が見えている画素へそのリングの深度レンジで描けば同じレンジで比べるので正しく隠れる。
+ * 遠景しか見えていない画素には描かない（遠景上のオーバーレイは出なくなる）
+ */
+export const MAIN_DEPTH_STENCIL_FORMAT: GPUTextureFormat = 'depth24plus-stencil8';
+
+/** ring番目（0=最外）の地形が書くステンシル値。空（地形なし）の0と区別するため1始まり */
+export const terrainStencilReference = (ringIndex: number): number => ringIndex + 1;
+
+/** オーバーレイを描いてよい画素のステンシル値（最も細かい＝最後に描くリングの地形が見えている画素） */
+export const overlayStencilReference = (ringCount: number): number => terrainStencilReference(Math.max(1, ringCount) - 1);
+
+/**
+ * オーバーレイを描くリングの番号（描く順）。
+ * 眺望の望遠では近景より細かい扇形が近景の後に描かれるので、最後のリングだけに描くと
+ * 扇形の外にある近景上のオーバーレイまで消えてしまう。drawOverlayの立ったリングごとに、
+ * そのリングの深度レンジとステンシル値で描く（画素はリング間で重ならないので二重には塗らない）
+ */
+export const overlayRingIndices = (rings: readonly { drawOverlay?: boolean }[]): number[] => {
+  const indices: number[] = [];
+  rings.forEach((ring, index) => {
+    if (ring.drawOverlay === true) indices.push(index);
+  });
+  if (indices.length === 0) indices.push(Math.max(1, rings.length) - 1);
+  return indices;
 };
 
 /** タイルuniform内でレイヤ毎のUV矩形が始まるfloat位置（vec4×3＋不透明度vec4×2の後ろ） */
@@ -550,7 +587,14 @@ export class TerrainRenderer {
         ],
       },
       primitive: { topology: 'triangle-list', cullMode: 'back' },
-      depthStencil: { depthWriteEnabled: true, depthCompare: 'less-equal', format: 'depth24plus' },
+      depthStencil: {
+        depthWriteEnabled: true,
+        depthCompare: 'less-equal',
+        format: MAIN_DEPTH_STENCIL_FORMAT,
+        // 深度テストに通った（＝その時点で最前面の）地形のリング番号を書く。参照値はリング毎に設定する
+        stencilFront: { compare: 'always', passOp: 'replace', failOp: 'keep', depthFailOp: 'keep' },
+        stencilBack: { compare: 'always', passOp: 'replace', failOp: 'keep', depthFailOp: 'keep' },
+      },
     });
 
     const overlayModule = device.createShaderModule({ code: OVERLAY_SHADER });
@@ -583,9 +627,13 @@ export class TerrainRenderer {
       depthStencil: {
         depthWriteEnabled: false,
         depthCompare: 'less-equal',
-        format: 'depth24plus',
+        format: MAIN_DEPTH_STENCIL_FORMAT,
         depthBias: -4,
         depthBiasSlopeScale: -4,
+        // 近景（と、それより細かい扇形）の地形が見えている画素だけに描く（overlayRingIndices参照）
+        stencilFront: { compare: 'equal', passOp: 'keep', failOp: 'keep', depthFailOp: 'keep' },
+        stencilBack: { compare: 'equal', passOp: 'keep', failOp: 'keep', depthFailOp: 'keep' },
+        stencilWriteMask: 0,
       },
     });
 
@@ -631,7 +679,7 @@ export class TerrainRenderer {
     this.depthTexture?.destroy();
     this.depthTexture = this.device.createTexture({
       size: [width, height],
-      format: 'depth24plus',
+      format: MAIN_DEPTH_STENCIL_FORMAT,
       usage: this.flags.texture.RENDER_ATTACHMENT,
     });
     this.depthSize = [width, height];
@@ -1067,6 +1115,9 @@ export class TerrainRenderer {
         depthClearValue: 1,
         depthLoadOp: 'clear',
         depthStoreOp: 'store',
+        stencilClearValue: 0,
+        stencilLoadOp: 'clear',
+        stencilStoreOp: 'discard',
       },
     });
     for (let r = 0; r < ringCount; r++) {
@@ -1074,6 +1125,7 @@ export class TerrainRenderer {
       if (ringVisible.length === 0) continue;
       const [minDepth, maxDepth] = ringDepthRange(r, ringCount);
       pass.setViewport(0, 0, width, height, minDepth, maxDepth);
+      pass.setStencilReference(terrainStencilReference(r));
       const grid = this.sharedGrid(rings[r].segments);
       pass.setPipeline(this.pipeline);
       pass.setBindGroup(0, this.frameBindGroup);
@@ -1093,15 +1145,18 @@ export class TerrainRenderer {
         batch !== null && batch.indexCount > 0 && batch.colorBuffer !== null
     );
     if (drawableBatches.length > 0) {
-      const [minDepth, maxDepth] = ringDepthRange(ringCount - 1, ringCount);
-      pass.setViewport(0, 0, width, height, minDepth, maxDepth);
       pass.setPipeline(this.overlayPipeline);
       pass.setBindGroup(0, this.frameBindGroup);
-      for (const batch of drawableBatches) {
-        pass.setVertexBuffer(0, batch.vertexBuffer);
-        pass.setVertexBuffer(1, batch.colorBuffer);
-        pass.setIndexBuffer(batch.indexBuffer, 'uint32');
-        pass.drawIndexed(batch.indexCount);
+      for (const r of overlayRingIndices(rings)) {
+        const [minDepth, maxDepth] = ringDepthRange(r, ringCount);
+        pass.setViewport(0, 0, width, height, minDepth, maxDepth);
+        pass.setStencilReference(terrainStencilReference(r));
+        for (const batch of drawableBatches) {
+          pass.setVertexBuffer(0, batch.vertexBuffer);
+          pass.setVertexBuffer(1, batch.colorBuffer);
+          pass.setIndexBuffer(batch.indexBuffer, 'uint32');
+          pass.drawIndexed(batch.indexCount);
+        }
       }
     }
     pass.end();

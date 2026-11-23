@@ -28,6 +28,8 @@ import { copiedPhotosMessage } from '../utils/photoCopyMessage';
 import { useSingleFlight } from '../hooks/useSingleFlight';
 import { AcquiredPhoto, usePhotoAcquisition } from '../hooks/usePhotoAcquisition';
 import { discardStalePickerResult } from '../utils/discardStalePickerResult';
+import { usePermission } from '../hooks/usePermission';
+import { isReferenceAddLocked as isReferenceAddLockedFor } from '../utils/referenceLock';
 
 export default function DataEditContainer() {
   const { navigate, navigateToHome } = useBottomSheetNavigation();
@@ -69,6 +71,12 @@ export default function DataEditContainer() {
   const user = useSelector((state: RootState) => state.user);
   const store = useStore<RootState>();
   const { checkRecordEditable, unselectRecord } = useRecord();
+  const { isRunningProject } = usePermission();
+  const layers = useSelector((state: RootState) => state.layers, shallowEqual);
+  const isReferenceAddLocked = useCallback(
+    (referenceLayer: LayerType) => isReferenceAddLockedFor(referenceLayer, layers, isRunningProject),
+    [isRunningProject, layers]
+  );
   const { keyboardShown } = useKeyboard();
   const { isLandscape, windowWidth, mapRegion } = useWindow();
   //console.log('####', targetLayer);
@@ -632,6 +640,10 @@ export default function DataEditContainer() {
         Alert.alert('', t('DataEdit.alert.saveChangesFirst'));
         return;
       }
+      if (isReferenceAddLocked(referenceLayer)) {
+        Alert.alert('', t('hooks.message.lockProject'));
+        return;
+      }
       //参照データを追加して、referenceKeyを設定する
       //console.log(fields);
       const referenceData = addRecord(fields);
@@ -644,7 +656,7 @@ export default function DataEditContainer() {
         mainLayer: targetLayer,
       });
     },
-    [isEditingRecord, navigate, targetLayer, targetRecord]
+    [isEditingRecord, isReferenceAddLocked, navigate, targetLayer, targetRecord]
   );
 
   const pressEditPosition = useCallback(async () => {
@@ -705,6 +717,10 @@ export default function DataEditContainer() {
         Alert.alert('', t('DataEdit.alert.saveChangesFirst'));
         return;
       }
+      if (isReferenceAddLocked(referenceLayer)) {
+        Alert.alert('', t('hooks.message.lockProject'));
+        return;
+      }
       const dictionaryField = referenceLayer.field.find((f) => f.id === referenceLayer.dictionaryFieldId);
       const fieldName = dictionaryField?.name;
       if (!fieldName) return;
@@ -714,7 +730,7 @@ export default function DataEditContainer() {
       }
       addRecord({ ...fields, [fieldName]: text });
     },
-    [isEditingRecord]
+    [isEditingRecord, isReferenceAddLocked]
   );
   const dataEditContextValue = React.useMemo(
     () => ({
@@ -750,6 +766,7 @@ export default function DataEditContainer() {
       pressCopyData,
       pressAddReferenceData,
       pressAddReferenceDataByDictionary,
+      isReferenceAddLocked,
       pressEditPosition,
       pressJumpToData,
       gotoGoogleMaps,
@@ -776,6 +793,7 @@ export default function DataEditContainer() {
       onChangeRecord,
       pressAddReferenceData,
       pressAddReferenceDataByDictionary,
+      isReferenceAddLocked,
       pressClosePhoto,
       pressCopyData,
       pressDeleteData,

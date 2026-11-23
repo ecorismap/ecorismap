@@ -11,6 +11,7 @@ import { RootState } from '../store';
 import { t } from '../i18n/config';
 import dayjs from '../i18n/dayjs';
 import { replaceDataWithTrackingGuard } from '../utils/trackingLeaveGuard';
+import { selectGoogleDriveDefaultSaveName } from '../modules/googleDrive';
 
 export default function GoogleDriveProjectsContainers() {
   const { goBack, navigateToHome } = useBottomSheetNavigation();
@@ -18,7 +19,7 @@ export default function GoogleDriveProjectsContainers() {
   const { params } = useBottomSheetRoute<'GoogleDriveProjects'>();
   const mode = params?.mode;
   const { isRunningProject } = usePermission();
-  const lastSync = useSelector((state: RootState) => state.googleDrive.lastSync);
+  const googleDriveState = useSelector((state: RootState) => state.googleDrive);
   const {
     isLoading,
     progress,
@@ -47,10 +48,10 @@ export default function GoogleDriveProjectsContainers() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const defaultSaveName = (() => {
-    const synced = Object.values(lastSync).sort((a, b) => (a.syncedAt < b.syncedAt ? 1 : -1));
-    return synced[0]?.name ?? `ecorismap_${dayjs().format('YYYY-MM-DD')}`;
-  })();
+  const defaultSaveName = selectGoogleDriveDefaultSaveName(
+    googleDriveState,
+    `ecorismap_${dayjs().format('YYYY-MM-DD')}`
+  );
 
   const pressConnect = useCallback(async () => {
     const { isOK, message } = await connect();

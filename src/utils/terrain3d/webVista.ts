@@ -27,11 +27,19 @@ import {
   stepVistaFov,
 } from './constants';
 import { terrain3dVistaStore } from './vistaStore';
+import { regionCenteredAt } from './coords';
+import type { RegionType } from '../../types';
 import type { PeakProjector } from '../peaks/peakProjector';
 import { isSightBlocked } from '../peaks/sightline';
 import { createTerrainSampler } from './webCamera';
 import { createDistanceTileZoom } from './webTerrainView';
-import { footDemStatus, FootDemStatus, footGroundElevation, TerrainTileInternals } from './webVistaGround';
+import {
+  footDemStatus,
+  FootDemStatus,
+  footGroundElevation,
+  TerrainTileInternals,
+  webVistaEyeAltitude,
+} from './webVistaGround';
 
 /** 通常時のmaxPitch（Home.web.tsxのMapと同じ値） */
 export const WEB_NORMAL_MAX_PITCH_DEG = 85;
@@ -102,7 +110,7 @@ const lookTarget = (state: WebVistaState, distanceM: number) => {
   };
 };
 
-const eyeAltitude = (state: WebVistaState) => state.ground + state.heightM;
+const eyeAltitude = (state: WebVistaState) => webVistaEyeAltitude(state.ground, state.heightM, TERRAIN_EXAGGERATION);
 
 const applyCamera = (state: WebVistaState) => {
   // 画角を狭めると、同じ距離の注視点を写すのにmaplibreのズームが上がり、望遠側で
@@ -391,6 +399,14 @@ export const changeWebVistaHeight = (step: number): void => {
   applyCamera(vista);
   publish();
 };
+
+/**
+ * 眺望中に3Dを抜けるときの2Dの表示範囲（眺望中でなければnull）。
+ * 眺望中のmapRegionは足元のすぐ先の注視点・超拡大（約z20.5）になっているので、
+ * バナーから抜けたときと同じ立ち位置・ズームで2Dを開く（V-M8）
+ */
+export const webVistaExitRegion = (region: RegionType): RegionType | null =>
+  vista === null ? null : regionCenteredAt(region, { latitude: vista.latitude, longitude: vista.longitude }, EXIT_ZOOM);
 
 /**
  * 眺望を解除する。restoreCamera=trueなら立っていた地点を注視点にした俯瞰へ戻す

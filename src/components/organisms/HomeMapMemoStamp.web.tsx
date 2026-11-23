@@ -5,6 +5,7 @@ import { Marker } from 'react-map-gl/maplibre';
 
 import Svg, { Text } from 'react-native-svg';
 import { getMapMemoSymbolScaleAtZoom, SYMBOL_BASE_SIZE_PX } from '../../utils/Layer';
+import { toMemoZoom } from '../../utils/memoZoom';
 import { hasStampSymbol, StampSymbol } from './HomeStampSymbol';
 
 interface Props {
@@ -22,7 +23,8 @@ export const HomeMapMemoStamp = React.memo((props: Props) => {
 
   if (feature.coords === undefined) return null;
   //描画時よりズームアウトしたら線幅と同様に縮小表示する
-  const scale = getMapMemoSymbolScaleAtZoom(zoom);
+  //記号の基準ズームはGoogle基準なので、maplibreのズームを揃えてから比べる（作図監査 E-L8）
+  const scale = getMapMemoSymbolScaleAtZoom(toMemoZoom(zoom));
   const size = SYMBOL_BASE_SIZE_PX * scale;
   switch (stamp) {
     //数字・英字・文字はレイヤのラベル設定の値を描く。ラベルが「なし」なら描くものが無い

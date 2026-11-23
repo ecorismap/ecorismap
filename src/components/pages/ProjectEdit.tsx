@@ -31,6 +31,7 @@ export default function ProjectEditScreen() {
     migrationProgress,
     userUid,
     staleKeyUids,
+    isAddedMember,
     changeText,
     changeMemberText,
     changeAdmin,
@@ -78,27 +79,34 @@ export default function ProjectEditScreen() {
   const showReshareKey = project.cryptoScheme === 'dek' && !isNew;
 
   const renderMemberItem = useCallback(
-    ({ item, index }: { item: MemberType; index: number }) => (
-      <ProjectEditMembers
-        key={index}
-        name={item.role === 'OWNER' ? t('common.owner') : t('common.member')}
-        value={item.email}
-        verified={item.verified}
-        keyStale={!!item.uid && staleKeyUids.includes(item.uid)}
-        role={item.role}
-        editable={(isOwner && !isProjectOpen && index !== 0) || (isNew && index !== 0)}
-        visibleMinus={item.role !== 'OWNER' && !isProjectOpen && (isOwner || isNew)}
-        visibleReshareKey={showReshareKey}
-        enableReshareKey={
-          item.verified === 'OK' && !!item.uid && item.uid !== userUid && (isOwnerAdmin || item.role === 'OWNER')
-        }
-        onCheckAdmin={(checked) => changeAdmin(checked, index)}
-        onChangeText={(value) => changeMemberText(value, index)}
-        pressDeleteMember={(isOwner && !isProjectOpen) || isNew ? () => pressDeleteMember(index) : () => null}
-        pressReshareMemberKey={() => pressReshareMemberKey(index)}
-      />
-    ),
+    ({ item, index }: { item: MemberType; index: number }) => {
+      const canEditExisting = (isOwner && !isProjectOpen) || isNew;
+      // 保存前に追加した行はまだ誰にも権限を渡していないので、追加欄を使える管理者にも直す・消す手段を与える。
+      // 残すと打ち間違えたアドレスが保留のまま保存され、後でそのアドレスが登録されたときに鍵が配られうる（A-L17）
+      const canEditAdded = isOwnerAdmin && isAddedMember(index);
+      return (
+        <ProjectEditMembers
+          key={index}
+          name={item.role === 'OWNER' ? t('common.owner') : t('common.member')}
+          value={item.email}
+          verified={item.verified}
+          keyStale={!!item.uid && staleKeyUids.includes(item.uid)}
+          role={item.role}
+          editable={(canEditExisting && index !== 0) || canEditAdded}
+          visibleMinus={item.role !== 'OWNER' && ((!isProjectOpen && (isOwner || isNew)) || canEditAdded)}
+          visibleReshareKey={showReshareKey}
+          enableReshareKey={
+            item.verified === 'OK' && !!item.uid && item.uid !== userUid && (isOwnerAdmin || item.role === 'OWNER')
+          }
+          onCheckAdmin={(checked) => changeAdmin(checked, index)}
+          onChangeText={(value) => changeMemberText(value, index)}
+          pressDeleteMember={canEditExisting || canEditAdded ? () => pressDeleteMember(index) : () => null}
+          pressReshareMemberKey={() => pressReshareMemberKey(index)}
+        />
+      );
+    },
     [
+      isAddedMember,
       changeAdmin,
       changeMemberText,
       isNew,

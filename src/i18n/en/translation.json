@@ -328,7 +328,9 @@
       "fileOpen": "Load data file (.ecorismap)? \nCurrent data and settings will be overwritten.",
       "restoreBackup": "Restore the selected backup? \nCurrent data will be replaced. (The current state will also be backed up automatically.)",
       "deleteBackup": "Delete this backup? \nThis cannot be undone.",
-      "clearAllBackups": "Delete all backups on this device? \n(Including backups of other accounts not shown in the list.) \nThis cannot be undone."
+      "clearAllBackups": "Delete all backups on this device? \n(Including backups of other accounts not shown in the list.) \nThis cannot be undone.",
+      "backupFailedProceed": "The automatic backup could not be created (the data may be too large, or the device may be low on storage).\nIf you continue, the current data cannot be brought back with \"Restore from backup\". We recommend writing it to a file with \"Save data\" first.\nContinue?",
+      "backupFailedProceedOK": "Continue"
     },
     "alert": {
       "loadEcorisMapFile": "File is loaded.",
@@ -400,6 +402,10 @@
     }
   },
   "Account": {
+    "confirm": {
+      "closeOtherUserProject": "The project \"{{name}}\" opened with another account is still open. Close this project and log in?\n(Cancel to stop logging in.)",
+      "closeOtherUserProjectBackupNote": "The data before closing is kept in the automatic backup (unless the backup could not be created, for example because the data is too large)."
+    },
     "resetWarning": {
       "title": "Reset encryption key",
       "intro": "Resetting the encryption key makes the data protected by your current key unreadable. Unlike resetting your login password, this cannot be undone.",
@@ -471,6 +477,7 @@
       "restoreEncryptKeySuccessOpenProject": "The encryption key has been restored. Please open the project again."
     },
     "message": {
+      "sessionExpired": "Your login has expired. Please log in again. The encryption key and data on this device can be used as they are.",
       "inputMail": "Please enter your e-mail address",
       "inputPassword": "Please enter your login password.",
       "signupSent": "A confirmation email has been sent. Click the link in the email, then log in.",
@@ -514,6 +521,7 @@
       "deleteAllProjects": "Please enter your login password."
     },
     "alert": {
+      "deleteUserAccount": "Please execute after closing the project.",
       "deleteAllProjects": "Please execute after closing the project."
     },
     "navigation": {
@@ -587,6 +595,7 @@
   },
   "ProjectEdit": {
     "alert": {
+      "openFailedClosed": "Could not open the project. To avoid leaving a partially loaded state, the project that was open has been closed. Please open it again.",
       "exportProject": "Project data export is only available in the web version",
       "deleteProject": "The project has been deleted.",
       "settingProject": "You can change the project settings.",
@@ -596,6 +605,8 @@
       "migrateSelfDataFailed": "Some data could not be migrated to the new encryption. The project will open anyway (migration will be retried next time)."
     },
     "confirm": {
+      "replaceLocalData": "The data on this device will be replaced with the project data. The previous data can be brought back with \"Restore from backup\" (unless the backup could not be created, for example because the data is too large). Open the project?",
+      "replaceLocalDataWeb": "The data on this device will be replaced with the project data. On the web version, the previous data cannot be brought back. Save it first with \"Save data\" if needed. Open the project?",
       "deleteProject": "Do you want to delete the project?",
       "gotoBack": "Do you want to discard your changes?",
       "reshareKey": "Do you want to re-share the project's encryption key with this member? Run this when the member has reset their encryption key and can no longer decrypt data.",
@@ -648,7 +659,9 @@
     "confirm": {
       "deleteLayer": "Do you want to delete the layer? \nThe data in the layer is also deleted.",
       "gotoBack": "Would you like to discard your changes and return?",
-      "unmigratedCloudFields": "Members' cloud data will not be migrated for the fields whose name or type you changed ({{fields}}). Values under the old names will no longer appear on screen or in CSV, and values of changed types will stay unconverted. Save anyway?"
+      "unmigratedCloudFields": "Members' cloud data will not be migrated for the fields whose name or type you changed ({{fields}}). Values under the old names will no longer appear on screen or in CSV, and values of changed types will stay unconverted. Save anyway?",
+      "lostFieldValues": "Changing the format will clear or change {{count}} existing values (values that are not numbers become blank, decimals are rounded). Changing the format back will not restore them. Save anyway?",
+      "unmigratedAndLostFieldValues": "Members' cloud data will not be migrated for the fields whose name or type you changed ({{fields}}). Values under the old names will no longer appear on screen or in CSV, and values of changed types will stay unconverted.\nAlso, changing the format will clear or change {{count}} existing values (values that are not numbers become blank, decimals are rounded). Changing the format back will not restore them. Save anyway?"
     },
     "navigation": {
       "title": "Layer settings"
@@ -746,6 +759,8 @@
       "failDownload": "Download failed"
     },
     "message": {
+      "loginCancelledProjectOpen": "Login was cancelled.",
+      "reloginRequiredSessionExpired": "Your login has expired (for example, the password was changed on another device).\nPlease log in again from the \"Projects\" button on the home screen, and then try again.",
       "pleaseLogin": "Please login",
       "cloudDataChangedByOtherDevice": "Your data in the cloud was updated on another device, so the upload was stopped so as not to overwrite it. Please upload again.",
       "cannotVerifyCloudData": "Upload was stopped so as not to overwrite your data in the cloud, because it could not be checked. Check your connection and try again.",
@@ -764,6 +779,7 @@
       "cannotImportData": "Cannot import due to the large size of the data.",
       "changeProjectName": "There is a project with the same name. \nPlease change the project name.",
       "duplicateMembers": "Duplicate members.",
+      "duplicateMemberAccounts": "The same account is registered in more than one member row (e.g. an email alias). Please delete one of the rows.",
       "emailInUse": "That email address is already in use.",
       "signupRestricted": "This email address cannot be registered. Account sign-up requires approval from the operator. You can also use \"Connect with Google\".",
       "signinRestricted": "Sign-in is unavailable because your organization account has been restricted. Please contact your organization's administrator or the operator.",
@@ -817,6 +833,7 @@
       "lockProject": "This layer cannot be edited.",
       "recordModifyAdminOnly": "Only administrators can change or delete other members' records or template records.",
       "recordModifyPrivateLayer": "In a private layer, other members' records and template records cannot be changed or deleted, because the change would not reach the members' devices. Change templates in settings mode.",
+      "childRecordDeleteBlocked": "This record cannot be deleted because some of the behavior symbols attached to it cannot be deleted.",
       "noActivate": "Your account has not been activated.",
       "noEditMode": "You are not in edit mode.",
       "noLayerToEdit": "There are no layers to edit.",
@@ -852,6 +869,7 @@
       "invalidLine": "Can't save for invalid line",
       "invalidPoint": "Can't save for invalid point.",
       "cannotInRunningProject": "Not possible when project is open",
+      "storageWriteFailed": "Data could not be saved because the device is running out of storage. If the app is closed now, recent changes may be lost. Please free up space, for example by deleting unneeded photos or the map cache.",
       "encryptKeyFailed": "Check encryption password",
       "saveTracking": "There are unsaved track logs. \nDo you want to save?",
       "saveInterruptedTracking": "Track recording was interrupted at {{time}}. Do you want to save the track recorded up to then?",
@@ -948,6 +966,9 @@
       "pdfPopupBlocked": "The PDF could not be opened because a pop-up was blocked. Please allow pop-ups for this site in your browser."
     },
     "confirm": {
+      "sessionExpired": "Your login has expired (for example, the password was changed on another device). Uploading and downloading are not possible as it is.\nLog in again? The encryption key and data on this device are kept.",
+      "sessionExpiredLogin": "Log in",
+      "sessionExpiredLater": "Later",
       "individualColor": "The layer's color type will be changed to [Individual] for the pen (restored when you change it back). Continue?",
       "closeProject": "Do you want to finish the project? \nAny data that has not been uploaded will be discarded! \n!",
       "deleteTiles": "Clear the map cache, including downloaded tiles? Imported PDF maps and styles are kept.",
@@ -1278,7 +1299,7 @@
     },
     "confirm": {
       "saveInRunningProject": "A shared project is running. This backup is saved to your personal Google Drive and will not be shared with the team. Continue?",
-      "overwrite": "A project with the same name exists on Drive. Overwrite it? (Previous versions can be restored from Drive revision history.)",
+      "overwrite": "A project with the same name exists on Drive. Overwrite it? (Previous versions stay in Drive revision history only for a limited time and cannot be restored after that.)",
       "load": "Load this project? The current data and settings will be overwritten.",
       "delete": "Delete this project? (It will be moved to the Drive trash.)",
       "disconnect": "Disconnect from your Google account?"

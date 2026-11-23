@@ -455,6 +455,9 @@ export interface SettingsType {
   tileRegions: TileRegionType[];
   projectId: string | undefined;
   projectName: string | undefined;
+  //開いているプロジェクトの状態がどのアカウントのものか。取りやめられないログアウトやセッション切れの後に
+  //別の人がログインしたとき、前の人のプロジェクトを開いたまま引き継がないよう照合する（A-M1）。旧データはキーがない
+  projectSessionUid?: string;
   projectRegion: RegionType;
   memberLocation: MemberLocationType[];
   isEditingRecord: boolean;
@@ -725,7 +728,13 @@ export type UndoLineType = {
   action: UndoActionType;
   //消した行動記号を戻すための控え（DELETE_SYMBOL用）。セッション中のものと保存済みのものがある
   deletedLine?: DrawLineType;
-  deletedRecord?: { layerId: string; userId: string | undefined; record: RecordType };
+  deletedRecord?: {
+    layerId: string;
+    userId: string | undefined;
+    record: RecordType;
+    //記号を消したときに親の飛翔線から外した行動の値（戻すときに親へ足し直す）
+    parentBehavior?: { userId: string | undefined; parentId: string; fieldName: string; value: string };
+  };
 };
 
 export type PointToolType = keyof typeof POINTTOOL;
@@ -813,7 +822,8 @@ export type ScaleType = '500' | '1000' | '1500' | '2500' | '5000' | '10000' | '2
 export type PaperOrientationType = keyof typeof ORIENTATIONTYPE;
 export type GpsAccuracyType = keyof typeof GPS_ACCURACY;
 
-export type ArrowStyleType = 'NONE' | 'ARROW_END' | 'ARROW_BOTH';
+//ARROW_STARTは描画側だけが解釈する（古い版が終点に描くため、部分消去では作らず座標反転＋ARROW_ENDで保存する）
+export type ArrowStyleType = 'NONE' | 'ARROW_END' | 'ARROW_BOTH' | 'ARROW_START';
 
 // Cloud Data Management Types
 export interface CloudDataSummaryItem {

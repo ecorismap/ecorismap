@@ -7,6 +7,7 @@ import {
   lonToTileXFloat,
   MERCATOR_CIRCUMFERENCE,
   mercatorToLonLat,
+  regionCenteredAt,
   regionToCamera,
   restartCameraFromScene,
   tileSizeMeters,
@@ -135,5 +136,31 @@ describe('restartCameraFromScene（V-L1 作り直しの再開位置）', () => {
   it('眺望でなければ直前のカメラのまま、俯角だけ上限に丸める', () => {
     expect(restartCameraFromScene(camera, null)).toEqual({ ...camera, pitch: 80 });
     expect(restartCameraFromScene({ ...camera, pitch: 45 }, null).pitch).toBe(45);
+  });
+});
+
+describe('regionCenteredAt（V-M8 眺望から3Dを抜けるときの2Dの範囲）', () => {
+  const region = { latitude: 35.37, longitude: 138.73, latitudeDelta: 0.0004, longitudeDelta: 0.0003, zoom: 20.5 };
+  it('立ち位置を中心に、指定ズームで開く', () => {
+    const exit = regionCenteredAt(region, { latitude: 35.36, longitude: 138.72 }, 15);
+    expect(exit.latitude).toBe(35.36);
+    expect(exit.longitude).toBe(138.72);
+    expect(exit.zoom).toBe(15);
+  });
+  it('deltaはズーム差の分だけ広がる（5.5段引くと2^5.5倍）', () => {
+    const exit = regionCenteredAt(region, { latitude: 35.36, longitude: 138.72 }, 15);
+    expect(exit.latitudeDelta).toBeCloseTo(region.latitudeDelta * Math.pow(2, 5.5), 12);
+    expect(exit.longitudeDelta).toBeCloseTo(region.longitudeDelta * Math.pow(2, 5.5), 12);
+  });
+});
+
+describe('眺望中に3Dを抜けるときのネイティブの2D範囲（V-M8）', () => {
+  it('注視点（視線の先）ではなく立ち位置を中心に、ズームはそのまま', () => {
+    const camera = { latitude: 35.5, longitude: 138.9, zoom: 16, heading: 30, pitch: 95 };
+    const standing = { latitude: 35.36, longitude: 138.72 };
+    const region = cameraToRegion(restartCameraFromScene(camera, standing), 400, 800);
+    expect(region.latitude).toBe(standing.latitude);
+    expect(region.longitude).toBe(standing.longitude);
+    expect(region.zoom).toBe(16);
   });
 });

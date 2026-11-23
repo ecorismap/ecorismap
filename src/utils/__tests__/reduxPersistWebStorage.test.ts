@@ -1,4 +1,4 @@
-import { selectOrphanDatabases } from '../reduxPersistWebStorage';
+import { parseTileMapIdsFromPersistedRoot, selectOrphanDatabases } from '../reduxPersistWebStorage';
 
 const DB_PREFIX = 'ecorismapReduxPersist-';
 
@@ -27,5 +27,25 @@ describe('selectOrphanDatabases', () => {
 
   it('空のDBリストなら空を返す', () => {
     expect(selectOrphanDatabases([], new Set(['a']), 'b')).toEqual([]);
+  });
+});
+
+describe('parseTileMapIdsFromPersistedRoot（永続化監査 S-H1）', () => {
+  const root = (tileMaps: unknown) => JSON.stringify({ tileMaps: JSON.stringify(tileMaps), _persist: '{}' });
+
+  it('redux-persist の保存形式から tileMaps の id を取り出す', () => {
+    expect(parseTileMapIdsFromPersistedRoot(root([{ id: 'a' }, { id: 'b' }]))).toEqual(['a', 'b']);
+  });
+
+  it('まだ書いていないタブ・tileMaps の無い保存値は空', () => {
+    expect(parseTileMapIdsFromPersistedRoot(undefined)).toEqual([]);
+    expect(parseTileMapIdsFromPersistedRoot(null)).toEqual([]);
+    expect(parseTileMapIdsFromPersistedRoot(JSON.stringify({ settings: '{}' }))).toEqual([]);
+  });
+
+  it('読めない保存値は undefined（消去を諦めさせる）', () => {
+    expect(parseTileMapIdsFromPersistedRoot('{broken')).toBeUndefined();
+    expect(parseTileMapIdsFromPersistedRoot(JSON.stringify({ tileMaps: '{broken' }))).toBeUndefined();
+    expect(parseTileMapIdsFromPersistedRoot(JSON.stringify({ tileMaps: JSON.stringify({ id: 'x' }) }))).toBeUndefined();
   });
 });

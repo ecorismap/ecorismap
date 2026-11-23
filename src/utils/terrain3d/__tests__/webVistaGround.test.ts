@@ -1,4 +1,11 @@
-import { footDemStatus, footGroundElevation, isFootDemLoaded, requiredFootDemZoom, TerrainTileInternals } from '../webVistaGround';
+import {
+  footDemStatus,
+  footGroundElevation,
+  isFootDemLoaded,
+  requiredFootDemZoom,
+  TerrainTileInternals,
+  webVistaEyeAltitude,
+} from '../webVistaGround';
 
 // 富士山頂付近
 const lat = 35.3606;
@@ -85,5 +92,13 @@ describe('footGroundElevation（V-L10）', () => {
   it('海底地形の負の標高では海面に立つ', () => {
     expect(footGroundElevation(-3000)).toBe(0);
     expect(footGroundElevation(1200)).toBe(1200);
+  });
+});
+
+describe('Web眺望の目の高さ（V-L9）', () => {
+  it('地上の高さにも地形と同じ誇張を掛ける（ネイティブと同じ実世界の地上高）', () => {
+    expect(webVistaEyeAltitude(1500, 1000, 1.5)).toBe(3000);
+    // 描画上の高さを誇張で割ると、素の標高＋地上高（ネイティブの目の高さ）に戻る
+    expect(webVistaEyeAltitude(1000 * 1.5, 1.7, 1.5) / 1.5).toBeCloseTo(1001.7, 9);
   });
 });

@@ -226,6 +226,20 @@ describe('confirmTrackingLeave', () => {
     expect(message).not.toContain('Home.confirm.stopTrackingSettingNote');
   });
 
+  it('開いていない状態からプロジェクトを開くときは、保存した軌跡も置き換わると注記する（A-L2）', async () => {
+    register(makeHandler({ getContext: () => ({ projectName: undefined, isRunningProject: true }) }).handler);
+    await confirmTrackingLeave('openProject');
+    const message = mockConfirm.mock.calls[0][0];
+    expect(message).toContain('Home.confirm.stopTrackingBackupNoteUnlessFailed');
+    expect(message).not.toContain('Home.confirm.stopTrackingUploadNote');
+  });
+
+  it('開いていない状態でもログアウトは置き換えではないので注記しない', async () => {
+    register(makeHandler({ getContext: () => ({ projectName: undefined, isRunningProject: true }) }).handler);
+    await confirmTrackingLeave('logout');
+    expect(mockConfirm.mock.calls[0][0]).not.toContain('Home.confirm.stopTrackingBackupNoteUnlessFailed');
+  });
+
   it('設定の編集中は、軌跡がアップロードされず破棄されると案内する', async () => {
     register(makeHandler({ getContext: () => ({ projectName: 'P1', isRunningProject: false }) }).handler);
     await confirmTrackingLeave('closeProject');

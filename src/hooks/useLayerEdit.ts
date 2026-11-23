@@ -15,7 +15,7 @@ import * as FileSystem from 'expo-file-system/legacy';
 import { addDataAction, deleteDataAction, updateDataAction } from '../modules/dataSet';
 import { addLayerAction, deleteLayerAction, setLayersAction, updateLayerAction } from '../modules/layers';
 import { editSettingsAction, setDataFilterForLayerAction } from '../modules/settings';
-import { changeFieldValue, getBlankFieldValue } from '../utils/Data';
+import { changeFieldValue, countFieldValuesLostOnFormatChange, getBlankFieldValue } from '../utils/Data';
 import { LAYER_PRESETS, PRESET_LAYER_DATA } from '../constants/Presets';
 import { createLayerFromPreset, PresetDictionary } from '../utils/Preset';
 import { geoJson2Data } from '../utils/Geometry';
@@ -43,6 +43,8 @@ export type UseLayerEditReturnType = {
   canChangePermission: boolean;
   /** 共有プロジェクトで名前か型を変えた既存属性（変更前の名前）。メンバーのクラウドデータは移行されないので保存前に警告する */
   unmigratedCloudFieldNames: string[];
+  /** 形式の変更で消える・変わる既存の値の件数。個人・共有を問わず保存前に確認する */
+  lostFieldValueCount: number;
   saveLayer: () => void;
   deleteLayer: () => Promise<void>;
   deleteLayerPhotos: () => Promise<void>;
@@ -126,6 +128,14 @@ export const useLayerEdit = (
     if (oldLayer === undefined) return [];
     return getRenamedOrRetypedFieldNames(oldLayer.field, targetLayer.field);
   }, [isNewLayer, layers, projectId, targetLayer.field, targetLayer.id]);
+
+  const lostFieldValueCount = useMemo(() => {
+    if (isNewLayer) return 0;
+    const oldLayer = layers.find((l) => l.id === targetLayer.id);
+    if (oldLayer === undefined) return 0;
+    const records = dataSet.flatMap((d) => d.data ?? []);
+    return countFieldValuesLostOnFormatChange(records, oldLayer.field, targetLayer.field);
+  }, [dataSet, isNewLayer, layers, targetLayer.field, targetLayer.id]);
 
   useEffect(() => {
     setTargetLayer(layer);
@@ -588,6 +598,7 @@ export const useLayerEdit = (
     isNewLayer,
     canChangePermission,
     unmigratedCloudFieldNames,
+    lostFieldValueCount,
     saveLayer,
     deleteLayer,
     deleteLayerPhotos,

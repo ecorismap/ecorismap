@@ -1,6 +1,13 @@
 import { ulid } from 'ulid';
 import { getAccessToken } from './auth';
-import { ensureAppFolder, initiateResumableUpload, listFiles, trashFile, uploadChunk } from './driveApi';
+import {
+  ensureAppFolder,
+  getFileMetadata,
+  initiateResumableUpload,
+  listFiles,
+  trashFile,
+  uploadChunk,
+} from './driveApi';
 import { downloadToUri, readChunk } from './driveTransfer';
 import {
   DRIVE_FILE_EXT,
@@ -31,6 +38,20 @@ export async function listDriveProjects(): Promise<DriveProjectItem[]> {
     q: `'${folderId}' in parents and trashed=false and appProperties has { key='ecorismapSchema' and value='${DRIVE_SCHEMA_VERSION}' }`,
   });
   return files.map(toItem).sort((a, b) => (a.updatedAt < b.updatedAt ? 1 : -1));
+}
+
+/**
+ * 上書き先がまだ使えるか（ゴミ箱に入っていない・消えていない）。一覧を読んだ後に別の端末や drive.google.com で
+ * ゴミ箱へ移されていると、Drive API はゴミ箱の中のファイルもそのまま更新でき、30日後に保存した内容ごと消える（A-L12）
+ */
+export async function isOverwritableDriveProject(fileId: string): Promise<boolean> {
+  try {
+    const meta = await getFileMetadata(fileId, 'id,trashed');
+    return meta.trashed !== true;
+  } catch (e) {
+    if (e instanceof DriveApiError && e.status === 404) return false;
+    throw e;
+  }
 }
 
 export async function uploadDriveProject(args: {

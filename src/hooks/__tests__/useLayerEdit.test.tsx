@@ -144,3 +144,19 @@ describe('useLayerEdit 共有プロジェクトで移行されない属性変更
     expect(result.current.unmigratedCloudFieldNames).toEqual([]);
   });
 });
+
+describe('useLayerEdit 形式変更で消える値の件数（E-M4）', () => {
+  it('個人データでも、値が消える形式変更は件数を返す', () => {
+    const { result } = setup();
+    expect(result.current.lostFieldValueCount).toBe(0);
+    act(() => result.current.changeFieldFormat(0, 'INTEGER'));
+    //「地点A」は数値にならず空欄になる
+    expect(result.current.lostFieldValueCount).toBe(1);
+  });
+
+  it('値がそのまま残る形式変更は0', () => {
+    const { result } = setup();
+    act(() => result.current.changeFieldFormat(1, 'STRING_MULTI'));
+    expect(result.current.lostFieldValueCount).toBe(0);
+  });
+});

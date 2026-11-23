@@ -54,6 +54,11 @@ jest.mock('../../utils/Coords', () => ({
   }),
 }));
 
+jest.mock('../../utils/terrain3d/webVista', () => ({
+  isWebVistaActive: jest.fn(() => false),
+  clearWebVista: jest.fn(),
+}));
+
 // Create mock MapView and MapRef
 const createMockMapView = () => ({
   animateToRegion: jest.fn(),
@@ -326,6 +331,43 @@ describe('useMapView', () => {
 
       const state = store.getState();
       expect(state.settings.mapRegion).toEqual(newRegion);
+    });
+
+    it('Webの眺望中にジャンプしたら、先に眺望を解いてから移動先を保存する（V-L3）', () => {
+      (Platform as any).OS = 'web';
+      const { isRegionType } = require('../../utils/Map');
+      isRegionType.mockReturnValue(true);
+      const webVista = require('../../utils/terrain3d/webVista');
+      webVista.isWebVistaActive.mockReturnValue(true);
+      const { result } = renderHook(() => useMapView({ current: null }), { wrapper });
+      const target = { latitude: 36.5, longitude: 136.5, latitudeDelta: 0.02, longitudeDelta: 0.02, zoom: 16 };
+
+      act(() => {
+        result.current.changeMapRegion(target, true);
+      });
+
+      expect(webVista.clearWebVista).toHaveBeenCalledWith(false);
+      expect(store.getState().settings.mapRegion).toEqual(target);
+      webVista.isWebVistaActive.mockReturnValue(false);
+    });
+
+    it('Webの眺望中でも、ジャンプでない地図移動の通知では眺望を解かない', () => {
+      (Platform as any).OS = 'web';
+      const { isRegionType } = require('../../utils/Map');
+      isRegionType.mockReturnValue(true);
+      const webVista = require('../../utils/terrain3d/webVista');
+      webVista.isWebVistaActive.mockReturnValue(true);
+      const { result } = renderHook(() => useMapView({ current: null }), { wrapper });
+
+      act(() => {
+        result.current.changeMapRegion(
+          { latitude: 36.5, longitude: 136.5, latitudeDelta: 0.02, longitudeDelta: 0.02, zoom: 16 },
+          false
+        );
+      });
+
+      expect(webVista.clearWebVista).not.toHaveBeenCalled();
+      webVista.isWebVistaActive.mockReturnValue(false);
     });
 
     it('should handle ViewState on web platform with null mapViewRef', () => {

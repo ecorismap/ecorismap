@@ -172,3 +172,10 @@ export const hasAuthSession = () => auth.currentUser !== null;
 
 //現在の認証セッションのuid（未ログインならundefined）
 export const getAuthUid = (): string | undefined => auth.currentUser?.uid ?? undefined;
+
+// セッション切れの検知（A-L4）はネイティブだけ。Web で同じ食い違いが起きるかは未確認なので、同じ名前で何もしない
+export const startAuthSessionWatch = async (): Promise<void> => {};
+export const getLostSessionUid = (): string | undefined => undefined;
+export const clearLostSession = (): void => {};
+export const consumeLostSessionPrompt = (): boolean => false;
+export const subscribeAuthSessionLost = (_listener: (uid: string) => void): (() => void) => () => {};

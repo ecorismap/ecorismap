@@ -22,6 +22,14 @@ import * as projectStorage from '../lib/firebase/storage';
 import { t } from '../i18n/config';
 import { FirebaseAuthTypes } from '@react-native-firebase/auth';
 
+export type LoginOptions = {
+  /**
+   * 認証が通ってから Redux の user を差し替える前に呼ぶ。false ならサインアウトしてログインを取りやめる。
+   * 差し替えた後に確かめると、その間に位置共有が新しい名義で前の人のプロジェクトへ現在地を送りうる（A-M1）
+   */
+  beforeSwitchUser?: (uid: string) => Promise<boolean>;
+};
+
 /**
  * KMSバックアップ作成の失敗理由のうち、利用者の対処が通常の失敗と違うものを表示文にする。
  * それ以外（通信エラー等）は undefined を返し、呼び出し側の既定の文言に任せる。
@@ -77,7 +85,11 @@ export type UseAccountReturnType = {
   sendConfirmEMail: () => Promise<{
     isOK: boolean;
   }>;
-  login: (email: string, password: string) => Promise<{ isOK: boolean; authUser: FirebaseAuthTypes.User | undefined }>;
+  login: (
+    email: string,
+    password: string,
+    options?: LoginOptions
+  ) => Promise<{ isOK: boolean; authUser: FirebaseAuthTypes.User | undefined }>;
   signUp: (email: string, password: string) => Promise<{ isOK: boolean }>;
   logout: () => Promise<void>;
   deleteLocalEncryptKeys: () => Promise<void>;
@@ -248,7 +260,7 @@ export const useAccount = (): UseAccountReturnType => {
   }, []);
 
   const login = useCallback(
-    async (email: string, password: string) => {
+    async (email: string, password: string, options?: LoginOptions) => {
       //ログイン処理
       setIsLoading(true);
       const { isOK: signInOK, message: signInMessage, authUser } = await firebase.signInWithEmail(email, password);
@@ -280,6 +292,22 @@ export const useAccount = (): UseAccountReturnType => {
         await FBsignOut();
         return { isOK: false, authUser: undefined };
       }
+      if (options?.beforeSwitchUser !== undefined) {
+        const proceed = await options.beforeSwitchUser(authUser.uid);
+        if (!proceed) {
+          await FBsignOut();
+          setAccountMessage(t('hooks.message.loginCancelledProjectOpen'));
+          return { isOK: false, authUser: undefined };
+        }
+      }
+      // セッション切れでは Redux の user を残したまま入り直すので、別の人が入るときはログアウトと同じく
+      // 前の人の公開鍵・DEK のキャッシュとプロジェクト一覧をここで捨てる（同じ人なら残して入り直せるようにする）
+      if (user.uid !== undefined && user.uid !== authUser.uid) {
+        e3kit.clearPublicKeyCache();
+        clearPublicKeyLedgerCache();
+        projectStore.clearProjectCryptoCache();
+        dispatch(setProjectsAction(projectsInitialState));
+      }
       dispatch(
         setUserAction({
           uid: authUser.uid,
@@ -292,7 +320,7 @@ export const useAccount = (): UseAccountReturnType => {
 
       return { isOK: true, authUser };
     },
-    [dispatch]
+    [dispatch, user.uid]
   );
 
   const logout = useCallback(async () => {

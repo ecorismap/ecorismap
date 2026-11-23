@@ -1,5 +1,6 @@
 import { LayerType } from '../types';
 import { getColorRule } from './Layer';
+import { MEMO_ZOOM_OFFSET } from './memoZoom';
 
 export const getColorExpression = (layer_: LayerType, displayName: string) => {
   const colorExpression = [
@@ -60,13 +61,14 @@ export const getDataStyleLine = (layer_: LayerType, userId: string, displayName:
   //ズームアウトで線が地図を覆い尽くすのを防ぐ（ズームイン側は画面上の太さを維持）。
   //['zoom']はトップレベルのinterpolateでしか使えないため、整数ズームごとのストップ出力側で
   //min(固定幅, 2^(stop - _zoom) * 固定幅)を計算する（隣接ストップ間はexponential base2補間でほぼ正確）
+  //_zoomはGoogle（256px）基準なので、maplibreのズーム（stop）を揃えてから比べる（作図監査 E-L8）
   const drawnZoom = ['number', ['get', '_zoom'], 0];
   const stops: unknown[] = [];
   for (let z = 0; z <= 24; z++) {
     stops.push(z, [
       'case',
       ['>', drawnZoom, 0],
-      ['min', fixedWidth, ['*', fixedWidth, ['^', 2, ['-', z, drawnZoom]]]],
+      ['min', fixedWidth, ['*', fixedWidth, ['^', 2, ['-', z + MEMO_ZOOM_OFFSET, drawnZoom]]]],
       fixedWidth,
     ]);
   }

@@ -13,6 +13,8 @@ interface ProjectEditContextType {
   userUid: string | undefined;
   /** 鍵リセット済み（ラップが古く本人が開けない）で再共有が必要なメンバーのuid */
   staleKeyUids: string[];
+  /** 保存前にこの画面で追加した行か（管理者もその行だけは直したり消したりできる） */
+  isAddedMember: (idx: number) => boolean;
   changeText: (name: string, value: string) => void;
   changeMemberText: (value: string, idx: number) => void;
   changeAdmin: (checked: boolean, idx: number) => void;

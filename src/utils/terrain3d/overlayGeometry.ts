@@ -97,6 +97,34 @@ export const combinedReadyGeneration = (managers: readonly { readyGeneration: nu
   for (const manager of managers) sum += manager.readyGeneration;
   return sum;
 };
+
+/**
+ * サンプルした標高が「暫定」か（あとで細かい値に置き換わりうるか）。
+ * 最も細かいリング以外（遠景の粗いDEM）から取った値と、ズーム切替中に旧ズームのタイルから
+ * 取った値は、描かれる地形がこの先変わるので確定扱いにしない（V-M4 (A)(B)）
+ * @param ringIndex 値を返したリングの順位（0=最も細かい）
+ * @param staleZoom そのリングが新しいズームを要求中で、旧ズームのタイルから返したか
+ */
+export const isProvisionalElevationSample = (ringIndex: number, staleZoom: boolean): boolean =>
+  ringIndex > 0 || staleZoom;
+
+/**
+ * 標高の欠け・暫定値があったオーバーレイを作り直すか。
+ * 新しいタイルが届いたとき（世代が進んだとき）だけ、間引き間隔を空けて作り直す。
+ * 時間だけで回すと、どのリングにも細かく覆われない地物が永久に作り直され続ける
+ */
+export const shouldRetryOverlayBuild = (params: {
+  hadMissing: boolean;
+  hadProvisional: boolean;
+  readyGen: number;
+  lastReadyGen: number;
+  nowMs: number;
+  lastBuildMs: number;
+  intervalMs: number;
+}): boolean =>
+  (params.hadMissing || params.hadProvisional) &&
+  params.readyGen !== params.lastReadyGen &&
+  params.nowMs - params.lastBuildMs > params.intervalMs;
 /** ラインの長い区間はこの長さ[m]以下になるよう分割して地形に沿わせる */
 const MAX_SEGMENT_METERS = 150;
 

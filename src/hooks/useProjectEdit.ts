@@ -6,7 +6,7 @@ import { RootState } from '../store';
 import { editSettingsAction } from '../modules/settings';
 import { clearDataSyncProjectAction } from '../modules/dataSync';
 import { ProjectType, RegionType, UserType, VerifiedType } from '../types';
-import { checkDuplicateMember, checkEmails } from '../utils/Project';
+import { checkDuplicateMember, checkEmails, hasDuplicateMemberUid, normalizeMemberEmail } from '../utils/Project';
 import { hasRegisterdUser } from '../lib/virgilsecurity/e3kit';
 import { t } from '../i18n/config';
 import { isLoggedIn } from '../utils/Account';
@@ -36,6 +36,8 @@ export type UseProjectEditReturnType = {
   changeAdmin: (checked: boolean, idx: number) => void;
   addMembers: (emails: string) => void;
   deleteMember: (idx: number) => void;
+  /** 保存前にこの画面で追加した行か。管理者でも打ち間違いを直したり消したりできるようにする */
+  isAddedMember: (idx: number) => boolean;
 };
 
 export const useProjectEdit = (initialProject: ProjectType, isNew: boolean): UseProjectEditReturnType => {
@@ -46,6 +48,10 @@ export const useProjectEdit = (initialProject: ProjectType, isNew: boolean): Use
   const projects = useSelector((state: RootState) => state.projects);
   const [targetProject, setTargetProject] = useState<ProjectType>(initialProject);
   const [originalProject, setOriginalProject] = useState<ProjectType>(initialProject);
+
+  // members と同じ並びで「保存前にこの画面で追加した行」を持つ。メールで照合すると、入力途中に既存メンバーと
+  // 同じ文字列になった瞬間に編集不可へ切り替わってしまうので、行の位置で持つ（A-L17）
+  const [addedMemberFlags, setAddedMemberFlags] = useState<boolean[]>([]);
 
   const [isEdited, setIsEdited] = useState(false);
   const isProjectOpen = useMemo(() => currentProjectId !== undefined, [currentProjectId]);
@@ -65,6 +71,7 @@ export const useProjectEdit = (initialProject: ProjectType, isNew: boolean): Use
       return a.email.localeCompare(b.email);
     });
     setTargetProject({ ...initialProject, members: sortedMembers });
+    setAddedMemberFlags(sortedMembers.map(() => false));
   }, [initialProject]);
 
   const startProjectSetting = useCallback(() => {
@@ -82,6 +89,7 @@ export const useProjectEdit = (initialProject: ProjectType, isNew: boolean): Use
         // 設定モードのまま通常の「開く」をすると設定モードが残り、「保存」で自分の記録がテンプレートとして
         // 配られてしまう。設定モードの入口は開いた後に startProjectSetting で立て直す
         isSettingProject: false,
+        projectSessionUid: user.uid,
       })
     );
   }, [dispatch, role, targetProject.id, targetProject.name, user]);
@@ -97,8 +105,8 @@ export const useProjectEdit = (initialProject: ProjectType, isNew: boolean): Use
   }, [currentProjectId, dispatch, targetProject.id]);
 
   const updateProjectMembers = useCallback(
-    (uids: (string | null)[], hasRegisterd: boolean[]): ProjectType => {
-      const updatedProject = cloneDeep(targetProject);
+    (baseProject: ProjectType, uids: (string | null)[], hasRegisterd: boolean[]): ProjectType => {
+      const updatedProject = cloneDeep(baseProject);
       // 既存プロジェクトで保存済みの有効メンバーは OK のまま残す。一律に HOLD にすると、保留の確認で
       // キャンセルしたり保存に失敗したりしたとき全員がオレンジになり、鍵の再共有も押せなくなる。
       // 新規作成では createE3kitGroup が HOLD を参加者の抽出に使うので HOLD にする
@@ -116,10 +124,13 @@ export const useProjectEdit = (initialProject: ProjectType, isNew: boolean): Use
             }
           : { ...member, uid: null, verified: 'NO_ACCOUNT' as VerifiedType }
       );
-      const membersUid = members.map((v) => v.uid).filter((v): v is string => v !== null);
-      const adminsUid = members
-        .map((v) => (v.role === 'OWNER' || v.role === 'ADMIN') && v.uid)
-        .filter((v): v is string => !!v);
+      // 同じ uid の行が残っていても配列には一度だけ入れる（Rules は重複を拒まない）
+      const membersUid = [...new Set(members.map((v) => v.uid).filter((v): v is string => v !== null))];
+      const adminsUid = [
+        ...new Set(
+          members.map((v) => (v.role === 'OWNER' || v.role === 'ADMIN') && v.uid).filter((v): v is string => !!v)
+        ),
+      ];
 
       return { ...updatedProject, membersUid, adminsUid, members: members };
 
@@ -135,7 +146,7 @@ export const useProjectEdit = (initialProject: ProjectType, isNew: boolean): Use
       //   console.log(deleteMessage);
       // }
     },
-    [isNew, originalProject, targetProject]
+    [isNew, originalProject]
   );
 
   // 保留（未登録）メンバーの登録状況を画面表示時に再チェックする。
@@ -166,16 +177,15 @@ export const useProjectEdit = (initialProject: ProjectType, isNew: boolean): Use
         const resolved = new Map<string, string>();
         pendingEmails.forEach((email, idx) => {
           const uid = uids[idx];
-          if (uid && registered[idx]) resolved.set(email, uid);
+          if (uid && registered[idx]) resolved.set(normalizeMemberEmail(email), uid);
         });
         if (resolved.size === 0) return;
         setTargetProject((prev) => ({
           ...prev,
-          members: prev.members.map((m) =>
-            !m.uid && resolved.has(m.email)
-              ? { ...m, uid: resolved.get(m.email)!, verified: 'HOLD' as VerifiedType }
-              : m
-          ),
+          members: prev.members.map((m) => {
+            const uid = resolved.get(normalizeMemberEmail(m.email));
+            return !m.uid && uid !== undefined ? { ...m, uid, verified: 'HOLD' as VerifiedType } : m;
+          }),
         }));
         if (canSave) setIsEdited(true);
       } catch (e) {
@@ -208,7 +218,12 @@ export const useProjectEdit = (initialProject: ProjectType, isNew: boolean): Use
         return { isOK: false, message: t('hooks.message.duplicateMembers'), project: undefined };
       }
     }
-    const { isOK: emailOK, emails } = checkEmails(targetProject);
+    // 照会・保存は小文字にそろえたメールで行う。大文字小文字の違いを残すと、次の比較でまた別人扱いになる
+    const normalizedProject: ProjectType = {
+      ...targetProject,
+      members: targetProject.members.map((m) => ({ ...m, email: normalizeMemberEmail(m.email) })),
+    };
+    const { isOK: emailOK, emails } = checkEmails(normalizedProject);
     if (!emailOK) {
       return {
         isOK: false,
@@ -221,7 +236,12 @@ export const useProjectEdit = (initialProject: ProjectType, isNew: boolean): Use
       return { isOK: false, message: t('hooks.message.failUserCheck'), project: undefined };
     }
     const { registerd, hasInvalidAccount } = await checkRegisterdUser(uids);
-    const updatedProject = updateProjectMembers(uids, registerd);
+    const updatedProject = updateProjectMembers(normalizedProject, uids, registerd);
+    // 別のメール（別名・旧アドレスなど）が同じアカウントに解決された。行ごとに役割が違うと、片方で管理者を外しても
+    // 権限が残り表示と食い違うので、保存前に止めてどちらかの行を消してもらう
+    if (hasDuplicateMemberUid(updatedProject)) {
+      return { isOK: false, message: t('hooks.message.duplicateMemberAccounts'), project: undefined };
+    }
     if (hasInvalidAccount) {
       // アカウントが未登録（サインアップ前）または退会済みのメンバーは「保留」（NO_ACCOUNT・赤バッジ）の
       // まま保存できるようにする。membersUid には含まれないためアクセス権は付与されず、
@@ -256,6 +276,7 @@ export const useProjectEdit = (initialProject: ProjectType, isNew: boolean): Use
     setIsEdited(false);
     setTargetProject(updatedProject);
     setOriginalProject(updatedProject);
+    setAddedMemberFlags(updatedProject.members.map(() => false));
   }, []);
 
   const changeText = useCallback(
@@ -306,12 +327,19 @@ export const useProjectEdit = (initialProject: ProjectType, isNew: boolean): Use
         .split(/,|\s|\r\n|\r|\n/)
         .filter((v) => v !== '');
       const members = cloneDeep(targetProject.members);
-      values.forEach((email) => {
+      let addedCount = 0;
+      values.forEach((value) => {
+        const email = normalizeMemberEmail(value);
         if (email === '') return;
-        if (members.find((v) => v.email === email)) return;
+        if (members.find((v) => normalizeMemberEmail(v.email) === email)) return;
         members.push({ uid: '', email: email, verified: 'NO_ACCOUNT', role: 'MEMBER' });
+        addedCount++;
       });
       setTargetProject({ ...targetProject, members });
+      setAddedMemberFlags((prev) => [
+        ...targetProject.members.map((_, i) => prev[i] === true),
+        ...Array.from({ length: addedCount }, () => true),
+      ]);
       setIsEdited(true);
     },
     [targetProject]
@@ -321,6 +349,7 @@ export const useProjectEdit = (initialProject: ProjectType, isNew: boolean): Use
     (idx: number) => {
       const members = cloneDeep(targetProject.members);
       members.splice(idx, 1);
+      setAddedMemberFlags((prev) => prev.filter((_, i) => i !== idx));
       const membersUid = members.map((v) => v.uid).filter((v): v is string => v !== null);
       const adminsUid = members
         .map((v) => (v.role === 'OWNER' || v.role === 'ADMIN') && v.uid)
@@ -330,6 +359,8 @@ export const useProjectEdit = (initialProject: ProjectType, isNew: boolean): Use
     },
     [targetProject]
   );
+
+  const isAddedMember = useCallback((idx: number) => addedMemberFlags[idx] === true, [addedMemberFlags]);
 
   return {
     user,
@@ -351,5 +382,6 @@ export const useProjectEdit = (initialProject: ProjectType, isNew: boolean): Use
     changeAdmin,
     addMembers,
     deleteMember,
+    isAddedMember,
   } as const;
 };

@@ -155,7 +155,10 @@ jest.mock('react-redux', () => ({
 jest.mock('../../../hooks/useRepository', () => ({ useRepository: () => ({ fetchAllPhotos: jest.fn(() => []) }) }));
 jest.mock('../../../hooks/useDynamicDictionaryInput', () => ({ clearAllDynamicDictionaries: jest.fn() }));
 jest.mock('../../../hooks/useData', () => ({ clearAllVisibilitySnapshots: jest.fn() }));
-jest.mock('../../projectBackup', () => ({ saveProjectBackup: jest.fn() }));
+jest.mock('../../projectBackup', () => ({
+  saveProjectBackup: jest.fn(),
+  saveProjectBackupWithResult: jest.fn(() => 'saved'),
+}));
 
 import JSZip from 'jszip';
 import { Image as RNImage } from 'react-native';

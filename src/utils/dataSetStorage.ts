@@ -3,6 +3,7 @@ import autoMergeLevel1 from 'redux-persist/lib/stateReconciler/autoMergeLevel1';
 import { storage } from './mmkvStorage';
 import { registerPersistFlusher } from './persistFlush';
 import { DataType } from '../types';
+import { notifyStorageWriteFailed } from './storageWriteFailNotice';
 
 // ============================================================================
 // dataSetのpersist分離（モバイル）
@@ -98,7 +99,7 @@ export const attachDataSetPersistSubscriber = (store: DataSetStore): (() => void
       storage.set(DATASET_KEY, JSON.stringify(current));
       lastPersisted = current;
     } catch (e) {
-      console.log('[dataSetStorage] write error:', e);
+      notifyStorageWriteFailed(e);
     }
   };
 

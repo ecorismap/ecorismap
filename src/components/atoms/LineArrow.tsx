@@ -47,29 +47,31 @@ const LineArrow = React.memo((props: Props) => {
   const startCoord = coordinates[0];
   return (
     <>
-      <Marker
-        tracksViewChanges={false}
-        key={`arrow-end-${contentKey}`}
-        coordinate={endCoord}
-        opacity={1}
-        anchor={{ x: 0.5, y: 0.5 }}
-        // 角度は北基準の方位。flatにしないとrotationが画面基準になり、地図を回転したときに向きがずれる
-        rotation={angleEnd}
-        flat
-        style={{ zIndex: -1, alignItems: 'center' }}
-        zIndex={
-          Platform.OS === 'ios'
-            ? markerZIndex(MARKER_BAND.LINE_ARROW, `${endCoord.latitude}:${endCoord.longitude}`)
-            : undefined
-        }
-      >
-        <View style={{ width: size, height: size }}>
-          <Svg height={size.toString()} width={size.toString()} viewBox={`0 0 ${size} ${size}`}>
-            <Path d={scaledPath} fill={strokeColor} stroke="white" />
-          </Svg>
-        </View>
-      </Marker>
-      {arrowStyle === 'ARROW_BOTH' && (
+      {arrowStyle !== 'ARROW_START' && (
+        <Marker
+          tracksViewChanges={false}
+          key={`arrow-end-${contentKey}`}
+          coordinate={endCoord}
+          opacity={1}
+          anchor={{ x: 0.5, y: 0.5 }}
+          // 角度は北基準の方位。flatにしないとrotationが画面基準になり、地図を回転したときに向きがずれる
+          rotation={angleEnd}
+          flat
+          style={{ zIndex: -1, alignItems: 'center' }}
+          zIndex={
+            Platform.OS === 'ios'
+              ? markerZIndex(MARKER_BAND.LINE_ARROW, `${endCoord.latitude}:${endCoord.longitude}`)
+              : undefined
+          }
+        >
+          <View style={{ width: size, height: size }}>
+            <Svg height={size.toString()} width={size.toString()} viewBox={`0 0 ${size} ${size}`}>
+              <Path d={scaledPath} fill={strokeColor} stroke="white" />
+            </Svg>
+          </View>
+        </Marker>
+      )}
+      {(arrowStyle === 'ARROW_BOTH' || arrowStyle === 'ARROW_START') && (
         <Marker
           tracksViewChanges={false}
           key={`arrow-start-${contentKey}`}

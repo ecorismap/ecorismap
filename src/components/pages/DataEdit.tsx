@@ -54,6 +54,7 @@ export default function DataEditScreen() {
     onChangeRecord,
     pressAddReferenceData,
     pressAddReferenceDataByDictionary,
+    isReferenceAddLocked,
     gotoBack,
     gotoReferenceData,
   } = useContext(DataEditContext);
@@ -313,6 +314,7 @@ export default function DataEditScreen() {
                       onPress={gotoReferenceData}
                       pressAddReferenceData={pressAddReferenceData}
                       pressAddReferenceDataByDictionary={pressAddReferenceDataByDictionary}
+                      isAddLocked={isReferenceAddLocked(refLayer)}
                     />
                   )
                 );

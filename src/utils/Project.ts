@@ -5,9 +5,15 @@ export const hasOpened = (projectId: string | undefined): projectId is string =>
   return projectId !== undefined;
 };
 
+/**
+ * メンバーのメールの比較・保存用の形。Firebase Auth の照会は大文字小文字を区別しないので、
+ * そろえずに比べると同じ人が別の行として2つ登録できてしまう（A-L15）
+ */
+export const normalizeMemberEmail = (email: string) => email.trim().toLowerCase();
+
 export const checkDuplicateMember = (project: ProjectType, idx: number) => {
-  const email = project.members[idx].email;
-  const duplicatedEmail = project.members.filter((v) => v.email === email);
+  const email = normalizeMemberEmail(project.members[idx].email);
+  const duplicatedEmail = project.members.filter((v) => normalizeMemberEmail(v.email) === email);
   if (duplicatedEmail.length > 1) {
     return false;
   }
@@ -37,4 +43,10 @@ export const pickNewProjectIdForSave = (id: string, attemptedIds: Set<string>, g
   while (attemptedIds.has(nextId)) nextId = generateId();
   attemptedIds.add(nextId);
   return nextId;
+};
+
+/** uid が解決済みの行のうち、同じ uid が2行以上あるか。行ごとに役割が違うと、外したはずの管理者権限が残る */
+export const hasDuplicateMemberUid = (project: ProjectType) => {
+  const uids = project.members.map((m) => m.uid).filter((uid): uid is string => !!uid);
+  return new Set(uids).size !== uids.length;
 };

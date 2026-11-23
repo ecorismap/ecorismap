@@ -60,6 +60,7 @@ jest.mock('../usePermission', () => ({
 }));
 
 jest.mock('../../utils/Data', () => ({
+  getNumberingRecordSets: jest.requireActual('../../utils/Data').getNumberingRecordSets,
   getDefaultField: jest.fn().mockReturnValue({
     testField: 'defaultValue',
   }),
@@ -371,6 +372,20 @@ describe('useRecord', () => {
     expect(record.displayName).toBe('Test User');
     expect(record.coords).toEqual(coords);
     expect(record.field).toEqual({ testField: 'defaultValue' });
+  });
+
+  it('連番・前回値は一覧と同じ数え方で、レイヤの全記録と渡された集合から数える（E-L1）', () => {
+    const { getDefaultField } = jest.requireMock('../../utils/Data');
+    (getDefaultField as jest.Mock).mockClear();
+    const { result } = renderHook(() => useRecord(), { wrapper });
+    const layer = result.current.findLayer('layer1')!;
+    const pending = { id: 'pending', userId: 'user1', displayName: 'Test User', visible: true, redraw: false, field: {} };
+    const template = { id: 'tpl', userId: 'template', displayName: null, visible: true, redraw: false, field: {} };
+    result.current.generateRecord('POINT', layer, [template, pending] as RecordType[], { latitude: 35, longitude: 135 });
+    const options = (getDefaultField as jest.Mock).mock.calls[0][3];
+    //前回値は自分の記録だけ、連番はストアの全記録＋追加中の記録
+    expect(options.numbering.lastValueRecords.map((r: RecordType) => r.id)).toEqual(['pending']);
+    expect(options.numbering.serialRecords.map((r: RecordType) => r.id)).toEqual(['record1', 'tpl', 'pending']);
   });
 
   it('should add record with check successfully', () => {

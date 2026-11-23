@@ -64,12 +64,14 @@ import { MapRef } from 'react-map-gl/maplibre';
 import { editSettingsAction } from '../modules/settings';
 import { useRecord } from './useRecord';
 import { isBrushTool, isPlotTool, isPointTool, isStampTool } from '../utils/General';
-import { getHisyouBehavior } from '../constants/HisyouBehavior';
+import { getHisyouBehavior, getSymbolKey } from '../constants/HisyouBehavior';
 import { PositionFilter } from '../utils/OneEuroFilter';
 import { followHolesToRigidRingTransform } from '../utils/polygonHoles';
 import { Position } from 'geojson';
 import { RootState } from '../store';
 import { getTerrain3DRegion } from '../utils/terrain3d/regionSyncStore';
+import { toMemoZoom } from '../utils/memoZoom';
+import { webVistaExitRegion } from '../utils/terrain3d/webVista';
 
 //ピンチ開始時にGrant以降の移動距離がこの値未満なら描画意図なしとみなして破棄する
 const PINCH_DISCARD_DISTANCE_PX = 10;
@@ -163,6 +165,32 @@ const mergeBehaviorToParent = (parent: RecordType, layer: LayerType, line: DrawL
   return { ...parent, field: updatedField };
 };
 
+//CHECK形式の値から値を1つ外す。入っていなければ変更なし（undefined）
+const removeCheckValue = (current: unknown, value: string): string | undefined => {
+  if (typeof current !== 'string' || current === '') return undefined;
+  const values = current.split(',');
+  if (!values.includes(value)) return undefined;
+  return values.filter((v) => v !== value).join(',');
+};
+
+//保存済みの行動記号が親へ集約している行動（フィールド名と値）。飛翔図の記号でなければundefined
+const getSymbolBehaviorValue = (
+  record: RecordType,
+  layer: LayerType
+): { fieldName: string; value: string } | undefined => {
+  const key = getSymbolKey({
+    stamp: String(record.field._stamp ?? ''),
+    strokeStyle: String(record.field._strokeStyle ?? ''),
+  });
+  const behavior = getHisyouBehavior(key);
+  if (behavior === undefined || !layer.field.some((f) => f.name === behavior.fieldName)) return undefined;
+  const value = record.field[behavior.fieldName];
+  if (typeof value !== 'string' || value === '') return undefined;
+  return { fieldName: behavior.fieldName, value };
+};
+
+type DeletedSymbolType = NonNullable<UndoLineType['deletedRecord']>;
+
 export type UseDrawToolReturnType = {
   isEditingDraw: boolean;
   isAreaSelected: boolean;
@@ -247,6 +275,8 @@ export type UseDrawToolReturnType = {
         recordIndex: number | undefined;
       };
   resetDrawTools: () => void;
+  //キャンセル時に、このセッションで消した保存済みの行動記号を戻す（resetDrawToolsの前に呼ぶ）
+  revertErasedSymbols: () => void;
 
   hideDrawLine: () => void;
   showDrawLine: (options?: { immediate?: boolean }) => void;
@@ -1000,6 +1030,101 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     [findRecord]
   );
 
+  /**
+   * 選んだ後にデータ一覧で消された・同期で無くなった記録か。確定で保存すると削除した記録が復活するので保存しない
+   * （作図監査 E-M9）。分割でできた新しい線（SPLIT）はまだストアに無いのが正しいので対象外
+   */
+  const isRemovedFromStore = useCallback(
+    (line: DrawLineType, type: 'POINT' | 'LINE' | 'POLYGON'): boolean => {
+      if (line.record === undefined || line.layerId === undefined) return false;
+      if (line.properties.includes('SPLIT')) return false;
+      const latest: RecordType | undefined = findRecord(line.layerId, line.record.userId, line.record.id, type);
+      return latest === undefined || latest.deleted === true;
+    },
+    [findRecord]
+  );
+
+  /**
+   * 消した行動記号の行動を親の飛翔線の値から外す。同じ親に同じ行動・値の記号がほかに残っていれば外さない。
+   * 外さないと地図の記号と親の属性が食い違い、集計・書き出しに消した行動が残る（作図監査 E-L5）。
+   * 外したときは、Undo・キャンセルで足し直すための控えを返す
+   */
+  const removeSymbolBehaviorFromParent = useCallback(
+    (layer: LayerType, symbol: RecordType): DeletedSymbolType['parentBehavior'] => {
+      const group = symbol.field._group;
+      if (typeof group !== 'string' || group === '') return undefined;
+      const behavior = getSymbolBehaviorValue(symbol, layer);
+      if (behavior === undefined) return undefined;
+      //lineDataSetは論理削除済みの記録を含まない
+      const buckets = lineDataSet.filter((d) => d.layerId === layer.id);
+      const stillUsed = buckets.some((d) =>
+        d.data.some(
+          (r) =>
+            r.id !== symbol.id &&
+            r.field._group === group &&
+            r.field[behavior.fieldName] === behavior.value
+        )
+      );
+      if (stillUsed) return undefined;
+      for (const d of buckets) {
+        const parent = d.data.find((r) => r.id === group);
+        if (parent === undefined) continue;
+        const removed = removeCheckValue(parent.field[behavior.fieldName], behavior.value);
+        if (removed === undefined) return undefined;
+        //テンプレートなど自分で直せない親は触らない（ストアでも受け付けない）
+        if (!checkRecordsModifiable(layer, [parent], 'edit').isOK) return undefined;
+        const updated = { ...parent, field: { ...parent.field, [behavior.fieldName]: removed }, updatedAt: Date.now() };
+        dispatch(updateRecordsAction({ layerId: layer.id, userId: d.userId, data: [updated] }));
+        return { userId: d.userId, parentId: group, fieldName: behavior.fieldName, value: behavior.value };
+      }
+      return undefined;
+    },
+    [checkRecordsModifiable, dispatch, lineDataSet]
+  );
+
+  /**
+   * 消した保存済みの行動記号をストアへ戻し、親から外した行動も足し直す。
+   * parents は同じ回にまとめて戻すときの親の控え（ストアの反映を待たずに続けて足すと、前に足した値が消えるため）
+   */
+  const restoreDeletedSymbol = useCallback(
+    (deleted: DeletedSymbolType, parents: Map<string, RecordType>) => {
+      const { layerId, userId, record, parentBehavior } = deleted;
+      const now = Date.now();
+      // 削除の墓標（updatedAt 付き）より新しくしないと、同期で削除のほうが勝って戻した記号が消える
+      dispatch(updateRecordsAction({ layerId, userId, data: [{ ...record, updatedAt: now }] }));
+      if (parentBehavior === undefined) return;
+      const parentKey = `${layerId}/${parentBehavior.parentId}`;
+      const parent =
+        parents.get(parentKey) ??
+        lineDataSet
+          .find((d) => d.layerId === layerId && d.userId === parentBehavior.userId)
+          ?.data.find((r) => r.id === parentBehavior.parentId);
+      if (parent === undefined) return;
+      const appended = appendCheckValue(parent.field[parentBehavior.fieldName], parentBehavior.value);
+      if (appended === undefined) return;
+      const updated = { ...parent, field: { ...parent.field, [parentBehavior.fieldName]: appended }, updatedAt: now };
+      parents.set(parentKey, updated);
+      dispatch(updateRecordsAction({ layerId, userId: parentBehavior.userId, data: [updated] }));
+    },
+    [dispatch, lineDataSet]
+  );
+
+  /**
+   * 編集のキャンセルで、このセッションで消した保存済みの行動記号を戻す（作図監査 E-M11）。
+   * 記号の削除だけはタップ時点でストアへ確定するので、戻さないとキャンセルしても記号が消えたままになる。
+   * 呼んだ後は resetDrawTools で控えごと捨てる前提
+   */
+  const revertErasedSymbols = useCallback(() => {
+    const parents = new Map<string, RecordType>();
+    for (let i = undoLine.current.length - 1; i >= 0; i--) {
+      const undo = undoLine.current[i];
+      if (undo.action === 'DELETE_SYMBOL' && undo.deletedRecord !== undefined) {
+        restoreDeletedSymbol(undo.deletedRecord, parents);
+      }
+    }
+    undoLine.current = undoLine.current.filter((u) => !(u.action === 'DELETE_SYMBOL' && u.deletedRecord !== undefined));
+  }, [restoreDeletedSymbol]);
+
   const deleteDrawRecord = useCallback(
     (fallbackLayerId: string) => {
       //選択した要素は選んだ時点のレイヤに属する。選択中に編集レイヤを切り替えても、
@@ -1062,6 +1187,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
         line.latlon = xyArrayToLatLonArray(line.xy, mapRegion, mapSize, mapViewRef);
       }
       if (line.record !== undefined && line.layerId !== undefined) {
+        if (isRemovedFromStore(line, 'POINT')) continue;
         const coords = latlonArrayToLatLonObjects(line.latlon)[0];
         const updatedRecord: RecordType = { ...latestRecordOf(line, 'POINT'), coords };
         const recordLayer = findLayer(line.layerId);
@@ -1082,6 +1208,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     findLayer,
     generateRecord,
     getEditableLayerAndRecordSetWithCheck,
+    isRemovedFromStore,
     latestRecordOf,
     mapRegion,
     mapSize,
@@ -1161,6 +1288,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
 
     for (const line of orderedLines) {
       if (line.record !== undefined && line.layerId !== undefined) {
+        if (isRemovedFromStore(line, 'LINE')) continue;
         const coords = latlonArrayToLatLonObjects(line.latlon);
         const centroid = calcLineMidPoint(coords);
         const updatedRecord: RecordType = { ...latestRecordOf(line, 'LINE'), coords, centroid };
@@ -1243,6 +1371,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     findRecord,
     generateRecord,
     getEditableLayerAndRecordSetWithCheck,
+    isRemovedFromStore,
     latestRecordOf,
     mapRegion,
     mapSize,
@@ -1333,6 +1462,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     const savedRecordSet: RecordType[] = [];
     for (const line of drawLine.current) {
       if (line.record !== undefined && line.layerId !== undefined) {
+        if (isRemovedFromStore(line, 'POLYGON')) continue;
         const coords = latlonArrayToLatLonObjects(line.latlon);
         const centroid = calcCentroid(coords);
         const updatedRecord: RecordType = { ...latestRecordOf(line, 'POLYGON'), coords, centroid };
@@ -1379,7 +1509,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
 
     resetDrawTools();
     return { isOK: true, message: '', layer: layer, recordSet: savedRecordSet };
-  }, [addRecord, findLayer, followHolesOfMovedPolygon, generateRecord, getEditableLayerAndRecordSetWithCheck, latestRecordOf, mapRegion, mapSize, mapViewRef, resetDrawTools, updateRecord]);
+  }, [addRecord, findLayer, followHolesOfMovedPolygon, generateRecord, getEditableLayerAndRecordSetWithCheck, isRemovedFromStore, latestRecordOf, mapRegion, mapSize, mapViewRef, resetDrawTools, updateRecord]);
 
   const selectSingleFeatureByLatLon = useCallback(
     (latlon: Position) => {
@@ -1500,6 +1630,25 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
       if (recordLayer === undefined) return { isOK: false, message: t('hooks.message.noLayerToEdit') };
       const modifiable = checkRecordsModifiable(recordLayer, targets, 'delete');
       if (!modifiable.isOK) return { isOK: false, message: modifiable.message };
+      //_groupでぶら下がる行動記号も親と一緒に消すので、同じ規則で判定する。テンプレートの親を一般メンバーが
+      //持ち替えた後などに、親だけ消えて子が孤児で残り、消す手段が無くなるため（作図監査 E-L6）
+      const targetIds = targets.map((record) => record.id);
+      const children = lineDataSet
+        .filter((d) => d.layerId === layerId)
+        .flatMap((d) => d.data)
+        .filter((record) => {
+          const group = record.field._group;
+          return typeof group === 'string' && targetIds.includes(group);
+        });
+      if (children.length > 0) {
+        const childModifiable = checkRecordsModifiable(recordLayer, children, 'delete');
+        if (!childModifiable.isOK) {
+          return {
+            isOK: false,
+            message: `${t('hooks.message.childRecordDeleteBlocked')}\n${childModifiable.message}`,
+          };
+        }
+      }
       if (targetLayer === undefined) targetLayer = recordLayer;
     }
     deleteDrawRecord(layer.id);
@@ -1513,6 +1662,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     featureButton,
     findLayer,
     getEditableLayerAndRecordSetWithCheck,
+    lineDataSet,
     resetDrawTools,
   ]);
 
@@ -1560,9 +1710,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
           ...drawLine.current.slice(undo.index),
         ];
       } else if (undo.deletedRecord !== undefined) {
-        const { layerId, userId, record } = undo.deletedRecord;
-        // 削除の墓標（updatedAt 付き）より新しくしないと、同期で削除のほうが勝って戻した記号が消える
-        dispatch(updateRecordsAction({ layerId, userId, data: [{ ...record, updatedAt: Date.now() }] }));
+        restoreDeletedSymbol(undo.deletedRecord, new Map());
       }
       setRedraw(ulid());
       return;
@@ -1631,7 +1779,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
       setDrawTool('NONE');
     }
     setRedraw(ulid());
-  }, [dispatch, mapRegion, mapSize, mapViewRef, resetDrawTools]);
+  }, [mapRegion, mapSize, mapViewRef, resetDrawTools, restoreDeletedSymbol]);
 
   /**
    * undoDrawで取り消した操作をやり直す。
@@ -1733,8 +1881,9 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
           (mapViewRef as MapRef).getMap().setTerrain(null);
         }
         // ネイティブ3DはmapRegionへの同期を間引いているので、抜ける時点のカメラ位置を直接読む
-        // （古いmapRegionのままだと2Dが慣性移動・ズーム前の位置で開く）
-        const latestRegion = Platform.OS === 'web' ? null : getTerrain3DRegion();
+        // （古いmapRegionのままだと2Dが慣性移動・ズーム前の位置で開く）。
+        // 眺望中はどちらも注視点ではなく立ち位置で開く（Webは眺望中のmapRegionが注視点・超拡大のため）
+        const latestRegion = Platform.OS === 'web' ? webVistaExitRegion(mapRegion) : getTerrain3DRegion();
         // Terrain が有効のままだとピッチやベアリングが保持され、ライン変換の精度が落ちるためリセットする
         dispatch(editSettingsAction({ mapRegion: { ...(latestRegion ?? mapRegion), pitch: 0, bearing: 0 } }));
         setIsTerrainActive(false);
@@ -1845,7 +1994,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
               strokeWidth: penStyle.strokeWidth,
               strokeStyle: penStyle.arrowStyle,
               stamp: '',
-              zoom: mapRegion.zoom,
+              zoom: toMemoZoom(mapRegion.zoom),
             };
           }
           return;
@@ -1860,7 +2009,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
           strokeWidth: typeof field._strokeWidth === 'number' ? field._strokeWidth : penStyle.strokeWidth,
           strokeStyle: typeof field._strokeStyle === 'string' ? field._strokeStyle : 'NONE',
           stamp: typeof field._stamp === 'string' ? field._stamp : '',
-          zoom: typeof field._zoom === 'number' ? field._zoom : mapRegion.zoom,
+          zoom: typeof field._zoom === 'number' ? field._zoom : toMemoZoom(mapRegion.zoom),
         };
       });
       editingObjectIndex.current = -1;
@@ -2320,11 +2469,12 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
           if (!isHit(xy, isStamp)) continue;
           //テンプレートなど他人の名義の記号は、管理者でなければ消せない（同期監査 M8。ストアでも受け付けない）
           if (!checkRecordsModifiable(layer, [record], 'delete').isOK) return;
+          const parentBehavior = removeSymbolBehaviorFromParent(layer, record);
           pushUndo({
             index: -1,
             latlon: [],
             action: 'DELETE_SYMBOL',
-            deletedRecord: { layerId: layer.id, userId: data.userId, record },
+            deletedRecord: { layerId: layer.id, userId: data.userId, record, parentBehavior },
           });
           dispatch(deleteRecordsAction({ layerId: layer.id, userId: data.userId, data: [record] }));
           return;
@@ -2340,6 +2490,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
       mapSize,
       mapViewRef,
       pushUndo,
+      removeSymbolBehaviorFromParent,
     ]
   );
 
@@ -2381,7 +2532,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
           strokeWidth: penStyle.strokeWidth,
           strokeStyle: featureButton === 'LINE' ? penStyle.arrowStyle : 'NONE',
           stamp: '',
-          zoom: mapRegion.zoom,
+          zoom: toMemoZoom(mapRegion.zoom),
         };
         activeHandwritingStroke.current = newStroke.id;
         activeHandwritingIsNew.current = true;
@@ -2428,7 +2579,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
             strokeWidth: penStyle.strokeWidth,
             strokeStyle: '',
             stamp: subTool,
-            zoom: mapRegion.zoom,
+            zoom: toMemoZoom(mapRegion.zoom),
             groupId,
           },
         });
@@ -2458,7 +2609,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
             strokeWidth: penStyle.strokeWidth,
             strokeStyle: subTool,
             stamp: '',
-            zoom: mapRegion.zoom,
+            zoom: toMemoZoom(mapRegion.zoom),
             groupId: target.targetId,
           },
         });
@@ -2592,7 +2743,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
           strokeWidth: penStyle.strokeWidth,
           strokeStyle: featureButton === 'LINE' ? penStyle.arrowStyle : 'NONE',
           stamp: '',
-          zoom: mapRegion.zoom,
+          zoom: toMemoZoom(mapRegion.zoom),
         };
       } else if (isBrushTool(subTool)) {
         if (line.xy.length < 2) {
@@ -2749,6 +2900,11 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
       const index = editingObjectIndex.current;
       if (index === -1) return;
 
+      //選んだ後に消された線を分割すると、前半だけ新しい線として復活するので分割しない（確定と同じく保存もしない）
+      if (isRemovedFromStore(drawLine.current[index], 'LINE')) {
+        saveLine();
+        return;
+      }
       const lineXY = drawLine.current[index].xy;
 
       let nodeIndex = findNearNodeIndex(pXY, lineXY);
@@ -2780,6 +2936,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
         latlon: frontLatlon,
         layerId: layerId,
         record: record ? { ...record, id: ulid() } : undefined,
+        properties: [...drawLine.current[index].properties, 'SPLIT'],
       };
       drawLine.current.push(newLine);
 
@@ -2790,7 +2947,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
       //保存する
       saveLine();
     },
-    [mapRegion, mapSize, mapViewRef, saveLine]
+    [isRemovedFromStore, mapRegion, mapSize, mapViewRef, saveLine]
   );
 
   const setCurrentInfoTool = useCallback(
@@ -2861,6 +3018,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     selectSingleFeature,
     selectSingleFeatureByLatLon,
     resetDrawTools,
+    revertErasedSymbols,
     hideDrawLine,
     showDrawLine,
     toggleTerrain,

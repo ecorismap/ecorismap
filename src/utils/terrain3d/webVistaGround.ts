@@ -103,3 +103,13 @@ export const isFootDemLoaded = (
  * （ネイティブのmoveToVistaと同じ）
  */
 export const footGroundElevation = (elevation: number): number => Math.max(0, elevation);
+
+/**
+ * Web眺望の目の高さ[m]（誇張込み＝描画上の高さ）。
+ * 足元の標高はmaplibreが誇張込みで返すので、地上の高さにも同じ誇張を掛けてそろえる。
+ * ネイティブは素の標高＋高さに描画時の倍率をまとめて掛けるので、これで同じ実世界の地上高になる（V-L9）
+ * @param groundDrawn 足元の標高（誇張込み）
+ * @param heightM 地上からの目の高さ（実世界の値）
+ */
+export const webVistaEyeAltitude = (groundDrawn: number, heightM: number, exaggeration: number): number =>
+  groundDrawn + heightM * exaggeration;

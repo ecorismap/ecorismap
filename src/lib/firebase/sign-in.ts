@@ -2,7 +2,9 @@ import {
   auth,
   createUserWithEmailAndPassword,
   EmailAuthProvider,
+  firebaseReady,
   getIdTokenResult,
+  onAuthStateChanged,
   reauthenticateWithCredential,
   sendEmailVerification,
   sendPasswordResetEmail,
@@ -11,6 +13,10 @@ import {
   updateProfile,
 } from './firebase';
 import { t } from '../../i18n/config';
+import { createAuthSessionTracker } from '../../utils/authSessionTracker';
+
+// 外からのセッション切れ（A-L4）を見分ける。FBsignOut が「アプリ自身のサインアウト」の印を付ける
+const sessionTracker = createAuthSessionTracker();
 
 export const signInWithEmail = async (email: string, password: string) => {
   try {
@@ -151,6 +157,7 @@ export const FBsendPasswordResetEmail = async (email: string) => {
 
 export const FBsignOut = async () => {
   try {
+    sessionTracker.markIntentionalSignOut();
     await signOut(auth);
   } catch (error) {
     //console.log(error);
@@ -164,3 +171,20 @@ export const hasAuthSession = () => auth.currentUser !== null;
 export const getAuthUid = (): string | undefined => auth.currentUser?.uid ?? undefined;
 
 export const initFirebaseAuth = async () => {};
+
+let isWatchingAuthSession = false;
+
+/** auth の状態変化の購読を始める（何度呼んでも1回だけ）。アプリが動いている間は外さない */
+export const startAuthSessionWatch = async (): Promise<void> => {
+  if (isWatchingAuthSession) return;
+  isWatchingAuthSession = true;
+  await firebaseReady;
+  onAuthStateChanged(auth, (authUser) => sessionTracker.handleAuthUser(authUser?.uid ?? null));
+};
+
+/** 外からセッションが切れた uid。切れていなければ undefined */
+export const getLostSessionUid = (): string | undefined => sessionTracker.getLostUid();
+export const clearLostSession = (): void => sessionTracker.clearLost();
+export const consumeLostSessionPrompt = (): boolean => sessionTracker.consumePrompt();
+export const subscribeAuthSessionLost = (listener: (uid: string) => void): (() => void) =>
+  sessionTracker.subscribe(listener);

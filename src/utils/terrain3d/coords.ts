@@ -90,6 +90,26 @@ export const restartCameraFromScene = (
     : { ...camera, latitude: vistaOrigin.latitude, longitude: vistaOrigin.longitude, pitch: INITIAL_PITCH_DEG };
 
 /**
+ * 表示範囲を別の中心・ズームへ置き直す（delta はズーム差の分だけ伸縮する）。
+ * Webの眺望から3Dを抜けるとき、注視点（足元のすぐ先・超拡大）ではなく立ち位置の俯瞰で2Dを開くのに使う
+ */
+export const regionCenteredAt = (
+  region: RegionType,
+  center: { latitude: number; longitude: number },
+  zoom: number
+): RegionType => {
+  const factor = Number.isFinite(region.zoom) ? Math.pow(2, region.zoom - zoom) : 1;
+  return {
+    ...region,
+    latitude: center.latitude,
+    longitude: center.longitude,
+    latitudeDelta: region.latitudeDelta * factor,
+    longitudeDelta: region.longitudeDelta * factor,
+    zoom,
+  };
+};
+
+/**
  * 3Dカメラ→擬似RegionType。
  * latitudeDelta/longitudeDeltaはズームからの近似（useViewportBounds等の既存機能向け）。
  */
