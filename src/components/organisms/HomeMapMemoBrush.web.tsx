@@ -7,6 +7,7 @@ import { BrushSymbol } from './HomeBrushSymbol';
 import { interpolateLineString, latLonObjectsToLatLonArray } from '../../utils/Coords';
 import { Marker } from 'react-map-gl/maplibre';
 import { getMapMemoSymbolScaleAtZoom, SYMBOL_BASE_SIZE_PX, SYMBOL_BASE_ZOOM } from '../../utils/Layer';
+import { toMemoZoom } from '../../utils/memoZoom';
 
 interface Props {
   lineColor: string;
@@ -16,7 +17,9 @@ interface Props {
 }
 
 export const HomeMapMemoBrush = React.memo((props: Props) => {
-  const { lineColor, feature, zoom } = props;
+  const { lineColor, feature } = props;
+  //記号の基準ズームはGoogle基準なので、maplibreのズームを揃えてから比べる（作図監査 E-L8）
+  const zoom = toMemoZoom(props.zoom);
   if (feature.coords === undefined) return null;
   const latlon = latLonObjectsToLatLonArray(feature.coords);
   //描画時よりズームアウトしたら記号を線幅と同様に縮小し、間隔も描画時ズーム基準で固定して

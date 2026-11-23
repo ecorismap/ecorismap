@@ -22,6 +22,11 @@ import { getMemberKeyFreshness, migrateSelfDataToDEK, SelfMigrationInputType } f
 import dayjs from '../i18n/dayjs';
 import { useEcorisMapFile } from '../hooks/useEcorismapFile';
 import { ConflictResolverModal } from '../components/organisms/HomeModalConflictResolver';
+import { useStore } from 'react-redux';
+import { RootState } from '../store';
+import { backupBeforeReplace } from '../utils/backupBeforeReplace';
+import { useProject } from '../hooks/useProject';
+import { buildOpenFailedMessage, buildOpenReplaceConfirmMessage, hasLocalRecords } from '../utils/projectOpenGuard';
 
 export default function ProjectEditContainer({ navigation, route }: Props_ProjectEdit) {
   const {
@@ -40,11 +45,14 @@ export default function ProjectEditContainer({ navigation, route }: Props_Projec
     changeAdmin,
     addMembers,
     deleteMember,
+    isAddedMember,
     openProject,
     discardSyncBaselines,
     startProjectSetting,
   } = useProjectEdit(route.params.project, route.params.isNew);
 
+  const store = useStore<RootState>();
+  const { clearProject } = useProject();
   const [isLoading, setIsLoading] = useState(false);
   const [migrationProgress, setMigrationProgress] = useState('');
   // 鍵リセット済み（ラップが古く本人が開けない）メンバーのuid。管理者にバッジ表示して再共有を促す
@@ -157,6 +165,9 @@ export default function ProjectEditContainer({ navigation, route }: Props_Projec
 
   const pressOpenProject = useCallback(
     async (isSetting: boolean) => {
+      // 手元のデータに触れ始めたか。触れた後に失敗したら、途中まで読み込んだ状態（今のプロジェクトの名前で中身が空や
+      // 開く先の構成）を残さず閉じる。残すと送信や設定の保存で今のプロジェクトのクラウドを上書きしうる（A-H2）
+      let hasTouchedLocal = false;
       try {
         //通常はユーザーとして自分のデータのみ取得する。管理者は取得時に全てのデータを取得できる。
         //ただしWeb版は集計・確認作業が中心のため、管理者には開く時点で他メンバーのプライベートデータも取得するか確認する。
@@ -167,6 +178,10 @@ export default function ProjectEditContainer({ navigation, route }: Props_Projec
         const proceed = await leaveWithTrackingGuard('openProject', async () => {
           if (isProjectOpen) {
             const ret = await ConfirmAsync(t('Home.confirm.reOpenProject'));
+            if (!ret) return false;
+          } else if (hasLocalRecords(store.getState().dataSet)) {
+            // 開いていない状態の記録も確認なしに置き換わる。Drive やファイルから開くときと同じく尋ねる（A-L2）
+            const ret = await ConfirmAsync(buildOpenReplaceConfirmMessage(Platform.OS === 'web'));
             if (!ret) return false;
           }
           if (!isSetting && Platform.OS === 'web' && isOwnerAdmin) {
@@ -185,12 +200,20 @@ export default function ProjectEditContainer({ navigation, route }: Props_Projec
           }
           throw new Error(loadE3kitGroupResult.message);
         }
+        // 開く前の自動バックアップを作れなかったら、手元に触れる前に続けるかを尋ねる。基準値を捨てる前に尋ねるのは、
+        // 取りやめたとき今のプロジェクトの基準値（同期監査 L11 の確認）を残すため。
+        // downloadProjectSettings の中の保存は直後の重複として飛ばされる（永続化監査 S-L2）
+        if (!(await backupBeforeReplace(store.getState(), 'projectOpen'))) {
+          setIsLoading(false);
+          return false;
+        }
         // 開く処理は手元のデータを捨ててクラウドから取り直す。途中で失敗したり自分のデータを復号できなかったりして
         // 手元が空でも、前回アップロード時の基準値が残っていると「同期済み」とみなされ、次のアップロードが
         // 確認なしにクラウドの自分のデータを置き換えてしまう。開く先と今開いているプロジェクトの基準値を捨てて、
         // 次回は必ず内容を比べさせる。手元に触れる直前まで遅らせるのは、鍵の復元誘導や通信エラーで開く前に
         // 中止したとき、今のプロジェクトの「削除済みデータを上げ直すか」の確認（同期監査 L11）を外さないため
         discardSyncBaselines();
+        hasTouchedLocal = true;
 
         const projectSettingsResult = await downloadProjectSettings(targetProject);
         if (!projectSettingsResult.isOK || projectSettingsResult.region === undefined)
@@ -239,11 +262,23 @@ export default function ProjectEditContainer({ navigation, route }: Props_Projec
       } catch (e: any) {
         setIsLoading(false);
         setMigrationProgress('');
-        await AlertAsync(e.message);
+        if (hasTouchedLocal && isProjectOpen) {
+          // 元の状態の書き戻しではなく閉じた状態に落とす。差し替えた地図タイルや辞書は戻せず、中途半端な復元になるため。
+          // 開く直前の状態は開く処理の自動バックアップ（ネイティブ）に残っている。ここで閉じる前のバックアップを取ると
+          // 「今のプロジェクトの名前で中身は開く先」の途中状態が最新世代になり、復元すると A-H2 の状態を再現するので取らない。
+          // 開いていなかったときは閉じない。projectId が無くクラウドを上書きする経路が無いうえ、閉じると独自の地図一覧や
+          // レイヤ構成まで初期化され、記録0件では自動バックアップも残らないため
+          clearProject({ skipBackup: true });
+          await AlertAsync(buildOpenFailedMessage(e?.message ?? ''));
+        } else {
+          await AlertAsync(e.message);
+        }
         return false;
       }
     },
     [
+      clearProject,
+      store,
       discardSyncBaselines,
       isProjectOpen,
       isOwnerAdmin,
@@ -471,6 +506,7 @@ export default function ProjectEditContainer({ navigation, route }: Props_Projec
         isNew,
         userUid: user.uid,
         staleKeyUids,
+        isAddedMember,
         changeText,
         changeMemberText,
         changeAdmin,

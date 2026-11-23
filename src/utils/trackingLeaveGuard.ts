@@ -100,6 +100,13 @@ const withoutHandlerMessage = (kind: 'blocked' | 'forcedLogout') =>
       ? t('Home.alert.stopTrackingFromHome')
       : t('Home.alert.trackingContinuesAfterForcedLogout');
 
+/**
+ * 止めて保存した軌跡が、続く操作で手元ごと置き換わるか。プロジェクトを開いていない状態から開くときも、端末内の
+ * データはプロジェクトのデータに置き換わる。注記が無いと「保存してから開く」と告げた軌跡がその直後に消える（A-L2）
+ */
+const isReplacingData = (action: TrackingLeaveAction, context: TrackingLeaveContext) =>
+  REPLACE_DATA_ACTIONS.has(action) || (action === 'openProject' && context.projectName === undefined);
+
 const shouldUpload = (context: TrackingLeaveContext) => context.projectName !== undefined && context.isRunningProject;
 
 const buildDestination = (context: TrackingLeaveContext) =>
@@ -135,7 +142,7 @@ export const confirmTrackingLeave = async (action: TrackingLeaveAction): Promise
   const notes = [
     shouldUpload(context)
       ? t('Home.confirm.stopTrackingUploadNote')
-      : REPLACE_DATA_ACTIONS.has(action)
+      : isReplacingData(action, context)
         ? // 端末内のデータや設定の編集中は、保存した軌跡も置き換えで消える。直前の自動バックアップには残るが、
           // 大きすぎる・保存に失敗したときは作られないので、無条件には約束しない（設定監査 S-L2）
           t('Home.confirm.stopTrackingBackupNoteUnlessFailed')

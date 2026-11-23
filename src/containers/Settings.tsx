@@ -10,7 +10,7 @@ import { SettingsContext } from '../contexts/Settings';
 import * as DocumentPicker from 'expo-document-picker';
 import { useDispatch, useSelector, useStore } from 'react-redux';
 import { RootState } from '../store';
-import { saveProjectBackup } from '../utils/projectBackup';
+import { backupBeforeReplace } from '../utils/backupBeforeReplace';
 import { useProjectBackup } from '../hooks/useProjectBackup';
 import { SettingsModalBackupSelect } from '../components/organisms/SettingsModalBackupSelect';
 import { useEcorisMapFile } from '../hooks/useEcorismapFile';
@@ -29,7 +29,9 @@ import dayjs from '../i18n/dayjs';
 import { replaceDataWithTrackingGuard } from '../utils/trackingLeaveGuard';
 import { flushPersistence } from '../utils/persistFlush';
 
-const alertRestoreFailed = async (reason: 'differentUser' | undefined) => {
+const alertRestoreFailed = async (reason: 'differentUser' | 'cancelled' | undefined) => {
+  //バックアップを作れず利用者が取りやめたときは、もう知らせることはない
+  if (reason === 'cancelled') return;
   await AlertAsync(
     reason === 'differentUser' ? t('Settings.alert.restoreBackupDifferentUser') : t('Settings.alert.restoreBackupFailed')
   );
@@ -190,20 +192,8 @@ export default function SettingsContainers() {
       'clearData',
       async () => ((await ConfirmAsync(t('Settings.confirm.fileNew'))) ? true : undefined),
       async () => {
-        //データ全消去の直前に自動バックアップ（止めて保存した軌跡もここに入る）
-        const state = store.getState();
-        saveProjectBackup(
-          {
-            settings: state.settings,
-            layers: state.layers,
-            tileMaps: state.tileMaps,
-            dataSet: state.dataSet,
-            user: state.user,
-            projects: state.projects,
-            dataSync: state.dataSync,
-          },
-          'fileNew'
-        );
+        //データ全消去の直前に自動バックアップ（止めて保存した軌跡もここに入る）。作れなかったら続けるかを尋ねる（永続化監査 S-L2）
+        if (!(await backupBeforeReplace(store.getState(), 'fileNew'))) return;
         const { isOK, message } = await clearEcorisMap();
 
         if (!isOK) {
@@ -248,7 +238,7 @@ export default function SettingsContainers() {
         async () => ((await ConfirmAsync(t('Settings.confirm.restoreBackup'))) ? true : undefined),
         async () => {
           // 確認の間に消えた・ログインが変わった場合の防御として、restoreBackup の中でも確かめる
-          const { isOK, region, reason } = restoreBackup(id);
+          const { isOK, region, reason } = await restoreBackup(id);
           if (!isOK) {
             await alertRestoreFailed(reason);
             return;

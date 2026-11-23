@@ -6,7 +6,7 @@ import { useProjectBackup } from '../useProjectBackup';
 import dataSetReducer from '../../modules/dataSet';
 import layersReducer from '../../modules/layers';
 import tileMapsReducer from '../../modules/tileMaps';
-import settingsReducer, { settingsInitialState } from '../../modules/settings';
+import settingsReducer, { editSettingsAction, settingsInitialState } from '../../modules/settings';
 import userReducer from '../../modules/user';
 import projectsReducer from '../../modules/projects';
 import dataSyncReducer from '../../modules/dataSync';
@@ -19,10 +19,20 @@ const mockGetAuthUid = jest.fn<string | undefined, []>(() => undefined);
 
 jest.mock('../../utils/projectBackup', () => ({
   isBackupAvailable: true,
-  saveProjectBackup: (state: unknown, trigger: unknown) => mockSaveProjectBackup(state, trigger),
+  saveProjectBackupWithResult: (state: unknown, trigger: unknown) => mockSaveProjectBackup(state, trigger) ?? 'saved',
   loadBackup: (id: string) => mockLoadBackup(id),
   listBackups: () => mockListBackups(),
   deleteBackup: jest.fn(),
+}));
+
+const mockConfirmProceed = jest.fn<Promise<boolean>, [string]>(() => Promise.resolve(true));
+jest.mock('../../utils/backupBeforeReplace', () => ({
+  ...jest.requireActual('../../utils/backupBeforeReplace'),
+  confirmProceedWithoutBackup: (result: string) => mockConfirmProceed(result),
+}));
+jest.mock('../../components/molecules/AlertAsync', () => ({
+  ConfirmAsync: jest.fn(),
+  waitForModalTransition: jest.fn(() => Promise.resolve()),
 }));
 
 jest.mock('../../lib/firebase/sign-in', () => ({
@@ -89,7 +99,7 @@ describe('useProjectBackup', () => {
     mockGetAuthUid.mockReturnValue(undefined);
   });
 
-  test('restoreBackupで各sliceが復元されregionが返る', () => {
+  test('restoreBackupで各sliceが復元されregionが返る', async () => {
     const store = createTestStore();
     const snapshot = createSnapshot();
     mockLoadBackup.mockReturnValue(snapshot);
@@ -97,8 +107,8 @@ describe('useProjectBackup', () => {
     const { result } = renderHook(() => useProjectBackup(), { wrapper: createWrapper(store) });
 
     let restoreResult: { isOK: boolean; region?: unknown } = { isOK: false };
-    act(() => {
-      restoreResult = result.current.restoreBackup('backup-id');
+    await act(async () => {
+      restoreResult = await result.current.restoreBackup('backup-id');
     });
 
     expect(restoreResult.isOK).toBe(true);
@@ -114,34 +124,34 @@ describe('useProjectBackup', () => {
     expect(state.dataSync).toEqual(snapshot.state.dataSync);
   });
 
-  test('復元後に写真uriの付け替えを復元したdataSetに対して走らせる（写真監査 P-L10）', () => {
+  test('復元後に写真uriの付け替えを復元したdataSetに対して走らせる（写真監査 P-L10）', async () => {
     mockRebaseSeenDataSet.length = 0;
     const store = createTestStore();
     const snapshot = createSnapshot();
     mockLoadBackup.mockReturnValue(snapshot);
 
     const { result } = renderHook(() => useProjectBackup(), { wrapper: createWrapper(store) });
-    act(() => {
-      result.current.restoreBackup('backup-id');
+    await act(async () => {
+      await result.current.restoreBackup('backup-id');
     });
 
     expect(mockRebaseSeenDataSet).toEqual([snapshot.state.dataSet]);
   });
 
-  test('復元しないときは写真uriの付け替えも走らせない', () => {
+  test('復元しないときは写真uriの付け替えも走らせない', async () => {
     mockRebaseSeenDataSet.length = 0;
     const store = createTestStore();
     mockLoadBackup.mockReturnValue(undefined);
 
     const { result } = renderHook(() => useProjectBackup(), { wrapper: createWrapper(store) });
-    act(() => {
-      result.current.restoreBackup('missing-id');
+    await act(async () => {
+      await result.current.restoreBackup('missing-id');
     });
 
     expect(mockRebaseSeenDataSet).toEqual([]);
   });
 
-  test('保存先フォルダの外を指すIDの地図は復元しない', () => {
+  test('保存先フォルダの外を指すIDの地図は復元しない', async () => {
     const store = createTestStore();
     const snapshot = createSnapshot();
     const tileMap = { name: 'map', url: 'https://example.com/{z}/{x}/{y}.png', maptype: 'none', visible: true };
@@ -153,35 +163,35 @@ describe('useProjectBackup', () => {
     mockLoadBackup.mockReturnValue(snapshot);
 
     const { result } = renderHook(() => useProjectBackup(), { wrapper: createWrapper(store) });
-    act(() => {
-      result.current.restoreBackup('backup-id');
+    await act(async () => {
+      await result.current.restoreBackup('backup-id');
     });
 
     expect(store.getState().tileMaps.map((m) => m.id)).toEqual(['safe1']);
   });
 
-  test('復元前に現在の状態をbeforeRestoreトリガーでバックアップする', () => {
+  test('復元前に現在の状態をbeforeRestoreトリガーでバックアップする', async () => {
     const store = createTestStore();
     mockLoadBackup.mockReturnValue(createSnapshot());
 
     const { result } = renderHook(() => useProjectBackup(), { wrapper: createWrapper(store) });
-    act(() => {
-      result.current.restoreBackup('backup-id');
+    await act(async () => {
+      await result.current.restoreBackup('backup-id');
     });
 
     expect(mockSaveProjectBackup).toHaveBeenCalledTimes(1);
     expect(mockSaveProjectBackup.mock.calls[0][1]).toBe('beforeRestore');
   });
 
-  test('スナップショットが読めない場合はisOK falseで状態は変更されない', () => {
+  test('スナップショットが読めない場合はisOK falseで状態は変更されない', async () => {
     const store = createTestStore();
     mockLoadBackup.mockReturnValue(undefined);
     const before = store.getState();
 
     const { result } = renderHook(() => useProjectBackup(), { wrapper: createWrapper(store) });
     let restoreResult: { isOK: boolean } = { isOK: true };
-    act(() => {
-      restoreResult = result.current.restoreBackup('missing-id');
+    await act(async () => {
+      restoreResult = await result.current.restoreBackup('missing-id');
     });
 
     expect(restoreResult.isOK).toBe(false);
@@ -189,7 +199,7 @@ describe('useProjectBackup', () => {
     expect(store.getState()).toEqual(before);
   });
 
-  test('別ユーザーのログイン中はdifferentUserで復元をブロックし状態を変更しない', () => {
+  test('別ユーザーのログイン中はdifferentUserで復元をブロックし状態を変更しない', async () => {
     const store = createTestStore();
     mockLoadBackup.mockReturnValue(createSnapshot()); //スナップショットのuidは'u1'
     mockGetAuthUid.mockReturnValue('u2');
@@ -197,8 +207,8 @@ describe('useProjectBackup', () => {
 
     const { result } = renderHook(() => useProjectBackup(), { wrapper: createWrapper(store) });
     let restoreResult: { isOK: boolean; reason?: string } = { isOK: true };
-    act(() => {
-      restoreResult = result.current.restoreBackup('backup-id');
+    await act(async () => {
+      restoreResult = await result.current.restoreBackup('backup-id');
     });
 
     expect(restoreResult.isOK).toBe(false);
@@ -207,30 +217,30 @@ describe('useProjectBackup', () => {
     expect(store.getState()).toEqual(before);
   });
 
-  test('同一ユーザーのログイン中は復元できる', () => {
+  test('同一ユーザーのログイン中は復元できる', async () => {
     const store = createTestStore();
     mockLoadBackup.mockReturnValue(createSnapshot());
     mockGetAuthUid.mockReturnValue('u1');
 
     const { result } = renderHook(() => useProjectBackup(), { wrapper: createWrapper(store) });
     let restoreResult: { isOK: boolean } = { isOK: false };
-    act(() => {
-      restoreResult = result.current.restoreBackup('backup-id');
+    await act(async () => {
+      restoreResult = await result.current.restoreBackup('backup-id');
     });
 
     expect(restoreResult.isOK).toBe(true);
     expect(store.getState().user.uid).toBe('u1');
   });
 
-  test('認証セッションなし（ログアウト後の救済）は他ユーザーのスナップショットも復元できる', () => {
+  test('認証セッションなし（ログアウト後の救済）は他ユーザーのスナップショットも復元できる', async () => {
     const store = createTestStore();
     mockLoadBackup.mockReturnValue(createSnapshot());
     mockGetAuthUid.mockReturnValue(undefined);
 
     const { result } = renderHook(() => useProjectBackup(), { wrapper: createWrapper(store) });
     let restoreResult: { isOK: boolean } = { isOK: false };
-    act(() => {
-      restoreResult = result.current.restoreBackup('backup-id');
+    await act(async () => {
+      restoreResult = await result.current.restoreBackup('backup-id');
     });
 
     expect(restoreResult.isOK).toBe(true);
@@ -306,7 +316,7 @@ describe('useProjectBackup', () => {
     expect(result.current.backupList.map((m) => m.id)).toEqual(['b1', 'b2']);
   });
 
-  test('プロジェクトなしのバックアップはmapRegionを返す', () => {
+  test('プロジェクトなしのバックアップはmapRegionを返す', async () => {
     const store = createTestStore();
     const snapshot = createSnapshot();
     snapshot.state.settings = {
@@ -319,12 +329,12 @@ describe('useProjectBackup', () => {
 
     const { result } = renderHook(() => useProjectBackup(), { wrapper: createWrapper(store) });
     let restoreResult: { isOK: boolean; region?: unknown } = { isOK: false };
-    act(() => {
-      restoreResult = result.current.restoreBackup('backup-id');
+    await act(async () => {
+      restoreResult = await result.current.restoreBackup('backup-id');
     });
     expect(restoreResult.region).toEqual(snapshot.state.settings.mapRegion);
   });
-  test('ログイン中に未ログイン時のスナップショットを復元しても、今のユーザーとプロジェクト一覧は残す（設定監査 S-L1）', () => {
+  test('ログイン中に未ログイン時のスナップショットを復元しても、今のユーザーとプロジェクト一覧は残す（設定監査 S-L1）', async () => {
     const store = createTestStore();
     act(() => {
       store.dispatch({
@@ -340,8 +350,8 @@ describe('useProjectBackup', () => {
     mockGetAuthUid.mockReturnValue('me');
 
     const { result } = renderHook(() => useProjectBackup(), { wrapper: createWrapper(store) });
-    act(() => {
-      result.current.restoreBackup('backup-id');
+    await act(async () => {
+      await result.current.restoreBackup('backup-id');
     });
 
     const state = store.getState();
@@ -352,7 +362,7 @@ describe('useProjectBackup', () => {
     expect(state.layers).toEqual(snapshot.state.layers);
   });
 
-  test('未ログインのまま未ログイン時のスナップショットを復元すると、ユーザーとプロジェクト一覧も戻す', () => {
+  test('未ログインのまま未ログイン時のスナップショットを復元すると、ユーザーとプロジェクト一覧も戻す', async () => {
     const store = createTestStore();
     // 復元前とスナップショットで値を変えておかないと、戻さない退行でも通ってしまう
     act(() => {
@@ -368,21 +378,108 @@ describe('useProjectBackup', () => {
     mockLoadBackup.mockReturnValue(snapshot);
 
     const { result } = renderHook(() => useProjectBackup(), { wrapper: createWrapper(store) });
-    act(() => {
-      result.current.restoreBackup('backup-id');
+    await act(async () => {
+      await result.current.restoreBackup('backup-id');
     });
     expect(store.getState().user.uid).toBeUndefined();
     expect(store.getState().user.displayName).toBe('snap');
     expect(store.getState().projects).toEqual([{ id: 'snap', name: 'snap' }]);
   });
 
-  test('復元の直後に永続化の書き込み待ちを書き出す（設定監査 S-L3）', () => {
+  test('復元の直後に永続化の書き込み待ちを書き出す（設定監査 S-L3）', async () => {
     const store = createTestStore();
     mockLoadBackup.mockReturnValue(createSnapshot());
     const { result } = renderHook(() => useProjectBackup(), { wrapper: createWrapper(store) });
-    act(() => {
-      result.current.restoreBackup('backup-id');
+    await act(async () => {
+      await result.current.restoreBackup('backup-id');
     });
     expect(mockFlushPersistence).toHaveBeenCalledTimes(1);
+  });
+
+  describe('復元で端末ローカルの設定を巻き戻さない（永続化監査 S-M1）', () => {
+    const gnss = {
+      baudRate: 115200,
+      antennaHeight: 1.8,
+      ntrip: { enabled: true, host: 'h', port: 2101, mountpoint: 'm', username: 'u', password: 'p', sendGga: true },
+    };
+    const createSnapshotWithSettings = () => {
+      const snapshot = createSnapshot();
+      snapshot.state.settings = {
+        ...snapshot.state.settings,
+        isSynced: true,
+        memberLocation: [{ uid: 'other', coords: { latitude: 1, longitude: 1 } }],
+        tileRegions: [{ id: 'old', tileMapId: 'm-old', coords: [], centroid: { latitude: 0, longitude: 0 } }],
+        agreedTermsVersion: 'old-terms',
+        lastSeenVersion: '0.1.0',
+        gpsAccuracy: 'LOW',
+        externalGnss: undefined,
+        proximityAlert: { enabled: false, targetLayerIds: ['layer1'], distanceThreshold: 50 },
+      } as unknown as typeof snapshot.state.settings;
+      return snapshot;
+    };
+
+    test('位置共有は切り、保存範囲・既読・同意・GNSS・GPS精度・接近通知は今の値を引き継ぐ', async () => {
+      const store = createTestStore();
+      store.dispatch(
+        editSettingsAction({
+          tileRegions: [],
+          agreedTermsVersion: 'current-terms',
+          lastSeenVersion: '0.7.0',
+          gpsAccuracy: 'HIGH',
+          externalGnss: gnss as unknown as typeof settingsInitialState.externalGnss,
+          proximityAlert: { enabled: true, targetLayerIds: ['now-layer'], distanceThreshold: 20 },
+        })
+      );
+      mockLoadBackup.mockReturnValue(createSnapshotWithSettings());
+      const { result } = renderHook(() => useProjectBackup(), { wrapper: createWrapper(store) });
+      await act(async () => {
+        await result.current.restoreBackup('backup-id');
+      });
+      const settings = store.getState().settings;
+      //データ側（プロジェクト）はスナップショットから戻る
+      expect(settings.projectId).toBe('p1');
+      expect(settings.isSynced).toBe(false);
+      expect(settings.memberLocation).toEqual([]);
+      expect(settings.tileRegions).toEqual([]);
+      expect(settings.agreedTermsVersion).toBe('current-terms');
+      expect(settings.lastSeenVersion).toBe('0.7.0');
+      expect(settings.gpsAccuracy).toBe('HIGH');
+      expect(settings.externalGnss?.antennaHeight).toBe(1.8);
+      //接近通知の有効・距離は今の値、対象レイヤは復元したレイヤを指すスナップショット側
+      expect(settings.proximityAlert).toEqual({ enabled: true, targetLayerIds: ['layer1'], distanceThreshold: 20 });
+    });
+  });
+
+  describe('復元前の自動バックアップを作れなかったとき（永続化監査 S-M5・S-L2）', () => {
+    test('続けるのを取りやめたら cancelled を返し、何も置き換えない', async () => {
+      const store = createTestStore();
+      mockLoadBackup.mockReturnValue(createSnapshot());
+      mockSaveProjectBackup.mockReturnValueOnce('failed');
+      mockConfirmProceed.mockResolvedValueOnce(false);
+      const before = store.getState();
+      const { result } = renderHook(() => useProjectBackup(), { wrapper: createWrapper(store) });
+      let restoreResult: { isOK: boolean; reason?: string } = { isOK: true };
+      await act(async () => {
+        restoreResult = await result.current.restoreBackup('backup-id');
+      });
+      expect(mockConfirmProceed).toHaveBeenCalledWith('failed');
+      expect(restoreResult).toEqual({ isOK: false, reason: 'cancelled' });
+      expect(store.getState()).toEqual(before);
+      expect(mockFlushPersistence).not.toHaveBeenCalled();
+    });
+
+    test('続けると選んだら復元する', async () => {
+      const store = createTestStore();
+      mockLoadBackup.mockReturnValue(createSnapshot());
+      mockSaveProjectBackup.mockReturnValueOnce('failed');
+      mockConfirmProceed.mockResolvedValueOnce(true);
+      const { result } = renderHook(() => useProjectBackup(), { wrapper: createWrapper(store) });
+      let restoreResult: { isOK: boolean } = { isOK: false };
+      await act(async () => {
+        restoreResult = await result.current.restoreBackup('backup-id');
+      });
+      expect(restoreResult.isOK).toBe(true);
+      expect(store.getState().settings.projectId).toBe('p1');
+    });
   });
 });

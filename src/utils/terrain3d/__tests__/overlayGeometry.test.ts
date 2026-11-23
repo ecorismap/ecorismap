@@ -2,9 +2,11 @@ import {
   buildPolygonFill,
   buildRibbon,
   combinedReadyGeneration,
+  isProvisionalElevationSample,
   OverlayBatchBuilder,
   overlayLiftMeters,
   overlayLiftMetersForView,
+  shouldRetryOverlayBuild,
 } from '../overlayGeometry';
 import { lonLatToMercator } from '../coords';
 import { parseColorToRgba } from '../colorUtils';
@@ -184,5 +186,34 @@ describe('combinedReadyGeneration（V-M4）', () => {
     const before = combinedReadyGeneration([near, far]);
     far.readyGeneration = 3;
     expect(combinedReadyGeneration([near, far])).not.toBe(before);
+  });
+});
+
+describe('粗いリング・旧ズームの標高を暫定扱いにする（V-M4 (A)(B)）', () => {
+  it('最も細かいリングの現ズームの値だけが確定', () => {
+    expect(isProvisionalElevationSample(0, false)).toBe(false);
+    expect(isProvisionalElevationSample(1, false)).toBe(true);
+    expect(isProvisionalElevationSample(0, true)).toBe(true);
+  });
+
+  const base = {
+    hadMissing: false,
+    hadProvisional: false,
+    readyGen: 10,
+    lastReadyGen: 9,
+    nowMs: 10000,
+    lastBuildMs: 5000,
+    intervalMs: 2000,
+  };
+  it('暫定値を使ったオーバーレイは、新しいタイルが届けば作り直す', () => {
+    expect(shouldRetryOverlayBuild({ ...base, hadProvisional: true })).toBe(true);
+    expect(shouldRetryOverlayBuild({ ...base, hadMissing: true })).toBe(true);
+  });
+  it('確定値だけなら作り直さない', () => {
+    expect(shouldRetryOverlayBuild(base)).toBe(false);
+  });
+  it('タイルが届いていない・間引き間隔内なら作り直さない（間引き条件は維持）', () => {
+    expect(shouldRetryOverlayBuild({ ...base, hadProvisional: true, readyGen: 9 })).toBe(false);
+    expect(shouldRetryOverlayBuild({ ...base, hadProvisional: true, lastBuildMs: 9000 })).toBe(false);
   });
 });

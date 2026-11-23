@@ -35,6 +35,12 @@ export default function AccountSettingsContainers({ navigation }: Props_AccountS
   }, [confirmEncryptKeyReset, navigation]);
 
   const pressDeleteUserAccount = useCallback(async () => {
+    // 削除で開いているプロジェクトも消えるが、続くログアウトは手元を閉じないので、消えたプロジェクトが名前とボタンごと
+    // 残ってエラーが続く。全プロジェクト削除と同じく閉じてから実行させる（他人のプロジェクトの未送信データも捨てずに済む）
+    if (projectId !== undefined) {
+      await AlertAsync(t('AccountSettings.alert.deleteUserAccount'));
+      return;
+    }
     const ret = await ConfirmAsync(t('AccountSettings.confirm.deleteUserAccount'));
     if (ret) {
       navigation.navigate('Account', {
@@ -43,7 +49,7 @@ export default function AccountSettingsContainers({ navigation }: Props_AccountS
         previous: 'AccountSettings',
       });
     }
-  }, [navigation]);
+  }, [navigation, projectId]);
 
   const pressDeleteAllProjects = useCallback(async () => {
     if (projectId !== undefined) {

@@ -43,21 +43,23 @@ const LineArrow = React.memo((props: Props) => {
   // ネイティブのflatと同じく、地図に寝かせて回転・傾きに追従させる
   return (
     <>
-      <Marker
-        {...coordinates[coordinates.length - 1]}
-        anchor={'center'}
-        draggable={false}
-        rotation={angleEnd}
-        rotationAlignment="map"
-        pitchAlignment="map"
-      >
-        <View style={{ width: size, height: size }}>
-          <Svg height={size.toString()} width={size.toString()} viewBox={`0 0 ${size} ${size}`}>
-            <Path d={scaledPath} fill={strokeColor} stroke="white" />
-          </Svg>
-        </View>
-      </Marker>
-      {arrowStyle === 'ARROW_BOTH' && (
+      {arrowStyle !== 'ARROW_START' && (
+        <Marker
+          {...coordinates[coordinates.length - 1]}
+          anchor={'center'}
+          draggable={false}
+          rotation={angleEnd}
+          rotationAlignment="map"
+          pitchAlignment="map"
+        >
+          <View style={{ width: size, height: size }}>
+            <Svg height={size.toString()} width={size.toString()} viewBox={`0 0 ${size} ${size}`}>
+              <Path d={scaledPath} fill={strokeColor} stroke="white" />
+            </Svg>
+          </View>
+        </Marker>
+      )}
+      {(arrowStyle === 'ARROW_BOTH' || arrowStyle === 'ARROW_START') && (
         <Marker
           {...coordinates[0]}
           anchor={'center'}

@@ -180,3 +180,73 @@ export const reduxPersistWebStorage = {
     await db.keyvalue.delete(key);
   },
 };
+
+/**
+ * persist:root の保存値から tileMaps の id 一覧を取り出す純関数。
+ * 読めない値は undefined（呼び出し側は消去を諦める＝取り込んだ地図を守る側に倒す）。
+ * 値が無い（まだ一度も書いていないタブ）は空配列。
+ */
+export const parseTileMapIdsFromPersistedRoot = (value: string | null | undefined): string[] | undefined => {
+  if (value === null || value === undefined) return [];
+  try {
+    const root: unknown = JSON.parse(value);
+    if (typeof root !== 'object' || root === null) return undefined;
+    const raw = (root as Record<string, unknown>).tileMaps;
+    if (raw === undefined) return [];
+    if (typeof raw !== 'string') return undefined;
+    const tileMaps: unknown = JSON.parse(raw);
+    if (!Array.isArray(tileMaps)) return undefined;
+    return tileMaps
+      .map((tileMap: unknown) =>
+        typeof tileMap === 'object' && tileMap !== null ? (tileMap as Record<string, unknown>).id : undefined
+      )
+      .filter((id): id is string => typeof id === 'string');
+  } catch (e) {
+    return undefined;
+  }
+};
+
+/**
+ * 生きているタブ（Web Locks を保持・待機中）すべての保存済み tileMaps の id を集める。
+ * Web Locks の照会ができない・どれか1タブでも読めないときは undefined（判断できないので消さない）。
+ */
+export const readTileMapIdsFromAliveTabs = async (): Promise<Set<string> | undefined> => {
+  try {
+    if (typeof navigator === 'undefined' || !('locks' in navigator) || typeof navigator.locks.query !== 'function') {
+      return undefined;
+    }
+    const ownDb = await getDb();
+    const dbNames = await Dexie.getDatabaseNames();
+    const { held = [], pending = [] } = await navigator.locks.query();
+    const aliveTabIds = new Set(
+      [...held, ...pending]
+        .map((lock) => lock.name ?? '')
+        .filter((name) => name.startsWith(LOCK_PREFIX))
+        .map((name) => name.slice(LOCK_PREFIX.length))
+    );
+    const ids = new Set<string>();
+    for (const tabId of aliveTabIds) {
+      const dbName = DB_PREFIX + tabId;
+      if (!dbNames.includes(dbName)) continue;
+      let value: string | undefined;
+      if (dbName === ownDb.name) {
+        value = (await ownDb.keyvalue.get(LEGACY_ROOT_KEY))?.value;
+      } else {
+        const otherDb = new ReduxPersistDatabase(dbName);
+        try {
+          await otherDb.open();
+          value = (await otherDb.keyvalue.get(LEGACY_ROOT_KEY))?.value;
+        } finally {
+          otherDb.close();
+        }
+      }
+      const tileMapIds = parseTileMapIdsFromPersistedRoot(value);
+      if (tileMapIds === undefined) return undefined;
+      tileMapIds.forEach((id) => ids.add(id));
+    }
+    return ids;
+  } catch (e) {
+    console.log('[reduxPersistWebStorage] read alive tileMaps error:', e);
+    return undefined;
+  }
+};

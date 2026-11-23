@@ -33,11 +33,21 @@ interface Props {
     fields: { [key: string]: string | number | PhotoType[] },
     value: string
   ) => void;
+  /** 参照先へ記録を足せない（実行中プロジェクトのCOMMON）。＋と辞書入力を無効にする */
+  isAddLocked?: boolean;
 }
 
 export const DataEditReference = (props: Props) => {
   const { data } = useContext(DataEditContext);
-  const { name, list, refLayer, onPress, pressAddReferenceData, pressAddReferenceDataByDictionary } = props;
+  const {
+    name,
+    list,
+    refLayer,
+    onPress,
+    pressAddReferenceData,
+    pressAddReferenceDataByDictionary,
+    isAddLocked = false,
+  } = props;
 
   const refField = useMemo(
     () =>
@@ -97,6 +107,7 @@ export const DataEditReference = (props: Props) => {
               }}
               size={20}
               name="plus"
+              disabled={isAddLocked}
               onPress={() => pressAddReferenceData(refLayer, addDefaultRecord, fields)}
             />
           )}
@@ -107,6 +118,7 @@ export const DataEditReference = (props: Props) => {
           refLayer.field.some((f) => f.id === refLayer.dictionaryFieldId && f.format === 'STRING_DICTIONARY') && (
           <View style={{ flexDirection: 'row', justifyContent: 'center', margin: 10 }}>
             <DictionaryTextInput
+              editable={!isAddLocked}
               initialValue=""
               table={`_${refLayer.id}_${refLayer.dictionaryFieldId}`}
               handleSelect={(text: string) =>
@@ -120,6 +132,7 @@ export const DataEditReference = (props: Props) => {
           refLayer.field.some((f) => f.id === refLayer.dictionaryFieldId && f.format === 'STRING_DYNAMIC') && (
             <View style={{ flexDirection: 'row', justifyContent: 'center', margin: 10 }}>
               <DynamicDictionaryTextInput
+                editable={!isAddLocked}
                 initialValue=""
                 fieldKey={`${refLayer.id}_${refLayer.dictionaryFieldId}`}
                 handleSelect={(text: string) =>

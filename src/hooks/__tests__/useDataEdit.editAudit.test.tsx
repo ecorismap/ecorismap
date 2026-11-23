@@ -130,3 +130,40 @@ describe('E-M1 データ編集から親を削除すると子も消える', () =>
     expect(alive).toEqual([]);
   });
 });
+
+describe('E-M1（残り） 消せない子があるときは削除全体を止める', () => {
+  it('一般メンバーが自分の飛翔線を消すとき、テンプレート名義の子が残るなら何も消さずに理由を返す', () => {
+    const parent = { ...line('p1', [{ latitude: 0, longitude: 0 }]), userId: 'me' } as RecordType;
+    const child = { ...line('c1', [], { _group: 'p1' }), userId: 'template' } as RecordType;
+    const initial = rootReducer(undefined, { type: '@@INIT' });
+    const store = configureStore({
+      reducer: rootReducer,
+      preloadedState: {
+        ...initial,
+        dataSet: [
+          { layerId: 'L', userId: 'me', data: [parent] },
+          { layerId: 'L', userId: 'template', data: [child] },
+        ],
+        layers: [layer],
+        user: { uid: 'me', email: '', displayName: 'Me', photoURL: '' },
+        //実行中のプロジェクトの一般メンバー
+        settings: { ...initial.settings, projectId: 'p', isSettingProject: false, role: 'MEMBER' as RoleType },
+      },
+      middleware: (getDefaultMiddleware) => getDefaultMiddleware({ immutableCheck: false, serializableCheck: false }),
+    });
+    const wrapper = ({ children }: { children: React.ReactNode }) => <Provider store={store}>{children}</Provider>;
+    const { result } = renderHook(() => useDataEdit(parent, layer), { wrapper });
+    let res: { isOK: boolean; message: string } | undefined;
+    act(() => {
+      res = result.current.deleteRecord();
+    });
+    expect(res?.isOK).toBe(false);
+    expect(res?.message).toContain('hooks.message.childRecordDeleteBlocked');
+    const alive = store
+      .getState()
+      .dataSet.flatMap((d: DataType) => d.data)
+      .filter((r: RecordType) => !r.deleted)
+      .map((r: RecordType) => r.id);
+    expect(alive).toEqual(['p1', 'c1']);
+  });
+});

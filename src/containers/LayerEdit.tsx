@@ -14,6 +14,7 @@ import { exportGeoFile } from '../utils/File';
 import { MAX_BACKUP_LABEL_LENGTH, truncateForFileName } from '../utils/General';
 import { useGeoFile } from '../hooks/useGeoFile';
 import dayjs from 'dayjs';
+import { getLayerSaveConfirmMessage } from '../utils/layerSaveConfirm';
 
 export default function LayerEditContainer() {
   const { navigate } = useBottomSheetNavigation();
@@ -24,6 +25,7 @@ export default function LayerEditContainer() {
     isNewLayer,
     canChangePermission,
     unmigratedCloudFieldNames,
+    lostFieldValueCount,
     saveLayer,
     deleteLayer,
     deleteLayerPhotos,
@@ -62,15 +64,15 @@ export default function LayerEditContainer() {
       Alert.alert('', checkLayerInputsResult.message);
       return;
     }
-    //属性の値は名前をキーに持つ。改名・型変更は手元のデータにしか反映されず、メンバーのクラウドデータは移行されない
-    if (unmigratedCloudFieldNames.length > 0) {
-      const ret = await ConfirmAsync(
-        t('LayerEdit.confirm.unmigratedCloudFields', { fields: unmigratedCloudFieldNames.join(', ') })
-      );
+    //属性の値は名前をキーに持つ。改名・型変更は手元のデータにしか反映されず、メンバーのクラウドデータは移行されない。
+    //形式を戻しても消えた値は戻らないので、個人データでも件数を示して確認する
+    const confirmMessage = getLayerSaveConfirmMessage(unmigratedCloudFieldNames, lostFieldValueCount);
+    if (confirmMessage !== undefined) {
+      const ret = await ConfirmAsync(confirmMessage);
       if (!ret) return;
     }
     saveLayer();
-  }, [isRunningProject, saveLayer, targetLayer, unmigratedCloudFieldNames]);
+  }, [isRunningProject, lostFieldValueCount, saveLayer, targetLayer, unmigratedCloudFieldNames]);
 
   const pressDeleteLayer = useCallback(async () => {
     if (isRunningProject) {

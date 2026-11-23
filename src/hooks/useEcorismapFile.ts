@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useState } from 'react';
 import { shallowEqual, useDispatch, useSelector, useStore } from 'react-redux';
-import { saveProjectBackup } from '../utils/projectBackup';
+import { backupBeforeReplace } from '../utils/backupBeforeReplace';
+import { withDeviceLocalSettings } from '../utils/deviceLocalSettings';
 import {
   DataType,
   EcorisMapFileType,
@@ -100,6 +101,7 @@ export const useEcorisMapFile = (): UseEcorisMapFileReturnType => {
       tileRegions: [],
       projectId: undefined,
       projectName: undefined,
+      projectSessionUid: undefined,
       memberLocation: [],
       tracking: undefined,
       selectedRecord: undefined,
@@ -360,7 +362,10 @@ export const useEcorisMapFile = (): UseEcorisMapFileReturnType => {
 
   const openEcorisMapFile = useCallback(
     async (uri: string) => {
-      //console.log('######', loaded);
+      //ファイル読み込み（この端末/Google Drive）による上書きで現在のデータが失われないよう、先に自動バックアップ。
+      //作れなかったら続けるかを尋ね、取りやめなら何も変えない（message 空=呼び出し側は何も表示しない。永続化監査 S-L2）。
+      //ZIPを読む前に尋ねるのは、読み込みの途中で辞書（SQLite）の取り込みと写真の展開が手元へ先に書かれるため
+      if (!(await backupBeforeReplace(store.getState(), 'fileOpen'))) return { isOK: false, message: '' };
       let loaded: Awaited<ReturnType<typeof loadEcorisMapFile>>;
       try {
         loaded = await loadEcorisMapFile(uri);
@@ -372,20 +377,7 @@ export const useEcorisMapFile = (): UseEcorisMapFileReturnType => {
       if (loaded === undefined) {
         return { isOK: false, message: t('hooks.message.failGetData') };
       }
-      //ファイル読み込み（この端末/Google Drive）による上書きで現在のデータが失われないよう、直前に自動バックアップ
       const state = store.getState();
-      saveProjectBackup(
-        {
-          settings: state.settings,
-          layers: state.layers,
-          tileMaps: state.tileMaps,
-          dataSet: state.dataSet,
-          user: state.user,
-          projects: state.projects,
-          dataSync: state.dataSync,
-        },
-        'fileOpen'
-      );
       //ToDo: データのサイズチェック。もともと書き出したものだからチェックいらない？
       dispatch(setDataSetAction(loaded.dataSet));
       dispatch(setLayersAction(loaded.layers));
@@ -417,17 +409,16 @@ export const useEcorisMapFile = (): UseEcorisMapFileReturnType => {
     dispatch(setLayersAction(layersInitialState));
     dispatch(setDataSetAction(dataSetInitialState));
     dispatch(setTileMapsAction(tileMapsInitialState));
+    //端末に属する設定（既読・同意・保存範囲・外部GNSSのアンテナ高・GPS精度・接近通知など）は今の値を引き継ぐ。
+    //初期値に戻すと、受信機をつないだままなら以後の標高がポール高ぶんずれ、利用者は気づけない（永続化監査 S-M2）
+    const currentSettings = store.getState().settings;
     dispatch(
       setSettingsAction({
-        ...settingsInitialState,
-        tutrials: settings.tutrials,
-        agreedTermsVersion: settings.agreedTermsVersion,
-        //リセットすると次回起動で更新情報モーダルが再表示されてしまうため引き継ぐ
-        lastSeenVersion: settings.lastSeenVersion,
+        ...withDeviceLocalSettings(settingsInitialState, currentSettings),
         //地図の表示位置は戻さない。ファイルを開くときと違いクリアでは地図を動かさないので、
         //状態だけ初期位置にすると表示とずれ、描いたものが初期位置（緯度35/経度135）に保存される
         //（ネイティブは画面座標→緯度経度の変換にmapRegionを使うため）
-        mapRegion: settings.mapRegion,
+        mapRegion: currentSettings.mapRegion,
       })
     );
     // 置き換えた複数のスライスを揃えて書く（設定監査 S-L3）
@@ -442,7 +433,7 @@ export const useEcorisMapFile = (): UseEcorisMapFileReturnType => {
     // }
 
     return { isOK: true, message: '' };
-  }, [dispatch, settings?.tutrials, settings?.agreedTermsVersion, settings?.lastSeenVersion, settings?.mapRegion]);
+  }, [dispatch, store]);
 
   return {
     isLoading,

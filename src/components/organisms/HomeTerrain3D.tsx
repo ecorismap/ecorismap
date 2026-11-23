@@ -39,6 +39,7 @@ import { DataSelectionContext } from '../../contexts/DataSelection';
 import { AppStateContext } from '../../contexts/AppState';
 import { InfoToolContext } from '../../contexts/InfoTool';
 import { cameraToRegion, restartCameraFromScene } from '../../utils/terrain3d/coords';
+import { shouldLeaveVistaForJump } from '../../utils/terrain3d/externalCameraMove';
 import {
   LONG_PRESS_MAX_MOVE_DP,
   LONG_PRESS_MS,
@@ -409,10 +410,16 @@ export const HomeTerrain3D = React.memo(() => {
           syncRegionRef.current(false);
         }, duration + 80);
       };
+      // 3Dの外からのジャンプ（中心を伴う移動）は、眺望中なら眺望を解いてから動かす（V-L3）。
+      // 解かないと次のフレームで注視点が立ち位置から導出し直され、移動が打ち消される
+      const leaveVistaForJump = (target: { center?: { latitude: number; longitude: number } }) => {
+        if (shouldLeaveVistaForJump(scene.isVistaActive, target)) scene.clearVista(performance.now());
+      };
       const handle: Terrain3DHandle = {
         isTerrain3D: true,
         animateCamera: (camera, opts) => animate(camera, opts?.duration ?? 300),
         animateToRegion: (region, duration = 300) => {
+          leaveVistaForJump({ center: { latitude: region.latitude, longitude: region.longitude } });
           const targetZoom =
             region.latitudeDelta !== undefined && region.longitudeDelta !== undefined
               ? deltaToZoom(viewportRef.current.width, {
@@ -431,7 +438,10 @@ export const HomeTerrain3D = React.memo(() => {
             pitch: state.pitch,
           };
         },
-        setCamera: (camera) => animate(camera, 0),
+        setCamera: (camera) => {
+          leaveVistaForJump(camera);
+          animate(camera, 0);
+        },
         moveToVista: (latitude, longitude, followCurrent = false) => {
           const moved = scene.moveToVista(
             latitude,
@@ -441,7 +451,7 @@ export const HomeTerrain3D = React.memo(() => {
             VISTA_DURATION_MS,
             followCurrent
           );
-          // 移動後の視点をmapRegionへ反映する（ズーム表記や2Dへ戻したときの位置）
+          // 移動後の視点をmapRegionへ反映する（ズーム表記など。2Dへ戻すときは立ち位置で開く）
           if (moved) setTimeout(() => syncRegionRef.current(true), VISTA_DURATION_MS + 80);
           return moved;
         },
@@ -638,7 +648,9 @@ export const HomeTerrain3D = React.memo(() => {
       const scene = sceneRef.current;
       if (scene === null) return null;
       const { width, height } = viewportRef.current;
-      return cameraToRegion(scene.controller.getState(), width, height);
+      // 眺望中のカメラ中心は視線の先（z16で約1.8km先）なので、バナーから抜けたときと同じく
+      // 立ち位置を中心にした範囲を渡す（V-M8）
+      return cameraToRegion(restartCameraFromScene(scene.controller.getState(), scene.vistaEye), width, height);
     });
     return () => {
       unregisterRegion();

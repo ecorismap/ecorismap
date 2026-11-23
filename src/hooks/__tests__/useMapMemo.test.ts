@@ -1121,6 +1121,70 @@ describe('useMapMemo', () => {
     expect(getMemoData().length).toBe(2);
   });
 
+  it.each([
+    ['ARROW_BOTH', 'ARROW_END', 'ARROW_END', true],
+    ['ARROW_END', 'NONE', 'ARROW_END', false],
+  ])(
+    '矢印付きの線（%s）を部分消去すると、元の端を含む断片にだけ矢印が残る（作図監査 E-L9）',
+    (original, firstExpected, secondExpected, firstReversed) => {
+      const Coords = require('../../utils/Coords');
+      //元の線は latLonObjectsToLatLonArray のモックの3点。中央を消して始点側・終点側の2区間が残る
+      Coords.erasePartialLine.mockReturnValue({
+        erased: true,
+        remainingSegments: [
+          [
+            [35.0, 135.0],
+            [35.0005, 135.0005],
+          ],
+          [
+            [35.0015, 135.0015],
+            [35.002, 135.002],
+          ],
+        ],
+      });
+      Coords.latlonArrayToLatLonObjects.mockImplementation((arr: any) =>
+        arr.map(([lon, lat]: [number, number]) => ({ latitude: lat, longitude: lon }))
+      );
+      const parent = makeParentRecordWithoutSymbolFields();
+      store.dispatch({
+        type: 'dataSet/addRecordsAction',
+        payload: {
+          layerId: 'memo',
+          userId: undefined,
+          data: [{ ...parent, field: { ...parent.field, _strokeStyle: original } }],
+        },
+      });
+
+      const mockMapViewRef = { current: {} } as any;
+      const { result } = renderHook(() => useMapMemo(mockMapViewRef), { wrapper });
+      act(() => {
+        result.current.setMapMemoTool('PEN_ERASER_PARTIAL');
+      });
+      const grantEvent = {
+        nativeEvent: { locationX: 100, locationY: 100, pageX: 100, pageY: 100, touches: [{}] },
+        persist: jest.fn(),
+      } as any;
+      act(() => {
+        result.current.handleGrantMapMemo(grantEvent);
+      });
+      act(() => {
+        result.current.handleReleaseMapMemo(grantEvent);
+      });
+
+      const data = getMemoData();
+      expect(data.length).toBe(2);
+      //先頭の区間は元のレコード（id を保つ）、2本目は新しいレコード
+      const first = data.find((r: any) => r.id === 'test-line-id');
+      const second = data.find((r: any) => r.id !== 'test-line-id');
+      expect(first?.field._strokeStyle).toBe(firstExpected);
+      expect(second?.field._strokeStyle).toBe(secondExpected);
+      //始点側の断片は ARROW_START を出さず、座標を反転して終点に矢印を描かせる（古い版でも正しい端に出る）
+      expect(first?.coords?.[0]).toEqual(
+        firstReversed ? { latitude: 135.0005, longitude: 35.0005 } : { latitude: 135.0, longitude: 35.0 }
+      );
+    }
+  );
+
   it('部分消去で全区間が消えると_groupの子レコードも巻き込み削除されること', () => {
     const Coords = require('../../utils/Coords');
     Coords.erasePartialLine.mockReturnValue({ erased: true, remainingSegments: [] });

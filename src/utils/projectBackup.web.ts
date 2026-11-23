@@ -19,6 +19,8 @@ export type BackupMetaType = {
   recordCount: number;
   //保存時のユーザー。null=未ログイン、undefined=uid導入前の旧メタ
   uid?: string | null;
+  //復元前の別枠に入っている控えだけ true
+  restoreSlot?: boolean;
 };
 
 export type BackupStateType = {
@@ -39,6 +41,19 @@ export type BackupSnapshotType = {
 };
 
 export const isBackupAvailable = false;
+
+export type BackupSaveResultType = 'saved' | 'notNeeded' | 'failed';
+
+//Webはそもそもバックアップの対象外なので、置き換えの前に確認を出さない（notNeeded）
+export const saveProjectBackupWithResult = (_state: BackupStateType, _trigger: BackupTriggerType): BackupSaveResultType =>
+  'notNeeded';
+
+export const selectBackupsToRemove = (_index: BackupMetaType[]): BackupMetaType[] => [];
+
+export const planBackupRetention = (
+  index: BackupMetaType[],
+  _isRedundant: (meta: BackupMetaType) => boolean
+): { kept: BackupMetaType[]; removed: BackupMetaType[] } => ({ kept: index, removed: [] });
 
 export const saveProjectBackup = (_state: BackupStateType, _trigger: BackupTriggerType): boolean => false;
 

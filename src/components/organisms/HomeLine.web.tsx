@@ -9,6 +9,7 @@ import { HomeMapMemoStamp } from './HomeMapMemoStamp';
 import { HomeMapMemoBrush } from './HomeMapMemoBrush';
 import { COLOR } from '../../constants/AppConstants';
 import { generateLabel, getColor, getLineWidthAtZoom, isGnssQualityColored, SYMBOL_BASE_SIZE_PX } from '../../utils/Layer';
+import { toMemoZoom } from '../../utils/memoZoom';
 import { LineArrow } from '../atoms';
 import { splitTrackFixSegments } from '../../utils/Location';
 
@@ -46,7 +47,7 @@ export const Line = React.memo((props: Props) => {
         brushes.push(feature);
       } else {
         const arrowStyle = feature.field._strokeStyle as ArrowStyleType;
-        if (arrowStyle === 'ARROW_BOTH' || arrowStyle === 'ARROW_END') {
+        if (arrowStyle === 'ARROW_BOTH' || arrowStyle === 'ARROW_END' || arrowStyle === 'ARROW_START') {
           arrows.push(feature);
         }
         lines.push(feature);
@@ -98,7 +99,8 @@ export const Line = React.memo((props: Props) => {
         const selected = isFeatureSelected(feature);
         const lineColor = selected ? COLOR.YELLOW : getColor(layer, feature);
         const arrowStyle = feature.field._strokeStyle as ArrowStyleType;
-        const strokeWidth = getLineWidthAtZoom(layer, feature, zoomDecimal ?? zoom);
+        //_zoomはGoogle基準なので、maplibreのズームを揃えてから比べる（作図監査 E-L8）
+        const strokeWidth = getLineWidthAtZoom(layer, feature, toMemoZoom(zoomDecimal ?? zoom));
         //飛翔線のように線幅がズームで変わらない線は、矢印も縮小せず行動記号と同じ基準の大きさにする
         const hasZoomLinkedWidth = typeof feature.field._zoom === 'number' && feature.field._zoom > 0;
         const arrowSizeScale = hasZoomLinkedWidth ? 1 : SYMBOL_BASE_SIZE_PX / 20;

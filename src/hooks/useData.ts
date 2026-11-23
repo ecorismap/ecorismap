@@ -14,6 +14,7 @@ import { ulid } from 'ulid';
 import {
   filterRecords,
   getDefaultField,
+  getNumberingRecordSets,
   getFilterCandidates,
   isFilterTargetAvailable,
   sortData,
@@ -206,13 +207,6 @@ export const useData = (layerId: string): UseDataReturnType => {
     [checkList, dispatch, filteredRecordSet, targetFields, targetLayer]
   );
 
-  const changeVisibleAll = useCallback(
-    (visible: boolean) => {
-      dispatch(setAllRecordsVisibilityAction({ layerId: targetLayer.id, visible }));
-    },
-    [dispatch, targetLayer]
-  );
-
   const changeVisible = useCallback(
     (record: RecordType) => {
       //子も親と同じ表示にする。updateRecordsAction は集合に無い id を追加してしまうため、親と同じ名義の子だけを渡す
@@ -291,6 +285,22 @@ export const useData = (layerId: string): UseDataReturnType => {
     [dispatch, targetLayer]
   );
 
+  //見出しの目ボタン。絞り込み中は一覧に出ている記録（と子の記号）だけを切り替える。
+  //レイヤ全体を切り替えると、一覧に出ていない記録まで変わり、絞り込みを解除しても戻らなかった
+  const changeVisibleAll = useCallback(
+    (visible: boolean) => {
+      if (!isFiltering) {
+        dispatch(setAllRecordsVisibilityAction({ layerId: targetLayer.id, visible }));
+        return;
+      }
+      const changed = withChildRecords(sortedRecordSet)
+        .filter((r) => r.visible !== visible)
+        .map((r) => ({ ...r, visible }));
+      if (changed.length > 0) dispatchVisibility(changed);
+    },
+    [dispatch, dispatchVisibility, isFiltering, sortedRecordSet, targetLayer, withChildRecords]
+  );
+
   //絞り込み結果のレコードだけを地図に表示する
   const showOnlyFilteredRecords = useCallback(() => {
     //連続で押しても最初の状態を保つ（2回目に控えると絞り込み後の状態を覚えてしまう）
@@ -329,9 +339,11 @@ export const useData = (layerId: string): UseDataReturnType => {
       currentLocation?: { latitude: number; longitude: number; altitude?: number }
     ) => {
       const id = ulid();
-      // 採番(連番/前回値引き継ぎ)はソート状態に依存しないよう、未ソートのストア順(末尾が最新追加)を使用する
+      // 採番(連番/前回値引き継ぎ)はソート状態に依存しないよう、未ソートのストア順(末尾が最新追加)を使用する。
+      // 数え方は地図の作図と同じ（前回値=自分の記録の末尾、連番=レイヤの全記録の最大値+1）
       const ownRecordSet = allUserRecordSet.filter((d) => d.userId === dataUser.uid);
-      const field = getDefaultField(targetLayer, ownRecordSet, id);
+      const numbering = getNumberingRecordSets(allUserRecordSet, layerRecordSetWithChildren, dataUser.uid);
+      const field = getDefaultField(targetLayer, ownRecordSet, id, { numbering });
 
       // GPS座標を使用する場合
       let coords;
@@ -357,7 +369,7 @@ export const useData = (layerId: string): UseDataReturnType => {
       setCheckList([]);
       return newData;
     },
-    [allUserRecordSet, targetLayer, dataUser.uid, dataUser.displayName, dispatch]
+    [allUserRecordSet, layerRecordSetWithChildren, targetLayer, dataUser.uid, dataUser.displayName, dispatch]
   );
 
   const deleteRecords = useCallback(() => {

@@ -14,6 +14,7 @@ import { clearAppFolderCache } from '../lib/googledrive/driveApi';
 import {
   deleteDriveProject,
   downloadDriveProject,
+  isOverwritableDriveProject,
   listDriveProjects,
   uploadDriveProject,
   UPLOAD_CHUNK_SIZE,
@@ -22,6 +23,7 @@ import { DriveApiError, DriveProjectItem, GoogleDriveAuthError } from '../lib/go
 import {
   deleteGoogleDriveLastSyncAction,
   setGoogleDriveConnectedEmailAction,
+  setGoogleDriveCurrentFileAction,
   setGoogleDriveLastSyncAction,
 } from '../modules/googleDrive';
 import { selectNonDeletedDataSet } from '../modules/selectors';
@@ -177,11 +179,18 @@ export const useGoogleDriveProjects = (): UseGoogleDriveProjectsReturnType => {
         // 複数チャンクになる場合のみ%を表示する（それ以外はスピナーのみ）
         const showProgress = zip.size > UPLOAD_CHUNK_SIZE;
         if (showProgress) setProgress(0);
+        // ゴミ箱に入った（または消えた）ファイルへは上書きせず新しく作る。projectId は引き継いで同期記録を新しいファイルへ向ける
+        let overwriteFileId: string | undefined = existing?.fileId;
+        if (overwriteFileId !== undefined) {
+          const usable = await isOverwritableDriveProject(overwriteFileId);
+          if (!usable) overwriteFileId = undefined;
+        }
+        const staleFileId = existing !== undefined && overwriteFileId === undefined ? existing.fileId : undefined;
         const item = await uploadDriveProject({
           name,
           source: zip.source,
           size: zip.size,
-          existingFileId: existing?.fileId,
+          existingFileId: overwriteFileId,
           projectId: existing !== undefined && existing.projectId !== '' ? existing.projectId : undefined,
           onProgress: showProgress ? setProgress : undefined,
         });
@@ -194,7 +203,8 @@ export const useGoogleDriveProjects = (): UseGoogleDriveProjectsReturnType => {
             name: item.name,
           })
         );
-        setDriveProjects((prev) => [item, ...prev.filter((p) => p.fileId !== item.fileId)]);
+        dispatch(setGoogleDriveCurrentFileAction(item.fileId));
+        setDriveProjects((prev) => [item, ...prev.filter((p) => p.fileId !== item.fileId && p.fileId !== staleFileId)]);
         return { isOK: true, message: '' };
       } catch (e) {
         return { isOK: false, message: toErrorMessage(e) };
@@ -224,6 +234,8 @@ export const useGoogleDriveProjects = (): UseGoogleDriveProjectsReturnType => {
               name: item.name,
             })
           );
+          // 読み込みでデータを置き換えると対応が外れるので、置き換えの後で付け直す
+          dispatch(setGoogleDriveCurrentFileAction(item.fileId));
         }
         return result;
       } catch (e) {

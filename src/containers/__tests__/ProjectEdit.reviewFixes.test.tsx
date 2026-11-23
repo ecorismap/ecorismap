@@ -45,6 +45,11 @@ jest.mock('../../components/molecules/AlertAsync', () => ({
   ConfirmAsync: jest.fn(async () => true),
 }));
 jest.mock('../../i18n/config', () => ({ t: jest.fn((key: string) => key) }));
+jest.mock('../../hooks/useProject', () => ({ useProject: () => ({ clearProject: jest.fn() }) }));
+jest.mock('react-redux', () => ({
+  ...jest.requireActual('react-redux'),
+  useStore: () => ({ getState: () => ({ dataSet: [] }) }),
+}));
 jest.mock('../../i18n/dayjs', () => jest.fn());
 jest.mock('../../utils/trackingLeaveGuard', () => ({
   leaveWithTrackingGuard: jest.fn(async (_kind: string, confirm: () => Promise<boolean>) => confirm()),

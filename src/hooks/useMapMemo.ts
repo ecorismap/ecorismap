@@ -13,6 +13,8 @@ import { shallowEqual, useDispatch, useSelector, useStore } from 'react-redux';
 import { RootState } from '../store';
 import { ulid } from 'ulid';
 import { penWidthTypeToNumber } from '../utils/penWidth';
+import { toMemoZoom } from '../utils/memoZoom';
+import { arrowFragment } from '../utils/arrowStyle';
 import {
   booleanIntersects,
   calcDegreeRadius,
@@ -79,6 +81,8 @@ export type UseMapMemoReturnType = {
   setMapMemoSettingsTab: Dispatch<SetStateAction<MapMemoToolGroupType>>;
   setArrowStyle: Dispatch<SetStateAction<ArrowStyleType>>;
   selectPenColor: (hue: number, sat: number, val: number, alpha: number) => void;
+  //控えておいたペンの色（rgba文字列）へそのまま戻す。色選択モーダルは開閉しない
+  restorePenColor: (color: string) => void;
   clearMapMemoHistory: () => void;
   handleGrantMapMemo: (event: GestureResponderEvent) => void;
   handleMoveMapMemo: (event: GestureResponderEvent) => void;
@@ -533,7 +537,7 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
 
     return {
       latlon: latlonLine,
-      zoom: mapRegionRef.current.zoom,
+      zoom: toMemoZoom(mapRegionRef.current.zoom),
       strokeColor: penColor,
       strokeWidth: penWidth,
       strokeStyle: arrowStyle,
@@ -739,7 +743,7 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
     const newMapMemoLines = [
       {
         latlon: xyArrayToLatLonArray(mapMemoEditingLine.current, mapRegion, mapSize, mapViewRef),
-        zoom: mapRegion.zoom,
+        zoom: toMemoZoom(mapRegion.zoom),
         strokeColor: penColor,
         strokeWidth: penWidth,
         strokeStyle: '',
@@ -765,7 +769,7 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
         ...mapMemoLines,
         {
           latlon: xyArrayToLatLonArray(brushLine, mapRegion, mapSize, mapViewRef),
-          zoom: mapRegion.zoom,
+          zoom: toMemoZoom(mapRegion.zoom),
           strokeColor: penColor,
           strokeWidth: penWidth,
           strokeStyle: currentMapMemoTool,
@@ -883,21 +887,33 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
       if (remainingSegments.length === 0) {
         removed.push({ idx, line });
       } else {
-        const [firstSegment, ...restSegments] = remainingSegments;
-        const firstCoords = latlonArrayToLatLonObjects(firstSegment);
+        //矢印は元の線の端を含む断片にだけ残す（全断片に付けると切れ目に余計な矢印が出る。作図監査 E-L9）
+        const fragments = remainingSegments.map((segment) => arrowFragment(line.field._strokeStyle, lineArray, segment));
+        const fragmentField = (strokeStyle: unknown): RecordType['field'] =>
+          strokeStyle === line.field._strokeStyle
+            ? { ...line.field }
+            : { ...line.field, _strokeStyle: strokeStyle as string };
+        const [firstFragment, ...restFragments] = fragments;
+        const firstCoords = latlonArrayToLatLonObjects(firstFragment.positions);
         updated.push({
           idx,
           line,
-          updatedLine: { ...line, coords: firstCoords, centroid: calcLineMidPoint(firstCoords), updatedAt: Date.now() },
+          updatedLine: {
+            ...line,
+            coords: firstCoords,
+            centroid: calcLineMidPoint(firstCoords),
+            field: fragmentField(firstFragment.style),
+            updatedAt: Date.now(),
+          },
         });
-        restSegments.forEach((segment) => {
-          const coords = latlonArrayToLatLonObjects(segment);
+        restFragments.forEach((fragment) => {
+          const coords = latlonArrayToLatLonObjects(fragment.positions);
           added.push({
             ...line,
             id: ulid(),
             coords,
             centroid: calcLineMidPoint(coords),
-            field: { ...line.field },
+            field: fragmentField(fragment.style),
             updatedAt: Date.now(),
           });
         });
@@ -1071,6 +1087,10 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
     setVisibleMapMemoColor(false);
     const rgbaString = hsv2rgbaString(hue, sat, val, alpha);
     setPenColor(rgbaString);
+  }, []);
+
+  const restorePenColor = useCallback((color: string) => {
+    setPenColor(color);
   }, []);
 
   /**
@@ -1261,6 +1281,7 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
     setMapMemoSettingsTab,
     setArrowStyle,
     selectPenColor,
+    restorePenColor,
     handleGrantMapMemo,
     handleMoveMapMemo,
     handleReleaseMapMemo,

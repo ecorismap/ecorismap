@@ -36,6 +36,7 @@ import { interpolateGridCell } from './sharedGridMesh';
 import { loadTileAsRgba, loadTileImageBitmap, resolveTileTexture } from './tileTextureLoader';
 import { TerrainRenderer, TileDrawPass } from './TerrainRenderer';
 import { LayerSpec, TileKey } from './types';
+import { advanceActiveZoom } from './tileZoomAdvance';
 
 interface TileEntry {
   key: TileKey;
@@ -142,6 +143,12 @@ export class TerrainTileManager {
   private readyGen = 0;
   /** 開発時の診断: 直近のsampleElevationがどのタイル・DEMから取ったか */
   lastSampleInfo = '';
+  /**
+   * 直近のsampleElevationAtMercatorが、新しいズームを要求中に旧ズームのタイルから値を返したか。
+   * 値を受け取った側が、新ズームが届いた後に作り直すべきかを判断するのに使う（V-M4 (B)）。
+   * 戻り値に包まないのは、レイマーチで1視線あたり数十回呼ばれ、割り当てを増やしたくないため
+   */
+  lastSampleStaleZoom = false;
   /** 開発時の診断: 親タイルを借りて描き始めたタイルの累計数 */
   borrowedCount = 0;
   /** 開発時の診断: 「今この瞬間に親を借りている枚数/自前の絵がある枚数/絵が無い枚数」＋累計 */
@@ -294,7 +301,11 @@ export class TerrainTileManager {
       if (now - since < TILE_RETAIN_MS && this.tiles.size <= retainLimit) continue;
       this.disposeTile(key);
     }
-    if (newZoomReady && needed.length > 0) this.activeZoom = texZoom;
+    const advanced = advanceActiveZoom(this.activeZoom, texZoom, newZoomReady, needed.length);
+    if (advanced.changed) {
+      this.activeZoom = advanced.activeZoom;
+      this.readyGen++;
+    }
 
     // 新規タイルのロード（computeTileRingが中心に近い順で返す）
     for (const tile of needed) {
@@ -348,6 +359,7 @@ export class TerrainTileManager {
    */
   sampleElevationAtMercator(mx: number, my: number): number | null {
     const z = this.coveredZoomAtMercator(mx, my);
+    this.lastSampleStaleZoom = z !== null && this.lastTexZoom !== null && z !== this.lastTexZoom;
     if (z === null) return null;
     const scale = Math.pow(2, z);
     const txf = (mx / MERCATOR_CIRCUMFERENCE + 0.5) * scale;

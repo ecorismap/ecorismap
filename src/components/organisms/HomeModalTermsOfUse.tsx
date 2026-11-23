@@ -3,15 +3,16 @@ import { View, Modal, Text, StyleSheet, Linking, Platform } from 'react-native';
 import { Pressable } from '../atoms/Pressable';
 import { COLOR, CURRENT_TERMS_VERSION, VERSION } from '../../constants/AppConstants';
 import { t } from '../../i18n/config';
-import { useDispatch, useSelector } from 'react-redux';
+import { useDispatch, useSelector, useStore } from 'react-redux';
 import { RootState } from '../../store';
 import { editSettingsAction } from '../../modules/settings';
 import { useModalYieldingToDialog } from '../molecules/StyledDialog';
-import { db } from '../../utils/db';
+import { cleanupOrphanTileRows } from '../../utils/tilesDbOrphanCleanup';
 
 export const HomeModalTermsOfUse = React.memo(() => {
   //console.log('render ModalTileMap');
   const dispatch = useDispatch();
+  const reduxStore = useStore<RootState>();
   const agreedTermsVersion = useSelector((state: RootState) => state.settings.agreedTermsVersion);
   const isTermsOfUseOpen = useMemo(() => agreedTermsVersion !== CURRENT_TERMS_VERSION, [agreedTermsVersion]);
   //Cancel時の注意文。別ダイアログを重ねられない（iOSのModal二枚制約）ためモーダル内に表示する
@@ -39,14 +40,14 @@ export const HomeModalTermsOfUse = React.memo(() => {
   }, []);
 
   useEffect(() => {
-    //ブラウザを開きなおしたときに、データを消去する
+    //ブラウザを開きなおしたときに、閉じたタブが取り込んだ地図の実体を消す。
+    //tilesDBは全タブ共有なので、生きているほかのタブの地図一覧にある行は残す（永続化監査 S-H1）
     if (isTermsOfUseOpen) {
       if (Platform.OS === 'web') {
-        db.geotiff.clear();
-        db.pmtiles.clear();
+        void cleanupOrphanTileRows(reduxStore.getState().tileMaps.map((tileMap) => tileMap.id));
       }
     }
-  }, [isTermsOfUseOpen]);
+  }, [isTermsOfUseOpen, reduxStore]);
 
   const styles = StyleSheet.create({
     input: {

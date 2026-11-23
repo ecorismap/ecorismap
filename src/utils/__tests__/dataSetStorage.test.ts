@@ -2,17 +2,24 @@ import { combineReducers, configureStore } from '@reduxjs/toolkit';
 
 // MMKVのstorageをMapベースのフェイクに差し替える
 const mockKvStore = new Map<string, string>();
+const mockWriteFail = { enabled: false };
 jest.mock('../mmkvStorage', () => ({
   storage: {
     contains: (key: string) => mockKvStore.has(key),
     getString: (key: string) => mockKvStore.get(key),
     set: (key: string, value: string) => {
+      if (mockWriteFail.enabled) throw new Error('Failed to set value for key');
       mockKvStore.set(key, value);
     },
     remove: (key: string) => {
       mockKvStore.delete(key);
     },
   },
+}));
+
+const mockNotifyWriteFailed = jest.fn();
+jest.mock('../storageWriteFailNotice', () => ({
+  notifyStorageWriteFailed: (e: unknown) => mockNotifyWriteFailed(e),
 }));
 
 import {
@@ -200,5 +207,17 @@ describe('attachDataSetPersistSubscriber', () => {
     store.dispatch(setDataSetAction(updated));
     jest.advanceTimersByTime(1000);
     expect(mockKvStore.get(DATASET_KEY)).toBe(JSON.stringify(updated));
+  });
+  it('書き込みに失敗したら空き容量不足の通知へ渡し、例外は外へ出さない（永続化監査 S-M4）', () => {
+    const store = createTestStore();
+    attachDataSetPersistSubscriber(store);
+    mockWriteFail.enabled = true;
+    try {
+      store.dispatch(setDataSetAction(sampleDataSet));
+      expect(() => jest.advanceTimersByTime(1000)).not.toThrow();
+      expect(mockNotifyWriteFailed).toHaveBeenCalledTimes(1);
+    } finally {
+      mockWriteFail.enabled = false;
+    }
   });
 });

@@ -671,15 +671,119 @@ describe('useDrawTool', () => {
         expect(mockFindRecord).toHaveBeenCalledWith(mockLineLayer.id, 'user1', mockLineRecord.id, 'LINE');
       });
 
-      it('ストアに無い記録は従来どおり選んだ時点の版で保存する（削除済みの扱いは別途判断）', () => {
+      it('選んだ後にストアから消えた記録（物理削除）は、確定しても追加し直さない', () => {
         mockFindLayer.mockReturnValue(mockLineLayer);
         mockFindRecord.mockReturnValue(undefined);
+        const { result } = renderDrawTool();
+        result.current.drawLine.current = [selectedLine()];
+        let res: ReturnType<typeof result.current.saveLine> | undefined;
+        act(() => {
+          res = result.current.saveLine();
+        });
+        expect(res?.isOK).toBe(true);
+        expect(mockAddRecord).not.toHaveBeenCalled();
+        expect(mockUpdateRecord).not.toHaveBeenCalled();
+      });
+
+      it('削除済み（墓標）の記録も、確定で生きた版に戻さない（ポイント・ポリゴンも同じ）', () => {
+        mockFindLayer.mockReturnValue(mockLineLayer);
+        mockFindRecord.mockReturnValue({ ...mockLineRecord, deleted: true, updatedAt: 300 });
         const { result } = renderDrawTool();
         result.current.drawLine.current = [selectedLine()];
         act(() => {
           result.current.saveLine();
         });
-        expect(mockAddRecord).toHaveBeenCalledWith(mockLineLayer, expect.objectContaining({ id: mockLineRecord.id }));
+        expect(mockUpdateRecord).not.toHaveBeenCalled();
+        expect(mockAddRecord).not.toHaveBeenCalled();
+
+        mockFindLayer.mockReturnValue(mockPointLayer);
+        mockFindRecord.mockReturnValue({ ...mockPointRecord, deleted: true });
+        mockGetEditableLayerAndRecordSetWithCheck.mockReturnValue({
+          isOK: true,
+          message: '',
+          layer: mockPointLayer,
+          recordSet: [],
+        });
+        result.current.drawLine.current = [
+          {
+            id: mockPointRecord.id,
+            layerId: mockPointLayer.id,
+            record: mockPointRecord,
+            xy: [[30, 40]],
+            latlon: [[30, 40]],
+            properties: [],
+          },
+        ];
+        act(() => {
+          result.current.savePoint();
+        });
+        expect(mockUpdateRecord).not.toHaveBeenCalled();
+        expect(mockAddRecord).not.toHaveBeenCalled();
+      });
+
+      it('分割でできた新しい線（まだストアに無い）は従来どおり追加する', () => {
+        mockFindLayer.mockReturnValue(mockLineLayer);
+        //元の線はストアにあり、分割でできた線（別id）は無い
+        mockFindRecord.mockImplementation((_layerId: string, _userId: string, id: string) =>
+          id === mockLineRecord.id ? mockLineRecord : undefined
+        );
+        (findNearNodeIndex as jest.Mock).mockReturnValueOnce(1);
+        const { result } = renderDrawTool();
+        result.current.drawLine.current = [
+          {
+            ...selectedLine(),
+            xy: [
+              [10, 10],
+              [15, 15],
+              [20, 20],
+            ],
+            latlon: [
+              [10, 10],
+              [15, 15],
+              [20, 20],
+            ],
+            properties: ['EDIT'],
+          },
+        ];
+        act(() => {
+          result.current.switchSelectionToSplit();
+        });
+        act(() => {
+          result.current.handleGrantSplitLine([15, 15]);
+        });
+        //後半（元の線）は更新、前半（分割でできた線）は追加
+        expect(mockUpdateRecord).toHaveBeenCalledWith(mockLineLayer, expect.objectContaining({ id: mockLineRecord.id }));
+        expect(mockAddRecord).toHaveBeenCalledTimes(1);
+        expect((mockAddRecord.mock.calls[0][1] as RecordType).id).not.toBe(mockLineRecord.id);
+      });
+
+      it('選んだ後に消された線は分割せず、前半も復活させない', () => {
+        mockFindLayer.mockReturnValue(mockLineLayer);
+        mockFindRecord.mockReturnValue(undefined);
+        const { result } = renderDrawTool();
+        result.current.drawLine.current = [
+          {
+            ...selectedLine(),
+            xy: [
+              [10, 10],
+              [15, 15],
+              [20, 20],
+            ],
+            latlon: [
+              [10, 10],
+              [15, 15],
+              [20, 20],
+            ],
+          },
+        ];
+        act(() => {
+          result.current.switchSelectionToSplit();
+        });
+        act(() => {
+          result.current.handleGrantSplitLine([15, 15]);
+        });
+        expect(mockAddRecord).not.toHaveBeenCalled();
+        expect(mockUpdateRecord).not.toHaveBeenCalled();
       });
 
       it('ポイント・ポリゴンの確定でもストアの今の版を使う', () => {
@@ -893,6 +997,7 @@ describe('useDrawTool', () => {
       mockFindLayer.mockReturnValue(mockPointLayer);
 
       const noCoordsRecord = { ...mockPointRecord, id: 'no-coords-1', coords: undefined } as unknown as PointRecordType;
+      mockFindRecord.mockReturnValue(noCoordsRecord);
 
       act(() => {
         result.current.selectObjectByFeature(mockPointLayer, noCoordsRecord);
@@ -1005,6 +1110,7 @@ describe('useDrawTool', () => {
         recordSet: [polygonRecord],
       });
       mockFindLayer.mockReturnValue(polygonLayer);
+      mockFindRecord.mockReturnValue(polygonRecord);
 
       const { result } = renderDrawTool();
       //一括変形で外周だけが(+10, +20)動いた状態
@@ -1042,6 +1148,7 @@ describe('useDrawTool', () => {
       const holes = { h1: [{ longitude: 40, latitude: 40 }] };
       const polygonRecord = { ...mockLineRecord, id: 'holed2', coords: outer, holes } as unknown as RecordType;
       mockFindLayer.mockReturnValue(polygonLayer);
+      mockFindRecord.mockReturnValue(polygonRecord);
       mockGetEditableLayerAndRecordSetWithCheck.mockReturnValue({
         isOK: true,
         message: '',
@@ -1081,6 +1188,7 @@ describe('useDrawTool', () => {
           recordSet: [polygonRecord],
         });
         mockFindLayer.mockReturnValue(polygonLayer);
+        mockFindRecord.mockReturnValue(polygonRecord);
       });
 
       //選択時に閉じ点を外した状態（changeToEditingObject 後）を再現する
@@ -2193,6 +2301,9 @@ describe('useDrawTool', () => {
       const { result } = renderDrawTool();
       selectMultiPoints(result);
       mockFindLayer.mockReturnValue(mockPointLayer);
+      mockFindRecord.mockImplementation((_layerId: string, _userId: string, id: string) =>
+        multiPoints.find((record) => record.id === id)
+      );
       act(() => {
         result.current.handleGrantPlot([15, 15]);
       });
@@ -4013,5 +4124,190 @@ describe('useDrawTool', () => {
       expect(saved.field._strokeColor).toBe('rgba(255,0,0,0.7)');
       expect(saved.field._strokeWidth).toBe(5);
     });
+  });
+});
+
+describe('飛翔図の行動記号の削除（作図監査 E-M11・E-L5・E-L6）', () => {
+  const hisyouLayer = {
+    ...mockLineLayer,
+    field: [
+      { id: 'f1', name: 'とまり', format: 'CHECK', list: [] },
+      { id: 'f2', name: '採餌行動', format: 'CHECK', list: [] },
+    ],
+  } as unknown as LayerType;
+  const parent = {
+    ...mockLineRecord,
+    id: 'parent1',
+    coords: [
+      { latitude: 0, longitude: 0 },
+      { latitude: 100, longitude: 100 },
+    ],
+    field: { とまり: '枝', 採餌行動: '探餌,狩り' },
+    updatedAt: 1,
+  } as unknown as RecordType;
+  //スタンプは座標がそのまま画面座標になる（Coordsは恒等モック）
+  const stamp = (id: string, x: number, field: RecordType['field']) =>
+    ({
+      ...mockLineRecord,
+      id,
+      coords: [{ latitude: x, longitude: x }],
+      field: { _group: 'parent1', _strokeStyle: '', ...field },
+      updatedAt: 1,
+    }) as unknown as RecordType;
+  const tomari = stamp('s-tomari', 10, { _stamp: 'TOMARI', とまり: '枝' });
+  const kari = stamp('s-kari', 50, { _stamp: 'KARI', 採餌行動: '狩り' });
+
+  const setupSession = (records: RecordType[]) => {
+    mockLineDataSet.length = 0;
+    mockLineDataSet.push({ layerId: hisyouLayer.id, userId: 'user1', data: records });
+    mockGetEditableLayerAndRecordSetWithCheck.mockReturnValue({
+      isOK: true,
+      message: '',
+      layer: hisyouLayer,
+      recordSet: records,
+    });
+    mockFindLayer.mockReturnValue(hisyouLayer);
+    const rendered = renderDrawTool();
+    act(() => {
+      rendered.store.dispatch(addDataAction([{ layerId: hisyouLayer.id, userId: 'user1', data: records }]));
+    });
+    //保存済みの飛翔線を選んだ状態
+    rendered.result.current.drawLine.current = [
+      {
+        id: parent.id,
+        layerId: hisyouLayer.id,
+        record: parent,
+        xy: [
+          [0, 0],
+          [100, 100],
+        ],
+        latlon: [
+          [0, 0],
+          [100, 100],
+        ],
+        properties: ['HANDWRITING'],
+      },
+    ];
+    act(() => {
+      rendered.result.current.setFeatureButton('LINE');
+    });
+    act(() => {
+      rendered.result.current.setHandwritingSubTool('ERASER');
+    });
+    return rendered;
+  };
+  const penStyle = {
+    strokeColor: 'red',
+    strokeWidth: 5,
+    arrowStyle: 'NONE' as const,
+    isStraightStyle: false,
+    snapWithLine: true,
+  };
+  const storeRecords = (store: ReturnType<typeof renderDrawTool>['store']) =>
+    store.getState().dataSet.find((d) => d.layerId === hisyouLayer.id)?.data ?? [];
+  //実アプリでは操作ごとに再描画されてlineDataSetが新しくなる。モックの配列をストアの今の中身に合わせる
+  const syncDataSet = (store: ReturnType<typeof renderDrawTool>['store']) => {
+    mockLineDataSet.length = 0;
+    mockLineDataSet.push({ layerId: hisyouLayer.id, userId: 'user1', data: storeRecords(store) });
+  };
+  //未同期の記録は物理削除、同期済みは墓標になる。どちらも「生きていない」
+  const isAlive = (store: ReturnType<typeof renderDrawTool>['store'], id: string) =>
+    storeRecords(store).some((r) => r.id === id && r.deleted !== true);
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockCheckRecordsModifiable.mockImplementation(() => ({ isOK: true, message: '' }));
+    mockFindRecord.mockReturnValue(undefined);
+  });
+
+  it('E-L5: 記号を消すと親の行動の値から外し、Undoで足し直す', () => {
+    const { result, store } = setupSession([parent, tomari, kari]);
+    act(() => {
+      result.current.handleGrantHandwriting([50, 50], penStyle);
+    });
+    syncDataSet(store);
+    let records = storeRecords(store);
+    expect(isAlive(store, 's-kari')).toBe(false);
+    expect(records.find((r) => r.id === 'parent1')?.field.採餌行動).toBe('探餌');
+    act(() => {
+      result.current.undoDraw();
+    });
+    records = storeRecords(store);
+    expect(isAlive(store, 's-kari')).toBe(true);
+    expect(records.find((r) => r.id === 'parent1')?.field.採餌行動).toBe('探餌,狩り');
+  });
+
+  it('E-L5: 同じ親に同じ行動・値の記号がほかに残っていれば、親の値は外さない', () => {
+    const tomari2 = stamp('s-tomari2', 80, { _stamp: 'TOMARI', とまり: '枝' });
+    const { result, store } = setupSession([parent, tomari, tomari2]);
+    act(() => {
+      result.current.handleGrantHandwriting([10, 10], penStyle);
+    });
+    syncDataSet(store);
+    const records = storeRecords(store);
+    expect(isAlive(store, 's-tomari')).toBe(false);
+    expect(records.find((r) => r.id === 'parent1')?.field.とまり).toBe('枝');
+  });
+
+  it('E-M11: 記号を消してからキャンセルすると、記号も親の値も戻る', () => {
+    const { result, store } = setupSession([parent, tomari, kari]);
+    act(() => {
+      result.current.handleGrantHandwriting([10, 10], penStyle);
+    });
+    syncDataSet(store);
+    act(() => {
+      result.current.handleGrantHandwriting([50, 50], penStyle);
+    });
+    syncDataSet(store);
+    let records = storeRecords(store);
+    expect(records.find((r) => r.id === 'parent1')?.field).toEqual(
+      expect.objectContaining({ とまり: '', 採餌行動: '探餌' })
+    );
+    act(() => {
+      result.current.revertErasedSymbols();
+      result.current.resetDrawTools();
+    });
+    records = storeRecords(store);
+    expect(isAlive(store, 's-tomari')).toBe(true);
+    expect(isAlive(store, 's-kari')).toBe(true);
+    //2つ続けて戻しても、先に足した値が消えない
+    expect(records.find((r) => r.id === 'parent1')?.field).toEqual(
+      expect.objectContaining({ とまり: '枝', 採餌行動: '探餌,狩り' })
+    );
+    //控えは使い切っている（もう一度呼んでも何もしない）
+    expect(result.current.isUndoable).toBe(false);
+  });
+
+  it('E-M11: 確定後に呼んでも、消した記号は戻らない', () => {
+    mockFindRecord.mockReturnValue(parent);
+    const { result, store } = setupSession([parent, tomari]);
+    act(() => {
+      result.current.handleGrantHandwriting([10, 10], penStyle);
+    });
+    syncDataSet(store);
+    act(() => {
+      result.current.saveLine();
+    });
+    act(() => {
+      result.current.revertErasedSymbols();
+    });
+    expect(isAlive(store, 's-tomari')).toBe(false);
+  });
+
+  it('E-L6: ぶら下がる記号に消せないもの（テンプレート名義など）があれば、親も含めて何も消さない', () => {
+    const templateChild = { ...tomari, userId: 'template' } as RecordType;
+    const { result, store } = setupSession([parent, templateChild]);
+    mockCheckRecordsModifiable.mockImplementation(((_layer: LayerType, records: RecordType[]) =>
+      records.some((r) => r.userId === 'template')
+        ? { isOK: false, message: 'adminOnly' }
+        : { isOK: true, message: '' }) as unknown as () => { isOK: boolean; message: string });
+    let res: ReturnType<typeof result.current.deleteDraw> | undefined;
+    act(() => {
+      res = result.current.deleteDraw();
+    });
+    expect(res?.isOK).toBe(false);
+    expect(res?.message).toContain('hooks.message.childRecordDeleteBlocked');
+    expect(res?.message).toContain('adminOnly');
+    expect(storeRecords(store).every((r) => r.deleted !== true)).toBe(true);
   });
 });

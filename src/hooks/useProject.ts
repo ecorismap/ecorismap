@@ -32,7 +32,8 @@ export type UseProjectReturnType = {
     warning?: string;
   }>;
   syncPosition: (shouldSync: boolean) => void;
-  clearProject: () => void;
+  /** skipBackup: 閉じる前の自動バックアップを取らない（開く途中の失敗など、手元が途中状態で直前に別の世代を保存済みのとき） */
+  clearProject: (options?: { skipBackup?: boolean }) => void;
   /** 一部の写真をアップロードできなかったときは警告文を返す */
   saveProjectSetting: () => Promise<string | undefined>;
   /** 設定モードで開いた後に、別の端末（別の管理者）が設定を保存していないか */
@@ -76,44 +77,49 @@ export const useProject = (): UseProjectReturnType => {
     [dispatch, project, user]
   );
 
-  const clearProject = useCallback(() => {
-    //破棄直前の自動バックアップ（プロジェクトを閉じる/切替/ログアウト/設定破棄の全経路が通る）
-    const state = store.getState();
-    saveProjectBackup(
-      {
-        settings: state.settings,
-        layers: state.layers,
-        tileMaps: state.tileMaps,
-        dataSet: state.dataSet,
-        user: state.user,
-        projects: state.projects,
-        dataSync: state.dataSync,
-      },
-      'projectClose'
-    );
-    // 手元のデータを捨てるので、そのプロジェクトの同期の基準値も捨てる（残すと、次に開いた後の
-    // アップロードが「同期済み」とみなされ、確認なしにクラウドを置き換えうる）。バックアップには上で保存済み
-    if (state.settings.projectId !== undefined) dispatch(clearDataSyncProjectAction(state.settings.projectId));
-    dispatch(
-      editSettingsAction({
-        role: undefined,
-        isSettingProject: false,
-        isSynced: false,
-        projectId: undefined,
-        projectName: undefined,
-        // 地図一覧を初期状態に戻すので背景の地図種別も合わせる。残すと衛星写真で閉じたとき一覧と食い違う（M-M20）
-        mapType: mapTypeFromTileMaps(tileMapsInitialState) ?? state.settings.mapType,
-      })
-    );
-    dispatch(setLayersAction(layersInitialState));
-    dispatch(setDataSetAction(dataSetInitialState));
-    dispatch(setTileMapsAction(tileMapsInitialState));
-    // 置き換えた複数のスライスを揃えて書く。数秒ずれた間に落ちると「基準値は閉じる前・記録は空」で起動する（設定監査 S-L3）
-    flushPersistence();
-    // 動的辞書をクリア
-    clearAllDynamicDictionaries();
-    clearAllVisibilitySnapshots();
-  }, [dispatch, store]);
+  const clearProject = useCallback(
+    (options?: { skipBackup?: boolean }) => {
+      //破棄直前の自動バックアップ（プロジェクトを閉じる/切替/ログアウト/設定破棄の全経路が通る）
+      const state = store.getState();
+      if (options?.skipBackup !== true)
+        saveProjectBackup(
+          {
+            settings: state.settings,
+            layers: state.layers,
+            tileMaps: state.tileMaps,
+            dataSet: state.dataSet,
+            user: state.user,
+            projects: state.projects,
+            dataSync: state.dataSync,
+          },
+          'projectClose'
+        );
+      // 手元のデータを捨てるので、そのプロジェクトの同期の基準値も捨てる（残すと、次に開いた後の
+      // アップロードが「同期済み」とみなされ、確認なしにクラウドを置き換えうる）。バックアップには上で保存済み
+      if (state.settings.projectId !== undefined) dispatch(clearDataSyncProjectAction(state.settings.projectId));
+      dispatch(
+        editSettingsAction({
+          role: undefined,
+          isSettingProject: false,
+          isSynced: false,
+          projectId: undefined,
+          projectName: undefined,
+          projectSessionUid: undefined,
+          // 地図一覧を初期状態に戻すので背景の地図種別も合わせる。残すと衛星写真で閉じたとき一覧と食い違う（M-M20）
+          mapType: mapTypeFromTileMaps(tileMapsInitialState) ?? state.settings.mapType,
+        })
+      );
+      dispatch(setLayersAction(layersInitialState));
+      dispatch(setDataSetAction(dataSetInitialState));
+      dispatch(setTileMapsAction(tileMapsInitialState));
+      // 置き換えた複数のスライスを揃えて書く。数秒ずれた間に落ちると「基準値は閉じる前・記録は空」で起動する（設定監査 S-L3）
+      flushPersistence();
+      // 動的辞書をクリア
+      clearAllDynamicDictionaries();
+      clearAllVisibilitySnapshots();
+    },
+    [dispatch, store]
+  );
 
   const isProjectSettingCurrent = useCallback(async () => {
     if (project === undefined) return true;

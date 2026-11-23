@@ -22,7 +22,11 @@ import { ulid } from 'ulid';
 import { boundingBoxFromCoords, latLonDMS } from './Coords';
 import { t } from '../i18n/config';
 import { isLocationType } from './General';
-import { applyTakeoversToDataSet, resolveTakeoverCandidates, separateTemplateDeletionTombstones } from './recordTakeover';
+import {
+  applyTakeoversToDataSet,
+  resolveTakeoverCandidates,
+  separateTemplateDeletionTombstones,
+} from './recordTakeover';
 import * as wanakana from 'wanakana';
 
 export type SortOrderType = 'ASCENDING' | 'DESCENDING' | 'UNSORTED';
@@ -145,6 +149,18 @@ const isTextValueFormat = (format: FormatType) =>
   format === 'RADIO' ||
   format === 'CHECK';
 
+const isNumberValueFormat = (format: FormatType) => format === 'INTEGER' || format === 'DECIMAL' || format === 'SERIAL';
+
+//数値形式へ変えるときの値。空欄と数値にならない値（「abc」など）は空欄にする。
+//NaNを入れると一覧に「NaN」と出て、データ編集の保存も止まるため
+const toNumberFieldValue = (value: string | number, changedFormat: FormatType): string | number => {
+  const parsed = typeof value === 'number' ? value : value.trim() === '' ? NaN : parseFloat(value);
+  //数値形式の空欄は''（getBlankFieldValueと同じ）
+  if (!Number.isFinite(parsed)) return '';
+  //整数形式は四捨五入（切り捨てより元の値に近い）
+  return changedFormat === 'DECIMAL' ? parsed : Math.round(parsed);
+};
+
 export const changeFieldValue = (
   originalData: string | number | PhotoType[] | undefined | null,
   originalFormat: FormatType,
@@ -165,18 +181,18 @@ export const changeFieldValue = (
   if (isTextValueFormat(changedFormat) && !Array.isArray(originalData)) {
     return typeof originalData === 'string' ? originalData : originalData.toString();
   }
+  //数値への変更は、数値として読める値を残す（DECIMAL→INTEGERも含む）。
+  //分岐が無いと全件0になり、形式を戻しても値は戻らなかった
+  if (
+    isNumberValueFormat(changedFormat) &&
+    (isNumberValueFormat(originalFormat) || isTextValueFormat(originalFormat))
+  ) {
+    return toNumberFieldValue(originalData as string | number, changedFormat);
+  }
   if (originalFormat === 'INTEGER' && (changedFormat === 'STRING' || changedFormat === 'STRING_MULTI')) {
     return originalData.toString();
-  } else if (originalFormat === 'INTEGER' && changedFormat === 'DECIMAL') {
-    return originalData;
-  } else if (originalFormat === 'INTEGER' && changedFormat === 'SERIAL') {
-    return originalData;
   } else if (originalFormat === 'SERIAL' && (changedFormat === 'STRING' || changedFormat === 'STRING_MULTI')) {
     return originalData.toString();
-  } else if (originalFormat === 'SERIAL' && changedFormat === 'INTEGER') {
-    return originalData;
-  } else if (originalFormat === 'SERIAL' && changedFormat === 'DECIMAL') {
-    return originalData;
   } else if (originalFormat === 'DECIMAL' && (changedFormat === 'STRING' || changedFormat === 'STRING_MULTI')) {
     return originalData.toString();
   } else if (originalFormat === 'DATETIME' && (changedFormat === 'STRING' || changedFormat === 'STRING_MULTI')) {
@@ -189,13 +205,6 @@ export const changeFieldValue = (
     return originalData;
   } else if (originalFormat === 'NUMBERRANGE' && (changedFormat === 'STRING' || changedFormat === 'STRING_MULTI')) {
     return originalData;
-  } else if (
-    originalFormat === 'STRING' &&
-    (changedFormat === 'INTEGER' || changedFormat === 'DECIMAL' || changedFormat === 'SERIAL')
-  ) {
-    //空欄はNaNにせず空欄のまま残す（NaNは一覧に「NaN」と出て、データ編集の保存も止まる）
-    if (typeof originalData === 'string' && originalData.trim() === '') return getBlankFieldValue(changedFormat);
-    return changedFormat === 'DECIMAL' ? parseFloat(originalData as string) : parseInt(originalData as string, 10);
   } else if (originalFormat === 'STRING' && changedFormat === 'DATETIME') {
     return originalData;
   } else if (originalFormat === 'STRING' && changedFormat === 'LIST') {
@@ -265,6 +274,68 @@ export const getBlankFieldValue = (format: FormatType): string | number | PhotoT
   }
 };
 
+//値が入っているか。範囲系の区切りだけの値やSERIALの0は未入力とみなす
+const hasFieldValue = (value: string | number | PhotoType[] | undefined | null, format: FormatType): boolean => {
+  if (value === undefined || value === null) return false;
+  if (Array.isArray(value)) return value.length > 0;
+  if (typeof value === 'number') return !(format === 'SERIAL' && value === 0) && Number.isFinite(value);
+  const trimmed = value.trim();
+  return trimmed !== '' && trimmed !== `${t('common.ndash')}`;
+};
+
+/** 形式を変えると消える・変わってしまう値か。空欄だった値や、そのまま（数値なら同じ数として）残る値は含めない */
+export const isFieldValueLostOnFormatChange = (
+  originalData: string | number | PhotoType[] | undefined | null,
+  originalFormat: FormatType,
+  changedFormat: FormatType,
+  list?: { value: string; isOther: boolean }[]
+): boolean => {
+  if (originalFormat === changedFormat) return false;
+  if (!hasFieldValue(originalData, originalFormat)) return false;
+  const changed = changeFieldValue(originalData, originalFormat, changedFormat, list);
+  if (!hasFieldValue(changed, changedFormat)) return true;
+  if (typeof changed === 'number') {
+    const original = typeof originalData === 'number' ? originalData : Number(String(originalData).trim());
+    return original !== changed;
+  }
+  if (Array.isArray(changed) || Array.isArray(originalData))
+    return JSON.stringify(changed) !== JSON.stringify(originalData);
+  return String(changed) !== String(originalData);
+};
+
+/**
+ * レイヤ設定の保存で、形式の変更によって消える・変わる値の件数。
+ * 保存前のデータは変更前の属性名で持っているので、変更前の名前で読む
+ */
+export const countFieldValuesLostOnFormatChange = (
+  records: RecordType[],
+  initialFields: FieldType[],
+  updatedFields: FieldType[]
+): number => {
+  const changes = updatedFields.flatMap((updated) => {
+    const initial = initialFields.find((f) => f.id === updated.id);
+    if (initial === undefined || initial.format === updated.format) return [];
+    return [{ name: initial.name, from: initial.format, to: updated.format, list: updated.list }];
+  });
+  if (changes.length === 0) return 0;
+  //削除済み（墓標）は画面に出ないので、消えても利用者に影響しない。数えると確認が過大になる
+  return records.reduce(
+    (count, record) =>
+      record.deleted === true
+        ? count
+        : count +
+          changes.filter(({ name, from, to, list }) =>
+            isFieldValueLostOnFormatChange(
+              record.field[name] as string | number | PhotoType[] | undefined,
+              from,
+              to,
+              list
+            )
+          ).length,
+    0
+  );
+};
+
 //一覧表示用の文字列。未入力（undefinedや空文字、SERIALの0）は空欄にする
 export const getFieldDisplayValue = (value: string | number | PhotoType[] | undefined, format: FormatType): string => {
   if (value === undefined || value === '') return '';
@@ -307,12 +378,42 @@ export const getGroupLastValue = (dataSet: RecordType[], groupFieldName: string,
   return value as string | number | undefined;
 };
 
-export const getDefaultFieldValue = (field: FieldType, dataSet: RecordType[], options?: { groupId?: string }) => {
+/** 新しい記録の既定値に使う集合。前回値は自分の記録の末尾、連番は画面に出る全記録の最大値+1 */
+export type NumberingRecordSets = { lastValueRecords: RecordType[]; serialRecords: RecordType[] };
+
+/**
+ * 一覧からの追加と地図の作図とで、連番・前回値の数え方を揃える。
+ * 入口ごとに集合が違うと（地図はテンプレートを含め、一覧は自分だけ）、同じ一覧の中で連番が重複していた。
+ * candidateRecords は入口が持つ追加先の集合（作図の連続追加でまだストアに入っていない記録を含む、末尾が最新）、
+ * displayedRecords はレイヤの全記録（他のメンバー・テンプレート・子の記号を含む）
+ */
+export const getNumberingRecordSets = (
+  candidateRecords: RecordType[],
+  displayedRecords: RecordType[],
+  ownUserId: string | undefined
+): NumberingRecordSets => {
+  const seen = new Set<string>();
+  const serialRecords = [...displayedRecords, ...candidateRecords].filter((r) => {
+    if (r.deleted || seen.has(r.id)) return false;
+    seen.add(r.id);
+    return true;
+  });
+  return { lastValueRecords: candidateRecords.filter((r) => r.userId === ownUserId), serialRecords };
+};
+
+export const getDefaultFieldValue = (
+  field: FieldType,
+  allDataSet: RecordType[],
+  options?: { groupId?: string; numbering?: NumberingRecordSets }
+) => {
+  //グループ（親の記録）は渡された集合から探す。前回値・連番は numbering があればそちらで数える
+  const dataSet = options?.numbering?.lastValueRecords ?? allDataSet;
+  const serialDataSet = options?.numbering?.serialRecords ?? allDataSet;
   switch (field.format) {
     case 'STRING': {
       let value;
       if (options?.groupId) {
-        value = field.useLastValue ? getGroupLastValue(dataSet, field.name, options.groupId) : field.defaultValue;
+        value = field.useLastValue ? getGroupLastValue(allDataSet, field.name, options.groupId) : field.defaultValue;
       } else {
         value = field.useLastValue ? getDataLastValue(dataSet, field.name) : field.defaultValue;
       }
@@ -323,18 +424,18 @@ export const getDefaultFieldValue = (field: FieldType, dataSet: RecordType[], op
     case 'SERIAL': {
       if (options?.groupId) {
         //グループの子レコードは親レコードの値+1（未入力はNaNになるため0として扱う）
-        const lastValue = getGroupLastValue(dataSet, field.name, options.groupId);
+        const lastValue = getGroupLastValue(allDataSet, field.name, options.groupId);
         const parsed = typeof lastValue === 'number' ? lastValue : parseInt(lastValue ?? '0', 10);
         return { [field.name]: (Number.isFinite(parsed) ? parsed : 0) + 1 };
       }
       //末尾のレコード基準だと、連番が空白のレコードが末尾へ移動しただけで採番が1に戻る。
       //並び順に依存しないよう全レコードの最大値+1で採番する
-      return { [field.name]: getSerialMaxValue(dataSet, field.name) + 1 };
+      return { [field.name]: getSerialMaxValue(serialDataSet, field.name) + 1 };
     }
     case 'INTEGER': {
       let value;
       if (options?.groupId) {
-        value = field.useLastValue ? getGroupLastValue(dataSet, field.name, options.groupId) : field.defaultValue;
+        value = field.useLastValue ? getGroupLastValue(allDataSet, field.name, options.groupId) : field.defaultValue;
       } else {
         value = field.useLastValue ? getDataLastValue(dataSet, field.name) : field.defaultValue;
       }
@@ -352,7 +453,7 @@ export const getDefaultFieldValue = (field: FieldType, dataSet: RecordType[], op
       const listTop = firstItem === undefined || firstItem.isOther ? '' : firstItem.value;
       const defaultValue = field.defaultValue !== undefined ? String(field.defaultValue) : listTop;
       if (options?.groupId) {
-        value = field.useLastValue ? getGroupLastValue(dataSet, field.name, options.groupId) : defaultValue;
+        value = field.useLastValue ? getGroupLastValue(allDataSet, field.name, options.groupId) : defaultValue;
       } else {
         value = field.useLastValue ? getDataLastValue(dataSet, field.name) : defaultValue;
       }
@@ -360,8 +461,7 @@ export const getDefaultFieldValue = (field: FieldType, dataSet: RecordType[], op
     }
     case 'RADIO':
       return {
-        [field.name]:
-          field.defaultValue !== undefined ? String(field.defaultValue) : (field.list?.[0]?.value ?? ''),
+        [field.name]: field.defaultValue !== undefined ? String(field.defaultValue) : (field.list?.[0]?.value ?? ''),
       };
     case 'CHECK':
       return { [field.name]: '' };
@@ -370,7 +470,7 @@ export const getDefaultFieldValue = (field: FieldType, dataSet: RecordType[], op
     case 'DATESTRING': {
       let value;
       if (options?.groupId) {
-        value = field.useLastValue ? getGroupLastValue(dataSet, field.name, options.groupId) : dayjs().format('L');
+        value = field.useLastValue ? getGroupLastValue(allDataSet, field.name, options.groupId) : dayjs().format('L');
       } else {
         value = field.useLastValue ? getDataLastValue(dataSet, field.name) : dayjs().format('L');
       }
@@ -383,7 +483,7 @@ export const getDefaultFieldValue = (field: FieldType, dataSet: RecordType[], op
       const defaultValue =
         field.defaultValue ?? `${dayjs().format('HH:mm')}${t('common.ndash')}${dayjs().format('HH:mm')}`;
       if (options?.groupId) {
-        value = field.useLastValue ? getGroupLastValue(dataSet, field.name, options.groupId) : defaultValue;
+        value = field.useLastValue ? getGroupLastValue(allDataSet, field.name, options.groupId) : defaultValue;
       } else {
         value = field.useLastValue ? getDataLastValue(dataSet, field.name) : defaultValue;
       }
@@ -417,7 +517,7 @@ export const getDefaultField = (
   layer: LayerType,
   dataSet: RecordType[],
   id: string,
-  options?: { groupId?: string }
+  options?: { groupId?: string; numbering?: NumberingRecordSets }
 ) => {
   const defaultField = layer.field
     .map((fieldObject) => getDefaultFieldValue(fieldObject, dataSet, options))
@@ -530,7 +630,7 @@ export const getCommonRecordOwners = (
       record.id,
       // 他人の集合にある記録はその人のもの。自分の集合でも、取り込んだ他人の記録（buildCommonAbsorption は自分の
       // 名義の集合に入れる）は記録の名義が元の持ち主のままなので、記録の名義を見る
-      ownerUserId !== undefined && ownerUserId !== ownUserId ? ownerUserId : record.userId ?? ownerUserId,
+      ownerUserId !== undefined && ownerUserId !== ownUserId ? ownerUserId : (record.userId ?? ownerUserId),
     ])
   );
 
@@ -547,7 +647,11 @@ const mergeCommonRecordsWithOwner = (
   );
   const chosen = new Map<string, { record: RecordType; own: boolean; ownerUserId: string | undefined }>();
   const order: string[] = [];
-  const score = (record: RecordType, own: boolean) => [record.deleted === true ? 0 : 1, record.updatedAt ?? 0, own ? 1 : 0];
+  const score = (record: RecordType, own: boolean) => [
+    record.deleted === true ? 0 : 1,
+    record.updatedAt ?? 0,
+    own ? 1 : 0,
+  ];
   const isBetter = (a: number[], b: number[]) => {
     for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return a[i] > b[i];
     return false;
@@ -606,7 +710,13 @@ export const buildCommonAbsorption = ({
   newId?: () => string;
 }): CommonAbsorption => {
   const versionOf = (record: RecordType) =>
-    JSON.stringify([record.updatedAt ?? 0, record.deleted === true, record.field, record.coords ?? null, record.holes ?? null]);
+    JSON.stringify([
+      record.updatedAt ?? 0,
+      record.deleted === true,
+      record.field,
+      record.coords ?? null,
+      record.holes ?? null,
+    ]);
   const extraCommonDataSet: DataType[] = [];
   const representedUserIds: { [layerId: string]: string[] } = {};
   for (const layerId of layerIds) {
@@ -621,8 +731,7 @@ export const buildCommonAbsorption = ({
     const cloudBuckets = applyTakeoversToDataSet(
       cloudCommonDataSet.filter((d) => d.layerId === layerId),
       localDataSet.filter((d) => d.layerId === layerId)
-    )
-      .sort((a, b) => Number(b.userId === ownUserId) - Number(a.userId === ownUserId));
+    ).sort((a, b) => Number(b.userId === ownUserId) - Number(a.userId === ownUserId));
     const absorbed: RecordType[] = [];
     const usedIds = new Set(localIds);
     for (const bucket of cloudBuckets) {
@@ -655,7 +764,10 @@ export const buildCommonAbsorption = ({
     );
     const templateRecords = templateBuckets
       .flatMap((d) => d.data)
-      .filter((record) => !record.deleted && !localIds.has(record.id) && !liveCloudIds.has(record.id) && !usedIds.has(record.id));
+      .filter(
+        (record) =>
+          !record.deleted && !localIds.has(record.id) && !liveCloudIds.has(record.id) && !usedIds.has(record.id)
+      );
     absorbed.push(...templateRecords);
     if (absorbed.length > 0) extraCommonDataSet.push({ layerId, userId: ownUserId, data: absorbed });
     const users = new Set<string>();
@@ -873,11 +985,18 @@ export const filterRecords = (
   const isBlank = trimmed === FILTER_BLANK;
   const isNotBlank = trimmed === FILTER_NOT_BLANK;
   const query = normalizeForFilter(trimmed);
-  const matchesValue = (value: unknown): boolean => {
-    const str = value === undefined || value === null ? '' : String(value);
-    if (isBlank) return str.trim() === '';
-    if (isNotBlank) return str.trim() !== '';
-    return normalizeForFilter(str).includes(query);
+  //一覧に出る表示値（DATETIMEは'L HH:mm'、SERIALの0は空欄）と保存されている生の値のどちらかに一致すれば通す。
+  //表示どおりに入れても0件にならず、これまでのISO形式での入力も効くようにする
+  const matchesValue = (value: unknown, format?: FormatType): boolean => {
+    const raw = value === undefined || value === null ? '' : String(value);
+    const display =
+      format === undefined || value === undefined || value === null
+        ? raw
+        : getFieldDisplayValue(value as string | number | PhotoType[], format);
+    const blank = raw.trim() === '' || display.trim() === '';
+    if (isBlank) return blank;
+    if (isNotBlank) return !blank;
+    return normalizeForFilter(raw).includes(query) || normalizeForFilter(display).includes(query);
   };
 
   if (filterFieldName === '_user_') {
@@ -889,7 +1008,7 @@ export const filterRecords = (
   //対象列が無い場合（削除された列を指したままなど）は絞り込まない
   if (targetFields.length === 0) return records;
 
-  return records.filter((record) => targetFields.some((f) => matchesValue(record.field[f.name])));
+  return records.filter((record) => targetFields.some((f) => matchesValue(record.field[f.name], f.format)));
 };
 
 /**
@@ -903,9 +1022,10 @@ export const getFilterCandidates = (records: RecordType[], layer: LayerType, fie
   } else {
     const field = layer.field.find((f) => f.name === fieldName);
     if (field === undefined || UNFILTERABLE_FORMATS.includes(field.format)) return [];
+    //候補は一覧の表示値から作る（DATETIMEの秒・オフセット付きの生の値を並べない）
     values = records.map((r) => {
       const value = r.field[fieldName];
-      return value === undefined || value === null ? '' : String(value);
+      return value === undefined || value === null ? '' : getFieldDisplayValue(value, field.format);
     });
   }
   const unique = Array.from(new Set(values.filter((v) => v.trim() !== '')));

@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect } from 'react';
 import { Platform } from 'react-native';
-import { useDispatch } from 'react-redux';
-import { AlertAsync } from '../components/molecules/AlertAsync';
+import { useDispatch, useStore } from 'react-redux';
+import { AlertAsync, ConfirmAsync } from '../components/molecules/AlertAsync';
 import Account from '../components/pages/Account';
 import { AccountContext } from '../contexts/Account';
 import { useAccount } from '../hooks/useAccount';
@@ -12,9 +12,16 @@ import { setGoogleDriveConnectedEmailAction } from '../modules/googleDrive';
 import { t } from '../i18n/config';
 import { stopTrackingBeforeForcedLogout } from '../utils/trackingLeaveGuard';
 import { Props_Account } from '../routes';
+import { RootState } from '../store';
+import { editSettingsAction } from '../modules/settings';
+import { useProject } from '../hooks/useProject';
+import { isOtherUsersProjectOpen, resolveProjectSessionUid } from '../utils/projectSession';
+import { backupBeforeReplace } from '../utils/backupBeforeReplace';
 
 export default function AccountContainers({ navigation, route }: Props_Account) {
   const dispatch = useDispatch();
+  const store = useStore<RootState>();
+  const { clearProject } = useProject();
   const {
     user,
     accountMessage,
@@ -52,8 +59,33 @@ export default function AccountContainers({ navigation, route }: Props_Account) 
   // この経路のログアウトは手元のデータを消さないので、保存した軌跡は再ログイン後にアップロードできる
   const logout = useCallback(async () => {
     await stopTrackingBeforeForcedLogout();
+    // 開いたままのプロジェクトが誰のものかを残す。次に別の人がログインしたら閉じるかを尋ねる（A-M1）
+    const { settings, user: currentUser } = store.getState();
+    const sessionUid = resolveProjectSessionUid(settings, currentUser.uid);
+    if (sessionUid !== undefined && settings.projectSessionUid !== sessionUid) {
+      dispatch(editSettingsAction({ projectSessionUid: sessionUid }));
+    }
     await logoutAccount();
-  }, [logoutAccount]);
+  }, [dispatch, logoutAccount, store]);
+
+  // 取りやめられないログアウトやセッション切れの後は、前の人のプロジェクトが開いたまま残る。別の人がそのまま
+  // 入ると、前の人の役割の表示・位置共有・未送信データを引き継ぐので、閉じてよいか尋ねる（A-M1）。同じ人なら今のまま
+  const confirmBeforeSwitchUser = useCallback(
+    async (uid: string) => {
+      const { settings, user: currentUser } = store.getState();
+      if (!isOtherUsersProjectOpen(settings, currentUser.uid, uid)) return true;
+      const backupNote = Platform.OS === 'web' ? '' : `\n${t('Account.confirm.closeOtherUserProjectBackupNote')}`;
+      const ok = await ConfirmAsync(
+        `${t('Account.confirm.closeOtherUserProject', { name: settings.projectName ?? '' })}${backupNote}`
+      );
+      if (!ok) return false;
+      // 確認文で「バックアップされる」と伝えているので、作れなかったときは閉じる前に続けるかを尋ねる（永続化監査 S-L2）
+      if (!(await backupBeforeReplace(store.getState(), 'projectClose'))) return false;
+      clearProject();
+      return true;
+    },
+    [clearProject, store]
+  );
 
   useEffect(() => {
     // パラメータが存在する場合のみ処理（無限ループ防止）
@@ -70,14 +102,14 @@ export default function AccountContainers({ navigation, route }: Props_Account) 
       if (!checkEmailResult.isOK) return;
       const checkPasswordResult = checkPassword(password);
       if (!checkPasswordResult.isOK) return;
-      const loginResult = await login(email, password);
+      const loginResult = await login(email, password, { beforeSwitchUser: confirmBeforeSwitchUser });
       if (!loginResult.isOK || loginResult.authUser === undefined) return;
       const initializeEncriptResult = await initializeEncript(loginResult.authUser);
       if (!initializeEncriptResult.isOK) return;
       setAccountMessage('');
       navigation.navigate('Projects');
     },
-    [checkEmail, checkPassword, initializeEncript, login, navigation, setAccountMessage]
+    [checkEmail, checkPassword, confirmBeforeSwitchUser, initializeEncript, login, navigation, setAccountMessage]
   );
 
   const pressSignupUserAccount = useCallback(

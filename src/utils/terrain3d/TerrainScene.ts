@@ -88,6 +88,8 @@ import {
   buildPolygonFill,
   buildRibbon,
   combinedReadyGeneration,
+  isProvisionalElevationSample,
+  shouldRetryOverlayBuild,
   OverlayBatchBuilder,
   overlayLiftMetersForView,
 } from './overlayGeometry';
@@ -96,6 +98,7 @@ import { LayerSpec, Terrain3DCameraState, TileKey } from './types';
 import { LayerTextureRef } from './layerTextureRef';
 import { terrain3dVistaStore } from './vistaStore';
 import { ReplayCameraState, stepReplayCamera } from './replayCamera';
+import { cameraLiftMeters } from './cameraClearance';
 import { LocationType } from '../../types';
 
 /** レイヤデータ（ライン・ポリゴン）のドレープ描画指定 */
@@ -121,6 +124,8 @@ interface OverlayBuildJob {
   index: number;
   batch: OverlayBatchBuilder;
   hadMissing: boolean;
+  /** 粗いリング・旧ズームから取った暫定の標高を使った頂点があったか（V-M4 (A)(B)） */
+  hadProvisional: boolean;
 }
 
 /**
@@ -142,6 +147,7 @@ interface OverlayChannel {
   job: OverlayBuildJob | null;
   dirty: boolean;
   hadMissing: boolean;
+  hadProvisional: boolean;
   lastBuildMs: number;
   /** 前回組んだ時点のタイル世代（新しい標高が来たかの判定用） */
   lastReadyGen: number;
@@ -154,6 +160,7 @@ const createOverlayChannel = (): OverlayChannel => ({
   job: null,
   dirty: false,
   hadMissing: false,
+  hadProvisional: false,
   lastBuildMs: 0,
   lastReadyGen: -1,
   builtZoom: null,
@@ -295,6 +302,13 @@ export class TerrainScene {
   };
   /** 注視点の標高キャッシュ（メートル） */
   private targetElevation = 0;
+  /**
+   * 視点が地形に埋まらないよう注視点に足している高さ[m]（V-M2）。
+   * targetElevation（注視点の地表）とは分けて持つ。混ぜると地表追従の差分判定が毎回発火する
+   */
+  private cameraLiftM = 0;
+  /** 直近のsampleElevationAtMercatorの値が暫定（粗いリング・旧ズーム）だったか */
+  private lastSampleProvisional = false;
   /**
    * 眺望モードの状態（通常はnull）。
    *
@@ -862,6 +876,34 @@ export class TerrainScene {
     this.markDirty();
   }
 
+  /** 描画・逆投影に使う注視点の高さ[m]。眺望は視点を自分で決めるので持ち上げない */
+  private get cameraTargetElevation(): number {
+    return this.vista === null ? this.targetElevation + this.cameraLiftM : this.targetElevation;
+  }
+
+  /**
+   * 視点の真下の地表と比べて、注視点の持ち上げ量を決め直す（通常3D・リプレイ）。
+   * 変わったときだけ描き直す
+   */
+  private updateCameraLift(state: Terrain3DCameraState, distance: number): void {
+    let lift = 0;
+    if (this.vista === null) {
+      const merc = lonLatToMercator(state.longitude, state.latitude);
+      const target: [number, number, number] = [
+        merc.mx - this.origin.mx,
+        this.targetElevation * this.elevScale,
+        this.origin.my - merc.my,
+      ];
+      const eye = orbitEye(target, distance, state.heading, state.pitch);
+      const ground = this.sampleElevationAtMercator(this.origin.mx + eye[0], this.origin.my - eye[2]);
+      lift = cameraLiftMeters(this.targetElevation, ground, distance, state.pitch, this.elevScale);
+    }
+    if (Math.abs(lift - this.cameraLiftM) > 0.01) {
+      this.cameraLiftM = lift;
+      this.dirty = true;
+    }
+  }
+
   sampleElevation(latitude: number, longitude: number): number | null {
     const merc = lonLatToMercator(longitude, latitude);
     return this.sampleElevationAtMercator(merc.mx, merc.my);
@@ -869,10 +911,15 @@ export class TerrainScene {
 
   /** メルカトル座標で引く版（遮蔽判定のレイマーチ用）。細かいリングから順に探す */
   private sampleElevationAtMercator(mx: number, my: number): number | null {
-    for (const manager of this.allTileManagers()) {
-      const elev = manager.sampleElevationAtMercator(mx, my);
-      if (elev !== null) return elev;
+    const managers = this.allTileManagers();
+    for (let i = 0; i < managers.length; i++) {
+      const elev = managers[i].sampleElevationAtMercator(mx, my);
+      if (elev !== null) {
+        this.lastSampleProvisional = isProvisionalElevationSample(i, managers[i].lastSampleStaleZoom);
+        return elev;
+      }
     }
+    this.lastSampleProvisional = false;
     return null;
   }
 
@@ -925,7 +972,7 @@ export class TerrainScene {
     const merc = lonLatToMercator(state.longitude, state.latitude);
     const target: [number, number, number] = [
       merc.mx - this.origin.mx,
-      this.targetElevation * this.elevScale,
+      this.cameraTargetElevation * this.elevScale,
       this.origin.my - merc.my,
     ];
     const eye = orbitEye(target, distance, state.heading, state.pitch);
@@ -976,7 +1023,7 @@ export class TerrainScene {
     const merc = lonLatToMercator(state.longitude, state.latitude);
     const target: [number, number, number] = [
       merc.mx - this.origin.mx,
-      this.targetElevation * this.elevScale,
+      this.cameraTargetElevation * this.elevScale,
       this.origin.my - merc.my,
     ];
     const eye = orbitEye(target, distance, state.heading, state.pitch);
@@ -1223,15 +1270,18 @@ export class TerrainScene {
   private collectRings(drawRings: RingSpec[]): TerrainRingDraw[] {
     this.ringDraws.length = 0;
     // drawRingsは粗い順（遠景ほど粗いメッシュ。DEMも粗いので形は変わらず、頂点数だけ減る）
-    for (const ring of drawRings) {
+    // オーバーレイは近景とその後に描く（より細かい望遠の扇形）リングの上に描く（overlayRingIndices参照）
+    const nearIndex = drawRings.findIndex((ring) => ring.manager === this.tileManager);
+    drawRings.forEach((ring, index) => {
       this.ringDraws.push({
         tiles: ring.manager.buildDrawPasses(),
         segments: ring.segments,
         fillBase: true,
         layerCount: ring.manager.layerCount,
         layerOpacity: ring.manager.layerOpacities,
+        drawOverlay: nearIndex >= 0 && index >= nearIndex,
       });
-    }
+    });
     return this.ringDraws;
   }
 
@@ -1258,10 +1308,16 @@ export class TerrainScene {
     const zoomChanged = channel.builtZoom !== this.texZoom;
     // 標高は全リングから引くので、遠景だけが後から届いた場合も再試行の対象にする
     const readyGen = combinedReadyGeneration(this.allTileManagers());
-    const retry =
-      channel.hadMissing &&
-      readyGen !== channel.lastReadyGen &&
-      nowMs - channel.lastBuildMs > OVERLAY_RETRY_INTERVAL_MS;
+    // 粗い遠景や旧ズームから取った標高も、細かいタイルが届いたら焼き直す（V-M4 (A)(B)）
+    const retry = shouldRetryOverlayBuild({
+      hadMissing: channel.hadMissing,
+      hadProvisional: channel.hadProvisional,
+      readyGen,
+      lastReadyGen: channel.lastReadyGen,
+      nowMs,
+      lastBuildMs: channel.lastBuildMs,
+      intervalMs: OVERLAY_RETRY_INTERVAL_MS,
+    });
     if (!channel.dirty && !zoomChanged && !retry) return false;
     channel.dirty = false;
     channel.builtZoom = this.texZoom;
@@ -1275,6 +1331,7 @@ export class TerrainScene {
       index: 0,
       batch: new OverlayBatchBuilder(),
       hadMissing: false,
+      hadProvisional: false,
     };
     return true;
   }
@@ -1312,6 +1369,7 @@ export class TerrainScene {
     const sampler = (lat: number, lon: number): number | null => {
       const v = this.sampleElevation(lat, lon);
       if (v === null) job.hadMissing = true;
+      else if (this.lastSampleProvisional) job.hadProvisional = true;
       // 開発時の診断: 焼き込んだ標高を残し、あとで「その場で取った値」と突き合わせる
       if (__DEV__ && v !== null) {
         this.overlaySampleLog.set(`${lat.toFixed(5)},${lon.toFixed(5)}`, v);
@@ -1347,6 +1405,7 @@ export class TerrainScene {
     if (channel.resources !== null) this.renderer.deleteTileResources(channel.resources);
     channel.resources = resources;
     channel.hadMissing = job.hadMissing;
+    channel.hadProvisional = job.hadProvisional;
     channel.job = null;
     this.markDirty();
   }
@@ -1539,6 +1598,7 @@ export class TerrainScene {
       }
     }
 
+    this.updateCameraLift(state, distance);
     this.maybeRebuildOverlays(nowMs);
 
     if (!this.dirty) return false;

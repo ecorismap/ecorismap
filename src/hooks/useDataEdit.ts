@@ -432,6 +432,28 @@ export const useDataEdit = (record: RecordType, layer: LayerType): UseDataEditRe
   const deleteRecord = useCallback(() => {
     //他のメンバー・テンプレートの記録を消してよいか（同期監査 M8）。だめなら写真も含めて何も消さずに理由を返す
     if (deleteBlockMessage !== undefined) return { isOK: false, message: deleteBlockMessage };
+    //_group でぶら下がる子（飛翔図の行動記号など）も一緒に消すので、子にも同じ規則を当てる。
+    //消せない子だけ黙って残ると、一覧にも地図にも出ず消す手段が無いので、1件でもあれば全体を止める（作図監査 E-M1・E-L6）
+    const childBlock = dataSet
+      .flatMap((d) => (d.layerId === layer.id ? d.data : []))
+      .filter((d) => d.deleted !== true && d.field._group === targetRecord.id)
+      .map((child) =>
+        getRecordModifyBlock({
+          layer: targetLayer,
+          recordUserId: child.userId,
+          action: 'delete',
+          ownUserId: dataUser.uid,
+          isOwnerAdmin,
+          isRunningProject,
+        })
+      )
+      .find((block) => block !== undefined);
+    if (childBlock !== undefined) {
+      return {
+        isOK: false,
+        message: `${t('hooks.message.childRecordDeleteBlocked')}\n${t(recordModifyBlockMessageKey(childBlock))}`,
+      };
+    }
     //編集中のまま消すときは、編集を保存せずに元の記録を消す。写真は、編集で足したもの（targetRecord に入っている）と
     //編集で外したもの（temporaryDeletePhotoList。保存済みの記録にはまだ入っている）の両方を消す
     deleteRecordPhotos(targetLayer, targetRecord);
@@ -465,6 +487,9 @@ export const useDataEdit = (record: RecordType, layer: LayerType): UseDataEditRe
     dispatch,
     dataSet,
     layer.id,
+    dataUser.uid,
+    isOwnerAdmin,
+    isRunningProject,
     setIsEditingRecord,
   ]);
 

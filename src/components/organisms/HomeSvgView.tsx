@@ -10,6 +10,7 @@ import { ulid } from 'ulid';
 import { COLOR } from '../../constants/AppConstants';
 import { isBrushTool, isHandwritingTool, isPlotTool } from '../../utils/General';
 import { getMapMemoSymbolScaleAtZoom, SYMBOL_BASE_SIZE_PX, SYMBOL_BASE_ZOOM } from '../../utils/Layer';
+import { toMemoZoom } from '../../utils/memoZoom';
 import { DrawingToolsContext } from '../../contexts/DrawingTools';
 import { MapMemoContext } from '../../contexts/MapMemo';
 import { SVGDrawingContext } from '../../contexts/SVGDrawing';
@@ -83,7 +84,8 @@ export const SvgView = React.memo(() => {
   //どんな記号が付くのか分かるようにする（間隔・角度の計算は保存後の描画と同じ）
   //描画時よりズームアウトしたら記号を縮小する（保存後の描画と同じ計算。整数ズームで比較する）
   //保存後と同じ計算（基準ズームより引いたときだけ縮小する）
-  const symbolScale = () => getMapMemoSymbolScaleAtZoom(Math.floor(mapRegion.zoom));
+  //記号の基準ズームはGoogle基準（Webのmaplibreのズームは揃えてから比べる。作図監査 E-L8）
+  const symbolScale = () => getMapMemoSymbolScaleAtZoom(Math.floor(toMemoZoom(mapRegion.zoom)));
   //矢印の大きさ。飛翔線のように線幅がズームで変わらない線（色分けが個別でない）は
   //縮小せず行動記号と同じ基準の大きさで固定する。
   //個別色の手書きは線幅から決まる従来どおりの大きさにする
@@ -99,7 +101,7 @@ export const SvgView = React.memo(() => {
     if (latlon.length < 2) return [];
     try {
       //間隔も基準ズームで固定する（保存後と同じ計算）
-      const zoom = Math.floor(mapRegion.zoom);
+      const zoom = Math.floor(toMemoZoom(mapRegion.zoom));
       const scale = symbolScale();
       const intervalZoom = scale < 1 ? SYMBOL_BASE_ZOOM : zoom;
       return interpolateLineString(latlon, 1 / 2 ** (intervalZoom - 10)).map((point) => ({
@@ -274,7 +276,7 @@ export const SvgView = React.memo(() => {
                   strokeLinejoin="round"
                   fill="none"
                 />
-                {!isBrushStroke && (arrowStyle === 'ARROW_END' || arrowStyle === 'ARROW_BOTH') && (
+                {!isBrushStroke && (arrowStyle === 'ARROW_END' || arrowStyle === 'ARROW_BOTH' || arrowStyle === 'ARROW_START') && (
                   <ArrowHeads
                     points={xy}
                     strokeColor={previewColor}

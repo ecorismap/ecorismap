@@ -11,6 +11,7 @@ import { deltaToZoom, zoomToDelta } from '../utils/Coords';
 import { isTerrain3DHandle } from '../utils/terrain3d/types';
 import { useDispatch } from 'react-redux';
 import { isMapRotated, mapHeadingStore } from '../utils/mapHeadingStore';
+import { clearWebVista, isWebVistaActive } from '../utils/terrain3d/webVista';
 
 export type UseMapViewReturnType = {
   zoom: number;
@@ -105,6 +106,9 @@ export const useMapView = (mapViewRefObj: React.RefObject<MapView | MapRef | nul
       const mapViewRef = mapViewRefObj.current;
       if (region === undefined) return;
       if (Platform.OS === 'web') {
+        // 眺望中のMapは非制御（mapRegionを渡さない）なので、ジャンプ先をdispatchしても動かない（V-L3）。
+        // 先に眺望を解いて制御側へ戻す。カメラはジャンプ先が上書きするので俯瞰への復帰はしない
+        if (jumpTo && isWebVistaActive()) clearWebVista(false);
         if (isRegionType(region)) {
           dispatch(editSettingsAction({ mapRegion: region }));
         } else if (isViewState(region)) {

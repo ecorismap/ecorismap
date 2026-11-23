@@ -51,6 +51,7 @@ import { requestGnssAveragingAsync } from '../hooks/useGnssAveraging';
 import { useExternalGnssAutoConnect } from '../hooks/useExternalGnssAutoConnect';
 import { isLocationInUse } from '../lib/gnss/autoReconnect';
 import { shallowEqual, useSelector, useDispatch, useStore } from 'react-redux';
+import { backupBeforeReplace } from '../utils/backupBeforeReplace';
 import { RootState, AppDispatch } from '../store';
 import { useTiles } from '../hooks/useTiles';
 import { useRecord } from '../hooks/useRecord';
@@ -108,6 +109,7 @@ import { AppStateContext } from '../contexts/AppState';
 import { useGeoFile } from '../hooks/useGeoFile';
 import * as e3kit from '../lib/virgilsecurity/e3kit';
 import { hasAuthSession } from '../lib/firebase/sign-in';
+import { reloginRequiredMessage, useAuthSessionLost } from '../hooks/useAuthSessionLost';
 import { getReceivedFiles, deleteReceivedFiles, exportFileFromData, exportFileFromUri } from '../utils/File';
 import { getDropedFile } from '../utils/File.web';
 import { useMapMemo } from '../hooks/useMapMemo';
@@ -171,6 +173,8 @@ import { ViewshedContext, ViewshedProvider } from '../contexts/Viewshed';
 import { useLayers } from '../hooks/useLayers';
 import { usePendingPhotoCapture } from '../hooks/usePendingPhotoCapture';
 import { createTapDragTracker, isDragDistance, shouldHandleAsTap } from '../utils/tapDragTracker';
+import { toMemoZoom } from '../utils/memoZoom';
+import { nextHisyouPenState, PenSettingsType } from '../utils/hisyouPenRestore';
 
 //タッチ開始からこの時間内に2本目の指が着いたらピンチ意図とみなす（2本指の着地ずれの許容時間）
 const PINCH_INTENT_DURATION_MS = 300;
@@ -418,6 +422,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     showDrawLine,
     hideDrawLine,
     resetDrawTools,
+    revertErasedSymbols,
     toggleTerrain,
     setVisibleInfoPicker,
     setCurrentInfoTool,
@@ -477,6 +482,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     setMapMemoSettingsTab,
     setArrowStyle,
     selectPenColor,
+    restorePenColor,
     handleGrantMapMemo,
     handleMoveMapMemo,
     handleReleaseMapMemo,
@@ -631,7 +637,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       //ログアウト後にバックアップ復元した状態（Redux上はログイン済みだが認証セッションなし）では
       //サーバー同期できないため、再ログインを案内する
       if (user.uid && !hasAuthSession()) {
-        throw new Error(t('hooks.message.reloginRequired'));
+        throw new Error(reloginRequiredMessage(user.uid));
       }
       // e3kitの初期化チェック
       if (!e3kit.isInitialized() && user.uid) {
@@ -1179,22 +1185,33 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
   //植生図の区分は、タブ（ポイント/ライン/ポリゴン/メモ）や編集レイヤを切り替えたら未選択へ戻す。
   //ツールボタン（追加⇔手書き等）の持ち替えではリセットしない（同じ区分を続けて描く）
   const prevEditingLayerRef = useRef<{ id: string; toolPalette?: LayerType['toolPalette'] } | undefined>(undefined);
+  //飛翔図のレイヤへ入る直前のペン設定。離れたらこれへ戻す（作図監査 E-L10）
+  const currentPenSettingsRef = useRef<PenSettingsType>({ penColor, currentPenWidth, arrowStyle });
+  currentPenSettingsRef.current = { penColor, currentPenWidth, arrowStyle };
+  const penBeforeHisyouRef = useRef<PenSettingsType | undefined>(undefined);
   useEffect(() => {
     const prev = prevEditingLayerRef.current;
     if (prev !== undefined && prev.id !== editingLayer?.id) {
       if (prev.toolPalette === 'VEGETATION') clearPaletteFieldValues(prev.id);
-      //飛翔図のパレットはペンに設定（太さ・矢印・種名の色）を焼き込む。普通のラインレイヤには
-      //それらを変えるボタンが無いため、持ち越すと矢印付きのまま直せなくなる。
-      //（矢印は色分けが個別でないレイヤでもレコードへ保存される）
-      if (prev.toolPalette === 'HISYOU' && editingLayer?.toolPalette !== 'HISYOU') {
-        setArrowStyle('NONE');
-        setPenWidth('PEN_MEDIUM');
-        selectPenColor(0, 0, 0, 0.7);
-      }
+    }
+    //飛翔図のパレットはペンに設定（太さ・矢印・種名の色）を焼き込む。普通のラインレイヤには
+    //それらを変えるボタンが無いため、持ち越すと矢印付きのまま直せなくなる。
+    //（矢印は色分けが個別でないレイヤでもレコードへ保存される）。離れたら入る前の設定へ戻す
+    const { saved, restore } = nextHisyouPenState(
+      prev?.toolPalette,
+      editingLayer?.toolPalette,
+      currentPenSettingsRef.current,
+      penBeforeHisyouRef.current
+    );
+    penBeforeHisyouRef.current = saved;
+    if (restore !== undefined) {
+      setArrowStyle(restore.arrowStyle);
+      setPenWidth(restore.currentPenWidth);
+      restorePenColor(restore.penColor);
     }
     prevEditingLayerRef.current =
       editingLayer === undefined ? undefined : { id: editingLayer.id, toolPalette: editingLayer.toolPalette };
-  }, [editingLayer, clearPaletteFieldValues, selectPenColor, setArrowStyle, setPenWidth]);
+  }, [editingLayer, clearPaletteFieldValues, restorePenColor, setArrowStyle, setPenWidth]);
 
   const selectFieldValues = useCallback(
     (values: { [fieldName: string]: string }) => {
@@ -1253,11 +1270,12 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     if (isEditingDraw || isEditingObject) {
       const ret = await ConfirmAsync(t('Home.confirm.discard'));
       if (!ret) return;
+      revertErasedSymbols();
       resetDrawTools();
       setDrawTool('NONE');
     }
     await openLayerSwitcher(featureButton);
-  }, [featureButton, isEditingDraw, isEditingObject, openLayerSwitcher, resetDrawTools, setDrawTool]);
+  }, [featureButton, isEditingDraw, isEditingObject, openLayerSwitcher, resetDrawTools, revertErasedSymbols, setDrawTool]);
 
   const selectMapMemoTool = useCallback(
     async (value: MapMemoToolType | undefined) => {
@@ -1270,7 +1288,8 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
         //どのツールもマップメモの内容を書き換えるため、ブラシ・スタンプ・消しゴム含め全てで編集可否を確認する
         //（プロジェクト実行中のロック等も選択時に検出する）
         if (!(await checkEditableMapMemo())) return;
-        //編集選択の選択状態が残っていれば破棄する
+        //編集選択の選択状態が残っていれば破棄する。破棄なので未確定の記号削除も戻す（作図監査 E-M11）
+        revertErasedSymbols();
         resetDrawTools();
         setDrawTool('NONE');
         setMapMemoTool(value);
@@ -1280,6 +1299,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       checkEditableMapMemo,
       flushPausedPenStroke,
       resetDrawTools,
+      revertErasedSymbols,
       setDrawTool,
       setInfoToolActive,
       setMapMemoTool,
@@ -1298,6 +1318,8 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
         if (Platform.OS !== 'web') await toggleHeadingUp(false);
       }
       flushPausedPenStroke();
+      //作図の破棄にあたるので、未確定の記号削除も戻す（作図監査 E-M11）
+      revertErasedSymbols();
       resetDrawTools();
       setDrawTool('NONE');
       setMapMemoTool('NONE');
@@ -1305,6 +1327,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     [
       flushPausedPenStroke,
       resetDrawTools,
+      revertErasedSymbols,
       setCurrentInfoTool,
       setDrawTool,
       setInfoToolActive,
@@ -1352,7 +1375,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       //LINEでは矢印設定も通常作図（プロット）の新規レコードへ反映する
       strokeStyle: featureButton === 'LINE' ? arrowStyle : 'NONE',
       stamp: '',
-      zoom: mapRegion.zoom,
+      zoom: toMemoZoom(mapRegion.zoom),
     }),
     [penColor, penWidth, arrowStyle, featureButton, mapRegion.zoom]
   );
@@ -1474,6 +1497,8 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       setMapMemoTool('NONE');
       toggleTerrain(value === 'NONE');
       setFeatureButton(value);
+      //描きかけの破棄なので、このセッションで消した保存済みの行動記号も戻す（キャンセルと同じ扱い）
+      revertErasedSymbols();
       resetDrawTools();
       clearMapMemoHistory();
       if (Platform.OS !== 'web') toggleHeadingUp(false);
@@ -1484,6 +1509,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       setMapMemoTool,
       toggleTerrain,
       setFeatureButton,
+      revertErasedSymbols,
       resetDrawTools,
       clearMapMemoHistory,
       toggleHeadingUp,
@@ -1634,6 +1660,8 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       const ret = await ConfirmAsync(t('Home.confirm.discard'));
       if (!ret) return;
     }
+    //行動記号の削除だけはタップ時点でストアへ確定しているので、キャンセルでは戻してから捨てる（作図監査 E-M11）
+    revertErasedSymbols();
     resetDrawTools();
     setDrawTool('NONE');
     toolBeforeMoveRef.current = undefined;
@@ -1647,6 +1675,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     finishEditPosition,
     hasUnsavedDrawing,
     resetDrawTools,
+    revertErasedSymbols,
     route.params?.mode,
     setDrawTool,
   ]);
@@ -1709,6 +1738,8 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
         }
       } else if (value === 'SELECT') {
         if (currentDrawTool === value) {
+          //選択の解除は作図の破棄にあたるので、未確定の記号削除も戻す（作図監査 E-M11）
+          revertErasedSymbols();
           resetDrawTools();
           setDrawTool('NONE');
         } else {
@@ -1762,6 +1793,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       isEditingObject,
       isSelectedDraw,
       resetDrawTools,
+      revertErasedSymbols,
       setDrawTool,
       setInfoToolActive,
       setMapMemoTool,
@@ -2065,7 +2097,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     async (layerId: string) => {
       if (project === undefined) return { isOK: false, message: t('hooks.message.unknownError') };
       if (isConnected === false) return { isOK: false, message: t('Home.alert.noInternet') };
-      if (user.uid && !hasAuthSession()) return { isOK: false, message: t('hooks.message.reloginRequired') };
+      if (user.uid && !hasAuthSession()) return { isOK: false, message: reloginRequiredMessage(user.uid) };
       if (!e3kit.isInitialized() && user.uid) {
         const { isOK: initE3kitOK, message: initE3kitMessage } = await e3kit.initializeUser(user.uid);
         if (!initE3kitOK) {
@@ -2211,6 +2243,8 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       )
     );
     if (!ret) return;
+    // 閉じる前の自動バックアップを作れなかったら、鍵を消す前に続けるかを尋ねる（永続化監査 S-L2）
+    if (!(await backupBeforeReplace(store.getState(), 'projectClose'))) return;
 
     // ローカルの暗号化鍵一式を削除（uidを参照するためlogoutより前に実行。エラーでも続行）
     await deleteLocalEncryptKeys();
@@ -2223,7 +2257,16 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       await disconnectGoogleAccount();
     }
     navigation.navigate('Home');
-  }, [clearProject, deleteLocalEncryptKeys, disconnectGoogleAccount, googleAccountEmail, isSettingProject, logout, navigation]);
+  }, [
+    clearProject,
+    deleteLocalEncryptKeys,
+    disconnectGoogleAccount,
+    googleAccountEmail,
+    isSettingProject,
+    logout,
+    navigation,
+    store,
+  ]);
 
   //ズーム後の描きかけ再表示はregion変化イベントの再計算に任せるが、上限・下限でクランプされた場合や
   //refが無効な場合はイベントが来ず非表示のまま固着するため、フォールバックで必ず再表示する
@@ -2299,7 +2342,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       //ログアウト後にバックアップ復元した状態（Redux上はログイン済みだが認証セッションなし）では
       //サーバー同期できないため、再ログインを案内する
       if (user.uid && !hasAuthSession()) {
-        await AlertAsync(t('hooks.message.reloginRequired'));
+        await AlertAsync(reloginRequiredMessage(user.uid));
         setIsLoading(false);
         return;
       }
@@ -2341,13 +2384,14 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
   const pressCloseProject = useCallback(async () => {
     // 記録中なら、終了の確認まで了承されてから止めて保存・アップロードする（キャンセルなら記録を続けたまま何もしない）
     const ret = await leaveWithTrackingGuard('closeProject', () => ConfirmAsync(t('Home.confirm.closeProject')));
-    if (ret) {
+    // 閉じる前の自動バックアップを作れなかったら続けるかを尋ねる。clearProject の中の保存は直後の重複として飛ばされる（永続化監査 S-L2）
+    if (ret && (await backupBeforeReplace(store.getState(), 'projectClose'))) {
       //Layersに戻らないとwebでエラー（白く）なる
       navigateToSplit?.('Layers');
       clearProject();
       setIsShowingProjectButtons(false);
     }
-  }, [clearProject, navigateToSplit]);
+  }, [clearProject, navigateToSplit, store]);
 
   const pressSaveProjectSetting = useCallback(async () => {
     try {
@@ -2386,23 +2430,37 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
 
   const pressDiscardProjectSetting = useCallback(async () => {
     const ret = await leaveWithTrackingGuard('closeProject', () => ConfirmAsync(t('Home.confirm.discardProject')));
-    if (ret) {
+    if (ret && (await backupBeforeReplace(store.getState(), 'projectClose'))) {
       navigateToSplit?.('Layers');
       clearProject();
       navigation.navigate('ProjectEdit', { previous: 'Projects', project: project!, isNew: false });
     }
-  }, [clearProject, navigateToSplit, navigation, project]);
+  }, [clearProject, navigateToSplit, navigation, project, store]);
   /****************** goto ****************************/
 
   // 別の画面へ移るとこの画面がアンマウントされ、軌跡の記録（useLocation）の購読と記録ガードの handler が外れる。
   // 記録中は移る前に止めて保存させ、キャンセルや保存・アップロードの失敗なら移らない（軌跡監査 T-H1）
   // マップメモの中断中・保存待ちの線も、アンマウントで消えないよう移る直前に保存する（作図監査 E-L7）
+  // セッションが切れたときのログインし直し。LOGOUT（鍵を消して手元も閉じる）を通さずにログイン画面へ送る（A-L4）
+  const gotoRelogin = useCallback(async () => {
+    await leaveHomeWithTrackingGuard(() => {
+      flushMapMemoBeforeLeave();
+      navigation.navigate('Account', {
+        accountFormState: 'loginUserAccount',
+        message: t('Account.message.sessionExpired'),
+      });
+    });
+  }, [flushMapMemoBeforeLeave, navigation]);
+  const { promptReloginIfSessionLost } = useAuthSessionLost(gotoRelogin);
+
   const gotoProjects = useCallback(async () => {
+    // セッションが切れていると一覧は汎用の権限エラーになるので、先にログインし直しを案内する
+    if (await promptReloginIfSessionLost()) return;
     await leaveHomeWithTrackingGuard(() => {
       flushMapMemoBeforeLeave();
       navigation.navigate('Projects');
     });
-  }, [flushMapMemoBeforeLeave, navigation]);
+  }, [flushMapMemoBeforeLeave, navigation, promptReloginIfSessionLost]);
 
   const gotoAccount = useCallback(async () => {
     await leaveHomeWithTrackingGuard(() => {

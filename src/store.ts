@@ -9,6 +9,7 @@ import {
   dataSetExcludingReconciler,
 } from './utils/dataSetStorage';
 import { attachPersistFlushOnBackground, registerPersistFlusher } from './utils/persistFlush';
+import { notifyStorageWriteFailed } from './utils/storageWriteFailNotice';
 
 // dataSet（最大データ）はpersist:rootから分離し、専用キーへカスタム購読で永続化する。
 // これによりdataSetと無関係な更新（地図パン等）でdataSet全体が再書き込みされない。
@@ -20,6 +21,8 @@ const persistConfig: any = {
   throttle: 1000,
   blacklist: ['dataSet'],
   stateReconciler: dataSetExcludingReconciler,
+  // 空き容量不足で書けていないことを知らせる（落ちないだけでは、再起動でデータが消えていて初めて気づく。S-M4）
+  writeFailHandler: notifyStorageWriteFailed,
 };
 
 // 旧形式（persist:root内のdataSet）からの一回限りの移行と同期ハイドレーション。

@@ -13,6 +13,7 @@ export type DriveFileMeta = {
   modifiedTime?: string;
   headRevisionId?: string;
   appProperties?: Record<string, string>;
+  trashed?: boolean;
 };
 
 export type DriveProjectItem = {

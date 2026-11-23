@@ -18,7 +18,7 @@ import {
 import { editSettingsAction } from '../modules/settings';
 import { t } from '../i18n/config';
 import { ulid } from 'ulid';
-import { getDefaultField } from '../utils/Data';
+import { getDefaultField, getNumberingRecordSets } from '../utils/Data';
 import { addRecordsAction, moveRecordsToUserAction, updateRecordsAction } from '../modules/dataSet';
 
 import { calcCentroid, calcLineMidPoint } from '../utils/Coords';
@@ -278,7 +278,13 @@ export const useRecord = (): UseRecordReturnType => {
       options?: { groupId?: string }
     ) => {
       const id = ulid();
-      const field = getDefaultField(editingLayer, editingRecordSet, id, options);
+      //連番・前回値は一覧からの追加と同じ数え方にする（前回値=自分の記録の末尾、連番=レイヤの全記録の最大値+1）
+      //作図の連続追加中もストアの最新を読む（閉じ込めた値だと他のメンバーの同期分を取りこぼす）
+      const layerRecords = dispatch((_thunkDispatch, getState) => (getState() as RootState).dataSet)
+        .filter((d) => d.layerId === editingLayer.id)
+        .flatMap((d) => d.data);
+      const numbering = getNumberingRecordSets(editingRecordSet, layerRecords, dataUser.uid);
+      const field = getDefaultField(editingLayer, editingRecordSet, id, { ...options, numbering });
       const centroid = Array.isArray(coords)
         ? featureType === 'LINE'
           ? calcLineMidPoint(coords)
@@ -298,7 +304,7 @@ export const useRecord = (): UseRecordReturnType => {
       };
       return record;
     },
-    [dataUser.displayName, dataUser.uid]
+    [dataUser.displayName, dataUser.uid, dispatch]
   );
 
   const getEditableLayerAndRecordSetWithCheck = useCallback(

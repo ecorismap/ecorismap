@@ -114,7 +114,10 @@ jest.mock('react-redux', () => ({
 jest.mock('../useRepository', () => ({ useRepository: () => ({}) }));
 jest.mock('../useDynamicDictionaryInput', () => ({ clearAllDynamicDictionaries: jest.fn() }));
 jest.mock('../useData', () => ({ clearAllVisibilitySnapshots: jest.fn() }));
-jest.mock('../../utils/projectBackup', () => ({ saveProjectBackup: jest.fn() }));
+jest.mock('../../utils/projectBackup', () => ({
+  saveProjectBackup: jest.fn(),
+  saveProjectBackupWithResult: jest.fn(() => 'saved'),
+}));
 //付け替えは取り込んだdataSetに対して走る必要があるので、呼ばれた時点で積まれていた操作を控える
 const mockRebaseSeenActions: string[][] = [];
 jest.mock('../../utils/photoUriRebase', () => ({

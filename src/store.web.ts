@@ -3,6 +3,7 @@ import reducer from './modules/';
 import { persistStore, persistReducer } from 'redux-persist';
 import { reduxPersistWebStorage } from './utils/reduxPersistWebStorage';
 import { attachPersistFlushOnBackground, registerPersistFlusher } from './utils/persistFlush';
+import { notifyStorageWriteFailed } from './utils/storageWriteFailNotice';
 
 const persistConfig = {
   key: 'root',
@@ -11,6 +12,8 @@ const persistConfig = {
   storage: reduxPersistWebStorage,
   // dataSetを含む全stateをdispatchごとにシリアライズすると大量データ時に重いため間引く
   throttle: 1000,
+  // ブラウザの保存容量の上限で書けていないことを知らせる（永続化監査 S-M4）
+  writeFailHandler: notifyStorageWriteFailed,
 };
 
 const persistedReducer = persistReducer(persistConfig, reducer);
