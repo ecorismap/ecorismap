@@ -11,6 +11,7 @@ import {
 import { db } from '../../utils/db';
 import { blobToBase64 } from '../../utils/blob';
 import { isSafePathSegment } from '../../utils/safePath';
+import { convertToUploadableJpeg, deletePhotoFile } from '../../utils/Photo';
 
 /**
  * 辞書ファイルの保存先。version は設定のレイヤに持たせる dictionaryVersion。
@@ -282,9 +283,16 @@ export const uploadPhoto = async (projectId: string, layerId: string, userId: st
       payload = encdata as Blob | undefined;
       key = k;
     } else {
-      const { encUri, key: k } = await encFileRN(uri);
-      payload = encUri;
-      key = k;
+      //以前にHEIC等のまま保存した写真は、送る直前にJPEGにする。拡張子がそのままだと
+      //contentTypeがimage/heic等になり、Rulesで拒否されて一度も上がらない（写真監査 P-H1）
+      const source = await convertToUploadableJpeg(uri);
+      try {
+        const { encUri, key: k } = await encFileRN(source.uri);
+        payload = encUri;
+        key = k;
+      } finally {
+        if (source.isConverted) await deletePhotoFile(source.uri);
+      }
     }
     if (!payload || !key) {
       return { isOK: false, message: t('firebase.message.failEncryptPhoto'), url: null, key: null };

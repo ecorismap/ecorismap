@@ -7,6 +7,7 @@ import { getPhotoFields } from './Layer';
 import { LayerType, PhotoType, RecordType } from '../types';
 import { PHOTO_FOLDER } from '../constants/AppConstants';
 import { isUriInsideFolder } from './safePath';
+import { convertPhotoToJpeg, isPhotoConverterAvailable } from '../../modules/photo-converter/src';
 
 // 写真の実ファイルが端末（Webではブラウザ）に存在するか。
 // クラウドから取得したレコードは未ダウンロードだとuriがnull、ダウンロード済みでも
@@ -61,15 +62,81 @@ export const convertPhotoForExport = async (
 ): Promise<{ uri: string; filename: string; isConverted: boolean }> => {
   if (!/\.(heic|heif)$/i.test(filename)) return { uri, filename, isConverted: false };
   try {
-    const converted = await manipulateAsync(uri, [], { compress: 0.9, format: SaveFormat.JPEG });
+    const converted = await convertToJpegFile(uri);
     return {
-      uri: converted.uri,
+      uri: converted,
       filename: filename.replace(/\.(heic|heif)$/i, '.jpg'),
       isConverted: true,
     };
   } catch (e) {
     // 変換に失敗したら元のファイルをそのまま使う（表示できない可能性は残るが出力はされる）
     return { uri, filename, isConverted: false };
+  }
+};
+
+// Storage Rules（isValidPhotoContentType）が通すのは image/jpeg と image/png だけ。
+// ネイティブの putFile は拡張子から contentType を決めるので、拡張子で判定する
+const UPLOADABLE_PHOTO_EXT = /\.(jpe?g|png)$/i;
+export const isUploadablePhotoPath = (pathOrName: string) => UPLOADABLE_PHOTO_EXT.test(pathOrName.split('?')[0]);
+
+/**
+ * 画像をJPEGの一時ファイルに変換する。ネイティブでは元のEXIF（撮影位置・撮影日時・機種・向き）を
+ * 引き継ぐ（photo-converter）。expo-image-manipulatorはEXIFを落とすので、ネイティブモジュールが無い
+ * 環境（Web・モジュールを含まない古いビルド）でだけ使う
+ */
+const convertToJpegFile = async (uri: string): Promise<string> => {
+  if (Platform.OS !== 'web' && isPhotoConverterAvailable()) {
+    const id = `${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 10)}`;
+    const dst = `${FileSystem.cacheDirectory}photo_${id}.jpg`;
+    try {
+      await convertPhotoToJpeg(uri, dst, 0.9);
+      return dst;
+    } catch (e) {
+      //ファイルとして読めないuri（iOSのph://など）はimage-manipulatorで変換する（EXIFは落ちる）
+      console.log('convertToJpegFile: native conversion failed, falling back', e);
+      await deletePhotoFile(dst);
+    }
+  }
+  const converted = await manipulateAsync(uri, [], { compress: 0.9, format: SaveFormat.JPEG });
+  return converted.uri;
+};
+
+/**
+ * ファイルの先頭のバイトがJPEGかPNGか。分からないとき（読めない・Web）はundefined。
+ * AndroidのライブラリはHEIFを中身のまま「.jpeg」の名前で返すので、拡張子だけでは判断できない
+ */
+const isJpegOrPngContent = async (uri: string): Promise<boolean | undefined> => {
+  if (Platform.OS === 'web' || !uri.startsWith('file:')) return undefined;
+  try {
+    const head = await FileSystem.readAsStringAsync(uri, {
+      encoding: FileSystem.EncodingType.Base64,
+      position: 0,
+      length: 8,
+    });
+    const bytes = Uint8Array.from(atob(head), (c) => c.charCodeAt(0));
+    const isJpeg = bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff;
+    const isPng = bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e && bytes[3] === 0x47;
+    return isJpeg || isPng;
+  } catch {
+    return undefined;
+  }
+};
+
+/**
+ * JPEG/PNG以外（iPhoneのHEIC、AndroidのHEIF、WebP、GIFなど）をJPEGに変換する。
+ * そのままではアップロードがRulesで拒否されるか（拡張子がheic等）、jpegの名前でHEIFが上がって
+ * Web等で表示できない（写真監査 P-H1・P-L1）。中身で判断し、読めないときは拡張子で判断する。
+ * 変換した場合はisConverted=trueで、uriは一時ファイル。呼び出し側が後始末する。
+ * 変換できなければ元のまま返す（端末内では使えるので、写真自体は捨てない）
+ */
+export const convertToUploadableJpeg = async (uri: string): Promise<{ uri: string; isConverted: boolean }> => {
+  const byContent = await isJpegOrPngContent(uri);
+  if (byContent ?? isUploadablePhotoPath(uri)) return { uri, isConverted: false };
+  try {
+    return { uri: await convertToJpegFile(uri), isConverted: true };
+  } catch (e) {
+    console.log('convertToUploadableJpeg: failed', e);
+    return { uri, isConverted: false };
   }
 };
 
@@ -142,27 +209,34 @@ export const pickImage = async (photoFolder: string) => {
     });
     if (result.canceled) return;
 
-    let extension;
+    const asset = result.assets[0];
+    let extension: string | undefined;
     let name;
-    let uri;
-    //ImagePickerのバグのためwebに処理を追加
-    //https://github.com/expo/expo/issues/9984
-    uri = result.assets[0].uri;
+    let uri = asset.uri;
     if (Platform.OS === 'web') {
-      extension = uri.split(';')[0].split('/')[1];
+      //Webはblob:かdata:のURLで返り、拡張子を持たない。種類はmimeTypeから取る
+      extension = (asset.mimeType ?? uri.split(';')[0].split(':')[1] ?? '').split('/')[1];
+      if (extension !== 'jpeg' && extension !== 'png') {
+        //WebP・GIFなどはJPEGにしないとアップロードがRulesで拒否される（写真監査 P-H1）
+        const converted = await manipulateAsync(uri, [], { compress: 0.9, format: SaveFormat.JPEG });
+        uri = converted.uri;
+        extension = 'jpeg';
+      }
       name = `EMAP_${dayjs().format('YYYYMMDD_HHmmss')}.${extension}`;
       const res = await fetch(uri);
       const blob = await res.blob();
       uri = URL.createObjectURL(blob);
-      //写真のデータそのもの。変更可能？
     } else {
-      extension = uri.split('.').pop();
+      //iPhoneのライブラリの写真はHEICのまま返る。JPEG/PNG以外はJPEGにして保存する（写真監査 P-H1）
+      const { uri: source, isConverted } = await convertToUploadableJpeg(uri);
+      extension = isConverted ? 'jpg' : uri.split('.').pop();
       name = `EMAP_${dayjs().format('YYYYMMDD_HHmmss')}.${extension}`;
-      uri = await saveToStorage(uri, name, photoFolder);
+      uri = await saveToStorage(source, name, photoFolder);
+      if (isConverted) await deletePhotoFile(source);
     }
     const thumbnail = await createThumbnail(uri);
-    const width = result.assets[0].width;
-    const height = result.assets[0].height;
+    const width = asset.width;
+    const height = asset.height;
     return { uri, thumbnail, name, width, height };
   } catch (error) {
     console.log(error);
@@ -173,9 +247,12 @@ export const pickImage = async (photoFolder: string) => {
 // takePhoto（通常の流れ）と、Androidでカメラ起動中にActivityが破棄された後に
 // getPendingResultAsyncで回収した結果の両方から使う
 export const saveCapturedPhoto = async (asset: ImagePicker.ImagePickerAsset, photoFolder: string) => {
-  const extension = asset.uri.split('.').pop();
+  //カメラは通常JPEGを返すが、端末の設定でHEIFになることがある。その場合もJPEGにそろえる（写真監査 P-H1）
+  const { uri: source, isConverted } = await convertToUploadableJpeg(asset.uri);
+  const extension = isConverted ? 'jpg' : asset.uri.split('.').pop();
   const name = `EMAP_${dayjs().format('YYYYMMDD_HHmmss')}.${extension}`;
-  const uri = await saveToStorage(asset.uri, name, photoFolder, { copy: true });
+  const uri = await saveToStorage(source, name, photoFolder, { copy: true });
+  if (isConverted) await deletePhotoFile(source);
   const thumbnail = await createThumbnail(uri);
   return { uri, thumbnail, name, width: asset.width, height: asset.height };
 };

@@ -13,8 +13,15 @@ jest.mock('expo-file-system/legacy', () => ({
   copyAsync: jest.fn(),
   deleteAsync: jest.fn(),
   getInfoAsync: jest.fn(),
-  EncodingType: { UTF8: 'UTF8' },
+  readAsStringAsync: jest.fn(),
+  EncodingType: { UTF8: 'UTF8', Base64: 'base64' },
   documentDirectory: 'file:///docs/',
+  cacheDirectory: 'file:///cache/',
+}));
+const mockConverter = { available: false, convert: jest.fn() };
+jest.mock('../../../modules/photo-converter/src', () => ({
+  isPhotoConverterAvailable: () => mockConverter.available,
+  convertPhotoToJpeg: (...args: unknown[]) => mockConverter.convert(...args),
 }));
 jest.mock('react-native', () => ({
   Platform: { OS: 'ios' },
@@ -184,6 +191,127 @@ describe('Photo', () => {
       expect(result?.name).toMatch(/^EMAP_\d{8}_\d{6}\.jpg$/);
       expect(result?.uri).toBe(`mock://folder/${result?.name}`);
       expect(mockMediaLibrary.createAssetAsync).toHaveBeenCalledWith(result?.uri);
+    });
+  });
+
+  describe('JPEG/PNG以外の写真（写真監査 P-H1）', () => {
+    const ImagePicker = require('expo-image-picker');
+    const originalOS = Platform.OS;
+    beforeEach(() => {
+      (Platform as { OS: string }).OS = 'ios';
+      mockFileSystem.makeDirectoryAsync.mockResolvedValue(undefined);
+      mockFileSystem.copyAsync.mockResolvedValue(undefined);
+      mockFileSystem.deleteAsync.mockResolvedValue(undefined);
+    });
+    afterEach(() => {
+      (Platform as { OS: string }).OS = originalOS;
+      mockConverter.available = false;
+    });
+
+    it('ネイティブ変換が使えればそれで変換し、image-manipulatorは使わない（EXIFを残す）', async () => {
+      mockConverter.available = true;
+      mockConverter.convert.mockResolvedValueOnce(undefined);
+      const result = await Photo.convertToUploadableJpeg('file:///a/x.heic');
+      expect(result.isConverted).toBe(true);
+      expect(result.uri).toMatch(/^file:\/\/\/cache\/photo_.+\.jpg$/);
+      expect(mockConverter.convert).toHaveBeenCalledWith('file:///a/x.heic', result.uri, 0.9);
+      expect(mockManipulateAsync).not.toHaveBeenCalled();
+    });
+
+    it('ネイティブ変換に失敗したらimage-manipulatorで変換する', async () => {
+      mockConverter.available = true;
+      mockConverter.convert.mockRejectedValueOnce(new Error('cannot read'));
+      mockManipulateAsync.mockResolvedValueOnce({ uri: 'file:///cache/conv.jpg', width: 1, height: 1 });
+      const result = await Photo.convertToUploadableJpeg('ph://ABC');
+      expect(result).toEqual({ uri: 'file:///cache/conv.jpg', isConverted: true });
+      //書きかけの出力は消す
+      expect(mockFileSystem.deleteAsync).toHaveBeenCalledWith(expect.stringMatching(/^file:\/\/\/cache\/photo_/), {
+        idempotent: true,
+      });
+    });
+
+    it('書き出し時のHEIC変換もネイティブ変換を使う', async () => {
+      mockConverter.available = true;
+      mockConverter.convert.mockResolvedValueOnce(undefined);
+      const result = await Photo.convertPhotoForExport('file:///a/IMG_1.HEIC', 'IMG_1.HEIC');
+      expect(result.isConverted).toBe(true);
+      expect(result.filename).toBe('IMG_1.jpg');
+      expect(mockManipulateAsync).not.toHaveBeenCalled();
+    });
+
+    it('中身がHEIFなら名前が.jpegでも変換する（AndroidのライブラリはHEIFを.jpegで返す）', async () => {
+      //HEIF: 先頭4バイトのあとに ftyp
+      mockFileSystem.readAsStringAsync.mockResolvedValueOnce(Buffer.from([0, 0, 0, 0x18, 0x66, 0x74, 0x79, 0x70]).toString('base64'));
+      mockManipulateAsync.mockResolvedValueOnce({ uri: 'file:///cache/conv.jpg', width: 1, height: 1 });
+      const result = await Photo.convertToUploadableJpeg('file:///cache/ImagePicker/x.jpeg');
+      expect(result).toEqual({ uri: 'file:///cache/conv.jpg', isConverted: true });
+    });
+
+    it('中身がJPEGなら変換しない', async () => {
+      mockFileSystem.readAsStringAsync.mockResolvedValueOnce(Buffer.from([0xff, 0xd8, 0xff, 0xe1, 0, 0, 0, 0]).toString('base64'));
+      const result = await Photo.convertToUploadableJpeg('file:///a/x.jpg');
+      expect(result).toEqual({ uri: 'file:///a/x.jpg', isConverted: false });
+      expect(mockManipulateAsync).not.toHaveBeenCalled();
+    });
+
+    it('アップロードできる拡張子はjpg/jpeg/pngだけ', () => {
+      expect(Photo.isUploadablePhotoPath('file:///a/EMAP_1.jpg')).toBe(true);
+      expect(Photo.isUploadablePhotoPath('file:///a/EMAP_1.JPEG')).toBe(true);
+      expect(Photo.isUploadablePhotoPath('file:///a/EMAP_1.png')).toBe(true);
+      expect(Photo.isUploadablePhotoPath('file:///a/EMAP_1.heic')).toBe(false);
+      expect(Photo.isUploadablePhotoPath('file:///a/EMAP_1.webp')).toBe(false);
+      expect(Photo.isUploadablePhotoPath('file:///a/EMAP_1')).toBe(false);
+    });
+
+    it('JPEGはそのまま返し、変換しない', async () => {
+      const result = await Photo.convertToUploadableJpeg('file:///a/x.jpg');
+      expect(result).toEqual({ uri: 'file:///a/x.jpg', isConverted: false });
+      expect(mockManipulateAsync).not.toHaveBeenCalled();
+    });
+
+    it('HEICはJPEGの一時ファイルに変換する', async () => {
+      mockManipulateAsync.mockResolvedValueOnce({ uri: 'file:///cache/conv.jpg', width: 1, height: 1 });
+      const result = await Photo.convertToUploadableJpeg('file:///a/x.heic');
+      expect(result).toEqual({ uri: 'file:///cache/conv.jpg', isConverted: true });
+      expect(mockManipulateAsync).toHaveBeenCalledWith('file:///a/x.heic', [], { compress: 0.9, format: 1 });
+    });
+
+    it('変換に失敗したら元のまま返す（写真は捨てない）', async () => {
+      mockManipulateAsync.mockRejectedValueOnce(new Error('decode failed'));
+      const result = await Photo.convertToUploadableJpeg('file:///a/x.heic');
+      expect(result).toEqual({ uri: 'file:///a/x.heic', isConverted: false });
+    });
+
+    it('ライブラリのHEICは.jpgとして保存し、変換の一時ファイルを消す', async () => {
+      ImagePicker.launchImageLibraryAsync.mockResolvedValueOnce({
+        canceled: false,
+        assets: [{ uri: 'file:///picker/IMG_1.heic', width: 400, height: 300 }],
+      });
+      mockManipulateAsync
+        .mockResolvedValueOnce({ uri: 'file:///cache/conv.jpg', width: 400, height: 300 })
+        .mockResolvedValueOnce({ uri: 'file:///cache/thumb.jpg', width: 150, height: 100, base64: 'abc' });
+
+      const result = await Photo.pickImage('file:///photos');
+
+      expect(result?.name).toMatch(/^EMAP_\d{8}_\d{6}\.jpg$/);
+      expect(mockFileSystem.copyAsync).toHaveBeenCalledWith({ from: 'file:///cache/conv.jpg', to: `file:///photos/${result?.name}` });
+      expect(mockFileSystem.deleteAsync).toHaveBeenCalledWith('file:///cache/conv.jpg', { idempotent: true });
+      expect(result?.uri).toBe(`file:///photos/${result?.name}`);
+    });
+
+    it('ライブラリのJPEGは再圧縮せずそのまま保存する', async () => {
+      ImagePicker.launchImageLibraryAsync.mockResolvedValueOnce({
+        canceled: false,
+        assets: [{ uri: 'file:///picker/IMG_2.jpg', width: 400, height: 300 }],
+      });
+      mockManipulateAsync.mockResolvedValueOnce({ uri: 'file:///cache/thumb.jpg', width: 150, height: 100, base64: 'abc' });
+
+      const result = await Photo.pickImage('file:///photos');
+
+      expect(result?.name).toMatch(/\.jpg$/);
+      expect(mockFileSystem.copyAsync).toHaveBeenCalledWith({ from: 'file:///picker/IMG_2.jpg', to: `file:///photos/${result?.name}` });
+      //サムネイル作成の1回だけ
+      expect(mockManipulateAsync).toHaveBeenCalledTimes(1);
     });
   });
 

@@ -1,0 +1,9 @@
+{
+  "platforms": ["apple", "android"],
+  "apple": {
+    "modules": ["PhotoConverterModule"]
+  },
+  "android": {
+    "modules": ["expo.modules.photoconverter.PhotoConverterModule"]
+  }
+}
