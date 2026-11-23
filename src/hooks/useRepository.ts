@@ -44,6 +44,7 @@ import { applyTakeoversToDataSet, dropRecordsResolvedAway } from '../utils/recor
 import { findSettingsMismatchedLayers, mergeOwnCloudRecords } from '../utils/ownDataSync';
 import { Platform } from 'react-native';
 import { t } from '../i18n/config';
+import { canDeleteProject } from '../utils/projectPermission';
 import { AlertAsync, ConfirmAsync, DataConflictConfirmAsync } from '../components/molecules/AlertAsync';
 import { exportDatabase, hasDictionaryTables, importDictionary } from '../utils/SQLite';
 import { ulid } from 'ulid';
@@ -1492,6 +1493,10 @@ export const useRepository = (): UseRepositoryReturnType & {
 
   const deleteProject = useCallback(
     async (project_: ProjectType) => {
+      // オーナー以外が進めると Storage だけ消えて project doc とデータが残るので、何も消さずに止める
+      if (!canDeleteProject(project_, user.uid)) {
+        return { isOK: false, message: t('hooks.message.deleteProjectOwnerOnly') };
+      }
       const { isOK: photoOK, message: photoMessage } = await projectStorage.deleteProjectStorageData(project_.id);
       if (!photoOK) {
         return { isOK: false, message: photoMessage };
@@ -1503,7 +1508,7 @@ export const useRepository = (): UseRepositoryReturnType & {
       dispatch(deleteProjectAction(project_));
       return { isOK: true, message: '' };
     },
-    [dispatch]
+    [dispatch, user.uid]
   );
 
   const downloadDictionaries = useCallback(async (projectId: string, layers_: LayerType[]) => {

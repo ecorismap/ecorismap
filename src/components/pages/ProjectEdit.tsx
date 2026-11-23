@@ -178,6 +178,7 @@ export default function ProjectEditScreen() {
           disabled={isEdited}
           isNew={isNew}
           isOwnerAdmin={isOwnerAdmin}
+          isOwner={isOwner}
           onPressOpenProject={() => pressOpenProject(false)}
           onPressDeleteProject={pressDeleteProject}
           onPressExportProject={pressExportProject}
