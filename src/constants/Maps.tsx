@@ -66,3 +66,16 @@ export const BASE: TileMapType[] = [
     flipY: false,
   },
 ];
+
+/**
+ * 新規（初回起動・プロジェクトを閉じた後・新規プロジェクト）の地図一覧。
+ * 日本語では不透明な地理院地図が標準地図を覆うので、標準地図は非表示にしておく。表示のままだと Web では
+ * 見えない MapTiler のタイルをパン・ズームのたびに取得し、無料枠を消費する（M-M21）。
+ * 保存済みの一覧（既存の利用者・共有プロジェクト）は変えない
+ */
+export const createInitialTileMaps = (language: string | undefined): TileMapType[] => {
+  if (language?.includes('ja')) {
+    return [...JP, ...BASE.map((m) => (m.id === 'standard' ? { ...m, visible: false } : m))];
+  }
+  return BASE;
+};

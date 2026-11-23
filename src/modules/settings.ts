@@ -3,6 +3,9 @@ import { DEFAULT_MAP_LIST_URL } from '../constants/AppConstants';
 import { TUTRIALS } from '../constants/Tutrials';
 import { TileRegionType, MemberLocationType, SettingsType, RoleType, ProximityAlertSettingsType } from '../types';
 import dayjs from 'dayjs';
+import { createInitialTileMaps } from '../constants/Maps';
+import i18n from '../i18n/config';
+import { mapTypeFromTileMaps } from '../utils/baseMapType';
 
 export const settingsInitialState: SettingsType = {
   tutrials: TUTRIALS,
@@ -14,7 +17,8 @@ export const settingsInitialState: SettingsType = {
   isOffline: false,
   updatedAt: dayjs('2000-01-01').toISOString(),
   role: undefined as RoleType | undefined,
-  mapType: 'standard',
+  // 初期の地図一覧（言語で標準地図の表示が変わる）とそろえる（M-M20・M-M21）。テストで i18n を差し替えても読めるよう ?. で読む
+  mapType: mapTypeFromTileMaps(createInitialTileMaps(i18n?.language)) ?? 'standard',
   tileRegions: [] as TileRegionType[],
   mapRegion: {
     latitude: 35,

@@ -18,6 +18,7 @@ import {
 import { t } from '../i18n/config';
 import { TileMapType } from '../types';
 import { downloadedDemTileUri } from './demSource';
+import { downloadFileIfOk, TileDownloadResult } from './tileDownloadHelpers';
 
 /** 疑似地図。ダウンロード機構に通すための定義で、Redux tileMapsには決して追加しない */
 export const getDemTileMap = (): TileMapType => ({
@@ -37,27 +38,20 @@ export const getDemTileMap = (): TileMapType => ({
 
 /**
  * 1タイル分のダウンロード。
- * 200は保存、404（外洋）は0バイトマーカーを書いて完了扱い。
- * 一時エラー（5xx・通信断）は中間ファイルを削除してthrowし、再開時に再試行される。
+ * 200は保存、404（外洋）は0バイトマーカーを書いて missing。
+ * 一時エラー（5xx・通信断）は保存済みのタイルを残したまま failed を返し、呼び出し側が枚数を知らせる。
  */
-export const downloadDemTile = async (tile: { z: number; x: number; y: number }): Promise<void> => {
+export const downloadDemTile = async (tile: { z: number; x: number; y: number }): Promise<TileDownloadResult> => {
   const path = downloadedDemTileUri(tile.z, tile.x, tile.y);
   const url = MAPTERHORN_URL.replace('{z}', String(tile.z))
     .replace('{x}', String(tile.x))
     .replace('{y}', String(tile.y));
-  let status: number;
+  const result = await downloadFileIfOk(url, path);
+  if (result !== 'missing') return result;
   try {
-    status = (await FileSystem.downloadAsync(url, path)).status;
-  } catch (e) {
-    await FileSystem.deleteAsync(path, { idempotent: true }).catch(() => {});
-    throw e;
-  }
-  if (status === 200) return;
-  if (status === 404) {
-    // 本文（エラーメッセージ）を0バイトのマーカーで上書きする
     await FileSystem.writeAsStringAsync(path, '');
-    return;
+    return 'missing';
+  } catch (e) {
+    return 'failed';
   }
-  await FileSystem.deleteAsync(path, { idempotent: true }).catch(() => {});
-  throw new Error(`DEM tile download failed: ${status}`);
 };

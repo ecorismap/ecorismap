@@ -18,6 +18,7 @@ import { readAsStringAsync } from 'expo-file-system/legacy';
 import { db } from '../utils/db';
 import * as FileSystem from 'expo-file-system/legacy';
 import { exportFileFromData } from '../utils/File';
+import { isPdfTileMap } from '../utils/pdfTileMap';
 
 // Web版のexpo-document-pickerはblob: URLを返すが、PDFインポート経路(importMapFile)はdata:を想定しているため変換する
 async function blobUriToDataUri(blobUri: string): Promise<string> {
@@ -79,7 +80,7 @@ export default function MapContainer() {
   const pressDownloadMap = useCallback(
     async (item: TileMapType) => {
       // Web版でローカルインポートしたPDF（file://）の場合はIndexedDBから保存済みPDFをダウンロード
-      if (Platform.OS === 'web' && item.url.startsWith('file://') && item.url.endsWith('.pdf')) {
+      if (Platform.OS === 'web' && item.url.startsWith('file://') && isPdfTileMap(item)) {
         try {
           const geotiff = await db.geotiff.get(item.id);
           if (geotiff && geotiff.pdf) {
@@ -190,7 +191,7 @@ export default function MapContainer() {
     });
     if (file.assets === null) return;
     const name = file.assets[0].name;
-    let uri = file.assets[0].uri;
+    const uri = file.assets[0].uri;
     const ext = getExt(name)?.toLowerCase();
     if (!ext || !(ext === 'json' || ext === 'pdf' || ext === 'pmtiles')) {
       await AlertAsync(t('hooks.message.wrongExtension'));
@@ -201,14 +202,24 @@ export default function MapContainer() {
       await AlertAsync(t('hooks.message.pmtilesNotSupportedOnMobile'));
       return;
     }
-    // expo-document-picker(Web)はblob: URLを返すが、importMapFileはdata:を想定しているためdata:に変換する
-    if (Platform.OS === 'web' && uri.startsWith('blob:')) {
-      uri = await blobUriToDataUri(uri);
-    }
     setIsLoading(true);
     setTimeout(async () => {
-      const { message } = await importMapFile(uri, name, ext);
-      setIsLoading(false);
+      let message = '';
+      try {
+        // expo-document-picker(Web)はblob: URLを返す。data:へ変換が要るのはPDFの経路だけ。
+        // PMTilesはfetch(blob:)で読めるので変換しない（数百MBを文字列にすると上限を超えて失敗する）（M-M10）
+        let importUri = uri;
+        if (Platform.OS === 'web' && ext === 'pdf' && uri.startsWith('blob:')) {
+          importUri = await blobUriToDataUri(uri);
+        }
+        const result = await importMapFile(importUri, name, ext);
+        message = result.message;
+      } catch (e) {
+        console.error('pressImportMaps error:', e);
+        message = t('hooks.message.failReceiveFile');
+      } finally {
+        setIsLoading(false);
+      }
       if (message !== '') await AlertAsync(message);
     }, 10);
   }, [importMapFile]);

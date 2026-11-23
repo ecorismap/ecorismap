@@ -91,6 +91,8 @@ async function loadRawTile(demUrlTemplate: string, z: number, x: number, y: numb
   try {
     const url = demUrlTemplate.replace('{z}', String(z)).replace('{x}', String(x)).replace('{y}', String(y));
     const response = await fetch(url);
+    // 覚えてよいのは成功と 404（タイルが無いと確定）だけ。5xx・429 などは一時的で、覚えると再読み込みまで欠ける
+    if (!response.ok && response.status !== 404) return null;
     if (response.ok) tile = await decodeGsjBlob(await response.blob());
   } catch {
     // ネットワークエラーは一時的な可能性があるためキャッシュしない

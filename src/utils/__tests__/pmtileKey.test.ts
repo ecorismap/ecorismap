@@ -68,4 +68,12 @@ describe('getUrlTileKey', () => {
     expect(getUrlTileKey(tileMap, TILE, true, 'ios')).not.toBe(getUrlTileKey(tileMap, TILE, false, 'ios'));
     expect(getUrlTileKey(tileMap, TILE, true, 'android')).toBe(getUrlTileKey(tileMap, TILE, false, 'android'));
   });
+
+  it('Android・iOS とも、redraw（同じ ID での PDF 再ダウンロード）で作り直す', () => {
+    for (const os of ['android', 'ios']) {
+      expect(getUrlTileKey({ ...tileMap, redraw: true }, TILE, false, os)).not.toBe(
+        getUrlTileKey({ ...tileMap, redraw: false }, TILE, false, os)
+      );
+    }
+  });
 });

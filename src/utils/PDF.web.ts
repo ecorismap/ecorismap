@@ -5,13 +5,13 @@ import { warpedFileType } from 'react-native-gdalwarp';
 import { GeoInfo } from './PDF';
 import {
   buildTileMapHTML,
-  buildTileUrl,
   isPmtilesMap,
   isVectorPmtilesMap,
   listPdfTiles,
   PdfTileMapOptions,
 } from './pdfExport/tiles';
 import { runTasks } from './pdfExport/runTasks';
+import { buildSignedTileUrl } from './pdfExport/signedTileUrl';
 import { createRasterPmtileLoader, renderVectorChunks } from './pdfExport/webPmtiles';
 import { getTileRegion } from './Tile';
 
@@ -38,7 +38,7 @@ export async function generateTileMap(
   const signatures = options.tileSignatures ?? {};
   const tiles = listPdfTiles(tileMaps, pdfRegion, tileZoom, true);
   const srcs = tiles.map((tile) =>
-    isPmtilesMap(tile.map) ? undefined : buildTileUrl(tile.map, tile.z, tile.x, tile.y)
+    isPmtilesMap(tile.map) ? undefined : buildSignedTileUrl(tile.map, tile.z, tile.x, tile.y, signatures)
   );
 
   const rasterIndexes = tiles.flatMap((tile, i) =>

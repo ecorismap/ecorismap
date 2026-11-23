@@ -71,6 +71,8 @@ jest.mock('../useWindow', () => ({
 
 jest.mock('expo-file-system/legacy', () => ({
   documentDirectory: 'file:///test/',
+  cacheDirectory: 'file:///cache/',
+  moveAsync: jest.fn(() => Promise.resolve()),
   makeDirectoryAsync: jest.fn(() => Promise.resolve()),
   downloadAsync: jest.fn(() => Promise.resolve({ uri: 'file://tile', status: 200 })),
   getInfoAsync: jest.fn(() => Promise.resolve({ exists: false })),
@@ -330,6 +332,10 @@ describe('useTiles', () => {
         (FileSystem.downloadAsync as jest.Mock).mockImplementation(async (_url: string, uri: string) =>
           count++ === 0 ? { uri, status: 404 } : { uri, status: 200 }
         );
+        (mockedDownloadTileGrid as jest.Mock).mockReturnValueOnce([
+          { x: 0, y: 0, z: 7 },
+          { x: 1, y: 0, z: 7 },
+        ]);
         const demMap = getDemTileMap();
         const { result } = renderHook(() => useTiles(undefined, [demMap.id], tileMaps));
 
@@ -339,7 +345,10 @@ describe('useTiles', () => {
 
         const calls = (FileSystem.downloadAsync as jest.Mock).mock.calls;
         expect(calls.every(([url]) => url.startsWith('https://tiles.mapterhorn.com/'))).toBe(true);
-        expect(calls.every(([, uri]) => /tiles\/dem_mapterhorn\/\d+\/\d+\/\d+\.webp$/.test(uri))).toBe(true);
+        // 一時ファイルへ落としてから保存先へ移す（失敗時に保存済みのタイルを消さないため）
+        const moves = (FileSystem.moveAsync as jest.Mock).mock.calls.map(([arg]) => arg.to);
+        expect(moves.length).toBeGreaterThan(0);
+        expect(moves.every((to: string) => /tiles\/dem_mapterhorn\/\d+\/\d+\/\d+\.webp$/.test(to))).toBe(true);
         expect(FileSystem.writeAsStringAsync).toHaveBeenCalledWith(expect.stringContaining('dem_mapterhorn/'), '');
 
         // 完了記録がdem_mapterhorn名義で保存される
@@ -729,6 +738,109 @@ describe('useTiles', () => {
       expect(pm).toHaveLength(1);
       expect(pm[0].status).toBeUndefined();
       expect(AlertAsync).toHaveBeenLastCalledWith('hooks.alert.completeDownload');
+    });
+  });
+
+  describe('404 以外で取れなかったタイルの警告（M-M1）と flipY（M-M2）', () => {
+    // 5枚中1枚目を503、2枚目を404にする
+    const mockStatuses = () => {
+      let count = 0;
+      (FileSystem.downloadAsync as jest.Mock).mockImplementation(async (_url: string, uri: string) => {
+        const n = count++;
+        return { uri, status: n === 0 ? 503 : n === 1 ? 404 : 200 };
+      });
+      (mockedDownloadTileGrid as jest.Mock).mockReturnValueOnce(
+        Array.from({ length: 5 }, (_, k) => ({ x: k, y: 0, z: 3 }))
+      );
+    };
+
+    afterEach(() => {
+      (FileSystem.downloadAsync as jest.Mock).mockImplementation(() =>
+        Promise.resolve({ uri: 'file://tile', status: 200 })
+      );
+    });
+
+    test('単一地図: 503 が1枚でもあれば完了扱いのまま枚数を知らせる（404 は数えない）', async () => {
+      mockStatuses();
+      const { result } = renderHook(() => useTiles(tileMaps[0]));
+
+      await act(async () => {
+        await result.current.downloadTiles(11);
+      });
+
+      const dispatched = getDispatchedTileRegions();
+      const m1 = dispatched[dispatched.length - 1].filter((r) => r.tileMapId === 'M1');
+      expect(m1).toHaveLength(1);
+      expect(m1[0].status).toBeUndefined();
+      expect(AlertAsync).toHaveBeenLastCalledWith('hooks.alert.someTilesFailed:count=1');
+    });
+
+    test('単一地図: 404 だけなら完了（範囲外の多い地図で失敗と出さない）', async () => {
+      (FileSystem.downloadAsync as jest.Mock).mockImplementation(async (_url: string, uri: string) => ({
+        uri,
+        status: 404,
+      }));
+      const { result } = renderHook(() => useTiles(tileMaps[0]));
+
+      await act(async () => {
+        await result.current.downloadTiles(11);
+      });
+
+      expect(AlertAsync).toHaveBeenLastCalledWith('hooks.alert.completeDownload');
+    });
+
+    test('複数地図: 失敗した枚数を地図ごとに知らせる', async () => {
+      mockStatuses();
+      const { result } = renderHook(() => useTiles(undefined, ['M1'], tileMaps));
+
+      await act(async () => {
+        await result.current.downloadMultipleTiles(11, [tileMaps[0]]);
+      });
+
+      const dispatched = getDispatchedTileRegions();
+      const m1 = dispatched[dispatched.length - 1].filter((r) => r.tileMapId === 'M1');
+      expect(m1[0].status).toBeUndefined();
+      const message = String((AlertAsync as jest.Mock).mock.calls.pop()?.[0]);
+      expect(message).toContain('hooks.message.failedTileCount:name=Map 1,count=1');
+      expect(message).toContain('hooks.message.retryFailedTiles');
+    });
+
+    test('flipY の地図は URL の y だけ反転し、XYZ の y のパスへ保存する', async () => {
+      (mockedDownloadTileGrid as jest.Mock).mockReturnValueOnce([{ x: 3, y: 1, z: 3 }]);
+      const tmsMap: TileMapType = { ...tileMaps[0], id: 'TMS', flipY: true };
+      const { result } = renderHook(() => useTiles(tmsMap));
+
+      await act(async () => {
+        await result.current.downloadTiles(11);
+      });
+
+      expect((FileSystem.downloadAsync as jest.Mock).mock.calls[0][0]).toBe('https://example.com/tiles1/3/3/6.png');
+      expect((FileSystem.moveAsync as jest.Mock).mock.calls[0][0].to).toBe('file:///test/tiles/TMS/3/3/1');
+    });
+
+    test('flipY の地図は、タイルを取る前に旧規約のキャッシュを片付けて印を置く（iOS が後で消さないように）', async () => {
+      (mockedDownloadTileGrid as jest.Mock).mockReturnValueOnce([{ x: 3, y: 1, z: 3 }]);
+      const order: string[] = [];
+      (FileSystem.writeAsStringAsync as jest.Mock).mockImplementation(async (path: string) => {
+        order.push(`write:${path}`);
+      });
+      (FileSystem.downloadAsync as jest.Mock).mockImplementation(async (url: string, uri: string) => {
+        order.push(`download:${url}`);
+        return { uri, status: 200 };
+      });
+      const tmsMap: TileMapType = { ...tileMaps[0], id: 'TMS2', flipY: true };
+      const { result } = renderHook(() => useTiles(tmsMap));
+
+      await act(async () => {
+        await result.current.downloadTiles(11);
+      });
+
+      const nativeMarker = order.indexOf('write:file:///test/tiles/TMS2/.xyz-tile-cache');
+      const firstDownload = order.findIndex((e) => e.startsWith('download:'));
+      expect(nativeMarker).toBeGreaterThanOrEqual(0);
+      expect(order).toContain('write:file:///test/tiles/TMS2/.xyz-tile-cache-js');
+      expect(nativeMarker).toBeLessThan(firstDownload);
+      (FileSystem.writeAsStringAsync as jest.Mock).mockImplementation(() => Promise.resolve());
     });
   });
 });

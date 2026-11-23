@@ -13,6 +13,7 @@ import { decodeDemFile } from '../../modules/dem-decoder/src';
 import { TILE_FOLDER } from '../constants/AppConstants';
 import { DEM_MAPTERHORN_MAP_ID, MAPTERHORN_URL } from '../constants/DemSources';
 import { createDemTileCache, DemTile, DemTileResult, demTileKey, isValidTile } from './demSourceCommon';
+import { clearDemTileDiskCache as clearGenericDemTileDiskCache } from './demTileLoader';
 
 export type { DemTile, DemTileResult } from './demSourceCommon';
 export { DEM_SOURCE_TILE_SIZE } from './demSourceCommon';
@@ -129,4 +130,15 @@ export const clearDemTileMemoryCache = (): void => cache.clear();
 export const clearDemTileDiskCache = async (): Promise<void> => {
   await FileSystem.deleteAsync(CACHE_DIR, { idempotent: true }).catch(() => {});
   cacheDirEnsured = false;
+};
+
+/**
+ * 標高タイルの取り直せるキャッシュを全部消す（設定のキャッシュクリアから呼ぶ）。
+ * Mapterhorn のメモリ・ディスク（dem_mapterhorn）と、URL 指定の標高タイル（dem_tiles）。
+ * オフラインDL（TILE_FOLDER）は消さない
+ */
+export const clearAllDemCaches = async (): Promise<void> => {
+  clearDemTileMemoryCache();
+  await clearDemTileDiskCache();
+  await clearGenericDemTileDiskCache();
 };

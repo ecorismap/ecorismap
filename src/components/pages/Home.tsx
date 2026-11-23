@@ -84,6 +84,7 @@ import { HomeTileMapSelector } from '../organisms/HomeTileMapSelector';
 import { useViewportBounds } from '../../hooks/useViewportBounds';
 import { HomePoiPopup } from '../organisms/HomePoiPopup';
 import { HomeTrackPointPopup } from '../organisms/HomeTrackPointPopup';
+import { isPdfTileMap } from '../../utils/pdfTileMap';
 
 interface TileMapsProps {
   tileMaps: TileMapType[];
@@ -106,7 +107,7 @@ const TileMaps = React.memo(({ tileMaps, isOffline }: TileMapsProps) => {
   const pmtileStyleURL = (tileMap: TileMapType) =>
     tileMap.styleURL ? withTileSignature(tileMap.styleURL, tileSignatures) : tileMap.styleURL;
   const urlTileTemplate = (tileMap: TileMapType) =>
-    tileMap.url.endsWith('.pdf') || tileMap.url.startsWith('pdf://')
+    isPdfTileMap(tileMap)
       ? 'file://dummy/{z}/{x}/{y}.png'
       : withTileSignature(tileMap.url, tileSignatures);
   return (
@@ -152,7 +153,7 @@ const TileMaps = React.memo(({ tileMaps, isOffline }: TileMapsProps) => {
                 maximumNativeZ={
                   //offlineで通常のタイルの場合、ダウンロードしたレベルの16にセットする
                   isOffline &&
-                  !(tileMap.url.endsWith('.pdf') || tileMap.url.startsWith('pdf://')) &&
+                  !isPdfTileMap(tileMap) &&
                   tileMap.overzoomThreshold > 16
                     ? 16
                     : tileMap.overzoomThreshold

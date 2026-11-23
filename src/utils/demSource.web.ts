@@ -70,3 +70,8 @@ export const downloadedDemTileUri = (_z: number, _x: number, _y: number): string
 export const clearDemTileMemoryCache = (): void => cache.clear();
 
 export const clearDemTileDiskCache = async (): Promise<void> => {};
+
+/** Web はディスクキャッシュを持たないので、メモリだけ消す（ネイティブ版と同じ呼び口） */
+export const clearAllDemCaches = async (): Promise<void> => {
+  clearDemTileMemoryCache();
+};

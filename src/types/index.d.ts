@@ -349,6 +349,10 @@ export interface TileMapType extends TileMapItemType {
   boundary?: boundaryType;
   encryptKey?: string;
   redraw?: boolean;
+  /** 複数ページの PDF から作ったページ地図の、元の地図（ダウンロードした項目）の id */
+  pdfSourceId?: string;
+  /** 複数ページの PDF から作ったページ地図のページ番号（1始まり） */
+  pdfPage?: number;
 }
 
 export type MapPresetType = {

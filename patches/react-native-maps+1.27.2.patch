@@ -357,10 +357,10 @@ index e4010de..e9a07ad 100644
 \ No newline at end of file
 diff --git a/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapDEMTileProvider.java b/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapDEMTileProvider.java
 new file mode 100644
-index 0000000..b5fbe3c
+index 0000000..38d53a1
 --- /dev/null
 +++ b/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapDEMTileProvider.java
-@@ -0,0 +1,857 @@
+@@ -0,0 +1,906 @@
 +package com.rnmaps.maps;
 +
 +import android.content.Context;
@@ -369,6 +369,7 @@ index 0000000..b5fbe3c
 +import android.util.Log;
 +import android.util.LruCache;
 +import com.google.android.gms.maps.model.Tile;
++import com.google.android.gms.maps.model.TileProvider;
 +import java.io.ByteArrayOutputStream;
 +import java.util.ArrayList;
 +import java.util.List;
@@ -519,6 +520,10 @@ index 0000000..b5fbe3c
 +  private static final ExecutorService NEIGHBOR_EXECUTOR = Executors.newFixedThreadPool(4);
 +  /** 標高配列の一辺。全タイル同じ前提で最初に見たタイルから決まる */
 +  private volatile int demTileSize = 0;
++  /** terrarium（Mapterhorn）の標高タイルの一辺 */
++  private static final int TERRARIUM_TILE_SIZE = 512;
++  /** 標高タイル取得の一時的失敗が最後に起きた時刻（System.nanoTime）。shadingCache に入れるかの判定に使う */
++  private volatile long lastTransientFailureAt = Long.MIN_VALUE;
 +  /** relief://（陰影段彩＋等深線）モード。URLプレフィックスから自己判定する */
 +  private volatile boolean reliefMode = false;
 +  /** GEBCO配色（URLフラグメントの #style=gebco から自己判定する） */
@@ -592,11 +597,23 @@ index 0000000..b5fbe3c
 +
 +  @Override
 +  public Tile getTile(int x, int y, int zoom) {
++    try {
++      return getShadedTile(x, y, zoom);
++    } catch (Exception | OutOfMemoryError e) {
++      Log.w(TAG, "getTile failed: " + zoom + "/" + x + "/" + y + " " + e);
++      return null;
++    }
++  }
++
++  private Tile getShadedTile(int x, int y, int zoom) {
 +    String cacheKey = x + "," + y + "," + zoom;
 +    byte[] cached = shadingCache.get(cacheKey);
 +    if (cached != null) {
 +      return new Tile(outTileSize(), outTileSize(), cached);
 +    }
++    // この描画中に一時的な失敗（オフラインの未保存・タイムアウト・5xx）があれば、粗いズームや
++    // 袖の欠けた結果を shadingCache に残さない（取れるようになったら正しく描き直すため）
++    long startedAt = System.nanoTime();
 +
 +    // まずオーバーズーム分を落とす。terrariumは1段粗いズームの512pxタイルから切り出す
 +    int startZoom = zoom > maximumNativeZ ? (int) maximumNativeZ : zoom;
@@ -622,7 +639,9 @@ index 0000000..b5fbe3c
 +      if (processed == null) {
 +        return null;
 +      }
-+      shadingCache.put(cacheKey, processed);
++      if (lastTransientFailureAt < startedAt) {
++        shadingCache.put(cacheKey, processed);
++      }
 +      return new Tile(outTileSize(), outTileSize(), processed);
 +    }
 +    return null;
@@ -654,9 +673,12 @@ index 0000000..b5fbe3c
 +  }
 +
 +  private float[] loadElevationUncached(String key, int x, int y, int zoom) {
-+
-+    Tile demTile = super.getTile(x, y, zoom);
-+    if (demTile == null || demTile.data == null) {
++    boolean[] transientFailure = new boolean[1];
++    byte[] demData = fetchDemTileBytes(x, y, zoom, transientFailure);
++    if (demData == null) {
++      if (transientFailure[0] || this.offlineMode) {
++        lastTransientFailureAt = System.nanoTime();
++      }
 +      return null;
 +    }
 +
@@ -668,7 +690,7 @@ index 0000000..b5fbe3c
 +    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
 +      options.inPreferredColorSpace = android.graphics.ColorSpace.get(android.graphics.ColorSpace.Named.SRGB);
 +    }
-+    Bitmap bitmap = BitmapFactory.decodeByteArray(demTile.data, 0, demTile.data.length, options);
++    Bitmap bitmap = BitmapFactory.decodeByteArray(demData, 0, demData.length, options);
 +    if (bitmap == null) {
 +      Log.e(TAG, "Failed to decode DEM tile: " + key);
 +      return null;
@@ -676,6 +698,14 @@ index 0000000..b5fbe3c
 +
 +    int width = bitmap.getWidth();
 +    int height = bitmap.getHeight();
++    // terrarium は 512px 前提でズームをずらしている。寸法が合わないタイルを1枚でも採ると
++    // demTileSize が狂い、以後の正しいタイルがすべて長さ不一致で捨てられる
++    int expectedSize = terrarium ? TERRARIUM_TILE_SIZE : demTileSize;
++    if (width != height || (expectedSize > 0 && width != expectedSize)) {
++      Log.w(TAG, "Unexpected DEM tile size " + width + "x" + height + ": " + key);
++      bitmap.recycle();
++      return null;
++    }
 +    int[] pixels = new int[width * height];
 +    bitmap.getPixels(pixels, 0, width, 0, 0, width, height);
 +    bitmap.recycle();
@@ -695,6 +725,25 @@ index 0000000..b5fbe3c
 +    }
 +    elevationCache.put(key, elevation);
 +    return elevation;
++  }
++
++  /**
++   * 標高タイル1枚の生データ。地図タイル用の getTile は失敗時に低ズームを拡大した画像を返すが、
++   * 標高ではその画像（寸法・位置がずれ、補間で値も壊れる）を成功と取り違えるので通さない。
++   * 粗いズームへ降りるのは getShadedTile のループに任せる。
++   */
++  private byte[] fetchDemTileBytes(int x, int y, int zoom, boolean[] transientFailure) {
++    if (!this.customMode || this.tileCachePath == null) {
++      // キャッシュなしの素の取得は代替処理を持たない
++      Tile tile = this.tileProvider.getTile(x, y, zoom);
++      if (tile == null || tile.data == null) {
++        // NO_TILE は範囲外の確定。null は取得失敗
++        if (tile != TileProvider.NO_TILE) transientFailure[0] = true;
++        return null;
++      }
++      return tile.data;
++    }
++    return getTileImage(x, y, zoom, false, transientFailure);
 +  }
 +
 +  /**
@@ -1503,10 +1552,10 @@ index 0000000..a60b11d
 +}
 diff --git a/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapPMTileProvider.java b/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapPMTileProvider.java
 new file mode 100644
-index 0000000..60be36a
+index 0000000..ba22e98
 --- /dev/null
 +++ b/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapPMTileProvider.java
-@@ -0,0 +1,1396 @@
+@@ -0,0 +1,1467 @@
 +package com.rnmaps.maps;
 +
 +import PMTiles.Header;
@@ -1784,17 +1833,47 @@ index 0000000..60be36a
 +    }
 +  }
 +
++  /**
++   * 直前の getTile が null を返した理由が一時的なもの（通信失敗・ヘッダー未取得・オフラインの未保存・
++   * スタイル未読込）か。3D のラスタライザが「タイルなし」の印を書いてよいかの判定に使う。
++   * 同じスレッドで getTile を呼んだ直後にだけ意味がある
++   */
++  private final ThreadLocal<Boolean> transientMiss = ThreadLocal.withInitial(() -> false);
++
++  public boolean wasLastMissTransient() {
++    return transientMiss.get() || this.tileType < 0 || this.offlineMode;
++  }
++
++  private void markTransientMiss() {
++    transientMiss.set(true);
++  }
++
 +  @Override
 +  public Tile getTile(int x, int y, int zoom) {
++    transientMiss.set(false);
++    // 壊れたキャッシュや想定外のデータで例外が出ても、地図SDKのワーカーを落とさず空白にする
++    try {
++      return getTileInternal(x, y, zoom);
++    } catch (Exception | OutOfMemoryError e) {
++      markTransientMiss();
++      Log.w("urlTile", "PMTile getTile failed: " + zoom + "/" + x + "/" + y + " " + e);
++      return null;
++    }
++  }
++
++  private Tile getTileInternal(int x, int y, int zoom) {
 +    byte[] image = null;
 +    int maximumZ = this.maximumZ > 0 ? this.maximumZ : Integer.MAX_VALUE;
++    if (zoom > maximumZ) return null;
 +
 +    if (this.tileSize == 256 && this.doubleTileSize && zoom + 1 <= this.maximumNativeZ && zoom + 1 <= maximumZ) {
 +      // Log.d("urlTile", "pullTilesFromHigherZoom");
 +      image = pullTilesFromHigherZoom(x, y, zoom);
 +    }
 +
-+    if (zoom > this.maximumNativeZ && zoom <= this.maximumNativeZ + 1) {
++    // maximumNativeZ より細かいズームは何段でも親タイルを拡大する（iOS と同じ）。
++    // オフラインでは保存したズームより上のタイルが無く、オンラインでもアーカイブの最大ズームを超えると空になるため
++    if (zoom > this.maximumNativeZ) {
 +      // Log.d("urlTile", "scaleLowerZoomTile");
 +      image = scaleLowerZoomTile(x, y, zoom, this.maximumNativeZ);
 +    }
@@ -1823,13 +1902,15 @@ index 0000000..60be36a
 +    byte[] image = null;
 +    if (this.tileCachePath != null) {
 +      image = readTileImage(x, y, zoom);
-+      // if (image != null) {
-+      //   //System.out.println("##read from cache" + zoom + "/" + x + "/" + y);
-+      //   boolean needRefresh = checkForRefresh(x, y, zoom);
-+      //   if (needRefresh) {
-+      //     image = null;
-+      //   }
-+      // }
++      if (image != null && checkForRefresh(x, y, zoom)) {
++        byte[] refreshed = fetchTile(x, y, zoom);
++        if (refreshed == null) {
++          // 描き直せない（オフラインで .pbf が無い・通信失敗・スタイル未読込）ときは前の絵を出し続ける
++          return image;
++        }
++        writeTileImage(refreshed, x, y, zoom);
++        return refreshed;
++      }
 +    }
 +    if (image == null && this.tileCachePath != null) {
 +      // Log.d("urlTile", "Normal fetch");
@@ -1859,30 +1940,21 @@ index 0000000..60be36a
 +      return null;
 +    }
 +
-+    Bitmap bitmap;
-+    if (leftTop != null) {
-+      bitmap = BitmapFactory.decodeByteArray(leftTop, 0, leftTop.length);
-+      canvas.drawBitmap(bitmap, 0, 0, paint);
-+      bitmap.recycle();
-+    }
-+    if (leftBottom != null) {
-+      bitmap = BitmapFactory.decodeByteArray(leftBottom, 0, leftBottom.length);
-+      canvas.drawBitmap(bitmap, 0, 256, paint);
-+      bitmap.recycle();
-+    }
-+    if (rightTop != null) {
-+      bitmap = BitmapFactory.decodeByteArray(rightTop, 0, rightTop.length);
-+      canvas.drawBitmap(bitmap, 256, 0, paint);
-+      bitmap.recycle();
-+    }
-+    if (rightBottom != null) {
-+      bitmap = BitmapFactory.decodeByteArray(rightBottom, 0, rightBottom.length);
-+      canvas.drawBitmap(bitmap, 256, 256, paint);
-+      bitmap.recycle();
-+    }
++    drawQuarter(canvas, paint, leftTop, 0, 0);
++    drawQuarter(canvas, paint, leftBottom, 0, 256);
++    drawQuarter(canvas, paint, rightTop, 256, 0);
++    drawQuarter(canvas, paint, rightBottom, 256, 256);
 +    data = bitmapToByteArray(image);
 +    image.recycle();
 +    return data;
++  }
++
++  private static void drawQuarter(Canvas canvas, Paint paint, byte[] data, int left, int top) {
++    if (data == null) return;
++    Bitmap bitmap = BitmapFactory.decodeByteArray(data, 0, data.length);
++    if (bitmap == null) return;
++    canvas.drawBitmap(bitmap, left, top, paint);
++    bitmap.recycle();
 +  }
 +
 +  Bitmap getNewBitmap() {
@@ -1916,16 +1988,20 @@ index 0000000..60be36a
 +    int yOffset = y % zoomFactor;
 +    byte[] data;
 +
-+    Bitmap image = getNewBitmap();
-+    Canvas canvas = new Canvas(image);
-+    Paint paint = new Paint();
 +    data = getTileImage(xParent, yParent, zoomParent);
 +
 +    if (data == null) return null;
-+    Bitmap sourceImage;
-+
-+    sourceImage = BitmapFactory.decodeByteArray(data, 0, data.length);
-+    int subTileSize = this.tileSize / zoomFactor;
++    Bitmap sourceImage = BitmapFactory.decodeByteArray(data, 0, data.length);
++    if (sourceImage == null) return null;
++    // 切り出しは親タイルの実寸で行う。段数が深く1画素未満になる範囲は描かない
++    int subTileSize = sourceImage.getWidth() / zoomFactor;
++    if (subTileSize < 1) {
++      sourceImage.recycle();
++      return null;
++    }
++    Bitmap image = getNewBitmap();
++    Canvas canvas = new Canvas(image);
++    Paint paint = new Paint();
 +
 +    Rect sourceRect = new Rect(
 +      xOffset * subTileSize,
@@ -1942,25 +2018,22 @@ index 0000000..60be36a
 +    return data;
 +  }
 +
++  /**
++   * 描画済みのベクタタイル（拡張子なしの PNG）が、今のスタイルより前に描かれたものか。
++   * ラスタはアーカイブの生バイトでスタイルに依らないので対象外。スタイルの更新時刻が
++   * まだ分からない（0、読み込み中）ときは描き直さない（毎回描き直して表示が止まるのを避ける）
++   */
 +  boolean checkForRefresh(int x, int y, int zoom) {
++    int type = this.tileType >= 0 ? this.tileType : getHintTileType();
++    if (type != 0 && type != 1) return false;
++    VectorTileStyleManager manager = this.styleManager;
++    if (manager == null) return false;
++    long styleLastUpdatedTime = manager.getLastUpdatedTime();
++    if (styleLastUpdatedTime <= 0) return false;
 +    String fileName = getTileFilename(x, y, zoom);
-+    File file = new File(fileName);
-+    long lastModified = file.lastModified();
-+    long now = System.currentTimeMillis();
-+    long styleLastUpdatedTime = styleManager.getLastUpdatedTime();
-+    // System.out.println(
-+    //   "##!" + x + "/" + y + "/" + zoom + ", " + styleLastUpdatedTime + ", " + lastModified + ", " + now
-+    // );
-+    if (styleLastUpdatedTime > lastModified || styleLastUpdatedTime == 0) {
-+      //System.out.println("##!style updated" + x + "/" + y + "/" + zoom);
-+      return true;
-+    }
-+    if ((now - lastModified) / 1000 > this.tileCacheMaxAge) {
-+      //System.out.println("##cache expired");
-+      return true;
-+    }
-+    //System.out.println("##!not update " + x + "/" + y + "/" + zoom);
-+    return false;
++    if (fileName == null) return false;
++    long lastModified = new File(fileName).lastModified();
++    return lastModified > 0 && styleLastUpdatedTime > lastModified;
 +  }
 +
 +  void setColorByCategory(Paint paint, String categoryC) {
@@ -2500,15 +2573,23 @@ index 0000000..60be36a
 +      }
 +      //Log.d("urlTile", pbfData == null ? "null" : "not null");
 +      if (pbfData == null) {
-+        if (this.offlineMode || cacheOnly) return null;
++        if (this.offlineMode || cacheOnly) {
++          markTransientMiss();
++          return null;
++        }
 +        if (type == 0) {
 +          pbfData = fetchPbf(zoom, x, y);
++          if (pbfData == null) return null;
 +        } else {
 +          PMTiles source = this.pmtiles;
-+          if (source == null) return null;
++          if (source == null) {
++            markTransientMiss();
++            return null;
++          }
 +          CompletableFuture<Optional<RangeResponse>> futureTileData = source.getZxy(zoom, x, y);
 +          Optional<RangeResponse> optionalRangeResponse = futureTileData.get();
 +
++          // アーカイブにこのタイルが無い（確定）
 +          if (!optionalRangeResponse.isPresent()) return null;
 +          RangeResponse rangeResponse = optionalRangeResponse.get();
 +          pbfData = rangeResponse.data.array();
@@ -2558,13 +2639,19 @@ index 0000000..60be36a
 +      List<LayerStyle> styles = manager.getStyleLayers();
 +      // style.json の読み込みが終わるまでは描かない（素の既定色で描いた画像をキャッシュに残さない）。
 +      // 初期化完了時に clearTileCache で読み直される
-+      if (styles == null) return null;
++      if (styles == null) {
++        markTransientMiss();
++        return null;
++      }
 +      if (styles.size() == 0) {
 +        Metadata currentMetadata = this.metadata;
 +        // メタデータが未取得（オフライン・ヘッダー取得失敗）なら、前回保存した style.json で描く
 +        styles =
 +          currentMetadata != null ? manager.getDefaultStyleLayers(currentMetadata) : manager.getLocalStyleLayers();
-+        if (styles == null || styles.size() == 0) return null;
++        if (styles == null || styles.size() == 0) {
++          markTransientMiss();
++          return null;
++        }
 +      }
 +      Bitmap image = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888);
 +      image.eraseColor(Color.TRANSPARENT);
@@ -2588,6 +2675,7 @@ index 0000000..60be36a
 +      // CompletableFuture#get()の例外処理
 +      //e.printStackTrace();
 +      //Log.d("urlTile", "!!An error occurred: " + e.getMessage());
++      markTransientMiss();
 +      return null;
 +    }
 +  }
@@ -2597,6 +2685,7 @@ index 0000000..60be36a
 +    PMTiles source = this.pmtiles;
 +    if (source == null || this.offlineMode) {
 +      // オフラインモード時はpmtilesが初期化されないためNPEを防ぐ
++      markTransientMiss();
 +      return null;
 +    }
 +    CompletableFuture<Optional<RangeResponse>> futureTileData = source.getZxy(zoom, x, y);
@@ -2615,6 +2704,7 @@ index 0000000..60be36a
 +    } catch (InterruptedException | ExecutionException e) {
 +      // CompletableFuture#get()の例外処理
 +      e.printStackTrace();
++      markTransientMiss();
 +      return null;
 +    }
 +  }
@@ -2631,12 +2721,18 @@ index 0000000..60be36a
 +      } else {
 +        type = getHintTileType();
 +        cacheOnly = true;
++        markTransientMiss();
 +      }
 +    }
 +    if (type == 0 || type == 1) {
 +      tile = getVectorTile(x, y, zoom, type, cacheOnly);
 +    } else if ((type == 2 || type == 3) && !cacheOnly) {
 +      tile = getRasterTile(x, y, zoom);
++    }
++    if (tile != null && (type == 2 || type == 3) && !MapTileProvider.isImageData(tile.data)) {
++      // 画像として読めないデータを保存すると以後取り直さないので、一時的失敗として捨てる
++      markTransientMiss();
++      return null;
 +    }
 +    if (Objects.isNull(tile)) {
 +      // Log.d("urlTileA:NO_TILE", getTileFilename(x, y, zoom));
@@ -2657,6 +2753,15 @@ index 0000000..60be36a
 +      connection.setRequestMethod("GET");
 +      connection.setDoInput(true);
 +      connection.connect();
++      int responseCode = connection.getResponseCode();
++      if (responseCode == HttpURLConnection.HTTP_NOT_FOUND || responseCode == HttpURLConnection.HTTP_NO_CONTENT) {
++        // タイルが無い（確定）
++        return null;
++      }
++      if (responseCode != HttpURLConnection.HTTP_OK) {
++        markTransientMiss();
++        return null;
++      }
 +      InputStream input = connection.getInputStream();
 +      ByteArrayOutputStream buffer = new ByteArrayOutputStream();
 +      byte[] data = new byte[BUFFER_SIZE];
@@ -2665,11 +2770,23 @@ index 0000000..60be36a
 +        buffer.write(data, 0, nRead);
 +      }
 +      buffer.flush();
++      input.close();
 +      return buffer.toByteArray();
 +    } catch (IOException e) {
 +      e.printStackTrace();
++      markTransientMiss();
 +      return null;
 +    }
++  }
++
++  // JS のダウンロードは最終パスへ直接書くので、書いている最中のファイルを読むことがある。
++  // 新しいファイルは書きかけかもしれないので消さず、しばらく経っても壊れたままのものだけ消す
++  private static final long PARTIAL_FILE_GRACE_MS = 60_000;
++
++  static void deleteIfNotBeingWritten(File file) {
++    long modified = file.lastModified();
++    if (modified > 0 && System.currentTimeMillis() - modified < PARTIAL_FILE_GRACE_MS) return;
++    file.delete();
 +  }
 +
 +  byte[] readPbfData(int x, int y, int zoom) {
@@ -2696,6 +2813,12 @@ index 0000000..60be36a
 +      // ここでBase64デコード
 +      byte[] decodedData = Base64.getDecoder().decode(stringBuilder.toString());
 +      return decodedData;
++    } catch (java.io.FileNotFoundException e) {
++      return null;
++    } catch (IllegalArgumentException e) {
++      // 途中まで書かれたファイル。残すと JS の再開ダウンロードが取り直さないので消す
++      deleteIfNotBeingWritten(file);
++      return null;
 +    } catch (IOException e) {
 +      e.printStackTrace();
 +      return null;
@@ -2724,11 +2847,16 @@ index 0000000..60be36a
 +      }
 +      buffer.flush();
 +
-+      if (this.tileCacheMaxAge == 0) {
-+        file.setLastModified(System.currentTimeMillis());
++      byte[] cached = buffer.toByteArray();
++      if (!MapTileProvider.isImageData(cached)) {
++        // 容量不足で途中まで書かれたファイルなど。残すと JS の再開ダウンロードが取り直さないので消す
++        deleteIfNotBeingWritten(file);
++        return null;
 +      }
-+
-+      return buffer.toByteArray();
++      // 描画済み画像の更新時刻はスタイルとの新旧比較に使うので、読んだだけでは触らない
++      return cached;
++    } catch (java.io.FileNotFoundException e) {
++      return null;
 +    } catch (IOException e) {
 +      e.printStackTrace();
 +      return null;
@@ -2746,59 +2874,51 @@ index 0000000..60be36a
 +  }
 +
 +  boolean writePbfData(byte[] pbf, int x, int y, int zoom) {
-+    OutputStream out = null;
 +    String fileName = getPbfFilename(x, y, zoom); // このメソッドは実装による
 +    if (fileName == null) {
 +      return false;
 +    }
 +
++    // バイトデータをBase64でエンコード
++    String base64Image = Base64.getEncoder().encodeToString(pbf);
++    return writeFileAtomically(fileName, base64Image.getBytes());
++  }
++
++  /** 一時ファイルに書いてから置き換える。書き込みに失敗しても途中までのファイルを残さないため */
++  static boolean writeFileAtomically(String fileName, byte[] bytes) {
++    File file = new File(fileName);
++    File tmp = new File(fileName + ".tmp" + Thread.currentThread().getId());
++    OutputStream out = null;
 +    try {
-+      // バイトデータをBase64でエンコード
-+      String base64Image = Base64.getEncoder().encodeToString(pbf);
-+
-+      File file = new File(fileName);
-+      file.getParentFile().mkdirs();
-+      out = new FileOutputStream(file);
-+
-+      // Base64文字列をバイト配列に変換してファイルに書き出し
-+      out.write(base64Image.getBytes());
-+
-+      return true;
-+    } catch (IOException e) {
-+      e.printStackTrace();
++      File parent = file.getParentFile();
++      if (parent != null) parent.mkdirs();
++      out = new FileOutputStream(tmp);
++      out.write(bytes);
++      out.close();
++      out = null;
++      if (tmp.renameTo(file)) {
++        tmp = null;
++        return true;
++      }
++      return false;
++    } catch (IOException | OutOfMemoryError e) {
++      Log.d("urlTile", "writeFileAtomically: " + e.getMessage());
 +      return false;
 +    } finally {
 +      if (out != null) try {
 +        out.close();
 +      } catch (Exception ignored) {}
++      if (tmp != null) tmp.delete();
 +    }
 +  }
 +
 +  boolean writeTileImage(byte[] image, int x, int y, int zoom) {
-+    OutputStream out = null;
 +    String fileName = getTileFilename(x, y, zoom);
 +    if (fileName == null) {
 +      return false;
 +    }
 +
-+    try {
-+      File file = new File(fileName);
-+      file.getParentFile().mkdirs();
-+      out = new FileOutputStream(file);
-+      out.write(image);
-+
-+      return true;
-+    } catch (IOException e) {
-+      e.printStackTrace();
-+      return false;
-+    } catch (OutOfMemoryError e) {
-+      e.printStackTrace();
-+      return false;
-+    } finally {
-+      if (out != null) try {
-+        out.close();
-+      } catch (Exception ignored) {}
-+    }
++    return writeFileAtomically(fileName, image);
 +  }
 +
 +  String getPbfFilename(int x, int y, int zoom) {
@@ -2904,7 +3024,7 @@ index 0000000..60be36a
 +  }
 +}
 diff --git a/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapTileProvider.java b/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapTileProvider.java
-index a974311..3ee0827 100644
+index a974311..46da19e 100644
 --- a/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapTileProvider.java
 +++ b/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapTileProvider.java
 @@ -1,49 +1,52 @@
@@ -3010,7 +3130,7 @@ index a974311..3ee0827 100644
        }
  
        try {
-@@ -85,188 +87,257 @@ public class MapTileProvider implements TileProvider {
+@@ -85,188 +87,270 @@ public class MapTileProvider implements TileProvider {
      }
    }
  
@@ -3118,7 +3238,16 @@ index a974311..3ee0827 100644
 +  @Override
 +  public Tile getTile(int x, int y, int zoom) {
 +    if (!this.customMode) return this.tileProvider.getTile(x, y, zoom);
++    // 壊れたキャッシュや想定外のデータで例外が出ても、地図SDKのワーカーを落とさず空白にする
++    try {
++      return getCustomTile(x, y, zoom);
++    } catch (Exception | OutOfMemoryError e) {
++      Log.w("urlTile", "getTile failed: " + zoom + "/" + x + "/" + y + " " + e);
++      return null;
++    }
++  }
 +
++  private Tile getCustomTile(int x, int y, int zoom) {
 +    byte[] image = null;
 +    int maximumZ = this.maximumZ > 0 ? this.maximumZ : Integer.MAX_VALUE;
 +
@@ -3375,6 +3504,7 @@ index a974311..3ee0827 100644
 +      Bitmap bitmapLeftTop = BitmapFactory.decodeByteArray(leftTop, 0, leftTop.length);
 +      if (bitmapLeftTop != null) {
 +        canvas.drawBitmap(bitmapLeftTop, null, new Rect(0, 0, width / 2, height / 2), paint);
++        bitmapLeftTop.recycle();
 +      }
 +    }
 +    if (leftBottom != null) {
@@ -3382,6 +3512,7 @@ index a974311..3ee0827 100644
 +      Bitmap bitmapLeftBottom = BitmapFactory.decodeByteArray(leftBottom, 0, leftBottom.length);
 +      if (bitmapLeftBottom != null) {
 +        canvas.drawBitmap(bitmapLeftBottom, null, new Rect(0, height / 2, width / 2, height), paint);
++        bitmapLeftBottom.recycle();
 +      }
 +    }
 +    if (rightTop != null) {
@@ -3389,6 +3520,7 @@ index a974311..3ee0827 100644
 +      Bitmap bitmapRightTop = BitmapFactory.decodeByteArray(rightTop, 0, rightTop.length);
 +      if (bitmapRightTop != null) {
 +        canvas.drawBitmap(bitmapRightTop, null, new Rect(width / 2, 0, width, height / 2), paint);
++        bitmapRightTop.recycle();
 +      }
 +    }
 +    if (rightBottom != null) {
@@ -3396,6 +3528,7 @@ index a974311..3ee0827 100644
 +      Bitmap bitmapRightBottom = BitmapFactory.decodeByteArray(rightBottom, 0, rightBottom.length);
 +      if (bitmapRightBottom != null) {
 +        canvas.drawBitmap(bitmapRightBottom, null, new Rect(width / 2, height / 2, width, height), paint);
++        bitmapRightBottom.recycle();
 +      }
 +    }
      
@@ -3422,7 +3555,7 @@ index a974311..3ee0827 100644
      image.eraseColor(Color.TRANSPARENT);
      return image;
    }
-@@ -279,12 +350,16 @@ public class MapTileProvider implements TileProvider {
+@@ -279,12 +363,16 @@ public class MapTileProvider implements TileProvider {
      try {
        bos.close();
      } catch (Exception e) {
@@ -3441,33 +3574,41 @@ index a974311..3ee0827 100644
      int overZoomLevel = zoom - maximumZoom;
      int zoomFactor = 1 << overZoomLevel;
      
-@@ -294,201 +369,274 @@ public class MapTileProvider implements TileProvider {
+@@ -294,201 +382,336 @@ public class MapTileProvider implements TileProvider {
      
      int xOffset = x % zoomFactor;
      int yOffset = y % zoomFactor;
 -
      byte[] data;
 -    Bitmap image = getNewBitmap();
-+
+-    Canvas canvas = new Canvas(image);
+-    Paint paint = new Paint();
+ 
+-		data = getTileImage(xParent, yParent, zoomParent);
+-    if (data == null) return null;
 +    // if (overZoomLevel > 3) {
 +    //   return null;
 +    // }
-+    Bitmap image = getNewBitmap(this.tileSize, this.tileSize);
-     Canvas canvas = new Canvas(image);
-     Paint paint = new Paint();
 +    data = getTileImage(xParent, yParent, zoomParent, cacheOnly, transientFailure);
- 
--		data = getTileImage(xParent, yParent, zoomParent);
-     if (data == null) return null;
--    
-     Bitmap sourceImage;
+     
+-    Bitmap sourceImage;
 -    sourceImage = BitmapFactory.decodeByteArray(data, 0, data.length);
++    if (data == null) return null;
++    Bitmap sourceImage = BitmapFactory.decodeByteArray(data, 0, data.length);
++    if (sourceImage == null) return null;
++    // 切り出しは親タイルの実寸で行う（tileSize と違う大きさの画像を返すサーバーがある）
++    int subTileSize = sourceImage.getWidth() / zoomFactor;
++    if (subTileSize < 1) {
++      sourceImage.recycle();
++      return null;
++    }
++    Bitmap image = getNewBitmap(this.tileSize, this.tileSize);
++    Canvas canvas = new Canvas(image);
++    Paint paint = new Paint();
  
-+    sourceImage = BitmapFactory.decodeByteArray(data, 0, data.length);
-     int subTileSize = this.tileSize / zoomFactor;
+-    int subTileSize = this.tileSize / zoomFactor;
 -    Rect sourceRect = new Rect(xOffset * subTileSize, yOffset * subTileSize, xOffset * subTileSize + subTileSize , yOffset * subTileSize + subTileSize);
 -    Rect targetRect = new Rect(0,0,TARGET_TILE_SIZE, TARGET_TILE_SIZE);
-+
 +    Rect sourceRect = new Rect(
 +      xOffset * subTileSize,
 +      yOffset * subTileSize,
@@ -3713,7 +3854,15 @@ index a974311..3ee0827 100644
 +        buffer.write(data, 0, nRead);
 +      }
 +      buffer.flush();
-+      return buffer.toByteArray();
++      byte[] body = buffer.toByteArray();
++      if (!isImageData(body)) {
++        // 空本文やキャプティブポータルの HTML。保存せず、一時的失敗として低ズームの代替に任せる
++        if (transientFailure != null) {
++          transientFailure[0] = true;
++        }
++        return null;
++      }
++      return body;
 +    } catch (IOException e) {
 +      // タイムアウト・接続エラーは一時的失敗
 +      if (transientFailure != null) {
@@ -3755,11 +3904,20 @@ index a974311..3ee0827 100644
 +      }
 +      buffer.flush();
 +
++      byte[] cached = buffer.toByteArray();
++      if (!isImageData(cached)) {
++        // 容量不足で途中まで書かれたファイルなど。残すと取り直さないので消す
++        file.delete();
++        return null;
++      }
++
 +      if (this.tileCacheMaxAge == 0) {
 +        file.setLastModified(System.currentTimeMillis());
 +      }
 +
-+      return buffer.toByteArray();
++      return cached;
++    } catch (java.io.FileNotFoundException e) {
++      return null;
 +    } catch (IOException e) {
 +      e.printStackTrace();
 +      return null;
@@ -3783,12 +3941,21 @@ index a974311..3ee0827 100644
 +      return false;
 +    }
 +
++    File tmp = null;
 +    try {
 +      File file = new File(fileName);
 +      file.getParentFile().mkdirs();
-+      out = new FileOutputStream(file);
++      // 書き込み途中で失敗しても壊れたタイルを残さないよう、一時ファイルに書いてから置き換える
++      tmp = new File(fileName + ".tmp" + Thread.currentThread().getId());
++      out = new FileOutputStream(tmp);
 +      out.write(image);
-+
++      out.close();
++      out = null;
++      if (!tmp.renameTo(file)) {
++        tmp.delete();
++        return false;
++      }
++      tmp = null;
 +      return true;
 +    } catch (IOException e) {
 +      Log.d("urlTile", "writeTileImage: " + e.getMessage());
@@ -3802,7 +3969,39 @@ index a974311..3ee0827 100644
 +      if (out != null) try {
 +        out.close();
 +      } catch (Exception ignored) {}
++      if (tmp != null) tmp.delete();
 +    }
++  }
++
++  /**
++   * 画像として読めるデータか。PNG・JPEG・GIF・WebP は先頭バイトで、それ以外は
++   * 寸法だけのデコードで確かめる（空本文・HTML・途中で切れたファイルを弾く）
++   */
++  public static boolean isImageData(byte[] data) {
++    if (data == null || data.length < 4) return false;
++    int b0 = data[0] & 0xff, b1 = data[1] & 0xff, b2 = data[2] & 0xff, b3 = data[3] & 0xff;
++    if (b0 == 0x89 && b1 == 0x50 && b2 == 0x4e && b3 == 0x47) return hasPngEnd(data);
++    if (b0 == 0xff && b1 == 0xd8 && b2 == 0xff) return true;
++    if (b0 == 'G' && b1 == 'I' && b2 == 'F') return true;
++    if (data.length >= 12 && b0 == 'R' && b1 == 'I' && b2 == 'F' && b3 == 'F'
++        && data[8] == 'W' && data[9] == 'E' && data[10] == 'B' && data[11] == 'P') return true;
++    BitmapFactory.Options options = new BitmapFactory.Options();
++    options.inJustDecodeBounds = true;
++    BitmapFactory.decodeByteArray(data, 0, data.length, options);
++    return options.outWidth > 0 && options.outHeight > 0;
++  }
++
++  /**
++   * PNG は末尾近くに IEND チャンクがあるかで途中切れを見分ける（容量不足で書きかけになった場合）。
++   * IEND の後ろに余分なバイトを付けるサーバーもあるので、末尾の少し手前まで探す
++   */
++  private static boolean hasPngEnd(byte[] data) {
++    int n = data.length;
++    if (n < 20) return false;
++    for (int i = n - 8; i >= Math.max(8, n - 64); i--) {
++      if (data[i] == 'I' && data[i + 1] == 'E' && data[i + 2] == 'N' && data[i + 3] == 'D') return true;
++    }
++    return false;
 +  }
 +
 +  String getTileFilename(int x, int y, int zoom) {
@@ -12013,10 +12212,10 @@ index 0000000..c9f56f2
 +#endif
 diff --git a/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapDEMTileOverlay.m b/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapDEMTileOverlay.m
 new file mode 100644
-index 0000000..5496a31
+index 0000000..1ff3306
 --- /dev/null
 +++ b/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapDEMTileOverlay.m
-@@ -0,0 +1,859 @@
+@@ -0,0 +1,908 @@
 +//
 +//  AIRGoogleMapDEMTileOverlay.m
 +//  AirGoogleMaps
@@ -12284,8 +12483,10 @@ index 0000000..5496a31
 +/**
 + * 標高タイル1枚を取得してfloat配列にデコードする。取得できなければ nil。
 + * 戻り値のNSDataはfloatの並び。sizeOut に一辺の画素数を返す。
++ * 取れなかった理由が通信の一時失敗（タイムアウト・接続エラー・5xx）なら transientOut を YES にする。
 + */
-+- (NSData *)elevationForX:(NSUInteger)x y:(NSUInteger)y zoom:(NSUInteger)zoom size:(NSInteger *)sizeOut {
++- (NSData *)elevationForX:(NSUInteger)x y:(NSUInteger)y zoom:(NSUInteger)zoom size:(NSInteger *)sizeOut
++                transient:(BOOL *)transientOut {
 +    NSString *key = [NSString stringWithFormat:@"%lu,%lu,%lu", (unsigned long)x, (unsigned long)y, (unsigned long)zoom];
 +    NSData *cached = [_elevationCache objectForKey:key];
 +    if (cached) {
@@ -12320,13 +12521,23 @@ index 0000000..5496a31
 +            return elevation;
 +        }
 +        if (!data) {
++            if (transient && transientOut) {
++                *transientOut = YES;
++            }
 +            return nil;
 +        }
 +        // WebP以外（terrariumのPNG）は下の汎用経路でデコードする
 +    }
 +
++    // 親クラスはnil=一時失敗（再要求させる）、NoTile=確定失敗を返す
 +    UIImage *image = [super tileForX:x y:y zoom:zoom];
-+    if (!image || image == kGMSTileLayerNoTile) {
++    if (!image) {
++        if (transientOut) {
++            *transientOut = YES;
++        }
++        return nil;
++    }
++    if (image == kGMSTileLayerNoTile) {
 +        return nil;
 +    }
 +
@@ -12379,7 +12590,8 @@ index 0000000..5496a31
 + * 計算する区画（regionX0/regionY0/region、タイル内の画素位置）の袖が届く隣接タイルだけを使う。
 + */
 +- (NSMutableData *)assembleWithHaloX:(NSUInteger)x y:(NSUInteger)y zoom:(NSUInteger)zoom size:(NSInteger)size
-+                             regionX0:(NSInteger)regionX0 regionY0:(NSInteger)regionY0 region:(NSInteger)region {
++                             regionX0:(NSInteger)regionX0 regionY0:(NSInteger)regionY0 region:(NSInteger)region
++                            transient:(BOOL *)transientOut {
 +    NSInteger bufferSize = size + 2 * kHalo;
 +    NSMutableData *buffer = [NSMutableData dataWithLength:(NSUInteger)(bufferSize * bufferSize * (NSInteger)sizeof(float))];
 +    float *dst = (float *)buffer.mutableBytes;
@@ -12412,17 +12624,36 @@ index 0000000..5496a31
 +        }
 +    }
 +
-+    // 隣接タイルは並列に取得してキャッシュへ載せる（順番に取ると通信の往復が積み重なる）
++    // 隣接タイルは並列に取得してキャッシュへ載せる（順番に取ると通信の往復が積み重なる）。
++    // 結果は添字ごとの別々の要素に書くので、スレッド間で競合しない
++    BOOL fetchedStorage[9] = {NO};
++    BOOL transientStorage[9] = {NO};
++    BOOL *fetched = fetchedStorage;
++    BOOL *transients = transientStorage;
 +    dispatch_apply((size_t)targetCount, dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0), ^(size_t i) {
 +        NSInteger ignored = 0;
-+        [self elevationForX:(NSUInteger)targets[i][2] y:(NSUInteger)targets[i][3] zoom:zoom size:&ignored];
++        BOOL transient = NO;
++        NSData *tile = [self elevationForX:(NSUInteger)targets[i][2] y:(NSUInteger)targets[i][3] zoom:zoom
++                                      size:&ignored transient:&transient];
++        fetched[i] = (tile != nil);
++        transients[i] = transient;
 +    });
 +
 +    for (NSInteger i = 0; i < targetCount; i++) {
++        if (transients[i] && transientOut) {
++            *transientOut = YES;
++        }
++        // 取れなかったタイルをここで取り直すと、失敗のたびに待ち時間が倍になる
++        if (!fetched[i]) continue;
 +        NSInteger tx = targets[i][0];
 +        NSInteger ty = targets[i][1];
 +        NSInteger tileSize = 0;
-+        NSData *tile = [self elevationForX:(NSUInteger)targets[i][2] y:(NSUInteger)targets[i][3] zoom:zoom size:&tileSize];
++        BOOL transient = NO;
++        NSData *tile = [self elevationForX:(NSUInteger)targets[i][2] y:(NSUInteger)targets[i][3] zoom:zoom
++                                      size:&tileSize transient:&transient];
++        if (transient && transientOut) {
++            *transientOut = YES;
++        }
 +        if (!tile || tileSize != size) continue;
 +        const float *src = (const float *)tile.bytes;
 +
@@ -12448,14 +12679,16 @@ index 0000000..5496a31
 + * （terrariumの512pxタイルは常に1段粗いので区画は256px）。
 + */
 +- (UIImage *)shadingImageForX:(NSUInteger)x y:(NSUInteger)y zoom:(NSUInteger)zoom size:(NSInteger)size
-+                  scaleFactor:(NSInteger)scaleFactor offsetX:(NSUInteger)offsetX offsetY:(NSUInteger)offsetY {
++                  scaleFactor:(NSInteger)scaleFactor offsetX:(NSUInteger)offsetX offsetY:(NSUInteger)offsetY
++                    transient:(BOOL *)transientOut {
 +    NSInteger bufferSize = size + 2 * kHalo;
 +    // 計算する区画（標高タイル内の画素位置）
 +    const NSInteger region = MAX(1, size / scaleFactor);
 +    const NSInteger regionX0 = (NSInteger)offsetX * region;
 +    const NSInteger regionY0 = (NSInteger)offsetY * region;
 +    NSMutableData *bufferData = [self assembleWithHaloX:x y:y zoom:zoom size:size
-+                                               regionX0:regionX0 regionY0:regionY0 region:region];
++                                               regionX0:regionX0 regionY0:regionY0 region:region
++                                              transient:transientOut];
 +    const float *buffer = (const float *)bufferData.bytes;
 +    double metersPerPx = MetersPerPixel(zoom, y, size);
 +
@@ -12662,9 +12895,11 @@ index 0000000..5496a31
 + * 島名・海底地形名と等値線の数値ラベルは、タイル焼き込みではなくアプリ側のMarker
 + * オーバーレイで表示する（src/components/organisms/HomeSeaLabels.tsx）。
 + */
-+- (UIImage *)gebcoImageForX:(NSUInteger)x y:(NSUInteger)y zoom:(NSUInteger)zoom size:(NSInteger)size {
++- (UIImage *)gebcoImageForX:(NSUInteger)x y:(NSUInteger)y zoom:(NSUInteger)zoom size:(NSInteger)size
++                   transient:(BOOL *)transientOut {
 +    NSInteger bufferSize = size + 2 * kHalo;
-+    NSMutableData *bufferData = [self assembleWithHaloX:x y:y zoom:zoom size:size regionX0:0 regionY0:0 region:size];
++    NSMutableData *bufferData = [self assembleWithHaloX:x y:y zoom:zoom size:size regionX0:0 regionY0:0 region:size
++                                              transient:transientOut];
 +    const float *buffer = (const float *)bufferData.bytes;
 +
 +    int contourMinor = 0;
@@ -12819,6 +13054,9 @@ index 0000000..5496a31
 +    // 標高タイルの提供範囲はズームによって地域差がある（例えば産総研の陸域統合DEMは
 +    // z14は全国にあるがz15は佐渡島・知床・屋久島などで欠ける）。取れなければ粗い
 +    // ズームへ降り、該当部分を切り出して拡大する。
++    // NoTileはGMSが確定キャッシュしてclearTileCacheまで再要求しないので、
++    // 通信の一時失敗が混じったら nil を返して再要求させ、粗い代替画像もキャッシュしない
++    BOOL anyTransient = NO;
 +    for (NSInteger sourceZoom = startZoom; sourceZoom >= lowestZoom; sourceZoom--) {
 +        NSInteger shift = (NSInteger)zoom - sourceZoom;
 +        NSUInteger sx = x >> shift;
@@ -12826,15 +13064,21 @@ index 0000000..5496a31
 +
 +        // 中央タイルが取れなければ、さらに粗いズームを試す
 +        NSInteger size = 0;
-+        NSData *center = [self elevationForX:sx y:sy zoom:(NSUInteger)sourceZoom size:&size];
++        BOOL centerTransient = NO;
++        NSData *center = [self elevationForX:sx y:sy zoom:(NSUInteger)sourceZoom size:&size
++                                   transient:&centerTransient];
 +        if (!center || size <= 0) {
++            if (centerTransient) {
++                anyTransient = YES;
++            }
 +            continue;
 +        }
 +
 +        BOOL isGebco = self.reliefMode && self.reliefGebcoStyle;
 +        UIImage *image;
 +        if (isGebco) {
-+            image = [self gebcoImageForX:sx y:sy zoom:(NSUInteger)sourceZoom size:size];
++            image = [self gebcoImageForX:sx y:sy zoom:(NSUInteger)sourceZoom size:size
++                               transient:&anyTransient];
 +            if (image && shift > 0) {
 +                image = [self cropImage:image
 +                            scaleFactor:(1 << shift)
@@ -12845,7 +13089,8 @@ index 0000000..5496a31
 +            image = [self shadingImageForX:sx y:sy zoom:(NSUInteger)sourceZoom size:size
 +                               scaleFactor:(1 << shift)
 +                                   offsetX:(x - (sx << shift))
-+                                   offsetY:(y - (sy << shift))];
++                                   offsetY:(y - (sy << shift))
++                                 transient:&anyTransient];
 +            // 区画が256pxと違えば（オーバーズーム・z0）256pxへ拡大・縮小する
 +            if (image && image.CGImage && CGImageGetWidth(image.CGImage) != 256) {
 +                image = [self resizeImage:image toSize:256];
@@ -12858,13 +13103,16 @@ index 0000000..5496a31
 +                                  orientation:UIImageOrientationUp];
 +        }
 +        if (!image) {
-+            return kGMSTileLayerNoTile;
++            return anyTransient ? nil : kGMSTileLayerNoTile;
 +        }
 +
-+        [_shadingCache setObject:image forKey:cacheKey cost:(NSUInteger)(size * size * 4)];
++        // 細かい段や隣接タイルが一時失敗で欠けた画像は、次の要求で描き直せるようにキャッシュしない
++        if (!anyTransient) {
++            [_shadingCache setObject:image forKey:cacheKey cost:(NSUInteger)(size * size * 4)];
++        }
 +        return image;
 +    }
-+    return kGMSTileLayerNoTile;
++    return anyTransient ? nil : kGMSTileLayerNoTile;
 +}
 +
 +- (void)clearTileCache {
@@ -13314,10 +13562,10 @@ index 0000000..583fc83
 +#endif
 diff --git a/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapPMTileOverlay.m b/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapPMTileOverlay.m
 new file mode 100644
-index 0000000..8d3637d
+index 0000000..7b30200
 --- /dev/null
 +++ b/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapPMTileOverlay.m
-@@ -0,0 +1,1171 @@
+@@ -0,0 +1,1166 @@
 +//
 +//  AIRGoogleMapPMTile.m
 +//
@@ -13568,14 +13816,15 @@ index 0000000..8d3637d
 +  NSData *data;
 +
 +  data = [self readTileImage:tileCacheFilePath];
-+  // if (data) {
-+  //   NSLog(@"read from cache %d %d %d", zoom, x, y);
-+  //   // if ([self doesFileNeedRefresh:tileCacheFilePath
-+  //   //                    withMaxAge:self.tileCacheMaxAge]) {
-+  //   //   data = nil;
-+  //   //   // NSLog(@"!cache expired");
-+  //   // }
-+  // }
++  // スタイル更新前に描いたベクタの画像は描き直す。描き直せなければ（オフラインで.pbfが無いなど）
++  // 空白にするより古いスタイルのまま出すほうがよいので、古い画像を残しておく
++  NSData *staleData = nil;
++  if (data && self.tileCachePath && (self.tileType == 0 || self.tileType == 1) &&
++      [self doesFileNeedRefresh:tileCacheFilePath
++                     withMaxAge:self.tileCacheMaxAge]) {
++    staleData = data;
++    data = nil;
++  }
 +  if (!data) {
 +    if (self.tileType == -1 && self.pmtiles) {
 +      // 初回のヘッダー取得に失敗していた。取り直せたらそのまま取得する
@@ -13591,7 +13840,7 @@ index 0000000..8d3637d
 +    }
 +
 +    if (!data) {
-+      return nil;
++      return staleData;
 +    } else {
 +      // NSLog(@"fetch from url %d %d %d", zoom, x, y);
 +      if (self.tileCachePath) {
@@ -14455,32 +14704,26 @@ index 0000000..8d3637d
 +
 +- (BOOL)doesFileNeedRefresh:(NSURL *)tileCacheFilePath
 +                 withMaxAge:(NSInteger)tileCacheMaxAge {
-+  NSError *error;
-+  NSFileManager *fileManager = [NSFileManager defaultManager];
-+  NSDictionary *fileAttributes =
-+      [fileManager attributesOfItemAtPath:[tileCacheFilePath path]
-+                                    error:&error];
-+  long long _lastUpdatedTime = [self.styleManager getLastUpdatedTime];
++  NSDictionary *fileAttributes = [[NSFileManager defaultManager]
++      attributesOfItemAtPath:[tileCacheFilePath path]
++                       error:nil];
++  NSDate *modificationDate = fileAttributes[NSFileModificationDate];
++  if (!modificationDate) {
++    return NO;
++  }
 +
-+  if (fileAttributes) {
-+    NSDate *modificationDate = fileAttributes[NSFileModificationDate];
++  // 0はスタイル未読込。毎回描き直すと重いだけなので比べない
++  long long styleUpdatedTimeMs = [self.styleManager getLastUpdatedTime];
++  long long tileUpdatedTimeMs =
++      (long long)([modificationDate timeIntervalSince1970] * 1000.0);
++  if (styleUpdatedTimeMs > 0 && styleUpdatedTimeMs > tileUpdatedTimeMs) {
++    return YES;
++  }
 +
-+    // NSLog(@"tileCacheFilePath %@", [tileCacheFilePath path]);
-+    // NSLog(@"%ld   %ld", _lastUpdatedTime,
-+    //       (long long)[modificationDate timeIntervalSince1970]);
-+    if (_lastUpdatedTime >
-+            (long long)[modificationDate timeIntervalSince1970] ||
-+        _lastUpdatedTime == 0) {
-+      // NSLog(@"!#!# style updated");
-+      return YES;
-+    }
-+
-+    if (modificationDate) {
-+      if (-1 * (int)modificationDate.timeIntervalSinceNow > tileCacheMaxAge) {
-+        // NSLog(@"!#!# cache expired");
-+        return YES;
-+      }
-+    }
++  // 期限0は「期限なし」。オフラインでは取り直せないので期限切れでも捨てない
++  if (tileCacheMaxAge > 0 && !self.offlineMode &&
++      -[modificationDate timeIntervalSinceNow] > (NSTimeInterval)tileCacheMaxAge) {
++    return YES;
 +  }
 +
 +  return NO;
@@ -14751,10 +14994,10 @@ index 05b2afd..83cf84e 100644
  #endif
 +
 diff --git a/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapUrlTile.m b/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapUrlTile.m
-index b2e1eea..5c62b83 100644
+index b2e1eea..20d98d5 100644
 --- a/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapUrlTile.m
 +++ b/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapUrlTile.m
-@@ -6,51 +6,221 @@
+@@ -6,51 +6,222 @@
  #ifdef HAVE_GOOGLE_MAPS
  
  #import "AIRGoogleMapUrlTile.h"
@@ -14794,7 +15037,8 @@ index b2e1eea..5c62b83 100644
 -  _tileLayer.tileSize = [[UIScreen mainScreen] scale] * 256;
 +- (void)setFlipY:(BOOL)flipY {
 +  _flipY = flipY;
-+  if (self.tileLayer && flipY) {
++  // NOへ戻したときも反映しないと、反転したままのURLで取り続ける
++  if (self.tileLayer && self.tileLayer.flipY != flipY) {
 +    [self.tileLayer setFlipY:_flipY];
 +    [self.tileLayer clearTileCache];
 +  }
@@ -15035,10 +15279,10 @@ index 0000000..1e08b53
 +#endif
 diff --git a/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapUrlTileOverlay.m b/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapUrlTileOverlay.m
 new file mode 100644
-index 0000000..efe95d4
+index 0000000..1ca899e
 --- /dev/null
 +++ b/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapUrlTileOverlay.m
-@@ -0,0 +1,493 @@
+@@ -0,0 +1,556 @@
 +//
 +//  AIRGoogleMapURLTile.m
 +//  Created by Nick Italiano on 11/5/16.
@@ -15047,13 +15291,74 @@ index 0000000..efe95d4
 +#ifdef HAVE_GOOGLE_MAPS
 +
 +#import "AIRGoogleMapUrlTileOverlay.h"
++
++// 旧版はflipYの地図をTMSのyでキャッシュしていた。XYZのyへ移ったことを地図フォルダに記録する印
++static NSString *const kXYZTileCacheMarker = @".xyz-tile-cache";
++
++@interface AIRGoogleMapUrlTileOverlay ()
++// 移行を確かめ終えたキャッシュフォルダ（tileCachePathが差し替わったら確かめ直す）
++@property(nonatomic, copy) NSString *xyzCacheCheckedPath;
++@end
++
 +@implementation AIRGoogleMapUrlTileOverlay
 +- (id)init {
 +  self = [super init];
 +  return self;
 +}
 +
++// 旧版がTMSのyで書いたタイルは、XYZのyで読むと南北の違う行として出てしまう。
++// どの行がどちらの規約か見分けられないので、flipYの地図は一度だけ数字のズームフォルダを消して取り直す。
++// style.jsonなど数字以外は残す。印を置いた後のタイル（JSのダウンロード分を含む）はXYZのyなので消さない
++- (void)discardLegacyFlippedTileCacheIfNeeded {
++  NSString *cachePath = self.tileCachePath;
++  if (!self.flipY || cachePath.length == 0) {
++    return;
++  }
++  // PDF地図（file://）のタイルは端末で作った唯一の実体で、取り直せないので消さない
++  if ([self.tileTemplate hasPrefix:@"file://"]) {
++    return;
++  }
++  // 移行中に別スレッドが旧タイルを読まないよう、終わるまで他のタイル要求を待たせる
++  @synchronized(self) {
++    if ([self.xyzCacheCheckedPath isEqualToString:cachePath]) {
++      return;
++    }
++    NSString *directory = [[NSURL URLWithString:cachePath] path];
++    if (directory.length == 0) {
++      return;
++    }
++    NSFileManager *fileManager = [NSFileManager defaultManager];
++    NSString *markerPath =
++        [directory stringByAppendingPathComponent:kXYZTileCacheMarker];
++    if (![fileManager fileExistsAtPath:markerPath]) {
++      NSArray<NSString *> *entries =
++          [fileManager contentsOfDirectoryAtPath:directory error:nil];
++      NSCharacterSet *nonDigits =
++          [[NSCharacterSet decimalDigitCharacterSet] invertedSet];
++      for (NSString *name in entries) {
++        if (name.length == 0 ||
++            [name rangeOfCharacterFromSet:nonDigits].location != NSNotFound) {
++          continue;
++        }
++        [fileManager
++            removeItemAtPath:[directory stringByAppendingPathComponent:name]
++                       error:nil];
++      }
++      [fileManager createDirectoryAtPath:directory
++             withIntermediateDirectories:YES
++                              attributes:nil
++                                   error:nil];
++      // 印を置けなくても、このインスタンスでは繰り返さない（書いたばかりのタイルを消し続けないように）
++      [fileManager createFileAtPath:markerPath
++                           contents:[NSData data]
++                         attributes:nil];
++    }
++    self.xyzCacheCheckedPath = cachePath;
++  }
++}
++
 +- (UIImage *)tileForX:(NSUInteger)x y:(NSUInteger)y zoom:(NSUInteger)zoom {
++  [self discardLegacyFlippedTileCacheIfNeeded];
 +
 +  // NSLog(@"RNM: tileSize %ld", self.tileSize);
 +
@@ -15185,10 +15490,8 @@ index 0000000..efe95d4
 +          transient:(BOOL *)transient
 +          cacheOnly:(BOOL)cacheOnly {
 +
-+  if (self.flipY == YES) {
-+    y = (1 << zoom) - y - 1;
-+  }
-+
++  // キャッシュのパスはAndroid・3D・JSのダウンロードと同じくXYZのyにそろえ、
++  // TMS（flipY）の反転はURLを作るとき（fetchTile）だけ行う
 +  NSData *data;
 +  data = [self readTileImage:(NSUInteger)zoom x:(NSUInteger)x y:(NSUInteger)y];
 +  if (data && ![self isLikelyImageData:data]) {
@@ -15268,7 +15571,11 @@ index 0000000..efe95d4
 +  __block NSError *error = nil;
 +  __block NSInteger statusCode = 0;
 +
-+  NSURL *url = [self generateURLwithTemplate:self.tileTemplate x:x y:y z:zoom];
++  NSUInteger requestY = self.flipY ? ((1 << zoom) - y - 1) : y;
++  NSURL *url = [self generateURLwithTemplate:self.tileTemplate
++                                           x:x
++                                           y:requestY
++                                           z:zoom];
 +  if (!url) {
 +    return nil;
 +  }
@@ -18972,10 +19279,10 @@ index 0000000..a37e701
 \ No newline at end of file
 diff --git a/node_modules/react-native-maps/ios/AirGoogleMaps/VectorTile/StyleManager.m b/node_modules/react-native-maps/ios/AirGoogleMaps/VectorTile/StyleManager.m
 new file mode 100644
-index 0000000..f7f882c
+index 0000000..3b0f7e4
 --- /dev/null
 +++ b/node_modules/react-native-maps/ios/AirGoogleMaps/VectorTile/StyleManager.m
-@@ -0,0 +1,403 @@
+@@ -0,0 +1,409 @@
 +#import "StyleManager.h"
 +#import "StyleExpression.h"
 +#import <Foundation/Foundation.h>
@@ -19053,14 +19360,6 @@ index 0000000..f7f882c
 +                    localPath:_localPath
 +                        error:&error];
 +
-+      // スタイルの最終更新日時を取得して、_lastUpdatedTimeに設定
-+      NSFileManager *fileManager = [NSFileManager defaultManager];
-+      NSDictionary *fileAttributes =
-+          [fileManager attributesOfItemAtPath:[_localPath path] error:nil];
-+      NSDate *fileModificationDate = fileAttributes[NSFileModificationDate];
-+      _lastUpdatedTime =
-+          (long long)([fileModificationDate timeIntervalSince1970] * 1000.0);
-+
 +      error = nil;
 +    } else {
 +      // オンラインでスタイルのダウンロードに失敗した場合は、ローカルのスタイルがあればそれを使用。なければデフォルトのスタイルを使用。
@@ -19071,6 +19370,9 @@ index 0000000..f7f882c
 +      }
 +    }
 +  }
++
++  // オフラインや取得失敗でローカルのstyle.jsonを使う場合も、描画済み画像との新旧比較に更新時刻が要る
++  [self updateLastUpdatedTimeFromLocalStyle];
 +
 +  // スタイルをパースして_styleLayersに設定
 +  NSData *data = [style dataUsingEncoding:NSUTF8StringEncoding];
@@ -19203,13 +19505,8 @@ index 0000000..f7f882c
 +                                   error:nil];
 +
 +  if (existingStyle && [existingStyle isEqualToString:styleData]) {
-+    // ファイルが変更されていない場合は、既存のファイルの最後の修正日を取得
-+    NSDictionary *fileAttributes =
-+        [fileManager attributesOfItemAtPath:[styleCacheFilePath path]
-+                                      error:nil];
-+    NSDate *fileModificationDate = fileAttributes[NSFileModificationDate];
-+    _lastUpdatedTime =
-+        (long long)([fileModificationDate timeIntervalSince1970]);
++    // 内容が同じなら書き直さない（更新時刻を進めると描画済み画像が全部描き直しになる）
++    [self updateLastUpdatedTimeFromLocalStyle];
 +  } else {
 +    // NSLog(@"ファイル書き込み: %@", [styleCacheFilePath path]);
 +    [styleData writeToFile:[styleCacheFilePath path]
@@ -19222,8 +19519,24 @@ index 0000000..f7f882c
 +      return;
 +    }
 +
-+    _lastUpdatedTime = (long long)([[NSDate date] timeIntervalSince1970]);
++    [self updateLastUpdatedTimeFromLocalStyle];
 +  }
++}
++
++// 描画済み画像のファイル更新時刻と比べるため、単位はミリ秒にそろえる（秒だと同じ秒内の前後を区別できない）
++- (void)updateLastUpdatedTimeFromLocalStyle {
++  if (!_localPath) {
++    _lastUpdatedTime = 0;
++    return;
++  }
++  NSDictionary *fileAttributes =
++      [[NSFileManager defaultManager] attributesOfItemAtPath:[_localPath path]
++                                                       error:nil];
++  NSDate *fileModificationDate = fileAttributes[NSFileModificationDate];
++  _lastUpdatedTime =
++      fileModificationDate
++          ? (long long)([fileModificationDate timeIntervalSince1970] * 1000.0)
++          : 0;
 +}
 +
 +- (NSString *)downloadStyleJsonFromUrl:(NSURL *)url {

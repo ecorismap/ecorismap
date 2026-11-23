@@ -105,15 +105,21 @@ export const useMapEdit = (targetMap?: TileMapType | null) => {
     setIsEdited(true);
   }, []);
 
-  const saveMap = useCallback(() => {
-    const index = maps.findIndex(({ id }) => id === map.id);
-    if (index === -1) {
-      dispatch(addTileMapAction(map));
-    } else {
-      dispatch(updateTileMapAction(map));
-    }
-    setIsEdited(false);
-  }, [dispatch, map, maps]);
+  /** 保存時に補った値（PMTiles のヘッダーから決めたズーム範囲など）を反映するときは、その地図を渡す */
+  const saveMap = useCallback(
+    (savedMap?: TileMapType) => {
+      const target = savedMap ?? map;
+      const index = maps.findIndex(({ id }) => id === target.id);
+      if (index === -1) {
+        dispatch(addTileMapAction(target));
+      } else {
+        dispatch(updateTileMapAction(target));
+      }
+      if (savedMap !== undefined) setMap(savedMap);
+      setIsEdited(false);
+    },
+    [dispatch, map, maps]
+  );
 
   const deleteMap = useCallback(() => {
     dispatch(deleteTileMapAction(map));

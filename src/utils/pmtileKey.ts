@@ -29,6 +29,8 @@ export const getUrlTileKey = (
   isOffline: boolean,
   platformOS: string
 ) => {
-  const base = `${tileMap.id}-${urlTemplate}-${tileMap.flipY}-${tileMap.tileSize ?? 256}`;
-  return platformOS === 'ios' ? `${base}-${isOffline}-${tileMap.redraw}` : base;
+  // redraw は同じ ID のままタイルを作り直したとき（PDF の再ダウンロード）に反転する。作り直さないと
+  // GMS がメモリに持つ旧版のタイルを出し続ける（Android も同じ）
+  const base = `${tileMap.id}-${urlTemplate}-${tileMap.flipY}-${tileMap.tileSize ?? 256}-${tileMap.redraw}`;
+  return platformOS === 'ios' ? `${base}-${isOffline}` : base;
 };

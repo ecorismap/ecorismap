@@ -15,6 +15,7 @@ import { TileSignatureSync } from './components/atoms/TileSignatureSync';
 import { UnsyncedChangesGuard } from './components/atoms/UnsyncedChangesGuard';
 import { runDemSourceMigration } from './utils/demSourceMigration';
 import { runPhotoUriRebase } from './utils/photoUriRebase';
+import { startFlipYTileCacheMigration } from './utils/flipYTileCacheMigration';
 import { setTileMapsAction } from './modules/tileMaps';
 import { dropUnsafeTileMaps } from './utils/tileMapId';
 import { TileMapType } from './types';
@@ -48,6 +49,7 @@ export default function App() {
               dropUnsafePersistedTileMaps();
               runDemSourceMigration(store);
               runPhotoUriRebase(store);
+              startFlipYTileCacheMigration(store);
             }}
           >
             <>

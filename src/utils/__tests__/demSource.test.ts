@@ -1,6 +1,6 @@
 import * as FileSystem from 'expo-file-system/legacy';
 import { decodeDemFile } from '../../../modules/dem-decoder/src';
-import { clearDemTileMemoryCache, getDemTile, peekDemTile } from '../demSource';
+import { clearAllDemCaches, clearDemTileMemoryCache, getDemTile, peekDemTile } from '../demSource';
 import { createDemTileCache, resampleFromAncestor } from '../demSourceCommon';
 
 // ファイルシステムを「パス→中身のバイト数」の表で模擬する
@@ -141,6 +141,21 @@ describe('demSource（ネイティブ）', () => {
     expect(a).toBe(b);
     expect(mockDownload).toHaveBeenCalledTimes(1);
     expect(peekDemTile(13, 1, 2)).toBe(a);
+  });
+
+  it('clearAllDemCaches はメモリ・Mapterhorn・URL 標高のキャッシュを消し、オフラインDLは残す', async () => {
+    respondWith(200);
+    mockDecode.mockResolvedValue(decoded(3));
+    await getDemTile(13, 1, 2);
+    mockFiles.set(OFFLINE(13, 5, 6), 1000);
+    mockFiles.set('file:///cache/dem_tiles/abc', 1000);
+
+    await clearAllDemCaches();
+
+    expect(peekDemTile(13, 1, 2)).toBeUndefined();
+    expect(FileSystem.deleteAsync).toHaveBeenCalledWith('file:///cache/dem_mapterhorn', { idempotent: true });
+    expect(FileSystem.deleteAsync).toHaveBeenCalledWith('file:///cache/dem_tiles', { idempotent: true });
+    expect(mockFiles.has(OFFLINE(13, 5, 6))).toBe(true);
   });
 });
 

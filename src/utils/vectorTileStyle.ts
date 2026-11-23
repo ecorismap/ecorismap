@@ -200,7 +200,11 @@ export const getPmtilesSource = (
       type: tileMap.isVector ? 'vector' : 'raster',
       url: withTileSignature(tileMap.url.startsWith('pmtiles://') ? tileMap.url : 'pmtiles://' + tileMap.url, tileSignatures),
       minzoom: tileMap.minimumZ,
-      maxzoom: tileMap.overzoomThreshold,
+      // アーカイブの最大ズーム（maximumZ）より上を要求すると、地物が無いタイルとして空白になる（M-M18）
+      // 古いデータで maximumZ が欠けていても NaN にしない
+      maxzoom: Number.isFinite(tileMap.maximumZ)
+        ? Math.min(tileMap.overzoomThreshold, tileMap.maximumZ)
+        : tileMap.overzoomThreshold,
       scheme: 'xyz',
       tileSize: tileMap.isVector ? 512 : 256,
       attribution: tileMap.attribution,
