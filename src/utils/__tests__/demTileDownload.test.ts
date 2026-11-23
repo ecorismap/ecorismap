@@ -5,6 +5,7 @@ jest.mock('expo-file-system/legacy', () => ({
   documentDirectory: 'file:///test/',
   cacheDirectory: 'file:///cache/',
   downloadAsync: jest.fn(),
+  moveAsync: jest.fn(() => Promise.resolve()),
   deleteAsync: jest.fn(() => Promise.resolve()),
   writeAsStringAsync: jest.fn(() => Promise.resolve()),
 }));
@@ -18,6 +19,7 @@ jest.mock('../../i18n/config', () => ({
 const mockDownload = FileSystem.downloadAsync as jest.Mock;
 const mockDelete = FileSystem.deleteAsync as jest.Mock;
 const mockWrite = FileSystem.writeAsStringAsync as jest.Mock;
+const mockMove = FileSystem.moveAsync as jest.Mock;
 
 const TILE = { z: 13, x: 100, y: 200 };
 const PATH = 'file:///test/tiles/dem_mapterhorn/13/100/200.webp';
@@ -38,30 +40,36 @@ describe('downloadDemTile', () => {
     jest.clearAllMocks();
   });
 
-  it('200ならそのまま保存する', async () => {
-    mockDownload.mockResolvedValue({ uri: PATH, status: 200 });
-    await downloadDemTile(TILE);
-    expect(mockDownload).toHaveBeenCalledWith(URL, PATH);
+  it('200なら一時ファイルから保存先へ移す', async () => {
+    mockDownload.mockImplementation(async (_url: string, uri: string) => ({ uri, status: 200 }));
+    await expect(downloadDemTile(TILE)).resolves.toBe('saved');
+    const [url, temp] = mockDownload.mock.calls[0];
+    expect(url).toBe(URL);
+    expect(temp).toMatch(/^file:\/\/\/cache\//);
+    expect(mockMove).toHaveBeenCalledWith({ from: temp, to: PATH });
     expect(mockWrite).not.toHaveBeenCalled();
-    expect(mockDelete).not.toHaveBeenCalled();
   });
 
-  it('404（外洋）は0バイトマーカーで上書きし、エラーにしない', async () => {
-    mockDownload.mockResolvedValue({ uri: PATH, status: 404 });
-    await expect(downloadDemTile(TILE)).resolves.toBeUndefined();
+  it('404（外洋）は0バイトマーカーを書き、missingを返す', async () => {
+    mockDownload.mockImplementation(async (_url: string, uri: string) => ({ uri, status: 404 }));
+    await expect(downloadDemTile(TILE)).resolves.toBe('missing');
     expect(mockWrite).toHaveBeenCalledWith(PATH, '');
+    expect(mockMove).not.toHaveBeenCalled();
   });
 
-  it('5xxはファイルを削除してthrow（再開時に再試行される）', async () => {
-    mockDownload.mockResolvedValue({ uri: PATH, status: 503 });
-    await expect(downloadDemTile(TILE)).rejects.toThrow();
-    expect(mockDelete).toHaveBeenCalledWith(PATH, { idempotent: true });
+  it('5xxは保存済みのタイルに触れず一時ファイルだけ消してfailedを返す', async () => {
+    mockDownload.mockImplementation(async (_url: string, uri: string) => ({ uri, status: 503 }));
+    await expect(downloadDemTile(TILE)).resolves.toBe('failed');
+    const temp = mockDownload.mock.calls[0][1];
+    expect(mockDelete).toHaveBeenCalledWith(temp, { idempotent: true });
+    expect(mockDelete).not.toHaveBeenCalledWith(PATH, expect.anything());
     expect(mockWrite).not.toHaveBeenCalled();
+    expect(mockMove).not.toHaveBeenCalled();
   });
 
-  it('通信エラーはファイルを削除してthrow', async () => {
+  it('通信エラーは保存済みのタイルに触れずfailedを返す', async () => {
     mockDownload.mockRejectedValue(new Error('network'));
-    await expect(downloadDemTile(TILE)).rejects.toThrow('network');
-    expect(mockDelete).toHaveBeenCalledWith(PATH, { idempotent: true });
+    await expect(downloadDemTile(TILE)).resolves.toBe('failed');
+    expect(mockDelete).not.toHaveBeenCalledWith(PATH, expect.anything());
   });
 });

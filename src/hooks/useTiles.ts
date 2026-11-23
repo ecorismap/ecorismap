@@ -5,18 +5,19 @@ import { ulid } from 'ulid';
 import { RootState } from '../store';
 import { editSettingsAction } from '../modules/settings';
 import { toDemUrl } from '../utils/terrainShading';
-import { withTileSignature } from '../utils/TileSignature';
+import { TileSignaturesType, withTileSignature } from '../utils/TileSignature';
 import { AlertAsync, ResumeDownloadConfirmAsync, StopDownloadConfirmAsync } from '../components/molecules/AlertAsync';
 import { TileMapType, TileRegionType } from '../types';
+import { migrateFlipYTileCaches } from '../utils/flipYTileCacheMigration';
 import { TILE_FOLDER } from '../constants/AppConstants';
 import * as FileSystem from 'expo-file-system/legacy';
 import { t } from '../i18n/config';
 import { useWindow } from './useWindow';
 import * as pmtiles from 'pmtiles';
-import { Buffer } from 'buffer';
 import { cloneDeep } from 'lodash';
 import {
   boundsFromCoords,
+  downloadOneTile,
   downloadTileGrid,
   getTileType,
   getZoomRange,
@@ -27,9 +28,10 @@ import {
   removeIncompleteRegions,
   removeLegacyRasterPmtilePngs,
   resolvePmtileIsVector,
+  TileDownloadResult,
+  TileType,
   TileZoomRange,
   toCompletedRegion,
-  writeRasterPmtileTile,
 } from '../utils/tileDownloadHelpers';
 import { downloadDemTile, getDemTileMap } from '../utils/demTileDownload';
 import { hasIrreplaceableTiles, removeTileCacheEntries } from '../utils/tileCacheCleanup';
@@ -51,6 +53,30 @@ export type UseTilesReturnType = {
   hasIncompleteDownload: boolean;
   stopDownloadTiles: () => void;
   clearTiles: (tileMap_: TileMapType) => Promise<void>;
+};
+
+type TileXYZ = { x: number; y: number; z: number };
+
+/** 1枚分のダウンロード。単一地図版と複数地図版で同じ規則で数えるために共通化する */
+const downloadTileOfMap = (
+  tileType: TileType,
+  tileMap: TileMapType,
+  tile: TileXYZ,
+  pmtile: pmtiles.PMTiles | undefined,
+  pmtileIsVector: boolean,
+  tileSignatures: TileSignaturesType
+): Promise<TileDownloadResult> => {
+  if (tileType === 'dem') return downloadDemTile(tile);
+  const sourceUrl = tileType === 'hillshade' ? toDemUrl(tileMap.url) : tileMap.url;
+  return downloadOneTile({
+    tileType,
+    tileMapId: tileMap.id,
+    urlTemplate: withTileSignature(sourceUrl, tileSignatures),
+    flipY: tileMap.flipY === true,
+    pmtile,
+    pmtileIsVector,
+    tile,
+  });
 };
 
 export const useTiles = (
@@ -158,6 +184,9 @@ export const useTiles = (
   const downloadTiles = useCallback(
     async (zoom: number) => {
       if (tileMap === undefined) return;
+      // flipY の地図は旧規約のタイルを先に片付けて印を置く。後にすると、iOS が初めて表示したときに
+      // 今回 XYZ で保存したタイルを旧規約とみなして消してしまう（M-M2）
+      await migrateFlipYTileCaches(store, [tileMap]);
       const tileRegion = cloneDeep(downloadArea);
       tileRegion.id = ulid();
       tileRegion.tileMapId = tileMap.id;
@@ -312,11 +341,11 @@ export const useTiles = (
         }
       }
       await Promise.all(batch);
-      let batchDownload: any = [];
-      let errorCount = 0;
+      let batchDownload: Promise<void>[] = [];
+      // 404・PMTiles の範囲外以外で取れなかった枚数。完了扱いは変えず、1枚でもあれば枚数を知らせる
+      let failedCount = 0;
       // PMTiles は範囲外のタイルを undefined で返すので、1枚も保存されなかったことを数えて知らせる
-      let pmtileSavedCount = 0;
-      let pmtileFailedCount = 0;
+      let savedCount = 0;
       d = 0;
 
       for (const tile of tiles) {
@@ -324,104 +353,12 @@ export const useTiles = (
           if (await handlePause()) return;
         }
 
-        let tilePromise;
-        if (tileType === 'pmtiles' && pmtileIsVector && pmtile !== undefined) {
-          const localLocation = `${TILE_FOLDER}/${tileMap.id}/${tile.z}/${tile.x}/${tile.y}.pbf`;
-          tilePromise = pmtile
-            .getZxy(tile.z, tile.x, tile.y)
-            .then(async (resp) => {
-              if (resp === undefined) return;
-              const base64String = Buffer.from(resp.data).toString('base64');
-              await FileSystem.writeAsStringAsync(localLocation, base64String, {
-                encoding: FileSystem.EncodingType.UTF8,
-              });
-              pmtileSavedCount++;
-            })
-            .catch((e) => {
-              console.log(e);
-              pmtileFailedCount++;
-              //errorCount++;
-            });
-        } else if (tileType === 'pmtiles' && !pmtileIsVector && pmtile !== undefined) {
-          tilePromise = pmtile
-            .getZxy(tile.z, tile.x, tile.y)
-            .then(async (resp) => {
-              if (resp === undefined) return;
-              await writeRasterPmtileTile(tileMap.id, tile, resp.data);
-              pmtileSavedCount++;
-            })
-            .catch(() => {
-              errorCount++;
-              pmtileFailedCount++;
-            });
-        } else if (tileType === 'pbf') {
-          const fetchUrl = withTileSignature(tileMap.url, tileSignatures)
-            .replace('{z}', tile.z.toString())
-            .replace('{x}', tile.x.toString())
-            .replace('{y}', tile.y.toString());
-          const localLocation = `${TILE_FOLDER}/${tileMap.id}/${tile.z}/${tile.x}/${tile.y}.pbf`;
-
-          tilePromise = fetch(fetchUrl)
-            .then((response) => {
-              if (!response.ok) {
-                throw new Error('Network response was not ok');
-              }
-              return response.arrayBuffer();
-            })
-            .then(async (data) => {
-              const base64String = Buffer.from(data).toString('base64');
-              FileSystem.writeAsStringAsync(localLocation, base64String, {
-                encoding: FileSystem.EncodingType.UTF8,
-              });
-            })
-            .catch(() => {
-              errorCount++;
-              //console.error(error);
-            });
-        } else if (tileType === 'png') {
-          const fetchUrl = withTileSignature(tileMap.url, tileSignatures)
-            .replace('{z}', tile.z.toString())
-            .replace('{x}', tile.x.toString())
-            .replace('{y}', tile.y.toString());
-
-          const localLocation = `${TILE_FOLDER}/${tileMap.id}/${tile.z}/${tile.x}/${tile.y}`;
-          //console.log(fetchUrl, localLocation);
-
-          tilePromise = FileSystem.downloadAsync(fetchUrl, localLocation)
-            .then(({ uri, status }) => {
-              if (status !== 200) {
-                FileSystem.deleteAsync(uri);
-                //console.log('A', uri);
-                errorCount++;
-              }
-            })
-            .catch(() => {
-              errorCount++;
-              //console.error(error);
-            });
-        } else if (tileType === 'hillshade') {
-          // 立体図の場合は元のDEMタイルURLを構築
-          const cleanUrl = withTileSignature(toDemUrl(tileMap.url), tileSignatures);
-          const fetchUrl = cleanUrl
-            .replace('{z}', tile.z.toString())
-            .replace('{x}', tile.x.toString())
-            .replace('{y}', tile.y.toString());
-
-          const localLocation = `${TILE_FOLDER}/${tileMap.id}/${tile.z}/${tile.x}/${tile.y}`;
-          //console.log('Hillshade download:', fetchUrl, localLocation);
-
-          tilePromise = FileSystem.downloadAsync(fetchUrl, localLocation)
-            .then(({ uri, status }) => {
-              if (status !== 200) {
-                FileSystem.deleteAsync(uri);
-                errorCount++;
-              }
-            })
-            .catch(() => {
-              errorCount++;
-              //console.error(error);
-            });
-        }
+        const tilePromise = downloadTileOfMap(tileType, tileMap, tile, pmtile, pmtileIsVector, tileSignatures).then(
+          (result) => {
+            if (result === 'saved') savedCount++;
+            else if (result === 'failed') failedCount++;
+          }
+        );
 
         batchDownload.push(tilePromise);
         if (batchDownload.length >= BATCH_SIZE) {
@@ -434,13 +371,11 @@ export const useTiles = (
       await Promise.all(batchDownload);
 
       // 1枚も保存できなかったら完了扱いにしない（保存範囲の枠が出て、保存済みと誤解される）
-      if (tileType === 'pmtiles' && pmtileSavedCount === 0) {
+      if (tileType === 'pmtiles' && savedCount === 0) {
         updatedTileRegions = removeIncompleteRegions(updatedTileRegions, [tileRegion.id]);
         dispatch(editSettingsAction({ tileRegions: updatedTileRegions }));
         setIsDownloading(false);
-        await AlertAsync(
-          pmtileFailedCount > 0 ? t('hooks.alert.errorDownload') : t('hooks.message.noTilesInRange')
-        );
+        await AlertAsync(failedCount > 0 ? t('hooks.alert.errorDownload') : t('hooks.message.noTilesInRange'));
         return;
       }
 
@@ -449,9 +384,8 @@ export const useTiles = (
       dispatch(editSettingsAction({ tileRegions: updatedTileRegions }));
 
       setIsDownloading(false);
-      //console.log('errorCoount', (errorCount / tiles.length) * 100);
-      if (tiles.length > 0 && (errorCount / tiles.length) * 100 > 20) {
-        await AlertAsync(t('hooks.alert.errorDownload'));
+      if (failedCount > 0) {
+        await AlertAsync(t('hooks.alert.someTilesFailed', { count: failedCount }));
         return;
       }
       await AlertAsync(t('hooks.alert.completeDownload'));
@@ -477,9 +411,11 @@ export const useTiles = (
   const downloadMultipleTiles = useCallback(
     async (zoom: number, tileMapsToDownload: TileMapType[], resumeRegions?: (TileRegionType | undefined)[]) => {
       setIsDownloading(true);
+      await migrateFlipYTileCaches(store, tileMapsToDownload);
       let totalCompleted = 0;
       const totalMaps = tileMapsToDownload.length;
       const errorMaps: string[] = [];
+      let hasFailedTiles = false;
       // 非同期ループ中はuseSelectorのtileRegionsが更新されないため、storeから直接読んでローカルに累積する
       let updatedTileRegions = [...store.getState().settings.tileRegions];
 
@@ -655,11 +591,11 @@ export const useTiles = (
         await Promise.all(batch);
 
         // タイルダウンロード
-        let batchDownload: any = [];
-        let errorCount = 0;
+        let batchDownload: Promise<void>[] = [];
+        // 404・PMTiles の範囲外以外で取れなかった枚数。完了扱いは変えず、1枚でもあれば枚数を知らせる
+        let failedCount = 0;
         // PMTiles は範囲外のタイルを undefined で返すので、1枚も保存されなかったことを数えて知らせる
-        let pmtileSavedCount = 0;
-        let pmtileFailedCount = 0;
+        let savedCount = 0;
         let d = 0;
 
         for (const tile of tilesToDownload) {
@@ -667,103 +603,17 @@ export const useTiles = (
             if (await handlePause()) return;
           }
 
-          let tilePromise;
-          if (tileType === 'pmtiles' && pmtileIsVector && pmtile !== undefined) {
-            const localLocation = `${TILE_FOLDER}/${currentTileMap.id}/${tile.z}/${tile.x}/${tile.y}.pbf`;
-            tilePromise = pmtile
-              .getZxy(tile.z, tile.x, tile.y)
-              .then(async (resp) => {
-                if (resp === undefined) return;
-                const base64String = Buffer.from(resp.data).toString('base64');
-                await FileSystem.writeAsStringAsync(localLocation, base64String, {
-                  encoding: FileSystem.EncodingType.UTF8,
-                });
-                pmtileSavedCount++;
-              })
-              .catch((e) => {
-                console.log(e);
-                pmtileFailedCount++;
-              });
-          } else if (tileType === 'pmtiles' && !pmtileIsVector && pmtile !== undefined) {
-            tilePromise = pmtile
-              .getZxy(tile.z, tile.x, tile.y)
-              .then(async (resp) => {
-                if (resp === undefined) return;
-                await writeRasterPmtileTile(currentTileMap.id, tile, resp.data);
-                pmtileSavedCount++;
-              })
-              .catch(() => {
-                errorCount++;
-                pmtileFailedCount++;
-              });
-          } else if (tileType === 'pbf') {
-            const fetchUrl = withTileSignature(currentTileMap.url, tileSignatures)
-              .replace('{z}', tile.z.toString())
-              .replace('{x}', tile.x.toString())
-              .replace('{y}', tile.y.toString());
-            const localLocation = `${TILE_FOLDER}/${currentTileMap.id}/${tile.z}/${tile.x}/${tile.y}.pbf`;
-
-            tilePromise = fetch(fetchUrl)
-              .then((response) => {
-                if (!response.ok) throw new Error('Network response was not ok');
-                return response.arrayBuffer();
-              })
-              .then(async (data) => {
-                const base64String = Buffer.from(data).toString('base64');
-                FileSystem.writeAsStringAsync(localLocation, base64String, {
-                  encoding: FileSystem.EncodingType.UTF8,
-                });
-              })
-              .catch(() => {
-                errorCount++;
-              });
-          } else if (tileType === 'png') {
-            const fetchUrl = withTileSignature(currentTileMap.url, tileSignatures)
-              .replace('{z}', tile.z.toString())
-              .replace('{x}', tile.x.toString())
-              .replace('{y}', tile.y.toString());
-            const localLocation = `${TILE_FOLDER}/${currentTileMap.id}/${tile.z}/${tile.x}/${tile.y}`;
-
-            tilePromise = FileSystem.downloadAsync(fetchUrl, localLocation)
-              .then(({ uri, status }) => {
-                if (status !== 200) {
-                  FileSystem.deleteAsync(uri);
-                  // 404は正常な欠損タイルなのでエラーカウントしない
-                  if (status !== 404) {
-                    errorCount++;
-                  }
-                }
-              })
-              .catch(() => {
-                errorCount++;
-              });
-          } else if (tileType === 'hillshade') {
-            const cleanUrl = withTileSignature(toDemUrl(currentTileMap.url), tileSignatures);
-            const fetchUrl = cleanUrl
-              .replace('{z}', tile.z.toString())
-              .replace('{x}', tile.x.toString())
-              .replace('{y}', tile.y.toString());
-            const localLocation = `${TILE_FOLDER}/${currentTileMap.id}/${tile.z}/${tile.x}/${tile.y}`;
-
-            tilePromise = FileSystem.downloadAsync(fetchUrl, localLocation)
-              .then(({ uri, status }) => {
-                if (status !== 200) {
-                  FileSystem.deleteAsync(uri);
-                  // 404は正常な欠損タイルなのでエラーカウントしない
-                  if (status !== 404) {
-                    errorCount++;
-                  }
-                }
-              })
-              .catch(() => {
-                errorCount++;
-              });
-          } else if (tileType === 'dem') {
-            // 標高タイル（Mapterhorn）。404（外洋）はマーカーのみ=正常
-            tilePromise = downloadDemTile(tile).catch(() => {
-              errorCount++;
-            });
-          }
+          const tilePromise = downloadTileOfMap(
+            tileType,
+            currentTileMap,
+            tile,
+            pmtile,
+            pmtileIsVector,
+            tileSignatures
+          ).then((result) => {
+            if (result === 'saved') savedCount++;
+            else if (result === 'failed') failedCount++;
+          });
 
           batchDownload.push(tilePromise);
           if (batchDownload.length >= BATCH_SIZE) {
@@ -785,20 +635,18 @@ export const useTiles = (
 
         // 1枚も保存できなかったら完了扱いにしない（保存範囲の枠が出て、保存済みと誤解される）。
         // 再開で保存済みを飛ばした地図は、既に保存したタイルがあるので対象外
-        if (tileType === 'pmtiles' && skippedCount === 0 && pmtileSavedCount === 0) {
+        if (tileType === 'pmtiles' && skippedCount === 0 && savedCount === 0) {
           errorMaps.push(
-            pmtileFailedCount > 0
-              ? currentTileMap.name
-              : `${currentTileMap.name} (${t('hooks.message.noTilesInRange')})`
+            failedCount > 0 ? currentTileMap.name : `${currentTileMap.name} (${t('hooks.message.noTilesInRange')})`
           );
           updatedTileRegions = removeIncompleteRegions(updatedTileRegions, [tileRegion.id]);
           dispatch(editSettingsAction({ tileRegions: updatedTileRegions }));
           continue;
         }
 
-        // エラー率が80%を超える場合のみ警告（404などの正常な欠損タイルを考慮）
-        if (tilesToDownload.length > 0 && (errorCount / tilesToDownload.length) * 100 > 80) {
-          errorMaps.push(currentTileMap.name);
+        if (failedCount > 0) {
+          errorMaps.push(t('hooks.message.failedTileCount', { name: currentTileMap.name, count: failedCount }));
+          hasFailedTiles = true;
         }
 
         // この地図は完了: 未完了マーカー（status/zoom）を外して保存する
@@ -813,6 +661,7 @@ export const useTiles = (
       let message = t('hooks.message.completeDownloadMaps', { total: totalCompleted });
       if (errorMaps.length > 0) {
         message += `\n\n${t('hooks.message.mapsWithError')}\n${errorMaps.join('\n')}`;
+        if (hasFailedTiles) message += `\n\n${t('hooks.message.retryFailedTiles')}`;
       }
       await AlertAsync(message);
     },

@@ -15,6 +15,7 @@ import { db } from '../utils/db';
 import { TILE_FOLDER } from '../constants/AppConstants';
 import { isPeaksUrl } from '../utils/peaks/peak2dLabels';
 import { discardStaleTileSources } from '../utils/tileSourceCleanup';
+import { pmtilesHeaderZoom } from '../utils/pmtilesHeaderZoom';
 import { useStore } from 'react-redux';
 import { RootState } from '../store';
 
@@ -81,11 +82,11 @@ export default function MapEditContainer() {
         }
       }
 
-      finalMap.minimumZ = header ? header.minZoom : 4;
-      finalMap.maximumZ = header ? header.maxZoom : 16;
+      // ヘッダーが読めない（ネイティブ・取得失敗）ときは利用者の設定を残す
+      if (header) Object.assign(finalMap, pmtilesHeaderZoom(map, header));
     }
 
-    saveMapToState();
+    saveMapToState(finalMap);
   }, [getPmtilesBoundary, map, saveMapToState, store]);
 
   const pressDeleteMap = useCallback(async () => {

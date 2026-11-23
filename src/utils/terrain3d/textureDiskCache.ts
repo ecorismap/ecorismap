@@ -7,6 +7,21 @@ import * as FileSystem from 'expo-file-system/legacy';
  */
 export const TERRAIN_TEXTURE_CACHE_DIR = `${FileSystem.cacheDirectory}terrain3d_tex`;
 
+let cacheDirEnsured = false;
+
+/** 書き込み前にキャッシュフォルダを用意する。消した後は作り直すので、フラグはクリアと同じ場所で持つ */
+export const ensureTerrainTextureCacheDir = async (): Promise<void> => {
+  if (cacheDirEnsured) return;
+  await FileSystem.makeDirectoryAsync(TERRAIN_TEXTURE_CACHE_DIR, { intermediates: true }).catch(() => undefined);
+  cacheDirEnsured = true;
+};
+
+/** 3D 地形のテクスチャキャッシュを全部消す（設定のキャッシュクリアから呼ぶ） */
+export const clearTerrainTextureCache = async (): Promise<void> => {
+  cacheDirEnsured = false;
+  await FileSystem.deleteAsync(TERRAIN_TEXTURE_CACHE_DIR, { idempotent: true }).catch(() => undefined);
+};
+
 const escapeRegExp = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 /** 1つの地図のテクスチャキャッシュだけを消す。ID が別の地図の接頭辞でも巻き込まない */

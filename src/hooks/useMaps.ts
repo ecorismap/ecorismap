@@ -9,7 +9,7 @@ import { editSettingsAction } from '../modules/settings';
 import { RootState, AppDispatch } from '../store';
 import { addTileMapAction, deleteTileMapAction, setTileMapsAction, updateTileMapAction } from '../modules/tileMaps';
 import { cloneDeep } from 'lodash';
-import { csvToJsonArray, isMapListArray, isTileMapType, isValidMapListURL } from '../utils/Map';
+import { isTileMapType, isValidMapListURL, parseMapListCsv } from '../utils/Map';
 import { t } from '../i18n/config';
 import { AlertAsync } from '../components/molecules/AlertAsync';
 import { decodeUri } from '../utils/File.web';
@@ -22,8 +22,12 @@ import { withTileSignature } from '../utils/TileSignature';
 import { convertPDFToGeoTiff } from '../utils/PDF';
 import { db } from '../utils/db';
 import { saveStyleToPmtilesDb } from '../utils/pmtilesLocalStore';
+import { findPdfPageMaps } from '../utils/pdfTileMap';
 import { clearRefetchableTileCache, clearWebTileCache, regionsAfterTileCacheClear } from '../utils/tileCacheCleanup';
 import { discardStaleTileSources } from '../utils/tileSourceCleanup';
+import { clearAllDemCaches } from '../utils/demSource';
+import { clearTerrainTextureCache } from '../utils/terrain3d/textureDiskCache';
+import { clearPmtileProviders } from '../utils/terrain3d/pmtileRasterizer';
 import { generateTilesFromPDF } from '../utils/PDF';
 import * as pmtiles from 'pmtiles';
 import * as projectStorage from '../lib/firebase/storage';
@@ -151,18 +155,27 @@ export const useMaps = (): UseMapsReturnType => {
       }
       try {
         const response = await fetch(mapListURL, { signal: signal });
-
+        // 公開停止・権限なしのときは HTML のエラーページが返り、「データ形式が不正」と誤って案内してしまう
+        if (!response.ok) return { isOK: false, message: t('hooks.message.failGetData') };
         const csv = await response.text();
-        //console.log(csv);
-        const mapListArray = csvToJsonArray(csv);
-        //console.log(mapListArray);
-        if (!isMapListArray(mapListArray)) {
+        let parsed: ReturnType<typeof parseMapListCsv>;
+        try {
+          parsed = parseMapListCsv(csv);
+        } catch (e) {
+          // 引用符が閉じていないなど
+          return { isOK: false, message: t('hooks.message.invalidDataFormat') };
+        }
+        const { items: mapListArray, invalidCount } = parsed;
+        if (mapListArray.length === 0 && invalidCount > 0) {
           return { isOK: false, message: t('hooks.message.invalidDataFormat') };
         }
         if (mapListArray.length > 50) {
           return { isOK: false, message: t('hooks.message.tooManyMapList') };
         }
         dispatch(editSettingsAction({ mapList: mapListArray }));
+        if (invalidCount > 0) {
+          return { isOK: false, message: t('hooks.message.someInvalidMapList', { count: invalidCount }) };
+        }
         return { isOK: true, message: '' };
       } catch (error: any) {
         if (error.name === 'AbortError') {
@@ -196,9 +209,23 @@ export const useMaps = (): UseMapsReturnType => {
   // 取り直せるタイルだけを消す。PDF 地図のタイル・取り込んだスタイル・boundary.json・Web の取り込み実体は
   // 取り直す経路が無く、「キャッシュ」の操作で地図が壊れるため残す（タイル監査 M-H2）
   const clearTileCache = useCallback(async () => {
+    // 標高タイル（Mapterhorn・オンライン DEM）も配信元から取り直せるキャッシュ。
+    // 3D のテクスチャは一時的な失敗で付いた「タイルなし」の印もここでしか消せない（M-M7）
+    // これらを消せなくても地図タイルのクリアは続ける
+    try {
+      await clearAllDemCaches();
+    } catch (e) {
+      console.warn('clearAllDemCaches failed:', e);
+    }
     if (Platform.OS === 'web') {
       await clearWebTileCache();
       return;
+    }
+    try {
+      await clearTerrainTextureCache();
+      await clearPmtileProviders();
+    } catch (e) {
+      console.warn('clear 3D caches failed:', e);
     }
     await dispatch(async (thunkDispatch, getState) => {
       const clearedIds = await clearRefetchableTileCache((getState() as RootState).tileMaps);
@@ -718,10 +745,30 @@ export const useMaps = (): UseMapsReturnType => {
       }
       setProgress(formatProgress(PDF_PROGRESS.convertStart));
 
+      // 地図の項目からダウンロードし直したときは、前回作ったページ地図を置き換える（押すたびに増やさない）（M-M11）
+      const mapsAtImport = dispatch((_d, getState) => (getState() as RootState).tileMaps);
+      const sourceMap = id === undefined ? undefined : mapsAtImport.find((m) => m.id === id);
+      // 共有されたページ地図は pdf:// で PDF 全体を指す。押したページだけを作り、その地図自身を置き換える
+      // （全ページを作ると押すたびにページ数分の地図が増える）
+      const ownPage = sourceMap?.pdfPage;
+      if (ownPage !== undefined && outputFiles.length > 1) {
+        const ownFile = outputFiles[ownPage - 1];
+        if (ownFile === undefined) return { isOK: false, message: t('hooks.message.failReceiveFile') };
+        outputFiles = [ownFile];
+      }
       const totalPages = outputFiles.length;
+      const previousPages =
+        sourceMap === undefined ? new Map<number, TileMapType>() : findPdfPageMaps(mapsAtImport, sourceMap);
+      const reusedPageIds = new Set<string>();
       for (let page = 1; page <= totalPages; page++) {
         const outputFile = outputFiles[page - 1];
-        const mapId = id === undefined || totalPages > 1 ? ulid() : id;
+        const previousPage = totalPages > 1 ? previousPages.get(page) : undefined;
+        const mapId = totalPages > 1 ? previousPage?.id ?? ulid() : id ?? ulid();
+        if (previousPage !== undefined) {
+          reusedPageIds.add(previousPage.id);
+          // 前回のページのタイルが残ると、基準ズームが変わったときに古いタイルが混ざる
+          if (Platform.OS !== 'web') await FileSystem.deleteAsync(`${TILE_FOLDER}/${mapId}`, { idempotent: true });
+        }
         const pdfImage = 'file://' + outputFile.uri;
 
         const { y: pdfTopCoord } = outputFile.topLeft;
@@ -792,7 +839,21 @@ export const useMaps = (): UseMapsReturnType => {
         if (totalPages > 1) {
           //複数ページの場合は名前を変える
           tileMap.name = `${name}_page${page.toString().padStart(2, '0')}`;
-          dispatch(addTileMapAction(tileMap));
+          if (id !== undefined) {
+            tileMap.pdfSourceId = id;
+            tileMap.pdfPage = page;
+          }
+          if (previousPage !== undefined) {
+            // 利用者が変えた名前・透過度・表示・グループは引き継ぐ
+            tileMap.name = previousPage.name;
+            tileMap.transparency = previousPage.transparency;
+            tileMap.visible = previousPage.visible;
+            tileMap.groupId = previousPage.groupId;
+            tileMap.redraw = !previousPage.redraw;
+            dispatch(updateTileMapAction(tileMap));
+          } else {
+            dispatch(addTileMapAction(tileMap));
+          }
         } else if (id === undefined) {
           //単ページでローカル読み込みの場合は新規追加
           dispatch(addTileMapAction(tileMap));
@@ -807,6 +868,9 @@ export const useMaps = (): UseMapsReturnType => {
             tileMap.attribution = oldTileMap.attribution;
             tileMap.transparency = oldTileMap.transparency;
             tileMap.encryptKey = oldTileMap.encryptKey;
+            tileMap.pdfSourceId = oldTileMap.pdfSourceId;
+            tileMap.pdfPage = oldTileMap.pdfPage;
+            tileMap.groupId = oldTileMap.groupId;
             tileMap.redraw = !oldTileMap.redraw;
             thunkDispatch(updateTileMapAction(tileMap));
           });
@@ -815,6 +879,16 @@ export const useMaps = (): UseMapsReturnType => {
         const convertProgress =
           PDF_PROGRESS.convertStart + (page / totalPages) * (PDF_PROGRESS.convertEnd - PDF_PROGRESS.convertStart);
         setProgress(formatProgress(convertProgress));
+      }
+      // ページ数が減った・単ページになった場合、前回のページ地図の残りを片付ける
+      for (const stalePage of previousPages.values()) {
+        if (reusedPageIds.has(stalePage.id)) continue;
+        dispatch(deleteTileMapAction(stalePage));
+        if (Platform.OS === 'web') {
+          await db.geotiff.delete(stalePage.id).catch(() => undefined);
+        } else {
+          await FileSystem.deleteAsync(`${TILE_FOLDER}/${stalePage.id}`, { idempotent: true }).catch(() => undefined);
+        }
       }
       setProgress(formatProgress(PDF_PROGRESS.idle)); //次回のための初期値
 
@@ -889,7 +963,14 @@ export const useMaps = (): UseMapsReturnType => {
       //console.log('BBB', header);
 
       if (Platform.OS === 'web') {
-        await db.pmtiles.put({ mapId, blob: blob, boundary: JSON.stringify(boundary), style: undefined });
+        try {
+          await db.pmtiles.put({ mapId, blob: blob, boundary: JSON.stringify(boundary), style: undefined });
+        } catch (e) {
+          // 容量超過（QuotaExceededError）など。一覧に載らない地図の blob: を残さない（M-M10）
+          console.error('importPmtilesFile put error:', e);
+          URL.revokeObjectURL(url);
+          return { isOK: false, message: t('hooks.message.failReceiveFile') };
+        }
       } else {
         const boundaryUri = `${TILE_FOLDER}/${mapId}/boundary.json`;
         await FileSystem.writeAsStringAsync(boundaryUri, JSON.stringify(boundary));

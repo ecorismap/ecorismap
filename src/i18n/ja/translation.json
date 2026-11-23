@@ -1039,6 +1039,7 @@
       "completeDownload": "地図のダウンロードが完了しました。",
       "pleaseActivate": "メールを確認して、アクティベートしてください。",
       "errorDownload": "地図のダウンロードが完了しましたが、一部ダウンロードできていない可能性があります。",
+      "someTilesFailed": "地図のダウンロードが完了しましたが、{{count}}枚のタイルを取得できませんでした。電波の良い場所で同じ範囲をもう一度ダウンロードしてください。",
       "failDownload": "ダウンロードに失敗しました"
     },
     "message": {
@@ -1173,6 +1174,10 @@
       "failDeleteFile": "プロジェクトのファイルの削除に失敗しました",
       "completeDownloadMaps": "{{total}}個の地図のダウンロードが完了しました",
       "mapsWithError": "エラーが発生した地図:",
+      "someInvalidMapList": "地図リストの{{count}}行は形式が正しくないため読み込みませんでした。",
+      "pdfMapNotShared": "次のPDF地図はこの端末からは共有用にアップロードできないため、メンバーには表示されません（Web版で取り込んで保存すると共有できます）。\n{{names}}",
+      "failedTileCount": "{{name}}（{{count}}枚取得できませんでした）",
+      "retryFailedTiles": "電波の良い場所で同じ範囲をもう一度ダウンロードしてください。",
       "noTilesInRange": "この範囲には保存できるタイルがありません",
       "excludedInvalidLocation": "{{invalidCount}}個の無効な位置データを除外しました。",
       "insufficientTrackLog": "有効な軌跡データが不足しています",

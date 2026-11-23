@@ -1,15 +1,9 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { TileMapType } from '../types';
-import { JP, BASE } from '../constants/Maps';
+import { createInitialTileMaps } from '../constants/Maps';
 import i18n from '../i18n/config';
 
-const createTileMapsInitialState = (): TileMapType[] => {
-  if (i18n.language.includes('ja')) {
-    return [...JP, ...BASE];
-  } else {
-    return BASE;
-  }
-};
+export const createTileMapsInitialState = (): TileMapType[] => createInitialTileMaps(i18n.language);
 
 export const tileMapsInitialState = createTileMapsInitialState();
 

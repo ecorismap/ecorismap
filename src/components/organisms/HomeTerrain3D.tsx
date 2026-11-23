@@ -62,6 +62,7 @@ import { replayEyeDistanceM } from '../../utils/terrain3d/replayCamera';
 import { getTerrainDevice } from '../../utils/terrain3d/webgpuSupport';
 import MapView from 'react-native-maps';
 import { MapRef } from 'react-map-gl/maplibre';
+import { isPdfTileMap } from '../../utils/pdfTileMap';
 
 /**
  * 開発時の検証: ポイントの緯度経度にGPUで十字を描く。
@@ -101,7 +102,7 @@ export const selectTerrainLayers = (
     // PDF・陰影（hillshade://）は非対応（陰影はライティングで代替）。
     // 段彩（relief://）はJSで生成して貼る。GEBCOスタイルなら地形も海底モードになる。
     // PMTiles・pbf（ベクタ含む）は2Dと同じネイティブラスタライザで描画する
-    if (url.endsWith('.pdf') || url.startsWith('pdf://')) return false;
+    if (isPdfTileMap(tileMap)) return false;
     if (isDemProtocolUrl(url) && !isReliefUrl(url)) return false;
     // 山名（peaks://）はタイルではない（3Dでは眺望の山名ラベルが代わりになる）
     if (isPeaksUrl(url)) return false;

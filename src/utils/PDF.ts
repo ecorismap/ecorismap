@@ -9,13 +9,14 @@ import ImageEditor from '@react-native-community/image-editor';
 import { moveFile, unlink } from '../utils/File';
 import {
   buildTileMapHTML,
-  buildTileUrl,
   isPmtilesMap,
   listPdfTiles,
   PdfTileMapOptions,
   PdfTileRequest,
 } from './pdfExport/tiles';
 import { runTasks } from './pdfExport/runTasks';
+import { buildSignedTileUrl } from './pdfExport/signedTileUrl';
+import { removeTileCacheEntries } from './tileCacheCleanup';
 import { renderPmtile } from './terrain3d/pmtileRasterizer';
 import { withTileSignature } from './TileSignature';
 import { getPmtileMaximumNativeZ } from './pmtileProps';
@@ -89,7 +90,10 @@ async function loadTileBase64(tile: PdfTileRequest, options: PdfTileMapOptions):
     }
     // PDF(file://)などダウンロードできないURLはスキップ
     if (!map.url.startsWith('http://') && !map.url.startsWith('https://')) return undefined;
-    const resp = await FileSystem.downloadAsync(buildTileUrl(map, z, x, y), tempFileUri);
+    const resp = await FileSystem.downloadAsync(
+      buildSignedTileUrl(map, z, x, y, options.tileSignatures ?? {}),
+      tempFileUri
+    );
     if (resp.status !== 200) {
       await FileSystem.deleteAsync(tempFileUri, { idempotent: true });
       return undefined;
@@ -181,6 +185,10 @@ export const generateTilesFromPDF = async (
       }
     }
   }
+  //同じIDでの再ダウンロード（改訂版への置き換え）で、範囲外や旧版の高ズームのタイルが残って混ざらないよう
+  //先に旧タイルを消す。boundary.json は呼び出し側が生成後に書き直す
+  await removeTileCacheEntries(mapId);
+
   const BATCH_SIZE = 10;
   let batch: Promise<void>[] = [];
 
@@ -209,8 +217,18 @@ export const generateTilesFromPDF = async (
       displaySize: { width: tileSize, height: tileSize },
       resizeMode: 'cover',
     })
-      .then((croppedImageUri) => {
-        moveFile(croppedImageUri, tileUri);
+      .then(async (cropped) => {
+        //パッチ済みのネイティブは型定義と違い file:// の文字列を返す
+        const croppedImageUri: string = typeof cropped === 'string' ? cropped : cropped.uri;
+        //iOS の moveFile は移動先があると失敗するため先に消す。完了を待たないと、生成完了の通知が
+        //最後の移動より先に走り、無いタイルが「タイルなし」として確定キャッシュされる
+        try {
+          await unlink(tileUri);
+          await moveFile(croppedImageUri, tileUri);
+        } catch (e) {
+          await unlink(croppedImageUri).catch(() => undefined);
+          throw e;
+        }
       })
       .catch((e) => {
         console.log(tile, e);

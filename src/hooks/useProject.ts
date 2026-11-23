@@ -11,6 +11,7 @@ import { dataSetInitialState, setDataSetAction } from '../modules/dataSet';
 import { useRepository } from './useRepository';
 import { hasOpened } from '../utils/Project';
 import { tileMapsInitialState, setTileMapsAction } from '../modules/tileMaps';
+import { mapTypeFromTileMaps } from '../utils/baseMapType';
 import * as projectStore from '../lib/firebase/firestore';
 import { isLoggedIn } from '../utils/Account';
 import { t } from '../i18n/config';
@@ -99,6 +100,8 @@ export const useProject = (): UseProjectReturnType => {
         isSynced: false,
         projectId: undefined,
         projectName: undefined,
+        // 地図一覧を初期状態に戻すので背景の地図種別も合わせる。残すと衛星写真で閉じたとき一覧と食い違う（M-M20）
+        mapType: mapTypeFromTileMaps(tileMapsInitialState) ?? state.settings.mapType,
       })
     );
     dispatch(setLayersAction(layersInitialState));

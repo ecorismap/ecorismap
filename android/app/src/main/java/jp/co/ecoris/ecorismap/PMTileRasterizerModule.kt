@@ -74,12 +74,25 @@ class PMTileRasterizerModule(reactContext: ReactApplicationContext) :
         val tile = provider.getTile(x, y, z)
         val data = tile?.data
         if (data == null || data.isEmpty()) {
-          promise.resolve(0)
+          // 0 は「タイルが無い」と確定したときだけ返す（JS が0バイトの印を書いて以後取りに来ない）。
+          // 通信失敗・ヘッダー未取得・オフラインの未保存範囲は reject して、次の機会に取り直させる
+          if (provider.wasLastMissTransient()) {
+            promise.reject("E_TILE_UNAVAILABLE", "tile temporarily unavailable: $z/$x/$y")
+          } else {
+            promise.resolve(0)
+          }
           return@execute
         }
         val outFile = File(stripFileScheme(outputPath))
         outFile.parentFile?.mkdirs()
-        outFile.writeBytes(data)
+        // 途中で失敗しても書きかけの画像がキャッシュとして残らないよう、一時ファイルから置き換える
+        val tmpFile = File(outFile.path + ".tmp")
+        try {
+          tmpFile.writeBytes(data)
+          if (!tmpFile.renameTo(outFile)) throw java.io.IOException("rename failed: ${outFile.path}")
+        } finally {
+          tmpFile.delete()
+        }
         promise.resolve(tile.width)
       } catch (e: Exception) {
         promise.reject("E_RENDER", e.message, e)

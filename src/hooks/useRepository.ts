@@ -31,6 +31,8 @@ import { layersInitialState, setLayersAction, TRACK_LAYER_ID } from '../modules/
 import { tileMapsInitialState, setTileMapsAction } from '../modules/tileMaps';
 import { discardStaleTileSources } from '../utils/tileSourceCleanup';
 import { dropUnsafeTileMaps } from '../utils/tileMapId';
+import { mapTypeFromTileMaps } from '../utils/baseMapType';
+import { isPdfTileMap } from '../utils/pdfTileMap';
 import { findLocalPhotoUri, photoDownloadTarget } from '../utils/photoDownloadPath';
 import { editSettingsAction } from '../modules/settings';
 import { addProjectAction, deleteProjectAction, updateProjectAction } from '../modules/projects';
@@ -1220,8 +1222,16 @@ export const useRepository = (): UseRepositoryReturnType & {
   const uploadTileMaps = useCallback(
     async (projectId: string) => {
       const uploadedTileMaps: TileMapType[] = [];
+      const unsharedPdfNames: string[] = [];
       for (const tileMap of tileMaps) {
-        if (tileMap.url.startsWith('file://') && tileMap.url.endsWith('.pdf')) {
+        // ローカルのPMTilesはアップロードしない。スタイルが付いていても、メンバーは blob: の本体を開けない（M-M17）
+        if (tileMap.url.includes('blob:')) continue;
+        if (Platform.OS !== 'web' && tileMap.url.startsWith('file://') && isPdfTileMap(tileMap)) {
+          // 元の PDF は Web の IndexedDB にしか無く、ネイティブでは上げられない。地図ごとに失敗を出すと
+          // 保存のたびにページ数分の警告が続くので、1回にまとめる。自分の端末で開き直したときに消えないよう一覧には残す
+          unsharedPdfNames.push(tileMap.name);
+          uploadedTileMaps.push(tileMap);
+        } else if (tileMap.url.startsWith('file://') && isPdfTileMap(tileMap)) {
           const { isOK, message, url, key } = await projectStorage.uploadPDF(projectId, tileMap.id);
           if (!isOK || url === null) {
             await AlertAsync(message);
@@ -1237,11 +1247,12 @@ export const useRepository = (): UseRepositoryReturnType & {
           } else {
             uploadedTileMaps.push({ ...tileMap, styleURL: url, encryptKey: key });
           }
-        } else if (tileMap.url.includes('blob:')) {
-          //ローカルのPMTilesはアップロードしない
         } else {
           uploadedTileMaps.push(tileMap);
         }
+      }
+      if (unsharedPdfNames.length > 0) {
+        await AlertAsync(t('hooks.message.pdfMapNotShared', { names: unsharedPdfNames.join('\n') }));
       }
 
       return uploadedTileMaps;
@@ -1428,7 +1439,7 @@ export const useRepository = (): UseRepositoryReturnType & {
       const { isOK, message } = await projectStore.uploadProjectSettings(project_.id, user.uid, {
         layers: layersInitialState,
         tileMaps: tileMapsInitialState,
-        mapType: 'none',
+        mapType: mapTypeFromTileMaps(tileMapsInitialState) ?? 'none',
         mapRegion: {
           latitude: 35,
           longitude: 135,
@@ -1516,18 +1527,21 @@ export const useRepository = (): UseRepositoryReturnType & {
     }
   }, []);
 
+  /**
+   * 共有スタイル（style://）を地図ごとに取り込む。1つ失敗しても残りの地図は続ける（M-M4）。
+   * 失敗はプロジェクトを開く処理を止めない（取り込めなかった地図は既定スタイルで表示される）ので、名前だけ返す
+   */
   const downloadStyle = useCallback(async (projectId: string, tileMaps_: TileMapType[]) => {
+    const failedNames: string[] = [];
     for (const tileMap of tileMaps_) {
       if (tileMap.styleURL === undefined || tileMap.encryptKey === undefined) continue;
       const url = tileMap.styleURL.startsWith('style://') ? tileMap.styleURL.replace('style://', '') : tileMap.styleURL;
       const { isOK, styleJson } = await projectStorage.downloadStyle(url, tileMap.encryptKey);
       if (!isOK || !styleJson) {
-        //メッセージは出ないようにする
-        //await AlertAsync(message);
+        failedNames.push(tileMap.name);
         continue;
       }
       try {
-        // console.log('importStyleFile', uri, name, id);
         if (Platform.OS === 'web') {
           await saveStyleToPmtilesDb(tileMap.id, styleJson);
         } else {
@@ -1535,13 +1549,21 @@ export const useRepository = (): UseRepositoryReturnType & {
           await FileSystem.makeDirectoryAsync(`${TILE_FOLDER}/${tileMap.id}`, { intermediates: true });
           await FileSystem.copyAsync({ from: styleJson, to: styleUri });
         }
-
-        return { isOK: true, message: '' };
-      } catch (e: any) {
-        console.log(e);
-        return { isOK: false, message: e.message + '\n' + t('hooks.message.failReceiveFile') };
+      } catch (e) {
+        console.warn('downloadStyle Error:', tileMap.name, e);
+        failedNames.push(tileMap.name);
+      } finally {
+        if (Platform.OS !== 'web') {
+          // 復号した一時ファイルと暗号化されたままの一時ファイル（storage.downloadStyle が作る）を残さない
+          await FileSystem.deleteAsync(styleJson, { idempotent: true }).catch(() => undefined);
+          await FileSystem.deleteAsync(`${FileSystem.cacheDirectory}temp_style.json`, { idempotent: true }).catch(
+            () => undefined
+          );
+        }
       }
     }
+    if (failedNames.length > 0) console.warn('downloadStyle failed:', failedNames.join(', '));
+    return { isOK: failedNames.length === 0, failedNames };
   }, []);
 
   const downloadProjectSettings = useCallback(
@@ -1595,7 +1617,9 @@ export const useRepository = (): UseRepositoryReturnType & {
       await discardStaleTileSources({ getState: store.getState, dispatch }, tileMapsFromSettings);
       dispatch(setLayersAction(mergedLayers));
       dispatch(setTileMapsAction(tileMapsFromSettings));
-      dispatch(editSettingsAction({ ...settings, projectRegion }));
+      // 保存された mapType は一覧と食い違っていることがある（既定の設定は 'none' で作っていた）ので一覧から導き直す（M-M20）
+      const mapType_ = mapTypeFromTileMaps(tileMapsFromSettings) ?? settings.mapType;
+      dispatch(editSettingsAction({ ...settings, mapType: mapType_, projectRegion }));
       return { isOK: true, message: '', region: projectRegion };
     },
     [dispatch, downloadDictionaries, downloadStyle, store]

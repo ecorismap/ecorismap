@@ -229,3 +229,34 @@
 
 確認: tsc 0、lint エラー0、jest 3104件通過。Android エミュレータで、特定植物群落（ヘッダー z5〜15）を z13 から範囲ダウンロードして z5〜15 が保存されること、キャッシュのクリアでタイルだけ消えて style.json が残り一覧外のフォルダが残ることを確認した。
 残り: M-H6 の署名付き保護地図の初回表示・プリセット置換は実機で未確認。iOS・Web は未確認。JSON 配列の一括取り込み・バックアップ復元・.ecorismap 読み込みで URL が差し替わる経路は未対応。一覧外の孤立フォルダは容量が回収されない。
+
+### medium 21件（2026-11-23、fix/tile-medium）
+
+方針（ユーザー判断）: M-M1=完了扱いは変えず失敗枚数を警告、M-M2=キャッシュの y を XYZ に統一、M-M6=tiles をバックアップ対象外にするだけ、M-M11=PDF の判定と再ダウンロードの重複だけ、M-M21=日本語の初期状態で MapTiler の standard を非表示。
+
+| 番号 | 修正内容 |
+|---|---|
+| M-M1 | 1枚分の取得を `downloadOneTile` にまとめ、単一地図版と複数地図版で同じ規則に。404 以外の失敗（PMTiles 例外・通信例外・5xx・書き込み失敗）を数えて警告。書き込みは await |
+| M-M2 | JS のダウンロードは URL の {y} だけ反転し保存は XYZ の y。iOS も反転を URL 生成時だけに。旧キャッシュは `flipYTileCacheMigration` で地図ごとに一度だけ消し、保存範囲も外す（起動時とダウンロード前） |
+| M-M3 | Android で取得データが画像か確かめ、一時ファイル経由で書く。decode の null チェック、getTile の例外処理 |
+| M-M4 | `downloadStyle` のループ内 return をやめ、全地図のスタイルを取り込む |
+| M-M5 | `downloadFileIfOk` で一時パスへ落とし、200 のときだけ置き換える（DEM も） |
+| M-M6 | AppDelegate で Documents/tiles に isExcludedFromBackup を付ける（起動時と背面移行時）。PDF 地図のタイルもバックアップされなくなる |
+| M-M7 | 3D テクスチャは 403/429/5xx・一時的な null を「タイルなし」にしない。キャッシュのクリアで 3D・DEM キャッシュも消す |
+| M-M8 | ベクタ PMTiles の描画済み PNG をスタイル更新時刻と比べて描き直す（Android・iOS） |
+| M-M9 | 地図リスト CSV を RFC4180 のパーサで読み、列ごとに型を決める。不正な行だけ除き件数を知らせる。response.ok を確認 |
+| M-M10 | Web の PMTiles 取り込みで data URL 変換をやめ、失敗表示と読み込み中の解除を必ず行う |
+| M-M11 | `pdfTileMap.ts` の `isPdfTileMap`（attribution==='PDF' 等）で判定。複数ページ PDF の再ダウンロードは前回のページ群を置き換え、共有ページ地図を押してもそのページだけ作る |
+| M-M12 | PDF 地図の再ダウンロードで旧タイルを消し、移動の上書き失敗を防ぐ |
+| M-M13 | Android の PMTiles を maximumNativeZ より何段でも拡大表示 |
+| M-M14 | Android の DEM が地図タイル用の代替タイルを受け取らない |
+| M-M15 | iOS の DEM オーバーレイで一時失敗に NoTile を返さない |
+| M-M16 | Web の陰影・段彩で共有の取得を最初の要求の中止に巻き込まない。gebcoDemLayers も 5xx を覚えない |
+| M-M17 | blob: の地図はスタイル付きでも共有設定に載せない |
+| M-M18 | MapEdit の保存でヘッダーの min/maxZoom と overzoomThreshold を反映。Web の PMTiles の maxzoom を min(overzoomThreshold, maximumZ) に |
+| M-M19 | PDF 出力で署名付き XYZ 地図に署名を付ける |
+| M-M20 | mapType を tileMaps から導き（`mapTypeFromTileMaps`）、プロジェクトの作成・取り込み・終了でそろえる |
+| M-M21 | `createInitialTileMaps` で日本語の初期状態の standard を非表示に（既存の設定は変えない） |
+
+確認: tsc 0、lint エラー0、jest 3190件通過。react-native-maps パッチを再生成（行末空白の罠で1回目は素の版に当たらず、素の版に当て直して再生成し forward/reverse とも確認）。Android・iOS ともビルド成功し、エミュレータ/シミュレータで起動・地図と陰影起伏の表示を確認、iOS の tiles に isExcludedFromBackup が付くことを確認した。
+残り: 各件の実機での動作（flipY 地図、PDF 再ダウンロード、スタイル更新後の描き直し、DEM の一時失敗、オーバーズーム）は未確認。旧版でダウンロードした flipY 地図は更新後にダウンロードし直しが必要（周知が要る）。pbf の flipY 地図は移行対象外。Web は未確認。

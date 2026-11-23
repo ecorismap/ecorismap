@@ -134,6 +134,12 @@ jest.mock('../../utils/tileSourceCleanup', () => ({
   discardStaleTileSources: jest.fn(async () => []),
 }));
 
+jest.mock('../../utils/demSource', () => ({ clearAllDemCaches: jest.fn(async () => undefined) }));
+jest.mock('../../utils/terrain3d/textureDiskCache', () => ({
+  clearTerrainTextureCache: jest.fn(async () => undefined),
+}));
+jest.mock('../../utils/terrain3d/pmtileRasterizer', () => ({ clearPmtileProviders: jest.fn(async () => undefined) }));
+
 // Thunk関数を実行して内部のdispatchを取得するヘルパー
 const executeThunkAndGetPayload = (thunkFn: (dispatch: jest.Mock, getState: () => { tileMaps: TileMapType[] }) => void): TileMapType[] => {
   const innerDispatch = jest.fn();
@@ -587,6 +593,10 @@ describe('useMaps', () => {
 
     expect(clearRefetchableTileCache).toHaveBeenCalledWith(state.tileMaps);
     expect(innerDispatch.mock.calls[0][0].payload.tileRegions.map((r: { id: string }) => r.id)).toEqual(['b']);
+    // 3D のテクスチャ（一時失敗の印を含む）と標高タイルのキャッシュも消す（M-M7）
+    expect(jest.requireMock('../../utils/demSource').clearAllDemCaches).toHaveBeenCalled();
+    expect(jest.requireMock('../../utils/terrain3d/textureDiskCache').clearTerrainTextureCache).toHaveBeenCalled();
+    expect(jest.requireMock('../../utils/terrain3d/pmtileRasterizer').clearPmtileProviders).toHaveBeenCalled();
   });
 
   // タイル監査 M-H6: 同じIDの地図を取り込んで取得元が変わったら、差し替える前に旧ソースのタイルを捨てる

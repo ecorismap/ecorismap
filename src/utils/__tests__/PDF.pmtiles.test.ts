@@ -68,3 +68,21 @@ describe('generateTileMap（モバイルのPMTiles）', () => {
     expect(html).not.toContain('<img');
   });
 });
+
+describe('generateTileMap（モバイルの署名付きXYZ）', () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  it('未保存のタイルは署名を付けたURLで取る', async () => {
+    const FileSystem = require('expo-file-system/legacy');
+    FileSystem.downloadAsync.mockResolvedValue({ status: 200 });
+    const template = 'https://tiles.example.com/protected/{z}/{x}/{y}.png';
+    const xyzMap: TileMapType = { ...pmtilesMap, id: 'xyz', url: template, styleURL: undefined, isVector: false };
+    await generateTileMap([xyzMap], region, '16', {
+      tileSignatures: { [template]: { status: 'signed', query: 'expires=1&sig=s', expires: 1, checkedAt: 0 } },
+    });
+    expect(FileSystem.downloadAsync).toHaveBeenCalled();
+    expect(FileSystem.downloadAsync.mock.calls[0][0]).toMatch(
+      /^https:\/\/tiles\.example\.com\/protected\/16\/\d+\/\d+\.png\?expires=1&sig=s$/
+    );
+  });
+});

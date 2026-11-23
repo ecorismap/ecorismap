@@ -4,6 +4,8 @@ import {
   countDownloadTiles,
   countTilesForRegion,
   downloadBoundsForZoom,
+  downloadFileIfOk,
+  downloadOneTile,
   downloadTileGrid,
   DOWNLOAD_TILE_COUNT_LIMIT,
   estimateDownloadTileCount,
@@ -27,6 +29,9 @@ import * as FileSystem from 'expo-file-system/legacy';
 
 jest.mock('expo-file-system/legacy', () => ({
   documentDirectory: 'file:///test/',
+  cacheDirectory: 'file:///cache/',
+  downloadAsync: jest.fn(),
+  moveAsync: jest.fn(() => Promise.resolve()),
   readDirectoryAsync: jest.fn(),
   writeAsStringAsync: jest.fn(() => Promise.resolve()),
   deleteAsync: jest.fn(() => Promise.resolve()),
@@ -504,5 +509,120 @@ describe('readPmtileZoomRange', () => {
     expect(await readPmtileZoomRange(failing)).toBeUndefined();
     expect(await readPmtileZoomRange(withZoom(14, 12))).toBeUndefined();
     expect(await readPmtileZoomRange(withZoom(-1, 12))).toBeUndefined();
+  });
+});
+
+describe('downloadFileIfOk', () => {
+  const mockDownload = FileSystem.downloadAsync as jest.Mock;
+  const mockMove = FileSystem.moveAsync as jest.Mock;
+  const mockDelete = FileSystem.deleteAsync as jest.Mock;
+  const DEST = 'file:///test/tiles/M1/10/5/7';
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  test('200は一時ファイルに落としてから保存先を置き換える', async () => {
+    mockDownload.mockImplementation(async (_url: string, uri: string) => ({ uri, status: 200 }));
+    expect(await downloadFileIfOk('https://example.com/t', DEST)).toBe('saved');
+    const temp = mockDownload.mock.calls[0][1];
+    expect(temp).not.toBe(DEST);
+    expect(temp.startsWith('file:///cache/')).toBe(true);
+    expect(mockDelete).toHaveBeenCalledWith(DEST, { idempotent: true });
+    expect(mockMove).toHaveBeenCalledWith({ from: temp, to: DEST });
+  });
+
+  test('一時的なエラー（503）では保存済みのタイルを消さず failed を返す', async () => {
+    mockDownload.mockImplementation(async (_url: string, uri: string) => ({ uri, status: 503 }));
+    expect(await downloadFileIfOk('https://example.com/t', DEST)).toBe('failed');
+    expect(mockDelete).not.toHaveBeenCalledWith(DEST, expect.anything());
+    expect(mockMove).not.toHaveBeenCalled();
+  });
+
+  test('404 は missing（失敗に数えない）', async () => {
+    mockDownload.mockImplementation(async (_url: string, uri: string) => ({ uri, status: 404 }));
+    expect(await downloadFileIfOk('https://example.com/t', DEST)).toBe('missing');
+    expect(mockMove).not.toHaveBeenCalled();
+  });
+
+  test('通信例外・移動の失敗は failed', async () => {
+    mockDownload.mockRejectedValueOnce(new Error('offline'));
+    expect(await downloadFileIfOk('https://example.com/t', DEST)).toBe('failed');
+    mockDownload.mockImplementation(async (_url: string, uri: string) => ({ uri, status: 200 }));
+    mockMove.mockRejectedValueOnce(new Error('disk full'));
+    expect(await downloadFileIfOk('https://example.com/t', DEST)).toBe('failed');
+  });
+});
+
+describe('downloadOneTile', () => {
+  const mockDownload = FileSystem.downloadAsync as jest.Mock;
+  const mockMove = FileSystem.moveAsync as jest.Mock;
+  const mockWrite = FileSystem.writeAsStringAsync as jest.Mock;
+  const originalFetch = global.fetch;
+  const tile = { z: 10, x: 900, y: 400 };
+  const common = { tileMapId: 'M1', flipY: false, pmtileIsVector: false, tile };
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockDownload.mockImplementation(async (_url: string, uri: string) => ({ uri, status: 200 }));
+  });
+
+  afterEach(() => {
+    global.fetch = originalFetch;
+  });
+
+  test('flipY（TMS）の地図は URL の {y} だけ反転し、保存先は XYZ の y', async () => {
+    const result = await downloadOneTile({
+      ...common,
+      tileType: 'png',
+      urlTemplate: 'https://example.com/{z}/{x}/{y}.png?sig=1',
+      flipY: true,
+    });
+    expect(result).toBe('saved');
+    expect(mockDownload.mock.calls[0][0]).toBe('https://example.com/10/900/623.png?sig=1');
+    expect(mockMove.mock.calls[0][0].to).toBe('file:///test/tiles/M1/10/900/400');
+  });
+
+  test('flipY でない地図はそのままの y で取る', async () => {
+    await downloadOneTile({ ...common, tileType: 'hillshade', urlTemplate: 'https://example.com/{z}/{x}/{y}.png' });
+    expect(mockDownload.mock.calls[0][0]).toBe('https://example.com/10/900/400.png');
+  });
+
+  test('pbf: 404 は missing、5xx と通信例外は failed、書き込み失敗も failed', async () => {
+    const pbf = { ...common, tileType: 'pbf' as const, urlTemplate: 'https://example.com/{z}/{x}/{y}.pbf' };
+    global.fetch = jest.fn(async () => ({ ok: false, status: 404 })) as unknown as typeof fetch;
+    expect(await downloadOneTile(pbf)).toBe('missing');
+    global.fetch = jest.fn(async () => ({ ok: false, status: 503 })) as unknown as typeof fetch;
+    expect(await downloadOneTile(pbf)).toBe('failed');
+    global.fetch = jest.fn(async () => {
+      throw new Error('offline');
+    }) as unknown as typeof fetch;
+    expect(await downloadOneTile(pbf)).toBe('failed');
+    global.fetch = jest.fn(async () => ({
+      ok: true,
+      status: 200,
+      arrayBuffer: async () => new Uint8Array([1, 2]).buffer,
+    })) as unknown as typeof fetch;
+    mockWrite.mockRejectedValueOnce(new Error('disk full'));
+    expect(await downloadOneTile(pbf)).toBe('failed');
+    expect(await downloadOneTile(pbf)).toBe('saved');
+    expect(mockWrite).toHaveBeenLastCalledWith('file:///test/tiles/M1/10/900/400.pbf', 'AQI=', { encoding: 'utf8' });
+  });
+
+  test('PMTiles: 範囲外（undefined）は missing、例外と書き込み失敗は failed', async () => {
+    const pm = { ...common, tileType: 'pmtiles' as const, urlTemplate: '', pmtileIsVector: true };
+    const outOfRange = { getZxy: jest.fn(async () => undefined) };
+    expect(await downloadOneTile({ ...pm, pmtile: outOfRange })).toBe('missing');
+    const throwing = {
+      getZxy: jest.fn(async (): Promise<{ data: ArrayBuffer } | undefined> => {
+        throw new Error('range request failed');
+      }),
+    };
+    expect(await downloadOneTile({ ...pm, pmtile: throwing })).toBe('failed');
+    const ok = { getZxy: jest.fn(async () => ({ data: new Uint8Array([1, 2]).buffer })) };
+    mockWrite.mockRejectedValueOnce(new Error('disk full'));
+    expect(await downloadOneTile({ ...pm, pmtile: ok })).toBe('failed');
+    expect(await downloadOneTile({ ...pm, pmtile: ok })).toBe('saved');
+    expect(await downloadOneTile({ ...pm, pmtile: undefined })).toBe('failed');
   });
 });

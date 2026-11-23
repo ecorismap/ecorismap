@@ -741,6 +741,7 @@
       "completeDownload": "The map download is complete.",
       "pleaseActivate": "Please check your email and activate.",
       "errorDownload": "The map has been downloaded, but some parts may not have been downloaded.",
+      "someTilesFailed": "The map download is complete, but {{count}} tile(s) could not be downloaded. Please download the same area again where the connection is good.",
       "failDownload": "Download failed"
     },
     "message": {
@@ -875,6 +876,10 @@
       "failDeleteFile": "Failed to delete files in the project",
       "completeDownloadMaps": "Download of {{total}} maps completed",
       "mapsWithError": "Maps with errors:",
+      "someInvalidMapList": "Skipped {{count}} row(s) in the map list because their format is invalid.",
+      "pdfMapNotShared": "The following PDF maps cannot be uploaded for sharing from this device, so members will not see them (import and save them in the web version to share).\n{{names}}",
+      "failedTileCount": "{{name}} ({{count}} tile(s) could not be downloaded)",
+      "retryFailedTiles": "Please download the same area again where the connection is good.",
       "noTilesInRange": "No tiles to save in this area",
       "excludedInvalidLocation": "Excluded {{invalidCount}} invalid location points.",
       "insufficientTrackLog": "Not enough valid track data",

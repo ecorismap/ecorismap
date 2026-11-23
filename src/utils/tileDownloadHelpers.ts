@@ -14,6 +14,7 @@ import { isPeaksUrl } from './peaks/peak2dLabels';
 import { getPmtileMaximumNativeZ } from './pmtileProps';
 import { isDemProtocolUrl, isTerrariumDemUrl, TERRARIUM_DEM_ZOOM_OFFSET } from './terrainShading';
 import { lonToTileX, latToTileY, tilesForZoom } from './Tile';
+import { buildTileUrl } from './pdfExport/tiles';
 
 // hillshadeはrelief://（陰影段彩）も含む。どちらも生のDEMタイルを保存する点で同じ扱い。
 // demは標高タイル（Mapterhorn）の疑似地図（demTileDownload.ts）
@@ -293,6 +294,97 @@ export const removeLegacyRasterPmtilePngs = async (tileMapId: string): Promise<v
   } catch (e) {
     // フォルダが無い（未ダウンロード）など
   }
+};
+
+/** 1枚分の結果。missing は配信元に無いタイル（404・PMTiles の範囲外）で、失敗には数えない */
+export type TileDownloadResult = 'saved' | 'missing' | 'failed';
+
+let tempDownloadSeq = 0;
+
+/**
+ * URL を一時ファイルへ落とし、200 のときだけ保存先へ移す。
+ * expo-file-system legacy の downloadAsync は応答コードに関係なく保存先を消してから本文を書くので、
+ * 保存先へ直接落とすと一時的な 5xx・429・署名切れの 403 で保存済みの正常なタイルが消える
+ */
+export const downloadFileIfOk = async (url: string, path: string): Promise<TileDownloadResult> => {
+  const temp = `${FileSystem.cacheDirectory ?? ''}tile-download-${Date.now()}-${tempDownloadSeq++}`;
+  try {
+    const { status } = await FileSystem.downloadAsync(url, temp);
+    if (status !== 200) {
+      await FileSystem.deleteAsync(temp, { idempotent: true }).catch(() => undefined);
+      return status === 404 ? 'missing' : 'failed';
+    }
+    // iOS の移動は移動先があると失敗する
+    await FileSystem.deleteAsync(path, { idempotent: true });
+    await FileSystem.moveAsync({ from: temp, to: path });
+    return 'saved';
+  } catch (e) {
+    await FileSystem.deleteAsync(temp, { idempotent: true }).catch(() => undefined);
+    return 'failed';
+  }
+};
+
+type PmtileTileSource = {
+  getZxy: (z: number, x: number, y: number) => Promise<{ data: ArrayBuffer } | undefined>;
+};
+
+export type DownloadOneTileArgs = {
+  tileType: Exclude<TileType, 'dem'>;
+  tileMapId: string;
+  /** 署名を付けたテンプレート URL。hillshade は元の DEM の URL（toDemUrl 済み） */
+  urlTemplate: string;
+  flipY: boolean;
+  pmtile?: PmtileTileSource;
+  pmtileIsVector: boolean;
+  tile: TileXYZ;
+};
+
+/**
+ * 地図タイル1枚をダウンロードして保存する。保存先のパスは常に XYZ の y で、
+ * flipY（TMS）の地図は URL の {y} だけを反転する（表示側のキャッシュと同じ規約）
+ */
+export const downloadOneTile = async ({
+  tileType,
+  tileMapId,
+  urlTemplate,
+  flipY,
+  pmtile,
+  pmtileIsVector,
+  tile,
+}: DownloadOneTileArgs): Promise<TileDownloadResult> => {
+  const basePath = `${TILE_FOLDER}/${tileMapId}/${tile.z}/${tile.x}/${tile.y}`;
+  if (tileType === 'pmtiles') {
+    if (pmtile === undefined) return 'failed';
+    try {
+      const resp = await pmtile.getZxy(tile.z, tile.x, tile.y);
+      if (resp === undefined) return 'missing';
+      if (pmtileIsVector) {
+        await FileSystem.writeAsStringAsync(`${basePath}.pbf`, Buffer.from(resp.data).toString('base64'), {
+          encoding: FileSystem.EncodingType.UTF8,
+        });
+      } else {
+        await writeRasterPmtileTile(tileMapId, tile, resp.data);
+      }
+      return 'saved';
+    } catch (e) {
+      return 'failed';
+    }
+  }
+  const url = buildTileUrl({ url: urlTemplate, flipY }, tile.z, tile.x, tile.y);
+  if (tileType === 'pbf') {
+    try {
+      const response = await fetch(url);
+      if (!response.ok) return response.status === 404 ? 'missing' : 'failed';
+      const data = await response.arrayBuffer();
+      await FileSystem.writeAsStringAsync(`${basePath}.pbf`, Buffer.from(data).toString('base64'), {
+        encoding: FileSystem.EncodingType.UTF8,
+      });
+      return 'saved';
+    } catch (e) {
+      return 'failed';
+    }
+  }
+  return downloadFileIfOk(url, basePath);
 };
 
 // ダウンロード完了したregionからstatus/zoomを取り除く（undefined残しではなくキー自体を除去）

@@ -30,7 +30,7 @@ const MAX_ZOOM_FALLBACK = 5;
 /** デコード済み標高のキャッシュ枚数。1枚あたり 256px=256KB、512px（terrarium）=1MB */
 const MAX_CACHED_TILES = 64;
 
-type ShadingTileConfig = {
+export type ShadingTileConfig = {
   /** 標高タイルのURLテンプレート。{z}/{x}/{y} を含む */
   u: string;
   /** Y軸反転（TMS形式） */
@@ -66,7 +66,18 @@ function resolveDemUrl(config: ShadingTileConfig, z: number, x: number, y: numbe
 
 // ---- デコード済み標高タイルのキャッシュ（挿入順を使った簡易LRU）----
 const elevationCache = new Map<string, Float32Array | null>();
-const inflight = new Map<string, Promise<Float32Array | null>>();
+
+/**
+ * 取得中の標高タイル。terrarium は4枚の地図タイルが中央の標高タイルを共有し、3×3 の袖も重なるため、
+ * 共有の fetch を最初の要求者の signal に紐づけると、画面外に出て中止されたタイルの巻き添えで
+ * 兄弟タイルまで欠ける。共有の fetch は専用の controller で行い、待っている全員が中止したときだけ中止する
+ */
+type InflightTile = {
+  promise: Promise<Float32Array | null>;
+  controller: AbortController;
+  waiters: number;
+};
+const inflight = new Map<string, InflightTile>();
 
 function cacheGet(key: string): Float32Array | null | undefined {
   if (!elevationCache.has(key)) return undefined;
@@ -90,8 +101,79 @@ export function clearShadingTileCache(): void {
   elevationCache.clear();
 }
 
+/**
+ * 結果をキャッシュしてよいか。タイルが無い（404）・壊れた画像は何度取っても同じなので覚える。
+ * 通信エラー・5xx・429・中止は一時的なものなので覚えず、次の要求で取り直す
+ */
+type ElevationFetchResult = { value: Float32Array | null; cacheable: boolean };
+
+async function fetchElevationTile(
+  config: ShadingTileConfig,
+  z: number,
+  x: number,
+  y: number,
+  signal: AbortSignal
+): Promise<ElevationFetchResult> {
+  let blob: Blob;
+  try {
+    const response = await fetch(resolveDemUrl(config, z, x, y), { signal });
+    if (!response.ok) return { value: null, cacheable: response.status === 404 };
+    blob = await response.blob();
+  } catch {
+    return { value: null, cacheable: false };
+  }
+  try {
+    // 標高をRGBに詰めた画像なので、色空間変換・アルファ乗算で値が変わらないようにする
+    const bitmap = await createImageBitmap(blob, { colorSpaceConversion: 'none', premultiplyAlpha: 'none' });
+    // terrariumは実寸（512px）のまま、GSI形式は従来どおり256pxで読む
+    const size = config.t ? bitmap.width : TILE_SIZE;
+    const canvas = new OffscreenCanvas(size, size);
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    if (!ctx) return { value: null, cacheable: false };
+    ctx.drawImage(bitmap, 0, 0, size, size);
+    bitmap.close();
+    const { data } = ctx.getImageData(0, 0, size, size);
+    const decode = config.t ? decodeTerrarium : decodeElevation;
+    const elevation = new Float32Array(size * size);
+    for (let i = 0; i < elevation.length; i++) {
+      const p = i * 4;
+      elevation[i] = decode(data[p], data[p + 1], data[p + 2]);
+    }
+    return { value: elevation, cacheable: true };
+  } catch {
+    return { value: null, cacheable: true };
+  }
+}
+
+/** 共有の取得を自分の signal で待つ。自分が中止したら null を返し、全員が中止したら取得自体を中止する */
+function waitInflight(key: string, entry: InflightTile, signal: AbortSignal): Promise<Float32Array | null> {
+  entry.waiters++;
+  return new Promise((resolve) => {
+    let settled = false;
+    const onAbort = () => {
+      if (settled) return;
+      settled = true;
+      entry.waiters--;
+      if (entry.waiters === 0) {
+        // 後から来た要求が中止済みの取得を受け取らないよう、先に外してから中止する
+        if (inflight.get(key) === entry) inflight.delete(key);
+        entry.controller.abort();
+      }
+      resolve(null);
+    };
+    signal.addEventListener('abort', onAbort, { once: true });
+    entry.promise.then((value) => {
+      if (settled) return;
+      settled = true;
+      entry.waiters--;
+      signal.removeEventListener('abort', onAbort);
+      resolve(value);
+    });
+  });
+}
+
 /** 標高タイル1枚を取得してFloat32Arrayへデコードする。取得できなければ null */
-async function loadElevationTile(
+export async function loadElevationTile(
   config: ShadingTileConfig,
   z: number,
   x: number,
@@ -102,47 +184,25 @@ async function loadElevationTile(
   const key = `${config.u}|${z}/${x}/${y}`;
   const cached = cacheGet(key);
   if (cached !== undefined) return cached;
+  if (signal.aborted) return null;
 
-  const pending = inflight.get(key);
-  if (pending) return pending;
-
-  const task = (async () => {
-    try {
-      const response = await fetch(resolveDemUrl(config, z, x, y), { signal });
-      if (!response.ok) return null;
-      const blob = await response.blob();
-      // 標高をRGBに詰めた画像なので、色空間変換・アルファ乗算で値が変わらないようにする
-      const bitmap = await createImageBitmap(blob, { colorSpaceConversion: 'none', premultiplyAlpha: 'none' });
-      // terrariumは実寸（512px）のまま、GSI形式は従来どおり256pxで読む
-      const size = config.t ? bitmap.width : TILE_SIZE;
-      const canvas = new OffscreenCanvas(size, size);
-      const ctx = canvas.getContext('2d', { willReadFrequently: true });
-      if (!ctx) return null;
-      ctx.drawImage(bitmap, 0, 0, size, size);
-      bitmap.close();
-      const { data } = ctx.getImageData(0, 0, size, size);
-      const decode = config.t ? decodeTerrarium : decodeElevation;
-      const elevation = new Float32Array(size * size);
-      for (let i = 0; i < elevation.length; i++) {
-        const p = i * 4;
-        elevation[i] = decode(data[p], data[p + 1], data[p + 2]);
-      }
-      return elevation;
-    } catch {
-      // 中断・ネットワークエラーはNoData扱い
-      return null;
-    }
-  })();
-
-  inflight.set(key, task);
-  try {
-    const result = await task;
-    // 中断された場合はキャッシュに残さない（次回再取得させる）
-    if (!signal.aborted) cacheSet(key, result);
-    return result;
-  } finally {
-    inflight.delete(key);
+  let entry = inflight.get(key);
+  if (!entry) {
+    const controller = new AbortController();
+    const created: InflightTile = { controller, waiters: 0, promise: Promise.resolve(null) };
+    created.promise = fetchElevationTile(config, z, x, y, controller.signal)
+      .then(({ value, cacheable }) => {
+        if (cacheable && !controller.signal.aborted) cacheSet(key, value);
+        return value;
+      })
+      .catch(() => null)
+      .finally(() => {
+        if (inflight.get(key) === created) inflight.delete(key);
+      });
+    inflight.set(key, created);
+    entry = created;
   }
+  return waitInflight(key, entry, signal);
 }
 
 /**

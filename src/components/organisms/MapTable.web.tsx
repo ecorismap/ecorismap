@@ -5,6 +5,7 @@ import { COLOR } from '../../constants/AppConstants';
 import { Button } from '../atoms';
 import { Pressable } from '../atoms/Pressable';
 import { MapsContext } from '../../contexts/Maps';
+import { isPdfTileMap } from '../../utils/pdfTileMap';
 import {
   DndContext,
   closestCenter,
@@ -131,7 +132,7 @@ const SortableMapRow = React.memo(
             {item.id !== 'standard' &&
               item.id !== 'hybrid' &&
               !item.isGroup &&
-              (item.url.endsWith('.pdf') || item.url.startsWith('pdf://')) && (
+              isPdfTileMap(item) && (
                 <Button
                   name="download"
                   onPress={() => pressDownloadMap(item)}
