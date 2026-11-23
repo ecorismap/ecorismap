@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { Keyboard, Linking, Platform } from 'react-native';
 import { LayerType, PhotoType, RecordType } from '../types';
 import DataEdit from '../components/pages/DataEdit';
@@ -90,6 +90,9 @@ export default function DataEditContainer() {
 
   //キーボードを閉じてから保存する場合の待機フラグ
   const [isSavePending, setIsSavePending] = useState(false);
+  //「変更を破棄しますか」の確認を出している間は保存を受け付けない。確認の表示より先に届いた保存が書き込んだ後で
+  //「破棄」が選ばれると、保存した記録が使っている写真のファイルまで cancelUpdate で消してしまう
+  const isConfirmingDiscardRef = useRef(false);
 
   const runSave = useCallback(async () => {
     const checkInputResult = checkFieldInput(targetLayer, targetRecord);
@@ -149,6 +152,7 @@ export default function DataEditContainer() {
 
   const pressSaveData = useCallback(async () => {
     if (isSavingRef.current) return;
+    if (isConfirmingDiscardRef.current) return;
     //取り込み中の写真はまだ記録に付いていない。保存して画面を離れると、その写真は捨てられる
     if (isPhotoProcessingRef.current) return;
     //他のメンバー・テンプレートの記録は管理者だけが変えられる（同期監査 L1）
@@ -472,9 +476,16 @@ export default function DataEditContainer() {
       //今と同じ番号や範囲外（1件目の←・最後の→）は何もしない。確認で「破棄」を選ぶと、記録は切り替わらないのに
       //編集で足した写真のファイルだけが消え、破棄したはずの値が画面に残って後の保存で書き込まれてしまう
       if (!isRecordNumberChangeable(value, recordNumber, maxRecordNumber)) return;
+      //保存の途中で切り替えると、保存中の値に対して破棄の確認が出て、選ぶと保存した写真のファイルが消える
+      if (isSavingRef.current || isSavePending || isConfirmingDiscardRef.current) return;
       if (isEditingRecord) {
-        const ret = await ConfirmAsync(t('DataEdit.confirm.changeRecord'));
-        if (!ret) return;
+        isConfirmingDiscardRef.current = true;
+        try {
+          const ret = await ConfirmAsync(t('DataEdit.confirm.changeRecord'));
+          if (!ret) return;
+        } finally {
+          isConfirmingDiscardRef.current = false;
+        }
       }
       if (value > maxRecordNumber) {
         //使用するか検討中
@@ -484,7 +495,16 @@ export default function DataEditContainer() {
         cancelUpdate();
       }
     },
-    [cancelUpdate, changeRecord, isEditingRecord, isPhotoProcessingRef, maxRecordNumber, recordNumber]
+    [
+      cancelUpdate,
+      changeRecord,
+      isEditingRecord,
+      isPhotoProcessingRef,
+      isSavePending,
+      isSavingRef,
+      maxRecordNumber,
+      recordNumber,
+    ]
   );
 
   const getJumpRegion = (
@@ -593,6 +613,8 @@ export default function DataEditContainer() {
 
   const gotoBack = useCallback(async () => {
     if (isPhotoProcessingRef.current) return;
+    //記録の切り替えと同じく、保存の途中で破棄の確認を出さない
+    if (isSavingRef.current || isSavePending || isConfirmingDiscardRef.current) return;
     const goBack = () => {
       if (params?.previous === 'Data') {
         unselectRecord();
@@ -612,7 +634,13 @@ export default function DataEditContainer() {
       }
     };
     if (isEditingRecord) {
-      const ret = await ConfirmAsync(t('DataEdit.confirm.gotoBack'));
+      isConfirmingDiscardRef.current = true;
+      let ret: boolean;
+      try {
+        ret = await ConfirmAsync(t('DataEdit.confirm.gotoBack'));
+      } finally {
+        isConfirmingDiscardRef.current = false;
+      }
       if (ret) {
         cancelUpdate();
         goBack();
@@ -624,6 +652,8 @@ export default function DataEditContainer() {
     cancelUpdate,
     isEditingRecord,
     isPhotoProcessingRef,
+    isSavePending,
+    isSavingRef,
     navigate,
     params?.mainData,
     params?.mainLayer,
