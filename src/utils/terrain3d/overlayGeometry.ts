@@ -83,6 +83,20 @@ const LIFT_PER_DISTANCE = 0.001;
  */
 export const overlayLiftMeters = (distance: number): number =>
   Math.min(MAX_LIFT_METERS, Math.max(MIN_LIFT_METERS, distance * LIFT_PER_DISTANCE));
+
+/**
+ * 描画に使う浮かせ量[m]。眺望は目の高さ（既定1.7m）から水平に見るのに、ズームは入ったときのまま
+ * なので距離連動だと目より上に浮き、ポリゴンの中に立つと頭上が塗りで覆われる。眺望中は下限に抑える
+ */
+export const overlayLiftMetersForView = (distance: number, vistaActive: boolean): number =>
+  vistaActive ? MIN_LIFT_METERS : overlayLiftMeters(distance);
+
+/** 全リングのタイル世代をまとめた値。どれか1枚でも増えれば変わる（近景だけ見ると遠景の到着を見落とす） */
+export const combinedReadyGeneration = (managers: readonly { readyGeneration: number }[]): number => {
+  let sum = 0;
+  for (const manager of managers) sum += manager.readyGeneration;
+  return sum;
+};
 /** ラインの長い区間はこの長さ[m]以下になるよう分割して地形に沿わせる */
 const MAX_SEGMENT_METERS = 150;
 

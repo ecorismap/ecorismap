@@ -119,6 +119,31 @@ describe('migrateFlipYTileCaches', () => {
   });
 });
 
+describe('migrateFlipYTileCaches の途中終了（設定監査 S-L5）', () => {
+  it('印を書く前にその地図の保存範囲の記録を外す（後の地図の処理中に終了しても先の地図の記録は残らない）', async () => {
+    const store = makeStore([map({ id: 'A' }), map({ id: 'B' })], [region('RA', 'A'), region('RB', 'B')]);
+    const regionsAtMark: Record<string, string[]> = {};
+    mockedFS.writeAsStringAsync.mockImplementation(async (path: string) => {
+      if (path.endsWith(JS_XYZ_MARKER)) regionsAtMark[path] = store.regions().map(({ id }) => id);
+      mockFiles.add(path);
+    });
+    await migrateFlipYTileCaches(store, [map({ id: 'A' }), map({ id: 'B' })]);
+    expect(regionsAtMark[`${TILE_FOLDER}/A/${JS_XYZ_MARKER}`]).toEqual(['RB']);
+    expect(regionsAtMark[`${TILE_FOLDER}/B/${JS_XYZ_MARKER}`]).toEqual([]);
+  });
+
+  it('タイルの削除に失敗した地図は記録を外さない', async () => {
+    const warn = jest.spyOn(console, 'warn').mockImplementation(() => undefined);
+    mockDirs[`${TILE_FOLDER}/A`] = ['14'];
+    mockedFS.deleteAsync.mockRejectedValueOnce(new Error('io'));
+    const store = makeStore([map({ id: 'A' })], [region('RA', 'A')]);
+    await migrateFlipYTileCaches(store, [map({ id: 'A' })]);
+    expect(store.regions().map(({ id }) => id)).toEqual(['RA']);
+    expect(mockFiles.has(`${TILE_FOLDER}/A/${JS_XYZ_MARKER}`)).toBe(false);
+    warn.mockRestore();
+  });
+});
+
 describe('startFlipYTileCacheMigration', () => {
   it('起動時の一覧と、後から一覧に現れた地図を移行する', async () => {
     const store = makeStore([map({ id: 'A' })], []);

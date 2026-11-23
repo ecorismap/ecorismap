@@ -1,8 +1,10 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { View, Image, StyleSheet, Text } from 'react-native';
 import { Pressable } from '../atoms/Pressable';
 import { MemberLocationType } from '../../types';
 import { Marker } from 'react-map-gl/maplibre';
+import type { Marker as MaplibreMarker } from 'maplibre-gl';
+import { useHideMarkersBehindCamera } from '../../hooks/useHideMarkersBehindCamera';
 import { COLOR } from '../../constants/AppConstants';
 
 interface Props {
@@ -11,11 +13,17 @@ interface Props {
 
 export const MemberMarker = React.memo((props: Props) => {
   const { memberLocation } = props;
+  // 傾けた3D・眺望で、カメラの後ろのメンバーが前方の空に浮かないようにする
+  const markerRef = useRef<MaplibreMarker | null>(null);
+  const refreshVisibility = useHideMarkersBehindCamera(() => [markerRef.current]);
+  // 位置の更新はマーカーを動かすだけで地図の描画イベントが来ないので、動いたら判定し直す
+  const { latitude, longitude } = memberLocation.coords;
+  useEffect(() => refreshVisibility(), [latitude, longitude, refreshVisibility]);
 
   //console.log(angle);
 
   return (
-    <Marker {...memberLocation.coords} anchor={'center'}>
+    <Marker ref={markerRef} {...memberLocation.coords} anchor={'center'}>
       <div>
         {memberLocation.icon.photoURL !== null ? (
           //@ts-ignore

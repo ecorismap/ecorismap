@@ -5,7 +5,7 @@ const { persistReducer, persistStore } = jest.requireActual('redux-persist');
 import { AppState } from 'react-native';
 
 let mockAppStateListener: ((state: string) => void) | null = null;
-import { attachPersistFlushOnBackground } from '../persistFlush';
+import { attachPersistFlushOnBackground, flushPersistence, registerPersistFlusher } from '../persistFlush';
 
 const kv = new Map<string, string>();
 const storage = {
@@ -103,5 +103,55 @@ describe('attachPersistFlushOnBackground', () => {
     expect(mockAppStateListener).not.toBeNull();
     detach();
     expect(mockAppStateListener).toBeNull();
+  });
+});
+
+describe('flushPersistence（設定監査 S-L3）', () => {
+  beforeEach(() => {
+    jest.useFakeTimers();
+    kv.clear();
+  });
+  afterEach(() => {
+    jest.useRealTimers();
+    jest.restoreAllMocks();
+  });
+
+  it('複数スライスを置き換えた直後に呼ぶと、スロットルを待たずに persist:root を書き出す', async () => {
+    const { store, persistor } = await setup();
+    await jest.advanceTimersByTimeAsync(5000);
+    const unregister = registerPersistFlusher(() => persistor.flush());
+
+    store.dispatch(settings.actions.set('closed'));
+    store.dispatch(layers.actions.set('initial'));
+    expect(persistedSettings()?.value).not.toBe('closed');
+
+    await flushPersistence();
+    expect(persistedSettings()).toEqual({ value: 'closed' });
+    unregister();
+  });
+
+  it('登録された書き出しの1つが失敗しても、ほかは書き出し、呼び出し元へは投げない', async () => {
+    const log = jest.spyOn(console, 'log').mockImplementation(() => undefined);
+    const ok = jest.fn();
+    const unregisterFail = registerPersistFlusher(() => Promise.reject(new Error('disk full')));
+    const unregisterThrow = registerPersistFlusher(() => {
+      throw new Error('sync');
+    });
+    const unregisterOk = registerPersistFlusher(ok);
+
+    await expect(flushPersistence()).resolves.toBeUndefined();
+    expect(ok).toHaveBeenCalledTimes(1);
+    unregisterFail();
+    unregisterThrow();
+    unregisterOk();
+    log.mockRestore();
+  });
+
+  it('解除した書き出しは呼ばない', async () => {
+    const flusher = jest.fn();
+    const unregister = registerPersistFlusher(flusher);
+    unregister();
+    await flushPersistence();
+    expect(flusher).not.toHaveBeenCalled();
   });
 });

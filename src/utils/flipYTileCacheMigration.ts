@@ -29,15 +29,18 @@ export const needsFlipYMigration = (tileMap: Pick<TileMapType, 'url' | 'flipY' |
   !isPmtilesSourceUrl(tileMap.url);
 
 /**
- * 1つの地図を移行する。済んでいれば何もしない。戻り値は今回タイルを消したか（保存範囲の記録を外すため）。
- * ダウンロードの前にも呼び、新しいタイルより先に印を置く（印の後のタイルは XYZ なので消されない）
+ * 1つの地図を移行する。済んでいれば何もしない。戻り値は今回タイルを消したか。
+ * ダウンロードの前にも呼び、新しいタイルより先に印を置く（印の後のタイルは XYZ なので消されない）。
+ * onTilesRemoved（保存範囲の記録を外す）は印を書く前に呼ぶ。印の後に回すと、その間に終了したとき
+ * 次の起動では印があるので記録を外す機会が二度と来ず、消えたタイルが「保存済み」のまま残る（設定監査 S-L5）
  */
-export const migrateFlipYTileCache = async (mapId: string): Promise<boolean> => {
+export const migrateFlipYTileCache = async (mapId: string, onTilesRemoved?: () => void): Promise<boolean> => {
   const folder = `${TILE_FOLDER}/${mapId}`;
   const jsMarker = await FileSystem.getInfoAsync(`${folder}/${JS_XYZ_MARKER}`);
   if (jsMarker.exists) return false;
   await removeTileCacheEntries(mapId);
   await removeTerrainTextureCacheForMap(mapId).catch(() => undefined);
+  onTilesRemoved?.();
   await FileSystem.makeDirectoryAsync(folder, { intermediates: true }).catch(() => undefined);
   await FileSystem.writeAsStringAsync(`${folder}/${NATIVE_XYZ_MARKER}`, '');
   await FileSystem.writeAsStringAsync(`${folder}/${JS_XYZ_MARKER}`, '');
@@ -60,16 +63,15 @@ export const migrateFlipYTileCaches = (
   const targets = tileMaps.filter(needsFlipYMigration).map(({ id }) => id);
   if (targets.length === 0) return Promise.resolve();
   const run = queue.then(async () => {
-    const migrated: string[] = [];
     for (const id of targets) {
       try {
-        if (await migrateFlipYTileCache(id)) migrated.push(id);
+        // 記録は地図ごとに外す。まとめて最後に外すと、途中で終了したとき印のある地図の記録が残る
+        await migrateFlipYTileCache(id, () => dropTileRegions(store, [id]));
       } catch (e) {
         // 移行できなくても表示・ダウンロードは止めない（次回の起動で再び試みる）
         console.warn('migrateFlipYTileCache failed:', id, e);
       }
     }
-    dropTileRegions(store, migrated);
   });
   queue = run.catch(() => undefined);
   return run;

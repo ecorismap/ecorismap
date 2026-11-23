@@ -290,7 +290,8 @@ export interface LayerType {
   //レイヤの用途。ツールパレットと色分け「個別」の可否をこれで決める（未設定＝通常のレイヤ）
   toolPalette?: ToolPaletteType;
 }
-export type CheckListItem = { id: number; checked: boolean };
+//id は並べ替え前の位置。チェックの照合は位置ではなく recordId（記録のid）で行う
+export type CheckListItem = { id: number; recordId: string; checked: boolean };
 export type LatLonDMSKey = 'latitude' | 'longitude';
 export type DMSKey = 'decimal' | 'deg' | 'min' | 'sec';
 

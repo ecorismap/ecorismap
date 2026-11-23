@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { shallowEqual, useDispatch, useSelector, useStore } from 'react-redux';
-import { CheckListItem, PhotoType, RecordType } from '../types';
+import { CheckListItem, LayerType, PhotoType, RecordType } from '../types';
 
 import { RootState } from '../store';
 import {
@@ -11,7 +11,14 @@ import {
   updateRecordsAction,
 } from '../modules/dataSet';
 import { ulid } from 'ulid';
-import { filterRecords, getDefaultField, getFilterCandidates, sortData, SortOrderType } from '../utils/Data';
+import {
+  filterRecords,
+  getDefaultField,
+  getFilterCandidates,
+  isFilterTargetAvailable,
+  sortData,
+  SortOrderType,
+} from '../utils/Data';
 
 import { setDataFilterForLayerAction } from '../modules/settings';
 import { updateLayerAction } from '../modules/layers';
@@ -39,7 +46,7 @@ export type UseDataReturnType = {
   showOnlyFilteredRecords: () => void;
   changeVisible: (record: RecordType) => void;
   changeVisibleAll: (visible: boolean) => void;
-  changeChecked: (index: number, checked: boolean) => void;
+  changeChecked: (recordId: string, checked: boolean) => void;
   changeCheckedAll: (checked: boolean) => void;
   changeOrder: (colname: string, order: SortOrderType) => void;
   addDefaultRecord: (
@@ -123,13 +130,20 @@ export const useData = (layerId: string): UseDataReturnType => {
     [layerRecordSetWithChildren]
   );
 
-  const isFiltering = useMemo(() => filterText.trim() !== '', [filterText]);
+  //対象列を削除・改名した後も条件だけ残ると、全件が出ているのに絞り込み中の表示になり、ドラッグも効かない
+  const isFilterTargetValid = useMemo(
+    () => targetLayer === undefined || isFilterTargetAvailable(targetLayer.field, filterFieldName),
+    [filterFieldName, targetLayer]
+  );
+  const isFiltering = useMemo(() => filterText.trim() !== '' && isFilterTargetValid, [filterText, isFilterTargetValid]);
 
   //一覧に出すレコード。チェックリストと並行配列にする必要があるため、表示側ではなくここで絞り込む
+  //レイヤ全体に依存すると、ソート設定を保存しただけで絞り込みとソートがもう一度走るので、使う属性だけに絞る
+  const targetFields = targetLayer?.field;
   const filteredRecordSet = useMemo(() => {
-    if (targetLayer === undefined) return allUserRecordSet ?? [];
-    return filterRecords(allUserRecordSet ?? [], targetLayer, filterText, filterFieldName);
-  }, [allUserRecordSet, targetLayer, filterText, filterFieldName]);
+    if (targetFields === undefined) return allUserRecordSet ?? [];
+    return filterRecords(allUserRecordSet ?? [], { field: targetFields }, filterText, filterFieldName);
+  }, [allUserRecordSet, targetFields, filterText, filterFieldName]);
 
   const dataUser = useMemo(
     () => (projectId === undefined ? { ...user, uid: undefined, displayName: null } : user),
@@ -138,10 +152,11 @@ export const useData = (layerId: string): UseDataReturnType => {
 
   const isChecked = useMemo(() => checkList.some((c) => c?.checked), [checkList]);
 
-  const checkedRecords = useMemo(
-    () => sortedRecordSet.filter((_, i) => checkList[i]?.checked),
-    [sortedRecordSet, checkList]
-  );
+  //チェックは位置ではなく記録のidで引く。位置で引くと、絞り込みや並び順が変わったときに別の記録が対象になる
+  const checkedRecords = useMemo(() => {
+    const checkedIds = new Set(checkList.filter((c) => c.checked).map((c) => c.recordId));
+    return sortedRecordSet.filter((r) => checkedIds.has(r.id));
+  }, [sortedRecordSet, checkList]);
 
   //絞り込み中に列構成が変わらないよう、絞り込み前のレコードで判定する
   const isMapMemoLayer = useMemo(
@@ -155,23 +170,30 @@ export const useData = (layerId: string): UseDataReturnType => {
     [isClosedProject, isSettingProject, targetLayer?.permission]
   );
 
+  //最後に並べ替えた入力。見出しのタップでソート設定を保存すると下のeffectがもう一度走るので、同じ入力なら省く
+  const lastSortInputRef = useRef<
+    { recordSet: RecordType[]; fields: LayerType['field'] | undefined; name: string; order: SortOrderType } | undefined
+  >(undefined);
+
   const changeOrder = useCallback(
     (colName: string, order: SortOrderType, checkList_: CheckListItem[] = checkList) => {
       // allUserRecordSetが空またはundefinedの場合の処理
       const recordSet = filteredRecordSet || [];
+      lastSortInputRef.current = { recordSet: filteredRecordSet, fields: targetFields, name: colName, order };
+      //チェックは記録のidで引き継ぐ。旧一覧の位置で引き継ぐと、絞り込みを変えたときに別の記録へチェックが移り、
+      //利用者が選んでいない記録が一括削除・書き出しの対象になる。新しい一覧に無い記録のチェックは落とす
+      const checkedIds = new Set(checkList_.filter((c) => c.checked).map((c) => c.recordId));
 
       if (order === 'UNSORTED') {
-        const newCheckList = recordSet.map(
-          (_, idx) => checkList_.find((c) => idx === c.id) ?? { id: idx, checked: false }
-        );
-        setCheckList(newCheckList);
+        setCheckList(recordSet.map((r, idx) => ({ id: idx, recordId: r.id, checked: checkedIds.has(r.id) })));
         setSortedRecordSet(recordSet);
       } else {
         // DATETIME列は時刻で比べる（ISOと旧ネイティブのロケール形式が混在しうるため文字列比較では時系列にならない）
         const format = targetLayer?.field.find((f) => f.name === colName)?.format;
         const result = sortData(recordSet, colName, order, format);
-        const newCheckList = result.idx.map((d) => checkList_.find((c) => d === c.id) ?? { id: d, checked: false });
-        setCheckList(newCheckList);
+        setCheckList(
+          result.data.map((r, i) => ({ id: result.idx[i], recordId: r.id, checked: checkedIds.has(r.id) }))
+        );
         setSortedRecordSet(result.data);
       }
       setSortedOrder(order);
@@ -181,7 +203,7 @@ export const useData = (layerId: string): UseDataReturnType => {
         dispatch(updateLayerAction({ ...targetLayer, sortedOrder: order, sortedName: colName }));
       }
     },
-    [checkList, dispatch, filteredRecordSet, targetLayer]
+    [checkList, dispatch, filteredRecordSet, targetFields, targetLayer]
   );
 
   const changeVisibleAll = useCallback(
@@ -215,8 +237,11 @@ export const useData = (layerId: string): UseDataReturnType => {
     [checkList]
   );
 
-  const changeChecked = useCallback((index: number, checked: boolean) => {
-    setCheckList((prevCheckList) => prevCheckList.map((item, i) => (i === index ? { ...item, checked } : item)));
+  //行の位置は並べ替えで変わり、メモ化された行は古い位置を持ちうるので、記録のidで指定する
+  const changeChecked = useCallback((recordId: string, checked: boolean) => {
+    setCheckList((prevCheckList) =>
+      prevCheckList.map((item) => (item.recordId === recordId ? { ...item, checked } : item))
+    );
   }, []);
 
   const updateRecordSetOrder = useCallback(
@@ -388,12 +413,39 @@ export const useData = (layerId: string): UseDataReturnType => {
     dispatch,
   ]);
 
+  //ソートの入力（一覧・列・条件）が変わったときだけ並べ直す。レイヤ全体に依存すると、見出しのタップで
+  //ソート設定を保存しただけでもう一度ソートが走る（大量データで二重に重い）
+  const layerSortedName = targetLayer?.sortedName;
+  const layerSortedOrder = targetLayer?.sortedOrder;
+  const isTargetLayerMissing = targetLayer === undefined;
+  useEffect(() => {
+    if (isTargetLayerMissing) return;
+    const name = layerSortedName || '';
+    const order = layerSortedOrder || 'UNSORTED';
+    const last = lastSortInputRef.current;
+    if (
+      last !== undefined &&
+      last.recordSet === filteredRecordSet &&
+      last.fields === targetFields &&
+      last.name === name &&
+      last.order === order
+    ) {
+      return;
+    }
+    // すべての画面で初期化を実行（DataEdit画面でREFERENCEフィールドが動作するように）
+    changeOrder(name, order);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filteredRecordSet, layerSortedName, layerSortedOrder, targetFields, isTargetLayerMissing]);
+
+  //対象列が消えた・絞り込めない形式になった条件は解除する（地図表示の控えも戻す）。
+  //レイヤ設定の保存などで条件だけ消えて控えが残った場合も、ここで戻す
   useEffect(() => {
     if (targetLayer === undefined) return;
-    // すべての画面で初期化を実行（DataEdit画面でREFERENCEフィールドが動作するように）
-    changeOrder(targetLayer.sortedName || '', targetLayer.sortedOrder || 'UNSORTED');
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filteredRecordSet, targetLayer]);
+    const hasText = filterText.trim() !== '';
+    if ((hasText && !isFilterTargetValid) || (!hasText && visibilitySnapshots[layerId] !== undefined)) {
+      clearFilter();
+    }
+  }, [clearFilter, filterText, isFilterTargetValid, layerId, targetLayer]);
 
   return {
     sortedRecordSet,

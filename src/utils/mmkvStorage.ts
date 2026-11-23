@@ -14,9 +14,16 @@ export const trackLogStorage: MMKV = createMMKV({
 // デバッグログ専用のMMKVインスタンス（削除済み）
 
 // Redux Persist用のストレージアダプター
+// set/removeの失敗（空き容量不足など）は同期のthrowで起きる。redux-persistは返したPromiseの.catchでしか
+// 受けないので、同期で投げるとタイマーやflushのコールバックから未捕捉例外として漏れてアプリが落ちる。
+// rejectに変えて書き込み失敗として扱わせる（どちらでも保存はされない。変わるのは落ちるかどうかだけ。設定監査 S-M4）
 export const reduxMMKVStorage: Storage = {
   setItem: (key: string, value: any): Promise<boolean> => {
-    storage.set(key, value);
+    try {
+      storage.set(key, value);
+    } catch (e) {
+      return Promise.reject(e);
+    }
     return Promise.resolve(true);
   },
   getItem: (key: string): Promise<string | null> => {
@@ -24,7 +31,11 @@ export const reduxMMKVStorage: Storage = {
     return Promise.resolve(value ?? null);
   },
   removeItem: (key: string): Promise<void> => {
-    storage.remove(key);
+    try {
+      storage.remove(key);
+    } catch (e) {
+      return Promise.reject(e);
+    }
     return Promise.resolve();
   },
 };

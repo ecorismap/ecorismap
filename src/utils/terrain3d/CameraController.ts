@@ -176,13 +176,25 @@ export class CameraController {
     this.stopInertia();
     const clampPitch = (deg: number): number => Math.min(maxPitchDeg, Math.max(MIN_PITCH_DEG, deg));
     if (durationMs <= 0) {
+      // 書いたプロパティの補間は消す。残すと次のupdateで補間の途中値に上書きされ、即時反映が効かない
       if (target.center) {
         this.state.latitude = target.center.latitude;
         this.state.longitude = target.center.longitude;
+        delete this.tweens.lonMerc;
+        delete this.tweens.latMerc;
       }
-      if (target.heading !== undefined) this.state.heading = normalizeHeading(target.heading);
-      if (target.zoom !== undefined) this.state.zoom = clampZoom(target.zoom);
-      if (target.pitch !== undefined) this.state.pitch = clampPitch(target.pitch);
+      if (target.heading !== undefined) {
+        this.state.heading = normalizeHeading(target.heading);
+        delete this.tweens.heading;
+      }
+      if (target.zoom !== undefined) {
+        this.state.zoom = clampZoom(target.zoom);
+        delete this.tweens.zoom;
+      }
+      if (target.pitch !== undefined) {
+        this.state.pitch = clampPitch(target.pitch);
+        delete this.tweens.pitch;
+      }
       return;
     }
     if (target.center) {
@@ -251,6 +263,12 @@ export class CameraController {
       else active = true;
     }
     return active;
+  }
+
+  /** 進行中のアニメーションと慣性をすべて止める（眺望の解除など、モードを切り替えるときに使う） */
+  cancelAnimations(): void {
+    this.cancelTweens();
+    this.stopInertia();
   }
 
   private cancelTweens(): void {

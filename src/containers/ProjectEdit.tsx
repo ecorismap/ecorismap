@@ -1,4 +1,5 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
+import { ulid } from 'ulid';
 import ProjectEdit from '../components/pages/ProjectEdit';
 import { AlertAsync, ConfirmAsync } from '../components/molecules/AlertAsync';
 import { leaveWithTrackingGuard } from '../utils/trackingLeaveGuard';
@@ -6,14 +7,13 @@ import { useProjectEdit } from '../hooks/useProjectEdit';
 import { Props_ProjectEdit } from '../routes';
 import { Platform } from 'react-native';
 import NetInfo from '@react-native-community/netinfo';
-import { useDispatch } from 'react-redux';
-import { clearDataSyncProjectAction } from '../modules/dataSync';
 import { t } from '../i18n/config';
 import { ProjectEditContext } from '../contexts/ProjectEdit';
 import { useE3kitGroup } from '../hooks/useE3kitGroup';
 import { useRepository } from '../hooks/useRepository';
 import { exportGeoFile } from '../utils/File';
 import { truncateForFileName } from '../utils/General';
+import { pickNewProjectIdForSave } from '../utils/Project';
 import { ProjectType } from '../types';
 import { FUNC_ENCRYPTION, CREATE_DEK_PROJECTS, ENABLE_DEK_SELF_MIGRATION, ENABLE_KEY_LEDGER } from '../constants/AppConstants';
 import { getKeyMigrationState } from '../lib/crypto/migration';
@@ -41,10 +41,10 @@ export default function ProjectEditContainer({ navigation, route }: Props_Projec
     addMembers,
     deleteMember,
     openProject,
+    discardSyncBaselines,
     startProjectSetting,
   } = useProjectEdit(route.params.project, route.params.isNew);
 
-  const dispatch = useDispatch();
   const [isLoading, setIsLoading] = useState(false);
   const [migrationProgress, setMigrationProgress] = useState('');
   // 鍵リセット済み（ラップが古く本人が開けない）メンバーのuid。管理者にバッジ表示して再共有を促す
@@ -177,10 +177,6 @@ export default function ProjectEditContainer({ navigation, route }: Props_Projec
         if (!proceed) return false;
 
         setIsLoading(true);
-        // 開く処理は手元のデータを捨ててクラウドから取り直す。途中で失敗したり自分のデータを復号できなかったりして
-        // 手元が空でも、前回アップロード時の基準値が残っていると「同期済み」とみなされ、次のアップロードが
-        // 確認なしにクラウドの自分のデータを置き換えてしまう。基準値を捨てて、次回は必ず内容を比べさせる
-        dispatch(clearDataSyncProjectAction(targetProject.id));
         const loadE3kitGroupResult = await loadE3kitGroup(targetProject);
         if (!loadE3kitGroupResult.isOK) {
           if (await navigateToKeyRestoreIfNeeded(loadE3kitGroupResult.message)) {
@@ -189,6 +185,12 @@ export default function ProjectEditContainer({ navigation, route }: Props_Projec
           }
           throw new Error(loadE3kitGroupResult.message);
         }
+        // 開く処理は手元のデータを捨ててクラウドから取り直す。途中で失敗したり自分のデータを復号できなかったりして
+        // 手元が空でも、前回アップロード時の基準値が残っていると「同期済み」とみなされ、次のアップロードが
+        // 確認なしにクラウドの自分のデータを置き換えてしまう。開く先と今開いているプロジェクトの基準値を捨てて、
+        // 次回は必ず内容を比べさせる。手元に触れる直前まで遅らせるのは、鍵の復元誘導や通信エラーで開く前に
+        // 中止したとき、今のプロジェクトの「削除済みデータを上げ直すか」の確認（同期監査 L11）を外さないため
+        discardSyncBaselines();
 
         const projectSettingsResult = await downloadProjectSettings(targetProject);
         if (!projectSettingsResult.isOK || projectSettingsResult.region === undefined)
@@ -242,7 +244,7 @@ export default function ProjectEditContainer({ navigation, route }: Props_Projec
       }
     },
     [
-      dispatch,
+      discardSyncBaselines,
       isProjectOpen,
       isOwnerAdmin,
       targetProject,
@@ -335,8 +337,12 @@ export default function ProjectEditContainer({ navigation, route }: Props_Projec
     [originalProject, saveProject, updateE3kitGroupMembers, updateProject]
   );
 
+  // 保存を試みた新規プロジェクトの id。失敗の後始末で消した id を再保存で使い回さないために覚える
+  const attemptedNewProjectIdsRef = useRef<Set<string>>(new Set());
+
   const saveNewProject = useCallback(
-    async (project: ProjectType) => {
+    async (checked: ProjectType) => {
+      const project = { ...checked, id: pickNewProjectIdForSave(checked.id, attemptedNewProjectIdsRef.current, ulid) };
       const e3kitGroupResult = await createE3kitGroup(project);
       if (!e3kitGroupResult.isOK || !e3kitGroupResult.project) throw new Error(e3kitGroupResult.message);
       const createProjectResult = await createProject(e3kitGroupResult.project);

@@ -2,7 +2,7 @@ import { configureStore } from '@reduxjs/toolkit';
 import reducer from './modules/';
 import { persistStore, persistReducer } from 'redux-persist';
 import { reduxPersistWebStorage } from './utils/reduxPersistWebStorage';
-import { attachPersistFlushOnBackground } from './utils/persistFlush';
+import { attachPersistFlushOnBackground, registerPersistFlusher } from './utils/persistFlush';
 
 const persistConfig = {
   key: 'root',
@@ -25,4 +25,6 @@ export const store = configureStore({
 export const persistor = persistStore(store);
 // スロットル待ちのまま kill されると直前の変更（更新情報のOK・設定・レイヤ）が失われるため
 attachPersistFlushOnBackground(persistor);
+// 置き換え直後・言語切替の再読み込み前に書き出せるようにする（flushPersistence、設定監査 S-L3・S-L4）
+registerPersistFlusher(() => persistor.flush());
 export type RootState = ReturnType<typeof store.getState>;

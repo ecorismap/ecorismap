@@ -1,4 +1,4 @@
-import React, { useCallback, useContext, useState, useMemo, useRef } from 'react';
+import React, { useCallback, useContext, useMemo, useRef } from 'react';
 import { View, Text, StyleSheet, ScrollView, GestureResponderEvent } from 'react-native';
 import { Pressable } from '../atoms/Pressable';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -6,7 +6,7 @@ import { COLOR } from '../../constants/AppConstants';
 import { Button } from '../atoms';
 import { RecordType, FormatType, LayerType } from '../../types';
 import { DataContext } from '../../contexts/Data';
-import { SortOrderType, getFieldDisplayValue } from '../../utils/Data';
+import { SortOrderType, getFieldDisplayValue, getHeaderToggleState } from '../../utils/Data';
 import {
   DndContext,
   closestCenter,
@@ -24,7 +24,7 @@ const SortableDataRow = React.memo(
   ({
     item,
     index,
-    checkList,
+    checked,
     projectId,
     layer,
     isMapMemoLayer,
@@ -36,11 +36,11 @@ const SortableDataRow = React.memo(
     item: RecordType;
     index: number;
     isDragDisabled: boolean;
-    checkList: { id: number; checked: boolean }[];
+    checked: boolean;
     projectId: string | undefined;
     layer: LayerType;
     isMapMemoLayer: boolean;
-    changeChecked: (index: number, checked: boolean) => void;
+    changeChecked: (recordId: string, checked: boolean) => void;
     changeVisible: (item: RecordType) => void;
     gotoDataEdit: (index: number) => void;
   }) => {
@@ -92,8 +92,8 @@ const SortableDataRow = React.memo(
               color={COLOR.GRAY4}
               style={{ backgroundColor }}
               borderRadius={0}
-              name={checkList[index]?.checked ? 'checkbox-marked-outline' : 'checkbox-blank-outline'}
-              onPress={() => changeChecked(index, !checkList[index]?.checked)}
+              name={checked ? 'checkbox-marked-outline' : 'checkbox-blank-outline'}
+              onPress={() => changeChecked(item.id, !checked)}
               size={20}
             />
           </View>
@@ -156,7 +156,7 @@ const SortableDataRow = React.memo(
       isItemEqual &&
       prevProps.index === nextProps.index &&
       prevProps.isDragDisabled === nextProps.isDragDisabled &&
-      prevProps.checkList[prevProps.index]?.checked === nextProps.checkList[nextProps.index]?.checked
+      prevProps.checked === nextProps.checked
     );
   }
 );
@@ -182,17 +182,15 @@ export const DataTable = React.memo(() => {
     openFilterDialog,
   } = useContext(DataContext);
 
-  const [checkedAll, setCheckedAll] = useState(false);
-  const [visibleAll, setVisibleAll] = useState(true);
-  const onCheckAll = useCallback(() => {
-    setCheckedAll(!checkedAll);
-    changeCheckedAll(!checkedAll);
-  }, [changeCheckedAll, checkedAll]);
-
-  const onVisibleAll = useCallback(() => {
-    setVisibleAll(!visibleAll);
-    changeVisibleAll(!visibleAll);
-  }, [changeVisibleAll, visibleAll]);
+  //見出しの全選択・全表示は実際の状態から決める。画面内で反転だけを覚えると、削除・追加・行ごとの操作の後に
+  //表示が食い違い、1回目のタップが空振りする
+  const { checkedAll, visibleAll } = useMemo(() => getHeaderToggleState(checkList, sortedRecordSet), [
+    checkList,
+    sortedRecordSet,
+  ]);
+  const onCheckAll = useCallback(() => changeCheckedAll(!checkedAll), [changeCheckedAll, checkedAll]);
+  const onVisibleAll = useCallback(() => changeVisibleAll(!visibleAll), [changeVisibleAll, visibleAll]);
+  const checkedIds = useMemo(() => new Set(checkList.filter((c) => c.checked).map((c) => c.recordId)), [checkList]);
 
   const onChangeOrder = useCallback(
     (colName: string, format: FormatType | '_user_') => {
@@ -266,7 +264,7 @@ export const DataTable = React.memo(() => {
                   key={item.id}
                   item={item}
                   index={index}
-                  checkList={checkList}
+                  checked={checkedIds.has(item.id)}
                   projectId={projectId}
                   layer={layer}
                   isMapMemoLayer={isMapMemoLayer}

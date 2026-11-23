@@ -114,4 +114,29 @@ describe('CameraController', () => {
     expect(iterations).toBeGreaterThan(3);
     expect(c.getState().latitude).toBeGreaterThan(initial.latitude);
   });
+
+  it('duration 0 で書いたプロパティの補間は残らない（V-L2）', () => {
+    const c = new CameraController(initial, 800);
+    c.animateTo({ heading: 90, pitch: 90 }, 600, 0, 120);
+    c.update(100);
+    c.animateTo({ pitch: 60 }, 0, 100);
+    c.update(200);
+    expect(c.getState().pitch).toBe(60);
+    // 書いていない方位の補間は進み続ける
+    expect(c.getState().heading).toBeGreaterThan(0);
+  });
+
+  it('cancelAnimations は補間と慣性をすべて止める（V-L2）', () => {
+    const c = new CameraController(initial, 800);
+    c.animateTo({ heading: 90, pitch: 90 }, 600, 0, 120);
+    c.update(100);
+    const mid = c.getState();
+    c.startPanInertia(1, 1);
+    c.cancelAnimations();
+    expect(c.update(200)).toBe(false);
+    const after = c.getState();
+    expect(after.heading).toBe(mid.heading);
+    expect(after.pitch).toBe(mid.pitch);
+    expect(after.latitude).toBe(mid.latitude);
+  });
 });

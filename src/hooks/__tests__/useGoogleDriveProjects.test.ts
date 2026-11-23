@@ -42,7 +42,7 @@ jest.mock('../../lib/googledrive/driveProjectStore', () => ({
 
 import { renderHook, act } from '@testing-library/react-hooks';
 import { useGoogleDriveProjects } from '../useGoogleDriveProjects';
-import { signInGoogleDrive, trySilentSignIn } from '../../lib/googledrive/auth';
+import { getAccessToken, signInGoogleDrive, trySilentSignIn } from '../../lib/googledrive/auth';
 import {
   deleteDriveProject,
   downloadDriveProject,
@@ -50,10 +50,11 @@ import {
   uploadDriveProject,
 } from '../../lib/googledrive/driveProjectStore';
 import { generateEcorisMapZip } from '../../utils/File';
-import { DriveProjectItem } from '../../lib/googledrive/types';
+import { DriveProjectItem, GoogleDriveAuthError } from '../../lib/googledrive/types';
 
 const mockSignIn = signInGoogleDrive as jest.MockedFunction<typeof signInGoogleDrive>;
 const mockTrySilent = trySilentSignIn as jest.MockedFunction<typeof trySilentSignIn>;
+const mockGetAccessToken = getAccessToken as jest.MockedFunction<typeof getAccessToken>;
 const mockList = listDriveProjects as jest.MockedFunction<typeof listDriveProjects>;
 const mockUpload = uploadDriveProject as jest.MockedFunction<typeof uploadDriveProject>;
 const mockDownload = downloadDriveProject as jest.MockedFunction<typeof downloadDriveProject>;
@@ -172,5 +173,113 @@ describe('useGoogleDriveProjects', () => {
     expect(result.current.driveProjects).toEqual([]);
     const dispatched = mockDispatch.mock.calls.map((c) => c[0]);
     expect(dispatched.some((a) => a.type === 'googleDrive/deleteGoogleDriveLastSyncAction')).toBe(true);
+  });
+});
+
+describe('useGoogleDriveProjects（アカウント監査 A-M8・A-L7・A-L9・A-L10）', () => {
+  test('A-L9: initializeでサイレント接続できたらRedux全体の接続状態にも反映する', async () => {
+    mockTrySilent.mockResolvedValue({ isOK: true, message: '', email: 'a@example.com' });
+    mockList.mockResolvedValue([item]);
+    const { result } = renderHook(() => useGoogleDriveProjects());
+    await act(async () => {
+      const ret = await result.current.initialize();
+      expect(ret).toEqual({ isOK: true, message: '' });
+    });
+    expect(mockDispatch).toHaveBeenCalledWith({
+      type: 'googleDrive/setGoogleDriveConnectedEmailAction',
+      payload: 'a@example.com',
+    });
+    expect(result.current.isListLoaded).toBe(true);
+  });
+
+  test('A-L10: 接続後の一覧取得に失敗したらエラー文を返し、一覧は未取得のままにする', async () => {
+    mockTrySilent.mockResolvedValue({ isOK: true, message: '', email: 'a@example.com' });
+    mockList.mockRejectedValue(new Error('offline'));
+    const { result } = renderHook(() => useGoogleDriveProjects());
+    await act(async () => {
+      const ret = await result.current.initialize();
+      expect(ret.isOK).toBe(false);
+      expect(ret.message).toBe('hooks.message.googleDriveApiError');
+    });
+    expect(result.current.isConnected).toBe(true);
+    expect(result.current.isListLoaded).toBe(false);
+  });
+
+  test('A-L10: initializeでサイレント接続が失敗したときは警告を出させない', async () => {
+    mockTrySilent.mockResolvedValue({ isOK: false, message: 'reauth-required' });
+    const { result } = renderHook(() => useGoogleDriveProjects());
+    await act(async () => {
+      expect(await result.current.initialize()).toEqual({ isOK: false, message: '' });
+    });
+  });
+
+  test('A-L10: reloadProjectsは取得した一覧を返す', async () => {
+    mockList.mockResolvedValue([item]);
+    const { result } = renderHook(() => useGoogleDriveProjects());
+    await act(async () => {
+      const ret = await result.current.reloadProjects();
+      expect(ret.items).toEqual([item]);
+    });
+    expect(result.current.isListLoaded).toBe(true);
+  });
+
+  test('A-L7: 接続中に重ねて押されても2回目はサインインを呼ばずに黙って戻る', async () => {
+    let resolveSignIn: (v: { isOK: boolean; message: string; email?: string }) => void = () => undefined;
+    mockSignIn.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveSignIn = resolve;
+        })
+    );
+    mockList.mockResolvedValue([item]);
+    const { result } = renderHook(() => useGoogleDriveProjects());
+    let first: Promise<{ isOK: boolean; message: string }> | undefined;
+    let second: { isOK: boolean; message: string } | undefined;
+    await act(async () => {
+      first = result.current.connect();
+      second = await result.current.connect();
+    });
+    expect(second).toEqual({ isOK: false, message: '' });
+    expect(mockSignIn).toHaveBeenCalledTimes(1);
+    await act(async () => {
+      resolveSignIn({ isOK: true, message: '', email: 'a@example.com' });
+      expect((await first)?.isOK).toBe(true);
+    });
+    // 終わったら再び押せる
+    mockSignIn.mockResolvedValue({ isOK: true, message: '', email: 'a@example.com' });
+    await act(async () => {
+      await result.current.connect();
+    });
+    expect(mockSignIn).toHaveBeenCalledTimes(2);
+  });
+
+  test('A-M8: saveToDriveはデータ生成より先にアップロード用のトークンを確保する', async () => {
+    const order: string[] = [];
+    mockGetAccessToken.mockImplementation(async () => {
+      order.push('token');
+      return 'tok';
+    });
+    mockGenerateEcorisMapData.mockImplementation(async () => {
+      order.push('generate');
+      return [];
+    });
+    mockGenerateZip.mockResolvedValue({ source: '/tmp/test.ecorismap', size: 100 });
+    mockUpload.mockResolvedValue(item);
+    const { result } = renderHook(() => useGoogleDriveProjects());
+    await act(async () => {
+      await result.current.saveToDrive('test');
+    });
+    expect(mockGetAccessToken).toHaveBeenCalledWith({ minTtlSec: 600 });
+    expect(order).toEqual(['token', 'generate']);
+  });
+
+  test('A-M8: トークンを確保できなければデータを生成せず再接続を促す', async () => {
+    mockGetAccessToken.mockRejectedValue(new GoogleDriveAuthError('reauth-required'));
+    const { result } = renderHook(() => useGoogleDriveProjects());
+    await act(async () => {
+      const ret = await result.current.saveToDrive('test');
+      expect(ret).toEqual({ isOK: false, message: 'hooks.message.googleDriveReauth' });
+    });
+    expect(mockGenerateEcorisMapData).not.toHaveBeenCalled();
   });
 });

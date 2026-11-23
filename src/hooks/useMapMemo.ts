@@ -12,6 +12,7 @@ import { useWindow } from './useWindow';
 import { shallowEqual, useDispatch, useSelector, useStore } from 'react-redux';
 import { RootState } from '../store';
 import { ulid } from 'ulid';
+import { penWidthTypeToNumber } from '../utils/penWidth';
 import {
   booleanIntersects,
   calcDegreeRadius,
@@ -87,6 +88,7 @@ export type UseMapMemoReturnType = {
   clearMapMemoEditingLine: () => void;
   pauseMapMemoDrawing: (discardGrantStroke?: boolean) => void;
   flushPausedPenStroke: () => void;
+  flushMapMemoBeforeLeave: () => void;
   setPencilModeActive: Dispatch<SetStateAction<boolean>>;
   setSnapWithLine: Dispatch<SetStateAction<boolean>>;
   setIsStraightStyle: Dispatch<SetStateAction<boolean>>;
@@ -105,6 +107,11 @@ export type HistoryType =
         updated: { idx: number; line: LineRecordType; updatedLine: LineRecordType }[];
         added: LineRecordType[];
       };
+    }
+  | {
+      //保存待ちのまま取り消した線（future にだけ積む）。まだレコードが無いので Redo では保存待ちへ戻す
+      operation: 'pending';
+      data: MapMemoStateType[];
     };
 
 export type MapMemoStateType = {
@@ -282,20 +289,7 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
 
   const editableMapMemo = useMemo(() => activeMemoLayer !== undefined, [activeMemoLayer]);
 
-  const penWidth = useMemo(() => {
-    switch (currentPenWidth) {
-      case 'PEN_THIN':
-        return 2;
-      case 'PEN_MEDIUM':
-        return 5;
-      case 'PEN_THICK':
-        return 10;
-      case 'PEN_EXTRA_THICK':
-        return 20;
-      default:
-        return 1;
-    }
-  }, [currentPenWidth]);
+  const penWidth = useMemo(() => penWidthTypeToNumber(currentPenWidth), [currentPenWidth]);
 
   const isUndoable = useMemo(() => history.length > 0, [history]);
   const isRedoable = useMemo(() => future.length > 0, [future]);
@@ -509,12 +503,12 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
   );
 
   /**
-   * 現在のペンストローク（緯度経度）を整形して保存キューに積む
+   * 現在のペンストローク（緯度経度）を整形した1本の線として取り出す（描きかけは空になる）
    */
-  const finishPenStroke = useCallback(() => {
+  const takePenStrokeLine = useCallback((): MapMemoStateType | undefined => {
     let latlonLine = [...mapMemoEditingLineLatLon.current];
     mapMemoEditingLineLatLon.current = [];
-    if (latlonLine.length === 0) return;
+    if (latlonLine.length === 0) return undefined;
     if (latlonLine.length === 1) {
       //1点だけの場合は極小の線に変換する
       latlonLine.push([latlonLine[0][0] + 0.0000001, latlonLine[0][1] + 0.0000001]);
@@ -537,27 +531,40 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
       }
     }
 
-    const newMapMemoLines = [
-      ...mapMemoLines,
-      {
-        latlon: latlonLine,
-        zoom: mapRegionRef.current.zoom,
-        strokeColor: penColor,
-        strokeWidth: penWidth,
-        strokeStyle: arrowStyle,
-        stamp: '',
-      },
-    ];
+    return {
+      latlon: latlonLine,
+      zoom: mapRegionRef.current.zoom,
+      strokeColor: penColor,
+      strokeWidth: penWidth,
+      strokeStyle: arrowStyle,
+      stamp: '',
+    };
+  }, [arrowStyle, isStraightStyle, mapSize, mapViewRef, penColor, penWidth]);
 
-    setMapMemoLines(newMapMemoLines);
+  /**
+   * 現在のペンストロークを保存キューに積む
+   */
+  const queuePendingSave = useCallback(
+    (newMapMemoLines: MapMemoStateType[]) => {
+      setMapMemoLines(newMapMemoLines);
 
-    if (timer.current) {
-      clearTimeout(timer.current);
-    }
-    timer.current = setTimeout(() => {
-      saveMapMemo(newMapMemoLines);
-    }, 1000);
-  }, [arrowStyle, isStraightStyle, mapMemoLines, mapSize, mapViewRef, penColor, penWidth, saveMapMemo]);
+      if (timer.current) {
+        clearTimeout(timer.current);
+      }
+      timer.current = setTimeout(() => {
+        //発火後も id を残すと「保存待ちあり」と誤判定され、Undo の空振りや離脱時の二重保存になる
+        timer.current = undefined;
+        saveMapMemo(newMapMemoLines);
+      }, 1000);
+    },
+    [saveMapMemo]
+  );
+
+  const finishPenStroke = useCallback(() => {
+    const line = takePenStrokeLine();
+    if (line === undefined) return;
+    queuePendingSave([...mapMemoLines, line]);
+  }, [mapMemoLines, queuePendingSave, takePenStrokeLine]);
 
   /**
    * ツール切替・タブ切替時に、中断中/描きかけのペンストロークを確定して保存する。
@@ -580,6 +587,35 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
     }
     clearMapMemoEditingLine();
   }, [clearMapMemoEditingLine, finishPenStroke]);
+
+  /**
+   * ホームを離れる直前に、中断中の線と保存待ちの線をその場で保存する。
+   * 画面遷移でホームがアンマウントされると、中断中の線は ref ごと消え、保存タイマーも止められるため。
+   * finishPenStroke を経由すると state の反映を待つことになるので、線を直接集めて即保存する
+   */
+  const flushMapMemoBeforeLeaveNow = useCallback(() => {
+    const hadPendingSave = timer.current !== undefined;
+    if (timer.current !== undefined) {
+      clearTimeout(timer.current);
+      timer.current = undefined;
+    }
+    //1点だけの中断はピンチの副産物なので保存しない（flushPausedPenStroke と同じ扱い）
+    const pausedLine = mapMemoEditingLineLatLon.current.length > 1 ? takePenStrokeLine() : undefined;
+    clearMapMemoEditingLine();
+    const lines = [...(hadPendingSave ? mapMemoLines : []), ...(pausedLine !== undefined ? [pausedLine] : [])];
+    if (lines.length === 0 || activeMemoLayer === undefined) return;
+    saveMapMemo(lines);
+  }, [activeMemoLayer, clearMapMemoEditingLine, mapMemoLines, saveMapMemo, takePenStrokeLine]);
+
+  //呼び出し側は記録停止の確認ダイアログを待ってから呼ぶため、その間に描画・保存が進んでも
+  //タップ時点の閉包（古い保存待ちの線）で二重保存しないよう、常に最新の実装を呼ぶ
+  const flushMapMemoBeforeLeaveRef = useRef(flushMapMemoBeforeLeaveNow);
+  useEffect(() => {
+    flushMapMemoBeforeLeaveRef.current = flushMapMemoBeforeLeaveNow;
+  }, [flushMapMemoBeforeLeaveNow]);
+  const flushMapMemoBeforeLeave = useCallback(() => {
+    flushMapMemoBeforeLeaveRef.current();
+  }, []);
 
   /**
    * Handles the start of a touch gesture
@@ -1072,8 +1108,23 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
    * Undoes the last map memo operation
    */
   const pressUndoMapMemo = useCallback(() => {
-    //保存待ちの線があると、履歴の末尾と実データがズレて別の線が消える
-    flushPendingSave();
+    //保存待ちの線があるときは、その最後の1本を保存前に取り消す。
+    //先に保存してから履歴を巻き戻すと、この閉包の history に保存分の履歴がまだ無いため
+    //1つ前の操作が取り消され、保存した線は履歴からもストアからも消えてしまう
+    if (timer.current !== undefined && mapMemoLines.length > 0) {
+      clearTimeout(timer.current);
+      timer.current = undefined;
+      const remaining = mapMemoLines.slice(0, -1);
+      const undoneLine = mapMemoLines[mapMemoLines.length - 1];
+      if (remaining.length > 0) {
+        saveMapMemo(remaining);
+      } else {
+        setMapMemoLines([]);
+      }
+      //保存後の線と同じく Redo で戻せるようにする。saveMapMemo が future を空にした後に積む（関数形で順序を保つ）
+      setFuture((prev) => [...prev, { operation: 'pending', data: [undoneLine] }]);
+      return;
+    }
     if (history.length === 0 || !activeMemoRecordSet) return;
 
     const lastOperation = history[history.length - 1];
@@ -1106,15 +1157,23 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
     }
 
     commitMemoLines(memoLines, newDrawLine);
-  }, [history, activeMemoRecordSet, future, flushPendingSave, commitMemoLines, memoLines]);
+  }, [history, activeMemoRecordSet, future, mapMemoLines, saveMapMemo, commitMemoLines, memoLines]);
 
   /**
    * Redoes the last undone map memo operation
    */
   const pressRedoMapMemo = useCallback(() => {
-    if (future.length === 0 || !activeMemoRecordSet) return;
-
+    if (future.length === 0) return;
     const nextOperation = future[future.length - 1];
+    //保存待ちのまま取り消した線は、まだレコードが無い（初回はメモのレコードセットも無い）ので保存待ちへ戻す。
+    //履歴へは保存時に積まれる
+    if (nextOperation.operation === 'pending') {
+      setFuture(future.slice(0, -1));
+      queuePendingSave([...mapMemoLines, ...nextOperation.data]);
+      return;
+    }
+    if (!activeMemoRecordSet) return;
+
     setFuture(future.slice(0, -1));
     setHistory([...history, nextOperation]);
 
@@ -1149,7 +1208,7 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
     }
 
     commitMemoLines(memoLines, newDrawLine);
-  }, [future, activeMemoRecordSet, history, memoLines, commitMemoLines]);
+  }, [future, activeMemoRecordSet, history, memoLines, commitMemoLines, mapMemoLines, queuePendingSave]);
 
   /**
    * Changes the active layer's color type to individual
@@ -1211,6 +1270,7 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
     clearMapMemoEditingLine,
     pauseMapMemoDrawing,
     flushPausedPenStroke,
+    flushMapMemoBeforeLeave,
     setPencilModeActive,
     setSnapWithLine,
     setIsStraightStyle,

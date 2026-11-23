@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useContext, useState, useSyncExternalStore } from 'react';
+import React, { useCallback, useEffect, useMemo, useContext, useRef, useState, useSyncExternalStore } from 'react';
 import { StyleSheet, View, Text } from 'react-native';
 import type { PointRecordType, LineRecordType, PolygonRecordType } from '../../types';
 
@@ -42,6 +42,7 @@ import { enableWebLowCameraGuard } from '../../utils/terrain3d/webLowCameraGuard
 import { HomeTerrain3DVistaBanner } from '../organisms/HomeTerrain3DVistaBanner';
 import { HomeTerrain3DButtons } from '../organisms/HomeTerrain3DButtons';
 import { HomeVistaPeakLabels } from '../organisms/HomeVistaPeakLabels';
+import { HomeUserLocationBehindGuard } from '../organisms/HomeUserLocationBehindGuard.web';
 import { loadPeakIndex } from '../../utils/peaks/peakData';
 import { isPeaksUrl } from '../../utils/peaks/peak2dLabels';
 import { EMPTY_PEAKS, getPeakLayers, PeakFeatureCollection, toPeakGeoJSON } from '../../utils/peaks/peakLayers.web';
@@ -183,6 +184,9 @@ export default function HomeScreen() {
 
   // DrawingToolsContext
   const { featureButton, currentDrawTool, onDragEndPoint } = useContext(DrawingToolsContext);
+
+  // 現在地ドットの背後判定用（HomeUserLocationBehindGuard）
+  const geolocateControlRef = useRef<maplibregl.GeolocateControl | null>(null);
 
   // 眺望中は地図の標準操作（パン・回転・ズーム）を止める。ドラッグは見回しになる（webVista）
   const vistaActive = useSyncExternalStore(
@@ -932,6 +936,7 @@ export default function HomeScreen() {
                   toggleTerrain={toggleTerrain ?? (() => {})}
                 />
                 <GeolocateControl
+                  ref={geolocateControlRef}
                   style={{ position: 'absolute', top: 180, left: 0 }}
                   trackUserLocation={true}
                   position="top-left"
@@ -939,6 +944,7 @@ export default function HomeScreen() {
                   onError={handleGeolocateError}
                   onTrackUserLocationEnd={handleTrackUserLocationEnd}
                 />
+                <HomeUserLocationBehindGuard controlRef={geolocateControlRef} />
                 {/************** Member Location ****************** */}
                 {isSynced &&
                   memberLocations.map((memberLocation) => (

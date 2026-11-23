@@ -1462,9 +1462,15 @@ export const useRepository = (): UseRepositoryReturnType & {
     async (project: ProjectType) => {
       const { isOK, message } = await projectStore.addProject(project);
       if (!isOK) return { isOK: false, message };
-      dispatch(addProjectAction(project));
       const result = await uploadDefaultProjectSettings(project);
-      return { isOK: result.isOK, message: result.message };
+      if (!result.isOK) {
+        // settings/default が無いプロジェクトは開くことも設定することもできないので、消して一覧にも載せない。
+        // 再保存は別の id で作り直す（ProjectEdit の pickNewProjectIdForSave。連鎖削除が後から走るため）
+        await projectStore.discardCreatedProject(project.id);
+        return { isOK: false, message: result.message };
+      }
+      dispatch(addProjectAction(project));
+      return { isOK: true, message: '' };
     },
     [dispatch, uploadDefaultProjectSettings]
   );

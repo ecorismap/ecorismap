@@ -689,7 +689,7 @@ describe('useData', () => {
 
       // チェックを入れる
       act(() => {
-        result.current.changeChecked(0, true);
+        result.current.changeChecked(result.current.sortedRecordSet[0].id, true);
       });
 
       expect(result.current.checkList[0].checked).toBe(true);
@@ -889,7 +889,7 @@ describe('useData', () => {
       expect(result.current.sortedRecordSet.map((r) => r.id)).toEqual(['m1', 'm2']);
 
       act(() => {
-        result.current.changeChecked(0, true);
+        result.current.changeChecked(result.current.sortedRecordSet[0].id, true);
       });
       act(() => {
         result.current.deleteRecords();
@@ -903,7 +903,7 @@ describe('useData', () => {
       expect(result.current.isMapMemoLayer).toBe(false);
 
       act(() => {
-        result.current.changeChecked(0, true);
+        result.current.changeChecked(result.current.sortedRecordSet[0].id, true);
       });
       act(() => {
         result.current.deleteRecords();
@@ -917,7 +917,7 @@ describe('useData', () => {
       const { store, result } = setup([line, child]);
 
       act(() => {
-        result.current.changeChecked(0, true);
+        result.current.changeChecked(result.current.sortedRecordSet[0].id, true);
       });
       act(() => {
         result.current.deleteRecords();

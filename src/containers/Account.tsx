@@ -6,6 +6,7 @@ import Account from '../components/pages/Account';
 import { AccountContext } from '../contexts/Account';
 import { useAccount } from '../hooks/useAccount';
 import { useEncryptKeyResetConfirm } from '../hooks/useEncryptKeyResetConfirm';
+import { useSingleFlight } from '../hooks/useSingleFlight';
 import { signInGoogleDrive } from '../lib/googledrive/auth';
 import { setGoogleDriveConnectedEmailAction } from '../modules/googleDrive';
 import { t } from '../i18n/config';
@@ -375,7 +376,7 @@ export default function AccountContainers({ navigation, route }: Props_Account) 
     [checkPassword, checkUserPassword, deleteAllProjects, navigateToPrevious, setAccountMessage]
   );
 
-  const pressConnectGoogle = useCallback(async () => {
+  const connectGoogle = useCallback(async () => {
     const result = await signInGoogleDrive();
     if (!result.isOK) {
       if (result.message === 'cancelled') return;
@@ -390,6 +391,9 @@ export default function AccountContainers({ navigation, route }: Props_Account) 
     setAccountMessage('');
     navigation.navigate('Home');
   }, [dispatch, navigation, setAccountMessage]);
+  // Webではポップアップの裏で元の画面を押せる。重ねて押すと2回目が処理中のトークン要求に当たり、
+  // 1回目は成功するのに「接続できませんでした」が出る。iOSはLoading表示がサインイン画面と衝突するため出さない
+  const { run: pressConnectGoogle } = useSingleFlight(connectGoogle);
 
   const changeLoginForm = useCallback(() => {
     setAccountMessage('');

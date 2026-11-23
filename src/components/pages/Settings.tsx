@@ -51,11 +51,14 @@ export default function Settings() {
         )}
 
         {/* アプリ設定 */}
-        <TextButton
-          name={SETTINGS_BTN.GPS_SETTINGS}
-          text={t('Settings.gps_settings.text')}
-          onPress={pressGPSSettingsOpen}
-        />
+        {/* Webの測位はブラウザ任せで精度の設定が効かず、外部GNSSも無いので出さない（設定監査 S-L6） */}
+        {Platform.OS !== 'web' && (
+          <TextButton
+            name={SETTINGS_BTN.GPS_SETTINGS}
+            text={t('Settings.gps_settings.text')}
+            onPress={pressGPSSettingsOpen}
+          />
+        )}
         {Platform.OS !== 'web' && (
           <TextButton
             name={SETTINGS_BTN.PROXIMITY_ALERT}

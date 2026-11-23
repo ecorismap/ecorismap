@@ -1,12 +1,36 @@
 import * as FileSystem from 'expo-file-system/legacy';
-import { needsMapterhornUrl, runDemSourceMigrationWith, toMapterhornDemUrl } from '../demSourceMigrationCore';
-import { runDemSourceMigration } from '../demSourceMigration';
+import {
+  needsMapterhornUrl,
+  runDemSourceMigrationWith,
+  toMapterhornDemUrl,
+  waitForDemSourceMigration,
+  withMapterhornDemUrls,
+} from '../demSourceMigrationCore';
+import { MAPTERHORN_DEM_MARKER, runDemSourceMigration } from '../demSourceMigration';
+
+// 端末内に置かれたファイル（印）の集合
+const mockFiles = new Set<string>();
 
 jest.mock('expo-file-system/legacy', () => ({
   documentDirectory: 'file:///test/',
   cacheDirectory: 'file:///cache/',
-  deleteAsync: jest.fn(() => Promise.resolve()),
+  deleteAsync: jest.fn((path: string) => {
+    [...mockFiles].filter((f) => f === path || f.startsWith(`${path}/`)).forEach((f) => mockFiles.delete(f));
+    return Promise.resolve();
+  }),
+  getInfoAsync: jest.fn((path: string) => Promise.resolve({ exists: mockFiles.has(path) })),
+  makeDirectoryAsync: jest.fn(() => Promise.resolve()),
+  writeAsStringAsync: jest.fn((path: string) => {
+    mockFiles.add(path);
+    return Promise.resolve();
+  }),
 }));
+
+const NOOP_IO = {
+  removeTiles: () => Promise.resolve(),
+  isMigrated: () => Promise.resolve(false),
+  markMigrated: () => Promise.resolve(),
+};
 
 const region = (id: string, tileMapId: string) => ({
   id,
@@ -43,6 +67,14 @@ describe('needsMapterhornUrl / toMapterhornDemUrl', () => {
     expect(needsMapterhornUrl('https://cyberjapandata.gsi.go.jp/xyz/std/{z}/{x}/{y}.png')).toBe(false);
   });
 
+  it('withMapterhornDemUrls は旧形式のURLだけ移行後の姿に置き換える', () => {
+    const maps = [map('H', GSJ_HILLSHADE), map('G', GEBCO)];
+    const result = withMapterhornDemUrls(maps);
+    expect(result.map((m) => m.url)).toEqual([MAPTERHORN_HILLSHADE, GEBCO]);
+    expect(result[1]).toBe(maps[1]);
+    expect(maps[0].url).toBe(GSJ_HILLSHADE);
+  });
+
   it('接頭辞とフラグメントを保ってMapterhornへ差し替える', () => {
     expect(toMapterhornDemUrl(GSJ_HILLSHADE)).toBe(MAPTERHORN_HILLSHADE);
     expect(toMapterhornDemUrl('relief://https://example.com/{z}/{x}/{y}.png#style=dynamic')).toBe(
@@ -52,34 +84,70 @@ describe('needsMapterhornUrl / toMapterhornDemUrl', () => {
 });
 
 describe('runDemSourceMigration', () => {
-  beforeEach(() => jest.clearAllMocks());
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockFiles.clear();
+  });
 
-  it('旧dem_viewshedの領域記録を消し、保存フォルダを削除する', () => {
+  it('旧dem_viewshedの領域記録を消し、保存フォルダを削除する', async () => {
     const { store, state } = createStore([], [region('a', 'dem_viewshed'), region('b', 'M1')]);
     runDemSourceMigration(store);
+    await waitForDemSourceMigration();
     expect(state.settings.tileRegions.map((r) => r.id)).toEqual(['b']);
     expect(FileSystem.deleteAsync).toHaveBeenCalledWith('file:///test/tiles/dem_viewshed', { idempotent: true });
     // 旧方式のディスクキャッシュも消す
     expect(FileSystem.deleteAsync).toHaveBeenCalledWith('file:///cache/dem_png', { idempotent: true });
   });
 
-  it('旧形式の陰影起伏はURL・出典を書き換え、旧形式のキャッシュとダウンロード記録を消す', () => {
+  it('旧形式の陰影起伏はURL・出典を書き換え、旧形式のキャッシュとダウンロード記録を消す', async () => {
     const { store, state } = createStore(
       [map('H', GSJ_HILLSHADE, '産総研シームレス標高タイル'), map('G', GEBCO), map('S', 'https://std/{z}/{x}/{y}.png')],
       [region('r1', 'H'), region('r2', 'G')]
     );
     runDemSourceMigration(store);
+    // URLの書き換えは同期で済む
     expect(state.tileMaps.find((m) => m.id === 'H')?.url).toBe(MAPTERHORN_HILLSHADE);
+    await waitForDemSourceMigration();
     expect(state.tileMaps.find((m) => m.id === 'H')?.attribution).toContain('Mapterhorn');
     expect(state.tileMaps.find((m) => m.id === 'G')?.url).toBe(GEBCO);
     expect(state.settings.tileRegions.map((r) => r.id)).toEqual(['r2']);
     expect(FileSystem.deleteAsync).toHaveBeenCalledWith('file:///test/tiles/H', { idempotent: true });
     expect(FileSystem.deleteAsync).not.toHaveBeenCalledWith('file:///test/tiles/G', { idempotent: true });
+    // 削除を終えてから済みの印を書く
+    expect(mockFiles.has(`file:///test/tiles/H/${MAPTERHORN_DEM_MARKER}`)).toBe(true);
+  });
+
+  it('済みの印がある地図は、旧URLが再び入ってもURLの書き換えだけでタイルと保存範囲は残す（設定監査 S-M3）', async () => {
+    mockFiles.add(`file:///test/tiles/H/${MAPTERHORN_DEM_MARKER}`);
+    const { store, state } = createStore([map('H', GSJ_HILLSHADE)], [region('r1', 'H')]);
+    runDemSourceMigrationWith(store, {
+      removeTiles: (id) => FileSystem.deleteAsync(`file:///test/tiles/${id}`, { idempotent: true }),
+      isMigrated: async (id) => mockFiles.has(`file:///test/tiles/${id}/${MAPTERHORN_DEM_MARKER}`),
+      markMigrated: async () => undefined,
+    });
+    await waitForDemSourceMigration();
+    expect(state.tileMaps[0].url).toBe(MAPTERHORN_HILLSHADE);
+    expect(state.settings.tileRegions.map((r) => r.id)).toEqual(['r1']);
+    expect(FileSystem.deleteAsync).not.toHaveBeenCalledWith('file:///test/tiles/H', { idempotent: true });
+  });
+
+  it('タイルの削除に失敗したら印を書かない（次回やり直す）', async () => {
+    const markMigrated = jest.fn(() => Promise.resolve());
+    const { store } = createStore([map('H', GSJ_HILLSHADE)], []);
+    const warn = jest.spyOn(console, 'warn').mockImplementation(() => undefined);
+    runDemSourceMigrationWith(store, {
+      removeTiles: (id) => (id === 'H' ? Promise.reject(new Error('io')) : Promise.resolve()),
+      isMigrated: () => Promise.resolve(false),
+      markMigrated,
+    });
+    await waitForDemSourceMigration();
+    expect(markMigrated).not.toHaveBeenCalled();
+    warn.mockRestore();
   });
 
   it('対象が無ければstoreは触らない（毎回の起動で呼んでよい）', () => {
     const { store, dispatch } = createStore([map('H', MAPTERHORN_HILLSHADE)], [region('c', 'dem_mapterhorn')]);
-    runDemSourceMigrationWith(store, () => {});
+    runDemSourceMigrationWith(store, NOOP_IO);
     expect(dispatch).not.toHaveBeenCalled();
   });
 });

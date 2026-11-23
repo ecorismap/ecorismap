@@ -1,5 +1,5 @@
 import { createContext } from 'react';
-import { LayerType, RecordType } from '../types';
+import { CheckListItem, LayerType, RecordType } from '../types';
 import { SortOrderType } from '../utils/Data';
 
 interface DataContextType {
@@ -8,7 +8,7 @@ interface DataContextType {
   sortedRecordSet: RecordType[];
   layer: LayerType;
   isChecked: boolean;
-  checkList: { id: number; checked: boolean }[];
+  checkList: CheckListItem[];
   isMapMemoLayer: boolean;
   sortedName: string;
   sortedOrder: SortOrderType;
@@ -37,7 +37,7 @@ interface DataContextType {
   pressExportData: () => void;
   cancelExportData: () => void;
   changeOrder: (colname: string, order: SortOrderType) => void;
-  changeChecked: (index: number, checked: boolean) => void;
+  changeChecked: (recordId: string, checked: boolean) => void;
   changeCheckedAll: (checked: boolean) => void;
   changeVisible: (record: RecordType) => void;
   changeVisibleAll: (visible: boolean) => void;

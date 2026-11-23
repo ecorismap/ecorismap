@@ -1,5 +1,6 @@
 import { googleDriveOAuth } from '../../constants/APIKeys';
 import { DRIVE_FILE_SCOPE, GoogleDriveAuthError, GoogleDriveAuthResult } from './types';
+import { clearAppFolderCache } from './appFolderCache';
 
 const GSI_SRC = 'https://accounts.google.com/gsi/client';
 const SCOPES = `${DRIVE_FILE_SCOPE} openid email`;
@@ -7,6 +8,7 @@ const STORAGE_KEY = 'ecorismap:googleDriveEmail';
 const USERINFO_URL = 'https://www.googleapis.com/oauth2/v3/userinfo';
 const SILENT_TIMEOUT_MS = 10 * 1000;
 const INTERACTIVE_TIMEOUT_MS = 5 * 60 * 1000;
+const SAVE_MIN_TTL_MS = 600 * 1000;
 
 type GsiTokenResponse = {
   access_token?: string;
@@ -162,6 +164,8 @@ export const signInGoogleDrive = async (): Promise<GoogleDriveAuthResult> => {
     const email = await fetchEmail(token);
     connectedEmail = email ?? connectedEmail ?? loadStoredEmail();
     storeEmail(connectedEmail);
+    // 接続解除を経ずに別アカウントで入り直すと、前のアカウントのフォルダIDで一覧・保存してしまう
+    clearAppFolderCache();
     return { isOK: true, message: '', email: connectedEmail };
   } catch (e) {
     if (e instanceof GoogleDriveAuthError) {
@@ -176,7 +180,9 @@ export const trySilentSignIn = async (): Promise<GoogleDriveAuthResult> => {
   if (storedEmail === undefined) return { isOK: false, message: 'not-connected' };
   // 有効なトークンがある間は再取得しない。GSIのトークン取得はサイレント指定(prompt:'')でも
   // 一瞬ポップアップを開くため、不要な取得は画面のチラつきになる。
-  if (accessToken !== undefined && accessToken.expiresAt - Date.now() > 60 * 1000) {
+  // 保存はアップロード前に残り10分を求める（driveProjectStore）。画面を開いたときに残りが少なければ
+  // ここで更新しておかないと、保存時の再取得がタップ外のポップアップとしてブロックされて失敗する
+  if (accessToken !== undefined && accessToken.expiresAt - Date.now() > SAVE_MIN_TTL_MS) {
     return { isOK: true, message: '', email: connectedEmail ?? storedEmail };
   }
   try {
@@ -185,6 +191,10 @@ export const trySilentSignIn = async (): Promise<GoogleDriveAuthResult> => {
     storeEmail(connectedEmail);
     return { isOK: true, message: '', email: connectedEmail };
   } catch (e) {
+    // 前倒しの更新が失敗しても、まだ使えるトークンがあれば従来どおり接続済みとして扱う
+    if (accessToken !== undefined && accessToken.expiresAt - Date.now() > 60 * 1000) {
+      return { isOK: true, message: '', email: connectedEmail ?? storedEmail };
+    }
     if (e instanceof GoogleDriveAuthError) {
       return { isOK: false, message: e.reason };
     }

@@ -39,6 +39,7 @@ import { useGeoFile } from './useGeoFile';
 import { clearAllDynamicDictionaries } from './useDynamicDictionaryInput';
 import { clearAllVisibilitySnapshots } from './useData';
 import { runPhotoUriRebase } from '../utils/photoUriRebase';
+import { flushPersistence } from '../utils/persistFlush';
 
 export type UseEcorisMapFileReturnType = {
   isLoading: boolean;
@@ -402,6 +403,8 @@ export const useEcorisMapFile = (): UseEcorisMapFileReturnType => {
       //写真なしで書き出したファイルを同じ端末で開くと、写真uriは書き出し時のコンテナを指したまま入る。iOSはアプリ更新で
       //コンテナUUIDが変わるので、次の起動を待たずにここで付け替える（冪等。iOS以外は何もしない。写真監査 P-L10）
       runPhotoUriRebase(store);
+      // 置き換えた複数のスライスを揃えて書く。ずれた間に落ちると新しい記録と古いレイヤの組で起動する（設定監査 S-L3）
+      flushPersistence();
 
       return { isOK: true, message: '', region: loaded.settings.mapRegion };
     },
@@ -427,6 +430,8 @@ export const useEcorisMapFile = (): UseEcorisMapFileReturnType => {
         mapRegion: settings.mapRegion,
       })
     );
+    // 置き換えた複数のスライスを揃えて書く（設定監査 S-L3）
+    flushPersistence();
     // 動的辞書をクリア
     clearAllDynamicDictionaries();
     clearAllVisibilitySnapshots();

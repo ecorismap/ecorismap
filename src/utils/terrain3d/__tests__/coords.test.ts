@@ -8,6 +8,7 @@ import {
   MERCATOR_CIRCUMFERENCE,
   mercatorToLonLat,
   regionToCamera,
+  restartCameraFromScene,
   tileSizeMeters,
   tileToMercator,
   zoomToDistance,
@@ -120,5 +121,19 @@ describe('メルカトル座標からタイル座標を四則演算で出せる'
     const scale = Math.pow(2, z);
     expect((mx / MERCATOR_CIRCUMFERENCE + 0.5) * scale).toBeCloseTo(lonToTileXFloat(lon, z), 9);
     expect((0.5 - my / MERCATOR_CIRCUMFERENCE) * scale).toBeCloseTo(latToTileYFloat(lat, z), 9);
+  });
+});
+
+describe('restartCameraFromScene（V-L1 作り直しの再開位置）', () => {
+  const camera = { latitude: 35.4, longitude: 138.7, zoom: 15, heading: 30, pitch: 90 };
+
+  it('眺望中は前方の注視点ではなく立ち位置を中心にし、通常の俯角へ戻す', () => {
+    const restarted = restartCameraFromScene(camera, { latitude: 35.36, longitude: 138.72 });
+    expect(restarted).toEqual({ latitude: 35.36, longitude: 138.72, zoom: 15, heading: 30, pitch: 60 });
+  });
+
+  it('眺望でなければ直前のカメラのまま、俯角だけ上限に丸める', () => {
+    expect(restartCameraFromScene(camera, null)).toEqual({ ...camera, pitch: 80 });
+    expect(restartCameraFromScene({ ...camera, pitch: 45 }, null).pitch).toBe(45);
   });
 });

@@ -10,9 +10,9 @@ import { StyleSheet, View } from 'react-native';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../store';
 import { COLOR } from '../../constants/AppConstants';
-import { PointRecordType } from '../../types';
 import { generateLabel, getColor } from '../../utils/Layer';
 import { TerrainScene } from '../../utils/terrain3d/TerrainScene';
+import { selectTerrain3DPoints } from '../../utils/terrain3d/terrain3dPoints';
 import { useWindow } from '../../hooks/useWindow';
 import { MapViewStableContext } from '../../contexts/MapViewStable';
 import { DataSelectionContext } from '../../contexts/DataSelection';
@@ -22,8 +22,6 @@ interface Props {
   scene: TerrainScene | null;
 }
 
-/** 3Dで同時に表示するポイント数の上限（投影計算のコスト対策） */
-const MAX_3D_POINTS = 300;
 /** 投影の更新間隔[ms]。1回で最大300点ぶんのReact更新が走るので細かくしすぎない */
 const PROJECT_INTERVAL_MS = 250;
 const DOT_SIZE = 15;
@@ -50,28 +48,23 @@ export const HomeTerrain3DPoints = React.memo(({ scene }: Props) => {
   const layers = useSelector((state: RootState) => state.layers);
   const [projected, setProjected] = useState<ProjectedItem[]>([]);
 
-  const items = useMemo(() => {
-    const result: PointItem[] = [];
-    for (const dataSet of pointDataSet) {
-      const layer = layers.find((v) => v.id === dataSet.layerId);
-      if (!layer?.visible) continue;
-      for (const record of dataSet.data as PointRecordType[]) {
-        if (!record.visible || record.coords === undefined) continue;
-        if (result.length >= MAX_3D_POINTS) return result;
-        const selected = selectedRecord?.record?.id === record.id;
+  // 選定はタップのピック（HomeTerrain3D）と共通。選択点は末尾に来るので最前面に描かれる
+  const items = useMemo(
+    (): PointItem[] =>
+      selectTerrain3DPoints(pointDataSet, layers, selectedRecord).map(({ layer, record, latitude, longitude, selected }) => {
         const color = getColor(layer, record);
-        result.push({
-          key: `${dataSet.layerId}-${record.id}`,
-          latitude: record.coords.latitude,
-          longitude: record.coords.longitude,
-          color,
+        return {
+          key: `${layer.id}-${record.id}`,
+          latitude,
+          longitude,
+          // 2D・Webと同じく選択中は黄色
+          color: selected ? COLOR.YELLOW : color,
           borderColor: selected ? COLOR.BLACK : COLOR.WHITE,
           label: zoom > 8 ? generateLabel(layer, record) : '',
-        });
-      }
-    }
-    return result;
-  }, [pointDataSet, layers, selectedRecord, zoom]);
+        };
+      }),
+    [pointDataSet, layers, selectedRecord, zoom]
+  );
 
   const itemsRef = useRef(items);
   itemsRef.current = items;

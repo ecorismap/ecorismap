@@ -128,6 +128,7 @@ import { substituteGoogleBasemaps } from '../utils/terrain3d/googleBasemapSubsti
 import { buildMapAttribution } from '../utils/mapAttribution';
 import { generateLabel, getColor, resolveCodeField, toCodeFieldValue } from '../utils/Layer';
 import { hex2rgba, hsv2rgbaString } from '../utils/Color';
+import { penWidthTypeToNumber } from '../utils/penWidth';
 import { getAllTrackPoints } from '../utils/Location';
 import { TRACK_PHOTO_TAP_RADIUS_PX, clusterTrackPhotos, spiderOffsets } from '../utils/trackPhoto';
 import BottomSheet from '@gorhom/bottom-sheet';
@@ -484,6 +485,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     clearMapMemoHistory,
     pauseMapMemoDrawing,
     flushPausedPenStroke,
+    flushMapMemoBeforeLeave,
     setPencilModeActive,
     setSnapWithLine,
     setIsStraightStyle,
@@ -1411,8 +1413,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     (width: PenWidthType) => {
       if (isSelectedDraw) selectionStyleChanged.current.width = true;
       if (canPreviewSelectionStyle) {
-        //useMapMemoのpenWidth導出と同じ対応（細=2/中=5/太=10）
-        applySelectionStylePreview({ strokeWidth: width === 'PEN_THIN' ? 2 : width === 'PEN_MEDIUM' ? 5 : 10 });
+        applySelectionStylePreview({ strokeWidth: penWidthTypeToNumber(width) });
       }
       setPenWidth(width);
     },
@@ -2395,25 +2396,31 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
 
   // 別の画面へ移るとこの画面がアンマウントされ、軌跡の記録（useLocation）の購読と記録ガードの handler が外れる。
   // 記録中は移る前に止めて保存させ、キャンセルや保存・アップロードの失敗なら移らない（軌跡監査 T-H1）
+  // マップメモの中断中・保存待ちの線も、アンマウントで消えないよう移る直前に保存する（作図監査 E-L7）
   const gotoProjects = useCallback(async () => {
-    await leaveHomeWithTrackingGuard(() => navigation.navigate('Projects'));
-  }, [navigation]);
+    await leaveHomeWithTrackingGuard(() => {
+      flushMapMemoBeforeLeave();
+      navigation.navigate('Projects');
+    });
+  }, [flushMapMemoBeforeLeave, navigation]);
 
   const gotoAccount = useCallback(async () => {
-    await leaveHomeWithTrackingGuard(() =>
+    await leaveHomeWithTrackingGuard(() => {
+      flushMapMemoBeforeLeave();
       navigation.navigate('AccountSettings', {
         previous: 'Home',
-      })
-    );
-  }, [navigation]);
+      });
+    });
+  }, [flushMapMemoBeforeLeave, navigation]);
 
   const gotoLogin = useCallback(async () => {
-    await leaveHomeWithTrackingGuard(() =>
+    await leaveHomeWithTrackingGuard(() => {
+      flushMapMemoBeforeLeave();
       navigation.navigate('Account', {
         accountFormState: 'selectLoginMethod',
-      })
-    );
-  }, [navigation]);
+      });
+    });
+  }, [flushMapMemoBeforeLeave, navigation]);
 
   const gotoLayers = useCallback(async () => {
     if (isEditingRecord) {

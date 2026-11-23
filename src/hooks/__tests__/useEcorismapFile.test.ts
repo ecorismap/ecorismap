@@ -35,6 +35,14 @@ jest.mock('../useGeoFile', () => ({ useGeoFile: () => ({}) }));
 jest.mock('../useDynamicDictionaryInput', () => ({ clearAllDynamicDictionaries: jest.fn() }));
 jest.mock('../useData', () => ({ clearAllVisibilitySnapshots: jest.fn() }));
 jest.mock('../../utils/projectBackup', () => ({ saveProjectBackup: jest.fn() }));
+// 書き出した時点で、置き換えの dispatch がどこまで済んでいたかを控える
+const mockDispatchedAtFlush: string[][] = [];
+jest.mock('../../utils/persistFlush', () => ({
+  flushPersistence: () => {
+    mockDispatchedAtFlush.push(mockDispatch.mock.calls.map(([a]) => a?.type));
+    return Promise.resolve();
+  },
+}));
 
 describe('clearEcorisMap', () => {
   beforeEach(() => mockDispatch.mockClear());
@@ -56,5 +64,22 @@ describe('clearEcorisMap', () => {
     //それ以外は初期値に戻る
     expect(settingsPayload.mapType).toBe(settingsInitialState.mapType);
     expect(settingsPayload.projectId).toBeUndefined();
+  });
+
+  it('置き換えたスライスがすべて揃ってから永続化の書き込み待ちを書き出す（設定監査 S-L3）', async () => {
+    mockDispatchedAtFlush.length = 0;
+    const { result } = renderHook(() => useEcorisMapFile());
+    await act(async () => {
+      await result.current.clearEcorisMap();
+    });
+    expect(mockDispatchedAtFlush).toHaveLength(1);
+    expect(mockDispatchedAtFlush[0]).toEqual(
+      expect.arrayContaining([
+        'layers/setLayersAction',
+        'dataSet/setDataSetAction',
+        'tileMaps/setTileMapsAction',
+        'settings/setSettingsAction',
+      ])
+    );
   });
 });

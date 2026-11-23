@@ -29,6 +29,11 @@ jest.mock('../../lib/firebase/sign-in', () => ({
   getAuthUid: () => mockGetAuthUid(),
 }));
 
+const mockFlushPersistence = jest.fn(() => Promise.resolve());
+jest.mock('../../utils/persistFlush', () => ({
+  flushPersistence: () => mockFlushPersistence(),
+}));
+
 //写真uriの付け替えは復元したdataSetに対して走る必要があるので、呼ばれた時点のstateを控える
 const mockRebaseSeenDataSet: unknown[] = [];
 jest.mock('../../utils/photoUriRebase', () => ({
@@ -318,5 +323,66 @@ describe('useProjectBackup', () => {
       restoreResult = result.current.restoreBackup('backup-id');
     });
     expect(restoreResult.region).toEqual(snapshot.state.settings.mapRegion);
+  });
+  test('ログイン中に未ログイン時のスナップショットを復元しても、今のユーザーとプロジェクト一覧は残す（設定監査 S-L1）', () => {
+    const store = createTestStore();
+    act(() => {
+      store.dispatch({
+        type: 'user/setUserAction',
+        payload: { uid: 'me', email: 'me@x.y', displayName: 'me', photoURL: null },
+      });
+      store.dispatch({ type: 'projects/setProjectsAction', payload: [{ id: 'mine', name: 'mine' }] });
+    });
+    const snapshot = createSnapshot();
+    snapshot.state.user = { ...snapshot.state.user, uid: undefined };
+    snapshot.state.projects = [];
+    mockLoadBackup.mockReturnValue(snapshot);
+    mockGetAuthUid.mockReturnValue('me');
+
+    const { result } = renderHook(() => useProjectBackup(), { wrapper: createWrapper(store) });
+    act(() => {
+      result.current.restoreBackup('backup-id');
+    });
+
+    const state = store.getState();
+    expect(state.user.uid).toBe('me');
+    expect(state.projects).toEqual([{ id: 'mine', name: 'mine' }]);
+    // ほかのスライスは戻す
+    expect(state.dataSet).toEqual(snapshot.state.dataSet);
+    expect(state.layers).toEqual(snapshot.state.layers);
+  });
+
+  test('未ログインのまま未ログイン時のスナップショットを復元すると、ユーザーとプロジェクト一覧も戻す', () => {
+    const store = createTestStore();
+    // 復元前とスナップショットで値を変えておかないと、戻さない退行でも通ってしまう
+    act(() => {
+      store.dispatch({
+        type: 'user/setUserAction',
+        payload: { uid: undefined, email: null, displayName: 'before', photoURL: null },
+      });
+      store.dispatch({ type: 'projects/setProjectsAction', payload: [{ id: 'old', name: 'old' }] });
+    });
+    const snapshot = createSnapshot();
+    snapshot.state.user = { ...snapshot.state.user, uid: undefined, displayName: 'snap' };
+    snapshot.state.projects = [{ id: 'snap', name: 'snap' }] as unknown as BackupSnapshotType['state']['projects'];
+    mockLoadBackup.mockReturnValue(snapshot);
+
+    const { result } = renderHook(() => useProjectBackup(), { wrapper: createWrapper(store) });
+    act(() => {
+      result.current.restoreBackup('backup-id');
+    });
+    expect(store.getState().user.uid).toBeUndefined();
+    expect(store.getState().user.displayName).toBe('snap');
+    expect(store.getState().projects).toEqual([{ id: 'snap', name: 'snap' }]);
+  });
+
+  test('復元の直後に永続化の書き込み待ちを書き出す（設定監査 S-L3）', () => {
+    const store = createTestStore();
+    mockLoadBackup.mockReturnValue(createSnapshot());
+    const { result } = renderHook(() => useProjectBackup(), { wrapper: createWrapper(store) });
+    act(() => {
+      result.current.restoreBackup('backup-id');
+    });
+    expect(mockFlushPersistence).toHaveBeenCalledTimes(1);
   });
 });

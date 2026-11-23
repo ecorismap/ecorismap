@@ -1,5 +1,7 @@
-import React, { useContext, useMemo } from 'react';
+import React, { useContext, useMemo, useRef } from 'react';
 import { Layer, Marker, Source } from 'react-map-gl/maplibre';
+import type { Marker as MaplibreMarker } from 'maplibre-gl';
+import { useHideMarkersBehindCamera } from '../../hooks/useHideMarkersBehindCamera';
 import { COLOR } from '../../constants/AppConstants';
 import { MeasureContext } from '../../contexts/Measure';
 import { LocationType } from '../../types';
@@ -49,17 +51,22 @@ export const HomeMeasure = React.memo(() => {
   );
 });
 
-const MeasurePointMarker = React.memo(({ coordinate }: { coordinate: LocationType }) => (
-  <Marker longitude={coordinate.longitude} latitude={coordinate.latitude} anchor="center">
-    <div
-      style={{
-        backgroundColor: COLOR.ORANGE,
-        border: `2px solid ${COLOR.WHITE}`,
-        borderRadius: 7,
-        boxSizing: 'border-box',
-        height: 14,
-        width: 14,
-      }}
-    />
-  </Marker>
-));
+const MeasurePointMarker = React.memo(({ coordinate }: { coordinate: LocationType }) => {
+  // 傾けた3D・眺望で、カメラの後ろの端点が前方の空に浮かないようにする
+  const markerRef = useRef<MaplibreMarker | null>(null);
+  useHideMarkersBehindCamera(() => [markerRef.current]);
+  return (
+    <Marker ref={markerRef} longitude={coordinate.longitude} latitude={coordinate.latitude} anchor="center">
+      <div
+        style={{
+          backgroundColor: COLOR.ORANGE,
+          border: `2px solid ${COLOR.WHITE}`,
+          borderRadius: 7,
+          boxSizing: 'border-box',
+          height: 14,
+          width: 14,
+        }}
+      />
+    </Marker>
+  );
+});

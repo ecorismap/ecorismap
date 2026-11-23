@@ -27,6 +27,7 @@ import { AppLanguageType, ProximityAlertSettingsType } from '../types';
 import { selectNonDeletedDataSet } from '../modules/selectors';
 import dayjs from '../i18n/dayjs';
 import { replaceDataWithTrackingGuard } from '../utils/trackingLeaveGuard';
+import { flushPersistence } from '../utils/persistFlush';
 
 const alertRestoreFailed = async (reason: 'differentUser' | undefined) => {
   await AlertAsync(
@@ -373,6 +374,8 @@ export default function SettingsContainers() {
     if (language === getStoredLanguage()) return;
     setStoredLanguage(language);
     if (Platform.OS === 'web') {
+      //スロットル待ちの状態を書き終えてから再読み込みする。待たないと直前の編集が戻りうる（設定監査 S-L4）
+      await flushPersistence();
       //リロードで新しい言語のリソースを読み込み直す
       window.location.reload();
     } else {

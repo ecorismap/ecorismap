@@ -1,6 +1,7 @@
 import { Platform } from 'react-native';
 import type { RootState } from '../store';
 import { TileMapType } from '../types';
+import { withMapterhornDemUrls } from './demSourceMigrationCore';
 import { cleanupPmtilesOnSave } from './pmtilesLocalStore';
 import { removeTerrainTextureCacheForMap } from './terrain3d/textureDiskCache';
 import { dropTileRegions, findTileSourceChanges, TileRegionStore, TileSourceChange } from './tileSourceChange';
@@ -20,7 +21,9 @@ export const discardStaleTileSources = async (
   store: TileMapsStore,
   nextMaps: TileMapType[]
 ): Promise<TileSourceChange[]> => {
-  const changes = findTileSourceChanges(store.getState().tileMaps, nextMaps);
+  // 旧形式の陰影起伏・段彩のURLは入った直後に標高移行がMapterhornへ書き換えるので、書き換え後の姿で比べる。
+  // 手元の移行済みURLとの差を取得元の変更とみなすと、取り直したタイルを毎回消してしまう（設定監査 S-M3）
+  const changes = findTileSourceChanges(store.getState().tileMaps, withMapterhornDemUrls(nextMaps));
   if (changes.length === 0) return changes;
   // スタイルだけの変更ではダウンロードした .pbf が残るので、保存範囲の記録も残す
   dropTileRegions(

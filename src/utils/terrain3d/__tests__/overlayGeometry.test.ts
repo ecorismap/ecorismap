@@ -1,4 +1,11 @@
-import { buildPolygonFill, buildRibbon, OverlayBatchBuilder, overlayLiftMeters } from '../overlayGeometry';
+import {
+  buildPolygonFill,
+  buildRibbon,
+  combinedReadyGeneration,
+  OverlayBatchBuilder,
+  overlayLiftMeters,
+  overlayLiftMetersForView,
+} from '../overlayGeometry';
 import { lonLatToMercator } from '../coords';
 import { parseColorToRgba } from '../colorUtils';
 
@@ -156,5 +163,26 @@ describe('overlayLiftMeters', () => {
     expect(overlayLiftMeters(400)).toBeCloseTo(0.4);
     expect(overlayLiftMeters(1500)).toBeCloseTo(1.5);
     expect(overlayLiftMeters(100000)).toBeCloseTo(3);
+  });
+});
+
+describe('overlayLiftMetersForView（V-M5）', () => {
+  it('通常3Dは距離連動のまま', () => {
+    expect(overlayLiftMetersForView(5000, false)).toBe(overlayLiftMeters(5000));
+    expect(overlayLiftMetersForView(5000, false)).toBe(3);
+  });
+  it('眺望中は目の高さを超えないよう下限に抑える', () => {
+    expect(overlayLiftMetersForView(5000, true)).toBe(0.3);
+    expect(overlayLiftMetersForView(1650, true)).toBeLessThan(1.7);
+  });
+});
+
+describe('combinedReadyGeneration（V-M4）', () => {
+  it('遠景リングだけが進んでも値が変わる', () => {
+    const near = { readyGeneration: 5 };
+    const far = { readyGeneration: 2 };
+    const before = combinedReadyGeneration([near, far]);
+    far.readyGeneration = 3;
+    expect(combinedReadyGeneration([near, far])).not.toBe(before);
   });
 });
