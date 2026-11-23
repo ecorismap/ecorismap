@@ -1236,13 +1236,15 @@ index fe9b4cc..c5b683c 100644
  
 diff --git a/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapPMTile.java b/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapPMTile.java
 new file mode 100644
-index 0000000..6edc929
+index 0000000..a60b11d
 --- /dev/null
 +++ b/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapPMTile.java
-@@ -0,0 +1,249 @@
+@@ -0,0 +1,261 @@
 +package com.rnmaps.maps;
 +
 +import android.content.Context;
++import android.os.Handler;
++import android.os.Looper;
 +import android.util.Log;
 +import com.google.android.gms.maps.GoogleMap;
 +import com.google.android.gms.maps.model.TileOverlay;
@@ -1462,6 +1464,16 @@ index 0000000..6edc929
 +        this.context,
 +        this.customTileProviderNeeded
 +      );
++    // 初期化（ヘッダー・style.json）はバックグラウンドで終わるので、終わったら表示中のタイルを読み直させる。
++    // TileOverlay は UI スレッドからしか触れない
++    final Handler mainHandler = new Handler(Looper.getMainLooper());
++    this.tileProvider.setOnTilesInvalidated(() ->
++      mainHandler.post(() -> {
++        if (tileOverlay != null) {
++          tileOverlay.clearTileCache();
++        }
++      })
++    );
 +    options.tileProvider(this.tileProvider);
 +    return options;
 +  }
@@ -1491,12 +1503,13 @@ index 0000000..6edc929
 +}
 diff --git a/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapPMTileProvider.java b/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapPMTileProvider.java
 new file mode 100644
-index 0000000..d4604ff
+index 0000000..60be36a
 --- /dev/null
 +++ b/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapPMTileProvider.java
-@@ -0,0 +1,1220 @@
+@@ -0,0 +1,1396 @@
 +package com.rnmaps.maps;
 +
++import PMTiles.Header;
 +import PMTiles.Metadata;
 +import PMTiles.PMTiles;
 +import PMTiles.RangeResponse;
@@ -1551,8 +1564,12 @@ index 0000000..d4604ff
 +import java.util.Random;
 +import java.util.concurrent.CompletableFuture;
 +import java.util.concurrent.ExecutionException;
++import java.util.concurrent.ExecutorService;
++import java.util.concurrent.Executors;
 +import java.util.concurrent.Future;
 +import java.util.concurrent.TimeUnit;
++import java.util.concurrent.atomic.AtomicInteger;
++import java.util.concurrent.locks.ReentrantLock;
 +import vector_tile.VectorTile;
 +import vector_tile.VectorTile.Tile.Feature;
 +import vector_tile.VectorTile.Tile.GeomType;
@@ -1565,7 +1582,7 @@ index 0000000..d4604ff
 +  protected static final int TARGET_TILE_SIZE = 512;
 +  protected String urlTemplate;
 +  protected String styleURL;
-+  protected int tileSize;
++  protected volatile int tileSize;
 +  protected boolean doubleTileSize;
 +  protected int maximumZ;
 +  protected int maximumNativeZ;
@@ -1573,14 +1590,36 @@ index 0000000..d4604ff
 +  protected boolean flipY;
 +  protected String tileCachePath;
 +  protected int tileCacheMaxAge;
-+  protected boolean offlineMode;
-+  protected boolean isVector;
++  protected volatile boolean offlineMode;
++  protected volatile boolean isVector;
 +  protected Context context;
 +  protected boolean customMode;
-+  protected PMTiles pmtiles;
-+  protected Metadata metadata;
-+  protected VectorTileStyleManager styleManager;
-+  protected int tileType;
++  // getTile は Google Maps の複数のワーカースレッドから、setter は UI スレッドから、
++  // 初期化はバックグラウンドから触るので、状態は volatile で公開する
++  protected volatile PMTiles pmtiles;
++  protected volatile Metadata metadata;
++  protected volatile VectorTileStyleManager styleManager;
++  protected volatile int tileType;
++
++  // ヘッダー取得の失敗後に getTile から取り直す間隔。弱電波でタイル要求ごとに通信を重ねないため
++  private static final long HEADER_RETRY_INTERVAL_MS = 5000;
++  private static final long HEADER_TIMEOUT_SEC = 30;
++  private static final ExecutorService INIT_EXECUTOR = Executors.newCachedThreadPool(runnable -> {
++    Thread thread = new Thread(runnable, "PMTileInit");
++    thread.setDaemon(true);
++    return thread;
++  });
++
++  // ヘッダー解決は1スレッドだけが行う。他の getTile は待たずにキャッシュだけ読む
++  private final ReentrantLock headerLock = new ReentrantLock();
++  private volatile boolean headerFailed = false;
++  private volatile long lastHeaderAttemptAt = 0;
++  // オフライン切替で pmtiles を作り直したとき、古い取得結果を反映しないための世代
++  private final AtomicInteger sourceGeneration = new AtomicInteger(0);
++  private final AtomicInteger styleGeneration = new AtomicInteger(0);
++  private volatile Runnable onTilesInvalidated;
++  // 直近の初期化（ヘッダー＋style.json）。同期で1枚だけ描く呼び出し元（3D・PDF のラスタライザ）が完了を待つため
++  private volatile CompletableFuture<Void> initializationFuture = CompletableFuture.completedFuture(null);
 +
 +  public MapPMTileProvider(
 +    int tileSizet,
@@ -1614,50 +1653,139 @@ index 0000000..d4604ff
 +    this.customMode = customMode;
 +    this.tileType = -1;
 +
-+    CompletableFuture<Void> pmtilesFuture = CompletableFuture.completedFuture(null); // Default to a completed future
-+
 +    if (urlTemplate.endsWith(".pbf")) {
 +      this.tileType = 0;
 +      this.tileSize = 512;
 +    } else if (this.offlineMode) {
-+      if (this.isVector) {
-+        this.tileType = 1;
-+        this.tileSize = 512;
-+      } else {
-+        this.tileType = 2;
-+        this.tileSize = 256;
-+      }
++      this.tileType = getHintTileType();
++      this.tileSize = getTileSizeForType(this.tileType);
 +    } else {
 +      this.pmtiles = new PMTiles(urlTemplate, null, null);
-+
-+      pmtilesFuture =
-+        this.pmtiles.getHeader()
-+          .thenAccept(header -> {
-+            if (header != null) {
-+              this.tileType = header.getTileType();
-+              this.tileSize = this.tileType == 1 ? 512 : 256;
-+            }
-+          })
-+          .thenCompose(v -> this.pmtiles.getMetadata())
-+          .exceptionally(ex -> {
-+            return null;
-+          })
-+          .thenAccept(metadata -> {
-+            this.metadata = metadata;
-+          });
++      // ヘッダーが届くまでは保存済みタイルを isVector の想定サイズで読む
++      this.tileSize = getTileSizeForType(getHintTileType());
 +    }
 +
 +    this.styleManager =
 +      new VectorTileStyleManager(this.urlTemplate, this.tileCachePath, this.styleURL, this.offlineMode);
-+    CompletableFuture<Void> styleManagerFuture = this.styleManager.initialize();
 +
-+    // Wait for both the pmtilesFuture and styleManagerFuture to complete
-+    CompletableFuture.allOf(pmtilesFuture, styleManagerFuture).join();
++    // ヘッダー・メタデータ・style.json の取得は UI スレッド（addToMap）で待たない。
++    // 弱電波では接続・読み込みのタイムアウトまで画面が固まり ANR になりうるため
++    startInitialization(this.styleManager, this.sourceGeneration.get(), this.styleGeneration.get());
++  }
++
++  /** 初期化やヘッダー解決が終わり、表示済みタイルを読み直すべきときに呼ばれる（呼び出し元スレッドは任意） */
++  public void setOnTilesInvalidated(Runnable listener) {
++    this.onTilesInvalidated = listener;
++  }
++
++  private void notifyTilesInvalidated() {
++    Runnable listener = this.onTilesInvalidated;
++    if (listener != null) listener.run();
++  }
++
++  private int getHintTileType() {
++    return this.isVector ? 1 : 2;
++  }
++
++  private static int getTileSizeForType(int type) {
++    return type == 0 || type == 1 ? 512 : 256;
++  }
++
++  private void startInitialization(VectorTileStyleManager manager, int sourceGen, int styleGen) {
++    CompletableFuture<Void> headerFuture = CompletableFuture.runAsync(
++      () -> resolveTileType(sourceGen, true),
++      INIT_EXECUTOR
++    );
++    CompletableFuture<Void> styleFuture = manager
++      .initialize()
++      .thenRun(() -> {
++        // 作り直し後に古い初期化が終わっても差し替えない
++        if (styleGen == this.styleGeneration.get()) {
++          this.styleManager = manager;
++        }
++      });
++    CompletableFuture<Void> all = CompletableFuture.allOf(headerFuture, styleFuture);
++    this.initializationFuture = all;
++    all.whenComplete((v, ex) -> notifyTilesInvalidated());
++  }
++
++  /**
++   * 初期化（ヘッダー・メタデータ・style.json）の完了を待つ。UI スレッドからは呼ばないこと。
++   * 2D はタイルを後から読み直せるが、1枚ずつ同期で描くラスタライザは待たないと最初のタイルが空になる。
++   *
++   * @return 時間内に終わったら true（失敗して終わった場合も true。種別未確定なら getTile が取り直す）
++   */
++  public boolean awaitInitialization(long timeoutMs) {
++    try {
++      this.initializationFuture.get(timeoutMs, TimeUnit.MILLISECONDS);
++      return true;
++    } catch (java.util.concurrent.TimeoutException e) {
++      return false;
++    } catch (InterruptedException e) {
++      Thread.currentThread().interrupt();
++      return false;
++    } catch (Exception e) {
++      return true;
++    }
++  }
++
++  /**
++   * ヘッダーからタイル種別を確定する（iOS の resolveTileTypeWithPMTiles 相当）。
++   * 失敗しても tileType は -1 のままにし、getTile から間隔を空けて取り直す。
++   * PMTiles の SharedPromiseCache は失敗したヘッダーも保持し続けるので、取り直しは新しいインスタンスで行う。
++   * wait=false のときは他スレッドが解決中なら待たない（getTile をヘッダー取得で詰まらせない）。
++   *
++   * @return この呼び出しで種別が確定したら true
++   */
++  private boolean resolveTileType(int sourceGen, boolean wait) {
++    if (wait) {
++      headerLock.lock();
++    } else if (!headerLock.tryLock()) {
++      return false;
++    }
++    try {
++      if (this.tileType >= 0 || this.offlineMode || this.pmtiles == null) return false;
++      if (sourceGen != this.sourceGeneration.get()) return false;
++      long now = System.currentTimeMillis();
++      if (!wait && this.headerFailed && now - this.lastHeaderAttemptAt < HEADER_RETRY_INTERVAL_MS) return false;
++      this.lastHeaderAttemptAt = now;
++
++      PMTiles candidate = this.headerFailed ? new PMTiles(this.urlTemplate, null, null) : this.pmtiles;
++      Header header = null;
++      try {
++        header = candidate.getHeader().get(HEADER_TIMEOUT_SEC, TimeUnit.SECONDS);
++      } catch (Exception e) {
++        header = null;
++      }
++      if (sourceGen != this.sourceGeneration.get()) return false;
++      if (header == null) {
++        this.headerFailed = true;
++        return false;
++      }
++      int resolvedType = header.getTileType();
++      Metadata resolvedMetadata = null;
++      if (resolvedType == 0 || resolvedType == 1) {
++        try {
++          resolvedMetadata = candidate.getMetadata().get(HEADER_TIMEOUT_SEC, TimeUnit.SECONDS);
++        } catch (Exception e) {
++          resolvedMetadata = null;
++        }
++      }
++      if (sourceGen != this.sourceGeneration.get()) return false;
++      this.pmtiles = candidate;
++      if (resolvedMetadata != null) this.metadata = resolvedMetadata;
++      this.headerFailed = false;
++      this.tileSize = getTileSizeForType(resolvedType);
++      // pmtiles・metadata・tileSize を揃えてから公開する（種別だけ先に見えると未準備のまま取得される）
++      this.tileType = resolvedType;
++      return true;
++    } finally {
++      headerLock.unlock();
++    }
 +  }
 +
 +  @Override
 +  public Tile getTile(int x, int y, int zoom) {
-+    if (this.tileType == -1 && !this.offlineMode) return null;
 +    byte[] image = null;
 +    int maximumZ = this.maximumZ > 0 ? this.maximumZ : Integer.MAX_VALUE;
 +
@@ -2347,6 +2475,18 @@ index 0000000..d4604ff
 +  }
 +
 +  public Tile getVectorTile(int x, int y, int zoom) {
++    return getVectorTile(x, y, zoom, this.tileType, false);
++  }
++
++  /**
++   * @param type 描画に使うタイル種別（0: .pbf URL、1: PMTiles のベクタ）。種別未確定のときは isVector からの想定
++   * @param cacheOnly true のときは保存済み .pbf だけを読み、通信しない
++   */
++  Tile getVectorTile(int x, int y, int zoom, int type, boolean cacheOnly) {
++    // 初期化中に差し替えられても1枚の描画中は同じものを使う
++    VectorTileStyleManager manager = this.styleManager;
++    // 図形の座標変換（create*Path）も this.tileSize を使うので、画像の大きさもそろえる
++    int size = this.tileSize;
 +    try {
 +      byte[] pbfData = null;
 +      if (this.tileCachePath != null) {
@@ -2360,11 +2500,13 @@ index 0000000..d4604ff
 +      }
 +      //Log.d("urlTile", pbfData == null ? "null" : "not null");
 +      if (pbfData == null) {
-+        if (this.offlineMode) return null;
-+        if (this.tileType == 0) {
++        if (this.offlineMode || cacheOnly) return null;
++        if (type == 0) {
 +          pbfData = fetchPbf(zoom, x, y);
 +        } else {
-+          CompletableFuture<Optional<RangeResponse>> futureTileData = pmtiles.getZxy(zoom, x, y);
++          PMTiles source = this.pmtiles;
++          if (source == null) return null;
++          CompletableFuture<Optional<RangeResponse>> futureTileData = source.getZxy(zoom, x, y);
 +          Optional<RangeResponse> optionalRangeResponse = futureTileData.get();
 +
 +          if (!optionalRangeResponse.isPresent()) return null;
@@ -2413,12 +2555,20 @@ index 0000000..d4604ff
 +        //Log.d("urlTile", "!!create source error: " + e.getMessage());
 +        // エラーハンドリングのロジック
 +      }
-+      Bitmap image = Bitmap.createBitmap(tileSize, tileSize, Bitmap.Config.ARGB_8888);
++      List<LayerStyle> styles = manager.getStyleLayers();
++      // style.json の読み込みが終わるまでは描かない（素の既定色で描いた画像をキャッシュに残さない）。
++      // 初期化完了時に clearTileCache で読み直される
++      if (styles == null) return null;
++      if (styles.size() == 0) {
++        Metadata currentMetadata = this.metadata;
++        // メタデータが未取得（オフライン・ヘッダー取得失敗）なら、前回保存した style.json で描く
++        styles =
++          currentMetadata != null ? manager.getDefaultStyleLayers(currentMetadata) : manager.getLocalStyleLayers();
++        if (styles == null || styles.size() == 0) return null;
++      }
++      Bitmap image = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888);
 +      image.eraseColor(Color.TRANSPARENT);
 +      Canvas canvas = new Canvas(image);
-+      //Log.d("urlTile", "##" + sources.size());
-+      List<LayerStyle> styles = styleManager.getStyleLayers();
-+      if (styles.size() == 0) styles = styleManager.getDefaultStyleLayers(this.metadata);
 +      for (LayerStyle styleLayer : styles) {
 +        //Log.d("urlTile", "##" + styleLayer);
 +        VectorSource source = getVectorSource(styleLayer.sourceLayer, sources);
@@ -2433,7 +2583,7 @@ index 0000000..d4604ff
 +      }
 +      byte[] tileImage = bitmapToByteArray(image);
 +      image.recycle();
-+      return new Tile(tileSize, tileSize, tileImage);
++      return new Tile(size, size, tileImage);
 +    } catch (Exception e) {
 +      // CompletableFuture#get()の例外処理
 +      //e.printStackTrace();
@@ -2444,11 +2594,12 @@ index 0000000..d4604ff
 +
 +  //ラスター用
 +  public Tile getRasterTile(int x, int y, int zoom) {
-+    if (this.pmtiles == null) {
++    PMTiles source = this.pmtiles;
++    if (source == null || this.offlineMode) {
 +      // オフラインモード時はpmtilesが初期化されないためNPEを防ぐ
 +      return null;
 +    }
-+    CompletableFuture<Optional<RangeResponse>> futureTileData = pmtiles.getZxy(zoom, x, y);
++    CompletableFuture<Optional<RangeResponse>> futureTileData = source.getZxy(zoom, x, y);
 +
 +    try {
 +      Optional<RangeResponse> optionalRangeResponse = futureTileData.get();
@@ -2470,9 +2621,21 @@ index 0000000..d4604ff
 +
 +  byte[] fetchTile(int x, int y, int zoom) {
 +    Tile tile = null;
-+    if (this.tileType == 0 || this.tileType == 1) {
-+      tile = getVectorTile(x, y, zoom);
-+    } else if (this.tileType == 2 || this.tileType == 3) {
++    int type = this.tileType;
++    boolean cacheOnly = false;
++    if (type < 0) {
++      // ヘッダー未取得（初期化中・取得失敗）。このスレッドで取り直し、だめなら保存済み .pbf だけ読む
++      if (resolveTileType(this.sourceGeneration.get(), false)) {
++        notifyTilesInvalidated();
++        type = this.tileType;
++      } else {
++        type = getHintTileType();
++        cacheOnly = true;
++      }
++    }
++    if (type == 0 || type == 1) {
++      tile = getVectorTile(x, y, zoom, type, cacheOnly);
++    } else if ((type == 2 || type == 3) && !cacheOnly) {
 +      tile = getRasterTile(x, y, zoom);
 +    }
 +    if (Objects.isNull(tile)) {
@@ -2704,7 +2867,32 @@ index 0000000..d4604ff
 +  }
 +
 +  public void setOfflineMode(boolean offlineMode) {
-+    this.offlineMode = offlineMode;
++    boolean next = offlineMode && (this.urlTemplate == null || !this.urlTemplate.contains("file://"));
++    if (next == this.offlineMode) return;
++    this.offlineMode = next;
++    if (next) return; // オフラインへは保存済みを読むだけなので作り直さない
++
++    // オンラインに戻った。オフラインで作られて pmtiles が無い、またはヘッダー取得に失敗したままなら作り直す。
++    // UI スレッドなので headerLock は取らず（解決中の通信を待たない）、世代で古い結果を捨てる
++    int sourceGen = this.sourceGeneration.get();
++    boolean isPbfUrl = this.urlTemplate != null && this.urlTemplate.endsWith(".pbf");
++    if (!isPbfUrl && this.urlTemplate != null && (this.pmtiles == null || this.tileType < 0)) {
++      sourceGen = this.sourceGeneration.incrementAndGet();
++      this.pmtiles = new PMTiles(this.urlTemplate, null, null);
++      this.headerFailed = false;
++      this.lastHeaderAttemptAt = 0;
++      this.tileSize = getTileSizeForType(getHintTileType());
++      this.tileType = -1;
++    }
++    // オフラインで読んだ保存済み style.json を、配信元の最新に取り直す
++    int styleGen = this.styleGeneration.incrementAndGet();
++    VectorTileStyleManager manager = new VectorTileStyleManager(
++      this.urlTemplate,
++      this.tileCachePath,
++      this.styleURL,
++      false
++    );
++    startInitialization(manager, sourceGen, styleGen);
 +  }
 +
 +  public void setIsVector(boolean isVector) {
@@ -7183,10 +7371,10 @@ index 0000000..8bd6caa
 +}
 diff --git a/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/VectorStyle/VectorTileStyleManager.java b/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/VectorStyle/VectorTileStyleManager.java
 new file mode 100644
-index 0000000..f598d9f
+index 0000000..b98bb7d
 --- /dev/null
 +++ b/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/VectorStyle/VectorTileStyleManager.java
-@@ -0,0 +1,245 @@
+@@ -0,0 +1,262 @@
 +package VectorTileStyleManager;
 +
 +import PMTiles.Metadata;
@@ -7216,8 +7404,12 @@ index 0000000..f598d9f
 +  private String urlTemplate;
 +  private String localPath;
 +  private long lastUpdatedTime = 0; // long型で記録
-+  private List<LayerStyle> styleLayers; // ダウンロードしたスタイル情報を保存
++  private volatile List<LayerStyle> styleLayers; // ダウンロードしたスタイル情報を保存
++  private volatile List<LayerStyle> localStyleLayers; // 前回保存した style.json（メタデータが無いときの代わり）
 +  private boolean offlineMode = false;
++  // 弱電波で style.json の取得が止まると初期化が終わらず、ベクタタイルが描かれないため
++  private static final int STYLE_CONNECT_TIMEOUT_MS = 10 * 1000;
++  private static final int STYLE_READ_TIMEOUT_MS = 10 * 1000;
 +
 +  public VectorTileStyleManager(String urlTemplate, String tileCachePath, String styleURL, Boolean offlineMode) {
 +    //Log.d("urlTile","##" + metadata.name + "##" + metadata.type);
@@ -7264,27 +7456,18 @@ index 0000000..f598d9f
 +    return LayerStyle.fromList(((Map<?, ?>) parsed).get("layers"));
 +  }
 +
-+  private void removeStyleFile() {
-+    Path path = Paths.get(this.localPath);
-+    try {
-+      // System.out.println("##removeStyleFile: " + path);
-+      Files.deleteIfExists(path);
-+    } catch (IOException e) {
-+      // System.out.println("##IOException: " + e);
-+      throw new RuntimeException("Failed to remove style file", e);
-+    }
-+  }
-+
 +  public CompletableFuture<String> loadStyleAsync() {
 +    return CompletableFuture.supplyAsync(() -> {
 +      try {
++        // オフラインでは通信せず、保存済みの style.json を読む
++        if (this.offlineMode) throw new IOException("offline");
 +        // まずダウンロードを試みる
 +        String style = downloadStyleJson(this.urlTemplate);
 +        return saveStyle(style);
 +      } catch (Exception e) {
-+        // styleURLが指定されていない場合は、キャッシュにあるファイルを削除する
++        // styleURLが指定されていない場合は、メタデータから既定スタイルを作る（呼び出し側）。
++        // style.json は消さない。ヘッダーが取れないとき、保存済みの .pbf をこれで描くため
 +        if ((this.urlTemplate == null || this.urlTemplate.trim().isEmpty()) && !this.offlineMode) {
-+          removeStyleFile();
 +          throw new RuntimeException("No style URL is specified", e);
 +        }
 +        // ダウンロードに失敗した場合は、ローカルファイルを読む
@@ -7336,6 +7519,8 @@ index 0000000..f598d9f
 +    try {
 +      URL obj = new URL(url);
 +      HttpURLConnection con = (HttpURLConnection) obj.openConnection();
++      con.setConnectTimeout(STYLE_CONNECT_TIMEOUT_MS);
++      con.setReadTimeout(STYLE_READ_TIMEOUT_MS);
 +      con.setRequestMethod("GET");
 +      int responseCode = con.getResponseCode();
 +
@@ -7421,6 +7606,26 @@ index 0000000..f598d9f
 +      throw new RuntimeException("Failed to save default style layers", e);
 +    }
 +    return parseLayers(styleLayersString);
++  }
++
++  /** 保存済みの style.json（既定スタイルを保存したものを含む）。無い・壊れていれば空 */
++  public List<LayerStyle> getLocalStyleLayers() {
++    List<LayerStyle> cached = this.localStyleLayers;
++    if (cached != null) return cached;
++    List<LayerStyle> loaded = new ArrayList<>();
++    if (this.localPath != null) {
++      try {
++        Path path = Paths.get(this.localPath);
++        if (Files.exists(path)) {
++          loaded = parseLayers(new String(Files.readAllBytes(path)));
++        }
++      } catch (Exception e) {
++        loaded = new ArrayList<>();
++      }
++    }
++    // 空は覚えない（後から既定スタイルが保存されることがある）
++    if (!loaded.isEmpty()) this.localStyleLayers = loaded;
++    return loaded;
 +  }
 +
 +  public List<LayerStyle> getStyleLayers() {

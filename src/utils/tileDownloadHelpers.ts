@@ -1,4 +1,5 @@
 import * as FileSystem from 'expo-file-system/legacy';
+import { Buffer } from 'buffer';
 import { TileMapType, TileRegionType } from '../types';
 import { TILE_FOLDER } from '../constants/AppConstants';
 import {
@@ -9,12 +10,30 @@ import {
   DEM_MAPTERHORN_MAP_ID,
 } from '../constants/DemSources';
 import { getExt } from './General';
+import { isPeaksUrl } from './peaks/peak2dLabels';
 import { isDemProtocolUrl, isTerrariumDemUrl, TERRARIUM_DEM_ZOOM_OFFSET } from './terrainShading';
 import { lonToTileX, latToTileY, tilesForZoom } from './Tile';
 
 // hillshadeはrelief://（陰影段彩）も含む。どちらも生のDEMタイルを保存する点で同じ扱い。
 // demは標高タイル（Mapterhorn）の疑似地図（demTileDownload.ts）
 export type TileType = 'pbf' | 'pmtiles' | 'hillshade' | 'png' | 'dem';
+
+/**
+ * ダウンロード画面で扱う（選択肢に出す・「すべての地図」で取得/削除/容量集計する）地図か。
+ * 画面と処理で条件がずれると、選択肢に出ていないPDF地図のタイルを上書き・削除してしまうため1か所にまとめる。
+ * - standard/hybrid: Googleの地図はタイルを保存できない
+ * - peaks://: 山名はアプリに同梱のデータでダウンロードするものがない
+ * - .pdf / pdf:// / file:// / blob:: 取り込んだ地図で、フォルダ内のタイルは端末で生成した実体（取り直せない）
+ */
+export const isDownloadableTileMap = (tileMap: TileMapType): boolean => {
+  if (tileMap.isGroup) return false;
+  if (tileMap.id === 'standard' || tileMap.id === 'hybrid') return false;
+  const { url } = tileMap;
+  if (isPeaksUrl(url)) return false;
+  if (url.endsWith('.pdf') || getExt(url).toLowerCase() === 'pdf' || url.startsWith('pdf://')) return false;
+  if (url.includes('file://') || url.includes('blob:')) return false;
+  return true;
+};
 
 export const getTileType = (tileMap: TileMapType): TileType =>
   tileMap.id === DEM_MAPTERHORN_MAP_ID
@@ -141,7 +160,9 @@ export const listExistingTiles = async (tileMapId: string): Promise<Set<string>>
         if (!/^\d+$/.test(x)) continue;
         const files = await FileSystem.readDirectoryAsync(`${TILE_FOLDER}/${tileMapId}/${z}/${x}`);
         for (const file of files) {
-          const y = file.replace(/\.(pbf|png|webp)$/, '');
+          // {y}.pngは旧版がラスタPMTilesを誤った形式（Base64文字列）で書いたもので、ネイティブは読まない。
+          // 保存済みとみなすと再開で取り直されないので数えない
+          const y = file.replace(/\.(pbf|webp)$/, '');
           if (!/^\d+$/.test(y)) continue;
           existing.add(`${z}/${x}/${y}`);
         }
@@ -151,6 +172,84 @@ export const listExistingTiles = async (tileMapId: string): Promise<Set<string>>
     return new Set<string>();
   }
   return existing;
+};
+
+/**
+ * ダウンロード画面の取得・削除の対象。個別選択があればその中のダウンロード対象だけ、
+ * 無ければ（「すべての地図」）ダウンロード対象すべて。標高タイル（疑似地図）はRedux tileMapsに無いので合成して足す
+ */
+export const tileMapsForDownloadScreen = (
+  tileMaps: TileMapType[],
+  selectedTileMapIds: string[],
+  demTileMap: TileMapType
+): TileMapType[] => {
+  if (selectedTileMapIds.length > 0) {
+    const maps = tileMaps.filter((map) => selectedTileMapIds.includes(map.id) && isDownloadableTileMap(map));
+    if (selectedTileMapIds.includes(demTileMap.id)) maps.push(demTileMap);
+    return maps;
+  }
+  return [...tileMaps.filter(isDownloadableTileMap), demTileMap];
+};
+
+type TileXYZ = { x: number; y: number; z: number };
+
+// pmtiles の TileType（0=Unknown, 1=Mvt, 2〜5=画像）。テストでモックされるため enum は読まない
+const PMTILES_TILE_TYPE_UNKNOWN = 0;
+const PMTILES_TILE_TYPE_MVT = 1;
+
+/**
+ * PMTiles をベクタとして保存するか。ヘッダーの種別を優先し、取れなければ地図の isVector に従う。
+ * ネイティブはヘッダーで種別を決めるので、isVector の付け忘れでもオンラインでは描けるが、
+ * ラスタとして {y} に MVT を書くと画像として読まれてダウンロード範囲だけ空白になる。
+ */
+export const resolvePmtileIsVector = async (
+  pmtile: { getHeader: () => Promise<{ tileType: number }> },
+  fallback: boolean
+): Promise<boolean> => {
+  try {
+    const { tileType } = await pmtile.getHeader();
+    if (tileType === PMTILES_TILE_TYPE_UNKNOWN) return fallback;
+    return tileType === PMTILES_TILE_TYPE_MVT;
+  } catch (e) {
+    return fallback;
+  }
+};
+
+/** ラスタPMTilesのタイルの保存先。ネイティブ（readTileImage/getTileFilename・iOS PMTileOverlay）は拡張子なしで読む */
+export const rasterPmtileTilePath = (tileMapId: string, tile: TileXYZ) =>
+  `${TILE_FOLDER}/${tileMapId}/${tile.z}/${tile.x}/${tile.y}`;
+
+/** ラスタPMTilesのタイルを、ネイティブのオンライン時キャッシュと同じ生バイトで書く */
+export const writeRasterPmtileTile = async (tileMapId: string, tile: TileXYZ, data: ArrayBuffer): Promise<void> => {
+  const base64String = Buffer.from(data).toString('base64');
+  await FileSystem.writeAsStringAsync(rasterPmtileTilePath(tileMapId, tile), base64String, {
+    encoding: FileSystem.EncodingType.Base64,
+  });
+};
+
+/**
+ * 旧版がラスタPMTilesで書いた {z}/{x}/{y}.png（Base64文字列で、どのOSでも読まれない）を消す。
+ * 変換はせず、消したタイルはダウンロードで取り直す。失敗しても取り直しには影響しないので握りつぶす。
+ */
+export const removeLegacyRasterPmtilePngs = async (tileMapId: string): Promise<void> => {
+  const root = `${TILE_FOLDER}/${tileMapId}`;
+  try {
+    const zDirs = await FileSystem.readDirectoryAsync(root);
+    for (const z of zDirs) {
+      if (!/^\d+$/.test(z)) continue;
+      const xDirs = await FileSystem.readDirectoryAsync(`${root}/${z}`);
+      for (const x of xDirs) {
+        if (!/^\d+$/.test(x)) continue;
+        const files = await FileSystem.readDirectoryAsync(`${root}/${z}/${x}`);
+        for (const file of files) {
+          if (!/^\d+\.png$/.test(file)) continue;
+          await FileSystem.deleteAsync(`${root}/${z}/${x}/${file}`, { idempotent: true }).catch(() => undefined);
+        }
+      }
+    }
+  } catch (e) {
+    // フォルダが無い（未ダウンロード）など
+  }
 };
 
 // ダウンロード完了したregionからstatus/zoomを取り除く（undefined残しではなくキー自体を除去）

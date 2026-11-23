@@ -3,7 +3,12 @@ import { TileMapType, TileRegionType } from '../../types';
 import { useTiles } from '../useTiles';
 import { getDemTileMap } from '../../utils/demTileDownload';
 import * as FileSystem from 'expo-file-system/legacy';
-import { ResumeDownloadConfirmAsync, StopDownloadConfirmAsync } from '../../components/molecules/AlertAsync';
+import * as pmtiles from 'pmtiles';
+import {
+  AlertAsync,
+  ResumeDownloadConfirmAsync,
+  StopDownloadConfirmAsync,
+} from '../../components/molecules/AlertAsync';
 
 // テスト用の地図データ
 const tileMaps: TileMapType[] = [
@@ -71,7 +76,7 @@ jest.mock('expo-file-system/legacy', () => ({
   readDirectoryAsync: jest.fn(() => Promise.reject(new Error('not found'))),
   writeAsStringAsync: jest.fn(() => Promise.resolve()),
   deleteAsync: jest.fn(() => Promise.resolve()),
-  EncodingType: { UTF8: 'utf8' },
+  EncodingType: { UTF8: 'utf8', Base64: 'base64' },
 }));
 
 // 進捗文字列の検証のため、補間パラメータを含めて返すようにモックする
@@ -446,6 +451,190 @@ describe('useTiles', () => {
     test('status付きの記録がないとfalseになる', () => {
       const { result } = renderHook(() => useTiles(undefined, [], tileMaps));
       expect(result.current.hasIncompleteDownload).toBe(false);
+    });
+  });
+
+  describe('ラスタPMTilesのダウンロード', () => {
+    const rasterPmtilesMap: TileMapType = {
+      ...tileMaps[0],
+      id: 'RP',
+      name: 'Raster PMTiles',
+      url: 'https://example.com/raster.pmtiles',
+      isVector: false,
+    };
+
+    beforeEach(() => {
+      (pmtiles.PMTiles as unknown as jest.Mock).mockImplementation(() => ({
+        getZxy: jest.fn(() => Promise.resolve({ data: new Uint8Array([0x89, 0x50, 0x4e, 0x47]).buffer })),
+      }));
+    });
+
+    afterEach(() => {
+      (FileSystem.readDirectoryAsync as jest.Mock).mockImplementation(() => Promise.reject(new Error('not found')));
+      (FileSystem.writeAsStringAsync as jest.Mock).mockImplementation(() => Promise.resolve());
+    });
+
+    test('拡張子なしの{z}/{x}/{y}にBase64エンコーディングで書く（ネイティブが読む形式）', async () => {
+      const { result } = renderHook(() => useTiles(undefined, ['RP'], [rasterPmtilesMap]));
+
+      await act(async () => {
+        await result.current.downloadMultipleTiles(11, [rasterPmtilesMap]);
+      });
+
+      const writes = (FileSystem.writeAsStringAsync as jest.Mock).mock.calls.filter(([path]) =>
+        String(path).includes('/RP/')
+      );
+      expect(writes).toHaveLength(1);
+      expect(writes[0][0]).toMatch(/\/RP\/0\/0\/0$/);
+      expect(writes[0][1]).toBe('iVBORw==');
+      expect(writes[0][2]).toEqual({ encoding: 'base64' });
+    });
+
+    test('単一地図のダウンロードでも同じ形式で書く', async () => {
+      const { result } = renderHook(() => useTiles(rasterPmtilesMap));
+
+      await act(async () => {
+        await result.current.downloadTiles(11);
+      });
+
+      const writes = (FileSystem.writeAsStringAsync as jest.Mock).mock.calls.filter(([path]) =>
+        String(path).includes('/RP/')
+      );
+      expect(writes).toHaveLength(1);
+      expect(writes[0][0]).toMatch(/\/RP\/0\/0\/0$/);
+      expect(writes[0][2]).toEqual({ encoding: 'base64' });
+      expect(AlertAsync).toHaveBeenLastCalledWith('hooks.alert.completeDownload');
+    });
+
+    test('書き込み失敗はエラーとして数え、完了サマリでエラーのあった地図に載る', async () => {
+      (FileSystem.writeAsStringAsync as jest.Mock).mockImplementation(() => Promise.reject(new Error('disk full')));
+      const { result } = renderHook(() => useTiles(undefined, ['RP'], [rasterPmtilesMap]));
+
+      await act(async () => {
+        await result.current.downloadMultipleTiles(11, [rasterPmtilesMap]);
+      });
+
+      const message = (AlertAsync as jest.Mock).mock.calls.map(([m]) => String(m)).pop();
+      expect(message).toContain('hooks.message.mapsWithError');
+      expect(message).toContain('Raster PMTiles');
+    });
+
+    test('旧版が書いた{y}.pngは消し、保存済みとみなさず取り直す', async () => {
+      (FileSystem.readDirectoryAsync as jest.Mock).mockImplementation((path: string) => {
+        if (path.endsWith('/RP')) return Promise.resolve(['0']);
+        if (path.endsWith('/RP/0')) return Promise.resolve(['0']);
+        if (path.endsWith('/RP/0/0')) return Promise.resolve(['0.png']);
+        return Promise.reject(new Error('not found'));
+      });
+      const pausedRegion: TileRegionType = {
+        id: 'RR',
+        tileMapId: 'RP',
+        coords: [
+          { latitude: 34.0, longitude: 134.0 },
+          { latitude: 34.1, longitude: 134.0 },
+          { latitude: 34.1, longitude: 134.1 },
+          { latitude: 34.0, longitude: 134.1 },
+        ],
+        centroid: { latitude: 34.05, longitude: 134.05 },
+        status: 'paused',
+        zoom: 11,
+      };
+      mockSelector = jest.fn().mockReturnValue([pausedRegion]);
+      mockTileRegions = [pausedRegion];
+      const { result } = renderHook(() => useTiles(undefined, ['RP'], [rasterPmtilesMap]));
+
+      await act(async () => {
+        await result.current.downloadMultipleTiles(11, [rasterPmtilesMap], [pausedRegion]);
+      });
+
+      const deleted = (FileSystem.deleteAsync as jest.Mock).mock.calls.map(([p]) => String(p));
+      expect(deleted.some((p) => /\/RP\/0\/0\/0\.png$/.test(p))).toBe(true);
+      const writes = (FileSystem.writeAsStringAsync as jest.Mock).mock.calls.filter(([path]) =>
+        /\/RP\/0\/0\/0$/.test(String(path))
+      );
+      expect(writes).toHaveLength(1);
+    });
+  });
+
+  describe('isVector の付け忘れたベクタPMTiles', () => {
+    const unflaggedVectorMap: TileMapType = {
+      ...tileMaps[0],
+      id: 'VP',
+      name: 'Vector PMTiles',
+      url: 'https://example.com/vector.pmtiles',
+      isVector: false,
+    };
+
+    beforeEach(() => {
+      (pmtiles.PMTiles as unknown as jest.Mock).mockImplementation(() => ({
+        getHeader: jest.fn(() => Promise.resolve({ tileType: 1 })),
+        getMetadata: jest.fn(() => Promise.resolve(undefined)),
+        getZxy: jest.fn(() => Promise.resolve({ data: new Uint8Array([0x1a, 0x02]).buffer })),
+      }));
+    });
+
+    test('ヘッダーが MVT なら {y}.pbf に書き、画像として読まれる拡張子なしの {y} には書かない', async () => {
+      const { result } = renderHook(() => useTiles(undefined, ['VP'], [unflaggedVectorMap]));
+
+      await act(async () => {
+        await result.current.downloadMultipleTiles(11, [unflaggedVectorMap]);
+      });
+
+      const tilePaths = (FileSystem.writeAsStringAsync as jest.Mock).mock.calls
+        .map(([path]) => String(path))
+        .filter((path) => /\/VP\/\d+\/\d+\/\d+/.test(path));
+      expect(tilePaths.length).toBeGreaterThan(0);
+      expect(tilePaths.every((path) => path.endsWith('.pbf'))).toBe(true);
+    });
+
+    test('単一地図のダウンロードでも同じ', async () => {
+      const { result } = renderHook(() => useTiles(unflaggedVectorMap));
+
+      await act(async () => {
+        await result.current.downloadTiles(11);
+      });
+
+      const tilePaths = (FileSystem.writeAsStringAsync as jest.Mock).mock.calls
+        .map(([path]) => String(path))
+        .filter((path) => /\/VP\/\d+\/\d+\/\d+/.test(path));
+      expect(tilePaths.length).toBeGreaterThan(0);
+      expect(tilePaths.every((path) => path.endsWith('.pbf'))).toBe(true);
+    });
+  });
+
+  describe('ダウンロード対象外の地図（PDF・取り込み地図）', () => {
+    const pdfMap: TileMapType = { ...tileMaps[0], id: 'PDF1', name: 'PDF', url: 'https://example.com/map.pdf' };
+    const localPdfMap: TileMapType = { ...tileMaps[0], id: 'PDF2', name: 'Local PDF', url: 'file://map.pdf' };
+    const region = (id: string, tileMapId: string): TileRegionType => ({
+      id,
+      tileMapId,
+      coords: [
+        { latitude: 34.0, longitude: 134.0 },
+        { latitude: 34.1, longitude: 134.0 },
+        { latitude: 34.1, longitude: 134.1 },
+        { latitude: 34.0, longitude: 134.1 },
+      ],
+      centroid: { latitude: 34.05, longitude: 134.05 },
+    });
+
+    test('「すべての地図」の保存範囲にPDF地図の範囲を含めない', () => {
+      const regions = [region('A', 'M1'), region('B', 'PDF1'), region('C', 'PDF2')];
+      mockSelector = jest.fn().mockReturnValue(regions);
+      mockTileRegions = regions;
+
+      const { result } = renderHook(() => useTiles(undefined, [], [tileMaps[0], pdfMap, localPdfMap]));
+
+      expect(result.current.savedArea.map((r) => r.tileMapId)).toEqual(['M1']);
+    });
+
+    test('「すべての地図」の容量集計にPDF地図のフォルダを含めない', async () => {
+      renderHook(() => useTiles(undefined, [], [tileMaps[0], pdfMap, localPdfMap]));
+      await act(async () => {});
+
+      const checked = (FileSystem.getInfoAsync as jest.Mock).mock.calls.map(([p]) => String(p));
+      expect(checked.some((p) => p.endsWith('/M1'))).toBe(true);
+      expect(checked.some((p) => p.endsWith('/dem_mapterhorn'))).toBe(true);
+      expect(checked.some((p) => p.includes('PDF'))).toBe(false);
     });
   });
 });

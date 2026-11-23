@@ -16,7 +16,7 @@ import java.util.concurrent.Executors
  * （MVT+style.json→PNG。ベクタ/ラスタ両対応・オーバーズーム込み）をJSへ公開する。
  *
  * MapPMTileProviderは
- *  - コンストラクタがPMTilesヘッダ/スタイル取得完了まで .join() でブロックする
+ *  - ヘッダ/スタイル取得を非同期で始めるので、作った直後のgetTileは空になる（awaitInitializationで待つ）
  *  - colorMapping等の内部状態を持ちスレッドセーフでない
  * ため、生成・呼び出しとも単一のバックグラウンドexecutorで直列実行する。
  */
@@ -27,6 +27,11 @@ class PMTileRasterizerModule(reactContext: ReactApplicationContext) :
   private val providers = ConcurrentHashMap<String, MapPMTileProvider>()
 
   override fun getName(): String = "PMTileRasterizer"
+
+  companion object {
+    // ヘッダ・メタデータ取得のタイムアウト（各30秒）に揃える
+    private const val INIT_TIMEOUT_MS = 60_000L
+  }
 
   /** file://スキームを外して実パスにする（2DのsetTileCachePathと同じ規約） */
   private fun stripFileScheme(path: String): String =
@@ -56,7 +61,6 @@ class PMTileRasterizerModule(reactContext: ReactApplicationContext) :
       try {
         val key = listOf(urlTemplate, styleURL, tileCachePath, maximumNativeZ, offlineMode, isVector).joinToString("|")
         val provider = providers.getOrPut(key) {
-          // 生成はヘッダ・style.json取得完了までブロックする（executor上なので許容）
           MapPMTileProvider(
             256, false, urlTemplate, styleURL,
             maximumZ, maximumNativeZ, minimumZ, flipY,
@@ -64,6 +68,9 @@ class PMTileRasterizerModule(reactContext: ReactApplicationContext) :
             reactApplicationContext, false
           )
         }
+        // 初期化前に描くと空タイルが返り、3Dはそれを「タイルなし」として恒久的に記録してしまう。
+        // executor上なので待ってよい（2Dと違い後から読み直す仕組みがない）
+        provider.awaitInitialization(INIT_TIMEOUT_MS)
         val tile = provider.getTile(x, y, z)
         val data = tile?.data
         if (data == null || data.isEmpty()) {
