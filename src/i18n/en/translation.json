@@ -321,8 +321,8 @@
     },
     "confirm": {
       "clearLocalStorage": "Initialize? \nAll data and settings will be reset.",
-      "clearTileCache": "Clear map cache and download files?",
-      "clearCache": "Clear the map cache? (Photos, records and layers will not be deleted.)",
+      "clearTileCache": "Clear the map cache and downloaded tiles? (Imported PDF maps and styles are kept.)",
+      "clearCache": "Clear the map cache, including downloaded tiles? (Photos, records, layers, imported PDF maps and styles will not be deleted.)",
       "fileNew": "Clear current data?",
       "fileOpen": "Load data file (.ecorismap)? \nCurrent data and settings will be overwritten.",
       "restoreBackup": "Restore the selected backup? \nCurrent data will be replaced. (The current state will also be backed up automatically.)",
@@ -875,6 +875,7 @@
       "failDeleteFile": "Failed to delete files in the project",
       "completeDownloadMaps": "Download of {{total}} maps completed",
       "mapsWithError": "Maps with errors:",
+      "noTilesInRange": "No tiles to save in this area",
       "excludedInvalidLocation": "Excluded {{invalidCount}} invalid location points.",
       "insufficientTrackLog": "Not enough valid track data",
       "failUpdateLoginPassword": "Failed to change the password.\nIs the current password correct?",
@@ -937,7 +938,7 @@
     "confirm": {
       "individualColor": "The layer's color type will be changed to [Individual] for the pen (restored when you change it back). Continue?",
       "closeProject": "Do you want to finish the project? \nAny data that has not been uploaded will be discarded! \n!",
-      "deleteTiles": "Do you want to clear the map cache?",
+      "deleteTiles": "Clear the map cache, including downloaded tiles? Imported PDF maps and styles are kept.",
       "discard": "Do you want to discard your changes?",
       "discardLogout": "There is a project in editing. \nDo you want to discard and log out?",
       "discardProject": "Do you want to discard the changes in the project settings?",

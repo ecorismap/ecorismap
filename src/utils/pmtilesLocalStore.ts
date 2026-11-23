@@ -3,6 +3,7 @@ import { Platform } from 'react-native';
 import { TILE_FOLDER } from '../constants/AppConstants';
 import { TileMapType } from '../types';
 import { db } from './db';
+import { isRefetchableTileCacheEntry, isTileCacheEntry } from './tileCacheCleanup';
 
 /**
  * Web の PMTiles レコードに style だけを書く。
@@ -45,8 +46,8 @@ export const getPmtilesSaveCleanup = (
   };
 };
 
-// タイルはズームごとの数字ディレクトリか .pbf。style.json や取り込んだ .pmtiles 本体はここに当てはまらない
-export const isTileCacheEntry = (name: string) => /^\d+$/.test(name) || name.toLowerCase().endsWith('.pbf');
+// タイルの判定は「キャッシュをクリア」と共通（tileCacheCleanup.ts）。既存の呼び出し元のため再公開する
+export { isTileCacheEntry };
 
 // ネイティブが描いて保存した画像は拡張子なしの数字名。ダウンロードした {y}.pbf はスタイルに依らないので残す
 const isRenderedTileFile = (name: string) => /^\d+$/.test(name);
@@ -95,7 +96,8 @@ export const cleanupPmtilesOnSave = async (mapId: string, cleanup: PmtilesSaveCl
   const entries = await FileSystem.readDirectoryAsync(folder);
   if (cleanup.source) {
     for (const name of entries) {
-      if (isTileCacheEntry(name) || name === 'boundary.json') {
+      // 旧配信元の metadata.json も次のダウンロードで取り直すので消す
+      if (isRefetchableTileCacheEntry(name) || name === 'boundary.json') {
         await FileSystem.deleteAsync(`${folder}/${name}`, { idempotent: true });
       }
     }

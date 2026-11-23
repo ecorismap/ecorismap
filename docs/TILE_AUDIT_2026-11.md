@@ -216,3 +216,16 @@
 
 確認: tsc 0、lint エラー0、jest 3054件通過、Android ビルド成功。エミュレータで、オフラインで起動したあとオンラインへ切り替えると、特定植物群落（ベクタ PMTiles）のタイルが取得・描画されることを確認した（画面は固まらない）。
 残り: iOS・Web と、ラスタ PMTiles のオフライン表示、3D・PDF の初回タイル、弱電波時の保存済みタイル表示は未確認。M-H2・M-H3・M-H6 は方針判断待ち。
+
+### 判断が要る high 3件（2026-11-23、fix/tile-high-decision）
+
+方針（ユーザー判断）: M-H2=取り直せるタイルだけ消す、M-H3=z0〜ファイルの最大ズーム、M-H6=URL が変わったら確認なしで古いキャッシュを消す。
+
+| 番号 | 修正内容 |
+|---|---|
+| M-H2 | `tileCacheCleanup.ts` に「タイルだけ消す」処理をまとめた。キャッシュのクリアは、今の一覧にある PDF 以外の地図（と DEM の疑似地図）から数字ディレクトリ・.pbf・metadata.json だけを消し、style.json・boundary.json・PDF 地図・一覧に無いフォルダは残す。保存範囲は消した地図の分だけ外す。Web は boundary だけの pmtiles 行だけ消す。ダウンロード画面の削除も同じ規則。確認文（ja/en）を実際の挙動に合わせた |
+| M-H3 | `getZoomRange` を、ヘッダーの min〜min(ヘッダーの max, 固定ズームの上限) に変更（読めないときは 0〜min(18, overzoomThreshold)）。見積もりも `usePmtilesZoomRanges` で読んだヘッダーの範囲とベクタ/ラスタで数える。1枚も保存できなかったときは完了扱いにせず `noTilesInRange` を知らせる |
+| M-H6 | 主因: タイル部品の key に実際に渡す URL（署名込み）・styleURL・flipY・tileSize を含め、URL が変わったら作り直す（`pmtileKey.ts`、ネイティブのパッチは変えない）。署名は期限の7日前までは据え置き、問い合わせ直しで不要に作り直さない（`tileSignatures.ts`）。副因: `tileSourceChange.ts`／`tileSourceCleanup.ts` で、署名を除いた URL・flipY・tileSize が変わったら確認なしでタイル・metadata・boundary・保存範囲・3D テクスチャを消す（地図編集の保存、JSON 単体取り込み、プロジェクト設定の反映）。PMTiles のスタイルだけの変更は描画済み画像だけを消す（.pbf はスタイルに依らないので残す）。PDF 地図は対象外 |
+
+確認: tsc 0、lint エラー0、jest 3104件通過。Android エミュレータで、特定植物群落（ヘッダー z5〜15）を z13 から範囲ダウンロードして z5〜15 が保存されること、キャッシュのクリアでタイルだけ消えて style.json が残り一覧外のフォルダが残ることを確認した。
+残り: M-H6 の署名付き保護地図の初回表示・プリセット置換は実機で未確認。iOS・Web は未確認。JSON 配列の一括取り込み・バックアップ復元・.ecorismap 読み込みで URL が差し替わる経路は未対応。一覧外の孤立フォルダは容量が回収されない。

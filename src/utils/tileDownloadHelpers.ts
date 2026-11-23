@@ -11,6 +11,7 @@ import {
 } from '../constants/DemSources';
 import { getExt } from './General';
 import { isPeaksUrl } from './peaks/peak2dLabels';
+import { getPmtileMaximumNativeZ } from './pmtileProps';
 import { isDemProtocolUrl, isTerrariumDemUrl, TERRARIUM_DEM_ZOOM_OFFSET } from './terrainShading';
 import { lonToTileX, latToTileY, tilesForZoom } from './Tile';
 
@@ -46,17 +47,45 @@ export const getTileType = (tileMap: TileMapType): TileType =>
     ? 'hillshade'
     : 'png';
 
-export const getZoomRange = (tileType: TileType, tileMap: TileMapType, zoom: number) => {
+export type TileZoomRange = { minZoom: number; maxZoom: number };
+
+/**
+ * ダウンロードするズームの範囲。
+ * pmtiles・pbf は表示中のズームに依らず z0（分かればアーカイブの minZoom）から取る。
+ * ネイティブは粗い段を細かい段から作らないので、高ズームだけ保存するとオフラインで縮小したとき白紙になる。
+ * 上限はオフライン時にオーバーズームを始めるズーム（getPmtileMaximumNativeZ）で、それより細かい段は描かれない。
+ * archiveZoom はPMTilesのヘッダーの min/maxZoom。アーカイブの外を数えると、1枚も無い段で見積もりが膨らむ
+ */
+export const getZoomRange = (tileType: TileType, tileMap: TileMapType, archiveZoom?: TileZoomRange): TileZoomRange => {
   // 可視領域・3Dが参照するのはz7〜13（512px）のみなのでそれより粗い段は取らない
   if (tileType === 'dem') return { minZoom: DEM_DOWNLOAD_MIN_ZOOM, maxZoom: DEM_DOWNLOAD_MAX_ZOOM };
-  const minZoom = tileType === 'png' || tileType === 'hillshade' ? 0 : zoom;
-  const maxZoom =
-    tileType === 'png' || tileType === 'hillshade' || !tileMap.isVector ? Math.min(tileMap.overzoomThreshold, 16) : 18;
+  if (tileType === 'pmtiles' || tileType === 'pbf') {
+    // pbf は常にベクタとして描かれる
+    const isVector = tileType === 'pbf' ? true : tileMap.isVector;
+    const nativeMaxZoom = getPmtileMaximumNativeZ({ overzoomThreshold: tileMap.overzoomThreshold, isVector }, true);
+    if (archiveZoom === undefined) return { minZoom: 0, maxZoom: Math.min(18, nativeMaxZoom) };
+    return { minZoom: Math.max(0, archiveZoom.minZoom), maxZoom: Math.min(archiveZoom.maxZoom, nativeMaxZoom) };
+  }
+  const minZoom = 0;
+  const maxZoom = Math.min(tileMap.overzoomThreshold, 16);
   // terrarium（512px）の陰影・段彩は1段粗いズームの標高タイルから描くので、最も細かい段は要らない
   if (tileType === 'hillshade' && isTerrariumDemUrl(tileMap.url)) {
     return { minZoom, maxZoom: Math.max(0, maxZoom - TERRARIUM_DEM_ZOOM_OFFSET) };
   }
   return { minZoom, maxZoom };
+};
+
+/** PMTiles のヘッダーからズームの範囲を読む。読めない・値が壊れているときは undefined（既定の範囲で取る） */
+export const readPmtileZoomRange = async (pmtile: {
+  getHeader: () => Promise<{ minZoom: number; maxZoom: number }>;
+}): Promise<TileZoomRange | undefined> => {
+  try {
+    const { minZoom, maxZoom } = await pmtile.getHeader();
+    if (!Number.isInteger(minZoom) || !Number.isInteger(maxZoom) || minZoom < 0 || minZoom > maxZoom) return undefined;
+    return { minZoom, maxZoom };
+  } catch (e) {
+    return undefined;
+  }
 };
 
 // ダウンロード可否の閾値。ズームレベルではなく推定タイル数で判定する
@@ -125,11 +154,20 @@ export const countDownloadTiles = (tileType: TileType, bounds: Bounds, minZoom: 
   return count;
 };
 
-// 対象地図ごとに実際の取得ズーム範囲（getZoomRange）でタイル数を見積もり合算する
-export const estimateDownloadTileCount = (bounds: Bounds, maps: TileMapType[], zoom: number): number =>
+// 対象地図ごとに実際の取得ズーム範囲（getZoomRange）でタイル数を見積もり合算する。
+// archiveZooms は PMTiles のヘッダーのズーム範囲（地図 ID ごと。まだ読めていない地図は既定の範囲で数える）。
+// archiveIsVectors はヘッダーの種別。ダウンロード（useTiles）は resolvePmtileIsVector で isVector を
+// ヘッダーに合わせてから上限を決めるので、見積もりも同じ判定で数えないと枚数の上限判定がずれる
+export const estimateDownloadTileCount = (
+  bounds: Bounds,
+  maps: TileMapType[],
+  archiveZooms: Record<string, TileZoomRange> = {},
+  archiveIsVectors: Record<string, boolean> = {}
+): number =>
   maps.reduce((total, tileMap) => {
     const tileType = getTileType(tileMap);
-    const { minZoom, maxZoom } = getZoomRange(tileType, tileMap, zoom);
+    const isVector = archiveIsVectors[tileMap.id] ?? tileMap.isVector;
+    const { minZoom, maxZoom } = getZoomRange(tileType, { ...tileMap, isVector }, archiveZooms[tileMap.id]);
     return total + countDownloadTiles(tileType, bounds, minZoom, maxZoom);
   }, 0);
 
@@ -197,6 +235,19 @@ type TileXYZ = { x: number; y: number; z: number };
 const PMTILES_TILE_TYPE_UNKNOWN = 0;
 const PMTILES_TILE_TYPE_MVT = 1;
 
+/** PMTiles のヘッダーの種別がベクタか。種別が不明・ヘッダーが読めないときは undefined */
+export const readPmtileHeaderIsVector = async (pmtile: {
+  getHeader: () => Promise<{ tileType: number }>;
+}): Promise<boolean | undefined> => {
+  try {
+    const { tileType } = await pmtile.getHeader();
+    if (tileType === PMTILES_TILE_TYPE_UNKNOWN) return undefined;
+    return tileType === PMTILES_TILE_TYPE_MVT;
+  } catch (e) {
+    return undefined;
+  }
+};
+
 /**
  * PMTiles をベクタとして保存するか。ヘッダーの種別を優先し、取れなければ地図の isVector に従う。
  * ネイティブはヘッダーで種別を決めるので、isVector の付け忘れでもオンラインでは描けるが、
@@ -205,15 +256,7 @@ const PMTILES_TILE_TYPE_MVT = 1;
 export const resolvePmtileIsVector = async (
   pmtile: { getHeader: () => Promise<{ tileType: number }> },
   fallback: boolean
-): Promise<boolean> => {
-  try {
-    const { tileType } = await pmtile.getHeader();
-    if (tileType === PMTILES_TILE_TYPE_UNKNOWN) return fallback;
-    return tileType === PMTILES_TILE_TYPE_MVT;
-  } catch (e) {
-    return fallback;
-  }
-};
+): Promise<boolean> => (await readPmtileHeaderIsVector(pmtile)) ?? fallback;
 
 /** ラスタPMTilesのタイルの保存先。ネイティブ（readTileImage/getTileFilename・iOS PMTileOverlay）は拡張子なしで読む */
 export const rasterPmtileTilePath = (tileMapId: string, tile: TileXYZ) =>

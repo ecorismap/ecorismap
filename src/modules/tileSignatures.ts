@@ -1,5 +1,5 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import { TileSignaturesType, TileSignatureType } from '../utils/TileSignature';
+import { needsResolve, TileSignaturesType, TileSignatureType } from '../utils/TileSignature';
 
 // 署名付きタイル配信の署名キャッシュ。キーはタイル/スタイル/PDFのURL。
 // persist:rootに含まれるので、オフライン起動時も前回の結果がそのまま使える。
@@ -32,7 +32,16 @@ const reducers = {
       resolved[url] = { status: 'signed', query: signatures[url], expires, checkedAt };
     });
     requested.forEach((url) => {
-      state[url] = resolved[url] ?? { status: 'denied', checkedAt };
+      const next = resolved[url] ?? { status: 'denied', checkedAt };
+      const prev = state[url];
+      // 問い合わせは未解決の URL が1件でもあると全 URL をまとめて送り、サーバーは毎回新しい署名を返す。
+      // まだ更新の時期でない署名まで差し替えると、署名込み URL を key に持つ地図の部品（pmtileKey.ts）が
+      // 地図を1つ足すたびに全部作り直される。更新の時期が来るまでは前の署名を据え置く
+      if (next.status === 'signed' && prev?.status === 'signed' && prev.query && !needsResolve(prev, checkedAt)) {
+        state[url] = { ...prev, checkedAt };
+        return;
+      }
+      state[url] = next;
     });
   },
   // ログアウト時に破棄する。他人の端末に署名が残らないようにする。

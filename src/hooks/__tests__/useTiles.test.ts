@@ -4,6 +4,7 @@ import { useTiles } from '../useTiles';
 import { getDemTileMap } from '../../utils/demTileDownload';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as pmtiles from 'pmtiles';
+import { downloadTileGrid as mockedDownloadTileGrid } from '../../utils/tileDownloadHelpers';
 import {
   AlertAsync,
   ResumeDownloadConfirmAsync,
@@ -635,6 +636,99 @@ describe('useTiles', () => {
       expect(checked.some((p) => p.endsWith('/M1'))).toBe(true);
       expect(checked.some((p) => p.endsWith('/dem_mapterhorn'))).toBe(true);
       expect(checked.some((p) => p.includes('PDF'))).toBe(false);
+    });
+  });
+  // タイル監査 M-H3: PMTiles はアーカイブのズーム範囲で取り、1枚も保存できなければ完了扱いにしない
+  describe('PMTilesのズーム範囲と保存0枚', () => {
+    const pmMap: TileMapType = {
+      ...tileMaps[0],
+      id: 'PM',
+      name: 'Contour',
+      url: 'https://example.com/contour.pmtiles',
+      isVector: true,
+      overzoomThreshold: 18,
+    };
+
+    const mockArchive = (resp: { data: ArrayBuffer } | undefined) => {
+      (pmtiles.PMTiles as unknown as jest.Mock).mockImplementation(() => ({
+        getHeader: jest.fn(() => Promise.resolve({ tileType: 1, minZoom: 12, maxZoom: 13 })),
+        getMetadata: jest.fn(() => Promise.resolve(undefined)),
+        getZxy: jest.fn(() => Promise.resolve(resp)),
+      }));
+    };
+
+    test('ヘッダーのズーム範囲（z12〜13）だけを取る', async () => {
+      mockArchive({ data: new Uint8Array([0x1a]).buffer });
+      const { result } = renderHook(() => useTiles(undefined, ['PM'], [pmMap]));
+
+      await act(async () => {
+        await result.current.downloadMultipleTiles(16, [pmMap]);
+      });
+
+      const calls = (mockedDownloadTileGrid as jest.Mock).mock.calls.filter(([type]) => type === 'pmtiles');
+      expect(calls).toHaveLength(1);
+      expect(calls[0][2]).toBe(12);
+      expect(calls[0][3]).toBe(13);
+    });
+
+    test('ヘッダーを読めないときは z0〜min(18, overzoomThreshold)', async () => {
+      (pmtiles.PMTiles as unknown as jest.Mock).mockImplementation(() => ({
+        getHeader: jest.fn(() => Promise.reject(new Error('offline'))),
+        getMetadata: jest.fn(() => Promise.resolve(undefined)),
+        getZxy: jest.fn(() => Promise.resolve({ data: new Uint8Array([0x1a]).buffer })),
+      }));
+      const { result } = renderHook(() => useTiles(undefined, ['PM'], [pmMap]));
+
+      await act(async () => {
+        await result.current.downloadMultipleTiles(16, [{ ...pmMap, overzoomThreshold: 15 }]);
+      });
+
+      const calls = (mockedDownloadTileGrid as jest.Mock).mock.calls.filter(([type]) => type === 'pmtiles');
+      expect(calls[0][2]).toBe(0);
+      expect(calls[0][3]).toBe(15);
+    });
+
+    test('getZxy がすべて undefined なら完了扱いにせず、保存範囲を残さずに知らせる', async () => {
+      mockArchive(undefined);
+      const { result } = renderHook(() => useTiles(undefined, ['PM'], [pmMap]));
+
+      await act(async () => {
+        await result.current.downloadMultipleTiles(16, [pmMap]);
+      });
+
+      const dispatched = getDispatchedTileRegions();
+      expect(dispatched[dispatched.length - 1].filter((r) => r.tileMapId === 'PM')).toHaveLength(0);
+      const message = String((AlertAsync as jest.Mock).mock.calls.pop()?.[0]);
+      expect(message).toContain('total=0');
+      expect(message).toContain('Contour (hooks.message.noTilesInRange)');
+    });
+
+    test('単一地図のダウンロードでも同じ', async () => {
+      mockArchive(undefined);
+      const { result } = renderHook(() => useTiles(pmMap));
+
+      await act(async () => {
+        await result.current.downloadTiles(16);
+      });
+
+      const dispatched = getDispatchedTileRegions();
+      expect(dispatched[dispatched.length - 1].filter((r) => r.tileMapId === 'PM')).toHaveLength(0);
+      expect(AlertAsync).toHaveBeenLastCalledWith('hooks.message.noTilesInRange');
+    });
+
+    test('1枚でも保存できれば従来どおり完了', async () => {
+      mockArchive({ data: new Uint8Array([0x1a]).buffer });
+      const { result } = renderHook(() => useTiles(pmMap));
+
+      await act(async () => {
+        await result.current.downloadTiles(16);
+      });
+
+      const dispatched = getDispatchedTileRegions();
+      const pm = dispatched[dispatched.length - 1].filter((r) => r.tileMapId === 'PM');
+      expect(pm).toHaveLength(1);
+      expect(pm[0].status).toBeUndefined();
+      expect(AlertAsync).toHaveBeenLastCalledWith('hooks.alert.completeDownload');
     });
   });
 });

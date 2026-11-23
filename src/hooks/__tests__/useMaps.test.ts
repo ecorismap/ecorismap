@@ -124,6 +124,16 @@ jest.mock('react-redux', () => ({
   useSelector: () => mockSelector(),
 }));
 
+jest.mock('../../utils/tileCacheCleanup', () => ({
+  ...jest.requireActual('../../utils/tileCacheCleanup'),
+  clearRefetchableTileCache: jest.fn(),
+  clearWebTileCache: jest.fn(),
+}));
+
+jest.mock('../../utils/tileSourceCleanup', () => ({
+  discardStaleTileSources: jest.fn(async () => []),
+}));
+
 // Thunk関数を実行して内部のdispatchを取得するヘルパー
 const executeThunkAndGetPayload = (thunkFn: (dispatch: jest.Mock, getState: () => { tileMaps: TileMapType[] }) => void): TileMapType[] => {
   const innerDispatch = jest.fn();
@@ -547,5 +557,79 @@ describe('useMaps', () => {
     const filterd = result.current.filterdMaps;
     expect(filterd.some((m) => m.id === 'M1')).toBe(true);
     expect(filterd.some((m) => m.id === 'M4')).toBe(true);
+  });
+
+  // タイル監査 M-H2: 「キャッシュをクリア」は取り直せるタイルだけを消し、残した地図の保存範囲は残す
+  test('clearTileCache: タイルだけを消し、タイルを消した地図の保存範囲の記録を外す', async () => {
+    const { clearRefetchableTileCache } = jest.requireMock('../../utils/tileCacheCleanup');
+    // 戻り値はタイルを消した地図 ID（PDF1 は残した）
+    (clearRefetchableTileCache as jest.Mock).mockResolvedValue(['M1']);
+    const pdfMap: TileMapType = { ...initialMaps[0], id: 'PDF1', url: 'file://map.pdf' };
+    const region = (id: string, tileMapId: string) => ({
+      id,
+      tileMapId,
+      coords: [],
+      centroid: { latitude: 0, longitude: 0 },
+    });
+    const { result } = renderHook(() => useMaps());
+
+    await act(async () => {
+      await result.current.clearTileCache();
+    });
+
+    const thunkFn = mockDispatch.mock.calls[mockDispatch.mock.calls.length - 1][0];
+    const innerDispatch = jest.fn();
+    const state = {
+      tileMaps: [initialMaps[0], pdfMap],
+      settings: { tileRegions: [region('a', 'M1'), region('b', 'PDF1')] },
+    };
+    await thunkFn(innerDispatch, () => state);
+
+    expect(clearRefetchableTileCache).toHaveBeenCalledWith(state.tileMaps);
+    expect(innerDispatch.mock.calls[0][0].payload.tileRegions.map((r: { id: string }) => r.id)).toEqual(['b']);
+  });
+
+  // タイル監査 M-H6: 同じIDの地図を取り込んで取得元が変わったら、差し替える前に旧ソースのタイルを捨てる
+  test('importMapFile（JSON単体）: 既存の地図の更新では、差し替え前に旧ソースの片付けを呼ぶ', async () => {
+    const FileSystem = require('expo-file-system/legacy');
+    const json = { ...initialMaps[0], url: 'https://example.com/new/{z}/{x}/{y}.png' };
+    const readSpy = jest.spyOn(FileSystem, 'readAsStringAsync').mockResolvedValue(JSON.stringify(json));
+    const { discardStaleTileSources } = jest.requireMock('../../utils/tileSourceCleanup');
+    const state = { tileMaps: initialMaps, settings: { tileRegions: [] } };
+    mockDispatch = jest.fn(async (action: unknown) => {
+      if (typeof action === 'function') return action(jest.fn(), () => state);
+      return action;
+    });
+    const { result } = renderHook(() => useMaps());
+
+    let ret: { isOK: boolean } | undefined;
+    await act(async () => {
+      ret = await result.current.importMapFile('file:///map.json', 'map.json', 'json');
+    });
+
+    expect(ret?.isOK).toBe(true);
+    expect(discardStaleTileSources).toHaveBeenCalledWith(expect.anything(), [json]);
+    const [storeArg] = (discardStaleTileSources as jest.Mock).mock.calls[0];
+    expect(storeArg.getState()).toBe(state);
+    // 片付けのthunkが地図の差し替え（updateTileMapAction）より先に流れる
+    const types = mockDispatch.mock.calls.map(([a]) => (typeof a === 'function' ? 'thunk' : a.type));
+    expect(types).toEqual(['thunk', 'tileMaps/updateTileMapAction']);
+    readSpy.mockRestore();
+  });
+
+  test('importMapFile（JSON単体）: 新しい地図の追加では片付けを呼ばない', async () => {
+    const FileSystem = require('expo-file-system/legacy');
+    const json = { ...initialMaps[0], id: 'NEW' };
+    const readSpy = jest.spyOn(FileSystem, 'readAsStringAsync').mockResolvedValue(JSON.stringify(json));
+    const { discardStaleTileSources } = jest.requireMock('../../utils/tileSourceCleanup');
+    (discardStaleTileSources as jest.Mock).mockClear();
+    const { result } = renderHook(() => useMaps());
+
+    await act(async () => {
+      await result.current.importMapFile('file:///map.json', 'map.json', 'json');
+    });
+
+    expect(discardStaleTileSources).not.toHaveBeenCalled();
+    readSpy.mockRestore();
   });
 });

@@ -17,8 +17,9 @@ import { readLocalFileBytes } from '../demTileLoader';
 import { renderPmtile } from './pmtileRasterizer';
 import { resolveReliefTexture } from './reliefTexture';
 import { LayerSpec, TileKey, TileTextureSource } from './types';
+import { TERRAIN_TEXTURE_CACHE_DIR } from './textureDiskCache';
 
-const CACHE_DIR = `${FileSystem.cacheDirectory}terrain3d_tex`;
+const CACHE_DIR = TERRAIN_TEXTURE_CACHE_DIR;
 let dirEnsured = false;
 
 const ensureCacheDir = async (): Promise<void> => {

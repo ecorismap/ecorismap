@@ -22,14 +22,17 @@ import {
   getZoomRange,
   isDownloadableTileMap,
   listExistingTiles,
+  readPmtileZoomRange,
   markRegionsPaused,
   removeIncompleteRegions,
   removeLegacyRasterPmtilePngs,
   resolvePmtileIsVector,
+  TileZoomRange,
   toCompletedRegion,
   writeRasterPmtileTile,
 } from '../utils/tileDownloadHelpers';
 import { downloadDemTile, getDemTileMap } from '../utils/demTileDownload';
+import { hasIrreplaceableTiles, removeTileCacheEntries } from '../utils/tileCacheCleanup';
 import { DEM_MAPTERHORN_MAP_ID } from '../constants/DemSources';
 
 export type UseTilesReturnType = {
@@ -203,7 +206,11 @@ export const useTiles = (
       setProgress('0');
       setIsDownloading(true);
       let pmtileIsVector = tileMap.isVector === true;
-      if (pmtile !== undefined) pmtileIsVector = await resolvePmtileIsVector(pmtile, pmtileIsVector);
+      let archiveZoom: TileZoomRange | undefined;
+      if (pmtile !== undefined) {
+        pmtileIsVector = await resolvePmtileIsVector(pmtile, pmtileIsVector);
+        archiveZoom = await readPmtileZoomRange(pmtile);
+      }
 
       //ベクタータイルの場合はmetadataとスタイルをダウンロード
       if (tileType === 'pmtiles' && pmtileIsVector) {
@@ -279,7 +286,7 @@ export const useTiles = (
 
       if (tileType === 'pmtiles' && !pmtileIsVector) await removeLegacyRasterPmtilePngs(tileMap.id);
 
-      const { minZoom, maxZoom } = getZoomRange(tileType, { ...tileMap, isVector: pmtileIsVector }, zoom);
+      const { minZoom, maxZoom } = getZoomRange(tileType, { ...tileMap, isVector: pmtileIsVector }, archiveZoom);
 
       const tiles = downloadTileGrid(tileType, downloadRegion, minZoom, maxZoom);
 
@@ -307,6 +314,9 @@ export const useTiles = (
       await Promise.all(batch);
       let batchDownload: any = [];
       let errorCount = 0;
+      // PMTiles は範囲外のタイルを undefined で返すので、1枚も保存されなかったことを数えて知らせる
+      let pmtileSavedCount = 0;
+      let pmtileFailedCount = 0;
       d = 0;
 
       for (const tile of tiles) {
@@ -322,12 +332,14 @@ export const useTiles = (
             .then(async (resp) => {
               if (resp === undefined) return;
               const base64String = Buffer.from(resp.data).toString('base64');
-              FileSystem.writeAsStringAsync(localLocation, base64String, {
+              await FileSystem.writeAsStringAsync(localLocation, base64String, {
                 encoding: FileSystem.EncodingType.UTF8,
               });
+              pmtileSavedCount++;
             })
             .catch((e) => {
               console.log(e);
+              pmtileFailedCount++;
               //errorCount++;
             });
         } else if (tileType === 'pmtiles' && !pmtileIsVector && pmtile !== undefined) {
@@ -336,9 +348,11 @@ export const useTiles = (
             .then(async (resp) => {
               if (resp === undefined) return;
               await writeRasterPmtileTile(tileMap.id, tile, resp.data);
+              pmtileSavedCount++;
             })
             .catch(() => {
               errorCount++;
+              pmtileFailedCount++;
             });
         } else if (tileType === 'pbf') {
           const fetchUrl = withTileSignature(tileMap.url, tileSignatures)
@@ -419,6 +433,17 @@ export const useTiles = (
       }
       await Promise.all(batchDownload);
 
+      // 1枚も保存できなかったら完了扱いにしない（保存範囲の枠が出て、保存済みと誤解される）
+      if (tileType === 'pmtiles' && pmtileSavedCount === 0) {
+        updatedTileRegions = removeIncompleteRegions(updatedTileRegions, [tileRegion.id]);
+        dispatch(editSettingsAction({ tileRegions: updatedTileRegions }));
+        setIsDownloading(false);
+        await AlertAsync(
+          pmtileFailedCount > 0 ? t('hooks.alert.errorDownload') : t('hooks.message.noTilesInRange')
+        );
+        return;
+      }
+
       // 完了: 未完了マーカー（status/zoom）を外して保存する
       updatedTileRegions = updatedTileRegions.map((r) => (r.id === tileRegion.id ? toCompletedRegion(r) : r));
       dispatch(editSettingsAction({ tileRegions: updatedTileRegions }));
@@ -437,8 +462,8 @@ export const useTiles = (
   const clearTiles = useCallback(
     async (tileMap_: TileMapType) => {
       try {
-        // idempotent: フォルダが存在しない場合（未ダウンロード）はエラーにしない
-        await FileSystem.deleteAsync(`${TILE_FOLDER}/${tileMap_.id}/`, { idempotent: true });
+        // ダウンロードの取り消しなので取り直せるタイルだけを消す（style.json・boundary.json・PDF 地図の実体は残す）
+        if (!hasIrreplaceableTiles(tileMap_)) await removeTileCacheEntries(tileMap_.id);
         const newTileRegions = tileRegions.filter((tileRegion) => tileRegion.tileMapId !== tileMap_.id);
         dispatch(editSettingsAction({ tileRegions: newTileRegions }));
         setTileSize('0');
@@ -527,7 +552,11 @@ export const useTiles = (
             ? new pmtiles.PMTiles(withTileSignature(currentTileMap.url, tileSignatures).replace('pmtiles://', ''))
             : undefined;
         let pmtileIsVector = currentTileMap.isVector === true;
-        if (pmtile !== undefined) pmtileIsVector = await resolvePmtileIsVector(pmtile, pmtileIsVector);
+        let archiveZoom: TileZoomRange | undefined;
+        if (pmtile !== undefined) {
+          pmtileIsVector = await resolvePmtileIsVector(pmtile, pmtileIsVector);
+          archiveZoom = await readPmtileZoomRange(pmtile);
+        }
 
         // メタデータとスタイルのダウンロード
         if (tileType === 'pmtiles' && pmtileIsVector) {
@@ -589,11 +618,7 @@ export const useTiles = (
 
         if (tileType === 'pmtiles' && !pmtileIsVector) await removeLegacyRasterPmtilePngs(currentTileMap.id);
 
-        const { minZoom, maxZoom } = getZoomRange(
-          tileType,
-          { ...currentTileMap, isVector: pmtileIsVector },
-          tileRegion.zoom ?? zoom
-        );
+        const { minZoom, maxZoom } = getZoomRange(tileType, { ...currentTileMap, isVector: pmtileIsVector }, archiveZoom);
 
         // 再開時は現在の地図表示ではなく、保存された領域からタイル集合を復元する
         const tiles = downloadTileGrid(tileType, boundsFromCoords(tileRegion.coords), minZoom, maxZoom);
@@ -632,6 +657,9 @@ export const useTiles = (
         // タイルダウンロード
         let batchDownload: any = [];
         let errorCount = 0;
+        // PMTiles は範囲外のタイルを undefined で返すので、1枚も保存されなかったことを数えて知らせる
+        let pmtileSavedCount = 0;
+        let pmtileFailedCount = 0;
         let d = 0;
 
         for (const tile of tilesToDownload) {
@@ -647,12 +675,14 @@ export const useTiles = (
               .then(async (resp) => {
                 if (resp === undefined) return;
                 const base64String = Buffer.from(resp.data).toString('base64');
-                FileSystem.writeAsStringAsync(localLocation, base64String, {
+                await FileSystem.writeAsStringAsync(localLocation, base64String, {
                   encoding: FileSystem.EncodingType.UTF8,
                 });
+                pmtileSavedCount++;
               })
               .catch((e) => {
                 console.log(e);
+                pmtileFailedCount++;
               });
           } else if (tileType === 'pmtiles' && !pmtileIsVector && pmtile !== undefined) {
             tilePromise = pmtile
@@ -660,9 +690,11 @@ export const useTiles = (
               .then(async (resp) => {
                 if (resp === undefined) return;
                 await writeRasterPmtileTile(currentTileMap.id, tile, resp.data);
+                pmtileSavedCount++;
               })
               .catch(() => {
                 errorCount++;
+                pmtileFailedCount++;
               });
           } else if (tileType === 'pbf') {
             const fetchUrl = withTileSignature(currentTileMap.url, tileSignatures)
@@ -750,6 +782,19 @@ export const useTiles = (
           }
         }
         await Promise.all(batchDownload);
+
+        // 1枚も保存できなかったら完了扱いにしない（保存範囲の枠が出て、保存済みと誤解される）。
+        // 再開で保存済みを飛ばした地図は、既に保存したタイルがあるので対象外
+        if (tileType === 'pmtiles' && skippedCount === 0 && pmtileSavedCount === 0) {
+          errorMaps.push(
+            pmtileFailedCount > 0
+              ? currentTileMap.name
+              : `${currentTileMap.name} (${t('hooks.message.noTilesInRange')})`
+          );
+          updatedTileRegions = removeIncompleteRegions(updatedTileRegions, [tileRegion.id]);
+          dispatch(editSettingsAction({ tileRegions: updatedTileRegions }));
+          continue;
+        }
 
         // エラー率が80%を超える場合のみ警告（404などの正常な欠損タイルを考慮）
         if (tilesToDownload.length > 0 && (errorCount / tilesToDownload.length) * 100 > 80) {

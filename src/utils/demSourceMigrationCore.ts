@@ -11,10 +11,10 @@
  * どちらも対象が無ければ何もしない（冪等）。
  */
 import { LEGACY_DEM_VIEWSHED_MAP_ID, MAPTERHORN_URL } from '../constants/DemSources';
-import { editSettingsAction } from '../modules/settings';
 import { setTileMapsAction } from '../modules/tileMaps';
 import type { AppDispatch, RootState } from '../store';
 import { TileMapType } from '../types';
+import { dropTileRegions } from './tileSourceChange';
 import { isTerrariumDemUrl, RELIEF_URL_PREFIX, SHADING_URL_PREFIX, toDemUrl } from './terrainShading';
 
 export type StoreLike = { getState: () => RootState; dispatch: AppDispatch; subscribe?: (listener: () => void) => () => void };
@@ -52,24 +52,13 @@ const migrateTileMaps = (store: StoreLike, removeTiles: RemoveTiles): void => {
       : map
   );
   store.dispatch(setTileMapsAction(updated));
-  const tileRegions = store.getState().settings.tileRegions;
-  if (tileRegions.some((region) => targetIds.has(region.tileMapId))) {
-    store.dispatch(
-      editSettingsAction({ tileRegions: tileRegions.filter((region) => !targetIds.has(region.tileMapId)) })
-    );
-  }
+  // 取得元を差し替えた地図の後始末は、地図編集・取り込みでの URL 変更と同じ（tileSourceChange.ts）
+  dropTileRegions(store, targetIds);
   targetIds.forEach(removeTiles);
 };
 
 const removeLegacyViewshedDownloads = (store: StoreLike, removeTiles: RemoveTiles): void => {
-  const tileRegions = store.getState().settings.tileRegions;
-  if (tileRegions.some((region) => region.tileMapId === LEGACY_DEM_VIEWSHED_MAP_ID)) {
-    store.dispatch(
-      editSettingsAction({
-        tileRegions: tileRegions.filter((region) => region.tileMapId !== LEGACY_DEM_VIEWSHED_MAP_ID),
-      })
-    );
-  }
+  dropTileRegions(store, [LEGACY_DEM_VIEWSHED_MAP_ID]);
   removeTiles(LEGACY_DEM_VIEWSHED_MAP_ID);
 };
 

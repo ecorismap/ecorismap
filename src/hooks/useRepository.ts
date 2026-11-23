@@ -29,6 +29,7 @@ import { canReadPhotoForUpload, isOwnUploadablePhotoUri } from '../utils/photoUp
 import { setDataSyncTimestampsAction, dataSyncKey } from '../modules/dataSync';
 import { layersInitialState, setLayersAction, TRACK_LAYER_ID } from '../modules/layers';
 import { tileMapsInitialState, setTileMapsAction } from '../modules/tileMaps';
+import { discardStaleTileSources } from '../utils/tileSourceCleanup';
 import { dropUnsafeTileMaps } from '../utils/tileMapId';
 import { findLocalPhotoUri, photoDownloadTarget } from '../utils/photoDownloadPath';
 import { editSettingsAction } from '../modules/settings';
@@ -1590,6 +1591,8 @@ export const useRepository = (): UseRepositoryReturnType & {
       }
       // 可視領域レイヤはここでは補完しない。可視領域データを受信したときに
       // createMergedDataSetがオンデマンドで補完する（お試し利用で構成を汚さないため）
+      // 管理者が地図の取得元を差し替えていたら、同じIDの旧ソースのタイルを差し替え前に捨てる（M-H6）
+      await discardStaleTileSources({ getState: store.getState, dispatch }, tileMapsFromSettings);
       dispatch(setLayersAction(mergedLayers));
       dispatch(setTileMapsAction(tileMapsFromSettings));
       dispatch(editSettingsAction({ ...settings, projectRegion }));

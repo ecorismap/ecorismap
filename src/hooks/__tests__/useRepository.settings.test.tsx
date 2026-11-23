@@ -37,6 +37,7 @@ jest.mock('../../utils/SQLite', () => ({
   importDictionary: jest.fn(async () => undefined),
 }));
 jest.mock('../../utils/projectBackup', () => ({ saveProjectBackup: jest.fn() }));
+jest.mock('../../utils/tileSourceCleanup', () => ({ discardStaleTileSources: jest.fn() }));
 
 import React from 'react';
 import { renderHook, act } from '@testing-library/react-hooks';
@@ -47,7 +48,8 @@ import * as projectStore from '../../lib/firebase/firestore';
 import * as projectStorage from '../../lib/firebase/storage';
 import * as AlertAsyncModule from '../../components/molecules/AlertAsync';
 import { exportDatabase, hasDictionaryTables, importDictionary } from '../../utils/SQLite';
-import type { LayerType, ProjectSettingsType } from '../../types';
+import type { LayerType, ProjectSettingsType, TileMapType } from '../../types';
+import { discardStaleTileSources } from '../../utils/tileSourceCleanup';
 
 const mockedHasDictionaryTables = hasDictionaryTables as jest.Mock;
 const mockedExportDatabase = exportDatabase as jest.Mock;
@@ -332,5 +334,34 @@ describe('L12: 設定から消えたレイヤのクラウドのデータを片�
     });
     expect(projectStore.isSettingsUpdatedAtCurrent).not.toHaveBeenCalled();
     expect(projectStore.deleteData).not.toHaveBeenCalled();
+  });
+});
+
+// タイル監査 M-H6: 管理者が地図の取得元を差し替えていたら、同じIDの旧ソースのタイルを地図の差し替え前に捨てる
+describe('M-H6: プロジェクト設定の反映で、取得元が変わった地図の旧タイルを捨てる', () => {
+  test('設定の地図一覧を渡して片付けを済ませてから、地図一覧を差し替える', async () => {
+    const order: string[] = [];
+    (discardStaleTileSources as jest.Mock).mockImplementation(async () => {
+      order.push('discard');
+      return [];
+    });
+    const tileMaps = [{ id: 'M1', url: 'https://example.com/2024/{z}/{x}/{y}.png', name: 'M1' } as TileMapType];
+    jest.spyOn(projectStore, 'downloadProjectSettings').mockResolvedValue({
+      isOK: true,
+      message: '',
+      data: { ...settingsOf([]), tileMaps },
+    });
+    const store = makeStore([]);
+    (store.dispatch as unknown as jest.Mock).mockImplementation((action: { type: string }) => {
+      order.push(action.type);
+      return action;
+    });
+    const { result } = renderWithStore(store);
+    await act(async () => {
+      await result.current.downloadProjectSettings(project);
+    });
+    expect(discardStaleTileSources).toHaveBeenCalledWith(expect.objectContaining({ getState: store.getState }), tileMaps);
+    expect(order.indexOf('discard')).toBeGreaterThanOrEqual(0);
+    expect(order.indexOf('discard')).toBeLessThan(order.indexOf('tileMaps/setTileMapsAction'));
   });
 });

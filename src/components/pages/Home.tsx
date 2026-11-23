@@ -53,7 +53,7 @@ import { RootState } from '../../store';
 import { getMapGesturesEnabled } from '../../utils/General';
 import { withTileSignature } from '../../utils/TileSignature';
 import { getPmtileMaximumNativeZ } from '../../utils/pmtileProps';
-import { getPmtileKey } from '../../utils/pmtileKey';
+import { getPmtileKey, getUrlTileKey } from '../../utils/pmtileKey';
 import { TileMapType, PaperOrientationType, PaperSizeType, ScaleType } from '../../types';
 import { MapViewContext } from '../../contexts/MapView';
 import { DrawingToolsContext } from '../../contexts/DrawingTools';
@@ -95,10 +95,20 @@ interface TileMapsProps {
 // 変わらなければ再レンダリングされず、Fabric(New Arch)のchild再マウントループ
 // （featuresの破壊によりレイヤーが非表示にできなくなる問題）を防ぐ。
 const TileMaps = React.memo(({ tileMaps, isOffline }: TileMapsProps) => {
-  // 署名付きタイル配信の署名。変化はごく稀（90日に1回程度）なのでmemoの効果は損なわない。
-  // tileMap.url自体は書き換えず描画直前に合成する。urlを変えるとkeyが変わり、
-  // iOSでタイルキャッシュがクリアされてオフライン用のダウンロードが無駄になるため。
+  // 署名付きタイル配信の署名。問い合わせ直しても更新の時期（期限の7日前）までは前の署名を据え置くので
+  // （mergeTileSignaturesAction）、署名込みURLが変わるのは取得・更新・失効のときだけで、
+  // memoの効果も、keyによる作り直しの頻度も問題にならない。
+  // tileMap.url自体は書き換えず描画直前に合成する（保存・共有される地図に署名を残さないため）。
+  // 合成したURLはkeyに入れ、署名の取得・失効でネイティブの部品を作り直させる（pmtileKey.ts）
   const tileSignatures = useSelector((state: RootState) => state.tileSignatures);
+  const pmtileUrlTemplate = (tileMap: TileMapType) =>
+    withTileSignature(tileMap.url, tileSignatures).replace('pmtiles://', '');
+  const pmtileStyleURL = (tileMap: TileMapType) =>
+    tileMap.styleURL ? withTileSignature(tileMap.styleURL, tileSignatures) : tileMap.styleURL;
+  const urlTileTemplate = (tileMap: TileMapType) =>
+    tileMap.url.endsWith('.pdf') || tileMap.url.startsWith('pdf://')
+      ? 'file://dummy/{z}/{x}/{y}.png'
+      : withTileSignature(tileMap.url, tileSignatures);
   return (
     <>
       {tileMaps
@@ -111,9 +121,9 @@ const TileMaps = React.memo(({ tileMaps, isOffline }: TileMapsProps) => {
             tileMap.url.includes('.pmtiles') ||
             tileMap.url.includes('.pbf') ? (
               <PMTile
-                key={getPmtileKey(tileMap, isOffline, Platform.OS)}
-                urlTemplate={withTileSignature(tileMap.url, tileSignatures).replace('pmtiles://', '')}
-                styleURL={tileMap.styleURL ? withTileSignature(tileMap.styleURL, tileSignatures) : tileMap.styleURL}
+                key={getPmtileKey(tileMap, pmtileUrlTemplate(tileMap), pmtileStyleURL(tileMap), isOffline)}
+                urlTemplate={pmtileUrlTemplate(tileMap)}
+                styleURL={pmtileStyleURL(tileMap)}
                 flipY={false}
                 opacity={1 - tileMap.transparency}
                 //tileSize={256} rasterは256、vectorは512で固定
@@ -130,12 +140,8 @@ const TileMaps = React.memo(({ tileMaps, isOffline }: TileMapsProps) => {
               />
             ) : (
               <UrlTile
-                key={Platform.OS === 'ios' ? `${tileMap.id}-${isOffline}-${tileMap.redraw}` : `${tileMap.id}`} //オンラインとオフラインでキーを変更しないとキャッシュがクリアされない。
-                urlTemplate={
-                  tileMap.url.endsWith('.pdf') || tileMap.url.startsWith('pdf://')
-                    ? 'file://dummy/{z}/{x}/{y}.png'
-                    : withTileSignature(tileMap.url, tileSignatures)
-                }
+                key={getUrlTileKey(tileMap, urlTileTemplate(tileMap), isOffline, Platform.OS)}
+                urlTemplate={urlTileTemplate(tileMap)}
                 flipY={tileMap.flipY}
                 opacity={1 - tileMap.transparency}
                 tileSize={tileMap.tileSize ? tileMap.tileSize : 256}
