@@ -284,6 +284,16 @@ export type UseLocationReturnType = {
   endWebGeolocate: () => void;
 };
 
+// 権限 API が使えないときは未許可とみなす（購読の失敗を想定内として扱うため）
+const isForegroundLocationPermitted = async (): Promise<boolean> => {
+  try {
+    const { granted } = await getForegroundPermissionsAsync();
+    return granted;
+  } catch {
+    return false;
+  }
+};
+
 export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>): UseLocationReturnType => {
   const projectId = useSelector((state: RootState) => state.settings.projectId, shallowEqual);
   const user = useSelector((state: RootState) => state.user);
@@ -314,6 +324,8 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
   const lastAzimuthTsRef = useRef(0);
   // heading購読の競合による二重購読を防ぐためのフラグ
   const headingSubscribingRef = useRef(false);
+  // 位置情報が未許可で方位を購読できなかったことを一度知らせたか
+  const headingPermissionWarnedRef = useRef(false);
   const bgReadyRef = useRef(false);
   const initializedRef = useRef(false);
   const trackingStateRef = useRef<TrackingStateType>('off');
@@ -407,7 +419,15 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
         pushAzimuth(pos.trueHeading);
       });
     } catch (error) {
-      console.error('Failed to start heading subscriber:', error);
+      //位置情報が未許可なら購読できないのは想定内。console.error だと開発ビルドの赤い LogBox が
+      //描画モード切替や3Dの出入りのたびに出てボタンを隠すので、未許可のときは一度だけ warn に留める
+      const permitted = await isForegroundLocationPermitted();
+      if (permitted) {
+        console.error('Failed to start heading subscriber:', error);
+      } else if (!headingPermissionWarnedRef.current) {
+        headingPermissionWarnedRef.current = true;
+        console.warn('Heading subscriber not started: location permission is not granted');
+      }
     } finally {
       headingSubscribingRef.current = false;
     }

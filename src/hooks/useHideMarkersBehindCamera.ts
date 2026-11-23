@@ -9,7 +9,7 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { useMap } from 'react-map-gl/maplibre';
 import type { LngLat, Marker as MaplibreMarker } from 'maplibre-gl';
-import { createBehindCameraTest } from '../utils/terrain3d/webCamera';
+import { createBehindCameraTest, isUsableLngLat } from '../utils/terrain3d/webCamera';
 
 /** 判定に必要なマーカーの機能だけ（テストで差し替えやすくする） */
 export type BehindTestMarker = Pick<MaplibreMarker, 'getLngLat' | 'getElement'>;
@@ -21,7 +21,9 @@ export const applyBehindCameraVisibility = (
 ): void => {
   for (const marker of markers) {
     if (marker === null || marker === undefined) continue;
-    const hidden = isBehind !== null && isBehind(marker.getLngLat());
+    // GeolocateControlの現在地ドット・精度円は位置が一度も届いていないとundefinedを返す（型はLngLat）
+    const lngLat = marker.getLngLat() as LngLat | undefined;
+    const hidden = isBehind !== null && isUsableLngLat(lngLat) && isBehind(lngLat);
     const element = marker.getElement();
     const visibility = hidden ? 'hidden' : '';
     if (element.style.visibility !== visibility) element.style.visibility = visibility;
@@ -47,6 +49,28 @@ export const refreshOnEvent = (source: RefreshEventSource | null, type: string, 
   };
 };
 
+let warnedRefreshFailure = false;
+
+/**
+ * 地図とマーカーで判定し直す。地図のrender・idleのハンドラやReactのコミット中から呼ばれるので、
+ * 例外を外へ出さない（出すとmaplibreの描画ループかReactの更新ごと止まり、画面が真っ白になる）。
+ * 判定できなかったときは今の表示のまま残す
+ */
+export const refreshBehindCameraVisibility = (
+  map: Parameters<typeof createBehindCameraTest>[0],
+  getMarkers: () => readonly (BehindTestMarker | null | undefined)[]
+): void => {
+  try {
+    applyBehindCameraVisibility(getMarkers(), createBehindCameraTest(map));
+  } catch (error) {
+    if (!warnedRefreshFailure) {
+      warnedRefreshFailure = true;
+      // eslint-disable-next-line no-console
+      console.warn('useHideMarkersBehindCamera: 背後判定に失敗しました', error);
+    }
+  }
+};
+
 /**
  * @param getMarkers 判定するマーカー（描画のたびに呼ぶので、refから読むだけにすること）
  * @returns 今すぐ判定し直す関数（マーカーが作り直されたとき用）
@@ -60,7 +84,7 @@ export const useHideMarkersBehindCamera = (
   const update = useCallback(() => {
     const map = mapRef?.getMap();
     if (!map) return;
-    applyBehindCameraVisibility(getMarkersRef.current(), createBehindCameraTest(map));
+    refreshBehindCameraVisibility(map, getMarkersRef.current);
   }, [mapRef]);
   useEffect(() => {
     const map = mapRef?.getMap();

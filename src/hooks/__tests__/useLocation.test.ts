@@ -740,6 +740,48 @@ describe('heading購読のライフサイクル', () => {
     expect(mockBackgroundGeolocation.requestPermission).not.toHaveBeenCalled();
   });
 
+  it('位置権限が未許可で方位を購読できないのは想定内なので、errorではなくwarnを一度だけ出す', async () => {
+    mockLocation.getForegroundPermissionsAsync.mockResolvedValue({ granted: false } as any);
+    mockLocation.watchHeadingAsync.mockRejectedValue(new Error('Location permission is required to do this operation'));
+    const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      const mockMapRef = { current: { animateCamera: jest.fn() } };
+      const { result } = renderHook(() => useLocation(mockMapRef as any), { wrapper });
+      for (let i = 0; i < 2; i++) {
+        await act(async () => {
+          await result.current.toggleGPS('show');
+        });
+        await act(async () => {
+          await result.current.toggleGPS('off');
+        });
+      }
+      expect(mockLocation.watchHeadingAsync.mock.calls.length).toBeGreaterThanOrEqual(2);
+      const headingErrors = errorSpy.mock.calls.filter((c) => String(c[0]).includes('heading subscriber'));
+      expect(headingErrors).toHaveLength(0);
+      const headingWarns = warnSpy.mock.calls.filter((c) => String(c[0]).includes('Heading subscriber'));
+      expect(headingWarns).toHaveLength(1);
+    } finally {
+      errorSpy.mockRestore();
+      warnSpy.mockRestore();
+    }
+  });
+
+  it('位置権限が許可済みなのに方位を購読できないときは、従来どおりerrorを出す', async () => {
+    mockLocation.getForegroundPermissionsAsync.mockResolvedValue({ granted: true } as any);
+    mockLocation.watchHeadingAsync.mockRejectedValue(new Error('Heading unavailable'));
+    const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    try {
+      const mockMapRef = { current: { animateCamera: jest.fn() } };
+      renderHook(() => useLocation(mockMapRef as any), { wrapper });
+      await act(async () => {});
+      const headingErrors = errorSpy.mock.calls.filter((c) => String(c[0]).includes('Failed to start heading subscriber'));
+      expect(headingErrors.length).toBeGreaterThanOrEqual(1);
+    } finally {
+      errorSpy.mockRestore();
+    }
+  });
+
   it('トラッキング開始後の状態変化でonLocation/heading購読が破棄されない（初期化effect再実行の回帰）', async () => {
     // 旧実装では初期化effectの依存配列にtrackingState等が含まれており、
     // 依存変化時のクリーンアップで購読が破棄され、再購読されないまま位置・方位の更新が止まることがあった
