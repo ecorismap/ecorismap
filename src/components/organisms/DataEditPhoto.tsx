@@ -11,9 +11,11 @@ interface Props {
   fieldName: string;
 }
 export const DataEditPhoto = (props: Props) => {
-  const { data, pressPhoto, pressTakePhoto, pressPickPhoto } = useContext(DataEditContext);
+  const { data, isPhotoProcessing, pressPhoto, pressTakePhoto, pressPickPhoto } = useContext(DataEditContext);
   const { fieldName } = props;
   const fieldData = data.field[fieldName]; // 変数に格納して型推論を助ける
+  //取り込みの実行中は重ねて撮影・選択できない。押せる見た目のままだと、押しても反応しない理由が分からない（写真監査 P-L3）
+  const isAcquireDisabled = isPhotoProcessing === true;
 
   // isPhotoField でチェックし、PhotoType[] でない場合は null を返す
   if (!isPhotoField(fieldData)) return null;
@@ -30,6 +32,7 @@ export const DataEditPhoto = (props: Props) => {
               testID="dataedit-photo-camera"
               name="camera"
               onPress={() => pressTakePhoto(fieldName)}
+              disabled={isAcquireDisabled}
               style={{ backgroundColor: COLOR.GRAY3 }}
               borderRadius={10}
             />
@@ -39,6 +42,7 @@ export const DataEditPhoto = (props: Props) => {
               testID="dataedit-photo-library"
               name="file-image"
               onPress={() => pressPickPhoto(fieldName)}
+              disabled={isAcquireDisabled}
               style={{ backgroundColor: COLOR.GRAY3 }}
               borderRadius={10}
             />

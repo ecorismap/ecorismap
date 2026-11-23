@@ -31,7 +31,7 @@ import { regionCenteredAt } from './coords';
 import type { RegionType } from '../../types';
 import type { PeakProjector } from '../peaks/peakProjector';
 import { isSightBlocked } from '../peaks/sightline';
-import { createTerrainSampler } from './webCamera';
+import { createTerrainSampler, queryTerrainElevationSafe } from './webCamera';
 import { createDistanceTileZoom } from './webTerrainView';
 import {
   footDemStatus,
@@ -110,6 +110,19 @@ const lookTarget = (state: WebVistaState, distanceM: number) => {
   };
 };
 
+/** 真水平からこれだけ離れていなければ、maplibreへ渡す俯角をこの分だけずらす[度] */
+const HORIZONTAL_PITCH_EPSILON_DEG = 1e-3;
+
+/**
+ * maplibreへ渡す俯角。真水平（90度）ちょうどはわずかに下へずらす。
+ * 真水平ではカメラと注視点の高さの差（cos90°×距離）が標高に対して丸めで消えて0になり、
+ * maplibre既定のタイルズーム計算（queryTerrainElevationやマーカーの投影が使う）が0/0でNaNになって
+ * z26のタイルを作ろうとして例外になった（眺望の開始直後の既定の俯角が90度）。
+ * 0.001度は見え方に出ない（40m先で0.7mm）。視点の状態（state.pitch）はそのまま持つ
+ */
+export const avoidExactHorizontalPitch = (pitch: number): number =>
+  Math.abs(pitch - 90) < HORIZONTAL_PITCH_EPSILON_DEG ? 90 - HORIZONTAL_PITCH_EPSILON_DEG : pitch;
+
 const eyeAltitude = (state: WebVistaState) => webVistaEyeAltitude(state.ground, state.heightM, TERRAIN_EXAGGERATION);
 
 const applyCamera = (state: WebVistaState) => {
@@ -135,7 +148,7 @@ const applyCamera = (state: WebVistaState) => {
   const transform = state.map.transform as unknown as WritableTransform;
   transform.clearNearFarZOverride();
   // 逆算した方位・俯角は丸め誤差を含むので、持っている値で上書きする
-  state.map.jumpTo({ ...options, bearing: state.bearing, pitch: state.pitch });
+  state.map.jumpTo({ ...options, bearing: state.bearing, pitch: avoidExactHorizontalPitch(state.pitch) });
   extendFarPlane(state.map);
   applyVistaTileZoom(state.map);
 };
@@ -203,10 +216,8 @@ interface WritableTransform {
 }
 
 /** 足元の標高（誇張込み）。地形タイルが未着ならnull */
-const queryGround = (map: MaplibreMap, latitude: number, longitude: number): number | null => {
-  const elevation = map.queryTerrainElevation([longitude, latitude]);
-  return elevation === null || !Number.isFinite(elevation) ? null : elevation;
-};
+const queryGround = (map: MaplibreMap, latitude: number, longitude: number): number | null =>
+  queryTerrainElevationSafe(map, longitude, latitude);
 
 const footStatus = (map: MaplibreMap, latitude: number, longitude: number): FootDemStatus => {
   const internals = (map as unknown as { terrain?: { tileManager?: TerrainTileInternals } | null }).terrain
@@ -479,7 +490,14 @@ const projectPeak = (
 
 /** Web版の山名ラベルの投影（HomeVistaPeakLabelsへ渡す） */
 export const createWebPeakProjector = (map: MaplibreMap): PeakProjector => ({
-  project: (latitude, longitude, ele) => projectPeak(map, latitude, longitude, ele),
+  project: (latitude, longitude, ele) => {
+    // 描画イベントの中で呼ばれる。maplibreの投影・標高の読み出しが例外を出しても描画を止めない
+    try {
+      return projectPeak(map, latitude, longitude, ele);
+    } catch {
+      return null;
+    }
+  },
   subscribe: (listener) => {
     map.on('render', listener);
     return () => {

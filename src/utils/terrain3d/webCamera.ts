@@ -18,10 +18,39 @@ const DEG = Math.PI / 180;
 const BEHIND_MARGIN_M = 1;
 
 /**
+ * 描画中の地形の標高（誇張込み）。地形表示中でない・引けなかったときはnull。
+ *
+ * map.queryTerrainElevationは画面を覆うタイルを数え直す途中で例外を投げることがある
+ * （真水平（pitch=90）でカメラと注視点の高さの差が丸めで0になると、maplibre既定の
+ * タイルズーム計算が0/0でNaNになり、z26まで潜って「outside of bounds」になった）。
+ * 描画イベントの中から呼ぶと地図ごと止まるので、例外のときは固定ズームの読み出しで代える
+ */
+export const queryTerrainElevationSafe = (map: MaplibreMap, longitude: number, latitude: number): number | null => {
+  if (!Number.isFinite(longitude) || !Number.isFinite(latitude)) return null;
+  let elevation: number | null;
+  try {
+    elevation = map.queryTerrainElevation([longitude, latitude]);
+  } catch {
+    try {
+      elevation = createTerrainSampler(map)?.(latitude, longitude) ?? null;
+    } catch {
+      elevation = null;
+    }
+  }
+  return elevation === null || !Number.isFinite(elevation) ? null : elevation;
+};
+
+/** 位置を持たないマーカー（GeolocateControlの現在地ドットは位置が届くまでundefined）を弾く */
+export const isUsableLngLat = (lngLat: LngLat | null | undefined): lngLat is LngLat =>
+  lngLat !== null && lngLat !== undefined && Number.isFinite(lngLat.lng) && Number.isFinite(lngLat.lat);
+
+/**
  * 「その地点がカメラの後ろにあるか」の判定関数を作る（1回の描画のあいだ使い回す）。
  * 傾けていない（ほぼ真上から見ている）ときは後ろの点が画面に入らないのでnullを返す
  */
-export const createBehindCameraTest = (map: MaplibreMap): ((lngLat: LngLat) => boolean) | null => {
+export const createBehindCameraTest = (
+  map: MaplibreMap
+): ((lngLat: LngLat | null | undefined) => boolean) | null => {
   const pitch = map.getPitch();
   if (pitch < 45) return null;
   const camera = map.transform.getCameraLngLat();
@@ -35,10 +64,12 @@ export const createBehindCameraTest = (map: MaplibreMap): ((lngLat: LngLat) => b
   const metersPerDegLat = EARTH_RADIUS_M * DEG;
   const metersPerDegLng = metersPerDegLat * Math.cos(camera.lat * DEG);
   return (lngLat) => {
+    // 位置の無いマーカーは描かれないので、判定せず表示側（false）にしておく
+    if (!isUsableLngLat(lngLat)) return false;
     const east = (lngLat.lng - camera.lng) * metersPerDegLng;
     const north = (lngLat.lat - camera.lat) * metersPerDegLat;
     // 地表の点として扱う（誇張込みの標高。カメラの高度も同じ空間の値）
-    const ground = map.queryTerrainElevation(lngLat) ?? 0;
+    const ground = queryTerrainElevationSafe(map, lngLat.lng, lngLat.lat) ?? 0;
     const up = ground - cameraAltitude;
     return east * forwardE + north * forwardN + up * forwardU < BEHIND_MARGIN_M;
   };

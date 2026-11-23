@@ -210,6 +210,8 @@ export default function DataEditContainer() {
   }, [finalizeSave, isSavePending, keyboardShown]);
 
   const pressCopyData = useCallback(async () => {
+    //取り込み中の写真は複製元にまだ付いておらず、複製先へ移ると付け先を失って捨てられる（写真監査 P-L3）
+    if (isPhotoProcessingRef.current) return;
     const ret = await ConfirmAsync(t('DataEdit.confirm.copyData'));
     if (!ret) return;
     const { record: newData, droppedPhotoCount, sharedPhotoCount } = await copyRecord(targetRecord);
@@ -239,6 +241,7 @@ export default function DataEditContainer() {
       });
     }
   }, [
+    isPhotoProcessingRef,
     copyRecord,
     navigate,
     params?.mainData,
@@ -249,6 +252,7 @@ export default function DataEditContainer() {
   ]);
 
   const pressDeleteData = useCallback(async () => {
+    if (isPhotoProcessingRef.current) return;
     //他のメンバー・テンプレートの記録は管理者だけが消せる（同期監査 M8）
     if (deleteBlockMessage !== undefined) {
       Alert.alert('', deleteBlockMessage);
@@ -298,6 +302,7 @@ export default function DataEditContainer() {
       }
     }
   }, [
+    isPhotoProcessingRef,
     changeActiveLayer,
     checkRecordEditable,
     deleteBlockMessage,
@@ -311,6 +316,8 @@ export default function DataEditContainer() {
 
   const pressPickPhoto = useCallback(
     async (fieldName: string) => {
+      //実行中は案内のダイアログも出さず、何も起きないようにする（写真監査 P-L3）
+      if (isPhotoProcessingRef.current) return;
       if (modifyBlockMessage !== undefined) {
         Alert.alert('', modifyBlockMessage);
         return;
@@ -320,11 +327,12 @@ export default function DataEditContainer() {
         return pickImage(photoFolder);
       });
     },
-    [acquirePhoto, modifyBlockMessage, photoFolder]
+    [acquirePhoto, isPhotoProcessingRef, modifyBlockMessage, photoFolder]
   );
 
   const pressTakePhoto = useCallback(
     async (fieldName: string) => {
+      if (isPhotoProcessingRef.current) return;
       if (Platform.OS === 'web') {
         await AlertAsync(t('DataEdit.confirm.takePhoto'));
         return;
@@ -372,7 +380,17 @@ export default function DataEditContainer() {
         if (ret) Linking.openSettings().catch(() => undefined);
       }
     },
-    [acquirePhoto, dispatch, getPhotoCaptureDraft, modifyBlockMessage, projectId, targetLayer.id, targetRecord.id, user.uid]
+    [
+      acquirePhoto,
+      dispatch,
+      getPhotoCaptureDraft,
+      isPhotoProcessingRef,
+      modifyBlockMessage,
+      projectId,
+      targetLayer.id,
+      targetRecord.id,
+      user.uid,
+    ]
   );
 
   const pressPhoto = useCallback(
@@ -513,6 +531,7 @@ export default function DataEditContainer() {
   };
 
   const pressJumpToData = useCallback(() => {
+    if (isPhotoProcessingRef.current) return;
     const jumpRegion = getJumpRegion(targetLayer, targetRecord, mapRegion, windowWidth, isLandscape);
     if (jumpRegion === undefined) return;
     navigateToHome?.({
@@ -520,7 +539,7 @@ export default function DataEditContainer() {
       previous: 'DataEdit',
       mode: 'jumpTo',
     });
-  }, [isLandscape, mapRegion, navigateToHome, targetLayer, targetRecord, windowWidth]);
+  }, [isLandscape, isPhotoProcessingRef, mapRegion, navigateToHome, targetLayer, targetRecord, windowWidth]);
 
   const gotoGoogleMaps = useCallback(async () => {
     let lat = 35;
@@ -660,6 +679,7 @@ export default function DataEditContainer() {
   );
 
   const pressEditPosition = useCallback(async () => {
+    if (isPhotoProcessingRef.current) return;
     if (isEditingRecord) {
       Alert.alert('', t('DataEdit.alert.saveChangesFirst'));
       return;
@@ -694,6 +714,7 @@ export default function DataEditContainer() {
       withCoord: jumpRegion !== undefined,
     });
   }, [
+    isPhotoProcessingRef,
     changeActiveLayer,
     checkRecordEditable,
     isEditingRecord,
