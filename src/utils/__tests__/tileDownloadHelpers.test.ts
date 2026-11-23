@@ -3,6 +3,7 @@ import {
   boundsFromCoords,
   countDownloadTiles,
   countTilesForRegion,
+  createStopSignal,
   downloadBoundsForZoom,
   downloadFileIfOk,
   downloadOneTile,
@@ -18,6 +19,7 @@ import {
   markRegionsPaused,
   rasterPmtileTilePath,
   removeIncompleteRegions,
+  waitForBatchOrStop,
   removeLegacyRasterPmtilePngs,
   readPmtileHeaderIsVector,
   readPmtileZoomRange,
@@ -717,5 +719,53 @@ describe('downloadOneTile', () => {
     expect(await downloadOneTile({ ...pm, pmtile: ok })).toBe('failed');
     expect(await downloadOneTile({ ...pm, pmtile: ok })).toBe('saved');
     expect(await downloadOneTile({ ...pm, pmtile: undefined })).toBe('failed');
+  });
+
+  test('停止で中断したときに打ち切れるよう、pbf の fetch と PMTiles の getZxy に signal を渡す', async () => {
+    const controller = new AbortController();
+    const fetchMock = jest.fn(async () => ({
+      ok: true,
+      status: 200,
+      arrayBuffer: async () => new Uint8Array([1]).buffer,
+    }));
+    global.fetch = fetchMock as unknown as typeof fetch;
+    await downloadOneTile({
+      ...common,
+      tileType: 'pbf',
+      urlTemplate: 'https://example.com/{z}/{x}/{y}.pbf',
+      signal: controller.signal,
+    });
+    expect(fetchMock).toHaveBeenCalledWith('https://example.com/10/900/400.pbf', { signal: controller.signal });
+
+    const pmtile = { getZxy: jest.fn(async () => ({ data: new Uint8Array([1]).buffer })) };
+    await downloadOneTile({
+      ...common,
+      tileType: 'pmtiles',
+      urlTemplate: '',
+      pmtile,
+      signal: controller.signal,
+    });
+    expect(pmtile.getZxy).toHaveBeenCalledWith(10, 900, 400, controller.signal);
+  });
+});
+
+describe('waitForBatchOrStop', () => {
+  test('停止の合図が来たら、取得中のタイルを待たずに stopped を返す', async () => {
+    const stop = createStopSignal();
+    const pending = new Promise<void>(() => undefined);
+    const waiting = waitForBatchOrStop([pending], stop.promise);
+    stop.trigger();
+    await expect(waiting).resolves.toBe('stopped');
+  });
+
+  test('合図が来なければバッチの完了を待って done を返す', async () => {
+    const stop = createStopSignal();
+    let release: () => void = () => undefined;
+    const tile = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const waiting = waitForBatchOrStop([tile, Promise.resolve()], stop.promise);
+    release();
+    await expect(waiting).resolves.toBe('done');
   });
 });

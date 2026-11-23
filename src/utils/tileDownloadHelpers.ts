@@ -331,7 +331,7 @@ export const downloadFileIfOk = async (url: string, path: string): Promise<TileD
 };
 
 type PmtileTileSource = {
-  getZxy: (z: number, x: number, y: number) => Promise<{ data: ArrayBuffer } | undefined>;
+  getZxy: (z: number, x: number, y: number, signal?: AbortSignal) => Promise<{ data: ArrayBuffer } | undefined>;
 };
 
 export type DownloadOneTileArgs = {
@@ -343,6 +343,8 @@ export type DownloadOneTileArgs = {
   pmtile?: PmtileTileSource;
   pmtileIsVector: boolean;
   tile: TileXYZ;
+  /** 停止で中断・一時停止したときに取得中の要求を打ち切る（fetch と PMTiles のみ。downloadAsync は打ち切れない） */
+  signal?: AbortSignal;
 };
 
 /**
@@ -357,12 +359,13 @@ export const downloadOneTile = async ({
   pmtile,
   pmtileIsVector,
   tile,
+  signal,
 }: DownloadOneTileArgs): Promise<TileDownloadResult> => {
   const basePath = `${TILE_FOLDER}/${tileMapId}/${tile.z}/${tile.x}/${tile.y}`;
   if (tileType === 'pmtiles') {
     if (pmtile === undefined) return 'failed';
     try {
-      const resp = await pmtile.getZxy(tile.z, tile.x, tile.y);
+      const resp = await pmtile.getZxy(tile.z, tile.x, tile.y, signal);
       if (resp === undefined) return 'missing';
       if (pmtileIsVector) {
         await FileSystem.writeAsStringAsync(`${basePath}.pbf`, Buffer.from(resp.data).toString('base64'), {
@@ -379,7 +382,7 @@ export const downloadOneTile = async ({
   const url = buildTileUrl({ url: urlTemplate, flipY }, tile.z, tile.x, tile.y);
   if (tileType === 'pbf') {
     try {
-      const response = await fetch(url);
+      const response = signal === undefined ? await fetch(url) : await fetch(url, { signal });
       if (!response.ok) return response.status === 404 ? 'missing' : 'failed';
       const data = await response.arrayBuffer();
       await FileSystem.writeAsStringAsync(`${basePath}.pbf`, Buffer.from(data).toString('base64'), {
@@ -392,6 +395,24 @@ export const downloadOneTile = async ({
   }
   return downloadFileIfOk(url, basePath);
 };
+
+/** 停止ボタンの合図。trigger すると promise が解決する（一度きり。使い回さず作り直す） */
+export type StopSignal = { promise: Promise<void>; trigger: () => void };
+
+export const createStopSignal = (): StopSignal => {
+  let trigger: () => void = () => undefined;
+  const promise = new Promise<void>((resolve) => {
+    trigger = resolve;
+  });
+  return { promise, trigger };
+};
+
+/**
+ * バッチの完了か停止の合図の早い方を待つ。停止が押されたら取得中のタイルを待たずに 'stopped' を返し、
+ * すぐ停止確認を出せるようにする（待つとバッチの最も遅い1枚の分だけ確認が遅れる）
+ */
+export const waitForBatchOrStop = (batch: Promise<unknown>[], stop: Promise<void>): Promise<'done' | 'stopped'> =>
+  Promise.race([Promise.all(batch).then(() => 'done' as const), stop.then(() => 'stopped' as const)]);
 
 /** スタイル取得の結果。local は style:// で端末に置いたスタイルがあり、取得しなかった */
 export type StyleDownloadResult = 'saved' | 'local' | 'failed';
