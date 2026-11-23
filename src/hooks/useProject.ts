@@ -158,7 +158,11 @@ export const useProject = (): UseProjectReturnType => {
     if (!deleteDataResult.isOK) throw new Error(deleteDataResult.message);
     const uploadTemplateResult = await uploadDataToRepository(project, 'Template');
     if (!uploadTemplateResult.isOK) throw new Error(uploadTemplateResult.message);
-    return dataToRepositoryResult.warning ?? uploadTemplateResult.warning;
+    // 共有データとテンプレートのどちらの警告も伝える（片方だけだと写真の送れなかった枚数などが落ちる）
+    const warnings = [dataToRepositoryResult.warning, uploadTemplateResult.warning].filter(
+      (w): w is string => w !== undefined && w !== ''
+    );
+    return warnings.length > 0 ? warnings.join('\n') : undefined;
   }, [deleteCommonAndTemplateData, project, store, uploadDataToRepository, uploadProjectSettings, user.uid]);
 
   return {
