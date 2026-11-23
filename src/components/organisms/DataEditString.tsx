@@ -3,6 +3,7 @@ import { View, StyleSheet } from 'react-native';
 
 import { TextInput } from '../atoms';
 import { COLOR } from '../../constants/AppConstants';
+import { toInputText } from '../../utils/Format';
 
 interface Props {
   name: string;
@@ -50,7 +51,7 @@ export const DataEditString = (props: Props) => {
         <TextInput
           style={styles.input}
           label={name}
-          value={value ? value.toString() : ''}
+          value={toInputText(value)}
           onChangeText={onChangeText}
           onEndEditing={onEndEditing}
           onBlur={onEndEditing}

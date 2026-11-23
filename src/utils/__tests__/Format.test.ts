@@ -1,6 +1,20 @@
-import { formattedInputs, isWeakPin } from '../Format';
+import { formattedInputs, isWeakPin, toInputText } from '../Format';
 
 describe('Format', () => {
+  describe('toInputText', () => {
+    it('0 と false を空欄にしない', () => {
+      expect(toInputText(0)).toBe('0');
+      expect(toInputText(false)).toBe('false');
+      expect(toInputText(1.5)).toBe('1.5');
+      expect(toInputText('A&B')).toBe('A&B');
+    });
+    it('値が無いときだけ空にする', () => {
+      expect(toInputText(undefined)).toBe('');
+      expect(toInputText(null)).toBe('');
+      expect(toInputText('')).toBe('');
+    });
+  });
+
   describe('isWeakPin', () => {
     it('rejects repeated digits', () => {
       expect(isWeakPin('111111')).toBe(true);

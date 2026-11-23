@@ -3,6 +3,13 @@ import { Alert } from '../components/atoms/Alert';
 import { t } from '../i18n/config';
 
 //同一数字（111111）と連番（123456/654321、循環含む 890123）を弱いPINとして判定する
+/**
+ * 入力欄に出す文字列。0 や false も値として出す（`value ? String(value) : ''` だと 0 が空欄に見え、
+ * 値が無いと思って上書きされる）。値が無いときだけ空にする
+ */
+export const toInputText = (value: unknown): string =>
+  value === undefined || value === null ? '' : String(value);
+
 export const isWeakPin = (pin: string): boolean => {
   const digits = pin.split('').map(Number);
   const allSame = digits.every((d) => d === digits[0]);
