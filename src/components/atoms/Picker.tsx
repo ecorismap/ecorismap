@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Pressable } from './Pressable';
 
@@ -6,6 +6,7 @@ import { COLOR } from '../../constants/AppConstants';
 import { ItemValue } from '@react-native-picker/picker/typings/Picker';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import ModalSelector from 'react-native-modal-selector';
+import { AncestorScrollSnapshot, guardAncestorScroll, snapshotAncestorScroll } from '../../utils/ancestorScrollGuard';
 
 interface Props {
   style?: any;
@@ -67,6 +68,23 @@ const CustomPicker = React.memo((props: Props) => {
   }));
   const selectedLabel = itemLabelArray[itemValueArray.indexOf(selectedValue)];
   const selectorRef = useRef(null);
+  // Web: モーダルを閉じたときのフォーカス復帰で祖先パネルがずれるのを戻す（ancestorScrollGuard.web.ts）
+  const containerRef = useRef<View>(null);
+  const scrollSnapshotRef = useRef<AncestorScrollSnapshot>(null);
+  const cancelScrollGuardRef = useRef<(() => void) | null>(null);
+
+  useEffect(() => () => cancelScrollGuardRef.current?.(), []);
+
+  const onModalOpen = () => {
+    cancelScrollGuardRef.current?.();
+    cancelScrollGuardRef.current = null;
+    scrollSnapshotRef.current = snapshotAncestorScroll(containerRef.current);
+  };
+
+  const onModalClose = () => {
+    cancelScrollGuardRef.current?.();
+    cancelScrollGuardRef.current = guardAncestorScroll(scrollSnapshotRef.current);
+  };
 
   const openSelector = () => {
     // enabledはこれまでaccessibleに渡すだけで実際には無効化されていなかった。
@@ -79,7 +97,7 @@ const CustomPicker = React.memo((props: Props) => {
   };
 
   return (
-    <View style={styles.tr2}>
+    <View ref={containerRef} style={styles.tr2}>
       {label && <Text style={styles.title}>{label}</Text>}
       <View style={styles.td2}>
         <Pressable onPress={openSelector} style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
@@ -99,6 +117,8 @@ const CustomPicker = React.memo((props: Props) => {
               //overlayStyle={{ backgroundColor: COLOR.DARKGREEN }}
               accessible={enabled}
               animationType={'none'}
+              onModalOpen={onModalOpen}
+              onModalClose={onModalClose}
               initValue={selectedLabel}
               onChange={(option) => {
                 if (option.value !== selectedValue) onValueChange(option.value, option.key);
