@@ -1,4 +1,4 @@
-import { DataType, LayerType, RecordType } from '../types';
+import { DataType, LayerType, PhotoType, RecordType } from '../types';
 
 /**
  * 他のメンバー・テンプレートの記録の変更と削除（同期監査 M8・L1）。
@@ -77,27 +77,89 @@ export const addTakenOverFrom = (current: string[] | undefined, ...userIds: (str
 };
 
 /**
- * 同じ id の候補から、引き継ぎで打ち消される版を除く。
- * 引き継いだ版 S（takenOverFrom を持つ）と、その引き継ぎ元の名義の版 R が並んでいれば、updatedAt が新しい方を残す。
- * 同じなら引き継いだ版を残す（引き継ぐときに元の版より新しい時刻にしているので、同じになるのは元の版の写しのとき）。
- * 打ち消し合って何も残らない（互いに引き継ぎ元に挙げている等）ときは、判断せずにそのまま返す
+ * 引き継いだ版 s に、打ち消される元の版 r で既に上がっている写真の url/key を写す（写真監査 P-M12）。
+ * 撮影者の端末で写真が上がらないうちに管理者が引き継ぐと、引き継いだ版の写真は url:null のまま、uri は撮影者の
+ * 端末のパスになる。管理者の端末にはそのファイルが無いので上げられない。撮影者が後から上げても、写真のアップロードは
+ * 記録の updatedAt を進めないので、引き継いだ版が勝って上がった写真が見えなくなる。そこで同じ写真（同じ id）について、
+ * 引き継いだ版が url:null で元の版に url/key があれば、それを使う。uri は引き継いだ版のまま
  */
-export const resolveTakeoverCandidates = <T extends RecordType>(candidates: T[]): T[] => {
-  if (candidates.length < 2 || !candidates.some((c) => (c.takenOverFrom?.length ?? 0) > 0)) return candidates;
+const inheritUploadedPhotos = <T extends RecordType>(s: T, originals: RecordType[]): T => {
+  const uploaded = new Map<string, { url: string; key: string }>();
+  originals.forEach((r) =>
+    Object.values(r.field).forEach((value) => {
+      if (!Array.isArray(value)) return;
+      (value as unknown[]).forEach((item) => {
+        const photo = item as Partial<PhotoType> | null;
+        if (typeof photo !== 'object' || photo === null || typeof photo.id !== 'string') return;
+        if (typeof photo.url === 'string' && photo.url !== '' && typeof photo.key === 'string' && photo.key !== '') {
+          uploaded.set(photo.id, { url: photo.url, key: photo.key });
+        }
+      });
+    })
+  );
+  if (uploaded.size === 0) return s;
+  let changed = false;
+  const field = { ...s.field };
+  Object.entries(s.field).forEach(([name, value]) => {
+    if (!Array.isArray(value)) return;
+    let fieldChanged = false;
+    const photos = (value as unknown[]).map((item) => {
+      const photo = item as Partial<PhotoType> | null;
+      if (typeof photo !== 'object' || photo === null || typeof photo.id !== 'string' || photo.url !== null) {
+        return item;
+      }
+      const found = uploaded.get(photo.id);
+      if (found === undefined) return item;
+      fieldChanged = true;
+      return { ...photo, url: found.url, key: found.key };
+    });
+    if (fieldChanged) {
+      changed = true;
+      field[name] = photos as PhotoType[];
+    }
+  });
+  return changed ? { ...s, field } : s;
+};
+
+/**
+ * 同じ id の候補から引き継ぎで打ち消される版を除き、残す版と、その元になった候補を組で返す。
+ * 残す版は、打ち消した元の版の上がっている写真を受け継いだ写しのことがある（inheritUploadedPhotos）
+ */
+const resolveTakeoverCandidatesWithSource = <T extends RecordType>(candidates: T[]): { source: T; kept: T }[] => {
+  const asIs = candidates.map((c) => ({ source: c, kept: c }));
+  if (candidates.length < 2 || !candidates.some((c) => (c.takenOverFrom?.length ?? 0) > 0)) return asIs;
   const dropped = new Set<T>();
+  // 引き継いだ版 → それが打ち消した元の版
+  const overridden = new Map<T, T[]>();
   for (const s of candidates) {
     const from = s.takenOverFrom;
     if (from === undefined || from.length === 0) continue;
     for (const r of candidates) {
       if (r === s || r.userId === undefined || r.userId === s.userId || !from.includes(r.userId)) continue;
-      if ((s.updatedAt ?? 0) >= (r.updatedAt ?? 0)) dropped.add(r);
-      else dropped.add(s);
+      if ((s.updatedAt ?? 0) >= (r.updatedAt ?? 0)) {
+        dropped.add(r);
+        overridden.set(s, [...(overridden.get(s) ?? []), r]);
+      } else dropped.add(s);
     }
   }
-  if (dropped.size === 0) return candidates;
+  if (dropped.size === 0) return asIs;
   const rest = candidates.filter((c) => !dropped.has(c));
-  return rest.length > 0 ? rest : candidates;
+  if (rest.length === 0) return asIs;
+  return rest.map((c) => {
+    const originals = overridden.get(c);
+    return { source: c, kept: originals === undefined ? c : inheritUploadedPhotos(c, originals) };
+  });
 };
+
+/**
+ * 同じ id の候補から、引き継ぎで打ち消される版を除く。
+ * 引き継いだ版 S（takenOverFrom を持つ）と、その引き継ぎ元の名義の版 R が並んでいれば、updatedAt が新しい方を残す。
+ * 同じなら引き継いだ版を残す（引き継ぐときに元の版より新しい時刻にしているので、同じになるのは元の版の写しのとき）。
+ * 打ち消し合って何も残らない（互いに引き継ぎ元に挙げている等）ときは、判断せずにそのまま返す。
+ * 引き継いだ版を残すときは、元の版で上がっている写真の url/key を受け継ぐ（写真監査 P-M12）
+ */
+export const resolveTakeoverCandidates = <T extends RecordType>(candidates: T[]): T[] =>
+  resolveTakeoverCandidatesWithSource(candidates).map(({ kept }) => kept);
 
 /** 管理者がテンプレートの記録を消した墓標か（引き継ぎ元に 'template' を持つ削除） */
 export const isTemplateDeletionTombstone = (record: RecordType): boolean =>
@@ -131,10 +193,19 @@ export const separateTemplateDeletionTombstones = <T extends RecordType>(
  * 集合（target）の記録から、引き継ぎで打ち消されるものを除く。判定には target と context の両方の記録を使い、
  * 除くのは target の記録だけ（context は手元の他の名義など、比べるためだけの集合）。変わらない集合は同じ参照で返す
  */
-export const applyTakeoversToDataSet = (target: DataType[], context: DataType[] = []): DataType[] => {
+export const applyTakeoversToDataSet = (
+  target: DataType[],
+  context: DataType[] = [],
+  // true なら、残す引き継いだ版に、打ち消した元の版で上がっている写真の url/key を受け継がせる（写真監査 P-M12）。
+  // 取得した版をそのまま手元に入れるときだけ使う。版の中身を比べて取り込むかを決める処理（COMMON の統合など）では、
+  // 受け継いだ写しが手元の版と違うものに見えて二重に取り込まれるので使わない
+  options: { inheritUploadedPhotos?: boolean } = {}
+): DataType[] => {
   const all = [...target, ...context];
   if (!all.some((d) => d.data.some((r) => (r.takenOverFrom?.length ?? 0) > 0))) return target;
   const droppedByLayer = new Map<string, Set<RecordType>>();
+  // 残す版のうち、元の版の上がっている写真を受け継いで差し替えるもの（写真監査 P-M12）
+  const replaced = new Map<RecordType, RecordType>();
   const layerIds = new Set(target.map((d) => d.layerId));
   layerIds.forEach((layerId) => {
     const byId = new Map<string, RecordType[]>();
@@ -150,17 +221,23 @@ export const applyTakeoversToDataSet = (target: DataType[], context: DataType[] 
     const dropped = new Set<RecordType>();
     byId.forEach((candidates) => {
       if (candidates.length < 2) return;
-      const rest = new Set(resolveTakeoverCandidates(candidates));
+      const resolved = resolveTakeoverCandidatesWithSource(candidates);
+      const rest = new Set(resolved.map(({ source }) => source));
       candidates.forEach((c) => {
         if (!rest.has(c)) dropped.add(c);
       });
+      if (options.inheritUploadedPhotos === true) {
+        resolved.forEach(({ source, kept }) => {
+          if (kept !== source) replaced.set(source, kept);
+        });
+      }
     });
     droppedByLayer.set(layerId, dropped);
   });
   return target.map((d) => {
-    const dropped = droppedByLayer.get(d.layerId);
-    if (dropped === undefined || dropped.size === 0 || !d.data.some((r) => dropped.has(r))) return d;
-    return { ...d, data: d.data.filter((r) => !dropped.has(r)) };
+    const dropped = droppedByLayer.get(d.layerId) ?? new Set<RecordType>();
+    if (!d.data.some((r) => dropped.has(r) || replaced.has(r))) return d;
+    return { ...d, data: d.data.filter((r) => !dropped.has(r)).map((r) => replaced.get(r) ?? r) };
   });
 };
 

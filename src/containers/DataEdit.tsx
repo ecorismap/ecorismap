@@ -13,7 +13,7 @@ import { shallowEqual, useDispatch, useSelector } from 'react-redux';
 import { RootState } from '../store';
 import { useKeyboard } from '@react-native-community/hooks';
 import { checkCoordsInput, checkFieldInput, isLatLonEmpty } from '../utils/Data';
-import { pickImage, takePhoto } from '../utils/Photo';
+import { isPhotoPermissionDenied, pickImage, takePhoto } from '../utils/Photo';
 import * as projectStorage from '../lib/firebase/storage';
 import { PHOTO_FOLDER } from '../constants/AppConstants';
 import { boundingBoxFromCoords, deltaToZoom } from '../utils/Coords';
@@ -24,6 +24,8 @@ import { useLayers } from '../hooks/useLayers';
 import { addToDynamicDictionary } from '../hooks/useDynamicDictionaryInput';
 import { editSettingsAction } from '../modules/settings';
 import { photoDownloadTarget } from '../utils/photoDownloadPath';
+import { copiedPhotosMessage } from '../utils/photoCopyMessage';
+import { useSingleFlight } from '../hooks/useSingleFlight';
 
 export default function DataEditContainer() {
   const { navigate, navigateToHome } = useBottomSheetNavigation();
@@ -57,6 +59,7 @@ export default function DataEditContainer() {
     submitField,
     changeLatLon,
     cancelUpdate,
+    getPhotoCaptureDraft,
   } = useDataEdit(params!.targetData, params!.targetLayer);
   const { changeActiveLayer } = useLayers();
   const dispatch = useDispatch();
@@ -71,7 +74,7 @@ export default function DataEditContainer() {
   //キーボードを閉じてから保存する場合の待機フラグ
   const [isSavePending, setIsSavePending] = useState(false);
 
-  const finalizeSave = useCallback(() => {
+  const runSave = useCallback(async () => {
     const checkInputResult = checkFieldInput(targetLayer, targetRecord);
     if (!checkInputResult.isOK) {
       Alert.alert('', checkInputResult.message);
@@ -85,11 +88,13 @@ export default function DataEditContainer() {
       return;
     }
 
-    const result = saveData();
+    const result = await saveData();
     if (!result.isOK) {
       Alert.alert('', result.message);
       return;
     }
+    //保存はできたが知らせることがある（テンプレートの写しに写せなかった写真など）
+    if (result.message !== '') await AlertAsync(result.message);
 
     //保存に成功したら元の画面に戻る
     if (params?.previous === 'Data') {
@@ -121,7 +126,12 @@ export default function DataEditContainer() {
     unselectRecord,
   ]);
 
+  //保存は実行中に重ねて走らせない。テンプレートの写しでは写真のコピーを待つ間ストアが変わらないので、連打すると
+  //同じ写真を二重にコピーして孤児ファイルを残す。実行中は保存ボタンも無効にする
+  const { run: finalizeSave, isRunning: isSaving, isRunningRef: isSavingRef } = useSingleFlight(runSave);
+
   const pressSaveData = useCallback(async () => {
+    if (isSavingRef.current) return;
     //他のメンバー・テンプレートの記録は管理者だけが変えられる（同期監査 L1）
     if (modifyBlockMessage !== undefined) {
       Alert.alert('', modifyBlockMessage);
@@ -153,7 +163,7 @@ export default function DataEditContainer() {
     }
 
     finalizeSave();
-  }, [changeActiveLayer, checkRecordEditable, finalizeSave, keyboardShown, modifyBlockMessage, targetLayer]);
+  }, [changeActiveLayer, checkRecordEditable, finalizeSave, isSavingRef, keyboardShown, modifyBlockMessage, targetLayer]);
 
   useEffect(() => {
     if (!isSavePending) return;
@@ -174,8 +184,13 @@ export default function DataEditContainer() {
   const pressCopyData = useCallback(async () => {
     const ret = await ConfirmAsync(t('DataEdit.confirm.copyData'));
     if (!ret) return;
-    const newData = copyRecord(targetRecord);
-    await AlertAsync(t('DataEdit.alert.copyData'));
+    const { record: newData, droppedPhotoCount, sharedPhotoCount } = await copyRecord(targetRecord);
+    //写せなかった写真・元の写真を参照したままの写真があれば、黙っていずに知らせる
+    await AlertAsync(
+      [t('DataEdit.alert.copyData'), copiedPhotosMessage({ droppedPhotoCount, sharedPhotoCount })]
+        .filter((m) => m !== '')
+        .join('\n')
+    );
     if (params?.previous === 'Data') {
       navigate('DataEdit', {
         previous: 'Data',
@@ -294,19 +309,34 @@ export default function DataEditContainer() {
           ? `${PHOTO_FOLDER}/${projectId}/${targetLayer.id}/${user.uid}`
           : `${PHOTO_FOLDER}/LOCAL/${targetLayer.id}/OWNER`;
       //Androidでカメラ起動中にActivityが破棄されると、ここには戻ってこない。
-      //復帰後にusePendingPhotoCaptureが撮影結果を回収できるよう、撮影先を残しておく
+      //復帰後にusePendingPhotoCaptureが撮影結果を回収できるよう、撮影先を残しておく。
+      //画面の状態（先に付けた写真や未保存の入力）も一緒に消えるので、編集中の下書きも残す
       dispatch(
         editSettingsAction({
-          pendingPhotoCapture: { layerId: targetLayer.id, recordId: targetRecord.id, fieldName },
+          pendingPhotoCapture: {
+            layerId: targetLayer.id,
+            recordId: targetRecord.id,
+            fieldName,
+            draft: getPhotoCaptureDraft(),
+          },
         })
       );
       const photo = await takePhoto(folder);
       dispatch(editSettingsAction({ pendingPhotoCapture: undefined }));
 
       if (photo === undefined) return;
+      if (isPhotoPermissionDenied(photo)) {
+        //拒否したままだと何度押しても何も起きないので、理由を伝えて設定画面へ案内する
+        const ret = await ConfirmAsync(t('DataEdit.alert.permitCamera'), {
+          true: t('DataEdit.label.openSettings'),
+          false: t('common.cancel'),
+        });
+        if (ret) Linking.openSettings().catch(() => undefined);
+        return;
+      }
       addPhoto(fieldName, photo);
     },
-    [addPhoto, dispatch, modifyBlockMessage, projectId, targetLayer.id, targetRecord.id, user.uid]
+    [addPhoto, dispatch, getPhotoCaptureDraft, modifyBlockMessage, projectId, targetLayer.id, targetRecord.id, user.uid]
   );
 
   const pressPhoto = useCallback(
@@ -662,6 +692,7 @@ export default function DataEditContainer() {
       isEditable,
       modifyBlockMessage,
       deleteBlockMessage,
+      isSaving,
       pressSaveData,
       changeLatLonType,
       changeLatLon,
@@ -695,6 +726,7 @@ export default function DataEditContainer() {
       isDecimal,
       isEditingRecord,
       isPhotoViewOpen,
+      isSaving,
       latlon,
       maxRecordNumber,
       isEditable,

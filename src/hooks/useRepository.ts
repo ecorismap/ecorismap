@@ -17,7 +17,15 @@ import { shallowEqual, useDispatch, useSelector, useStore } from 'react-redux';
 import { RootState } from '../store';
 import { saveProjectBackup } from '../utils/projectBackup';
 import { markLayerUploaded } from '../utils/unsyncedChanges';
-import { deleteDataAction, setDataSetAction, updateDataAction, updateRecordsAction } from '../modules/dataSet';
+import {
+  applyUploadedPhotosAction,
+  deleteDataAction,
+  setDataSetAction,
+  updateDataAction,
+  updateRecordsAction,
+  UploadedPhotosPayload,
+} from '../modules/dataSet';
+import { canReadPhotoForUpload, isOwnUploadablePhotoUri } from '../utils/photoUpload';
 import { setDataSyncTimestampsAction, dataSyncKey } from '../modules/dataSync';
 import { layersInitialState, setLayersAction, TRACK_LAYER_ID } from '../modules/layers';
 import { tileMapsInitialState, setTileMapsAction } from '../modules/tileMaps';
@@ -28,7 +36,7 @@ import { addProjectAction, deleteProjectAction, updateProjectAction } from '../m
 import { cloneDeep } from 'lodash';
 import { getPhotoFields, getTargetLayers } from '../utils/Layer';
 import { isLoggedIn } from '../utils/Account';
-import { CommonAbsorption, getTargetRecordSet, mergeLayerData } from '../utils/Data';
+import { CommonAbsorption, getCommonRecordOwners, getTargetRecordSet, mergeLayerData } from '../utils/Data';
 import { applyTakeoversToDataSet, dropRecordsResolvedAway } from '../utils/recordTakeover';
 import { findSettingsMismatchedLayers, mergeOwnCloudRecords } from '../utils/ownDataSync';
 import { Platform } from 'react-native';
@@ -38,6 +46,13 @@ import { exportDatabase, hasDictionaryTables, importDictionary } from '../utils/
 import { ulid } from 'ulid';
 import { db } from '../utils/db';
 import * as FileSystem from 'expo-file-system/legacy';
+import {
+  collectPhotoReferences,
+  isPhotoReferenced,
+  PendingPhotoDelete,
+  photoStorageOwnerUid,
+  recordsOutsideUpload,
+} from '../utils/photoReferences';
 
 export type UploadDataOptions = {
   /**
@@ -682,7 +697,13 @@ export const useRepository = (): UseRepositoryReturnType & {
       onPhotoUploadFailed?: () => void,
       // Storage から消す写真の id はここに積むだけで、まだ消さない（消すのはマージ後のデータで要らないと分かり、
       // データの書き込みに成功してから。先に消すと、マージで採られた版が参照する写真まで消える）
-      pendingPhotoDeletes?: Set<string>
+      // url も一緒に積む。消すパスの uid を、上げた人の uid（url のパス）から決めるため（写真監査 P-M9）
+      pendingPhotoDeletes?: Map<string, PendingPhotoDelete>,
+      // 上げ終えた写真の url/key をここへ積む。データの書き込みより先に手元へ反映するため（写真監査 P-M16）
+      uploadedPhotos?: UploadedPhotosPayload['records'],
+      // 写真を上げてよいかを判定する記録の名義。COMMON の統合では全記録を自分の名義に書き換えて渡すので、
+      // 書き換える前の名義（元の集合の userId）を渡す。省略時は data の名義で判定する（写真監査 P-M13）
+      photoOwner?: { userId?: string; takenOverFrom?: string[] }
     ) => {
       if (user.uid === undefined) return data;
       const uid = user.uid;
@@ -692,15 +713,33 @@ export const useRepository = (): UseRepositoryReturnType & {
         const photos = (data.field[name] as PhotoType[]).map(async (photo) => {
           if (data.deleted) {
             //データごと削除された写真をストレージから削除（書き込みの成功後）
-            pendingPhotoDeletes?.add(photo.id);
+            pendingPhotoDeletes?.set(photo.id, { id: photo.id, url: photo.url });
           } else if (photo.uri !== null && photo.uri !== undefined && photo.url === null) {
+            // 自分の写真フォルダ（Web は blob:）の外を指す uri は、他のメンバーの端末のパスなので読まない。
+            // 手元にないファイルなので失敗にも数えない（毎回警告が出ないように。写真監査 P-M13・P-M12）
+            // LOCAL と blob: はパスに uid を含まないので、記録の名義も見る。パスを通っても読めない原画
+            // （他の端末と同じ文字列のパス、再読み込みで無効になった blob:）は試さず、失敗にも数えない
+            if (!isOwnUploadablePhotoUri(photo.uri, project.id, layerId, uid, { record: photoOwner ?? data })) {
+              return photo;
+            }
+            if (!(await canReadPhotoForUpload(photo.uri))) return photo;
             //アップロード
-            const { isOK, url, key } = await projectStorage.uploadPhoto(project.id, layerId, uid, photo.id, photo.uri);
+            const { isOK, url, key } = await projectStorage.uploadPhoto(
+              project.id,
+              layerId,
+              uid,
+              photo.id,
+              photo.uri,
+              photo.name
+            );
             if (!isOK || url === null || key === null) {
               // 失敗した写真は未アップロード（url:null）のまま残し、次回のアップロードで再試行させる。
               // Webはuriを消すと原画が失われるので、元の値をそのまま返す
               onPhotoUploadFailed?.();
               return photo;
+            }
+            if (uploadedPhotos !== undefined) {
+              uploadedPhotos[data.id] = { ...uploadedPhotos[data.id], [photo.id]: { url, key } };
             }
             if (Platform.OS === 'web') {
               //Webはuriに直接写真データが入ってしまい重いのでアップロードしたら消す。
@@ -711,7 +750,7 @@ export const useRepository = (): UseRepositoryReturnType & {
             }
           } else if (photo.uri === undefined && photo.url !== null) {
             //写真削除したものは、クラウド削除して（書き込みの成功後）、photoのフィールドの値も消す(undefinedで返す)
-            pendingPhotoDeletes?.add(photo.id);
+            pendingPhotoDeletes?.set(photo.id, { id: photo.id, url: photo.url });
             return undefined;
           } else {
             //すでにアップロードしてある場合はなにもしない
@@ -972,12 +1011,40 @@ export const useRepository = (): UseRepositoryReturnType & {
             );
 
         //写真の更新
-        const pendingPhotoDeletes = new Set<string>();
+        const pendingPhotoDeletes = new Map<string, PendingPhotoDelete>();
+        const uploadedPhotos: UploadedPhotosPayload['records'] = {};
+        // COMMON の統合は全員分を自分の名義に書き換えて送る。写真を上げてよいかは書き換える前の名義で判定する
+        // （他のメンバーの記録の LOCAL のパスは、自分の端末の別のファイルを指しうる。写真監査 P-M13）
+        const commonOwners =
+          !isTemplate && layer.permission === 'COMMON'
+            ? getCommonRecordOwners(
+                consolidatedLayerIds.has(layer.id) ? [...fullDataSet, ...extraCommonDataSet] : fullDataSet,
+                layer.id,
+                user.uid
+              )
+            : undefined;
         const updatedData = await Promise.all(
           targetRecordSet.map((d: RecordType) => {
-            return updateStoragePhoto(d, project, layer.id, photoFields, countFailedPhoto, pendingPhotoDeletes);
+            return updateStoragePhoto(
+              d,
+              project,
+              layer.id,
+              photoFields,
+              countFailedPhoto,
+              pendingPhotoDeletes,
+              uploadedPhotos,
+              commonOwners === undefined
+                ? undefined
+                : { userId: commonOwners.get(d.id), takenOverFrom: d.takenOverFrom }
+            );
           })
         );
+        // 上がった写真の url/key は、この先のデータの書き込みが失敗しても手元に残す（写真監査 P-M16）。
+        // 残さないと、やり直しのたびに同じ写真を新しい鍵で全部上げ直す（圏外に近い現場では重い）。
+        // uri は残すので、手元の表示は変わらない。設定モードは書き込みの成功後も手元へ反映しないので、ここでもしない
+        if (!isSettingProject && Object.keys(uploadedPhotos).length > 0) {
+          dispatch(applyUploadedPhotosAction({ layerId: layer.id, records: uploadedPhotos }));
+        }
 
         const key = dataSyncKey(layer.id, layer.permission);
 
@@ -1029,18 +1096,28 @@ export const useRepository = (): UseRepositoryReturnType & {
           return { isOK: false, message: `${message} (${layer.name})${guidance}` };
         }
 
-        // 書き込めたので、要らなくなった写真を Storage から消す。マージで採られた版がまだ参照している写真は消さない
+        // 書き込めたので、要らなくなった写真を Storage から消す。マージで採られた版がまだ参照している写真は消さない。
+        // テンプレートとその写し、記録の複製は同じ写真の実体を指していることがある。今回送らない手元の集合
+        // （テンプレート・自分・他人）に同じ写真（同じ id か url）が残っていれば、それも消さない（写真監査 P-M10）
         if (pendingPhotoDeletes.size > 0) {
-          const referenced = new Set(
-            dataToUpload
-              .filter((record) => record.deleted !== true)
-              .flatMap((record) => photoFields.flatMap(({ name }) => (record.field[name] as PhotoType[] | undefined) ?? []))
-              .map((photo) => photo.id)
-          );
+          const referenced = collectPhotoReferences(dataToUpload, photoFields);
+          collectPhotoReferences(recordsOutsideUpload(fullDataSet, layer, user.uid, isTemplate), photoFields, referenced, {
+            conservative: true,
+          });
+          const uid = user.uid;
           await Promise.all(
-            Array.from(pendingPhotoDeletes)
-              .filter((photoId) => !referenced.has(photoId))
-              .map((photoId) => projectStorage.deleteStoragePhoto(project.id, layer.id, user.uid, photoId))
+            Array.from(pendingPhotoDeletes.values())
+              .filter((photo) => !isPhotoReferenced(photo, referenced))
+              // 管理者が他のメンバーの写真を外したときは、その人の uid の下にある実体を消す（写真監査 P-M9）。
+              // 一般メンバーが他人のパスを消そうとしても Rules が拒否し、deleteStoragePhoto がログに残すだけ
+              .map((photo) =>
+                projectStorage.deleteStoragePhoto(
+                  project.id,
+                  layer.id,
+                  photoStorageOwnerUid(photo, project.id, layer.id, uid),
+                  photo.id
+                )
+              )
           );
         }
 
@@ -1591,7 +1668,12 @@ export const useRepository = (): UseRepositoryReturnType & {
       }
       // 引き継ぎで打ち消される版（管理者が引き継いだ記録の、元の持ち主の名義に残る古い版など）は手元に入れない。
       // 入れると同じ記録が2人の名義に並んで表示され、管理者が消した記録も戻る
-      dispatch(updateDataAction(applyTakeoversToDataSet(updatedData, store.getState().dataSet)));
+      dispatch(
+        updateDataAction(
+          // 引き継いだ版の url:null の写真は、元の版で上がっていればそれを使う（写真監査 P-M12）
+          applyTakeoversToDataSet(updatedData, store.getState().dataSet, { inheritUploadedPhotos: true })
+        )
+      );
       return { isOK: true, message: '' };
     },
     [dispatch, downloadPhotos, layers, store]
@@ -1611,7 +1693,12 @@ export const useRepository = (): UseRepositoryReturnType & {
       }
       // 引き継ぎで打ち消される版（管理者が引き継いだ記録の、元の持ち主の名義に残る古い版など）は手元に入れない。
       // 入れると同じ記録が2人の名義に並んで表示され、管理者が消した記録も戻る
-      dispatch(updateDataAction(applyTakeoversToDataSet(updatedData, store.getState().dataSet)));
+      dispatch(
+        updateDataAction(
+          // 引き継いだ版の url:null の写真は、元の版で上がっていればそれを使う（写真監査 P-M12）
+          applyTakeoversToDataSet(updatedData, store.getState().dataSet, { inheritUploadedPhotos: true })
+        )
+      );
       return { isOK: true, message: '' };
     },
     [dispatch, downloadPhotos, layers, store]

@@ -23,7 +23,7 @@ import { Image, Platform } from 'react-native';
 import { addDataAction, replaceRecordsKeepingTombstonesAction } from '../modules/dataSet';
 import { cloneDeep } from 'lodash';
 import { t } from '../i18n/config';
-import { getBaseName, getExt, runAsync } from '../utils/General';
+import { getBaseName, getExt, normalizePhotoZipName, photoContentTypeFromName, runAsync } from '../utils/General';
 import { kml } from '@tmcw/togeojson';
 import { DOMParser, Document as XmlDocument, Element as XmlElement, Node as XmlNode } from '@xmldom/xmldom';
 import JSZip from 'jszip';
@@ -132,7 +132,7 @@ const readTextFile = (uri: string) =>
 // 写真名の照合と除外件数の算出のため、レイヤに無い一時項目でフィーチャーの番号を通しておく
 const FEATURE_INDEX_KEY = '$$ecorismapImportFeatureIndex';
 
-type ConvertedGeoJson = {
+export type ConvertedGeoJson = {
   records: RecordType[];
   // records[i]の元になったフィーチャーのproperties（写真名の照合に使う）
   sourceProperties: GeoJsonProperties[];
@@ -329,15 +329,17 @@ const createImportedPhotoThumbnail = async (uri: string) => {
  * 書き出し側はPHOTO項目を「写真名のカンマ区切り」で出し、写真本体を同じ名前でZIPに入れている。
  * 写真名とレイヤIDはファイル由来なので、パス区切りなどを含むものは取り込まない（写真フォルダの外へ書かない）。
  * @returns ZIPに見つからなかった・取り込めなかった写真の枚数
+ * （テストから直接呼ぶために export している）
  */
-const restorePhotosFromZip = async (converted: ConvertedGeoJson, layer: LayerType, zip: JSZip): Promise<number> => {
+export const restorePhotosFromZip = async (converted: ConvertedGeoJson, layer: LayerType, zip: JSZip): Promise<number> => {
   const photoFields = layer.field.filter((f) => f.format === 'PHOTO');
   if (photoFields.length === 0) return 0;
 
   const entryByName = new Map<string, string>();
   for (const key of Object.keys(zip.files)) {
     if (zip.files[key].dir || isMacMetadataEntry(key)) continue;
-    const baseName = getBaseName(key);
+    //書き出しと同じ正規化をかけた名前で引く（末尾の「.」が落ちた名前でも見つける。写真監査 P-M3）
+    const baseName = normalizePhotoZipName(getBaseName(key));
     if (!entryByName.has(baseName)) entryByName.set(baseName, key);
   }
 
@@ -352,12 +354,13 @@ const restorePhotosFromZip = async (converted: ConvertedGeoJson, layer: LayerTyp
   const extractPhoto = async (name: string): Promise<RestoredPhoto | undefined> => {
     if (restored.has(name)) return restored.get(name);
     let uri: string | undefined;
-    const entry = entryByName.get(name) ?? entryByName.get(name.normalize('NFC'));
+    const entry = entryByName.get(normalizePhotoZipName(name));
     if (entry !== undefined && isLayerIdSafe && isSafePathSegment(name)) {
       try {
         if (Platform.OS === 'web') {
           const content = await zip.files[entry].async('arraybuffer');
-          uri = URL.createObjectURL(new Blob([content]));
+          //種類のないBlobはアップロードでapplication/octet-streamになりRulesに拒否されるので、名前から付ける（写真監査 P-M5）
+          uri = URL.createObjectURL(new Blob([content], { type: photoContentTypeFromName(name) ?? 'image/jpeg' }));
         } else {
           const to = `${toFolder}/${name}`;
           if (isUriInsideFolder(to, PHOTO_FOLDER)) {

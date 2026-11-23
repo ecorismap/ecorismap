@@ -8,7 +8,6 @@ interface SettingsContextType {
   pressClearData: () => void;
   pressBackupRestoreOpen: () => void;
   pressClearTileCache: () => void;
-  pressClearPhotoCache: () => void;
   pressClearCache: () => void;
   pressGotoManual: () => void;
   pressOSSLicense: () => void;

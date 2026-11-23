@@ -315,6 +315,67 @@ describe('Photo', () => {
     });
   });
 
+  describe('撮影・選択の権限（写真監査 P-M2）', () => {
+    const ImagePicker = require('expo-image-picker');
+    const originalOS = Platform.OS;
+    beforeEach(() => {
+      (Platform as { OS: string }).OS = 'ios';
+      mockFileSystem.makeDirectoryAsync.mockResolvedValue(undefined);
+      mockFileSystem.copyAsync.mockResolvedValue(undefined);
+      mockMediaLibrary.requestPermissionsAsync.mockResolvedValue({ status: 'denied' } as any);
+      mockManipulateAsync.mockResolvedValue({ uri: 'file:///cache/thumb.jpg', width: 150, height: 100, base64: 'abc' });
+    });
+    afterEach(() => {
+      (Platform as { OS: string }).OS = originalOS;
+      ImagePicker.requestCameraPermissionsAsync.mockImplementation(() => Promise.resolve({ status: 'granted' }));
+    });
+
+    it('撮影は写真ライブラリの権限を求めず、カメラの権限だけで撮れる', async () => {
+      ImagePicker.launchCameraAsync.mockResolvedValueOnce({
+        canceled: false,
+        assets: [{ uri: 'file:///cache/cam.jpg', width: 640, height: 480 }],
+      });
+      const result = await Photo.takePhoto('file:///photos');
+      expect(ImagePicker.requestMediaLibraryPermissionsAsync).not.toHaveBeenCalled();
+      expect(ImagePicker.requestCameraPermissionsAsync).toHaveBeenCalledTimes(1);
+      expect(Photo.isPhotoPermissionDenied(result)).toBe(false);
+      expect(result).toMatchObject({ width: 640, height: 480 });
+    });
+
+    it('カメラの権限が拒否されたら理由を返し、カメラは起動しない', async () => {
+      ImagePicker.requestCameraPermissionsAsync.mockResolvedValueOnce({ status: 'denied' });
+      const result = await Photo.takePhoto('file:///photos');
+      expect(result).toEqual({ permissionDenied: 'camera' });
+      expect(Photo.isPhotoPermissionDenied(result)).toBe(true);
+      expect(ImagePicker.launchCameraAsync).not.toHaveBeenCalled();
+    });
+
+    it('ネイティブが権限なしで撮影を断った例外（Android 9以下のストレージなど）も理由を返す', async () => {
+      ImagePicker.launchCameraAsync.mockRejectedValueOnce(
+        Object.assign(new Error('User rejected permissions'), { code: 'ERR_USER_REJECTED_PERMISSIONS' })
+      );
+      const result = await Photo.takePhoto('file:///photos');
+      expect(result).toEqual({ permissionDenied: 'camera' });
+    });
+
+    it('権限以外の失敗は従来どおりundefined', async () => {
+      ImagePicker.launchCameraAsync.mockRejectedValueOnce(new Error('boom'));
+      const result = await Photo.takePhoto('file:///photos');
+      expect(result).toBeUndefined();
+    });
+
+    it('ライブラリからの選択は写真ライブラリの権限を求めない', async () => {
+      ImagePicker.launchImageLibraryAsync.mockResolvedValueOnce({
+        canceled: false,
+        assets: [{ uri: 'file:///picker/IMG_3.jpg', width: 400, height: 300 }],
+      });
+      const result = await Photo.pickImage('file:///photos');
+      expect(ImagePicker.requestMediaLibraryPermissionsAsync).not.toHaveBeenCalled();
+      expect(ImagePicker.launchImageLibraryAsync).toHaveBeenCalledTimes(1);
+      expect(result?.uri).toBe(`file:///photos/${result?.name}`);
+    });
+  });
+
   describe('deleteLocalPhoto', () => {
     it('should delete local photo on mobile', async () => {
       mockFileSystem.deleteAsync.mockResolvedValue(undefined);

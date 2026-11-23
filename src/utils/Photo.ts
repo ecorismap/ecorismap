@@ -197,10 +197,21 @@ export const deleteRecordPhotos = (layer: LayerType, record: RecordType) => {
   }
 };
 
+// 撮影を権限の拒否で止めたときに返す。呼び出し側が「設定で許可してください」と案内する
+export type PhotoPermissionDenied = { permissionDenied: 'camera' };
+
+export const isPhotoPermissionDenied = (value: unknown): value is PhotoPermissionDenied =>
+  typeof value === 'object' && value !== null && 'permissionDenied' in value;
+
+// ネイティブがカメラ（Android 9以下はストレージも）の権限なしで撮影を断ったときの例外コード
+const CAMERA_PERMISSION_ERROR_CODES = ['ERR_USER_REJECTED_PERMISSIONS', 'ERR_MISSING_CAMERA_PERMISSION'];
+
+// ライブラリからの選択には写真ライブラリの権限を求めない。iOS 14以降はPHPicker、Androidは
+// システムの写真選択（PickVisualMedia）を使い、どちらも選んだ写真だけをアプリへ渡すので権限が
+// 要らない（expo-image-picker 56のネイティブはlaunchImageLibraryAsyncで権限を確かめない）。
+// 以前は権限を求めて拒否されると何も起きず、案内も出なかった（写真監査 P-M2）
 export const pickImage = async (photoFolder: string) => {
   try {
-    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (permission.status !== 'granted') return;
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: false,
@@ -257,12 +268,13 @@ export const saveCapturedPhoto = async (asset: ImagePicker.ImagePickerAsset, pho
   return { uri, thumbnail, name, width: asset.width, height: asset.height };
 };
 
+// 撮影にはカメラの権限だけを求める。カメラロールへのコピーはsaveToStorageが自分で書き込み権限を
+// 取り、拒否されてもアプリ内には保存するので、写真ライブラリの権限で撮影を止める理由はない（写真監査 P-M2）。
+// 拒否されたときは理由を返し、呼び出し側が設定を促す
 export const takePhoto = async (photoFolder: string) => {
   try {
-    let res = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (res.status !== 'granted') return;
-    res = await ImagePicker.requestCameraPermissionsAsync();
-    if (res.status !== 'granted') return;
+    const res = await ImagePicker.requestCameraPermissionsAsync();
+    if (res.status !== 'granted') return { permissionDenied: 'camera' } as PhotoPermissionDenied;
     const result = await ImagePicker.launchCameraAsync({
       allowsEditing: false,
       exif: true,
@@ -270,6 +282,11 @@ export const takePhoto = async (photoFolder: string) => {
     if (result.canceled) return;
     return await saveCapturedPhoto(result.assets[0], photoFolder);
   } catch (e) {
+    //Android 9以下はネイティブがストレージの権限も必須にしており、拒否されると例外になる
+    const code = (e as { code?: unknown } | null)?.code;
+    if (typeof code === 'string' && CAMERA_PERMISSION_ERROR_CODES.includes(code)) {
+      return { permissionDenied: 'camera' } as PhotoPermissionDenied;
+    }
     console.log(e);
   }
 };

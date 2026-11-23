@@ -57,6 +57,21 @@ export const DataEditModalPhotoView = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isPhotoViewOpen]);
 
+  // 削除の確認ダイアログが出ている間はModalが引っ込み、ImageViewerはアンマウントされる。戻ると
+  // ImageViewerは作り直され、開いた時点の位置で表示される。一方で削除の対象（photo）はスワイプ先の
+  // ままなので、キャンセル後に見えている写真と消える写真がずれていた（写真監査 P-M14）。
+  // 引っ込んでいる間に、表示位置をいまの写真へ取り直す。マウントの区切りもkeyで明示し、
+  // 同じマウントのままindexを変えて表示が飛ぶことがないようにする
+  const [viewerMountKey, setViewerMountKey] = useState(0);
+  useEffect(() => {
+    if (shown) return;
+    const current = photos.findIndex(({ index }) => index === photo.index);
+    setInitialIndex(current === -1 ? 0 : current);
+    setViewerMountKey((k) => k + 1);
+    // 引っ込んだときだけ取り直す（表示中のスワイプでは取り直さない）
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [shown]);
+
   const imageUrls = useMemo(
     () =>
       hasLocalMap === null
@@ -106,6 +121,7 @@ export const DataEditModalPhotoView = () => {
         {imageUrls.length > 0 && (
           // @ts-ignore - react-native-image-zoom-viewer is not compatible with React 19 types
           <ImageViewer
+            key={viewerMountKey}
             imageUrls={imageUrls}
             index={initialIndex}
             onChange={(position) => {

@@ -74,3 +74,39 @@ describe('uploadPhoto（JPEG/PNG以外の写真を送る前にJPEGにする: 写
     expect(mockPutFile).not.toHaveBeenCalled();
   });
 });
+
+describe('uploadPhoto（Webは種類を明示して送る: 写真監査 P-M5）', () => {
+  const { Platform } = require('react-native');
+  const firebase = require('../firebase');
+  const e3kit = require('../../virgilsecurity/e3kit');
+  beforeEach(() => {
+    jest.clearAllMocks();
+    Platform.OS = 'web';
+  });
+  afterEach(() => {
+    Platform.OS = 'ios';
+  });
+
+  it('種類のないBlob（ZIPから取り込んだ写真）でも、名前からimage/jpegを付けて送る', async () => {
+    e3kit.encryptFileEThree.mockResolvedValueOnce({ encdata: new Blob(['x']), key: 'k' });
+    const result = await uploadPhoto('P1', 'L1', 'U1', 'PH1', 'blob:abc', 'EMAP_1.jpg');
+    expect(result.isOK).toBe(true);
+    expect(firebase.uploadBytes).toHaveBeenCalledWith(expect.anything(), expect.any(Blob), { contentType: 'image/jpeg' });
+  });
+
+  it('PNGはimage/pngで送る', async () => {
+    e3kit.encryptFileEThree.mockResolvedValueOnce({ encdata: new Blob(['x']), key: 'k' });
+    await uploadPhoto('P1', 'L1', 'U1', 'PH1', 'blob:abc', 'EMAP_1.png');
+    expect(firebase.uploadBytes).toHaveBeenCalledWith(expect.anything(), expect.any(Blob), { contentType: 'image/png' });
+  });
+
+  it('名前から分からなければBlobの種類、それも無ければimage/jpeg', async () => {
+    e3kit.encryptFileEThree.mockResolvedValueOnce({ encdata: new Blob(['x'], { type: 'image/png' }), key: 'k' });
+    await uploadPhoto('P1', 'L1', 'U1', 'PH1', 'blob:abc', 'EMAP_1_.');
+    expect(firebase.uploadBytes).toHaveBeenLastCalledWith(expect.anything(), expect.any(Blob), { contentType: 'image/png' });
+
+    e3kit.encryptFileEThree.mockResolvedValueOnce({ encdata: new Blob(['x']), key: 'k' });
+    await uploadPhoto('P1', 'L1', 'U1', 'PH1', 'blob:abc');
+    expect(firebase.uploadBytes).toHaveBeenLastCalledWith(expect.anything(), expect.any(Blob), { contentType: 'image/jpeg' });
+  });
+});

@@ -2,8 +2,7 @@ import React, { useCallback, useMemo, useState } from 'react';
 import Settings from '../components/pages/Settings';
 import { useBottomSheetNavigation } from '../contexts/BottomSheetNavigationContext';
 import { AlertAsync, ConfirmAsync, waitForModalTransition } from '../components/molecules/AlertAsync';
-import { DEFAULT_MAP_LIST_URL, PHOTO_FOLDER } from '../constants/AppConstants';
-import * as FileSystem from 'expo-file-system/legacy';
+import { DEFAULT_MAP_LIST_URL } from '../constants/AppConstants';
 import { Linking, Platform } from 'react-native';
 import { t } from '../i18n/config';
 import { useMaps } from '../hooks/useMaps';
@@ -304,35 +303,16 @@ export default function SettingsContainers() {
     }
   }, [clearTileCache]);
 
-  const pressClearPhotoCache = useCallback(async () => {
-    if (Platform.OS === 'web') return;
-    const ret = await ConfirmAsync(t('Settings.confirm.clearPhotoCache'));
-    if (ret) {
-      const { uri } = await FileSystem.getInfoAsync(PHOTO_FOLDER);
-      if (uri) {
-        // console.log(uri);
-        await FileSystem.deleteAsync(uri);
-      }
-      await AlertAsync(t('Settings.alert.clearPhotoCache'));
-    }
-  }, []);
-
+  // 「キャッシュをクリア」は地図のキャッシュだけを消す。
+  // 写真フォルダ（documentDirectory/projects）には撮影・ライブラリ選択・取り込みの原画や
+  // まだアップロードしていない写真も入っており、消すと記録との紐づけが切れて取り戻せないため、
+  // 写真は一切消さない（写真監査 P-M6）。
   const pressClearCache = useCallback(async () => {
     const ret = await ConfirmAsync(t('Settings.confirm.clearCache'));
     if (ret) {
       setIsLoading(true);
       try {
-        // 地図キャッシュをクリア
         await clearTileCache();
-        
-        // 写真キャッシュをクリア（モバイルのみ）
-        if (Platform.OS !== 'web') {
-          const { uri } = await FileSystem.getInfoAsync(PHOTO_FOLDER);
-          if (uri) {
-            await FileSystem.deleteAsync(uri);
-          }
-        }
-        
         await AlertAsync(t('Settings.alert.clearCache'));
       } catch (error) {
         console.error('Error clearing cache:', error);
@@ -432,7 +412,6 @@ export default function SettingsContainers() {
         pressClearData,
         pressBackupRestoreOpen,
         pressClearTileCache,
-        pressClearPhotoCache,
         pressClearCache,
         pressGotoManual,
         pressOSSLicense,

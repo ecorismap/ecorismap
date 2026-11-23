@@ -12,6 +12,8 @@ import { db } from '../../utils/db';
 import { blobToBase64 } from '../../utils/blob';
 import { isSafePathSegment } from '../../utils/safePath';
 import { convertToUploadableJpeg, deletePhotoFile } from '../../utils/Photo';
+import { photoContentTypeFromName } from '../../utils/General';
+import { ulid } from 'ulid';
 
 /**
  * 辞書ファイルの保存先。version は設定のレイヤに持たせる dictionaryVersion。
@@ -271,7 +273,17 @@ export const deleteProjectPDF = async (projectId: string, excludeItems: string[]
   }
 };
 
-export const uploadPhoto = async (projectId: string, layerId: string, userId: string, photoId: string, uri: string) => {
+/**
+ * @param photoName 写真名（photo.name）。Webで送る種類（contentType）を決めるのに使う
+ */
+export const uploadPhoto = async (
+  projectId: string,
+  layerId: string,
+  userId: string,
+  photoId: string,
+  uri: string,
+  photoName?: string
+) => {
   const path = `projects/${projectId}/PHOTO/${layerId}/${userId}/${photoId}`;
   const storageRef = ref(storage, path);
   try {
@@ -298,7 +310,13 @@ export const uploadPhoto = async (projectId: string, layerId: string, userId: st
       return { isOK: false, message: t('firebase.message.failEncryptPhoto'), url: null, key: null };
     }
     if (Platform.OS === 'web') {
-      await uploadBytes(storageRef, payload as Blob);
+      //暗号文のBlobは元のBlobの種類を引き継ぐだけなので、ZIPから取り込んだ写真（種類なしのBlob）は
+      //application/octet-streamで送られ、Rulesに拒否されていた（写真監査 P-M5）。種類を明示して送る。
+      //名前から分からなければBlobの種類、それも画像でなければJPEGとみなす
+      const blob = payload as Blob;
+      const blobType = blob.type === 'image/jpeg' || blob.type === 'image/png' ? blob.type : undefined;
+      const contentType = photoContentTypeFromName(photoName) ?? blobType ?? 'image/jpeg';
+      await uploadBytes(storageRef, blob, { contentType });
     } else {
       await storageRef.putFile(payload as string);
     }
@@ -325,6 +343,15 @@ const hasProjectImage = async (localFile: string) => {
   }
 };
 
+/** 一時ファイルを消す。消せなくても本来の結果は変えない */
+const deleteTempFile = async (path: string) => {
+  try {
+    await FileSystem.deleteAsync(path, { idempotent: true });
+  } catch {
+    // 一時ファイルが残るだけなので無視する
+  }
+};
+
 export const fetchPhoto = async (url: string, key: string) => {
   try {
     if (Platform.OS === 'web') {
@@ -341,17 +368,23 @@ export const fetchPhoto = async (url: string, key: string) => {
         return { isOK: true, message: '', data: uri };
       }
     } else {
-      const { uri, status } = await FileSystem.downloadAsync(url, FileSystem.cacheDirectory + 'temp');
-      if (status !== 200) {
-        await FileSystem.deleteAsync(uri);
-        return { isOK: false, message: t('firebase.message.failGetPhoto') };
-      } else {
-        const { decUri } = await decFileRN(uri, key);
+      // 暗号文の一時ファイルは1回ごとに別の名前にする。レイヤの写真はまとめて同時に取得するので、
+      // 固定名だと別の写真の暗号文や書きかけのファイルを読んで復号に失敗し、失敗した側が消すことで
+      // まだ読んでいない写真まで巻き込む（写真監査 P-M11）
+      const encPath = `${FileSystem.cacheDirectory}photo_${ulid()}`;
+      try {
+        const { status } = await FileSystem.downloadAsync(url, encPath);
+        if (status !== 200) {
+          return { isOK: false, message: t('firebase.message.failGetPhoto') };
+        }
+        const { decUri } = await decFileRN(encPath, key);
         if (decUri === undefined) {
-          await FileSystem.deleteAsync(uri);
           return { isOK: false, message: t('firebase.message.failDecryptPhoto') };
         }
         return { isOK: true, message: '', data: 'file://' + decUri };
+      } finally {
+        // 成功・失敗とも、消すのは自分が書いた暗号文だけ（復号済みファイルは呼び出し側が使う）
+        await deleteTempFile(encPath);
       }
     }
   } catch (error) {
@@ -381,20 +414,33 @@ export const downloadPhoto = async (url: string, key: string, filename: string, 
       //FileSaver.saveAs(data, filename);
     } else {
       await FileSystem.makeDirectoryAsync(folder, { intermediates: true });
-      await FileSystem.copyAsync({ from: data as string, to: localFile });
+      try {
+        await FileSystem.copyAsync({ from: data as string, to: localFile });
+      } finally {
+        // 写し終えた復号済みの一時ファイルは要らない（キャッシュに溜めない）
+        await deleteTempFile(data as string);
+      }
       newUri = localFile;
     }
     return { isOK: true, message: '', uri: newUri };
   }
 };
 
+/**
+ * プロジェクトの Storage（PHOTO/・PDF/・STYLE/・DICTIONARY/ のサブフォルダ）をすべて消す。
+ * 実体はすべてサブフォルダにあるので、直下の items だけを消すと何も消えない。project doc を消した後は
+ * Rules の isMember/isAdmin が成り立たずアプリから二度と消せないため、doc より先にここで再帰的に消す（写真監査 P-M7）
+ */
 export const deleteProjectStorageData = async (projectId: string) => {
   try {
-    const folderRef = ref(storage, `projects/${projectId}`);
-    const listResult = await listAll(folderRef);
-    await Promise.all(listResult.items.map((itemRef) => deleteObject(itemRef)));
+    if (!isSafePathSegment(projectId)) {
+      return { isOK: false, message: t('firebase.message.failDeleteProjectPhoto') };
+    }
+    await deleteStorageFolderRecursive(ref(storage, `projects/${projectId}`), { ignoreNotFound: true });
     return { isOK: true, message: '' };
   } catch (error) {
+    // 既に消えているものは消せたのと同じ
+    if (isObjectNotFound(error)) return { isOK: true, message: '' };
     console.error('deleteProjectStorageData Error:', error);
     return { isOK: false, message: t('firebase.message.failDeleteProjectPhoto') };
   }
@@ -499,14 +545,25 @@ export const deleteProjectStyle = async (projectId: string, excludeItems: string
 /**
  * フォルダを再帰的に削除
  */
-const deleteStorageFolderRecursive = async (folderRef: ReturnType<typeof ref>): Promise<void> => {
+const deleteStorageFolderRecursive = async (
+  folderRef: ReturnType<typeof ref>,
+  options: { ignoreNotFound?: boolean } = {}
+): Promise<void> => {
   const listResult = await listAll(folderRef);
 
-  // ファイルを削除
-  await Promise.all(listResult.items.map((itemRef) => deleteObject(itemRef)));
+  // ファイルを削除。ignoreNotFound のときは、一覧の後に他から消された1件で残りの削除を止めない
+  await Promise.all(
+    listResult.items.map((itemRef) =>
+      options.ignoreNotFound
+        ? deleteObject(itemRef).catch((error) => {
+            if (!isObjectNotFound(error)) throw error;
+          })
+        : deleteObject(itemRef)
+    )
+  );
 
   // サブフォルダを再帰削除
-  await Promise.all(listResult.prefixes.map((subFolderRef) => deleteStorageFolderRecursive(subFolderRef)));
+  await Promise.all(listResult.prefixes.map((subFolderRef) => deleteStorageFolderRecursive(subFolderRef, options)));
 };
 
 const listStorageFolderRecursive = async (folderRef: ReturnType<typeof ref>): Promise<string[]> => {

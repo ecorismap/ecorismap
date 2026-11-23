@@ -1,5 +1,6 @@
 import { BRUSH, ERASER, LINETOOL, POINTTOOL, POLYGONTOOL, STAMP } from '../constants/AppConstants';
 import { LineToolType, LocationType, PointToolType, PolygonToolType, RecordType } from '../types';
+import sanitize from 'sanitize-filename';
 
 export function splitStringsIntoChunksOfLen(str: string, len: number) {
   const chunks = [];
@@ -79,6 +80,28 @@ export function getBaseName(path: string): string {
 }
 
 /**
+ * 写真名をZIPに入れるときの名前にそろえる。書き出し（File.ts/File.web.ts）は sanitize-filename を
+ * 通してから入れるので、末尾の「.」や使えない文字が落ちる。以前のWebは拡張子のない「EMAP_…_.」の名前を
+ * 付けていたため、ZIPでは「EMAP_…_」になり、記録の名前と一致せず写真が戻らなかった（写真監査 P-M3）。
+ * 取り込みの照合では、記録側の名前とZIP側の名前の両方にこれをかけて比べる
+ */
+export function normalizePhotoZipName(name: string): string {
+  return sanitize(name.normalize('NFC')).normalize('NFC');
+}
+
+/**
+ * 写真名の拡張子から、Storage Rules が通す画像の種類（image/jpeg か image/png）を決める。
+ * 拡張子が分からない名前（以前のWebが付けた「EMAP_…_.」など）は undefined
+ */
+export function photoContentTypeFromName(name: string | null | undefined): 'image/jpeg' | 'image/png' | undefined {
+  if (!name) return undefined;
+  const ext = name.split('?')[0].split('.').pop()?.toLowerCase();
+  if (ext === 'jpg' || ext === 'jpeg') return 'image/jpeg';
+  if (ext === 'png') return 'image/png';
+  return undefined;
+}
+
+/**
  * バックアップzip内から、指定レイヤの写真ファイルのキーを探す。
  * レイヤ別フォルダ名には layer.id が必ず含まれるため、レイヤ名の切り詰め有無や
  * 新旧フォーマットに関わらず layer.id とベース名（photo.name）で一意に特定できる。
@@ -95,7 +118,9 @@ export function findPhotoFileKey(
   photoName: string,
   photoId?: string
 ): string | undefined {
-  const candidates = fileKeys.filter((f) => f.includes(layerId) && getBaseName(f) === photoName);
+  //名前は書き出しと同じ正規化をかけて比べる（末尾の「.」が落ちた名前・NFD/NFCの違いでも見つける）
+  const target = normalizePhotoZipName(photoName);
+  const candidates = fileKeys.filter((f) => f.includes(layerId) && normalizePhotoZipName(getBaseName(f)) === target);
   if (photoId !== undefined && photoId !== '') {
     const byId = candidates.find((f) => {
       const segments = f.split('/');

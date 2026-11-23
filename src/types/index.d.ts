@@ -526,6 +526,18 @@ export interface PendingPhotoCaptureType {
   layerId: string;
   recordId: string;
   fieldName: string;
+  // 撮影直前の編集中の下書き。Activityが破棄されるとデータ編集画面の状態（先に付けた写真や未保存の入力）が
+  // 失われるため、復帰時にこれを土台に撮影した写真を足して保存する。旧版が残した記録にはない
+  draft?: PhotoCaptureDraftType;
+}
+
+export interface PhotoCaptureDraftType {
+  record: RecordType;
+  // 未保存の編集があったか（写真を足していなくても入力を変えていればtrue）
+  isEditing: boolean;
+  // 編集中に足した写真（保存せずに終わると孤児になる）と外した写真（保存したらファイルを消す）
+  temporaryAddedPhotoList: { photoId: string; uri: string }[];
+  temporaryDeletePhotoList: { photoId: string; uri: string }[];
 }
 
 export interface RegionType {

@@ -179,7 +179,8 @@ export const useTrackPhotos = (coords: LocationType[] | undefined, enabled: bool
 const isLivePhoto = (asset: import('expo-media-library/legacy').Asset) =>
   asset.mediaSubtypes?.includes('livePhoto') === true;
 
-const loadPhotoInfo = async (
+// テストから呼ぶため export する
+export const loadPhotoInfo = async (
   MediaLibrary: typeof import('expo-media-library/legacy'),
   asset: import('expo-media-library/legacy').Asset
 ): Promise<CachedPhotoInfo> => {
@@ -198,9 +199,18 @@ const loadPhotoInfo = async (
     }
   }
 
+  // iOS で localUri が取れない Live Photo 以外の写真は、原画が iCloud にしかない。ph:// のまま
+  // createThumbnail（expo-image-manipulator）へ渡すと、ネットワーク経由で原寸の原画を取り寄せてから
+  // 縮小するので、サムネイルのためだけに大量に通信してしまう。その場合はサムネイルなしにする（写真監査 P-M15）。
+  // Live Photo は情報取得を省いているので localUri がないのが普通で、端末にあれば通信せずに作れるため従来どおり渡す。
+  // Android の uri は file:// の実パスなので、localUri がなくてもそのまま使える
+  const source =
+    localUri ?? (asset.uri.startsWith('ph://') && !isLivePhoto(asset) ? undefined : asset.uri);
+  if (source === undefined) return { thumbnail: null, localUri };
+
   let thumbnail: string | null = null;
   try {
-    thumbnail = await createThumbnail(localUri ?? asset.uri);
+    thumbnail = await createThumbnail(source);
   } catch {
     thumbnail = null;
   }

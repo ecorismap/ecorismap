@@ -1,5 +1,14 @@
 import { shallowEqual, useDispatch, useSelector } from 'react-redux';
-import { DMSKey, LatLonDMSKey, LatLonDMSType, LayerType, PhotoType, RecordType, SelectedPhotoType } from '../types';
+import {
+  DMSKey,
+  LatLonDMSKey,
+  LatLonDMSType,
+  LayerType,
+  PhotoCaptureDraftType,
+  PhotoType,
+  RecordType,
+  SelectedPhotoType,
+} from '../types';
 import { RootState } from '../store';
 import { addRecordsAction, deleteRecordsAction, moveRecordsToUserAction, updateRecordsAction } from '../modules/dataSet';
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -11,6 +20,9 @@ import { updateRecordCoords, updateReferenceFieldValue } from '../utils/Data';
 import { useRecord } from './useRecord';
 import { ulid } from 'ulid';
 import { deleteLocalPhoto, deleteRecordPhotos, hasLocalPhotoFile } from '../utils/Photo';
+import { detachCopiedRecordPhotos, DetachedPhotosResult, PhotoCopyContext } from '../utils/photoCopy';
+import { copiedPhotosMessage } from '../utils/photoCopyMessage';
+import * as projectStorage from '../lib/firebase/storage';
 import { useBottomSheetNavigation } from '../contexts/BottomSheetNavigationContext';
 import { isLocationType } from '../utils/General';
 import { resolveCodeField, toCodeFieldValue } from '../utils/Layer';
@@ -37,10 +49,12 @@ export type UseDataEditReturnType = {
   /** この記録を削除できない理由。削除できれば undefined */
   deleteBlockMessage: string | undefined;
   changeRecord: (value: number) => void;
-  saveData: () => {
+  /** テンプレートの写しを作るときは写真ファイルをコピーするので非同期（写真監査 P-M10） */
+  /** isOK が true でも message があれば、保存はできたが知らせることがある（写せなかった写真など） */
+  saveData: () => Promise<{
     isOK: boolean;
     message: string;
-  };
+  }>;
   addPhoto: (
     fieldName: string,
     photo: {
@@ -55,12 +69,17 @@ export type UseDataEditReturnType = {
   removePhoto: (photo: SelectedPhotoType) => void;
   selectPhoto: (fieldName: string, photo: PhotoType, index: number) => Promise<void>;
   deleteRecord: () => { isOK: boolean; message: string };
-  copyRecord: (originalRecord: RecordType) => RecordType;
+  /** 写真はファイルごと写して切り離すので非同期（写真監査 P-M8） */
+  copyRecord: (
+    originalRecord: RecordType
+  ) => Promise<{ record: RecordType; droppedPhotoCount: number; sharedPhotoCount: number }>;
   changeLatLonType: () => void;
   changeField: (name: string, value: string | number) => void;
   submitField: (name: string, format: string) => void;
   changeLatLon: (val: string, latlonType: LatLonDMSKey, dmsType: DMSKey) => void;
   cancelUpdate: () => void;
+  /** 撮影の前に残す編集中の下書き（Android の Activity 破棄からの復帰用。usePendingPhotoCapture） */
+  getPhotoCaptureDraft: () => PhotoCaptureDraftType;
 };
 
 export const useDataEdit = (record: RecordType, layer: LayerType): UseDataEditReturnType => {
@@ -97,6 +116,24 @@ export const useDataEdit = (record: RecordType, layer: LayerType): UseDataEditRe
         ? `${PHOTO_FOLDER}/${projectId}/${targetLayer.id}/${dataUser.uid}`
         : `${PHOTO_FOLDER}/LOCAL/${targetLayer.id}/OWNER`,
     [dataUser.uid, projectId, targetLayer.id]
+  );
+
+  //写しの写真で原画が手元にないものは、クラウドから取得して自分の写真フォルダへ置く（写真監査 P-M8(c)・P-M10(a)）
+  const photoCopyContext = useCallback(
+    (source: RecordType): PhotoCopyContext => ({
+      source: { userId: source.userId, takenOverFrom: source.takenOverFrom },
+      projectId,
+      uid: dataUser.uid,
+      downloadPhoto:
+        projectId === undefined
+          ? undefined
+          : async (photo, filename) => {
+              if (typeof photo.url !== 'string' || typeof photo.key !== 'string') return undefined;
+              const { isOK, uri } = await projectStorage.downloadPhoto(photo.url, photo.key, filename, photoFolder);
+              return isOK && typeof uri === 'string' ? uri : undefined;
+            },
+    }),
+    [dataUser.uid, photoFolder, projectId]
   );
 
   const isMapMemoLayer = useMemo(
@@ -273,14 +310,35 @@ export const useDataEdit = (record: RecordType, layer: LayerType): UseDataEditRe
     [setIsEditingRecord, targetRecord, temporaryAddedPhotoList]
   );
 
-  const saveData = useCallback(() => {
+  const saveData = useCallback(async () => {
     //他のメンバー・テンプレートの記録を変えてよいか（同期監査 L1）。だめなら何も変えずに理由を返す
     if (modifyBlockMessage !== undefined) return { isOK: false, message: modifyBlockMessage };
-    temporaryDeletePhotoList.forEach(({ uri }) => deleteLocalPhoto(uri));
+    //実行中のプロジェクトでテンプレートの記録を編集すると、テンプレートは残したまま自分の写しを作る
+    //（modules/recordOwnership の copy）。写しの写真はテンプレートと切り離す（写真監査 P-M10）
+    const isTemplateCopy = projectId !== undefined && !isSettingProject && targetRecord.userId === 'template';
+    //テンプレートの写しで外した写真は、テンプレートの写真としては残る。端末のファイルも消さない
+    if (!isTemplateCopy) temporaryDeletePhotoList.forEach(({ uri }) => deleteLocalPhoto(uri));
+    const addedPhotoIds = new Set(temporaryAddedPhotoList.map(({ photoId }) => photoId));
     setTemporaryDeletePhotoList([]);
     setTemporaryAddedPhotoList([]);
     const updatedField = updateReferenceFieldValue(targetLayer, targetRecord.field, targetRecord.id);
-    const fieldUpdatedRecord = { ...targetRecord, field: updatedField };
+    //編集中に足した写真は既に自分だけのファイルなので、そのまま残す。
+    //（await は三項演算子の外に出す。Hermes で三項演算子内のオブジェクトリテラルと await を混ぜると値が壊れる）
+    let detached: DetachedPhotosResult = {
+      record: { ...targetRecord, field: updatedField },
+      droppedPhotoCount: 0,
+      sharedPhotoCount: 0,
+    };
+    if (isTemplateCopy) {
+      detached = await detachCopiedRecordPhotos(
+        targetLayer,
+        { ...targetRecord, field: updatedField },
+        photoFolder,
+        addedPhotoIds,
+        photoCopyContext(targetRecord)
+      );
+    }
+    const fieldUpdatedRecord = detached.record;
 
     const updatedRecord = updateRecordCoords(fieldUpdatedRecord, latlon, isDecimal, isLatLonDirty);
     //unixTimeを更新
@@ -323,10 +381,16 @@ export const useDataEdit = (record: RecordType, layer: LayerType): UseDataEditRe
 
     setIsEditingRecord(false);
     setIsLatLonDirty(false);
-    return { isOK: true, message: '' };
+    //写せなかった写真（原画が手元になくクラウドにもない）と、元の写真を参照したままの写真は、黙っていずに知らせる
+    return { isOK: true, message: copiedPhotosMessage(detached) };
   }, [
     modifyBlockMessage,
+    projectId,
+    isSettingProject,
     temporaryDeletePhotoList,
+    temporaryAddedPhotoList,
+    photoFolder,
+    photoCopyContext,
     targetLayer,
     targetRecord,
     latlon,
@@ -465,12 +529,33 @@ export const useDataEdit = (record: RecordType, layer: LayerType): UseDataEditRe
     setTemporaryAddedPhotoList([]);
   }, [setIsEditingRecord, temporaryAddedPhotoList]);
 
+  const getPhotoCaptureDraft = useCallback(
+    (): PhotoCaptureDraftType => ({
+      record: targetRecord,
+      isEditing: isEditingRecord,
+      temporaryAddedPhotoList,
+      temporaryDeletePhotoList,
+    }),
+    [isEditingRecord, targetRecord, temporaryAddedPhotoList, temporaryDeletePhotoList]
+  );
+
   const copyRecord = useCallback(
-    (originalRecord: RecordType) => {
+    async (originalRecord: RecordType) => {
       const id = ulid();
 
       //複製は新しい id の自分の記録なので、元の記録の引き継ぎ元（takenOverFrom）は持ち越さない
-      const { takenOverFrom: _takenOverFrom, ...rest } = originalRecord;
+      const { takenOverFrom: _takenOverFrom, ...original } = originalRecord;
+      //写真は id・ファイル・クラウドの実体を元の記録と共有させない。共有すると、片方で写真を外したり記録を
+      //消したりしたときにもう一方の原画や実体まで消える（写真監査 P-M8）
+      //写してよい原画は元の記録の名義で決める（他人の記録の uri は送り手の端末のパスなので、写すと手元の
+      //関係のないファイルを自分の写真として上げてしまう。写真監査 P-M13）
+      const { record: rest, droppedPhotoCount, sharedPhotoCount } = await detachCopiedRecordPhotos(
+        targetLayer,
+        original as RecordType,
+        photoFolder,
+        new Set(),
+        photoCopyContext(originalRecord)
+      );
       const newData: RecordType = {
         ...rest,
         id: id,
@@ -479,9 +564,9 @@ export const useDataEdit = (record: RecordType, layer: LayerType): UseDataEditRe
         updatedAt: Date.now(),
       };
       dispatch(addRecordsAction({ layerId: targetLayer.id, userId: dataUser.uid, data: [newData] }));
-      return newData;
+      return { record: newData, droppedPhotoCount, sharedPhotoCount };
     },
-    [targetLayer, dataUser.uid, dataUser.displayName, dispatch]
+    [targetLayer, photoFolder, photoCopyContext, dataUser.uid, dataUser.displayName, dispatch]
   );
 
   return {
@@ -510,5 +595,6 @@ export const useDataEdit = (record: RecordType, layer: LayerType): UseDataEditRe
     cancelUpdate,
     copyRecord,
     saveData,
+    getPhotoCaptureDraft,
   } as const;
 };

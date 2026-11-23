@@ -21,6 +21,8 @@ interface DataEditContextType {
   changeField: (name: string, value: string | number) => void;
   submitField: (name: string, format: string) => void;
   onChangeRecord: (value: number) => void;
+  /** 保存の実行中（保存ボタンを無効にする） */
+  isSaving?: boolean;
   pressSaveData: () => void;
   pressCopyData: () => void;
   pressPhoto: (fieldName: string, photo: PhotoType, index: number) => void;

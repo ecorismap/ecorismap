@@ -26,7 +26,7 @@ import { setTileMapsAction } from '../modules/tileMaps';
 import { dropUnsafeTileMaps } from '../utils/tileMapId';
 import { setSettingsAction } from '../modules/settings';
 import { t } from '../i18n/config';
-import { findDictionaryFileKey, findPhotoFileKey, getExt, truncateMiddle } from '../utils/General';
+import { findDictionaryFileKey, findPhotoFileKey, getExt, photoContentTypeFromName, truncateMiddle } from '../utils/General';
 
 import dayjs from '../i18n/dayjs';
 import { PHOTO_FOLDER } from '../constants/AppConstants';
@@ -189,7 +189,8 @@ export const useEcorisMapFile = (): UseEcorisMapFileReturnType => {
       if (Platform.OS === 'web') {
         const content = await files[from].async('arraybuffer');
         const buffer = new Uint8Array(content);
-        const photoData = new Blob([buffer.buffer]);
+        //種類のないBlobはアップロードでapplication/octet-streamになりRulesに拒否されるので、名前から付ける（写真監査 P-M5）
+        const photoData = new Blob([buffer.buffer], { type: photoContentTypeFromName(to) ?? 'image/jpeg' });
         newUri = URL.createObjectURL(photoData);
         //console.log(newUri);
       } else {
