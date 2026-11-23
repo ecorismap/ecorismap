@@ -707,7 +707,9 @@ export const useRepository = (): UseRepositoryReturnType & {
       uploadedPhotos?: UploadedPhotosPayload['records'],
       // 写真を上げてよいかを判定する記録の名義。COMMON の統合では全記録を自分の名義に書き換えて渡すので、
       // 書き換える前の名義（元の集合の userId）を渡す。省略時は data の名義で判定する（写真監査 P-M13）
-      photoOwner?: { userId?: string; takenOverFrom?: string[] }
+      photoOwner?: { userId?: string; takenOverFrom?: string[] },
+      // 自分の写真なのに原画が端末で読めなかった（消された・移された）写真を数える。送信は止めず、終わったら件数を知らせる
+      onPhotoUnreadable?: () => void
     ) => {
       if (user.uid === undefined) return data;
       const uid = user.uid;
@@ -722,11 +724,17 @@ export const useRepository = (): UseRepositoryReturnType & {
             // 自分の写真フォルダ（Web は blob:）の外を指す uri は、他のメンバーの端末のパスなので読まない。
             // 手元にないファイルなので失敗にも数えない（毎回警告が出ないように。写真監査 P-M13・P-M12）
             // LOCAL と blob: はパスに uid を含まないので、記録の名義も見る。パスを通っても読めない原画
-            // （他の端末と同じ文字列のパス、再読み込みで無効になった blob:）は試さず、失敗にも数えない
+            // （他の端末と同じ文字列のパス、再読み込みで無効になった blob:）は試さない（読めなかった件数は別に知らせる）
             if (!isOwnUploadablePhotoUri(photo.uri, project.id, layerId, uid, { record: photoOwner ?? data })) {
               return photo;
             }
-            if (!(await canReadPhotoForUpload(photo.uri))) return photo;
+            // 読めない原画は試さず未アップロードのまま残す（上げても必ず失敗する）。黙って飛ばすと
+            // 送れていないことに気づけないので、件数を数えて送信の後に知らせる
+            const isReadable = await canReadPhotoForUpload(photo.uri);
+            if (!isReadable) {
+              onPhotoUnreadable?.();
+              return photo;
+            }
             //アップロード
             const { isOK, url, key } = await projectStorage.uploadPhoto(
               project.id,
@@ -1001,6 +1009,10 @@ export const useRepository = (): UseRepositoryReturnType & {
       const countFailedPhoto = () => {
         failedPhotoCount += 1;
       };
+      let unreadablePhotoCount = 0;
+      const countUnreadablePhoto = () => {
+        unreadablePhotoCount += 1;
+      };
 
       const unreadableIds = new Set(unreadableLayers.map((l) => l.id));
       for (const layer of targetLayers) {
@@ -1043,7 +1055,8 @@ export const useRepository = (): UseRepositoryReturnType & {
               uploadedPhotos,
               commonOwners === undefined
                 ? undefined
-                : { userId: commonOwners.get(d.id), takenOverFrom: d.takenOverFrom }
+                : { userId: commonOwners.get(d.id), takenOverFrom: d.takenOverFrom },
+              countUnreadablePhoto
             );
           })
         );
@@ -1201,6 +1214,9 @@ export const useRepository = (): UseRepositoryReturnType & {
           ? [t('hooks.message.skippedUnreadableLayers', { names: unreadableLayers.map((l) => l.name).join('、') })]
           : []),
         ...(failedPhotoCount > 0 ? [t('hooks.message.failUploadSomePhotos', { count: failedPhotoCount })] : []),
+        ...(unreadablePhotoCount > 0
+          ? [t('hooks.message.skippedUnreadablePhotos', { count: unreadablePhotoCount })]
+          : []),
       ];
       if (warnings.length > 0) {
         return { isOK: true, message: '', warning: warnings.join('\n') };
@@ -1241,7 +1257,10 @@ export const useRepository = (): UseRepositoryReturnType & {
             uploadedTileMaps.push({ ...tileMap, url, encryptKey: key });
           }
         } else if (Platform.OS === 'web' && tileMap.styleURL?.startsWith('style://')) {
-          const { isOK, message, url, key } = await projectStorage.uploadStyle(projectId, tileMap.id);
+          const { isOK, message, url, key } = await projectStorage.uploadStyle(projectId, tileMap.id, {
+            styleURL: tileMap.styleURL,
+            encryptKey: tileMap.encryptKey,
+          });
           if (!isOK || url === null) {
             await AlertAsync(message);
             uploadedTileMaps.push(tileMap);

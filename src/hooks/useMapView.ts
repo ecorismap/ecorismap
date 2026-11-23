@@ -1,4 +1,4 @@
-import React, { useMemo, useRef } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 import { useCallback } from 'react';
 import MapView, { Region } from 'react-native-maps';
 import { MapRef, ViewState } from 'react-map-gl/maplibre';
@@ -12,6 +12,7 @@ import { isTerrain3DHandle } from '../utils/terrain3d/types';
 import { useDispatch } from 'react-redux';
 import { isMapRotated, mapHeadingStore } from '../utils/mapHeadingStore';
 import { clearWebVista, isWebVistaActive } from '../utils/terrain3d/webVista';
+import { untiltedRegion } from '../utils/terrain3d/coords';
 
 export type UseMapViewReturnType = {
   zoom: number;
@@ -27,6 +28,18 @@ export const useMapView = (mapViewRefObj: React.RefObject<MapView | MapRef | nul
   const dispatch = useDispatch();
   const regionChangeSeq = useRef(0);
   const headingRequestInFlight = useRef(false);
+  // 眺望中に保存済みの表示範囲を読むため（changeMapRegionの依存に入れると地図が動くたびに作り直される）
+  const mapRegionRef = useRef(mapRegion);
+  mapRegionRef.current = mapRegion;
+
+  // Webは3Dの状態を保存しないので、起動時は必ず2Dで開く。3D（眺望を抜けた俯瞰を含む）の傾き・方位が
+  // 保存されていたら、3Dを抜けるとき（toggleTerrain）と同じく0へ戻す。残すと傾いた2Dが開く
+  useEffect(() => {
+    if (Platform.OS !== 'web') return;
+    const restored = mapRegionRef.current;
+    if (untiltedRegion(restored) === null) return;
+    dispatch(editSettingsAction({ mapRegion: { ...restored, pitch: 0, bearing: 0 } }));
+  }, [dispatch]);
 
   const zoomDecimal = useMemo(() => {
     if (mapRegion) {
@@ -109,6 +122,17 @@ export const useMapView = (mapViewRefObj: React.RefObject<MapView | MapRef | nul
         // 眺望中のMapは非制御（mapRegionを渡さない）なので、ジャンプ先をdispatchしても動かない（V-L3）。
         // 先に眺望を解いて制御側へ戻す。カメラはジャンプ先が上書きするので俯瞰への復帰はしない
         if (jumpTo && isWebVistaActive()) clearWebVista(false);
+        if (isWebVistaActive()) {
+          // 眺望中のカメラ（水平近い俯角・足元すぐ先の注視点・超拡大）はmapRegionへ保存しない。
+          // 保存すると再読み込みで傾いた2Dが開く。眺望に入る前の表示範囲を残し、傾きだけ外す。
+          // 眺望中のMapは非制御なので、mapRegionを止めても表示は動かない
+          const flattened = untiltedRegion(mapRegionRef.current);
+          if (flattened !== null) {
+            mapRegionRef.current = flattened;
+            dispatch(editSettingsAction({ mapRegion: flattened }));
+          }
+          return;
+        }
         if (isRegionType(region)) {
           dispatch(editSettingsAction({ mapRegion: region }));
         } else if (isViewState(region)) {
