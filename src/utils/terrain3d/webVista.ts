@@ -434,8 +434,6 @@ export const clearWebVista = (restoreCamera = true): void => {
   (state.map.transform as unknown as WritableTransform).clearNearFarZOverride();
   clearVistaTileZoom(state.map);
   state.map.setVerticalFieldOfView(state.previousFovDeg);
-  // 3Dを抜けるとき（restoreCamera=false）は2D側が俯角0の表示範囲を流し込むので、カメラは触らない。
-  // ここで俯角を戻すと、その2Dの値を上書きしてしまう（俯角が上限を超えていれば下のsetMaxPitchが丸める）
   if (restoreCamera) {
     state.map.easeTo({
       center: [state.longitude, state.latitude],
@@ -444,6 +442,12 @@ export const clearWebVista = (restoreCamera = true): void => {
       bearing: state.bearing,
       duration: 600,
     });
+  } else {
+    // 3Dを抜けるとき（restoreCamera=false）も、カメラは2Dが開く位置（webVistaExitRegionと同じ立ち位置・
+    // 俯角0）へ先に置く。眺望のカメラ（俯角90度前後・約z20.5）のままだと、下のsetMaxPitchが俯角を85度へ
+    // 丸めたときの移動イベントで、その傾いたカメラがmapRegionへ保存される。2D側が流し込んだ俯角0の
+    // 範囲がそれで上書きされ、傾いたままの2Dが開いた（2026-11-24 Web本番）
+    state.map.jumpTo({ center: [state.longitude, state.latitude], zoom: EXIT_ZOOM, pitch: 0, bearing: 0 });
   }
   state.map.setMaxPitch(WEB_NORMAL_MAX_PITCH_DEG);
   publish();
