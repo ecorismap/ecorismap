@@ -8,6 +8,7 @@ import { Platform } from 'react-native';
 import * as FileSystem from 'expo-file-system/legacy';
 import { splitStringsIntoChunksOfLen } from '../../utils/General';
 import { FUNC_ENCRYPTION } from '../../constants/AppConstants';
+import { serializeAsync } from '../../utils/serializeAsync';
 import { compressFileToTempUri, decompressFileToTempUri, gzip, unzip } from '../../utils/Zip';
 import { auth, functions, httpsCallable, firebaseReady } from '../firebase/firebase';
 
@@ -52,7 +53,12 @@ export const isInitialized = (): boolean => {
   }
 };
 
-export const initializeUser = async (userId: string) => {
+/**
+ * 初期化は一度に1つずつ。プロジェクト画面の保留メンバー確認（useProjectEdit）と「開く」（loadE3kitGroup）が
+ * 同時に初期化すると、Web で片方の EThree.initialize 以降が戻らず、開く処理が読み込み中のまま止まった
+ * （2026-11-24 Web 本番で再現。画面を開いてすぐ「開く」を押すと起きる）。
+ */
+export const initializeUser = serializeAsync(async (userId: string) => {
   if (!FUNC_ENCRYPTION) return { isOK: true, message: '' };
   // 強制ログアウト経路ではインスタンスが破棄されないため、別アカウントでログインすると
   // 前ユーザー名義の eThree が残る（前ユーザーの鍵で署名・復号してしまう）。
@@ -115,7 +121,7 @@ export const initializeUser = async (userId: string) => {
     eThree = undefined as any;
     return { isOK: false, message: e.message || e };
   }
-};
+});
 
 export const registEncrypt = async (backupPassword: string) => {
   if (!FUNC_ENCRYPTION) return { isOK: true };
