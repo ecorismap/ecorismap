@@ -32,6 +32,7 @@ import {
   getDoc,
   getDocs,
   getDocsFromServer,
+  getDocFromServer,
   httpsCallable,
   query,
   runTransaction,
@@ -492,17 +493,44 @@ export const updateProject = async (project: ProjectType) => {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { id, ownerUid, adminsUid, membersUid, storage, settingsEncryptedAt, ...others } = project;
     const encdata = await enc(others, ownerUid, id);
+    const encryptedAt = Timestamp.now();
     const updateProjectFS: UpdateProjectFS = {
       adminsUid,
       membersUid,
       encdata,
-      encryptedAt: Timestamp.now(),
+      encryptedAt,
     };
     await updateDoc(doc(firestore, 'projects', id), updateProjectFS);
-    return { isOK: true, message: '' };
+    // 手元のプロジェクトにも書いた時刻を持たせる。持たせないと、続けて保存したとき自分の保存を
+    // 「ほかの端末の更新」と取り違える（getProjectEncryptedAt との照合）
+    return { isOK: true, message: '', encryptedAt: toDate(encryptedAt) };
   } catch (error) {
     console.log(error);
-    return { isOK: false, message: t('firebase.message.failUpdateProject') };
+    return { isOK: false, message: t('firebase.message.failUpdateProject'), encryptedAt: undefined };
+  }
+};
+
+/**
+ * クラウドにあるプロジェクトの encryptedAt（プロジェクト情報を最後に書いた時刻）。キャッシュではなくサーバーから読む。
+ * プロジェクト一覧は端末に保存した内容から出るため、そこから開いた編集画面は古いことがある。保存の前にこれと比べ、
+ * ほかの端末で更新されていたら上書きしない。exists=false は削除済みか、もう読めない（メンバーから外された）
+ */
+export const getProjectEncryptedAt = async (
+  projectId: string
+): Promise<{ isOK: boolean; exists: boolean; encryptedAt?: Date }> => {
+  try {
+    const snapshot = await getDocFromServer(doc(firestore, 'projects', projectId));
+    if (!snapshot.exists()) return { isOK: true, exists: false };
+    const data = snapshot.data() as ProjectFS;
+    return { isOK: true, exists: true, encryptedAt: data.encryptedAt ? toDate(data.encryptedAt) : undefined };
+  } catch (error) {
+    // 削除済みの doc も、メンバーから外されたプロジェクトも、Rules では読めず権限エラーになる。
+    // どちらも「もうこの内容では保存できない」ので、通信の失敗とは分けて返す
+    if (String((error as { code?: string })?.code ?? '').includes('permission-denied')) {
+      return { isOK: true, exists: false };
+    }
+    console.log(error);
+    return { isOK: false, exists: false };
   }
 };
 

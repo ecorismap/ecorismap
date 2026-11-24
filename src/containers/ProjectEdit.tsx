@@ -18,7 +18,13 @@ import { ProjectType } from '../types';
 import { FUNC_ENCRYPTION, CREATE_DEK_PROJECTS, ENABLE_DEK_SELF_MIGRATION, ENABLE_KEY_LEDGER } from '../constants/AppConstants';
 import { getKeyMigrationState } from '../lib/crypto/migration';
 import { resolveKeyRestoreMessage } from '../hooks/useProjects';
-import { getMemberKeyFreshness, migrateSelfDataToDEK, SelfMigrationInputType } from '../lib/firebase/firestore';
+import {
+  getMemberKeyFreshness,
+  getProjectEncryptedAt,
+  migrateSelfDataToDEK,
+  SelfMigrationInputType,
+} from '../lib/firebase/firestore';
+import { isStaleProjectEdit } from '../utils/projectStaleGuard';
 import dayjs from '../i18n/dayjs';
 import { useEcorisMapFile } from '../hooks/useEcorismapFile';
 import { ConflictResolverModal } from '../components/organisms/HomeModalConflictResolver';
@@ -367,7 +373,7 @@ export default function ProjectEditContainer({ navigation, route }: Props_Projec
       if (!e3kitGroupResult.isOK || !e3kitGroupResult.project) throw new Error(e3kitGroupResult.message);
       const updateProjectResult = await updateProject(e3kitGroupResult.project);
       if (!updateProjectResult.isOK) throw new Error(updateProjectResult.message);
-      saveProject(e3kitGroupResult.project);
+      saveProject(updateProjectResult.project ?? e3kitGroupResult.project);
     },
     [originalProject, saveProject, updateE3kitGroupMembers, updateProject]
   );
@@ -388,6 +394,25 @@ export default function ProjectEditContainer({ navigation, route }: Props_Projec
 
   const pressSaveProject = useCallback(async () => {
     try {
+      // 一覧は端末に保存した内容から出るので、開いた画面が古いことがある。ほかの端末でメンバーや管理者が
+      // 変わっていたら、古い内容で黙って上書きせず止める（2026-11-24 Pixel 実機で古い保留メンバー・管理者が残っていた）
+      if (!isNew) {
+        setIsLoading(true);
+        const latest = await getProjectEncryptedAt(originalProject.id);
+        setIsLoading(false);
+        if (!latest.isOK) {
+          await AlertAsync(t('ProjectEdit.alert.checkLatestFailed'));
+          return;
+        }
+        if (!latest.exists) {
+          await AlertAsync(t('ProjectEdit.alert.projectGone'));
+          return;
+        }
+        if (isStaleProjectEdit(originalProject.encryptedAt, latest.encryptedAt)) {
+          await AlertAsync(t('ProjectEdit.alert.staleProject'));
+          return;
+        }
+      }
       // DEK方式でメンバーがいるのに管理者がオーナー1人だけの場合は注意を促す
       // （オーナーが暗号化キーを失った際の通常の復旧経路は管理者による再共有のため）。
       const willBeDek = isNew ? FUNC_ENCRYPTION && CREATE_DEK_PROJECTS : targetProject.cryptoScheme === 'dek';
@@ -421,7 +446,7 @@ export default function ProjectEditContainer({ navigation, route }: Props_Projec
       setIsLoading(false);
       await AlertAsync(e.message);
     }
-  }, [checkedProject, isNew, navigation, saveNewProject, saveUpdatedProject, targetProject]);
+  }, [checkedProject, isNew, navigation, originalProject, saveNewProject, saveUpdatedProject, targetProject]);
 
   const pressAddMembers = useCallback(
     (emails: string) => {

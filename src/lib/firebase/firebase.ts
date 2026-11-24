@@ -38,6 +38,7 @@ export {
   onSnapshot,
   setDoc,
   getDocsFromServer,
+  getDocFromServer,
   updateDoc,
   runTransaction,
 } from '@react-native-firebase/firestore';

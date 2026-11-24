@@ -950,3 +950,63 @@ describe('M-M4 / M-M17 / M-H6 副因: 共有スタイル・地図の共有設定
   });
 });
 
+
+// ---------------------------------------------------------------------------------------------
+describe('保存前の照合: 古い一覧から開いた編集画面で、ほかの端末の変更を上書きしない（2026-11-24 Pixel 実機）', () => {
+  test('updateProject が返す時刻はクラウドの encryptedAt と同じで、ほかの端末が保存すると手元の内容は古いと判定される', async () => {
+    const { isStaleProjectEdit } = jest.requireActual('../../../utils/projectStaleGuard');
+    const id = newProjectId();
+    const base: ProjectType = {
+      id,
+      name: `stale-${id.slice(-6)}`,
+      members: [memberRow(OWNER, 'OWNER'), memberRow(TARO, 'ADMIN')],
+      ownerUid: OWNER,
+      adminsUid: [OWNER, TARO],
+      membersUid: [OWNER, TARO],
+      abstract: '',
+      storage: { count: 0 },
+    };
+    await seedProject(base);
+
+    // 端末A（オーナー）が保存した直後の手元の時刻は、クラウドと一致する（続けて保存しても止まらない）
+    as(OWNER);
+    const savedA = await projectStore.updateProject(base);
+    expect(savedA.isOK).toBe(true);
+    const localA = savedA.encryptedAt;
+    let latest = await projectStore.getProjectEncryptedAt(id);
+    expect(latest).toEqual({ isOK: true, exists: true, encryptedAt: localA });
+    expect(isStaleProjectEdit(localA, latest.encryptedAt)).toBe(false);
+    // 端末に保存した一覧（文字列）でも同じ判定
+    expect(isStaleProjectEdit(localA?.toISOString(), latest.encryptedAt)).toBe(false);
+
+    // 同じオーナーが端末Bからあとで管理者を外して保存すると、端末Aの手元は古い
+    await new Promise((resolve) => setTimeout(resolve, 5));
+    const savedB = await projectStore.updateProject({
+      ...base,
+      members: [memberRow(OWNER, 'OWNER'), memberRow(TARO, 'MEMBER')],
+      adminsUid: [OWNER],
+    });
+    expect(savedB.isOK).toBe(true);
+    latest = await projectStore.getProjectEncryptedAt(id);
+    expect(isStaleProjectEdit(localA, latest.encryptedAt)).toBe(true);
+    expect(isStaleProjectEdit(savedB.encryptedAt, latest.encryptedAt)).toBe(false);
+  });
+
+  test('クラウドに無いプロジェクトも、メンバーから外されたプロジェクトも exists=false（通信の失敗とは分ける）', async () => {
+    as(OWNER);
+    expect(await projectStore.getProjectEncryptedAt(newProjectId())).toEqual({ isOK: true, exists: false });
+    const id = newProjectId();
+    await seedProject({
+      id,
+      name: `gone-${id.slice(-6)}`,
+      members: [memberRow(OWNER, 'OWNER')],
+      ownerUid: OWNER,
+      adminsUid: [OWNER],
+      membersUid: [OWNER],
+      abstract: '',
+      storage: { count: 0 },
+    });
+    as(TARO);
+    expect(await projectStore.getProjectEncryptedAt(id)).toEqual({ isOK: true, exists: false });
+  });
+});
