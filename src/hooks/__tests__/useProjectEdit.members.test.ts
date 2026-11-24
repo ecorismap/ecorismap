@@ -151,3 +151,34 @@ describe('A-L17: 保存前に追加した行', () => {
     expect(result.current.isAddedMember(1)).toBe(false);
   });
 });
+
+describe('何も変わらない操作では編集ありにしない（戻るときの「変更を破棄しますか？」の誤表示）', () => {
+  it('大文字小文字だけ違う既存メンバーや空白だけを追加しても、編集ありにならない', () => {
+    const project = makeProject([OWNER, PENDING]);
+    const { result } = renderHook(() => useProjectEdit(project, true));
+    act(() => result.current.addMembers('Pending@Example.com'));
+    act(() => result.current.addMembers('   '));
+    expect(result.current.targetProject.members).toHaveLength(2);
+    expect(result.current.isEdited).toBe(false);
+  });
+
+  it('新しいメンバーが1人でも増えれば編集ありになる', () => {
+    const project = makeProject([OWNER, PENDING]);
+    const { result } = renderHook(() => useProjectEdit(project, true));
+    act(() => result.current.addMembers('PENDING@example.com new@example.com'));
+    expect(result.current.targetProject.members.map((m) => m.email)).toEqual([
+      'owner@example.com',
+      'pending@example.com',
+      'new@example.com',
+    ]);
+    expect(result.current.isEdited).toBe(true);
+  });
+
+  it('メール欄を同じ値で確定しても編集ありにならず、行の確認状態も変えない', () => {
+    const project = makeProject([OWNER, MEMBER]);
+    const { result } = renderHook(() => useProjectEdit(project, true));
+    act(() => result.current.changeMemberText('member@example.com', 1));
+    expect(result.current.isEdited).toBe(false);
+    expect(result.current.targetProject.members[1]).toEqual(MEMBER);
+  });
+});
