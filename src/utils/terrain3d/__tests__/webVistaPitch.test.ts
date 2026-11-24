@@ -83,6 +83,19 @@ describe('眺望のカメラ更新（jumpToへ渡す俯角）', () => {
     pitches.forEach((p) => expect(p).not.toBe(90));
   });
 
+  it('3Dを抜けて解除するときは、上限を戻す前に立ち位置・俯角0へカメラを置く（傾いた2Dが保存されない）', async () => {
+    const { map, jumpTo } = createMap();
+    await startWebVista(map, 35.3, 138.7);
+    jumpTo.mockClear();
+    const setMaxPitch = map.setMaxPitch as unknown as jest.Mock;
+    setMaxPitch.mockClear();
+    clearWebVista(false);
+    expect(jumpTo).toHaveBeenCalledWith({ center: [138.7, 35.3], zoom: 15, pitch: 0, bearing: 0 });
+    expect(setMaxPitch).toHaveBeenCalledWith(85);
+    expect(jumpTo.mock.invocationCallOrder[0]).toBeLessThan(setMaxPitch.mock.invocationCallOrder[0]);
+    expect(map.easeTo).not.toHaveBeenCalled();
+  });
+
   it('見回して水平へ戻ったときも90度ちょうどを渡さない', async () => {
     const { map, jumpTo } = createMap();
     await startWebVista(map, 35.3, 138.7);
