@@ -426,6 +426,11 @@ export default function DataEditContainer() {
   }, []);
 
   const pressDownloadPhoto = useCallback(async () => {
+    //確認の前にビューアを閉じる。開いたままだと確認の間だけ引っ込み「Yes」の0.3秒後に出し直されるので、
+    //ダウンロードを終えて閉じるのが出し直しの表示アニメーションと重なる。iOS ではその閉じる処理が効かず、
+    //中身のない透明な Modal が前面に残って画面のタップがすべて効かなくなった（2026-11-24 iPhone 実機）。
+    //どの経路でも最後はビューアを閉じていたので、見え方は変わらない
+    setPhotoEditorOpen(false);
     const ret = await ConfirmAsync(t('DataEdit.confirm.downloadPhoto'));
     if (ret) {
       // if (!hasOpened(projectId)) {
