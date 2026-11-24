@@ -605,7 +605,10 @@
       "deleteProjectOpen": "Please close the project before running it.",
       "reshareKey": "The encryption key has been re-shared. Ask the member to reopen the project.",
       "reshareKeyNoUid": "Cannot re-share because this member has not registered an account.",
-      "migrateSelfDataFailed": "Some data could not be migrated to the new encryption. The project will open anyway (migration will be retried next time)."
+      "migrateSelfDataFailed": "Some data could not be migrated to the new encryption. The project will open anyway (migration will be retried next time).",
+      "staleProject": "This project was updated on another device. Saving was stopped so the older content does not overwrite it. Refresh the project list and edit again.",
+      "projectGone": "This project is no longer in the cloud or you can no longer edit it (it may have been deleted, or you were removed from it). Refresh the project list.",
+      "checkLatestFailed": "Saving was stopped because the latest version in the cloud could not be checked. Check your connection and try again."
     },
     "confirm": {
       "replaceLocalData": "The data on this device will be replaced with the project data. The previous data can be brought back with \"Restore from backup\" (unless the backup could not be created, for example because the data is too large). Open the project?",

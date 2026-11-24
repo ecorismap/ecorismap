@@ -119,6 +119,8 @@ export type UseRepositoryReturnType = {
   updateProject: (project: ProjectType) => Promise<{
     isOK: boolean;
     message: string;
+    /** 保存したプロジェクト（encryptedAt を書いた時刻にしたもの） */
+    project?: ProjectType;
   }>;
   deleteProject: (project_: ProjectType) => Promise<{
     isOK: boolean;
@@ -1500,12 +1502,13 @@ export const useRepository = (): UseRepositoryReturnType & {
       if (!isLoggedIn(user)) {
         return { isOK: false, message: t('hooks.message.pleaseLogin') };
       }
-      const { isOK, message } = await projectStore.updateProject(project);
+      const { isOK, message, encryptedAt } = await projectStore.updateProject(project);
       if (!isOK) {
         return { isOK, message };
       }
-      dispatch(updateProjectAction(project));
-      return { isOK: true, message: '' };
+      const saved = { ...project, encryptedAt };
+      dispatch(updateProjectAction(saved));
+      return { isOK: true, message: '', project: saved };
     },
     [dispatch, user]
   );
