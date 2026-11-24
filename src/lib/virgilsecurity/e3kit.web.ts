@@ -4,6 +4,7 @@ import { ProjectType } from '../../types';
 import { decryptSharedFile, encryptSharedFile } from './e3kit-browser';
 import { splitStringsIntoChunksOfLen } from '../../utils/General';
 import { FUNC_ENCRYPTION } from '../../constants/AppConstants';
+import { serializeAsync } from '../../utils/serializeAsync';
 import { gzip, unzip } from '../../utils/Zip';
 import { gzipFile, unzipFile } from '../../utils/Zip';
 import { functions, httpsCallable } from '../firebase/firebase';
@@ -32,7 +33,12 @@ export const isInitialized = (): boolean => {
   }
 };
 
-export const initializeUser = async (userId: string) => {
+/**
+ * 初期化は一度に1つずつ。プロジェクト画面の保留メンバー確認（useProjectEdit）と「開く」（loadE3kitGroup）が
+ * 同時に初期化すると、Web で片方の EThree.initialize 以降が戻らず、開く処理が読み込み中のまま止まった
+ * （2026-11-24 Web 本番で再現。画面を開いてすぐ「開く」を押すと起きる）。
+ */
+export const initializeUser = serializeAsync(async (userId: string) => {
   if (!FUNC_ENCRYPTION) return { isOK: true, state: '' };
   const getToken = httpsCallable(functions, 'getVirgilJwt');
   //@ts-ignore
@@ -58,7 +64,7 @@ export const initializeUser = async (userId: string) => {
     eThree = undefined as unknown as EThree;
     return { isOK: false, message: e.message || e };
   }
-};
+});
 
 export const registEncrypt = async (backupPassword: string) => {
   if (!FUNC_ENCRYPTION) return { isOK: true };

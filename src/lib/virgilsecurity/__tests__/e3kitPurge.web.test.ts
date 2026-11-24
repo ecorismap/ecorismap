@@ -61,3 +61,30 @@ describe('e3kit.web purgeLocalKeys / initializeUser', () => {
     expect(deleted).toEqual([]);
   });
 });
+
+describe('e3kit.web initializeUser の直列化', () => {
+  test('同時に呼ばれても、前の初期化が終わってから次の EThree.initialize を始める', async () => {
+    let releaseFirst: () => void = () => undefined;
+    const instance = () => ({
+      ...mockEThree,
+      findUsers: jest.fn().mockResolvedValue({}),
+      hasLocalPrivateKey: jest.fn().mockResolvedValue(true),
+      restorePrivateKey: jest.fn().mockRejectedValue(Object.assign(new Error('x'), { name: 'WrongKeyknoxPasswordError' })),
+    });
+    mockInitialize.mockReset();
+    mockInitialize
+      .mockImplementationOnce(() => new Promise((resolve) => (releaseFirst = () => resolve(instance()))))
+      .mockImplementationOnce(async () => instance());
+
+    // 保留メンバー確認（自分の uid）と「開く」（オーナーの uid）がほぼ同時に初期化する
+    const first = initializeUser('me');
+    const second = initializeUser('owner');
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(mockInitialize).toHaveBeenCalledTimes(1);
+
+    releaseFirst();
+    expect((await first).isOK).toBe(true);
+    expect((await second).isOK).toBe(true);
+    expect(mockInitialize).toHaveBeenCalledTimes(2);
+  });
+});
