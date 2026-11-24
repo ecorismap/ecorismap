@@ -7,7 +7,7 @@ import { editSettingsAction } from '../modules/settings';
 import { clearDataSyncProjectAction } from '../modules/dataSync';
 import { ProjectType, RegionType, UserType, VerifiedType } from '../types';
 import { checkDuplicateMember, checkEmails, hasDuplicateMemberUid, normalizeMemberEmail } from '../utils/Project';
-import { hasRegisterdUser } from '../lib/virgilsecurity/e3kit';
+import { hasRegisterdUser, initializeUser, isInitialized } from '../lib/virgilsecurity/e3kit';
 import { t } from '../i18n/config';
 import { isLoggedIn } from '../utils/Account';
 import { ConfirmAsync } from '../components/molecules/AlertAsync';
@@ -38,6 +38,18 @@ export type UseProjectEditReturnType = {
   deleteMember: (idx: number) => void;
   /** 保存前にこの画面で追加した行か。管理者でも打ち間違いを直したり消したりできるようにする */
   isAddedMember: (idx: number) => boolean;
+};
+
+/**
+ * メンバーの登録確認（Virgil Cards の照会）は E3Kit の初期化が前提。プロジェクト一覧は永続化から表示されるため、
+ * 起動し直したあとプロジェクトを開かず一覧の「更新」もしないと未初期化のままここへ来て、
+ * 「Cannot read property 'findUsers' of undefined」で保存できなかった。照会の前に済ませておく。
+ */
+const ensureEncryptionReady = async (uid: string | undefined): Promise<boolean> => {
+  if (isInitialized()) return true;
+  if (!uid) return false;
+  const { isOK } = await initializeUser(uid);
+  return isOK;
 };
 
 export const useProjectEdit = (initialProject: ProjectType, isNew: boolean): UseProjectEditReturnType => {
@@ -165,6 +177,7 @@ export const useProjectEdit = (initialProject: ProjectType, isNew: boolean): Use
       try {
         const uids = await getUidsByEmails(pendingEmails);
         if (cancelled || uids === undefined) return;
+        if (!(await ensureEncryptionReady(user.uid)) || cancelled) return;
         // 保存時は暗号化キー（Virgil）の登録まで確かめて未登録なら保留に戻すので、ここでも同じ基準で判定する。
         // Firebase だけで判定すると、キー未登録の人が開くたびにオレンジになり保存しても赤に戻る
         const registered = await Promise.all(
@@ -235,6 +248,9 @@ export const useProjectEdit = (initialProject: ProjectType, isNew: boolean): Use
     if (uids === undefined) {
       return { isOK: false, message: t('hooks.message.failUserCheck'), project: undefined };
     }
+    if (!(await ensureEncryptionReady(user.uid))) {
+      return { isOK: false, message: t('hooks.message.failedInitializeEncrypt'), project: undefined };
+    }
     const { registerd, hasInvalidAccount } = await checkRegisterdUser(uids);
     const updatedProject = updateProjectMembers(normalizedProject, uids, registerd);
     // 別のメール（別名・旧アドレスなど）が同じアカウントに解決された。行ごとに役割が違うと、片方で管理者を外しても
@@ -270,7 +286,7 @@ export const useProjectEdit = (initialProject: ProjectType, isNew: boolean): Use
       message: '',
       project: updatedProject,
     };
-  }, [checkRegisterdUser, originalProject.name, projects, targetProject, updateProjectMembers]);
+  }, [checkRegisterdUser, originalProject.name, projects, targetProject, updateProjectMembers, user.uid]);
 
   const saveProject = useCallback((updatedProject: ProjectType) => {
     setIsEdited(false);

@@ -20,7 +20,11 @@ jest.mock('react-redux', () => ({
   shallowEqual: jest.fn(),
 }));
 jest.mock('../../lib/firebase/firestore', () => ({ getUidsByEmails: jest.fn() }));
-jest.mock('../../lib/virgilsecurity/e3kit', () => ({ hasRegisterdUser: jest.fn() }));
+jest.mock('../../lib/virgilsecurity/e3kit', () => ({
+  hasRegisterdUser: jest.fn(),
+  isInitialized: jest.fn(() => true),
+  initializeUser: jest.fn(),
+}));
 jest.mock('../../components/molecules/AlertAsync', () => ({ ConfirmAsync: jest.fn() }));
 jest.mock('../../i18n/config', () => ({ t: jest.fn((key: string) => key) }));
 
@@ -181,7 +185,10 @@ describe('A-L14: 保留の確認でキャンセルしても既存の有効メン
     });
     expect(res?.project?.members.map((m) => m.verified)).toEqual(['OK', 'HOLD']);
 
-    const created = makeProject([{ ...OWNER, verified: 'HOLD' }, { ...MEMBER, uid: '', verified: 'NO_ACCOUNT' }]);
+    const created = makeProject([
+      { ...OWNER, verified: 'HOLD' },
+      { ...MEMBER, uid: '', verified: 'NO_ACCOUNT' },
+    ]);
     const { result: newResult } = renderHook(() => useProjectEdit(created, true));
     mockGetUidsByEmails.mockResolvedValueOnce(['owner', 'member']);
     await act(async () => {
