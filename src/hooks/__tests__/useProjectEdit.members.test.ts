@@ -16,7 +16,11 @@ jest.mock('react-redux', () => ({
   shallowEqual: jest.fn(),
 }));
 jest.mock('../../lib/firebase/firestore', () => ({ getUidsByEmails: jest.fn() }));
-jest.mock('../../lib/virgilsecurity/e3kit', () => ({ hasRegisterdUser: jest.fn() }));
+jest.mock('../../lib/virgilsecurity/e3kit', () => ({
+  hasRegisterdUser: jest.fn(),
+  isInitialized: jest.fn(() => true),
+  initializeUser: jest.fn(),
+}));
 jest.mock('../../components/molecules/AlertAsync', () => ({ ConfirmAsync: jest.fn() }));
 jest.mock('../../i18n/config', () => ({ t: jest.fn((key: string) => key) }));
 
