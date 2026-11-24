@@ -310,12 +310,11 @@ export const useProjectEdit = (initialProject: ProjectType, isNew: boolean): Use
 
   const changeMemberText = useCallback(
     (value: string, idx: number) => {
+      if (targetProject.members[idx].email === value) return;
       const members = cloneDeep(targetProject.members);
-      if (members[idx].email !== value) {
-        // メールを書き換えた行は別の人になりうる。元の人の uid・バッジのまま残すと、表示や鍵の再共有が
-        // 元の人に向いてしまう。保存時に全メールを解決し直すので、それまでは未確認として扱う
-        members[idx] = { ...members[idx], email: value, uid: null, verified: 'NO_ACCOUNT' };
-      }
+      // メールを書き換えた行は別の人になりうる。元の人の uid・バッジのまま残すと、表示や鍵の再共有が
+      // 元の人に向いてしまう。保存時に全メールを解決し直すので、それまでは未確認として扱う
+      members[idx] = { ...members[idx], email: value, uid: null, verified: 'NO_ACCOUNT' };
       setTargetProject({ ...targetProject, members: members });
       setIsEdited(true);
     },
@@ -351,6 +350,9 @@ export const useProjectEdit = (initialProject: ProjectType, isNew: boolean): Use
         members.push({ uid: '', email: email, verified: 'NO_ACCOUNT', role: 'MEMBER' });
         addedCount++;
       });
+      // 既存メンバーと重なる・空白だけなど、1人も増えなければ何も変えない。編集ありにすると、
+      // 何も変わっていないのに戻るときに「変更を破棄しますか？」が出る
+      if (addedCount === 0) return;
       setTargetProject({ ...targetProject, members });
       setAddedMemberFlags((prev) => [
         ...targetProject.members.map((_, i) => prev[i] === true),
