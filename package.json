@@ -16,6 +16,7 @@
       "src/__tests__/resources/.*",
       "src/lib/__tests__/firebase/.*",
       "maplibre-native/.*",
+      "e2e/.*",
       "\\.claude/"
     ],
     "moduleFileExtensions": [
@@ -81,6 +82,10 @@
     "test:coverage:watch": "jest --coverage --watchAll --detectOpenHandles --runInBand --forceExit",
     "testemu": "firebase emulators:exec 'yarn jest'",
     "smoke:photo": "scripts/smoke-photo.sh",
+    "e2e:web": "playwright test -c e2e/web/playwright.config.ts",
+    "e2e:web:emu": "scripts/e2e-web-emu.sh",
+    "e2e:ios": "scripts/e2e-native.sh ios",
+    "e2e:android": "scripts/e2e-native.sh android",
     "testrules": "firebase emulators:exec --project demo-ecorismap-test --only firestore,storage 'npx jest --config jest.rules.config.js --runInBand'",
     "lint": "ESLINT_USE_FLAT_CONFIG=false eslint --fix --ext .tsx --ext .ts src/",
     "audit": "yarn npm audit",
@@ -228,6 +233,7 @@
     "@babel/runtime": "^7.25.0",
     "@firebase/rules-unit-testing": "^3.0.4",
     "@maplibre/maplibre-gl-style-spec": "24.10.0",
+    "@playwright/test": "1.61.1",
     "@react-native-community/cli": "20.1.3",
     "@react-native-community/cli-platform-android": "20.1.3",
     "@react-native-community/cli-platform-ios": "20.1.3",

@@ -1,0 +1,11 @@
+# 開いているデータ一覧の行数を output.row に入れる（＝次に増える記録の行番号）。
+appId: jp.co.ecoris.ecorismap
+---
+- evalScript: ${output.row = 0}
+- repeat:
+    while:
+      visible:
+        id: data-row-${output.row}
+    times: 50
+    commands:
+      - evalScript: ${output.row = output.row + 1}

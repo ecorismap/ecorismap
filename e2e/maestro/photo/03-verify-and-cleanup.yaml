@@ -8,8 +8,11 @@ env:
 - stopApp
 - launchApp
 - runFlow: ../common/open-point-layer.yaml
+# 01・02が作ったのは末尾のレコード
+- runFlow: ../common/count-rows.yaml
+- evalScript: ${output.last = output.row - 1}
 - tapOn:
-    id: 'data-row-0'
+    id: data-row-${output.last}
 - extendedWaitUntil:
     visible:
       id: 'dataedit-photo-thumb-0'
@@ -30,5 +33,9 @@ env:
 - tapOn:
     id: 'dataedit-delete'
 - tapOn: 'Yes'
+- extendedWaitUntil:
+    visible:
+      id: 'data-add'
+    timeout: 10000
 - assertNotVisible:
-    id: 'data-row-0'
+    id: data-row-${output.last}

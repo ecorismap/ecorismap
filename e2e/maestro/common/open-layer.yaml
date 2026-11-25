@@ -1,0 +1,37 @@
+# 地図画面から、レイヤ一覧を開いて ${LAYER_NAME} のデータ一覧を開く（追加ボタンの無いライン・ポリゴン・軌跡のレイヤにも使える）。
+# レイヤ名は地図画面のボタンの文言（「軌跡」など）と重なることがあるので、一覧の行（layers-row-N）の中から探す。
+appId: jp.co.ecoris.ecorismap
+---
+# 起動直後（地図の読み込み中）のタップは効かないことがあるので、一覧が開くまで押し直す
+- repeat:
+    while:
+      notVisible:
+        id: 'layers-add'
+    times: 5
+    commands:
+      - tapOn:
+          id: 'home-layers'
+          # 画面が変わらないと同じ位置を押し直す既定動作は、開いた一覧の別ボタンを押してしまう
+          retryTapIfNoChange: false
+      - waitForAnimationToEnd:
+          timeout: 3000
+# Androidは行の中の文字が子要素になり、iOSは行そのものの読み上げ文言になる
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - tapOn:
+          id: 'layers-row-\d+'
+          containsDescendants:
+            - text: ${LAYER_NAME}
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - tapOn:
+          id: 'layers-row-\d+'
+          text: ${LAYER_NAME}
+- extendedWaitUntil:
+    visible:
+      id: 'data-export'
+    timeout: 10000

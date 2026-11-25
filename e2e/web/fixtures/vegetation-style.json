@@ -1,0 +1,21 @@
+{
+  "layers": [
+    {
+      "id": "vegetation-fill",
+      "type": "fill",
+      "source-layer": "vegetation",
+      "paint": {
+        "fill-color": [
+          "match", ["get", "植生"],
+          "ブナ林", "#2e7d32",
+          "コナラ林", "#8bc34a",
+          "スギ植林", "#00695c",
+          "伐採地", "#d7ccc8",
+          "#cccccc"
+        ],
+        "fill-opacity": 0.55,
+        "fill-outline-color": "#33691e"
+      }
+    }
+  ]
+}

@@ -1,0 +1,35 @@
+# アプリを起動し直して、地図画面が使える状態にする。
+# 初回起動のダイアログ（利用規約・更新情報）と開発ビルドの警告トーストは、出ていれば閉じる。
+appId: jp.co.ecoris.ecorismap
+---
+- stopApp
+- launchApp:
+    permissions:
+      all: allow
+- extendedWaitUntil:
+    visible:
+      id: 'home-layers'
+    timeout: 120000
+- runFlow:
+    when:
+      visible: '利用規約に同意して開始しますか？'
+    commands:
+      - tapOn: 'OK'
+- runFlow:
+    when:
+      visible: '更新情報'
+    commands:
+      - tapOn: 'OK'
+# 開発ビルドの警告トーストは下部のボタンに重なり、起動後に遅れて何度か出る。出なくなるまで閉じる
+- waitForAnimationToEnd:
+    timeout: 3000
+- repeat:
+    while:
+      visible: 'Open debugger to view warnings.'
+    times: 5
+    commands:
+      - tapOn:
+          rightOf: 'Open debugger to view warnings.'
+          retryTapIfNoChange: false
+      - waitForAnimationToEnd:
+          timeout: 2000

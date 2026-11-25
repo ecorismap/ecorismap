@@ -9,10 +9,8 @@ env:
     permissions:
       all: allow
 - runFlow: ../common/open-point-layer.yaml
-# 03は先頭のレコードを検証して消すので、レイヤが空の状態から始める。
-# 失敗したフローの残りがあるときは 99-delete-all-test-records.yaml で片付ける
-- assertNotVisible:
-    id: 'data-row-0'
+# いまある記録の数（＝これから作る記録の行番号）を数える。03は末尾のレコードを検証して消す
+- runFlow: ../common/count-rows.yaml
 - tapOn:
     id: 'data-add'
 - extendedWaitUntil:
@@ -47,5 +45,5 @@ env:
           id: 'dataedit-save'
       - extendedWaitUntil:
           visible:
-            id: 'data-row-0'
+            id: data-row-${output.row}
           timeout: 10000

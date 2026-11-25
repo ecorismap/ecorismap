@@ -1,0 +1,32 @@
+# BOOT-1〜3: 起動して地図画面とボタン群が出る。
+appId: jp.co.ecoris.ecorismap
+---
+- runFlow: ../common/launch.yaml
+- assertVisible:
+    id: 'home-maps'
+- assertVisible:
+    id: 'home-track'
+- assertVisible:
+    id: 'home-layers'
+- assertVisible:
+    id: 'home-settings'
+- assertVisible:
+    id: 'home-gps'
+- assertVisible:
+    id: 'home-compass-button'
+- assertVisible:
+    id: 'home-zoom-in'
+- assertVisible:
+    id: 'home-zoom-out'
+# SET-1: 設定画面が開き、ネイティブだけの項目も出る
+- runFlow: ../common/open-settings.yaml
+- assertVisible:
+    id: 'settings-clear-data'
+- assertVisible:
+    id: 'settings-backup-restore'
+- assertVisible:
+    id: 'settings-gps'
+- takeScreenshot: 01-settings
+- tapOn:
+    id: 'sheet-close'
+- takeScreenshot: 01-home
