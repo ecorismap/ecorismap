@@ -15,6 +15,7 @@ import { db } from '../utils/db';
 import { TILE_FOLDER } from '../constants/AppConstants';
 import { isPeaksUrl } from '../utils/peaks/peak2dLabels';
 import { discardStaleTileSources } from '../utils/tileSourceCleanup';
+import { nextNativeStyleURL } from '../utils/vectorStyleFile';
 import { hasSharedStyle } from '../utils/mapExport';
 import { pmtilesHeaderZoom } from '../utils/pmtilesHeaderZoom';
 import { useStore } from 'react-redux';
@@ -139,8 +140,9 @@ export default function MapEditContainer() {
       return;
     }
     pendingStyleRef.current = result.style;
-    changeStyleURL(Platform.OS === 'web' ? 'style://' + name : 'style://style.json');
-  }, [changeStyleURL, readStyleFile]);
+    const savedStyleURL = store.getState().tileMaps.find(({ id }) => id === map.id)?.styleURL;
+    changeStyleURL(Platform.OS === 'web' ? 'style://' + name : nextNativeStyleURL(savedStyleURL));
+  }, [changeStyleURL, map.id, readStyleFile, store]);
 
   const gotoBack = useCallback(() => {
     if (isEdited) {

@@ -32,7 +32,10 @@ const mockOrder: string[] = [];
 const mockDispatch = jest.fn((action: { type?: string }) => {
   if (action.type?.startsWith('tileMaps/')) mockOrder.push('saveMap');
 });
-const mockState = { tileMaps: [{ id: 'P' }], settings: {} };
+const mockState: { tileMaps: { id: string; styleURL?: string }[]; settings: object } = {
+  tileMaps: [{ id: 'P' }],
+  settings: {},
+};
 jest.mock('react-redux', () => ({
   useDispatch: () => mockDispatch,
   useSelector: (selector: (state: unknown) => unknown) => selector(mockState),
@@ -153,7 +156,22 @@ describe('地図編集のスタイル読み込み', () => {
     expect(mockSaveStyleFile.mock.calls).toEqual([['P', 'A']]);
   });
 
-  it('iOS/Android では style://style.json になる', async () => {
+  it.each([
+    [undefined, 'style://style.json'],
+    ['https://example.com/style.json', 'style://style.json'],
+    ['style://style.json', 'style://style.json?v=2'],
+    ['style://style.json?v=2', 'style://style.json?v=3'],
+  ])('iOS/Android では保存済み（%s）と違う styleURL にして、描き直させる', async (saved, expected) => {
+    Platform.OS = 'android';
+    mockState.tileMaps = [{ id: 'P', styleURL: saved }];
+    await importStyle('a.json', 'A');
+    expect(ctx().map.styleURL).toBe(expected);
+    await save();
+    expect(mockSaveStyleFile).toHaveBeenCalledWith('P', 'A');
+    mockState.tileMaps = [{ id: 'P' }];
+  });
+
+  it('iOS/Android でも読み込んだだけでは書かない', async () => {
     Platform.OS = 'ios';
     await importStyle('a.json', 'A');
     expect(ctx().map.styleURL).toBe('style://style.json');

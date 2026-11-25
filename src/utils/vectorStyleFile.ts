@@ -14,3 +14,16 @@ export const parseStyleLayers = (json: string): unknown[] | undefined => {
     return undefined;
   }
 };
+
+const NATIVE_STYLE_URL = 'style://style.json';
+
+/**
+ * 読み込んだスタイルを置いたあとの styleURL（ネイティブ）。描画は地図フォルダの style.json を読むので名前は使わない。
+ * 保存済みの styleURL と同じ文字列のままだと、描画済みの画像も表示中の地図部品も作り直されず前のスタイルが残るため、
+ * 読み込み直すたびに違う文字列にする（TILES-15）
+ */
+export const nextNativeStyleURL = (savedStyleURL: string | undefined): string => {
+  if (savedStyleURL === undefined || !savedStyleURL.startsWith(NATIVE_STYLE_URL)) return NATIVE_STYLE_URL;
+  const version = Number(/\?v=(\d+)$/.exec(savedStyleURL)?.[1] ?? 1);
+  return `${NATIVE_STYLE_URL}?v=${version + 1}`;
+};

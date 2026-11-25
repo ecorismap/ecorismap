@@ -69,7 +69,10 @@ export const getZoomRange = (tileType: TileType, tileMap: TileMapType, archiveZo
   if (tileType === 'pmtiles' || tileType === 'pbf') {
     // pbf は常にベクタとして描かれる
     const isVector = tileType === 'pbf' ? true : tileMap.isVector;
-    const nativeMaxZoom = getPmtileMaximumNativeZ({ overzoomThreshold: tileMap.overzoomThreshold, isVector }, true);
+    const nativeMaxZoom = getPmtileMaximumNativeZ(
+      { overzoomThreshold: tileMap.overzoomThreshold, maximumZ: tileMap.maximumZ, isVector },
+      true
+    );
     if (archiveZoom === undefined) return { minZoom: 0, maxZoom: Math.min(18, nativeMaxZoom) };
     return { minZoom: Math.max(0, archiveZoom.minZoom), maxZoom: Math.min(archiveZoom.maxZoom, nativeMaxZoom) };
   }
