@@ -119,6 +119,7 @@ export default function TrackSummary() {
           <View style={styles.headerButtons}>
             {/* 再生はヘッダに置く。シートが半開きでもグラフと地図を見ながら押せる */}
             <TouchableOpacity
+              testID="tracksummary-replay"
               style={styles.replayButton}
               onPress={toggleReplay}
               disabled={!canReplay}
@@ -131,6 +132,7 @@ export default function TrackSummary() {
               />
             </TouchableOpacity>
             <TouchableOpacity
+              testID="tracksummary-export"
               style={styles.exportButton}
               onPress={pressExportTrack}
               disabled={isExporting || statistics === null}
@@ -144,6 +146,7 @@ export default function TrackSummary() {
             </TouchableOpacity>
             {Platform.OS !== 'web' && (
               <TouchableOpacity
+                testID="tracksummary-photo-toggle"
                 style={styles.photoToggle}
                 onPress={toggleTrackPhotoVisible}
                 accessibilityLabel={t('TrackSummary.label.photos')}
@@ -180,7 +183,7 @@ export default function TrackSummary() {
               <View style={styles.limitedRow}>
                 <MaterialCommunityIcons name="alert-circle-outline" size={16} color={COLOR.GRAY3} />
                 <Text style={styles.limitedText}>{t('TrackSummary.limitedAccess')}</Text>
-                <TouchableOpacity onPress={presentLimitedPicker}>
+                <TouchableOpacity testID="tracksummary-select-more-photos" onPress={presentLimitedPicker}>
                   <Text style={styles.limitedLink}>{t('TrackSummary.selectMorePhotos')}</Text>
                 </TouchableOpacity>
               </View>
@@ -202,7 +205,7 @@ export default function TrackSummary() {
             )}
             <View style={styles.grid}>
               {statItems.map(({ key, icon, label, value }) => (
-                <View key={key} style={styles.card}>
+                <View testID={`tracksummary-stat-${key}`} key={key} style={styles.card}>
                   <View style={styles.cardLabelRow}>
                     <MaterialCommunityIcons name={icon} size={16} color={COLOR.GRAY3} />
                     <Text style={styles.cardLabel}>{label}</Text>

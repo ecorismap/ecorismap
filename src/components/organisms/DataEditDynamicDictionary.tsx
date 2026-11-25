@@ -53,6 +53,7 @@ export const DataEditDynamicDictionary = (props: Props) => {
         <View style={styles.tr2}>
           {name && <Text style={styles.title}>{name}</Text>}
           <DynamicDictionaryTextInput
+            testID={`dataedit-input-${name}`}
             initialValue={toInputText(value)}
             fieldKey={fieldKey}
             handleSelect={(text) => onChangeText(name, text)}

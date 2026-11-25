@@ -78,6 +78,7 @@ export const HomePopup = React.memo(() => {
         }}
       >
         <TouchableOpacity
+          testID="home-popup-close"
           style={{
             position: 'absolute',
             top: 4,

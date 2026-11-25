@@ -23,6 +23,7 @@ export const LayerEditFieldTitle = () => {
             backgroundColor: editable ? COLOR.BLUE : COLOR.LIGHTBLUE,
             padding: 0,
           }}
+          testID="layeredit-field-add"
           name="plus"
           disabled={!editable}
           onPress={pressAddField}
@@ -76,6 +77,7 @@ export const LayerEditFieldTable = () => {
                 backgroundColor: COLOR.DARKRED,
                 padding: 0,
               }}
+              testID={`layeredit-field-delete-${index}`}
               name="minus"
               size={14}
               disabled={!editable}
@@ -85,6 +87,7 @@ export const LayerEditFieldTable = () => {
           <View style={[styles.td, { flex: 6, borderRightWidth: 1, width: 150 }]}>
             <TextInput
               style={styles.input}
+              testID={`layeredit-field-name-${index}`}
               value={item.name}
               editable={editable}
               onChangeText={(val: string) => onChangeFieldName(index, val)}
@@ -96,6 +99,7 @@ export const LayerEditFieldTable = () => {
           <View style={[styles.td, { flex: 7, width: 175 }]}>
             <Picker
               enabled={editable}
+              testID={`layeredit-field-format-${index}`}
               selectedValue={item.format}
               onValueChange={(itemValue) => (editable ? onChangeFieldFormat(index, itemValue as FormatType) : null)}
               itemLabelArray={formatTypeLabels}
@@ -122,6 +126,7 @@ export const LayerEditFieldTable = () => {
                   padding: 0,
                 }}
                 color={COLOR.GRAY3}
+                testID={`layeredit-field-value-${index}`}
                 name="chevron-right-circle-outline"
                 size={18}
                 disabled={!editable}
@@ -132,6 +137,7 @@ export const LayerEditFieldTable = () => {
           <View style={[styles.td, { flex: 4, width: 100 }]}>
             {(item.format === 'STRING_DICTIONARY' || item.format === 'STRING_DYNAMIC') && (
               <CheckBox
+                testID={`layeredit-field-option-${index}`}
                 label={t('common.useAdd')}
                 labelSize={11}
                 width={95}
@@ -146,6 +152,7 @@ export const LayerEditFieldTable = () => {
           <View style={[styles.td, { flex: 3, width: 75, justifyContent: 'center' }]}>
             {/* 上へ */}
             <Button
+              testID={`layeredit-field-up-${index}`}
               name="chevron-up"
               disabled={!editable || index === 0}
               onPress={() => onChangeFieldOrder(index, 'up')}
@@ -154,6 +161,7 @@ export const LayerEditFieldTable = () => {
             />
             {/* 下へ */}
             <Button
+              testID={`layeredit-field-down-${index}`}
               name="chevron-down"
               disabled={!editable || index === layer.field.length - 1}
               onPress={() => onChangeFieldOrder(index, 'down')}

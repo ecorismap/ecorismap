@@ -400,6 +400,7 @@ export default function HomeScreen() {
         />
         {!isEditingRecord && !isEditingLayer && !isEditingMap && (
           <Pressable
+            testID="sheet-close"
             style={{
               position: 'absolute',
               right: 0,

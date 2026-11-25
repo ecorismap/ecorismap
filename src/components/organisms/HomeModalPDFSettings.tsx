@@ -139,6 +139,7 @@ export const HomeModalPDFSettings = React.memo((props: Props) => {
                 <Text style={{ fontSize: 14, width: 120 }}>{`${t('common.paperSize')}:`}</Text>
                 <View style={{ width: 155, height: 45, borderWidth: 1, borderRadius: 2, margin: 1 }}>
                   <Picker
+                    testID="home-pdfsettings-paper-size"
                     selectedValue={pdfPaperSize}
                     onValueChange={(itemValue) => setPdfPaperSize(itemValue as PaperSizeType)}
                     itemLabelArray={pdfPaperSizes}
@@ -151,6 +152,7 @@ export const HomeModalPDFSettings = React.memo((props: Props) => {
                 <Text style={{ fontSize: 14, width: 120 }}>{`${t('common.orientation')}:`}</Text>
                 <View style={{ width: 155, height: 45, borderWidth: 1, borderRadius: 2, margin: 1 }}>
                   <Picker
+                    testID="home-pdfsettings-orientation"
                     selectedValue={pdfOrientation}
                     onValueChange={(itemValue) => setPdfOrientation(itemValue as PaperOrientationType)}
                     itemLabelArray={Object.values(ORIENTATIONTYPE)}
@@ -163,6 +165,7 @@ export const HomeModalPDFSettings = React.memo((props: Props) => {
                 <Text style={{ fontSize: 14, width: 120 }}>{`${t('common.scale')}:`}</Text>
                 <View style={{ width: 155, height: 45, borderWidth: 1, borderRadius: 2, margin: 1 }}>
                   <Picker
+                    testID="home-pdfsettings-scale"
                     selectedValue={pdfScale}
                     onValueChange={(itemValue) => setPdfScale(itemValue as ScaleType)}
                     itemLabelArray={pdfScalesLabel}
@@ -175,6 +178,7 @@ export const HomeModalPDFSettings = React.memo((props: Props) => {
                 <Text style={{ fontSize: 14, width: 120 }}>{`${t('common.zoomlevelOfMaps')}:`}</Text>
                 <View style={{ width: 155, height: 45, borderWidth: 1, borderRadius: 2, margin: 1 }}>
                   <Picker
+                    testID="home-pdfsettings-zoom-level"
                     selectedValue={pdfTileMapZoomLevel}
                     onValueChange={(itemValue) => setPdfTileMapZoomLevel(itemValue as string)}
                     itemLabelArray={pdfTileMapZoomLevels}
@@ -189,6 +193,7 @@ export const HomeModalPDFSettings = React.memo((props: Props) => {
                   <CheckBox
                     style={{ backgroundColor: COLOR.WHITE }}
                     width={windowWidth * modalWidthScale * 0.5}
+                    testID="home-pdfsettings-output-vrt"
                     checked={outputVRT}
                     onCheck={setOutputVRT}
                   />
@@ -200,6 +205,7 @@ export const HomeModalPDFSettings = React.memo((props: Props) => {
                   <CheckBox
                     style={{ backgroundColor: COLOR.WHITE }}
                     width={windowWidth * modalWidthScale * 0.5}
+                    testID="home-pdfsettings-output-data-pdf"
                     checked={outputDataPDF}
                     onCheck={setOutputDataPDF}
                   />
@@ -208,7 +214,7 @@ export const HomeModalPDFSettings = React.memo((props: Props) => {
             </View>
 
             <View style={styles.modalButtonContainer}>
-              <Pressable style={styles.modalOKCancelButton} onPress={() => pressOK()}>
+              <Pressable testID="home-pdfsettings-ok" style={styles.modalOKCancelButton} onPress={() => pressOK()}>
                 <Text>OK</Text>
               </Pressable>
             </View>

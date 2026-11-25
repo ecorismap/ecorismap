@@ -95,6 +95,7 @@ export default function GoogleDriveProjects() {
         <View>
           <Text style={styles.description}>{t('GoogleDriveProjects.description')}</Text>
           <TextButton
+            testID="gdrive-connect"
             name={GOOGLEDRIVE_BTN.CONNECT}
             text={t('GoogleDriveProjects.connect.text')}
             onPress={pressConnect}
@@ -108,6 +109,7 @@ export default function GoogleDriveProjects() {
             </Text>
             <View style={{ width: 33, marginRight: 15 }}>
               <Button
+                testID="gdrive-reload"
                 name={GOOGLEDRIVE_BTN.RELOAD}
                 borderRadius={5}
                 backgroundColor={COLOR.GRAY3}
@@ -116,6 +118,7 @@ export default function GoogleDriveProjects() {
             </View>
             <View style={{ width: 33 }}>
               <Button
+                testID="gdrive-disconnect"
                 name={GOOGLEDRIVE_BTN.DISCONNECT}
                 borderRadius={5}
                 backgroundColor={COLOR.GRAY3}
@@ -125,6 +128,7 @@ export default function GoogleDriveProjects() {
           </View>
           {mode !== 'open' && (
             <TextButton
+              testID="gdrive-save"
               name={GOOGLEDRIVE_BTN.SAVE}
               text={t('GoogleDriveProjects.save.text')}
               onPress={pressSaveToDrive}
@@ -134,8 +138,8 @@ export default function GoogleDriveProjects() {
           <FlatList
             data={driveProjects}
             keyExtractor={(item) => item.fileId}
-            renderItem={({ item }) => (
-              <View style={styles.itemRow}>
+            renderItem={({ item, index }) => (
+              <View testID={`gdrive-row-${index}`} style={styles.itemRow}>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.itemName} numberOfLines={1}>
                     {item.name}
@@ -149,6 +153,7 @@ export default function GoogleDriveProjects() {
                 {mode !== 'save' && (
                   <View style={{ width: 33, marginRight: 15 }}>
                     <Button
+                      testID={`gdrive-load-${index}`}
                       name={GOOGLEDRIVE_BTN.LOAD}
                       borderRadius={5}
                       backgroundColor={COLOR.GRAY3}
@@ -160,6 +165,7 @@ export default function GoogleDriveProjects() {
                 {mode === undefined && (
                   <View style={{ width: 33 }}>
                     <Button
+                      testID={`gdrive-delete-${index}`}
                       name={GOOGLEDRIVE_BTN.DELETE}
                       borderRadius={5}
                       backgroundColor={COLOR.DARKRED}

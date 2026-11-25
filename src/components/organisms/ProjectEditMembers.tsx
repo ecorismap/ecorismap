@@ -9,6 +9,8 @@ import { CheckBox } from '../molecules/CheckBox';
 import { t } from '../../i18n/config';
 
 interface Props {
+  /** メンバー一覧での表示順（E2E用testIDの末尾に使う） */
+  index?: number;
   name: string;
   value: string | number | undefined;
   editable: boolean;
@@ -27,6 +29,7 @@ interface Props {
 
 export const ProjectEditMembers = (props: Props) => {
   const {
+    index,
     name,
     value,
     editable,
@@ -49,6 +52,7 @@ export const ProjectEditMembers = (props: Props) => {
     <View style={styles.tr}>
       <View style={[styles.td, { flex: 12 }]}>
         <MemberTextInput
+          testID={index === undefined ? undefined : `projectedit-member-email-${index}`}
           style={styles.input}
           label={name}
           verified={verified}
@@ -61,6 +65,7 @@ export const ProjectEditMembers = (props: Props) => {
 
       <View style={[styles.td, { flex: 2 }]}>
         <CheckBox
+          testID={index === undefined ? undefined : `projectedit-member-admin-${index}`}
           disabled={!editable}
           label={t('common.admin')}
           width={100}
@@ -72,6 +77,7 @@ export const ProjectEditMembers = (props: Props) => {
 
       <View style={[styles.td, { flex: 1 }]}>
         <Button
+          testID={index === undefined ? undefined : `projectedit-member-delete-${index}`}
           style={{
             backgroundColor: visibleMinus ? COLOR.DARKRED : COLOR.GRAY2,
             padding: 0,
@@ -87,6 +93,7 @@ export const ProjectEditMembers = (props: Props) => {
       {visibleReshareKey && (
         <View style={[styles.td, { flex: 1 }]}>
           <Button
+            testID={index === undefined ? undefined : `projectedit-member-menu-${index}`}
             style={{ backgroundColor: COLOR.TRANSPARENT, padding: 0 }}
             color={enableReshareKey ? COLOR.GRAY3 : COLOR.GRAY2}
             disabled={!enableReshareKey}
@@ -99,6 +106,7 @@ export const ProjectEditMembers = (props: Props) => {
               <View style={styles.menuCard}>
                 {!!value && <Text style={styles.menuHeader}>{value.toString()}</Text>}
                 <Pressable
+                  testID={index === undefined ? undefined : `projectedit-member-reshare-key-${index}`}
                   style={styles.menuItem}
                   onPress={() => {
                     setMenuVisible(false);

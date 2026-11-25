@@ -65,6 +65,7 @@ export const LayerEditRadio = () => {
               //余った幅はspace-betweenで項目の間に等分される
               <View key={index} style={{ flexDirection: 'row', width: permissionWidths[index] }}>
                 <CheckBox
+                  testID={`layeredit-permission-${item.toLowerCase()}`}
                   label={permissionLabels[index]}
                   disabled={!canChangePermission}
                   width={permissionWidths[index]}

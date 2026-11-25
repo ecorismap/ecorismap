@@ -34,7 +34,7 @@ export const HomeTerrainControl = React.memo((props: Props) => {
   });
 
   return (
-    <Pressable style={styles.buttonContainer} onPress={() => toggleTerrain()}>
+    <Pressable testID="home-terrain" style={styles.buttonContainer} onPress={() => toggleTerrain()}>
       {/* AndroidでSvgがタッチを飲み込みPressableが発火しないためpointerEventsを切る */}
       <Svg pointerEvents="none" width={22} height={22} viewBox="0 0 22 22">
         <Path

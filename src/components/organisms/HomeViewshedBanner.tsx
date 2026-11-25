@@ -24,8 +24,8 @@ export const HomeViewshedBanner = React.memo(() => {
     <View style={[styles.container, { top: viewshedBannerTop }]} pointerEvents="box-none">
       <View style={styles.banner}>
         <MaterialCommunityIcons name="eye-outline" size={18} color={COLOR.WHITE} />
-        <Text style={styles.text}>{t('Home.viewshed.previewCount', { count: viewshedResults.length })}</Text>
-        <Pressable onPress={pressClear} style={styles.clearButton}>
+        <Text testID="home-viewshed-text" style={styles.text}>{t('Home.viewshed.previewCount', { count: viewshedResults.length })}</Text>
+        <Pressable testID="home-viewshed-clear" onPress={pressClear} style={styles.clearButton}>
           <MaterialCommunityIcons name="trash-can-outline" size={18} color={COLOR.WHITE} />
         </Pressable>
       </View>

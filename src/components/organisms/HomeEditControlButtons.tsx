@@ -54,6 +54,7 @@ export const HomeEditControlButtons = React.memo(() => {
   return (
     <View style={styles.editControlContainer}>
       <Pressable
+        testID="home-draw-save"
         style={[styles.editButton, { backgroundColor: COLOR.BLUE }]}
         onPress={async () => {
           const saved = await pressSaveDraw();
@@ -68,6 +69,7 @@ export const HomeEditControlButtons = React.memo(() => {
         </Text>
       </Pressable>
       <Pressable
+        testID="home-draw-cancel"
         style={[styles.editButton, { backgroundColor: COLOR.RED }]}
         onPress={() => {
           //ツールボタンを押し直したときと同じ後始末。地図移動ツールへ持ち替えている間でもキャンセルできる

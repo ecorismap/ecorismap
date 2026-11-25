@@ -39,7 +39,7 @@ export default function AccountSettings() {
     <>
       {/* Custom Header */}
       <View style={styles.header}>
-        <TouchableOpacity style={{ padding: 5 }} onPress={pressGotoHome}>
+        <TouchableOpacity testID="accountsettings-back" style={{ padding: 5 }} onPress={pressGotoHome}>
           <MaterialCommunityIcons name="chevron-left" size={28} color={COLOR.BLACK} />
         </TouchableOpacity>
         <Text style={{ fontSize: 16 }}>{t('AccountSettings.navigation.title')}</Text>
@@ -48,12 +48,14 @@ export default function AccountSettings() {
       <View style={styles.container}>
         <ScrollView>
           <TextButton
+            testID="accountsettings-account-edit"
             name={ACCOUNT_SETTINGS_BTN.ACCOUNT_EDIT}
             text={t('AccountSettings.account_edit.text')}
             info={t('AccountSettings.account_edit.info')}
             onPress={pressUpdateUserProfile}
           />
           <TextButton
+            testID="accountsettings-password-change"
             name={ACCOUNT_SETTINGS_BTN.PASSWORD_CHANGE}
             text={t('AccountSettings.password_change.text')}
             info={t('AccountSettings.password_change.info')}
@@ -61,6 +63,7 @@ export default function AccountSettings() {
           />
           {FUNC_ENCRYPTION && (
             <TextButton
+              testID="accountsettings-encryption-password-change"
               name={ACCOUNT_SETTINGS_BTN.ENCRYPTION_PASSWORD_CHANGE}
               text={t('AccountSettings.encryption_password_change.text')}
               info={t('AccountSettings.encryption_password_change.info')}
@@ -69,6 +72,7 @@ export default function AccountSettings() {
           )}
           {FUNC_ENCRYPTION && (
             <TextButton
+              testID="accountsettings-encryption-key-reset"
               name={ACCOUNT_SETTINGS_BTN.ENCRYPTION_KEY_RESET}
               text={t('AccountSettings.encryption_key_reset.text')}
               info={t('AccountSettings.encryption_key_reset.info')}
@@ -76,6 +80,7 @@ export default function AccountSettings() {
             />
           )}
           <TextButton
+            testID="accountsettings-account-delete"
             name={ACCOUNT_SETTINGS_BTN.ACCOUNT_DELETE}
             text={t('AccountSettings.account_delete.text')}
             info={t('AccountSettings.account_delete.info')}
@@ -83,6 +88,7 @@ export default function AccountSettings() {
           />
           {Platform.OS === 'web' && (
             <TextButton
+              testID="accountsettings-project-delete-all"
               name={ACCOUNT_SETTINGS_BTN.PROJECT_DELETE_ALL}
               text={t('AccountSettings.project_delete_all.text')}
               info={t('AccountSettings.project_delete_all.info')}

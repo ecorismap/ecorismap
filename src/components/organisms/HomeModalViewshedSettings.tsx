@@ -110,6 +110,7 @@ export const HomeModalViewshedSettings = React.memo((props: Props) => {
               <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10 }}>
                 <Text style={{ fontSize: 14, width: 120 }}>{`${t('Home.viewshed.distance')}:`}</Text>
                 <TextInput
+                  testID="home-viewshedsettings-distance"
                   style={styles.input}
                   value={distanceKm}
                   onChangeText={setDistanceKm}
@@ -121,6 +122,7 @@ export const HomeModalViewshedSettings = React.memo((props: Props) => {
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                 <Text style={{ fontSize: 14, width: 120 }}>{`${t('Home.viewshed.observerHeight')}:`}</Text>
                 <TextInput
+                  testID="home-viewshedsettings-observer-height"
                   style={styles.input}
                   value={observerHeight}
                   onChangeText={setObserverHeight}
@@ -134,6 +136,7 @@ export const HomeModalViewshedSettings = React.memo((props: Props) => {
                 // モーダルが全画面に広がる（HomeModalPDFSettingsと同じ対処）
                 <View style={{ marginTop: 10, height: 45, width: Platform.OS === 'web' ? 300 : windowWidth * modalWidthScale }}>
                   <CheckBox
+                    testID="home-viewshedsettings-snap"
                     style={{ backgroundColor: COLOR.WHITE }}
                     label={t('Home.viewshed.useSnapPoint', { name: snapName })}
                     labelSize={14}
@@ -147,10 +150,11 @@ export const HomeModalViewshedSettings = React.memo((props: Props) => {
             </View>
 
             <View style={styles.modalButtonContainer}>
-              <Pressable style={styles.modalOKCancelButton} onPress={pressOK}>
+              <Pressable testID="home-viewshedsettings-ok" style={styles.modalOKCancelButton} onPress={pressOK}>
                 <Text>OK</Text>
               </Pressable>
               <Pressable
+                testID="home-viewshedsettings-cancel"
                 style={[styles.modalOKCancelButton, { backgroundColor: COLOR.GRAY1 }]}
                 onPress={pressCancel}
               >

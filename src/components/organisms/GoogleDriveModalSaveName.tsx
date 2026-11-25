@@ -99,6 +99,7 @@ export const GoogleDriveModalSaveName = React.memo((props: Props) => {
 
             <View style={{ flexDirection: 'row' }}>
               <TextInput
+                testID="gdrive-save-name"
                 placeholder={t('GoogleDriveProjects.modal.savePlaceholder')}
                 value={value}
                 style={styles.input}
@@ -109,10 +110,14 @@ export const GoogleDriveModalSaveName = React.memo((props: Props) => {
             <Text style={styles.saveNote}>{`${t('GoogleDriveProjects.modal.saveNote')}`}</Text>
 
             <View style={styles.modalButtonContainer}>
-              <Pressable style={styles.modalOKCancelButton} onPress={() => pressOK(value)}>
+              <Pressable testID="gdrive-save-ok" style={styles.modalOKCancelButton} onPress={() => pressOK(value)}>
                 <Text>OK</Text>
               </Pressable>
-              <Pressable style={[styles.modalOKCancelButton, { backgroundColor: COLOR.GRAY1 }]} onPress={pressCancel}>
+              <Pressable
+                testID="gdrive-save-cancel"
+                style={[styles.modalOKCancelButton, { backgroundColor: COLOR.GRAY1 }]}
+                onPress={pressCancel}
+              >
                 <Text>Cancel</Text>
               </Pressable>
             </View>

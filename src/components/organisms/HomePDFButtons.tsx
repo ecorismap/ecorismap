@@ -27,6 +27,7 @@ export const HomePDFButtons = React.memo((props: Props) => {
       <View style={{ margin: 5 }}>
         <Button
           size={30}
+          testID="home-pdf-export"
           name="download"
           backgroundColor={COLOR.RED}
           onPress={onPress}
@@ -34,6 +35,7 @@ export const HomePDFButtons = React.memo((props: Props) => {
         />
       </View>
       <Pressable
+        testID="home-pdf-settings"
         onPress={pressPDFSettingsOpen}
         style={{ borderWidth: 1, margin: 2, padding: 2, borderRadius: 2, backgroundColor: COLOR.WHITE }}
       >
@@ -43,6 +45,7 @@ export const HomePDFButtons = React.memo((props: Props) => {
         <View style={{ margin: 5, marginTop: 20 }}>
           <Button
             size={30}
+            testID="home-pdf-back"
             name="arrow-left"
             backgroundColor={COLOR.GRAY3}
             onPress={pressBack}

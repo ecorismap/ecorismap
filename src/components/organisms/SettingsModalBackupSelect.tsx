@@ -150,8 +150,8 @@ export const SettingsModalBackupSelect = React.memo((props: Props) => {
               <Text style={styles.modalNoBackupText}>{`${t('Settings.backup.noBackups')}`}</Text>
             )}
             <ScrollView style={styles.modalList}>
-              {backupList.map((meta) => (
-                <Pressable key={meta.id} style={styles.modalOptionButton} onPress={() => pressSelect(meta.id)}>
+              {backupList.map((meta, index) => (
+                <Pressable testID={`settings-backup-row-${index}`} key={meta.id} style={styles.modalOptionButton} onPress={() => pressSelect(meta.id)}>
                   <MaterialCommunityIcons name="backup-restore" size={24} color={COLOR.GRAY4} />
                   <View style={styles.modalTextContainer}>
                     <Text style={styles.modalOptionText}>
@@ -163,7 +163,7 @@ export const SettingsModalBackupSelect = React.memo((props: Props) => {
                       )}  ${triggerLabel(meta.trigger)}`}
                     </Text>
                   </View>
-                  <Pressable style={styles.modalDeleteButton} onPress={() => pressDelete(meta.id)}>
+                  <Pressable testID={`settings-backup-delete-${index}`} style={styles.modalDeleteButton} onPress={() => pressDelete(meta.id)}>
                     <MaterialCommunityIcons name="trash-can-outline" size={24} color={COLOR.DARKRED} />
                   </Pressable>
                 </Pressable>
@@ -171,11 +171,11 @@ export const SettingsModalBackupSelect = React.memo((props: Props) => {
             </ScrollView>
             <View style={styles.modalButtonContainer}>
               {backupList.length > 0 && (
-                <Pressable style={styles.modalClearAllButton} onPress={pressClearAll}>
+                <Pressable testID="settings-backup-delete-all" style={styles.modalClearAllButton} onPress={pressClearAll}>
                   <Text style={styles.modalClearAllButtonText}>{`${t('Settings.backup.deleteAll')}`}</Text>
                 </Pressable>
               )}
-              <Pressable style={styles.modalCancelButton} onPress={pressCancel}>
+              <Pressable testID="settings-backup-cancel" style={styles.modalCancelButton} onPress={pressCancel}>
                 <Text>Cancel</Text>
               </Pressable>
             </View>

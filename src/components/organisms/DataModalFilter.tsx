@@ -155,6 +155,7 @@ export const DataModalFilter = React.memo((props: Props) => {
                 return (
                   <Pressable
                     key={option.value}
+                    testID={`data-filter-field-${option.value}`}
                     style={[styles.fieldChip, selected && styles.fieldChipSelected]}
                     onPress={() => setFieldName(option.value)}
                   >
@@ -166,6 +167,7 @@ export const DataModalFilter = React.memo((props: Props) => {
 
             <View style={{ flexDirection: 'row' }}>
               <TextInput
+                testID="data-filter-input"
                 placeholder={t('Data.label.filter')}
                 value={value}
                 style={styles.input}
@@ -179,8 +181,8 @@ export const DataModalFilter = React.memo((props: Props) => {
               {[
                 { token: FILTER_BLANK, label: t('Data.label.blank') },
                 { token: FILTER_NOT_BLANK, label: t('Data.label.notBlank') },
-              ].map(({ token, label }) => (
-                <Pressable key={token} style={styles.candidateItem} onPress={() => pressOK(token, fieldName)}>
+              ].map(({ token, label }, index) => (
+                <Pressable key={token} testID={index === 0 ? 'data-filter-blank' : 'data-filter-not-blank'} style={styles.candidateItem} onPress={() => pressOK(token, fieldName)}>
                   <Text style={styles.candidateItemSpecialText} numberOfLines={1}>
                     {label}
                   </Text>
@@ -195,8 +197,9 @@ export const DataModalFilter = React.memo((props: Props) => {
                 keyboardShouldPersistTaps="always"
                 initialNumToRender={15}
                 getItemLayout={(_, index) => ({ length: 41, offset: 41 * index, index })}
-                renderItem={({ item }) => (
+                renderItem={({ item, index }) => (
                   <Pressable
+                    testID={`data-filter-candidate-${index}`}
                     style={[styles.candidateItem, item === value && styles.candidateItemSelected]}
                     onPress={() => setValue(item)}
                   >
@@ -207,10 +210,10 @@ export const DataModalFilter = React.memo((props: Props) => {
             )}
 
             <View style={styles.modalButtonContainer}>
-              <Pressable style={styles.modalOKCancelButton} onPress={() => pressOK(value, fieldName)}>
+              <Pressable testID="data-filter-ok" style={styles.modalOKCancelButton} onPress={() => pressOK(value, fieldName)}>
                 <Text>OK</Text>
               </Pressable>
-              <Pressable style={styles.modalOKCancelButton} onPress={pressCancel}>
+              <Pressable testID="data-filter-cancel" style={styles.modalOKCancelButton} onPress={pressCancel}>
                 <Text>Cancel</Text>
               </Pressable>
             </View>

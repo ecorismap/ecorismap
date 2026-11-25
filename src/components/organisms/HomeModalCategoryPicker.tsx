@@ -154,6 +154,7 @@ export const HomeModalCategoryPicker = React.memo((props: Props) => {
               {fields.map((name, index) => (
                 <Pressable
                   key={name}
+                  testID={`home-categorypicker-tab-${index}`}
                   style={[styles.segment, field === name && styles.segmentActive]}
                   onPress={() => {
                     setIsEditing(false);
@@ -175,11 +176,12 @@ export const HomeModalCategoryPicker = React.memo((props: Props) => {
             //小画面ではスクロールが必要になるため、続きがあることが分かるよう表示する
             showsVerticalScrollIndicator={true}
           >
-            {items.map((item) => {
+            {items.map((item, index) => {
               const selected = item.fieldValue === selectedValue;
               return (
                 <Pressable
                   key={item.id}
+                  testID={`home-categorypicker-row-${index}`}
                   style={[styles.row, selected && styles.rowSelected]}
                   onPress={() => {
                     if (item.fieldValue === undefined) return;
@@ -202,7 +204,12 @@ export const HomeModalCategoryPicker = React.memo((props: Props) => {
                     {item.fieldCode ? `${item.fieldCode} ${item.label}` : item.label}
                   </Text>
                   {withColor && (
-                    <Pressable style={styles.editButton} onPress={() => startEdit(item)} disablePressedAnimation>
+                    <Pressable
+                      testID={`home-categorypicker-edit-${index}`}
+                      style={styles.editButton}
+                      onPress={() => startEdit(item)}
+                      disablePressedAnimation
+                    >
                       <MaterialCommunityIcons name="pencil" size={16} color={COLOR.GRAY3} />
                     </Pressable>
                   )}
@@ -216,6 +223,7 @@ export const HomeModalCategoryPicker = React.memo((props: Props) => {
               <View style={styles.inputRow}>
                 {withColor && <View style={[styles.swatch, { backgroundColor: newColor }]} />}
                 <TextInput
+                  testID="home-categorypicker-input-name"
                   style={styles.input}
                   value={newValue}
                   onChangeText={setNewValue}
@@ -226,6 +234,7 @@ export const HomeModalCategoryPicker = React.memo((props: Props) => {
                 {/* コードの入れ先を決めてある属性は、選ぶだけでコードも入るよう一緒に登録する */}
                 {withCode(field) && (
                   <TextInput
+                    testID="home-categorypicker-input-code"
                     style={styles.codeInput}
                     value={newCode}
                     onChangeText={setNewCode}
@@ -256,22 +265,28 @@ export const HomeModalCategoryPicker = React.memo((props: Props) => {
             </View>
           ) : (
             withColor && (
-              <Pressable style={styles.addButton} onPress={startAdd} disablePressedAnimation>
+              <Pressable testID="home-categorypicker-add" style={styles.addButton} onPress={startAdd} disablePressedAnimation>
                 <Text style={styles.addButtonText}>{`＋ ${t('common.add')}`}</Text>
               </Pressable>
             )
           )}
           <View style={styles.footerRow}>
-            <Pressable style={styles.secondaryButton} onPress={close}>
+            <Pressable testID="home-categorypicker-cancel" style={styles.secondaryButton} onPress={close}>
               <Text style={styles.secondaryButtonText}>Cancel</Text>
             </Pressable>
             {isEditing && editingValue !== undefined && (
-              <Pressable style={styles.deleteButton} onPress={pressDelete} disablePressedAnimation>
+              <Pressable
+                testID="home-categorypicker-delete"
+                style={styles.deleteButton}
+                onPress={pressDelete}
+                disablePressedAnimation
+              >
                 <Text style={styles.deleteButtonText}>{t('common.delete')}</Text>
               </Pressable>
             )}
             {isEditing && (
               <Pressable
+                testID="home-categorypicker-ok"
                 style={[styles.primaryButton, !canApply && styles.primaryButtonDisabled]}
                 onPress={pressApply}
                 disablePressedAnimation

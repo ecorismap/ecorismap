@@ -149,7 +149,7 @@ export const HomeModalTermsOfUse = React.memo(() => {
               )}
               <Text style={styles.notice}>{t('tutrials.termsOfUse')}</Text>
               <View style={{ alignItems: 'center', margin: 10 }}>
-                <Pressable onPress={pressTermsOfUse}>
+                <Pressable testID="home-terms-link" onPress={pressTermsOfUse}>
                   <Text style={styles.text}>{`${t('common.termsOfUse')}`}</Text>
                 </Pressable>
               </View>
@@ -157,10 +157,11 @@ export const HomeModalTermsOfUse = React.memo(() => {
 
             {showCancelNotice && <Text style={styles.updateNotice}>{t('Home.alert.termsOfuse')}</Text>}
             <View style={styles.modalButtonContainer}>
-              <Pressable style={styles.modalOKCancelButton} onPress={termsOfUseOK}>
+              <Pressable testID="home-terms-agree" style={styles.modalOKCancelButton} onPress={termsOfUseOK}>
                 <Text>OK</Text>
               </Pressable>
               <Pressable
+                testID="home-terms-cancel"
                 style={[styles.modalOKCancelButton, { backgroundColor: COLOR.GRAY1 }]}
                 onPress={termsOfUseCancel}
               >

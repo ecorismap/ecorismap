@@ -38,12 +38,13 @@ export default function Settings() {
       <Loading visible={isLoading} text="" />
       <ScrollView>
         {/* データ管理 */}
-        <TextButton name={SETTINGS_BTN.FILE_OPEN} text={t('Settings.file_open.text')} onPress={pressFileOpen} />
-        <TextButton name={SETTINGS_BTN.FILE_SAVE} text={t('Settings.file_save.text')} onPress={pressFileSave} />
-        <TextButton name={SETTINGS_BTN.PDF_SAVE} text={t('Settings.pdf_save.text')} onPress={pressPDFSettingsOpen} />
-        <TextButton name={SETTINGS_BTN.FILE_NEW} text={t('Settings.file_new.text')} onPress={pressClearData} />
+        <TextButton testID="settings-file-open" name={SETTINGS_BTN.FILE_OPEN} text={t('Settings.file_open.text')} onPress={pressFileOpen} />
+        <TextButton testID="settings-file-save" name={SETTINGS_BTN.FILE_SAVE} text={t('Settings.file_save.text')} onPress={pressFileSave} />
+        <TextButton testID="settings-pdf" name={SETTINGS_BTN.PDF_SAVE} text={t('Settings.pdf_save.text')} onPress={pressPDFSettingsOpen} />
+        <TextButton testID="settings-clear-data" name={SETTINGS_BTN.FILE_NEW} text={t('Settings.file_new.text')} onPress={pressClearData} />
         {Platform.OS !== 'web' && (
           <TextButton
+            testID="settings-backup-restore"
             name={SETTINGS_BTN.BACKUP_RESTORE}
             text={t('Settings.backup_restore.text')}
             onPress={pressBackupRestoreOpen}
@@ -54,6 +55,7 @@ export default function Settings() {
         {/* Webの測位はブラウザ任せで精度の設定が効かず、外部GNSSも無いので出さない（設定監査 S-L6） */}
         {Platform.OS !== 'web' && (
           <TextButton
+            testID="settings-gps"
             name={SETTINGS_BTN.GPS_SETTINGS}
             text={t('Settings.gps_settings.text')}
             onPress={pressGPSSettingsOpen}
@@ -61,13 +63,15 @@ export default function Settings() {
         )}
         {Platform.OS !== 'web' && (
           <TextButton
+            testID="settings-proximity-alert"
             name={SETTINGS_BTN.PROXIMITY_ALERT}
             text={t('Settings.proximity_alert.text')}
             onPress={pressProximityAlertSettingsOpen}
           />
         )}
-        <TextButton name={SETTINGS_BTN.CACHE_DELETE} text={t('Settings.cachedelete.text')} onPress={pressClearCache} />
+        <TextButton testID="settings-clear-cache" name={SETTINGS_BTN.CACHE_DELETE} text={t('Settings.cachedelete.text')} onPress={pressClearCache} />
         <TextButton
+          testID="settings-language"
           name={SETTINGS_BTN.LANGUAGE}
           text={t('Settings.language.text')}
           onPress={pressLanguageSettingsOpen}
@@ -75,14 +79,15 @@ export default function Settings() {
 
         {/* 情報・ヘルプ */}
         <TextButton
+          testID="settings-manual"
           name={SETTINGS_BTN.MANUAL}
           text={t('Settings.manual.text')}
           isExternalLink
           onPress={pressGotoManual}
         />
-        <TextButton name={SETTINGS_BTN.OSSLICENSE} text={t('Settings.OSSLicense.txt')} onPress={pressOSSLicense} />
+        <TextButton testID="settings-oss-license" name={SETTINGS_BTN.OSSLICENSE} text={t('Settings.OSSLicense.txt')} onPress={pressOSSLicense} />
 
-        <TextButton name={SETTINGS_BTN.VERSION} text={VERSION} isExternalLink onPress={pressVersion} />
+        <TextButton testID="settings-version" name={SETTINGS_BTN.VERSION} text={VERSION} isExternalLink onPress={pressVersion} />
       </ScrollView>
     </View>
   );

@@ -44,6 +44,7 @@ export default function MapEditScreen() {
 
   const rightComponent = (
     <Button
+      testID="mapedit-save"
       name={MAPS_BTN.SAVE}
       onPress={pressSaveMap}
       backgroundColor={canSave ? COLOR.BLUE : COLOR.LIGHTBLUE}
@@ -68,6 +69,7 @@ export default function MapEditScreen() {
               <TextInput
                 style={[styles.textInput, { flex: 1 }]}
                 placeholderTextColor={COLOR.GRAY4}
+                testID="mapedit-name"
                 value={map.name}
                 onChangeText={changeMapName}
               />
@@ -78,7 +80,10 @@ export default function MapEditScreen() {
                   cancelText={t('common.cancel')}
                   onChange={(option) => changeMapPreset(option.value)}
                 >
-                  <View style={{ alignItems: 'center', justifyContent: 'center', paddingHorizontal: 5 }}>
+                  <View
+                    testID="mapedit-preset"
+                    style={{ alignItems: 'center', justifyContent: 'center', paddingHorizontal: 5 }}
+                  >
                     <MaterialCommunityIcons name={'chevron-down'} size={24} color={COLOR.GRAY4} />
                   </View>
                 </ModalSelector>
@@ -94,6 +99,7 @@ export default function MapEditScreen() {
                   style={styles.textInput}
                   placeholder=" https://example/{z}/{x}/{y}.png"
                   placeholderTextColor={COLOR.GRAY4}
+                  testID="mapedit-url"
                   value={map.url}
                   onChangeText={changeMapURL}
                 />
@@ -104,12 +110,14 @@ export default function MapEditScreen() {
                 <TextInput
                   style={styles.textInput}
                   placeholderTextColor={COLOR.GRAY4}
+                  testID="mapedit-attribution"
                   value={map.attribution}
                   onChangeText={changeAttribution}
                 />
               </View>
 
               <Slider
+                testID="mapedit-transparency"
                 label={t('common.transparency')}
                 labelColor={COLOR.GRAY4}
                 style={{ marginTop: 10 }}
@@ -124,6 +132,7 @@ export default function MapEditScreen() {
               {/* 山名（peaks://）はタイルではないので、タイル向けの設定は出さない */}
               {!map.url?.includes('pdf') && !isPeaksUrl(map.url) && (
                 <Slider
+                  testID="mapedit-fix-zoom"
                   label={t('common.fixZoom')}
                   labelColor={COLOR.GRAY4}
                   width={windowWidth * (isLandscape ? 0.45 : 0.88)}
@@ -145,6 +154,7 @@ export default function MapEditScreen() {
                       style={{ backgroundColor: COLOR.GRAY0 }}
                       labelSize={13}
                       width={windowWidth * (isLandscape ? 0.45 : 0.85)}
+                      testID="mapedit-high-resolution"
                       label={`${t('common.highResolution')}`}
                       checked={map.highResolutionEnabled || false}
                       onCheck={changeHighResolutionEnabled}
@@ -155,6 +165,7 @@ export default function MapEditScreen() {
                       style={{ backgroundColor: COLOR.GRAY0 }}
                       labelSize={13}
                       width={windowWidth * (isLandscape ? 0.45 : 0.85)}
+                      testID="mapedit-flip-y"
                       label={`${t('common.Yaxis')}`}
                       checked={map.flipY || false}
                       onCheck={changeFlipY}
@@ -167,6 +178,7 @@ export default function MapEditScreen() {
                 <View style={{ width: '100%', alignItems: 'flex-start' }}>
                   <CheckBox
                     style={{ backgroundColor: COLOR.GRAY0, marginVertical: 10 }}
+                    testID="mapedit-vector"
                     label={t('common.vectortile')}
                     checked={map.isVector ? true : false}
                     onCheck={changeIsVector}
@@ -181,10 +193,12 @@ export default function MapEditScreen() {
                     <TextInput
                       style={[styles.textInput, { flex: 1, marginRight: 10 }]}
                       placeholderTextColor={COLOR.GRAY4}
+                      testID="mapedit-style-url"
                       value={map.styleURL || ''}
                       onChangeText={changeStyleURL}
                     />
                     <Button
+                      testID="mapedit-import-style"
                       name={'folder-open'}
                       onPress={pressImportStyle}
                       backgroundColor={COLOR.GRAY2}
@@ -204,6 +218,7 @@ export default function MapEditScreen() {
         <View style={styles.buttonContainer}>
           {!map.isGroup && (
             <Button
+              testID="mapedit-export"
               name="briefcase-download"
               onPress={pressExportMap}
               backgroundColor={COLOR.BLUE}
@@ -211,6 +226,7 @@ export default function MapEditScreen() {
             />
           )}
           <Button
+            testID="mapedit-delete"
             name="delete"
             onPress={pressDeleteMap}
             backgroundColor={COLOR.DARKRED}

@@ -15,7 +15,7 @@ export const DataEditLayerName = (props: Props) => {
   return (
     <View style={styles.tr}>
       <View style={styles.td}>
-        <TextInput label={t('common.layerName')} value={value} style={styles.input} editable={false} />
+        <TextInput testID="dataedit-layername" label={t('common.layerName')} value={value} style={styles.input} editable={false} />
       </View>
     </View>
   );

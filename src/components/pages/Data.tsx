@@ -90,7 +90,7 @@ export default function DataScreen() {
         showBackButton
         onBack={gotoBack}
         rightComponent={
-          <Pressable style={styles.headerFilterButton} onPress={() => openFilterDialog(filterFieldName || (fieldOptions[0]?.value ?? ''))}>
+          <Pressable testID="data-filter" style={styles.headerFilterButton} onPress={() => openFilterDialog(filterFieldName || (fieldOptions[0]?.value ?? ''))}>
             <MaterialCommunityIcons
               name={isFiltering ? 'filter' : 'filter-outline'}
               size={20}
@@ -113,6 +113,7 @@ export default function DataScreen() {
                 color={isLocationEnabled ? COLOR.BLUE : COLOR.GRAY3}
               />
               <Switch
+                testID="data-location-toggle"
                 value={isLocationEnabled}
                 onValueChange={pressToggleLocation}
                 disabled={!isEditable}
@@ -123,6 +124,7 @@ export default function DataScreen() {
               />
               {/* ロック中は記録後も位置ONのままにする */}
               <Button
+                testID="data-location-lock"
                 name={isLocationLocked ? 'lock' : 'lock-open-variant'}
                 onPress={pressToggleLocationLock}
                 disabled={!isEditable}
@@ -135,6 +137,7 @@ export default function DataScreen() {
           <View style={styles.dictionaryInput}>
             {dictionaryField?.format === 'STRING_DYNAMIC' ? (
               <DynamicDictionaryTextInput
+                testID="data-dictionary-input"
                 initialValue=""
                 fieldKey={`${layer.id}_${layer.dictionaryFieldId}`}
                 handleSelect={(text: string) => addDataByDictionary(layer.dictionaryFieldId!, text)}
@@ -143,6 +146,7 @@ export default function DataScreen() {
               />
             ) : (
               <DictionaryTextInput
+                testID="data-dictionary-input"
                 initialValue=""
                 table={`_${layer.id}_${layer.dictionaryFieldId}`}
                 handleSelect={(text: string) => addDataByDictionary(layer.dictionaryFieldId!, text)}
@@ -156,18 +160,19 @@ export default function DataScreen() {
       {isFiltering && (
         <View style={styles.filterContainer}>
           <MaterialCommunityIcons name="filter" size={18} color={COLOR.BLUE} />
-          <Text style={styles.filterLabel} numberOfLines={1}>
+          <Text testID="data-filter-label" style={styles.filterLabel} numberOfLines={1}>
             {filterFieldName === ''
               ? `${t('Data.label.filter')}: ${filterValueLabel}`
               : `${filterFieldName === '_user_' ? 'User' : filterFieldName}: ${filterValueLabel}`}
           </Text>
-          <Text style={styles.filterCount}>{t('Data.message.filterResult', { count: sortedRecordSet.length })}</Text>
+          <Text testID="data-filter-count" style={styles.filterCount}>{t('Data.message.filterResult', { count: sortedRecordSet.length })}</Text>
           <View style={styles.filterSpacer} />
-          <Pressable style={styles.filterMapButton} onPress={showOnlyFilteredRecords}>
+          <Pressable testID="data-filter-show-on-map" style={styles.filterMapButton} onPress={showOnlyFilteredRecords}>
             <MaterialCommunityIcons name={DATAEDIT_BTN.JUMP} size={18} color={COLOR.BLUE} />
             <Text style={styles.filterMapButtonText}>{t('Data.label.showOnMap')}</Text>
           </Pressable>
           <Button
+            testID="data-filter-clear"
             name="close-circle"
             onPress={clearFilter}
             color={COLOR.GRAY3}

@@ -152,6 +152,7 @@ export const HomeModalMapMemoSettings = React.memo((props: Props) => {
   ) => (
     <View style={styles.optionButton} key={id}>
       <Button
+        testID={`home-memosettings-option-${id.toLowerCase().replace(/_/g, '-')}`}
         id={id}
         name={icon}
         backgroundColor={selected ? COLOR.ALFARED : COLOR.ALFABLUE}
@@ -211,6 +212,7 @@ export const HomeModalMapMemoSettings = React.memo((props: Props) => {
       </View>
       <View style={styles.checkboxRow}>
         <CheckBox
+          testID="home-memosettings-snap-with-line"
           label={t('common.snapWithLine')}
           style={{ backgroundColor: COLOR.WHITE }}
           labelColor="black"
@@ -255,11 +257,13 @@ export const HomeModalMapMemoSettings = React.memo((props: Props) => {
   const eraserRow = (tool: MapMemoToolType) => (
     <Pressable
       key={tool}
+      testID={`home-memosettings-eraser-${tool.toLowerCase().replace(/_/g, '-')}`}
       style={[styles.eraserRow, eraserSel === tool && styles.eraserRowSelected]}
       onPress={() => setEraserSel(tool)}
       disablePressedAnimation
     >
       <Button
+        testID={`home-memosettings-eraser-${tool.toLowerCase().replace(/_/g, '-')}-button`}
         id={tool}
         name={ERASER_ICONS[tool]}
         backgroundColor={eraserSel === tool ? COLOR.ALFARED : COLOR.ALFABLUE}
@@ -292,6 +296,7 @@ export const HomeModalMapMemoSettings = React.memo((props: Props) => {
             {visibleTabs.map(({ key, labelKey }) => (
               <Pressable
                 key={key}
+                testID={`home-memosettings-tab-${key.toLowerCase().replace(/_/g, '-')}`}
                 style={[styles.segment, tab === key && styles.segmentActive]}
                 onPress={() => tab !== key && setTab(key)}
                 disablePressedAnimation
@@ -310,10 +315,10 @@ export const HomeModalMapMemoSettings = React.memo((props: Props) => {
             </ScrollView>
           </View>
           <View style={styles.footerRow}>
-            <Pressable style={styles.secondaryButton} onPress={close}>
+            <Pressable testID="home-memosettings-cancel" style={styles.secondaryButton} onPress={close}>
               <Text style={styles.secondaryButtonText}>Cancel</Text>
             </Pressable>
-            <Pressable style={styles.primaryButton} onPress={handleOK}>
+            <Pressable testID="home-memosettings-ok" style={styles.primaryButton} onPress={handleOK}>
               <Text style={styles.primaryButtonText}>OK</Text>
             </Pressable>
           </View>

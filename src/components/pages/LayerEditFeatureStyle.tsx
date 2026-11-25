@@ -45,6 +45,7 @@ export default function LayerEditFeatureStyleScreen() {
 
   const rightComponent = isStyleChangeOnly ? (
     <HeaderRightButton
+      testID="featurestyle-save"
       name={LAYEREDIT_BTN.SAVE}
       onPress={saveColorStyle}
       backgroundColor={isEdited ? COLOR.BLUE : COLOR.LIGHTBLUE}
@@ -66,6 +67,7 @@ export default function LayerEditFeatureStyleScreen() {
           <View style={{ paddingHorizontal: 10, borderBottomWidth: 1, borderColor: COLOR.GRAY2 }}>
             <Slider
               style={{ paddingHorizontal: 10 }}
+              testID="featurestyle-width"
               label={t('common.width')}
               labelColor={COLOR.BLACK}
               initialValue={colorStyle.lineWidth ?? 1.5}
@@ -78,6 +80,7 @@ export default function LayerEditFeatureStyleScreen() {
         )}
         <SimplePicker
           style={{ flex: 2, borderTopWidth: 1, borderColor: COLOR.GRAY2 }}
+          testID="featurestyle-color-type"
           label={t('common.colorType')}
           value={colorStyle.colorType}
           onValueChange={changeColorType}
@@ -88,6 +91,7 @@ export default function LayerEditFeatureStyleScreen() {
           <View style={{ paddingHorizontal: 10, borderBottomWidth: 1, borderColor: COLOR.GRAY2 }}>
             <View style={styles.checkbox}>
               <CheckBox
+                testID="featurestyle-outline"
                 label={t('common.useOutline')}
                 labelSize={14}
                 labelColor="black"
@@ -100,12 +104,17 @@ export default function LayerEditFeatureStyleScreen() {
         )}
         {colorStyle.colorType === 'GNSS_QUALITY' && <GnssQualityLegend />}
         {(colorStyle.colorType === 'SINGLE' || colorStyle.colorType === 'GNSS_QUALITY') && (
-          <SingleColorSelect value={colorStyle.color} onPressColorSelect={pressSelectSingleColor} />
+          <SingleColorSelect
+            testID="featurestyle-single-color"
+            value={colorStyle.color}
+            onPressColorSelect={pressSelectSingleColor}
+          />
         )}
 
         {(colorStyle.colorType === 'CATEGORIZED' || colorStyle.colorType === 'USER') && (
           <View>
             <SimplePicker
+              testID="featurestyle-field-name"
               label={t('common.fieldName')}
               value={colorStyle.fieldName}
               onValueChange={changeFieldName}
@@ -116,6 +125,7 @@ export default function LayerEditFeatureStyleScreen() {
             {isCustom && (
               <View style={styles.td}>
                 <TextInput
+                  testID="featurestyle-custom-field"
                   label={t('common.customField')}
                   placeholder={'field1|field2'}
                   placeholderTextColor={COLOR.GRAY3}
@@ -127,6 +137,7 @@ export default function LayerEditFeatureStyleScreen() {
               </View>
             )}
             <SimplePicker
+              testID="featurestyle-color-ramp"
               label={t('common.colorLamp')}
               value={colorStyle.colorRamp}
               onValueChange={changeColorRamp}

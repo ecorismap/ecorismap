@@ -8,6 +8,8 @@ import { Pressable } from '../atoms/Pressable';
 import { t } from '../../i18n/config';
 
 interface DictionaryTextInputProp {
+  /** E2Eから要素を特定するためのID（入力欄）。ボタンは`${testID}-button`、候補は`${testID}-suggestion-${index}` */
+  testID?: string;
   editable?: boolean;
   table: string;
   initialValue: string;
@@ -17,7 +19,7 @@ interface DictionaryTextInputProp {
   onBlure?: (text: string) => void;
 }
 export const DictionaryTextInput = React.memo((prop: DictionaryTextInputProp) => {
-  const { editable, table, initialValue, filter, handleSelect, onBlure, clearOnSelect } = prop;
+  const { testID, editable, table, initialValue, filter, handleSelect, onBlure, clearOnSelect } = prop;
   const [isFocused, setFocus] = useState(false);
   const {
     queryString,
@@ -47,6 +49,7 @@ export const DictionaryTextInput = React.memo((prop: DictionaryTextInputProp) =>
     <View>
       <View style={styles.searchContainer}>
         <TextInput
+          testID={testID}
           style={styles.input}
           value={queryString}
           placeholder="Search..."
@@ -60,6 +63,7 @@ export const DictionaryTextInput = React.memo((prop: DictionaryTextInputProp) =>
         />
         <View style={{ marginLeft: 10 }}>
           <MaterialCommunityIcons.Button
+            testID={testID ? `${testID}-button` : undefined}
             borderRadius={50}
             iconStyle={{ marginRight: 0 }}
             size={30}
@@ -76,7 +80,7 @@ export const DictionaryTextInput = React.memo((prop: DictionaryTextInputProp) =>
         <ScrollView style={styles.flatList} nestedScrollEnabled keyboardShouldPersistTaps="handled">
           {filteredData.map((item, index) => {
             return (
-              <Pressable key={index} onPress={() => handleSelectItem(item)} style={styles.separator}>
+              <Pressable testID={testID ? `${testID}-suggestion-${index}` : undefined} key={index} onPress={() => handleSelectItem(item)} style={styles.separator}>
                 <Text
                   style={[styles.listText, { color: index === filteredData.length - 1 ? COLOR.GRAY4 : COLOR.BLACK }]}
                 >

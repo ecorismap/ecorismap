@@ -32,6 +32,7 @@ export default function GpsSettings() {
           return (
             <Pressable
               key={value}
+              testID={`gpssettings-accuracy-${value.toLowerCase()}`}
               style={[styles.card, selected && styles.cardSelected]}
               onPress={() => selectGpsAccuracy(value)}
             >

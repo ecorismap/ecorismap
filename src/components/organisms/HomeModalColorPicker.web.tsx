@@ -42,6 +42,7 @@ export const HomeModalColorPicker = React.memo((props: Props) => {
         >
           {/* バツボタン */}
           <Pressable
+            testID="home-colorpicker-close"
             style={{
               position: 'absolute',
               top: 10,
@@ -70,6 +71,7 @@ export const HomeModalColorPicker = React.memo((props: Props) => {
 
             <View style={styles.modalButtonContainer}>
               <Pressable
+                testID="home-colorpicker-ok"
                 style={styles.modalOKCancelButton}
                 onPress={() => {
                   const a = withAlpha ? val.a : 1;
@@ -79,6 +81,7 @@ export const HomeModalColorPicker = React.memo((props: Props) => {
                 <Text>OK</Text>
               </Pressable>
               <Pressable
+                testID="home-colorpicker-cancel"
                 style={[styles.modalOKCancelButton, { backgroundColor: COLOR.GRAY1 }]}
                 onPress={pressSelectColorCancel}
               >

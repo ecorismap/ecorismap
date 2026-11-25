@@ -77,6 +77,7 @@ export const HomeTileMapSelector = React.memo((props: Props) => {
         <ScrollView style={styles.scrollView}>
           <CheckBox
             key="all"
+            testID="home-download-map-all"
             label={t('Home.download.allMaps')}
             checked={isAllMapsSelected}
             onCheck={handleSelectAll}
@@ -85,9 +86,10 @@ export const HomeTileMapSelector = React.memo((props: Props) => {
             width={280}
             numberOfLines={2}
           />
-          {downloadableTileMaps.map((tileMap) => (
+          {downloadableTileMaps.map((tileMap, index) => (
             <CheckBox
               key={tileMap.id}
+              testID={`home-download-map-${index}`}
               label={tileMap.name}
               checked={isMapSelected(tileMap.id)}
               onCheck={() => handleMapSelect(tileMap.id)}
@@ -100,6 +102,7 @@ export const HomeTileMapSelector = React.memo((props: Props) => {
           {/* 可視領域用DEM。地図一覧には出さない内部専用のダウンロードターゲット */}
           <CheckBox
             key={DEM_MAPTERHORN_MAP_ID}
+            testID="home-download-map-dem"
             label={t('Home.download.demViewshed')}
             checked={isMapSelected(DEM_MAPTERHORN_MAP_ID)}
             onCheck={() => handleMapSelect(DEM_MAPTERHORN_MAP_ID)}
@@ -110,10 +113,10 @@ export const HomeTileMapSelector = React.memo((props: Props) => {
           />
         </ScrollView>
         <View style={styles.buttonContainer}>
-          <Pressable style={styles.modalOKCancelButton} onPress={onCancel}>
+          <Pressable testID="home-download-map-cancel" style={styles.modalOKCancelButton} onPress={onCancel}>
             <Text>Cancel</Text>
           </Pressable>
-          <Pressable style={[styles.modalOKCancelButton, { backgroundColor: COLOR.BLUE }]} onPress={onConfirm}>
+          <Pressable testID="home-download-map-ok" style={[styles.modalOKCancelButton, { backgroundColor: COLOR.BLUE }]} onPress={onConfirm}>
             <Text style={{ color: COLOR.WHITE }}>OK</Text>
           </Pressable>
         </View>

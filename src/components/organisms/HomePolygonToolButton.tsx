@@ -31,6 +31,7 @@ export const HomePolygonToolButton = React.memo((props: Props) => {
     <View style={styles.container}>
       <View style={styles.button}>
         <Button
+          testID="home-draw-plot-polygon"
           id={'PLOT_POLYGON'}
           name={POLYGONTOOL.PLOT_POLYGON}
           disabled={disabled}
@@ -48,6 +49,7 @@ export const HomePolygonToolButton = React.memo((props: Props) => {
       {!hideHandwriting && (
         <View style={styles.button}>
           <Button
+            testID="home-draw-handwriting-polygon"
             id={'HANDWRITING_POLYGON'}
             name={POLYGONTOOL.HANDWRITING_POLYGON}
             disabled={disabled}

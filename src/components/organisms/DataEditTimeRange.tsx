@@ -84,7 +84,7 @@ export const DataEditTimeRange = (props: Props) => {
   return (
     <View style={styles.tr}>
       <View style={styles.td}>
-        <Pressable style={styles.tr2} onPress={() => setOpen1(true)}>
+        <Pressable testID={`dataedit-input-${name}`} style={styles.tr2} onPress={() => setOpen1(true)}>
           {name && <Text style={styles.title}>{name}</Text>}
           <Text style={styles.text}>{dateValueString1}</Text>
           <DatePicker
@@ -108,7 +108,7 @@ export const DataEditTimeRange = (props: Props) => {
         <View style={{ marginTop: 20 }}>
           <Text>{`${t('common.ndash')}`}</Text>
         </View>
-        <Pressable style={styles.tr2} onPress={() => setOpen2(true)}>
+        <Pressable testID={`dataedit-input-${name}-end`} style={styles.tr2} onPress={() => setOpen2(true)}>
           {name && <Text style={styles.title}> </Text>}
           <Text style={styles.text}>{dateValueString2}</Text>
           <DatePicker

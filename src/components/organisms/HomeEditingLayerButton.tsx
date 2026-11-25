@@ -49,7 +49,7 @@ export const HomeEditingLayerButton = React.memo(() => {
 
   return (
     <View style={styles.container} pointerEvents="box-none">
-      <Pressable style={styles.chip} onPress={pressEditingLayerButton}>
+      <Pressable testID="home-editing-layer" style={styles.chip} onPress={pressEditingLayerButton}>
         <MaterialCommunityIcons name="square-edit-outline" size={16} color={COLOR.WHITE} />
         <Text style={styles.text} numberOfLines={1}>
           {noLayer ? t('Home.label.noEditingLayer') : editingLayerName}

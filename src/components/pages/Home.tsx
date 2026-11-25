@@ -362,17 +362,17 @@ export default function HomeScreen() {
     if (exportPDFMode) {
       return (
         <View style={[styles.headerRight, { marginRight: -10 }]}>
-          <Button name="cog" onPress={pressPDFSettingsOpen} labelText={t('Home.label.pdfsettings')} />
+          <Button testID="home-pdf-header-settings" name="cog" onPress={pressPDFSettingsOpen} labelText={t('Home.label.pdfsettings')} />
         </View>
       );
     } else {
       return (
         <View style={styles.headerRight}>
           <View style={{ width: 80, alignItems: 'flex-end' }}>
-            <Text style={{ marginHorizontal: 5 }}>{savedTileSize}MB</Text>
+            <Text testID="home-download-size" style={{ marginHorizontal: 5 }}>{savedTileSize}MB</Text>
           </View>
           {!isDownloading && (
-            <Button name="delete" onPress={pressDeleteTiles} size={18} backgroundColor={COLOR.DARKRED} />
+            <Button testID="home-download-delete" name="delete" onPress={pressDeleteTiles} size={18} backgroundColor={COLOR.DARKRED} />
           )}
         </View>
       );
@@ -425,6 +425,7 @@ export default function HomeScreen() {
             （シートが勝手に閉じる原因になっていた）。常に表示し、編集中の誤操作は
             onCloseBottomSheetの確認ダイアログで防ぐ */}
         <Pressable
+          testID="sheet-close"
           style={{
             position: 'absolute',
             right: 0,
@@ -456,12 +457,13 @@ export default function HomeScreen() {
       }}
     >
       <View style={{ flex: 0, minWidth: 40, justifyContent: 'center' }}>
-        <TouchableOpacity style={{ padding: 5 }} onPress={gotoMaps}>
+        <TouchableOpacity testID="home-download-back" style={{ padding: 5 }} onPress={gotoMaps}>
           <MaterialCommunityIcons name="chevron-left" size={28} color={COLOR.BLACK} />
         </TouchableOpacity>
       </View>
       <View style={{ flex: 1, paddingHorizontal: 10 }}>
         <Pressable
+          testID="home-download-map-select"
           style={{
             backgroundColor: COLOR.WHITE,
             borderRadius: 5,
@@ -511,7 +513,7 @@ export default function HomeScreen() {
       }}
     >
       <View style={{ flex: 1.5, justifyContent: 'center' }}>
-        <TouchableOpacity style={{ padding: 5 }} onPress={() => gotoHome()}>
+        <TouchableOpacity testID="home-pdf-header-back" style={{ padding: 5 }} onPress={() => gotoHome()}>
           <MaterialCommunityIcons name="chevron-left" size={28} color={COLOR.BLACK} />
         </TouchableOpacity>
       </View>
@@ -825,11 +827,12 @@ export default function HomeScreen() {
               <Text style={{ fontSize: 16, color: COLOR.GRAY3, marginBottom: 8, textAlign: 'center' }}>
                 {downloadProgress.substring(0, downloadProgress.lastIndexOf(' '))}
               </Text>
-              <Text style={{ fontSize: 36, fontWeight: 'bold', color: COLOR.BLACK }}>
+              <Text testID="home-download-progress" style={{ fontSize: 36, fontWeight: 'bold', color: COLOR.BLACK }}>
                 {downloadProgress.substring(downloadProgress.lastIndexOf(' ') + 1)}
               </Text>
             </View>
             <Button
+              testID="home-download-stop"
               name="pause"
               onPress={pressStopDownloadTiles}
               backgroundColor={COLOR.DARKRED}

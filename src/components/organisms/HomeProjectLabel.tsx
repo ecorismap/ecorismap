@@ -15,6 +15,7 @@ const HomeProjectLabel = React.memo(function HomeProjectLabel(props: Props) {
   const { projectLabelTop } = useHomeTopLayout();
   return (
     <Pressable
+      testID="home-project-label"
       style={{
         alignSelf: 'center',
         position: 'absolute',

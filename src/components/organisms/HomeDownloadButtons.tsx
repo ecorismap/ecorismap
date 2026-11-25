@@ -19,6 +19,7 @@ export const HomeDownloadButtons = React.memo((props: Props) => {
         <View style={{ margin: 5 }}>
           <Button
             size={30}
+            testID="home-download-start"
             name="download"
             backgroundColor={isDownloadPossible ? COLOR.RED : COLOR.GRAY4}
             onPress={onPress}

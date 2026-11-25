@@ -22,6 +22,7 @@ export const HomeTerrainControl = React.memo((props: Props) => {
   return (
     <View style={{ left, position: 'absolute', top }}>
       <Button
+        testID="home-terrain"
         name="terrain"
         // 有効中は半透明のまま色相を変えて状態を示す（濃淡だけでは見分けにくい）。
         // 赤系はGPSの表示・追従状態で使っているのでオレンジにする

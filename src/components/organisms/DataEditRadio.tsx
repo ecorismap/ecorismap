@@ -63,6 +63,7 @@ export const DataEditRadio = (props: Props) => {
             {checkItemValues.map((item, index) => (
               <CheckBox
                 key={index}
+                testID={`dataedit-option-${name}-${index}`}
                 label={item}
                 width={35 + item.length * 15 + 30}
                 checked={checkedList[index]}
@@ -72,6 +73,8 @@ export const DataEditRadio = (props: Props) => {
             ))}
             {otherItem !== undefined && (
               <CheckInput
+                testID={`dataedit-option-${name}-other`}
+                inputTestID={`dataedit-input-${name}-other`}
                 label={otherItem.value}
                 width={35 + 3 * 15 + 50}
                 text={otherText}

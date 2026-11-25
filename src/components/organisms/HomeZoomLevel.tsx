@@ -32,7 +32,7 @@ export const HomeZoomLevel = React.memo((props: Props) => {
 
   return (
     <View style={styles.buttonContainer}>
-      <Text style={{ fontSize: 12, color: COLOR.BLACK }}>{zoom.toString()}</Text>
+      <Text testID="home-zoom-level" style={{ fontSize: 12, color: COLOR.BLACK }}>{zoom.toString()}</Text>
     </View>
   );
 });

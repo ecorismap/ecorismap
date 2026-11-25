@@ -23,6 +23,7 @@ export const SelectToolButton = React.memo(({ disabled = false }: { disabled?: b
   return (
     <View style={styles.button}>
       <Button
+        testID="home-draw-select"
         name={DRAWTOOL.SELECT}
         backgroundColor={currentDrawTool === 'SELECT' ? COLOR.ALFARED : disabled ? COLOR.ALFAGRAY : COLOR.ALFABLUE}
         borderRadius={10}
@@ -40,6 +41,7 @@ export const MoveToolButton = React.memo(() => {
   return (
     <View style={styles.button}>
       <Button
+        testID="home-draw-move"
         name={DRAWTOOL.MOVE}
         backgroundColor={currentDrawTool === 'MOVE' ? COLOR.ALFARED : COLOR.ALFABLUE}
         borderRadius={10}
@@ -59,6 +61,7 @@ export const PencilLockButton = React.memo(() => {
   return (
     <View style={styles.button}>
       <Button
+        testID="home-draw-pencil-lock"
         name={MAPMEMOTOOL.PENCIL_LOCK}
         backgroundColor={isPencilModeActive ? COLOR.ALFARED : COLOR.ALFABLUE}
         borderRadius={10}
@@ -76,6 +79,7 @@ export const UndoToolButton = React.memo(() => {
   return (
     <View style={styles.button}>
       <Button
+        testID="home-draw-undo"
         name={DRAWTOOL.UNDO}
         backgroundColor={COLOR.ALFABLUE}
         borderRadius={10}
@@ -93,6 +97,7 @@ export const RedoToolButton = React.memo(() => {
   return (
     <View style={styles.button}>
       <Button
+        testID="home-draw-redo"
         name={DRAWTOOL.REDO}
         backgroundColor={COLOR.ALFABLUE}
         borderRadius={10}
@@ -109,6 +114,7 @@ export const DeleteToolButton = React.memo(() => {
   return (
     <View style={styles.button}>
       <Button
+        testID="home-draw-delete"
         name={DRAWTOOL.DELETE}
         backgroundColor={COLOR.ALFABLUE}
         borderRadius={10}

@@ -35,13 +35,14 @@ export const HomeTerrain3DVistaBanner = React.memo(() => {
   return (
     <View style={[styles.container, { top: vistaBannerTop }]} pointerEvents="box-none">
       <View style={styles.row} pointerEvents="box-none">
-        <Pressable onPress={pressClear} style={styles.banner}>
+        <Pressable testID="home-vista-close" onPress={pressClear} style={styles.banner}>
           <MaterialCommunityIcons name="binoculars" size={18} color={COLOR.WHITE} />
           <Text style={styles.text}>{t('Home.vista.banner')}</Text>
           <MaterialCommunityIcons name="close" size={18} color={COLOR.WHITE} style={styles.close} />
         </Pressable>
         {/* 山名の表示切替。景色だけを見たいときに消せるようにする */}
         <Pressable
+          testID="home-vista-peak-names"
           onPress={peakLabelsStore.toggle}
           style={[styles.banner, styles.toggle, !peakLabels && styles.toggleOff]}
           accessibilityLabel={t(peakLabels ? 'Home.vista.hidePeakNames' : 'Home.vista.showPeakNames')}

@@ -41,6 +41,7 @@ export const ProjectEditButtons = React.memo((props: Props) => {
       {!isNew && (
         <View style={{ marginHorizontal: 9 }}>
           <Button
+            testID="projectedit-open"
             name={PROJECTEDIT_BTN.OPEN}
             onPress={onPressOpenProject}
             backgroundColor={disabled ? COLOR.LIGHTBLUE : COLOR.BLUE}
@@ -51,6 +52,7 @@ export const ProjectEditButtons = React.memo((props: Props) => {
       )}
       {!isNew && isOwnerAdmin && Platform.OS === 'web' && (
         <Button
+          testID="projectedit-setting"
           name={PROJECTEDIT_BTN.SETTING}
           onPress={onPressSettingProject}
           disabled={disabled}
@@ -61,6 +63,7 @@ export const ProjectEditButtons = React.memo((props: Props) => {
       {!isNew && isOwnerAdmin && Platform.OS === 'web' && (
         <View style={{ marginHorizontal: 9 }}>
           <Button
+            testID="projectedit-data-manage"
             name={PROJECTEDIT_BTN.DATA_MANAGE}
             onPress={onPressCloudDataManagement}
             disabled={disabled}
@@ -73,6 +76,7 @@ export const ProjectEditButtons = React.memo((props: Props) => {
       {!isNew && isOwnerAdmin && Platform.OS === 'web' && (
         <View style={{ marginHorizontal: 9 }}>
           <Button
+            testID="projectedit-export"
             name={PROJECTEDIT_BTN.EXPORT}
             backgroundColor={disabled ? COLOR.LIGHTBLUE : COLOR.BLUE}
             disabled={disabled}
@@ -84,6 +88,7 @@ export const ProjectEditButtons = React.memo((props: Props) => {
       {!isNew && isOwner && Platform.OS === 'web' && (
         <View style={{ marginHorizontal: 9 }}>
           <Button
+            testID="projectedit-delete"
             name={PROJECTEDIT_BTN.DELETE}
             backgroundColor={disabled ? COLOR.LIGHTBLUE : COLOR.DARKRED}
             disabled={disabled}

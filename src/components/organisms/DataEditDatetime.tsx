@@ -59,7 +59,7 @@ export const DataEditDatetime = (props: Props) => {
   return (
     <View style={styles.tr}>
       <View style={styles.td}>
-        <Pressable style={styles.tr2} onPress={() => setOpen(true)}>
+        <Pressable testID={`dataedit-input-${name}`} style={styles.tr2} onPress={() => setOpen(true)}>
           {name && <Text style={styles.title}>{name}</Text>}
           <Text style={styles.text}>{dateValueString}</Text>
           <DatePicker

@@ -106,7 +106,7 @@ export const HomeTrackPhotoModal = () => {
             )}
           </View>
           <View style={styles.headerRight}>
-            <Button name={DATAEDIT_BTN.CLOSE} onPress={close} backgroundColor={COLOR.BLACK} size={30} />
+            <Button testID="home-trackphoto-close" name={DATAEDIT_BTN.CLOSE} onPress={close} backgroundColor={COLOR.BLACK} size={30} />
           </View>
         </View>
         {/* @ts-ignore - react-native-image-zoom-viewer is not compatible with React 19 types */}

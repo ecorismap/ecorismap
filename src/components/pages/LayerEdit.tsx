@@ -21,6 +21,7 @@ export default function LayerEditScreen() {
 
   const rightComponent = (
     <Button
+      testID="layeredit-save"
       name={LAYEREDIT_BTN.SAVE}
       onPress={pressSaveLayer}
       backgroundColor={isEdited ? COLOR.BLUE : COLOR.LIGHTBLUE}

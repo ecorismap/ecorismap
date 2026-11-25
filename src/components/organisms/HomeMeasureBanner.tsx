@@ -26,8 +26,8 @@ export const HomeMeasureBanner = React.memo(() => {
     <View style={[styles.container, { top: measureBannerTop }]} pointerEvents="box-none">
       <View style={styles.banner}>
         <MaterialCommunityIcons name="ruler" size={18} color={COLOR.WHITE} />
-        <Text style={styles.text}>{text}</Text>
-        <Pressable onPress={endMeasure} style={styles.closeButton}>
+        <Text testID="home-measure-text" style={styles.text}>{text}</Text>
+        <Pressable testID="home-measure-close" onPress={endMeasure} style={styles.closeButton}>
           <MaterialCommunityIcons name="close" size={18} color={COLOR.WHITE} />
         </Pressable>
       </View>

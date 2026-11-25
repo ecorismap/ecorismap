@@ -11,7 +11,11 @@ const QUALITIES = [FIX_QUALITY.RTK_FIX, FIX_QUALITY.RTK_FLOAT];
 export const GnssQualityLegend = () => (
   <View>
     {QUALITIES.map((quality) => (
-      <View key={quality} style={[styles.row, { backgroundColor: fixQualityColor(quality) }]}>
+      <View
+        key={quality}
+        testID={`featurestyle-gnss-quality-${quality}`}
+        style={[styles.row, { backgroundColor: fixQualityColor(quality) }]}
+      >
         <Text style={styles.label}>{fixQualityLabel(quality)}</Text>
       </View>
     ))}

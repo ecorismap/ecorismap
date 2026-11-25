@@ -45,6 +45,7 @@ export const DataEditTable = (props: Props_DataEditTable) => {
         ))}
         <View style={[styles.td3, { minWidth: 40, justifyContent: 'flex-end' }]}>
           <Button
+            testID={`dataedit-table-add-${name}`}
             style={{
               backgroundColor: COLOR.BLUE,
               padding: 0,
@@ -55,18 +56,19 @@ export const DataEditTable = (props: Props_DataEditTable) => {
           />
         </View>
       </View>
-      <ValueList data={data} list={list} onEndEditing={updateValue} />
+      <ValueList name={name} data={data} list={list} onEndEditing={updateValue} />
     </>
   );
 };
 
 interface Props_List {
+  name: string;
   data: string[][];
   list: { value: string; isOther: boolean }[];
   onEndEditing: (valueList: string[][]) => void;
 }
 const ValueList = (props: Props_List) => {
-  const { data, list, onEndEditing } = props;
+  const { name, data, list, onEndEditing } = props;
   const [valueList, setValueList] = useState<string[][]>([[]]);
 
   const changeText = useCallback(
@@ -101,6 +103,7 @@ const ValueList = (props: Props_List) => {
           {list.map((_, colIndex) => (
             <View key={colIndex} style={[styles.td, { flex: 100 }]}>
               <TextInput
+                testID={`dataedit-table-input-${name}-${rowIndex}-${colIndex}`}
                 style={styles.input}
                 value={rowItem[colIndex] ? rowItem[colIndex].toString() : ''}
                 onChangeText={(value) => changeText(rowIndex, colIndex, value)}
@@ -111,6 +114,7 @@ const ValueList = (props: Props_List) => {
           ))}
           <View style={[styles.td, { minWidth: 40, justifyContent: 'flex-end' }]}>
             <Button
+              testID={`dataedit-table-delete-${name}-${rowIndex}`}
               style={{
                 backgroundColor: COLOR.DARKRED,
                 padding: 0,

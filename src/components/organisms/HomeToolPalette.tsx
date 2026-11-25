@@ -269,6 +269,7 @@ export const HomeToolPalette = React.memo(({ items, featureType }: Props) => {
         return (
           <View key={item.id} style={styles.button}>
             <Button
+              testID={`home-palette-${item.id}`}
               // @ts-ignore アイコン名はパレット定義が持つ
               name={buttonProps.icon}
               //値ごとに色を変えるパレットは、どの色で描くのかをアイコンの色で示す

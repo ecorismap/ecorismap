@@ -15,7 +15,7 @@ export const DataEditUserName = (props: Props) => {
   return (
     <View style={styles.tr}>
       <View style={styles.td}>
-        <TextInput label={t('common.userName')} value={value} style={styles.input} editable={false} />
+        <TextInput testID="dataedit-username" label={t('common.userName')} value={value} style={styles.input} editable={false} />
       </View>
     </View>
   );

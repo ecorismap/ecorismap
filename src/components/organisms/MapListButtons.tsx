@@ -9,7 +9,7 @@ export const MapListButtons = () => {
 
   return (
     <View style={styles.buttonContainer}>
-      <Button name={MAPLIST_BTN.RELOAD} onPress={reloadMapList} />
+      <Button testID="maplist-reload" name={MAPLIST_BTN.RELOAD} onPress={reloadMapList} />
     </View>
   );
 };

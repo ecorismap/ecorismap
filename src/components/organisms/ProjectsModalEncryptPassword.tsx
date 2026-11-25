@@ -98,6 +98,7 @@ export const ProjectsModalEncryptPassword = React.memo((props: Props) => {
 
             <View style={{ flexDirection: 'row' }}>
               <TextInput
+                testID="projects-encrypt-pin"
                 value={value}
                 placeholder={t('Account.placeholder.pin')}
                 style={styles.input}
@@ -110,6 +111,7 @@ export const ProjectsModalEncryptPassword = React.memo((props: Props) => {
 
             <View style={styles.modalButtonContainer}>
               <Pressable
+                testID="projects-encrypt-ok"
                 style={styles.modalOKCancelButton}
                 onPress={() => {
                   pressOK(value);
@@ -119,6 +121,7 @@ export const ProjectsModalEncryptPassword = React.memo((props: Props) => {
                 <Text>OK</Text>
               </Pressable>
               <Pressable
+                testID="projects-encrypt-cancel"
                 style={[styles.modalOKCancelButton, { backgroundColor: COLOR.GRAY1 }]}
                 onPress={() => {
                   setValue('');

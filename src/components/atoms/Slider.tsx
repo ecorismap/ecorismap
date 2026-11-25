@@ -12,10 +12,12 @@ interface Props {
   minimumValue: number;
   maximumValue: number;
   onSlidingComplete: (val: number) => void;
+  /** E2Eから要素を特定するためのID */
+  testID?: string;
 }
 
 const Slider = React.memo((props: Props) => {
-  const { style, label, width, initialValue, step, minimumValue, maximumValue, labelColor, onSlidingComplete } = props;
+  const { style, label, width, initialValue, step, minimumValue, maximumValue, labelColor, onSlidingComplete, testID } = props;
   const [sliderValue, setSliderValue] = useState(0);
   const [sliderWidth, setSliderWidth] = useState('99.99%');
 
@@ -38,6 +40,7 @@ const Slider = React.memo((props: Props) => {
     >
       <Text style={{ width: 80, fontSize: 13, color: labelColor }}>{label}</Text>
       <RNSlider
+        testID={testID}
         // @ts-ignore
         style={{ height: 48, width: sliderWidth }}
         value={initialValue}

@@ -49,6 +49,7 @@ export const DataEditString = (props: Props) => {
     <View style={styles.tr}>
       <View style={styles.td}>
         <TextInput
+          testID={`dataedit-input-${name}`}
           style={styles.input}
           label={name}
           value={toInputText(value)}

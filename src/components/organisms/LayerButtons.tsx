@@ -11,13 +11,28 @@ export const LayerButtons = () => {
   return (
     <View style={styles.buttonContainer}>
       <View style={{ marginHorizontal: 9 }}>
-        <Button name={LAYERS_BTN.IMPORT} onPress={pressImportLayerAndData} labelText={t('Layer.label.import')} />
+        <Button
+          testID="layers-import"
+          name={LAYERS_BTN.IMPORT}
+          onPress={pressImportLayerAndData}
+          labelText={t('Layer.label.import')}
+        />
       </View>
       <View style={{ marginHorizontal: 9 }}>
-        <Button name={LAYERS_BTN.ADD_GROUP} onPress={pressAddLayerGroup} labelText={t('Layer.label.addGroup')} />
+        <Button
+          testID="layers-add-group"
+          name={LAYERS_BTN.ADD_GROUP}
+          onPress={pressAddLayerGroup}
+          labelText={t('Layer.label.addGroup')}
+        />
       </View>
       <View style={{ marginHorizontal: 9 }}>
-        <Button name={LAYERS_BTN.ADD} onPress={gotoLayerEditForAdd} labelText={t('Layer.label.add')} />
+        <Button
+          testID="layers-add"
+          name={LAYERS_BTN.ADD}
+          onPress={gotoLayerEditForAdd}
+          labelText={t('Layer.label.add')}
+        />
       </View>
     </View>
   );

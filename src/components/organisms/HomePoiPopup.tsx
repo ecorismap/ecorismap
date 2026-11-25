@@ -294,6 +294,7 @@ export const HomePoiPopup = React.memo(() => {
       >
         <View style={{ alignItems: 'center' }}>
           <Pressable
+            testID="home-poi-google-maps"
             onPress={openGoogleMaps}
             style={{
               paddingHorizontal: 10,
@@ -306,6 +307,7 @@ export const HomePoiPopup = React.memo(() => {
           </Pressable>
           {!isPOI && canVista && (
             <Pressable
+              testID="home-poi-vista"
               onPress={handleVista}
               style={{
                 paddingHorizontal: 10,
@@ -319,6 +321,7 @@ export const HomePoiPopup = React.memo(() => {
           )}
           {!isPOI && (
             <Pressable
+              testID="home-poi-viewshed"
               onPress={handleCreateViewshed}
               style={{
                 paddingHorizontal: 10,
@@ -332,6 +335,7 @@ export const HomePoiPopup = React.memo(() => {
           )}
           {!isPOI && !isTerrainActive && (
             <Pressable
+              testID="home-poi-measure"
               onPress={handleMeasureDistance}
               style={{
                 paddingHorizontal: 10,
@@ -344,11 +348,11 @@ export const HomePoiPopup = React.memo(() => {
             </Pressable>
           )}
           {distanceText && (
-            <Text style={{ color: COLOR.GRAY4, fontSize: 12, paddingBottom: 4 }}>{distanceText}</Text>
+            <Text testID="home-poi-distance" style={{ color: COLOR.GRAY4, fontSize: 12, paddingBottom: 4 }}>{distanceText}</Text>
           )}
-          <Text style={{ color: COLOR.GRAY4, fontSize: 12, paddingBottom: 4 }}>{elevationText}</Text>
+          <Text testID="home-poi-elevation" style={{ color: COLOR.GRAY4, fontSize: 12, paddingBottom: 4 }}>{elevationText}</Text>
           {coordinateText && (
-            <Pressable onPress={handleCopyCoordinate} style={{ paddingBottom: 4 }}>
+            <Pressable testID="home-poi-coordinate" onPress={handleCopyCoordinate} style={{ paddingBottom: 4 }}>
               <Text style={{ color: copied ? COLOR.GRAY4 : COLOR.BLUE, fontSize: 12 }}>
                 {copied ? t('Home.poi.copied') : coordinateDisplay}
               </Text>

@@ -68,11 +68,11 @@ export const GpsSettingsExternalGnss = React.memo(() => {
       <View style={styles.card}>
         <View style={styles.row}>
           <MaterialCommunityIcons name="satellite-variant" size={20} color={isConnected ? COLOR.BLUE : COLOR.GRAY3} />
-          <Text style={styles.linkText} numberOfLines={1}>
+          <Text testID="gpssettings-gnss-link-status" style={styles.linkText} numberOfLines={1}>
             {`${t(`GpsSettings.externalGnss.link.${status.link}`)}${status.linkName ? `  ${status.linkName}` : ''}`}
           </Text>
           {isConnected && (
-            <Pressable style={styles.smallButton} onPress={pressDisconnect}>
+            <Pressable testID="gpssettings-gnss-disconnect" style={styles.smallButton} onPress={pressDisconnect}>
               <Text style={styles.smallButtonText}>{`${t('GpsSettings.externalGnss.disconnect')}`}</Text>
             </Pressable>
           )}
@@ -120,19 +120,20 @@ export const GpsSettingsExternalGnss = React.memo(() => {
               <>
                 <View style={styles.row}>
                   <Text style={[styles.subTitle, styles.flex]}>{`${t('GpsSettings.externalGnss.usbDevices')}`}</Text>
-                  <Pressable style={styles.smallButton} onPress={refreshUsbDevices}>
+                  <Pressable testID="gpssettings-gnss-usb-refresh" style={styles.smallButton} onPress={refreshUsbDevices}>
                     <Text style={styles.smallButtonText}>{`${t('GpsSettings.externalGnss.refresh')}`}</Text>
                   </Pressable>
                 </View>
                 {usbDevices.length === 0 ? (
                   <Text style={styles.note}>{`${t('GpsSettings.externalGnss.noDevices')}`}</Text>
                 ) : (
-                  usbDevices.map((device) => (
+                  usbDevices.map((device, index) => (
                     <View key={device.deviceId} style={[styles.row, styles.deviceRow]}>
                       <Text style={[styles.flex, styles.deviceName]} numberOfLines={1}>
                         {device.name}
                       </Text>
                       <Pressable
+                        testID={`gpssettings-gnss-usb-connect-${index}`}
                         style={[
                           styles.smallButton,
                           styles.primaryButton,
@@ -159,6 +160,7 @@ export const GpsSettingsExternalGnss = React.memo(() => {
             <View style={[styles.row, isUsbSupported && styles.bleHeader]}>
               <Text style={[styles.subTitle, styles.flex]}>{`${t('GpsSettings.externalGnss.bleDevices')}`}</Text>
               <Pressable
+                testID="gpssettings-gnss-ble-scan"
                 style={[styles.smallButton, isBleScanning && styles.smallButtonDisabled]}
                 disabled={isBleScanning}
                 onPress={pressScanBle}
@@ -171,7 +173,7 @@ export const GpsSettingsExternalGnss = React.memo(() => {
             {bleDevices.length === 0 ? (
               <Text style={styles.note}>{`${t('GpsSettings.externalGnss.noBleDevices')}`}</Text>
             ) : (
-              bleDevices.map((device) => (
+              bleDevices.map((device, index) => (
                 <View key={device.address} style={[styles.row, styles.deviceRow]}>
                   <MaterialCommunityIcons
                     name={device.hasNus ? 'bluetooth-connect' : 'bluetooth'}
@@ -182,6 +184,7 @@ export const GpsSettingsExternalGnss = React.memo(() => {
                     {` ${device.name}  (${device.rssi}dBm)`}
                   </Text>
                   <Pressable
+                    testID={`gpssettings-gnss-ble-connect-${index}`}
                     style={[
                       styles.smallButton,
                       styles.primaryButton,
@@ -227,7 +230,7 @@ export const GpsSettingsExternalGnss = React.memo(() => {
               }`}
             </Text>
           </View>
-          <Pressable style={styles.smallButton} onPress={() => setReceiverModalVisible(true)}>
+          <Pressable testID="gpssettings-gnss-receiver-edit" style={styles.smallButton} onPress={() => setReceiverModalVisible(true)}>
             <Text style={styles.smallButtonText}>{`${t('GpsSettings.externalGnss.edit')}`}</Text>
           </Pressable>
         </View>
@@ -243,10 +246,11 @@ export const GpsSettingsExternalGnss = React.memo(() => {
                 : `${t('GpsSettings.externalGnss.ntrip.notConfigured')}`}
             </Text>
           </View>
-          <Pressable style={styles.smallButton} onPress={() => setNtripModalVisible(true)}>
+          <Pressable testID="gpssettings-gnss-ntrip-edit" style={styles.smallButton} onPress={() => setNtripModalVisible(true)}>
             <Text style={styles.smallButtonText}>{`${t('GpsSettings.externalGnss.edit')}`}</Text>
           </Pressable>
           <Switch
+            testID="gpssettings-gnss-ntrip-enabled"
             value={settings.ntrip.enabled}
             disabled={!ntripConfigured}
             onValueChange={(value) => setNtripEnabled(value)}

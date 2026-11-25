@@ -27,7 +27,11 @@ export const LayerStyle = () => {
           {layer.type !== 'NONE' && layer.type !== 'LAYERGROUP' && (
             <>
               <Text style={styles.title}>{`${t('common.style')}`}</Text>
-              <Pressable style={styles.td2} onPress={() => (editable ? gotoLayerEditFeatureStyle() : null)}>
+              <Pressable
+                testID="layeredit-style"
+                style={styles.td2}
+                onPress={() => (editable ? gotoLayerEditFeatureStyle() : null)}
+              >
                 {layer.type === 'POINT' && (
                   <PointView size={20} borderColor={COLOR.WHITE} color={layer.colorStyle.color} />
                 )}
@@ -41,6 +45,7 @@ export const LayerStyle = () => {
       </View>
       <View style={styles.td}>
         <Picker
+          testID="layeredit-type"
           label={t('common.type')}
           enabled={isNewLayer && editable}
           selectedValue={layer.type}

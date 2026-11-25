@@ -154,6 +154,7 @@ export const HomeTrackPointPopup = React.memo(() => {
         }}
       >
         <TouchableOpacity
+          testID="home-trackpoint-close"
           style={{
             position: 'absolute',
             top: 2,
@@ -217,7 +218,7 @@ export const HomeTrackPointPopup = React.memo(() => {
           )}
           {speedText && <Text style={{ color: COLOR.GRAY4, fontSize: 12, paddingBottom: 4 }}>{speedText}</Text>}
           {coordinateText && (
-            <Pressable onPress={handleCopyCoordinate} style={{ paddingBottom: 4 }}>
+            <Pressable testID="home-trackpoint-coordinate" onPress={handleCopyCoordinate} style={{ paddingBottom: 4 }}>
               <Text style={{ color: copied ? COLOR.GRAY4 : COLOR.BLUE, fontSize: 12 }}>
                 {copied ? t('Home.trackPoint.copied') : coordinateText}
               </Text>

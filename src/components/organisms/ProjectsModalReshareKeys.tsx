@@ -74,7 +74,7 @@ export const ProjectsModalReshareKeys = React.memo((props: Props) => {
             })}
           </ScrollView>
           <View style={styles.buttonRow}>
-            <Pressable style={[styles.buttonBase, styles.buttonCancel]} onPress={pressCancel}>
+            <Pressable testID="reshare-keys-cancel" style={[styles.buttonBase, styles.buttonCancel]} onPress={pressCancel}>
               <Text style={[styles.buttonTextBase, styles.buttonTextCancel]}>{t('common.cancel')}</Text>
             </Pressable>
             <Pressable

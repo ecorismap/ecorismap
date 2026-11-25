@@ -12,15 +12,18 @@ interface Props {
   itemLabelArray: string[];
   itemValueArray: string[];
   style?: { [key: string]: string | number };
+  /** E2Eから要素を特定するためのID */
+  testID?: string;
 }
 
 export const SimplePicker = React.memo((props: Props) => {
-  const { label, value, onValueChange, itemLabelArray, itemValueArray, style } = props;
+  const { label, value, onValueChange, itemLabelArray, itemValueArray, style, testID } = props;
 
   return (
     <View style={[styles.tr, style]}>
       <View style={styles.td}>
         <Picker
+          testID={testID}
           label={label}
           selectedValue={value}
           onValueChange={onValueChange}

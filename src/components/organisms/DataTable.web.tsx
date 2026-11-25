@@ -81,6 +81,7 @@ const SortableDataRow = React.memo(
         <View style={{ flex: 1, height: 45, flexDirection: 'row', backgroundColor }}>
           <View style={[styles.td, { width: 50 }]}>
             <Button
+              testID={`data-visible-${index}`}
               name={item.visible ? 'eye' : 'eye-off-outline'}
               onPress={() => changeVisible(item)}
               color={COLOR.GRAY4}
@@ -89,6 +90,7 @@ const SortableDataRow = React.memo(
           </View>
           <View style={[styles.td, { width: 60 }]}>
             <Button
+              testID={`data-check-${index}`}
               color={COLOR.GRAY4}
               style={{ backgroundColor }}
               borderRadius={0}
@@ -100,6 +102,7 @@ const SortableDataRow = React.memo(
 
           {projectId !== undefined && layer.permission !== 'COMMON' && (
             <Pressable
+              testID={`data-user-${index}`}
               style={[styles.td, { flex: 2, width: 100, cursor: dragCursor } as any]}
               onPressIn={onPressInRow}
               onPress={onPressRow}
@@ -113,6 +116,7 @@ const SortableDataRow = React.memo(
           {projectId === undefined && layer.field.length === 0 ? (
             <View style={[styles.td, { width: 60 }]}>
               <Button
+                testID={`data-row-${index}`}
                 color={COLOR.GRAY4}
                 style={{ backgroundColor }}
                 borderRadius={0}
@@ -124,6 +128,7 @@ const SortableDataRow = React.memo(
             layer.field.map(({ name, format }, field_index) => (
               <Pressable
                 key={field_index}
+                testID={field_index === 0 ? `data-row-${index}` : `data-cell-${index}-${field_index}`}
                 style={[styles.td, { flex: 2, width: 120, cursor: dragCursor } as any]}
                 onPressIn={onPressInRow}
                 onPress={onPressRow}
@@ -334,6 +339,7 @@ const DataTitle = React.memo((props: Props) => {
     <View style={{ flexDirection: 'row', height: 45 }}>
       <View style={[styles.th, { width: 50 }]}>
         <Button
+          testID="data-visible-all"
           name={visibleAll ? 'eye' : 'eye-off-outline'}
           size={20}
           onPress={onVisibleAll}
@@ -343,6 +349,7 @@ const DataTitle = React.memo((props: Props) => {
       </View>
       <View style={[styles.th, { width: 60 }]}>
         <Button
+          testID="data-check-all"
           color={COLOR.GRAY4}
           style={{ backgroundColor: COLOR.GRAY1 }}
           borderRadius={0}
@@ -353,6 +360,7 @@ const DataTitle = React.memo((props: Props) => {
       </View>
       {projectId !== undefined && layer.permission !== 'COMMON' && (
         <Pressable
+          testID="data-sort-_user_"
           style={[styles.th, { flex: 2, width: 100 }]}
           onPress={() => onChangeOrder('_user_', '_user_')}
           onLongPress={() => onFilterField('_user_')}
@@ -373,6 +381,7 @@ const DataTitle = React.memo((props: Props) => {
         layer.field.map(({ name, format }, field_index) => (
           <Pressable
             key={field_index}
+            testID={`data-sort-${name}`}
             style={[styles.th, { flex: 2, width: 120 }]}
             onPress={() => onChangeOrder(name, format)}
             onLongPress={() => onFilterField(name)}

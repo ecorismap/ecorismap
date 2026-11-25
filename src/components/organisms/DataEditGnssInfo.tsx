@@ -30,7 +30,7 @@ export const DataEditGnssInfo = React.memo(({ coords }: Props) => {
   ].filter(Boolean);
 
   return (
-    <View style={styles.row}>
+    <View testID="dataedit-gnss-info" style={styles.row}>
       <View style={[styles.badge, { backgroundColor: fixQualityColor(gnss.fixQuality) }]}>
         <Text style={styles.badgeText}>{fixQualityLabel(gnss.fixQuality)}</Text>
       </View>

@@ -22,8 +22,11 @@ export const MapListTable = React.memo(() => {
     t('common.maxZoom'),
     t('common.Yaxis'),
   ];
-  //@ts-ignore
-  const renderItem = useCallback(({ item }) => <MapListTableComponent item={item} addMap={addMap} />, [addMap]);
+  const renderItem = useCallback(
+    //@ts-ignore
+    ({ item, index }) => <MapListTableComponent item={item} index={index} addMap={addMap} />,
+    [addMap]
+  );
   const keyExtractor = useCallback((item: TileMapItemType) => item.url, []);
 
   return (
@@ -54,10 +57,12 @@ export const MapListTable = React.memo(() => {
 
 interface Props_MapListTableComponent {
   item: TileMapItemType;
+  /** 表示順（0始まり）。E2E用のtestIDに使う */
+  index: number;
   addMap: (map: TileMapItemType) => void;
 }
 
-const MapListTableComponent = React.memo(({ item, addMap }: Props_MapListTableComponent) => {
+const MapListTableComponent = React.memo(({ item, index, addMap }: Props_MapListTableComponent) => {
   //console.log('render renderItems');
   //console.log(item);
   return (
@@ -67,6 +72,7 @@ const MapListTableComponent = React.memo(({ item, addMap }: Props_MapListTableCo
           color={COLOR.GRAY4}
           style={{ backgroundColor: COLOR.MAIN }}
           borderRadius={0}
+          testID={`maplist-add-${index}`}
           name={'plus-thick'}
           onPress={() => addMap(item)}
         />

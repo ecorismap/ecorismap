@@ -56,19 +56,19 @@ export const HomeTerrain3DButtons = React.memo((props: Props) => {
   // 傾きも同じ考え方で、pitchを増やす（視線を寝かせる）と地面は
   // axis-x-rotate-counterclockwiseの矢印の向きに回って見える（実機で逆だったため入れ替えた）
   // 回転・傾きのボタンは眺望中は出さない（見回しはドラッグで行い、ボタン列は高さ・望遠だけにする）
-  const buttons: { key: string; icon: string; run: (handle: ButtonHandle) => void }[] = vista.active
+  const buttons: { key: string; testID: string; icon: string; run: (handle: ButtonHandle) => void }[] = vista.active
     ? []
     : [
-        { key: 'rotateCcw', icon: 'axis-z-rotate-counterclockwise', run: (h) => h.rotateBy(ROTATE_STEP_DEG) },
-        { key: 'rotateCw', icon: 'axis-z-rotate-clockwise', run: (h) => h.rotateBy(-ROTATE_STEP_DEG) },
-        { key: 'pitchCcw', icon: 'axis-x-rotate-counterclockwise', run: (h) => h.pitchBy(PITCH_STEP_DEG) },
-        { key: 'pitchCw', icon: 'axis-x-rotate-clockwise', run: (h) => h.pitchBy(-PITCH_STEP_DEG) },
+        { key: 'rotateCcw', testID: 'home-terrain-rotate-ccw', icon: 'axis-z-rotate-counterclockwise', run: (h) => h.rotateBy(ROTATE_STEP_DEG) },
+        { key: 'rotateCw', testID: 'home-terrain-rotate-cw', icon: 'axis-z-rotate-clockwise', run: (h) => h.rotateBy(-ROTATE_STEP_DEG) },
+        { key: 'pitchCcw', testID: 'home-terrain-pitch-ccw', icon: 'axis-x-rotate-counterclockwise', run: (h) => h.pitchBy(PITCH_STEP_DEG) },
+        { key: 'pitchCw', testID: 'home-terrain-pitch-cw', icon: 'axis-x-rotate-clockwise', run: (h) => h.pitchBy(-PITCH_STEP_DEG) },
       ];
 
   return (
     <View style={[styles.container, { top, left }]}>
       {buttons.map((button) => (
-        <Pressable key={button.key} style={styles.button} onPress={() => withHandle(button.run)}>
+        <Pressable key={button.key} testID={button.testID} style={styles.button} onPress={() => withHandle(button.run)}>
           <MaterialCommunityIcons
             //@ts-ignore アイコン名はグリフマップに存在する
             name={button.icon}
@@ -81,24 +81,24 @@ export const HomeTerrain3DButtons = React.memo((props: Props) => {
       {/* 眺望中だけ、立つ高さ（地上からの視点の高さ）を上下できるようにする */}
       {vista.active && (
         <>
-          <Pressable style={styles.button} onPress={() => withHandle((h) => h.changeVistaHeight(1))}>
+          <Pressable testID="home-vista-height-up" style={styles.button} onPress={() => withHandle((h) => h.changeVistaHeight(1))}>
             <MaterialCommunityIcons name="arrow-up" size={20} color={COLOR.WHITE} pointerEvents="none" />
           </Pressable>
           <View style={styles.height}>
-            <Text style={styles.heightText}>{formatHeight(vista.heightM)}</Text>
+            <Text testID="home-vista-height" style={styles.heightText}>{formatHeight(vista.heightM)}</Text>
           </View>
-          <Pressable style={styles.button} onPress={() => withHandle((h) => h.changeVistaHeight(-1))}>
+          <Pressable testID="home-vista-height-down" style={styles.button} onPress={() => withHandle((h) => h.changeVistaHeight(-1))}>
             <MaterialCommunityIcons name="arrow-down" size={20} color={COLOR.WHITE} pointerEvents="none" />
           </Pressable>
           {/* 画角（望遠・広角）。眺望中は地図のズームボタンを隠し、ズームはこのボタンで行う
               （ネイティブ・Webとも同じ並び） */}
-          <Pressable style={styles.button} onPress={() => withHandle((h) => h.changeVistaFov(1))}>
+          <Pressable testID="home-vista-zoom-in" style={styles.button} onPress={() => withHandle((h) => h.changeVistaFov(1))}>
             <MaterialCommunityIcons name="magnify-plus-outline" size={20} color={COLOR.WHITE} pointerEvents="none" />
           </Pressable>
           <View style={styles.height}>
-            <Text style={styles.heightText}>{formatMagnification(vista.fovDeg)}</Text>
+            <Text testID="home-vista-zoom" style={styles.heightText}>{formatMagnification(vista.fovDeg)}</Text>
           </View>
-          <Pressable style={styles.button} onPress={() => withHandle((h) => h.changeVistaFov(-1))}>
+          <Pressable testID="home-vista-zoom-out" style={styles.button} onPress={() => withHandle((h) => h.changeVistaFov(-1))}>
             <MaterialCommunityIcons name="magnify-minus-outline" size={20} color={COLOR.WHITE} pointerEvents="none" />
           </Pressable>
         </>
