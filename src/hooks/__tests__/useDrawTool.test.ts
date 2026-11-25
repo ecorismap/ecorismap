@@ -4442,6 +4442,44 @@ describe('飛翔図の行動記号の削除（作図監査 E-M11・E-L5・E-L6�
     expect(result.current.isUndoable).toBe(false);
   });
 
+  it('2つの値を持つ親から先頭の記号を消して戻しても、値の並び順が変わらない', () => {
+    const first = stamp('s-tansa', 80, { _stamp: 'KARI', 採餌行動: '探餌' });
+    const { result, store } = setupSession([parent, first, kari]);
+    const before = storeRecords(store).find((r) => r.id === 'parent1')?.field.採餌行動;
+    expect(before).toBe('探餌,狩り');
+    act(() => {
+      result.current.handleGrantHandwriting([80, 80], penStyle);
+    });
+    syncDataSet(store);
+    expect(storeRecords(store).find((r) => r.id === 'parent1')?.field.採餌行動).toBe('狩り');
+    act(() => {
+      result.current.undoDraw();
+    });
+    expect(storeRecords(store).find((r) => r.id === 'parent1')?.field.採餌行動).toBe(before);
+  });
+
+  it('消した後に親の線が削除されていたら、キャンセルでも記号だけを戻さない', () => {
+    const { result, store } = setupSession([parent, tomari]);
+    act(() => {
+      result.current.handleGrantHandwriting([10, 10], penStyle);
+    });
+    //データ一覧で親の線を削除した
+    mockLineDataSet.length = 0;
+    mockLineDataSet.push({
+      layerId: hisyouLayer.id,
+      userId: 'user1',
+      data: storeRecords(store).filter((r) => r.id !== 'parent1' && r.deleted !== true),
+    });
+    //再描画してlineDataSetを読み直させる
+    act(() => result.current.setHandwritingSubTool('TOMARI'));
+    act(() => result.current.setHandwritingSubTool('ERASER'));
+    act(() => {
+      result.current.revertErasedSymbols();
+      result.current.resetDrawTools();
+    });
+    expect(isAlive(store, 's-tomari')).toBe(false);
+  });
+
   it('E-M11: 確定後に呼んでも、消した記号は戻らない', () => {
     mockFindRecord.mockReturnValue(parent);
     const { result, store } = setupSession([parent, tomari]);

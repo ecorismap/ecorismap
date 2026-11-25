@@ -84,7 +84,13 @@ export default function MapEditContainer() {
         const result = await getPmtilesBoundary(map.url).finally(() => setIsSaving(false));
         boundary = result.boundary;
         // ヘッダーが読めない（取得失敗・オフライン）ときは利用者の設定を残す
-        if (result.header) Object.assign(finalMap, pmtilesHeaderZoom(finalMap, result.header));
+        if (result.header) {
+          Object.assign(finalMap, pmtilesHeaderZoom(finalMap, result.header));
+        } else if (!isEdited) {
+          // ズームの取り直しのためだけの保存（以前の版で登録した地図）。読めなければ何も変わらないので知らせる
+          await AlertAsync(t('hooks.message.failGetData'));
+          return;
+        }
       }
 
       // 読み込んだあとでスタイル欄を端末内のスタイル以外（URL・空・共有のスタイル）に変えていたら書かない。
@@ -132,7 +138,7 @@ export default function MapEditContainer() {
     } finally {
       savingRef.current = false;
     }
-  }, [getPmtilesBoundary, map, saveMapToState, saveStyleFile, store]);
+  }, [getPmtilesBoundary, isEdited, map, saveMapToState, saveStyleFile, store]);
 
   const pressDeleteMap = useCallback(async () => {
     const ret = await ConfirmAsync(t('Maps.confirm.deleteMap'));
@@ -173,6 +179,8 @@ export default function MapEditContainer() {
   }, [changeStyleURL, map.id, readStyleFile, store]);
 
   const gotoBack = useCallback(() => {
+    // 保存中（ヘッダーの取得待ち）に破棄の確認を出すと、保存されたのに「破棄しますか」が残る
+    if (savingRef.current) return;
     if (isEdited) {
       ConfirmAsync(t('common.confirm.cancelEdit')).then((ret) => {
         if (ret) navigationGoBack();

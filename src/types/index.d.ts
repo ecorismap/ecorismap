@@ -733,7 +733,17 @@ export type UndoLineType = {
     userId: string | undefined;
     record: RecordType;
     //記号を消したときに親の飛翔線から外した行動の値（戻すときに親へ足し直す）
-    parentBehavior?: { userId: string | undefined; parentId: string; fieldName: string; value: string };
+    //before/after は外す前後の親の値。親がまだ after なら before をそのまま戻す（値の並び順を変えない）
+    parentBehavior?: {
+      userId: string | undefined;
+      parentId: string;
+      fieldName: string;
+      value: string;
+      before: string;
+      after: string;
+    };
+    //消したときに親の飛翔線があったか。あった親がその後消されていたら、記号だけ戻すと一覧に出ない孤児になる
+    parentId?: string;
   };
 };
 

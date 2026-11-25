@@ -16,8 +16,9 @@ export const settleOnDrawnTerrain = (
   let lastStep = 0;
   for (let i = 0; i < options.iterations; i++) {
     const nextY = heightAt(y);
-    // 引けない: まだ動かしていなければ初期値のまま。動かした先で引けなくなったなら、その値は信用しない
-    if (nextY === null) return initialY;
+    // 引けない（空・画面外）。稜線の点は縮小した距離バッファでは隣の画素が空になるので、
+    // 直前までに寄っていればその値を採る。大きく動いた先で引けなくなったなら信用しない
+    if (nextY === null) return i > 0 && lastStep <= options.maxLastStep / 2 ? y : initialY;
     lastStep = Math.abs(nextY - y);
     y = nextY;
     if (lastStep < options.epsilon) return y;

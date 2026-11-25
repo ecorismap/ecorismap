@@ -279,4 +279,12 @@ describe('地図編集の保存（PMTiles のヘッダー）', () => {
     await save();
     expect(mockSavedMap).toMatchObject({ minimumZ: 5, maximumZ: 10, overzoomThreshold: 10 });
   });
+
+  it('何も変えていない保存でヘッダーが読めなければ、案内を出して保存しない', async () => {
+    await open({});
+    mockGetPmtilesBoundary.mockResolvedValue({ header: undefined, boundary: undefined });
+    await save();
+    expect(AlertAsync).toHaveBeenCalledWith('hooks.message.failGetData');
+    expect(mockOrder).toEqual([]);
+  });
 });

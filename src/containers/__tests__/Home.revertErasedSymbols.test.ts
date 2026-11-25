@@ -19,4 +19,16 @@ describe('Home の作図破棄経路', () => {
       expect(lines[idx - 1].trim()).toBe('revertErasedSymbols();');
     });
   });
+
+  it('アカウント・プロジェクト一覧・ログインへ移る経路は、描きかけを確認してから捨てる leaveHome を通る', () => {
+    const direct = lines.filter((line) => line.includes('leaveHomeWithTrackingGuard('));
+    expect(direct).toHaveLength(1);
+    const start = lines.findIndex((line) => line.includes('const leaveHome = useCallback('));
+    const body = lines.slice(start, start + 12).map((line) => line.trim());
+    const order = ['hasUnsavedDrawing()', 'leaveHomeWithTrackingGuard(', 'revertErasedSymbols();', 'resetDrawTools();'].map(
+      (word) => body.findIndex((line) => line.includes(word))
+    );
+    expect(order.every((index) => index >= 0)).toBe(true);
+    expect([...order].sort((a, b) => a - b)).toEqual(order);
+  });
 });

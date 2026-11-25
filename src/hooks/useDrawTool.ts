@@ -1109,7 +1109,14 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
         if (!checkRecordsModifiable(layer, [parent], 'edit').isOK) return undefined;
         const updated = { ...parent, field: { ...parent.field, [behavior.fieldName]: removed }, updatedAt: Date.now() };
         dispatch(updateRecordsAction({ layerId: layer.id, userId: d.userId, data: [updated] }));
-        return { userId: d.userId, parentId: group, fieldName: behavior.fieldName, value: behavior.value };
+        return {
+          userId: d.userId,
+          parentId: group,
+          fieldName: behavior.fieldName,
+          value: behavior.value,
+          before: String(parent.field[behavior.fieldName]),
+          after: removed,
+        };
       }
       return undefined;
     },
@@ -1122,8 +1129,16 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
    */
   const restoreDeletedSymbol = useCallback(
     (deleted: DeletedSymbolType, parents: Map<string, RecordType>) => {
-      const { layerId, userId, record, parentBehavior } = deleted;
+      const { layerId, userId, record, parentBehavior, parentId } = deleted;
       const now = Date.now();
+      // 消した後にデータ一覧などで親の線が消されていたら、記号も消えたままにする（一覧に出ず選べない孤児になる）
+      if (
+        parentId !== undefined &&
+        // lineDataSetは論理削除済みの記録を含まない
+        !lineDataSet.some((d) => d.layerId === layerId && d.data.some((r) => r.id === parentId))
+      ) {
+        return;
+      }
       // 削除の墓標（updatedAt 付き）より新しくしないと、同期で削除のほうが勝って戻した記号が消える
       dispatch(updateRecordsAction({ layerId, userId, data: [{ ...record, updatedAt: now }] }));
       if (parentBehavior === undefined) return;
@@ -1134,7 +1149,9 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
           .find((d) => d.layerId === layerId && d.userId === parentBehavior.userId)
           ?.data.find((r) => r.id === parentBehavior.parentId);
       if (parent === undefined) return;
-      const appended = appendCheckValue(parent.field[parentBehavior.fieldName], parentBehavior.value);
+      const current = parent.field[parentBehavior.fieldName];
+      const appended =
+        current === parentBehavior.after ? parentBehavior.before : appendCheckValue(current, parentBehavior.value);
       if (appended === undefined) return;
       const updated = { ...parent, field: { ...parent.field, [parentBehavior.fieldName]: appended }, updatedAt: now };
       parents.set(parentKey, updated);
@@ -2510,12 +2527,15 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
           if (!isHit(xy, isStamp)) continue;
           //テンプレートなど他人の名義の記号は、管理者でなければ消せない（同期監査 M8。ストアでも受け付けない）
           if (!checkRecordsModifiable(layer, [record], 'delete').isOK) return;
+          const parentId = lineDataSet.some((d) => d.layerId === layer.id && d.data.some((r) => r.id === group))
+            ? group
+            : undefined;
           const parentBehavior = removeSymbolBehaviorFromParent(layer, record);
           pushUndo({
             index: -1,
             latlon: [],
             action: 'DELETE_SYMBOL',
-            deletedRecord: { layerId: layer.id, userId: data.userId, record, parentBehavior },
+            deletedRecord: { layerId: layer.id, userId: data.userId, record, parentBehavior, parentId },
           });
           dispatch(deleteRecordsAction({ layerId: layer.id, userId: data.userId, data: [record] }));
           return;

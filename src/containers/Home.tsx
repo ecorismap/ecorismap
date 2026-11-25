@@ -2441,44 +2441,66 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
   // 別の画面へ移るとこの画面がアンマウントされ、軌跡の記録（useLocation）の購読と記録ガードの handler が外れる。
   // 記録中は移る前に止めて保存させ、キャンセルや保存・アップロードの失敗なら移らない（軌跡監査 T-H1）
   // マップメモの中断中・保存待ちの線も、アンマウントで消えないよう移る直前に保存する（作図監査 E-L7）
+  // 作図の描きかけも、キャンセルと同じく確認してから捨てる。行動記号の削除はタップ時点で確定しているので戻す（E-M11）。
+  // 確認は軌跡の停止より先に出し、やめたときに記録だけ止まらないようにする
+  const leaveHome = useCallback(
+    async (navigate: () => void) => {
+      const isDiscarding = hasUnsavedDrawing();
+      if (isDiscarding && !(await ConfirmAsync(t('Home.confirm.discard')))) return;
+      await leaveHomeWithTrackingGuard(() => {
+        revertErasedSymbols();
+        resetDrawTools();
+        //キャンセルと同じく、捨てた飛翔図の属性は選び直してもらう
+        if (isDiscarding && editingLayer?.toolPalette === 'HISYOU') clearPaletteFieldValues(editingLayer.id);
+        flushMapMemoBeforeLeave();
+        navigate();
+      });
+    },
+    [
+      clearPaletteFieldValues,
+      editingLayer?.id,
+      editingLayer?.toolPalette,
+      flushMapMemoBeforeLeave,
+      hasUnsavedDrawing,
+      resetDrawTools,
+      revertErasedSymbols,
+    ]
+  );
+
   // セッションが切れたときのログインし直し。LOGOUT（鍵を消して手元も閉じる）を通さずにログイン画面へ送る（A-L4）
   const gotoRelogin = useCallback(async () => {
-    await leaveHomeWithTrackingGuard(() => {
-      flushMapMemoBeforeLeave();
+    await leaveHome(() => {
       navigation.navigate('Account', {
         accountFormState: 'loginUserAccount',
         message: t('Account.message.sessionExpired'),
       });
     });
-  }, [flushMapMemoBeforeLeave, navigation]);
+  }, [leaveHome, navigation]);
   const { promptReloginIfSessionLost } = useAuthSessionLost(gotoRelogin);
 
   const gotoProjects = useCallback(async () => {
     // セッションが切れていると一覧は汎用の権限エラーになるので、先にログインし直しを案内する
     if (await promptReloginIfSessionLost()) return;
-    await leaveHomeWithTrackingGuard(() => {
-      flushMapMemoBeforeLeave();
+    await leaveHome(() => {
       navigation.navigate('Projects');
     });
-  }, [flushMapMemoBeforeLeave, navigation, promptReloginIfSessionLost]);
+  }, [leaveHome, navigation, promptReloginIfSessionLost]);
 
   const gotoAccount = useCallback(async () => {
-    await leaveHomeWithTrackingGuard(() => {
-      flushMapMemoBeforeLeave();
+    await leaveHome(() => {
       navigation.navigate('AccountSettings', {
         previous: 'Home',
       });
     });
-  }, [flushMapMemoBeforeLeave, navigation]);
+  }, [leaveHome, navigation]);
 
   const gotoLogin = useCallback(async () => {
-    await leaveHomeWithTrackingGuard(() => {
-      flushMapMemoBeforeLeave();
+    await leaveHome(() => {
       navigation.navigate('Account', {
         accountFormState: 'selectLoginMethod',
       });
     });
-  }, [flushMapMemoBeforeLeave, navigation]);
+  }, [leaveHome, navigation]);
 
   const gotoLayers = useCallback(async () => {
     if (isEditingRecord) {

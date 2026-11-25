@@ -46,6 +46,10 @@ describe('settleOnDrawnTerrain', () => {
     expect(settleOnDrawnTerrain(327, (y) => (y === 327 ? 500 : null), options)).toBe(327);
   });
 
+  it('少し寄った先で空に当たったら（稜線の点）、寄った値を採る', () => {
+    expect(settleOnDrawnTerrain(327, (y) => (y === 327 ? 330 : null), options)).toBe(330);
+  });
+
   it('寄り切らなくても、残りの動きが小さければ採る', () => {
     expect(settleOnDrawnTerrain(100, (y) => y + (150 - y) * 0.4, options)).toBeGreaterThan(140);
   });
