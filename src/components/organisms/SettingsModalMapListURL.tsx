@@ -105,6 +105,7 @@ export const SettingsModalMapListURL = React.memo((props: Props) => {
 
             <View style={{ flexDirection: 'row' }}>
               <TextInput
+                testID="settings-maplisturl-input"
                 placeholder={'https://docs.google.com/spreadsheets/xxx'}
                 value={value}
                 style={styles.input}
@@ -113,13 +114,13 @@ export const SettingsModalMapListURL = React.memo((props: Props) => {
             </View>
 
             <View style={styles.modalButtonContainer}>
-              <Pressable style={styles.modalOKCancelButton} onPress={() => pressOK(value)}>
+              <Pressable testID="settings-maplisturl-ok" style={styles.modalOKCancelButton} onPress={() => pressOK(value)}>
                 <Text>OK</Text>
               </Pressable>
-              <Pressable style={[styles.modalOKCancelButton, { backgroundColor: COLOR.GRAY1 }]} onPress={pressCancel}>
+              <Pressable testID="settings-maplisturl-cancel" style={[styles.modalOKCancelButton, { backgroundColor: COLOR.GRAY1 }]} onPress={pressCancel}>
                 <Text>Cancel</Text>
               </Pressable>
-              <Pressable style={[styles.modalOKCancelButton, { backgroundColor: COLOR.GRAY1 }]} onPress={pressReset}>
+              <Pressable testID="settings-maplisturl-reset" style={[styles.modalOKCancelButton, { backgroundColor: COLOR.GRAY1 }]} onPress={pressReset}>
                 <Text>{`${t('common.reset')}`}</Text>
               </Pressable>
             </View>

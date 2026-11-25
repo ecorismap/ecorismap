@@ -122,11 +122,12 @@ export const SettingsModalFileSave = React.memo((props: Props) => {
                 alignItems: 'center',
               }}
             >
-              <TextInput placeholder={''} value={value} style={styles.input} onChangeText={onChangeText} />
+              <TextInput testID="settings-filesave-name" placeholder={''} value={value} style={styles.input} onChangeText={onChangeText} />
               <Text style={styles.text}>.ecorismap</Text>
             </View>
             <View style={styles.modalCheckbox}>
               <CheckBox
+                testID="settings-filesave-include-photo"
                 style={{ backgroundColor: COLOR.WHITE }}
                 label={t('common.includePhoto')}
                 checked={includePhoto}
@@ -134,10 +135,10 @@ export const SettingsModalFileSave = React.memo((props: Props) => {
               />
             </View>
             <View style={styles.modalButtonContainer}>
-              <Pressable style={styles.modalOKCancelButton} onPress={() => pressOK(value, includePhoto)}>
+              <Pressable testID="settings-filesave-ok" style={styles.modalOKCancelButton} onPress={() => pressOK(value, includePhoto)}>
                 <Text>OK</Text>
               </Pressable>
-              <Pressable style={[styles.modalOKCancelButton, { backgroundColor: COLOR.GRAY1 }]} onPress={pressCancel}>
+              <Pressable testID="settings-filesave-cancel" style={[styles.modalOKCancelButton, { backgroundColor: COLOR.GRAY1 }]} onPress={pressCancel}>
                 <Text>Cancel</Text>
               </Pressable>
             </View>

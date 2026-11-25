@@ -52,7 +52,7 @@ export const DataEditDatetime = (props: Props) => {
   return (
     <View style={styles.tr}>
       <View style={styles.td}>
-        <View style={styles.tr2}>
+        <View testID={`dataedit-input-${name}`} style={styles.tr2}>
           {name && <Text style={styles.title}>{name}</Text>}
           <LocalizationProvider dateAdapter={AdapterDateFns}>
             {mode === 'time' && (

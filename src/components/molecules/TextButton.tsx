@@ -13,19 +13,21 @@ interface Props {
   info?: string;
   isExternalLink?: boolean;
   onPress: () => void;
+  /** E2Eから要素を特定するためのID（文字の行）。アイコンは`${testID}-icon`、情報ボタンは`${testID}-info` */
+  testID?: string;
 }
 
 export const TextButton = React.memo((props: Props) => {
-  const { name, text, info, isExternalLink, onPress } = props;
+  const { name, text, info, isExternalLink, onPress, testID } = props;
 
   return (
     <View style={styles.tr}>
       <View style={[styles.td, { flex: 10 }]}>
         <View style={{ width: 33 }}>
-          <Button name={name} borderRadius={5} backgroundColor={COLOR.GRAY3} onPress={onPress} />
+          <Button testID={testID ? `${testID}-icon` : undefined} name={name} borderRadius={5} backgroundColor={COLOR.GRAY3} onPress={onPress} />
         </View>
         <View style={{ marginLeft: 10, flex: 9 }}>
-          <Pressable onPress={onPress} style={{ height: 50, justifyContent: 'center' }}>
+          <Pressable testID={testID} onPress={onPress} style={{ height: 50, justifyContent: 'center' }}>
             <View style={styles.textRow}>
               <Text style={styles.text}>{text}</Text>
               {isExternalLink && (
@@ -38,6 +40,7 @@ export const TextButton = React.memo((props: Props) => {
       {info && (
         <View style={[styles.td, { flex: 1, justifyContent: 'flex-end' }]}>
           <Button
+            testID={testID ? `${testID}-info` : undefined}
             name="information-variant"
             backgroundColor={COLOR.GRAY2}
             size={12}

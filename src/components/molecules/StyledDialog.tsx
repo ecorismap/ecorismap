@@ -162,6 +162,7 @@ export const StyledDialog = React.memo(() => {
     return (
       <Pressable
         key={index}
+        testID={`dialog-button-${index}`}
         style={[
           styles.buttonBase,
           horizontal && styles.buttonHorizontal,
@@ -195,10 +196,10 @@ export const StyledDialog = React.memo(() => {
       {/* accessible={false}: 既定ではiOSで中身が1つの要素にまとまり、ボタンをVoiceOverやE2Eから個別に押せない */}
       <Pressable style={styles.modalOverlay} onPress={handleDismiss} disablePressedAnimation accessible={false}>
         <Pressable style={styles.modalCard} onPress={() => null} disablePressedAnimation accessible={false}>
-          {!!displayed?.title && <Text style={styles.title}>{displayed.title}</Text>}
+          {!!displayed?.title && <Text testID="dialog-title" style={styles.title}>{displayed.title}</Text>}
           {!!displayed?.message && (
             <ScrollView style={styles.messageScroll} contentContainerStyle={styles.messageContainer}>
-              <Text style={styles.message}>{displayed.message}</Text>
+              <Text testID="dialog-message" style={styles.message}>{displayed.message}</Text>
             </ScrollView>
           )}
           <View style={horizontal ? styles.buttonRow : styles.buttonColumn}>{buttons.map(renderButton)}</View>

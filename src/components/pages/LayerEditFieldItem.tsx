@@ -47,7 +47,12 @@ export default function LayerEditFieldItemScreen() {
 
   const rightComponent =
     itemFormat === 'STRING_DICTIONARY' ? (
-      <Button name={'folder-open'} onPress={pressImportDictionary} labelText={t('LayerEdit.label.dictionaty')} />
+      <Button
+        testID="fieldedit-import-dictionary"
+        name={'folder-open'}
+        onPress={pressImportDictionary}
+        labelText={t('LayerEdit.label.dictionaty')}
+      />
     ) : undefined;
 
   if (itemFormat === 'STRING_DICTIONARY') {
@@ -98,6 +103,7 @@ export default function LayerEditFieldItemScreen() {
             <View style={[styles.td, { flex: 3 }]}>
               <Picker
                 enabled={editable}
+                testID="fieldedit-ref-layer"
                 selectedValue={pickerValues[0]}
                 onValueChange={(itemValue) => changeValue(0, itemValue as string)}
                 itemLabelArray={refLayerNames}
@@ -106,6 +112,7 @@ export default function LayerEditFieldItemScreen() {
               />
               <Picker
                 enabled={pickerValues[0] !== ''}
+                testID="fieldedit-ref-field"
                 selectedValue={pickerValues[1]}
                 onValueChange={(itemValue) => changeValue(1, itemValue as string)}
                 itemLabelArray={refFieldNames}
@@ -114,6 +121,7 @@ export default function LayerEditFieldItemScreen() {
               />
               <Picker
                 enabled={editable}
+                testID="fieldedit-primary-field"
                 selectedValue={pickerValues[2]}
                 onValueChange={(itemValue) => changeValue(2, itemValue as string)}
                 itemLabelArray={primaryFieldNames}
@@ -131,6 +139,7 @@ export default function LayerEditFieldItemScreen() {
                     label={t('common.customField')}
                     placeholder={'field1|field2'}
                     placeholderTextColor={COLOR.GRAY3}
+                    testID="fieldedit-ref-custom"
                     value={customFieldReference}
                     onChangeText={changeCustomFieldReference}
                     style={styles.input}
@@ -144,6 +153,7 @@ export default function LayerEditFieldItemScreen() {
                     label={t('common.customField')}
                     placeholder={'field1|field2'}
                     placeholderTextColor={COLOR.GRAY3}
+                    testID="fieldedit-primary-custom"
                     value={customFieldPrimary}
                     onChangeText={changeCustomFieldPrimary}
                     style={styles.input}
@@ -171,6 +181,7 @@ export default function LayerEditFieldItemScreen() {
           itemFormat === 'TIMERANGE') && (
           <View style={styles.checkbox}>
             <CheckBox
+              testID="fieldedit-use-last-value"
               label={t('common.useLastValue')}
               labelSize={14}
               labelColor="black"
@@ -184,6 +195,7 @@ export default function LayerEditFieldItemScreen() {
           <View style={styles.tr}>
             <View style={[styles.td, { flex: 1 }]}>
               <Picker
+                testID="fieldedit-code-field"
                 label={t('common.codeField')}
                 selectedValue={codeFieldId}
                 onValueChange={(itemValue) => changeCodeFieldId(itemValue as string)}
@@ -230,6 +242,7 @@ export default function LayerEditFieldItemScreen() {
                         <View style={[styles.td, withCode ? styles.valueCell : styles.wideValueCell]}>
                           <TextInput
                             style={styles.input}
+                            testID={`fieldedit-value-${index}`}
                             value={item.value.toString()}
                             editable={editable && !item.isOther}
                             onChangeText={(value: string) => changeValue(index, value)}
@@ -241,6 +254,7 @@ export default function LayerEditFieldItemScreen() {
                             {!item.isOther && (
                               <TextInput
                                 style={styles.input}
+                                testID={`fieldedit-code-${index}`}
                                 value={(item.customFieldValue ?? '').toString()}
                                 editable={editable}
                                 onChangeText={(value: string) => changeCodeValue(index, value)}
@@ -254,6 +268,7 @@ export default function LayerEditFieldItemScreen() {
                               backgroundColor: COLOR.DARKRED,
                               padding: 0,
                             }}
+                            testID={`fieldedit-delete-${index}`}
                             name="minus"
                             disabled={!editable}
                             onPress={() => pressDeleteValue(index)}
@@ -261,6 +276,7 @@ export default function LayerEditFieldItemScreen() {
                         </View>
                         <View style={[styles.td, styles.buttonCell]}>
                           <Button
+                            testID={`fieldedit-top-${index}`}
                             name="chevron-double-up"
                             onPress={() => pressListOrder(index)}
                             color={COLOR.GRAY2}
@@ -299,6 +315,7 @@ const ListButtons = () => {
   return editable ? (
     <View style={styles.button}>
       <Button
+        testID="fieldedit-add"
         backgroundColor={COLOR.BLUE}
         name="plus"
         disabled={!editable}
@@ -306,7 +323,12 @@ const ListButtons = () => {
         labelText={t('LayerEditFieldItem.label.addValue')}
       />
       {(itemFormat === 'LIST' || itemFormat === 'CHECK' || itemFormat === 'RADIO') && (
-        <Pressable style={{ margin: 5 }} disabled={!editable} onPress={() => pressAddValue(true)}>
+        <Pressable
+          testID="fieldedit-add-other"
+          style={{ margin: 5 }}
+          disabled={!editable}
+          onPress={() => pressAddValue(true)}
+        >
           <Text style={{ fontSize: 14, color: COLOR.BLUE }}>{`${t('common.addOther')}`}</Text>
         </Pressable>
       )}

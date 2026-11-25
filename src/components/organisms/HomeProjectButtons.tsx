@@ -38,6 +38,7 @@ export const HomeProjectButtons = React.memo(() => {
         <>
           <View style={{ marginHorizontal: 9 }}>
             <Button
+              testID="home-project-save-setting"
               name={'content-save-cog'}
               onPress={pressSaveProjectSetting}
               backgroundColor={COLOR.BLUE}
@@ -46,6 +47,7 @@ export const HomeProjectButtons = React.memo(() => {
           </View>
           <View style={{ marginHorizontal: 9 }}>
             <Button
+              testID="home-project-discard-setting"
               name={'close-octagon'}
               onPress={pressDiscardProjectSetting}
               backgroundColor={COLOR.DARKRED}
@@ -57,6 +59,7 @@ export const HomeProjectButtons = React.memo(() => {
         <>
           <View style={{ marginHorizontal: 9 }}>
             <Button
+              testID="home-project-jump"
               name="home"
               onPress={() => pressJumpProject()}
               borderRadius={50}
@@ -66,6 +69,7 @@ export const HomeProjectButtons = React.memo(() => {
           </View>
           <View style={{ marginHorizontal: 9 }}>
             <Button
+              testID="home-project-download"
               name="cloud-download"
               onPress={pressDownloadData}
               borderRadius={50}
@@ -75,6 +79,7 @@ export const HomeProjectButtons = React.memo(() => {
           </View>
           <View style={{ marginHorizontal: 9 }}>
             <Button
+              testID="home-project-upload"
               name="cloud-upload"
               color={COLOR.GRAY4}
               backgroundColor={COLOR.DARKYELLOW}
@@ -93,6 +98,7 @@ export const HomeProjectButtons = React.memo(() => {
           </View> */}
           <View style={{ marginHorizontal: 9 }}>
             <Button
+              testID="home-project-close"
               name="exit-run"
               backgroundColor={COLOR.DARKRED}
               disabled={false}

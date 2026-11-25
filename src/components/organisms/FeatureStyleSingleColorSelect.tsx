@@ -6,14 +6,16 @@ import { COLOR } from '../../constants/AppConstants';
 interface Props {
   value: string;
   onPressColorSelect: () => void;
+  /** E2Eから要素を特定するためのID */
+  testID?: string;
 }
 
 export const SingleColorSelect = (props: Props) => {
-  const { value, onPressColorSelect } = props;
+  const { value, onPressColorSelect, testID } = props;
 
   return (
     <View style={styles.tr}>
-      <Pressable style={[styles.td, { backgroundColor: value }]} onPress={() => onPressColorSelect()}>
+      <Pressable testID={testID} style={[styles.td, { backgroundColor: value }]} onPress={() => onPressColorSelect()}>
         <Text>{value}</Text>
       </Pressable>
     </View>

@@ -8,6 +8,13 @@ model: sonnet
 
 Playwright MCPを使用してEcorisMap Web版のE2Eテストを実行・作成します。
 
+リポジトリに入っている通しテスト（`yarn e2e:web`、Playwright Test）と、確かめる項目の台帳は次を参照する。
+画面で確かめた手順を繰り返し使うときは、台帳のIDを付けて `e2e/web/specs/` のspecに落とす。
+
+- 台帳（機能一覧）: `docs/E2E_TEST_ITEMS.md`
+- 書き方・流し方: `e2e/README.md`
+- 画面要素のtestID: `e2e/TESTIDS.md`
+
 ## 担当タスク
 
 1. E2Eテストシナリオの作成
@@ -20,7 +27,7 @@ Playwright MCPを使用してEcorisMap Web版のE2Eテストを実行・作成�
 ### Web版の起動
 ```bash
 yarn web
-# http://localhost:19006 でアクセス可能
+# http://localhost:8081 でアクセス可能
 ```
 
 ### Playwright MCP有効化

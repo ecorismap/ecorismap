@@ -68,7 +68,7 @@ export const TrackSummaryChart = React.memo(({ profile, height = 180 }: Props) =
   const touchProfile = touchIndex !== null ? profile[touchIndex] : null;
 
   return (
-    <View style={styles.container} onLayout={onLayout}>
+    <View testID="tracksummary-chart" style={styles.container} onLayout={onLayout}>
       {chart !== null && (
         <GestureDetector gesture={scrubGesture}>
           <View>

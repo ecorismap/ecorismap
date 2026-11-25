@@ -63,6 +63,7 @@ export default function ProjectEditScreen() {
     <View style={{ flexDirection: 'row' }}>
       {(isOwnerAdmin || isNew) && (
         <HeaderRightButton
+          testID="projectedit-save"
           name={PROJECTEDIT_BTN.SAVE}
           onPress={pressSaveProject}
           backgroundColor={isEdited ? COLOR.BLUE : COLOR.LIGHTBLUE}
@@ -87,6 +88,7 @@ export default function ProjectEditScreen() {
       return (
         <ProjectEditMembers
           key={index}
+          index={index}
           name={item.role === 'OWNER' ? t('common.owner') : t('common.member')}
           value={item.email}
           verified={item.verified}
@@ -125,7 +127,7 @@ export default function ProjectEditScreen() {
     <>
       {/* Custom Header */}
       <View style={[styles.header, { height: HEADER_HEIGHT + insets.top, paddingTop: insets.top }]}>
-        <TouchableOpacity style={{ padding: 5 }} onPress={gotoBack}>
+        <TouchableOpacity testID="projectedit-back" style={{ padding: 5 }} onPress={gotoBack}>
           <MaterialCommunityIcons name="chevron-left" size={28} color={COLOR.BLACK} />
         </TouchableOpacity>
         <Text style={{ fontSize: 16 }}>{t('ProjectEdit.navigation.title')}</Text>
@@ -134,6 +136,7 @@ export default function ProjectEditScreen() {
       <View style={styles.container}>
         {/* 固定部分: プロジェクト名と概要 */}
         <EditString
+          testID="projectedit-name"
           name={t('common.projectName')}
           value={project.name}
           editable={(isOwner && !isProjectOpen) || isNew}
@@ -141,6 +144,7 @@ export default function ProjectEditScreen() {
           onEndEditing={() => null}
         />
         <EditString
+          testID="projectedit-abstract"
           name={t('common.overview')}
           value={project.abstract}
           editable={(isOwner && !isProjectOpen) || isNew}
@@ -150,6 +154,7 @@ export default function ProjectEditScreen() {
 
         {(isOwnerAdmin || isNew) && (
           <EditString
+            testID="projectedit-member-add"
             name={t('common.addMembers')}
             value={emails}
             style={{ backgroundColor: COLOR.WHITE, borderRadius: 5, flex: 1 }}

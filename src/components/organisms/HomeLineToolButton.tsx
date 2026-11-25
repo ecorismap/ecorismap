@@ -29,6 +29,7 @@ export const HomeLineToolButton = React.memo((props: Props) => {
     <View style={styles.container}>
       <View style={styles.button}>
         <Button
+          testID="home-draw-plot-line"
           id={'PLOT_LINE'}
           name={LINETOOL.PLOT_LINE}
           disabled={disabled}

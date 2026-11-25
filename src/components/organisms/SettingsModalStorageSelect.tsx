@@ -109,7 +109,7 @@ export const SettingsModalStorageSelect = React.memo((props: Props) => {
           </Text>
 
           {options.map((option) => (
-            <Pressable key={option.choice} style={styles.optionButton} onPress={() => onSelect(option.choice)}>
+            <Pressable testID={`settings-storage-option-${option.choice}`} key={option.choice} style={styles.optionButton} onPress={() => onSelect(option.choice)}>
               <View style={styles.optionIconCircle}>
                 <MaterialCommunityIcons name={option.icon} size={24} color={COLOR.BLUE} />
               </View>
@@ -121,7 +121,7 @@ export const SettingsModalStorageSelect = React.memo((props: Props) => {
             </Pressable>
           ))}
 
-          <Pressable style={styles.cancelButton} onPress={onCancel}>
+          <Pressable testID="settings-storage-cancel" style={styles.cancelButton} onPress={onCancel}>
             <Text style={styles.cancelButtonText}>{t('common.cancel')}</Text>
           </Pressable>
         </Pressable>

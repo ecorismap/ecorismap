@@ -83,6 +83,7 @@ export const HomeMapMemoTools = React.memo(() => {
     <View style={styles.buttonContainer}>
       <View style={styles.button}>
         <Button
+          testID="home-memo-pen"
           name={MAPMEMOTOOL.PEN}
           backgroundColor={isPenActive ? COLOR.ALFARED : COLOR.ALFABLUE}
           borderRadius={10}
@@ -92,6 +93,7 @@ export const HomeMapMemoTools = React.memo(() => {
       </View>
       <View style={styles.button}>
         <Button
+          testID="home-memo-eraser"
           name={ERASER.ERASER}
           backgroundColor={isEraserActive ? COLOR.ALFARED : COLOR.ALFABLUE}
           borderRadius={10}
@@ -103,6 +105,7 @@ export const HomeMapMemoTools = React.memo(() => {
       <View style={styles.button}>
         <Button
           //現在の太さをアイコンとラベルで示し、タップで細→中→太→極太と切り替える
+          testID="home-memo-pen-width"
           name={PEN_WIDTH[currentPenWidth]}
           backgroundColor={COLOR.ALFABLUE}
           borderRadius={10}
@@ -113,6 +116,7 @@ export const HomeMapMemoTools = React.memo(() => {
       <View style={styles.button}>
         <Button
           //現在の描き方をアイコンとラベルで示し、タップで直線⇔曲線を切り替える
+          testID="home-memo-pen-style"
           name={isStraightStyle ? PEN_STYLE.STRAIGHT : PEN_STYLE.FREEHAND}
           backgroundColor={COLOR.ALFABLUE}
           borderRadius={10}
@@ -123,6 +127,7 @@ export const HomeMapMemoTools = React.memo(() => {
       <View style={styles.button}>
         <Button
           //現在の矢印をアイコンとラベルで示し、タップで なし→終端→両側 と切り替える
+          testID="home-memo-arrow-style"
           name={arrow.icon}
           backgroundColor={COLOR.ALFABLUE}
           borderRadius={10}
@@ -132,6 +137,7 @@ export const HomeMapMemoTools = React.memo(() => {
       </View>
       <View style={styles.button}>
         <Button
+          testID="home-memo-color"
           name={MAPMEMOTOOL.COLOR}
           backgroundColor={COLOR.ALFABLUE}
           borderRadius={10}

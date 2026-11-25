@@ -15,10 +15,14 @@ interface Props {
   onEndEditing: (text: string) => void;
   style?: { [key: string]: string | number };
   radio?: boolean;
+  /** E2Eから要素を特定するためのID（チェック部分） */
+  testID?: string;
+  /** E2Eから要素を特定するためのID（入力欄） */
+  inputTestID?: string;
 }
 
 export const CheckInput = React.memo((props: Props) => {
-  const { label, text, checked, disabled, width, onCheck, onEndEditing, style, radio } = props;
+  const { label, text, checked, disabled, width, onCheck, onEndEditing, style, radio, testID, inputTestID } = props;
   const [input, setInput] = useState('');
 
   const checkedIcon = useMemo(() => (radio ? 'checkbox-marked-circle-outline' : 'checkbox-marked-outline'), [radio]);
@@ -44,6 +48,7 @@ export const CheckInput = React.memo((props: Props) => {
     >
       <View style={{ width: 35 }}>
         <Button
+          testID={testID}
           color={disabled ? COLOR.GRAY2 : COLOR.GRAY3}
           style={[{ backgroundColor: COLOR.MAIN }, style]}
           borderRadius={0}
@@ -55,6 +60,7 @@ export const CheckInput = React.memo((props: Props) => {
 
       <View style={{ width: width ? width - 35 : 100 }}>
         <TextInput
+          testID={inputTestID}
           value={input}
           placeholder={checked ? '' : label}
           placeholderTextColor={COLOR.GRAY3}

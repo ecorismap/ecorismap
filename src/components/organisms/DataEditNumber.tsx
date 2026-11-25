@@ -34,6 +34,7 @@ export const DataEditNumber = (props: Props) => {
     <View style={styles.tr}>
       <View style={styles.td}>
         <TextInput
+          testID={`dataedit-input-${name}`}
           style={[styles.input, isReadOnly && styles.readOnlyInput]}
           label={name}
           keyboardType="number-pad"
@@ -46,10 +47,10 @@ export const DataEditNumber = (props: Props) => {
         {!isReadOnly && (type === 'INTEGER' || type === 'SERIAL') && (
           <>
             <View style={styles.button}>
-              <Button name="plus" onPress={() => plus()} style={{ backgroundColor: COLOR.GRAY3 }} borderRadius={10} />
+              <Button testID={`dataedit-plus-${name}`} name="plus" onPress={() => plus()} style={{ backgroundColor: COLOR.GRAY3 }} borderRadius={10} />
             </View>
             <View style={styles.button}>
-              <Button name="minus" onPress={() => minus()} style={{ backgroundColor: COLOR.GRAY3 }} borderRadius={10} />
+              <Button testID={`dataedit-minus-${name}`} name="minus" onPress={() => minus()} style={{ backgroundColor: COLOR.GRAY3 }} borderRadius={10} />
             </View>
           </>
         )}

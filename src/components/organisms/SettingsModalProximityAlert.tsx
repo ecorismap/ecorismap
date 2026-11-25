@@ -178,6 +178,7 @@ export const SettingsModalProximityAlert = React.memo((props: Props) => {
             <View style={styles.switchRow}>
               <Text style={styles.switchLabel}>{t('settings.proximityAlert.enable')}</Text>
               <Switch
+                testID="settings-proximity-enabled"
                 value={enabled}
                 onValueChange={setEnabled}
                 trackColor={{ false: COLOR.GRAY2, true: COLOR.BLUE }}
@@ -189,6 +190,7 @@ export const SettingsModalProximityAlert = React.memo((props: Props) => {
             <View style={styles.distanceOptionsContainer}>
               {DISTANCE_OPTIONS.map((distance) => (
                 <Pressable
+                  testID={`settings-proximity-distance-${distance}`}
                   key={distance}
                   style={[
                     styles.distanceOption,
@@ -214,8 +216,9 @@ export const SettingsModalProximityAlert = React.memo((props: Props) => {
               {pointLayers.length === 0 ? (
                 <Text style={styles.noLayerText}>{t('settings.proximityAlert.noPointLayers')}</Text>
               ) : (
-                pointLayers.map((layer) => (
+                pointLayers.map((layer, index) => (
                   <CheckBox
+                    testID={`settings-proximity-layer-${index}`}
                     key={layer.id}
                     label={layer.name}
                     width={windowWidth * modalWidthScale - 60}
@@ -230,10 +233,11 @@ export const SettingsModalProximityAlert = React.memo((props: Props) => {
 
             {/* ボタン */}
             <View style={styles.modalButtonContainer}>
-              <Pressable style={styles.modalOKCancelButton} onPress={handleOK}>
+              <Pressable testID="settings-proximity-ok" style={styles.modalOKCancelButton} onPress={handleOK}>
                 <Text>OK</Text>
               </Pressable>
               <Pressable
+                testID="settings-proximity-cancel"
                 style={[styles.modalOKCancelButton, { backgroundColor: COLOR.GRAY1 }]}
                 onPress={pressCancel}
               >

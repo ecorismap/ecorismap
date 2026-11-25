@@ -142,6 +142,7 @@ export const ConflictResolverModal = React.memo(
                     )}
 
                     <Button
+                      testID={`home-conflict-apply-${idx}`}
                       title={c.deleted ? t('conflict.applyDelete') : t('conflict.applyThis')}
                       onPress={() => onSelect(c)}
                     />
@@ -152,10 +153,18 @@ export const ConflictResolverModal = React.memo(
 
             <View style={modalStyles.buttonContainer}>
               <View style={modalStyles.buttonWrapper}>
-                <Button title={t('conflict.bulkSelf')} onPress={() => onBulkSelect('self')} />
+                <Button
+                  testID="home-conflict-bulk-self"
+                  title={t('conflict.bulkSelf')}
+                  onPress={() => onBulkSelect('self')}
+                />
               </View>
               <View style={modalStyles.buttonWrapper}>
-                <Button title={t('conflict.bulkLatest')} onPress={() => onBulkSelect('latest')} />
+                <Button
+                  testID="home-conflict-bulk-latest"
+                  title={t('conflict.bulkLatest')}
+                  onPress={() => onBulkSelect('latest')}
+                />
               </View>
             </View>
           </View>

@@ -9,6 +9,8 @@ interface Props {
   dataItem: CloudDataItem;
   checked: boolean;
   onChangeChecked: (checked: boolean) => void;
+  /** E2Eから要素を特定するためのID */
+  testID?: string;
 }
 
 const getPermissionColor = (permission: string): string => {
@@ -36,11 +38,16 @@ const formatDate = (date: Date): string => {
 };
 
 export const CloudDataListItem = React.memo((props: Props) => {
-  const { dataItem, checked, onChangeChecked } = props;
+  const { dataItem, checked, onChangeChecked, testID } = props;
   const permissionColor = getPermissionColor(dataItem.permission);
 
   return (
-    <TouchableOpacity style={styles.container} onPress={() => onChangeChecked(!checked)} activeOpacity={0.7}>
+    <TouchableOpacity
+      testID={testID}
+      style={styles.container}
+      onPress={() => onChangeChecked(!checked)}
+      activeOpacity={0.7}
+    >
       <View style={styles.indent} />
       <View style={styles.checkboxContainer}>
         <MaterialCommunityIcons

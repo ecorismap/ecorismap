@@ -279,6 +279,7 @@ export const HomeDrawTools = React.memo(() => {
           {featureButton === 'POINT' && (
             <View style={styles.button}>
               <Button
+                testID="home-draw-add-location-point"
                 id={'ADD_LOCATION_POINT'}
                 name={POINTTOOL.ADD_LOCATION_POINT}
                 disabled={isAddLocationDisabled && !editPositionMode}
@@ -292,6 +293,7 @@ export const HomeDrawTools = React.memo(() => {
           {featureButton === 'POINT' && (!editPositionMode || editPositionWithoutCoord) && !isPointObjectSelected && (
             <View style={styles.button}>
               <Button
+                testID="home-draw-plot-point"
                 id={'PLOT_POINT'}
                 name={POINTTOOL.PLOT_POINT}
                 disabled={isToolLocked}
@@ -309,6 +311,7 @@ export const HomeDrawTools = React.memo(() => {
           {featureButton === 'POINT' && (isPointObjectSelected || editPositionWithCoord) && (
             <View style={styles.button}>
               <Button
+                testID="home-draw-move-point"
                 name={DRAWTOOL.MOVE_POINT}
                 backgroundColor={currentDrawTool === 'MOVE' ? COLOR.ALFABLUE : COLOR.ALFARED}
                 borderRadius={10}
@@ -337,6 +340,7 @@ export const HomeDrawTools = React.memo(() => {
             <>
               <View style={styles.button}>
                 <Button
+                  testID="home-draw-handwriting-line"
                   name={LINETOOL.HANDWRITING_LINE}
                   disabled={isToolLocked}
                   backgroundColor={
@@ -353,6 +357,7 @@ export const HomeDrawTools = React.memo(() => {
                 (!isHwToolPaletteOpen ? (
                   <View style={styles.button}>
                     <Button
+                      testID="home-draw-tools"
                       // @ts-ignore
                       name={hwToolPaletteIcon}
                       disabled={isToolLocked}
@@ -373,6 +378,7 @@ export const HomeDrawTools = React.memo(() => {
                   <View style={styles.hwPaletteRow}>
                     <View style={styles.hwPaletteButton}>
                       <Button
+                        testID="home-draw-tools-stamp"
                         name={MAPMEMOTOOL.STAMP}
                         backgroundColor={handwritingActive && hwGroup === 'STAMP' ? COLOR.ALFARED : COLOR.ALFABLUE}
                         borderRadius={10}
@@ -386,6 +392,7 @@ export const HomeDrawTools = React.memo(() => {
                     </View>
                     <View style={styles.hwPaletteButton}>
                       <Button
+                        testID="home-draw-tools-brush"
                         name={MAPMEMOTOOL.BRUSH}
                         backgroundColor={handwritingActive && hwGroup === 'BRUSH' ? COLOR.ALFARED : COLOR.ALFABLUE}
                         borderRadius={10}
@@ -398,6 +405,7 @@ export const HomeDrawTools = React.memo(() => {
                     </View>
                     <View style={styles.hwPaletteButton}>
                       <Button
+                        testID="home-draw-tools-setting"
                         name={'cog'}
                         backgroundColor={COLOR.ALFABLUE}
                         borderRadius={10}
@@ -420,6 +428,7 @@ export const HomeDrawTools = React.memo(() => {
                       }
                       backgroundColor={handwritingActive && hwGroup === 'STAMP' ? COLOR.ALFARED : COLOR.ALFABLUE}
                       borderRadius={10}
+                      testID="home-draw-stamp"
                       onPress={pressStampButton}
                       labelText={t('Home.label.stamp')}
                       labelFontSize={9}
@@ -433,6 +442,7 @@ export const HomeDrawTools = React.memo(() => {
                       }
                       backgroundColor={handwritingActive && hwGroup === 'BRUSH' ? COLOR.ALFARED : COLOR.ALFABLUE}
                       borderRadius={10}
+                      testID="home-draw-brush"
                       onPress={pressBrushButton}
                       labelText={t('Home.label.brush')}
                     />
@@ -445,6 +455,7 @@ export const HomeDrawTools = React.memo(() => {
                       }
                       backgroundColor={eraserActive ? COLOR.ALFARED : COLOR.ALFABLUE}
                       borderRadius={10}
+                      testID="home-draw-eraser"
                       onPress={pressEraserButton}
                       labelText={t('Home.label.eraser')}
                       labelFontSize={9}
@@ -460,6 +471,7 @@ export const HomeDrawTools = React.memo(() => {
             ((isEditingDraw && !handwritingActive) || (isSelectedDraw && handwritingActive)) && (
               <View style={styles.button}>
                 <Button
+                  testID="home-draw-split-line"
                   id={'SPLIT_LINE'}
                   name={LINETOOL.SPLIT_LINE}
                   backgroundColor={currentDrawTool === 'SPLIT_LINE' ? COLOR.ALFARED : COLOR.ALFABLUE}
@@ -472,6 +484,7 @@ export const HomeDrawTools = React.memo(() => {
           {showHandwritingSubTools && featureButton === 'LINE' && hwActive && (
             <View style={styles.button}>
               <Button
+                testID="home-draw-setting"
                 name={'cog'}
                 backgroundColor={COLOR.ALFABLUE}
                 borderRadius={10}
@@ -502,6 +515,7 @@ export const HomeDrawTools = React.memo(() => {
             <>
               <View style={styles.button}>
                 <Button
+                  testID="home-draw-style"
                   name={'palette'}
                   disabled={isToolLocked}
                   backgroundColor={isToolLocked ? COLOR.ALFAGRAY : COLOR.ALFABLUE}
@@ -531,6 +545,7 @@ export const HomeDrawTools = React.memo(() => {
         {featureButton === 'POINT' && editPositionMode && (
           <View style={styles.button}>
             <Button
+              testID="home-draw-finish-edit-position"
               name={DRAWTOOL.FINISH_EDIT_POSITION}
               backgroundColor={COLOR.ALFABLUE}
               borderRadius={10}

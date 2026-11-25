@@ -101,6 +101,7 @@ export const DataEditReference = (props: Props) => {
         <View style={[styles.td3, { minWidth: 40, justifyContent: 'flex-end' }]}>
           {(refLayer.type === 'NONE' || refLayer.type === 'POINT') && (
             <Button
+              testID={`dataedit-reference-add-${name}`}
               style={{
                 backgroundColor: COLOR.BLUE,
                 padding: 0,
@@ -118,6 +119,7 @@ export const DataEditReference = (props: Props) => {
           refLayer.field.some((f) => f.id === refLayer.dictionaryFieldId && f.format === 'STRING_DICTIONARY') && (
           <View style={{ flexDirection: 'row', justifyContent: 'center', margin: 10 }}>
             <DictionaryTextInput
+              testID={`dataedit-reference-dictionary-${name}`}
               editable={!isAddLocked}
               initialValue=""
               table={`_${refLayer.id}_${refLayer.dictionaryFieldId}`}
@@ -132,6 +134,7 @@ export const DataEditReference = (props: Props) => {
           refLayer.field.some((f) => f.id === refLayer.dictionaryFieldId && f.format === 'STRING_DYNAMIC') && (
             <View style={{ flexDirection: 'row', justifyContent: 'center', margin: 10 }}>
               <DynamicDictionaryTextInput
+                testID={`dataedit-reference-dictionary-${name}`}
                 editable={!isAddLocked}
                 initialValue=""
                 fieldKey={`${refLayer.id}_${refLayer.dictionaryFieldId}`}
@@ -147,7 +150,7 @@ export const DataEditReference = (props: Props) => {
       <ScrollView horizontal={true} contentContainerStyle={{ flexGrow: 1 }}>
         <View style={{ flex: 1, flexDirection: 'column' }}>
           <DataTitle layer={refLayer} />
-          <DataItems data={refData} layer={refLayer} onPress={(index: number) => onPress(refData[index], refLayer)} />
+          <DataItems referenceName={name} data={refData} layer={refLayer} onPress={(index: number) => onPress(refData[index], refLayer)} />
         </View>
       </ScrollView>
     </View>
@@ -172,19 +175,25 @@ const DataTitle = React.memo((props: Props_DataTitle) => {
 });
 
 interface Props_DataItems {
+  referenceName: string;
   data: RecordType[];
   layer: LayerType;
   onPress: (index: number) => void;
 }
 
 const DataItems = React.memo((props: Props_DataItems) => {
-  const { data, layer, onPress } = props;
+  const { referenceName, data, layer, onPress } = props;
 
   return (
     <View style={{ flex: 1, flexDirection: 'column' }}>
       {data.map((item, index) => {
         return (
-          <Pressable key={item.id} style={{ height: 45, flexDirection: 'row' }} onPress={() => onPress(index)}>
+          <Pressable
+            key={item.id}
+            testID={`dataedit-reference-row-${referenceName}-${index}`}
+            style={{ height: 45, flexDirection: 'row' }}
+            onPress={() => onPress(index)}
+          >
             {layer.field.map(({ name, format }, field_index) => (
               <View key={field_index} style={[styles.td, { flex: 1, width: 120 }]}>
                 <Text adjustsFontSizeToFit={true} numberOfLines={2}>

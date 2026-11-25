@@ -13,15 +13,18 @@ interface Props {
   style?: { [key: string]: string | number };
   onChangeText: (name: string, value: string) => void;
   onEndEditing: () => void;
+  /** E2Eから要素を特定するためのID */
+  testID?: string;
 }
 
 export const EditString = (props: Props) => {
-  const { style, name, value, editable, placeholder, onChangeText, onEndEditing } = props;
+  const { style, name, value, editable, placeholder, onChangeText, onEndEditing, testID } = props;
 
   return (
     <View style={styles.tr}>
       <View style={styles.td}>
         <TextInput
+          testID={testID}
           style={[styles.input, style]}
           label={name}
           value={toInputText(value)}

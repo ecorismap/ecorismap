@@ -32,10 +32,11 @@ export default function Licenses() {
       data={packageNames}
       initialNumToRender={packageNames.length}
       keyExtractor={(item) => item}
-      renderItem={({ item }) => {
+      renderItem={({ item, index }) => {
         return (
           <View style={{ flex: 1, height: 60, flexDirection: 'row' }}>
             <Pressable
+              testID={`licenses-row-${index}`}
               style={[styles.td, { flex: 5, width: 150, borderRightWidth: 1 }]}
               onPress={() => pressPackageName(item)}
             >

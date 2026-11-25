@@ -18,6 +18,10 @@ interface Props {
   maxIndex: number;
   enabled?: boolean;
   dropdownIcon?: boolean;
+  /** E2Eから要素を特定するためのID */
+  testID?: string;
+  /** 選択肢のtestIDの接頭辞（`${optionTestIDPrefix}-${index}`）。未指定でtestIDがあれば`${testID}-option-${index}` */
+  optionTestIDPrefix?: string;
 }
 
 const Picker = React.memo((props: Props) => {
@@ -31,6 +35,8 @@ const Picker = React.memo((props: Props) => {
     maxIndex,
     enabled,
     dropdownIcon,
+    testID,
+    optionTestIDPrefix,
   } = props;
 
   return (
@@ -44,6 +50,8 @@ const Picker = React.memo((props: Props) => {
       maxIndex={maxIndex}
       enabled={enabled}
       dropdownIcon={dropdownIcon}
+      testID={testID}
+      optionTestIDPrefix={optionTestIDPrefix}
     />
   );
 });
@@ -59,12 +67,15 @@ const CustomPicker = React.memo((props: Props) => {
     maxIndex,
     enabled,
     dropdownIcon,
+    testID,
+    optionTestIDPrefix,
   } = props;
 
   const items = itemValueArray.slice(0, maxIndex + 1).map((item, index) => ({
     label: itemLabelArray[index],
     value: itemValueArray[index],
     key: index,
+    testID: optionTestIDPrefix ? `${optionTestIDPrefix}-${index}` : testID ? `${testID}-option-${index}` : undefined,
   }));
   const selectedLabel = itemLabelArray[itemValueArray.indexOf(selectedValue)];
   const selectorRef = useRef(null);
@@ -100,7 +111,7 @@ const CustomPicker = React.memo((props: Props) => {
     <View ref={containerRef} style={styles.tr2}>
       {label && <Text style={styles.title}>{label}</Text>}
       <View style={styles.td2}>
-        <Pressable onPress={openSelector} style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+        <Pressable testID={testID} onPress={openSelector} style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
           <View style={{ flex: 10 }}>
             <ModalSelector
               ref={selectorRef}

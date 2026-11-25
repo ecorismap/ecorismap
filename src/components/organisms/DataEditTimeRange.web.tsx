@@ -80,7 +80,7 @@ export const DataEditTimeRange = (props: Props) => {
   return (
     <View style={styles.tr}>
       <View style={styles.td}>
-        <View style={styles.tr2}>
+        <View testID={`dataedit-input-${name}`} style={styles.tr2}>
           {name && <Text style={styles.title}>{name}</Text>}
           <LocalizationProvider dateAdapter={AdapterDateFns}>
             {mode === 'time' && (
@@ -113,7 +113,7 @@ export const DataEditTimeRange = (props: Props) => {
         <View style={{ marginTop: 20 }}>
           <Text>{`${t('common.ndash')}`}</Text>
         </View>
-        <View style={styles.tr2}>
+        <View testID={`dataedit-input-${name}-end`} style={styles.tr2}>
           {name && <Text style={styles.title}>{name}</Text>}
           <LocalizationProvider dateAdapter={AdapterDateFns}>
             {mode === 'time' && (

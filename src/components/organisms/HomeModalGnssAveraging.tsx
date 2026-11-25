@@ -59,6 +59,7 @@ export const HomeModalGnssAveraging = React.memo(() => {
             {TARGET_COUNTS.map((n) => (
               <Pressable
                 key={n}
+                testID={`home-averaging-count-${n}`}
                 style={[styles.segment, targetCount === n && styles.segmentSelected]}
                 disabled={isCollecting}
                 onPress={() => setTargetCount(n)}
@@ -71,14 +72,14 @@ export const HomeModalGnssAveraging = React.memo(() => {
           {source === 'external' && (
             <View style={[styles.row, styles.switchRow, isCollecting && styles.disabled]}>
               <Text style={styles.flex}>{`${t('GpsSettings.externalGnss.averaging.fixOnly')}`}</Text>
-              <Switch value={fixOnly} disabled={isCollecting} onValueChange={setFixOnly} />
+              <Switch testID="home-averaging-fix-only" value={fixOnly} disabled={isCollecting} onValueChange={setFixOnly} />
             </View>
           )}
 
           <View style={styles.progressTrack}>
             <View style={[styles.progressBar, { width: `${progress * 100}%` }]} />
           </View>
-          <Text style={styles.progressText}>
+          <Text testID="home-averaging-progress" style={styles.progressText}>
             {`${t('GpsSettings.externalGnss.averaging.collected', { count, target: targetCount })}`}
           </Text>
           {result !== null && (
@@ -91,26 +92,26 @@ export const HomeModalGnssAveraging = React.memo(() => {
 
           <View style={styles.buttons}>
             {phase === 'idle' && (
-              <Pressable style={[styles.button, styles.primaryButton]} onPress={start}>
+              <Pressable testID="home-averaging-start" style={[styles.button, styles.primaryButton]} onPress={start}>
                 <Text style={styles.primaryButtonText}>{`${t('GpsSettings.externalGnss.averaging.start')}`}</Text>
               </Pressable>
             )}
             {phase === 'collecting' && (
-              <Pressable style={styles.button} onPress={stop}>
+              <Pressable testID="home-averaging-stop" style={styles.button} onPress={stop}>
                 <Text>{`${t('GpsSettings.externalGnss.averaging.stop')}`}</Text>
               </Pressable>
             )}
             {phase === 'done' && (
               <>
-                <Pressable style={[styles.button, styles.primaryButton]} onPress={finish}>
+                <Pressable testID="home-averaging-record" style={[styles.button, styles.primaryButton]} onPress={finish}>
                   <Text style={styles.primaryButtonText}>{`${t('GpsSettings.externalGnss.averaging.record')}`}</Text>
                 </Pressable>
-                <Pressable style={styles.button} onPress={start}>
+                <Pressable testID="home-averaging-restart" style={styles.button} onPress={start}>
                   <Text>{`${t('GpsSettings.externalGnss.averaging.restart')}`}</Text>
                 </Pressable>
               </>
             )}
-            <Pressable style={styles.button} onPress={cancel}>
+            <Pressable testID="home-averaging-cancel" style={styles.button} onPress={cancel}>
               <Text>{`${t('common.cancel')}`}</Text>
             </Pressable>
           </View>

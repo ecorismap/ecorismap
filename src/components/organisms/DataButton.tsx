@@ -25,6 +25,7 @@ export const DataButton = () => {
       )}
       {!exportDisabled && (
         <Button
+          testID="data-export"
           name={DATA_BTN.EXPORT}
           onPress={pressExportData}
           backgroundColor={isChecked && isEditable && !isExporting ? COLOR.BLUE : COLOR.LIGHTBLUE}
@@ -33,6 +34,7 @@ export const DataButton = () => {
         />
       )}
       <Button
+        testID="data-delete"
         name={DATA_BTN.DELETE}
         onPress={pressDeleteData}
         backgroundColor={isChecked && isEditable ? COLOR.BLUE : COLOR.LIGHTBLUE}

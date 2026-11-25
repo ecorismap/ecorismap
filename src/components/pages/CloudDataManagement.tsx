@@ -40,7 +40,7 @@ export default function CloudDataManagementScreen() {
     <View style={styles.container}>
       {/* Fixed Header */}
       <View style={[styles.header, { height: HEADER_HEIGHT + insets.top, paddingTop: insets.top }]}>
-        <TouchableOpacity style={styles.backButton} onPress={gotoBack}>
+        <TouchableOpacity testID="clouddata-back" style={styles.backButton} onPress={gotoBack}>
           <MaterialCommunityIcons name="chevron-left" size={28} color={COLOR.BLACK} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{t('CloudDataManagement.navigation.title')}</Text>
@@ -48,7 +48,7 @@ export default function CloudDataManagementScreen() {
       </View>
 
       {/* Select All Checkbox - Fixed */}
-      <TouchableOpacity style={styles.selectAllContainer} onPress={() => changeCheckedAll(!isAllChecked)}>
+      <TouchableOpacity testID="clouddata-select-all" style={styles.selectAllContainer} onPress={() => changeCheckedAll(!isAllChecked)}>
         <MaterialCommunityIcons
           name={isAllChecked ? 'checkbox-marked-outline' : 'checkbox-blank-outline'}
           size={24}
@@ -72,6 +72,7 @@ export default function CloudDataManagementScreen() {
       <View style={[styles.footer, { paddingBottom: 15 + insets.bottom }]}>
         <View style={styles.buttonWrapper}>
           <Button
+            testID="clouddata-delete"
             name={PROJECTEDIT_BTN.DELETE}
             onPress={pressDeleteSelected}
             backgroundColor={isChecked ? COLOR.DARKRED : COLOR.LIGHTBLUE}

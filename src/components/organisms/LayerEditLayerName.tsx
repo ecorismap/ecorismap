@@ -33,6 +33,7 @@ export const LayerName = () => {
       <View style={styles.td}>
         <TextInput
           style={styles.input}
+          testID="layeredit-name"
           label={t('common.layerName')}
           editable={editable}
           value={layer.name}
@@ -47,7 +48,7 @@ export const LayerName = () => {
             cancelText={t('common.cancel')}
             onChange={(option) => onChangeLayerPreset(option.value)}
           >
-            <View style={styles.presetButton}>
+            <View testID="layeredit-preset" style={styles.presetButton}>
               <MaterialCommunityIcons name={'chevron-down'} size={24} color={COLOR.GRAY4} />
             </View>
           </ModalSelector>

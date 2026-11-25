@@ -28,6 +28,7 @@ export const HomeModalSubToolPicker = React.memo((props: Props) => {
             {items.map((item) => (
               <View key={item.id} style={styles.item}>
                 <Button
+                  testID={`home-subtool-${item.id}`}
                   id={item.id}
                   // @ts-ignore アイコン名はパレット定義が持つ
                   name={item.icon}
@@ -45,7 +46,7 @@ export const HomeModalSubToolPicker = React.memo((props: Props) => {
             ))}
           </ScrollView>
           <View style={styles.footerRow}>
-            <Pressable style={styles.secondaryButton} onPress={close}>
+            <Pressable testID="home-subtool-cancel" style={styles.secondaryButton} onPress={close}>
               <Text style={styles.secondaryButtonText}>Cancel</Text>
             </Pressable>
           </View>

@@ -31,6 +31,7 @@ export const DataEditNumberRange = (props: Props) => {
     <View style={styles.tr}>
       <View style={styles.td}>
         <TextInput
+          testID={`dataedit-input-${name}`}
           style={styles.input}
           label={name}
           keyboardType="number-pad"
@@ -45,6 +46,7 @@ export const DataEditNumberRange = (props: Props) => {
         </View>
 
         <TextInput
+          testID={`dataedit-input-${name}-end`}
           style={styles.input}
           label={' '}
           keyboardType="number-pad"

@@ -94,6 +94,7 @@ export const SettingsModalLanguageSelect = React.memo((props: Props) => {
 
             {languageOptions.map((option) => (
               <Pressable
+                testID={`settings-language-option-${option.value ?? 'system'}`}
                 key={option.value ?? 'system'}
                 style={styles.modalOptionButton}
                 onPress={() => pressSelect(option.value)}
@@ -107,7 +108,7 @@ export const SettingsModalLanguageSelect = React.memo((props: Props) => {
               </Pressable>
             ))}
 
-            <Pressable style={styles.modalCancelButton} onPress={pressCancel}>
+            <Pressable testID="settings-language-cancel" style={styles.modalCancelButton} onPress={pressCancel}>
               <Text>Cancel</Text>
             </Pressable>
           </View>

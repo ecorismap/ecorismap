@@ -41,12 +41,14 @@ const ColorList = () => {
           <View style={[styles.td, { flex: 5, borderRightWidth: 1 }]}>
             <TextInput
               style={styles.input}
+              testID={`featurestyle-value-${index}`}
               value={item.value?.toString()}
               onChangeText={(value) => changeValue(index, value)}
             />
           </View>
 
           <Pressable
+            testID={`featurestyle-color-${index}`}
             style={[styles.td, { flex: 3, backgroundColor: colorStyle.colorList[index].color }]}
             onPress={() => pressSelectValueColor(index)}
           >
@@ -59,6 +61,7 @@ const ColorList = () => {
                 backgroundColor: COLOR.DARKRED,
                 padding: 0,
               }}
+              testID={`featurestyle-delete-${index}`}
               name="minus"
               onPress={() => pressDeleteValue(index)}
             />
@@ -74,8 +77,8 @@ const ColorListButtons = () => {
 
   return (
     <View style={styles.button}>
-      <Button backgroundColor={COLOR.BLUE} name="autorenew" onPress={pressReloadValue} />
-      <Button backgroundColor={COLOR.BLUE} name="plus" onPress={pressAddValue} />
+      <Button testID="featurestyle-reload" backgroundColor={COLOR.BLUE} name="autorenew" onPress={pressReloadValue} />
+      <Button testID="featurestyle-add" backgroundColor={COLOR.BLUE} name="plus" onPress={pressAddValue} />
     </View>
   );
 };

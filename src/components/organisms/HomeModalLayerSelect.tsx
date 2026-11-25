@@ -118,9 +118,10 @@ export const HomeModalLayerSelect = React.memo((props: Props) => {
           <View style={styles.modalContents}>
             <Text style={styles.modalTitle}>{`${t('Home.layerSelect.title')}`}</Text>
             <ScrollView style={styles.modalList}>
-              {candidates.map((layer) => (
+              {candidates.map((layer, index) => (
                 <Pressable
                   key={layer.id}
+                  testID={`home-layerselect-row-${index}`}
                   style={[styles.modalOptionButton, layer.id === activeLayerId && styles.modalOptionButtonActive]}
                   onPress={() => onSelect(layer)}
                 >
@@ -143,7 +144,7 @@ export const HomeModalLayerSelect = React.memo((props: Props) => {
                 </Pressable>
               ))}
               {showCreateNew && (
-                <Pressable style={styles.modalOptionButton} onPress={onCreateNew}>
+                <Pressable testID="home-layerselect-create-new" style={styles.modalOptionButton} onPress={onCreateNew}>
                   <View style={styles.symbol}>
                     <MaterialCommunityIcons name="plus" size={20} color={COLOR.BLUE} />
                   </View>
@@ -154,7 +155,7 @@ export const HomeModalLayerSelect = React.memo((props: Props) => {
               )}
             </ScrollView>
             <View style={styles.modalButtonContainer}>
-              <Pressable style={styles.modalCancelButton} onPress={onCancel}>
+              <Pressable testID="home-layerselect-cancel" style={styles.modalCancelButton} onPress={onCancel}>
                 <Text>Cancel</Text>
               </Pressable>
             </View>

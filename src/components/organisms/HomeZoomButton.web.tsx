@@ -41,6 +41,7 @@ export const HomeZoomButton = React.memo((props: Props) => {
         //style={{ borderColor: COLOR.GRAY0, borderWidth: 1 }}
         iconStyle={{ marginRight: 0 }}
         size={12}
+        testID="home-zoom-in"
         name={HOME_BTN.ZOOM_PLUS}
         onPress={zoomIn}
       />
@@ -52,6 +53,7 @@ export const HomeZoomButton = React.memo((props: Props) => {
         //style={{ borderColor: COLOR.GRAY0, borderWidth: 1 }}
         iconStyle={{ marginRight: 0 }}
         size={12}
+        testID="home-zoom-out"
         name={HOME_BTN.ZOOM_MINUS}
         onPress={zoomOut}
       />

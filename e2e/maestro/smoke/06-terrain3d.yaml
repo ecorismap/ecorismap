@@ -1,0 +1,30 @@
+# ANLY-3: 3D表示に切り替えて、2Dに戻せる（落ちないことまで。描画の品質は実機で確かめる）。
+appId: jp.co.ecoris.ecorismap
+---
+- runFlow: ../common/launch.yaml
+- tapOn:
+    id: 'home-terrain'
+    retryTapIfNoChange: false
+# 3Dのカメラ操作ボタンが出る
+- extendedWaitUntil:
+    visible:
+      id: 'home-terrain-rotate-cw'
+    timeout: 30000
+- waitForAnimationToEnd:
+    timeout: 8000
+- takeScreenshot: 06-terrain3d
+- tapOn:
+    id: 'home-terrain-rotate-cw'
+- tapOn:
+    id: 'home-terrain-pitch-cw'
+- assertVisible:
+    id: 'home-terrain'
+- tapOn:
+    id: 'home-terrain'
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    notVisible:
+      id: 'home-terrain-rotate-cw'
+    timeout: 15000
+- assertVisible:
+    id: 'home-layers'

@@ -60,6 +60,7 @@ export const HomeGPSButton = React.memo((props: Props) => {
         }}
       >
         <Button
+          testID="home-gps"
           name={HOME_BTN.GPS}
           backgroundColor={gpsState === 'follow' ? 'red' : gpsState === 'show' ? COLOR.PALERED : COLOR.ALFABLUE}
           borderColor={externalFix ? fixQualityColor(externalFix.fixQuality) : undefined}
@@ -71,7 +72,7 @@ export const HomeGPSButton = React.memo((props: Props) => {
         />
       </View>
       {detailVisible && (
-        <Pressable style={[styles.panel, { left: 9 + insets.left + 52, top }]} onPress={() => setDetailVisible(false)}>
+        <Pressable testID="home-gps-detail" style={[styles.panel, { left: 9 + insets.left + 52, top }]} onPress={() => setDetailVisible(false)}>
           {!isConnected ? (
             <>
               <Text style={styles.row}>{`${t('GpsSettings.externalGnss.notConnected')}`}</Text>
@@ -82,6 +83,7 @@ export const HomeGPSButton = React.memo((props: Props) => {
               )}
               {onOpenGpsSettings !== undefined && (
                 <Pressable
+                  testID="home-gps-open-settings"
                   style={styles.linkButton}
                   onPress={() => {
                     setDetailVisible(false);

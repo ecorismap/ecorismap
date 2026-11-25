@@ -25,6 +25,7 @@ import { usePermission } from '../../hooks/usePermission';
 const SortableLayerRow = React.memo(
   ({
     item,
+    index,
     isClosedProject,
     isSettingProject,
     hasCustomLabel,
@@ -41,6 +42,8 @@ const SortableLayerRow = React.memo(
     pressLayerOrder,
   }: {
     item: LayerType;
+    /** 表示順（0始まり）。E2E用のtestIDに使う */
+    index: number | undefined;
     isClosedProject: boolean;
     isSettingProject: boolean;
     hasCustomLabel: boolean;
@@ -99,6 +102,7 @@ const SortableLayerRow = React.memo(
           <View style={[styles.td, { flex: 2, width: 60 }]}>
             {isParent ? (
               <Button
+                testID={`layers-expand-${index}`}
                 name={item.expanded ? 'chevron-down' : 'chevron-right'}
                 onPress={() => changeExpand(item)}
                 style={[styles.iconBtn, { backgroundColor }]}
@@ -108,6 +112,7 @@ const SortableLayerRow = React.memo(
               (isClosedProject || isSettingProject || item.permission !== 'COMMON') &&
               item.id !== 'track' && (
                 <Button
+                  testID={`layers-active-${index}`}
                   name={item.active ? 'square-edit-outline' : 'checkbox-blank-outline'}
                   onPress={() => changeActiveLayer(item)}
                   color={COLOR.GRAY3}
@@ -119,23 +124,24 @@ const SortableLayerRow = React.memo(
 
           <View style={[styles.td, { flex: 3, width: 100 }]}>
             <Button
+              testID={`layers-visible-${index}`}
               name={item.visible ? 'eye' : 'eye-off-outline'}
               onPress={() => changeVisible(!item.visible, item)}
               color={isParent ? parentFg : COLOR.GRAY4}
               style={[styles.iconBtn, { backgroundColor }]}
             />
             {item.type === 'POINT' && (
-              <Pressable onPress={() => gotoColorStyle(item)}>
+              <Pressable testID={`layers-style-${index}`} onPress={() => gotoColorStyle(item)}>
                 <PointView style={styles.symbol} color={item.colorStyle.color} size={20} borderColor={COLOR.WHITE} />
               </Pressable>
             )}
             {item.type === 'LINE' && (
-              <Pressable onPress={() => gotoColorStyle(item)}>
+              <Pressable testID={`layers-style-${index}`} onPress={() => gotoColorStyle(item)}>
                 <LineView style={styles.symbol} color={item.colorStyle.color} />
               </Pressable>
             )}
             {item.type === 'POLYGON' && (
-              <Pressable onPress={() => gotoColorStyle(item)}>
+              <Pressable testID={`layers-style-${index}`} onPress={() => gotoColorStyle(item)}>
                 <PolygonView style={styles.symbol} color={item.colorStyle.color} />
               </Pressable>
             )}
@@ -145,6 +151,7 @@ const SortableLayerRow = React.memo(
           </View>
 
           <Pressable
+            testID={`layers-row-${index}`}
             // グループ親はラベル列を表示しないため、レイヤ名+ラベルの2列分の幅を使う
             style={[styles.td, isParent ? { flex: 10, width: 310 } : { flex: 5, width: 150 }, { height: 60, cursor: 'grab' } as any]}
             onPress={() => (item.type === 'LAYERGROUP' ? changeExpand(item) : gotoData(item))}
@@ -182,6 +189,7 @@ const SortableLayerRow = React.memo(
           {!isParent && (
             <View style={[styles.td, { flex: 5, width: 160 }]}>
               <Picker
+                testID={`layers-label-${index}`}
                 selectedValue={item.label}
                 onValueChange={(val) => changeLabel(item, val as string)}
                 itemLabelArray={labelNames}
@@ -196,6 +204,7 @@ const SortableLayerRow = React.memo(
             <View style={[styles.td, { flex: 5, width: 160 }]}>
               {item.label === t('common.custom') && (
                 <TextInput
+                  testID={`layers-custom-label-${index}`}
                   placeholder={'field1|field2'}
                   placeholderTextColor={COLOR.GRAY3}
                   value={customLabelValue}
@@ -209,6 +218,7 @@ const SortableLayerRow = React.memo(
 
           <View style={[styles.td, { flex: 2, width: 60 }]}>
             <Button
+              testID={`layers-settings-${index}`}
               name="table-cog"
               onPress={() => gotoLayerEdit(item)}
               style={{ backgroundColor }}
@@ -220,6 +230,7 @@ const SortableLayerRow = React.memo(
           <View style={[styles.td, { flex: 3, width: 80, flexDirection: 'row', justifyContent: 'center' }]}>
             {/* 上へ */}
             <Button
+              testID={`layers-up-${index}`}
               name="chevron-up"
               onPress={() => pressLayerOrder(item, 'up')}
               color={isParent ? parentFg : COLOR.GRAY2}
@@ -227,6 +238,7 @@ const SortableLayerRow = React.memo(
             />
             {/* 下へ */}
             <Button
+              testID={`layers-down-${index}`}
               name="chevron-down"
               onPress={() => pressLayerOrder(item, 'down')}
               color={isParent ? parentFg : COLOR.GRAY2}
@@ -241,6 +253,7 @@ const SortableLayerRow = React.memo(
     // カスタム比較関数: trueを返すと再レンダリングをスキップ
     return (
       prevProps.item.id === nextProps.item.id &&
+      prevProps.index === nextProps.index &&
       prevProps.item.visible === nextProps.item.visible &&
       prevProps.item.active === nextProps.item.active &&
       prevProps.item.expanded === nextProps.item.expanded &&
@@ -326,10 +339,11 @@ export const LayersTable = React.memo(() => {
         >
           {/* @ts-ignore - dnd-kit is not compatible with React 19 types */}
           <SortableContext items={itemIds} strategy={verticalListSortingStrategy}>
-            {filterdLayers.map((item) => (
+            {filterdLayers.map((item, index) => (
               <SortableLayerRow
                 key={item.id}
                 item={item}
+                index={index}
                 isClosedProject={isClosedProject}
                 isSettingProject={isSettingProject}
                 hasCustomLabel={hasCustomLabel}

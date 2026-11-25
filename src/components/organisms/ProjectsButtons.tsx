@@ -15,9 +15,19 @@ export const ProjectsButtons = (props: Props) => {
 
   return (
     <View style={[styles.buttonContainer, { bottom: insets.bottom }]}>
-      <Button name={PROJECTS_BTN.RELOAD} onPress={reloadProjects} labelText={t('Projects.label.reloadProjects')} />
+      <Button
+        testID="projects-reload"
+        name={PROJECTS_BTN.RELOAD}
+        onPress={reloadProjects}
+        labelText={t('Projects.label.reloadProjects')}
+      />
       {Platform.OS === 'web' && (
-        <Button name={PROJECTS_BTN.ADD} onPress={createProject} labelText={t('Projects.label.createProject')} />
+        <Button
+          testID="projects-add"
+          name={PROJECTS_BTN.ADD}
+          onPress={createProject}
+          labelText={t('Projects.label.createProject')}
+        />
       )}
     </View>
   );

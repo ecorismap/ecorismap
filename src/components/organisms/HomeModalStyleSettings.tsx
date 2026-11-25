@@ -109,6 +109,7 @@ export const HomeModalStyleSettings = React.memo((props: Props) => {
   const optionButton = (id: string, icon: string, selected: boolean, onPress: () => void, label?: string) => (
     <View style={styles.optionButton} key={id}>
       <Button
+        testID={`home-stylesettings-option-${id.toLowerCase().replace(/_/g, '-')}`}
         id={id}
         name={icon}
         backgroundColor={selected ? COLOR.ALFARED : COLOR.ALFABLUE}
@@ -136,6 +137,7 @@ export const HomeModalStyleSettings = React.memo((props: Props) => {
             {tabs.map(({ key, label }) => (
               <Pressable
                 key={key}
+                testID={`home-stylesettings-tab-${key.toLowerCase().replace(/_/g, '-')}`}
                 style={[styles.segment, tab === key && styles.segmentActive]}
                 onPress={() => tab !== key && setTab(key)}
                 disablePressedAnimation
@@ -189,10 +191,10 @@ export const HomeModalStyleSettings = React.memo((props: Props) => {
             )}
           </View>
           <View style={styles.footerRow}>
-            <Pressable style={styles.secondaryButton} onPress={close}>
+            <Pressable testID="home-stylesettings-cancel" style={styles.secondaryButton} onPress={close}>
               <Text style={styles.secondaryButtonText}>Cancel</Text>
             </Pressable>
-            <Pressable style={styles.primaryButton} onPress={handleOK}>
+            <Pressable testID="home-stylesettings-ok" style={styles.primaryButton} onPress={handleOK}>
               <Text style={styles.primaryButtonText}>OK</Text>
             </Pressable>
           </View>

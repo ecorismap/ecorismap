@@ -8,6 +8,8 @@ import { Pressable } from '../atoms/Pressable';
 import { t } from '../../i18n/config';
 
 interface DynamicDictionaryTextInputProps {
+  /** E2Eから要素を特定するためのID（入力欄）。ボタンは`${testID}-button`、候補は`${testID}-suggestion-${index}` */
+  testID?: string;
   editable?: boolean;
   fieldKey: string;
   initialValue: string;
@@ -20,7 +22,7 @@ interface DynamicDictionaryTextInputProps {
 }
 
 export const DynamicDictionaryTextInput = React.memo((props: DynamicDictionaryTextInputProps) => {
-  const { editable = true, fieldKey, initialValue, handleSelect, onBlur, clearOnSelect, commitOnSelectOnly } = props;
+  const { testID, editable = true, fieldKey, initialValue, handleSelect, onBlur, clearOnSelect, commitOnSelectOnly } = props;
 
   const {
     queryString,
@@ -62,6 +64,7 @@ export const DynamicDictionaryTextInput = React.memo((props: DynamicDictionaryTe
     <View>
       <View style={styles.searchContainer}>
         <TextInput
+          testID={testID}
           style={styles.input}
           value={queryString}
           placeholder={t('common.enterText')}
@@ -87,6 +90,7 @@ export const DynamicDictionaryTextInput = React.memo((props: DynamicDictionaryTe
         />
         <View style={{ marginLeft: 10 }}>
           <MaterialCommunityIcons.Button
+            testID={testID ? `${testID}-button` : undefined}
             borderRadius={5}
             iconStyle={{ marginRight: 0 }}
             size={25}
@@ -102,7 +106,7 @@ export const DynamicDictionaryTextInput = React.memo((props: DynamicDictionaryTe
           {filteredData.map((item, index) => {
             const isNewEntry = index === filteredData.length - 1 && item === queryString && !filteredData.slice(0, -1).includes(item);
             return (
-              <Pressable key={`${item}-${index}`} onPress={() => handleSelectItem(item)} style={styles.separator}>
+              <Pressable testID={testID ? `${testID}-suggestion-${index}` : undefined} key={`${item}-${index}`} onPress={() => handleSelectItem(item)} style={styles.separator}>
                 <Text style={[styles.listText, { color: isNewEntry ? COLOR.GRAY4 : COLOR.BLACK }]}>
                   {item}
                   {isNewEntry && ` ${t('common.newEntry')}`}

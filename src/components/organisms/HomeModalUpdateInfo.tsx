@@ -116,7 +116,9 @@ export const HomeModalUpdateInfo = React.memo(() => {
         <View style={styles.modalFrameView}>
           <View style={styles.modalContents}>
             <Text style={styles.modalTitle}>{t('Home.updateInfo.title')}</Text>
-            <Text style={styles.versionText}>{VERSION}</Text>
+            <Text testID="home-updateinfo-version" style={styles.versionText}>
+              {VERSION}
+            </Text>
 
             <ScrollView style={styles.updateInfoContainer} showsVerticalScrollIndicator={true}>
               <View style={styles.updateInfoSection}>
@@ -161,7 +163,7 @@ export const HomeModalUpdateInfo = React.memo(() => {
             </ScrollView>
 
             <View style={styles.modalButtonContainer}>
-              <Pressable style={styles.modalOKButton} onPress={updateInfoOK}>
+              <Pressable testID="home-updateinfo-close" style={styles.modalOKButton} onPress={updateInfoOK}>
                 <Text style={styles.modalOKButtonText}>{t('common.ok')}</Text>
               </Pressable>
             </View>

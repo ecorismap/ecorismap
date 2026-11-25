@@ -54,12 +54,14 @@ export const CloudDataList = React.memo((props: Props) => {
         <View>
           {/* レイヤ（親）行 */}
           <TouchableOpacity
+            testID={`clouddata-layer-${index}`}
             style={[styles.layerContainer, item.isOrphan && styles.orphanLayer]}
             onPress={() => hasData && toggleExpanded(item.layerId)}
             activeOpacity={hasData ? 0.7 : 1}
           >
             <View style={styles.checkboxContainer}>
               <TouchableOpacity
+                testID={`clouddata-layer-check-${index}`}
                 onPress={(e) => {
                   e.stopPropagation();
                   onChangeLayerChecked(index, !checkState?.checked);
@@ -121,6 +123,7 @@ export const CloudDataList = React.memo((props: Props) => {
             item.dataItems.map((dataItem, dataIndex) => (
               <CloudDataListItem
                 key={`${item.layerId}_${dataItem.permission}_${dataItem.userId ?? 'all'}_${dataIndex}`}
+                testID={`clouddata-data-${index}-${dataIndex}`}
                 dataItem={dataItem}
                 checked={checkState?.dataChecks[dataIndex]?.checked ?? false}
                 onChangeChecked={(checked) => onChangeDataChecked(index, dataIndex, checked)}

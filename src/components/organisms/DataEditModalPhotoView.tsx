@@ -96,6 +96,7 @@ export const DataEditModalPhotoView = () => {
         <View style={{ flexDirection: 'row', paddingTop: insets.top }}>
           <View style={styles.headerLeft}>
             <Button
+              testID="photo-view-delete"
               name={DATAEDIT_BTN.DELETE}
               labelText={t('DataEdit.label.delete')}
               onPress={pressRemovePhoto}
@@ -105,7 +106,7 @@ export const DataEditModalPhotoView = () => {
           </View>
           {photos.length > 1 && currentPosition !== -1 && (
             <View style={styles.headerCenter}>
-              <Text style={styles.counter}>{`${currentPosition + 1} / ${photos.length}`}</Text>
+              <Text testID="photo-view-counter" style={styles.counter}>{`${currentPosition + 1} / ${photos.length}`}</Text>
             </View>
           )}
           <View style={styles.headerRight}>

@@ -15,11 +15,12 @@ interface Props {
 }
 
 const HeaderRightButton = React.memo((props: Props) => {
-  const { name, onPress, backgroundColor, disabled, borderRadius, size, color, labelText } = props;
+  const { name, onPress, backgroundColor, disabled, borderRadius, size, color, labelText, testID } = props;
 
   return (
     <View style={styles.headerRight}>
       <Button
+        testID={testID}
         name={name}
         onPress={onPress}
         backgroundColor={backgroundColor}

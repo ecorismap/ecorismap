@@ -25,14 +25,16 @@ export const DataEditRecordSelector = (props: Props) => {
   return (
     <View style={styles.buttonContainer}>
       <Button
+        testID="dataedit-prev"
         name="arrow-left-bold-outline"
         backgroundColor={COLOR.MAIN}
         color={COLOR.BLACK}
         onPress={onPressPrevious}
         size={25}
       />
-      <Text>{`${recordNumber}/${maxRecordNumber}`}</Text>
+      <Text testID="dataedit-record-number">{`${recordNumber}/${maxRecordNumber}`}</Text>
       <Button
+        testID="dataedit-next"
         name="arrow-right-bold-outline"
         backgroundColor={COLOR.MAIN}
         color={COLOR.BLACK}

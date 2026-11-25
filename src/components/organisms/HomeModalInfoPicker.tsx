@@ -108,6 +108,7 @@ export const HomeModalInfoPicker = React.memo((props: Props) => {
         >
           {/* バツボタン */}
           <Pressable
+            testID="home-infopicker-close"
             style={{
               position: 'absolute',
               top: 10,
@@ -139,6 +140,7 @@ export const HomeModalInfoPicker = React.memo((props: Props) => {
               }}
             >
               <Pressable
+                testID="home-infopicker-all"
                 style={{ flexDirection: 'row', alignItems: 'center' }}
                 onPress={() => {
                   setInfoTool('ALL_INFO');
@@ -148,6 +150,7 @@ export const HomeModalInfoPicker = React.memo((props: Props) => {
               >
                 <View style={{ marginVertical: 5, marginRight: 10 }}>
                   <Button
+                    testID="home-infopicker-all-button"
                     name={INFOTOOL.ALL_INFO}
                     backgroundColor={infoTool === 'ALL_INFO' ? COLOR.ALFARED : COLOR.ALFABLUE}
                     borderRadius={50}
@@ -161,6 +164,7 @@ export const HomeModalInfoPicker = React.memo((props: Props) => {
                 <Text>{`${t('common.selectAllInfo')}`}</Text>
               </Pressable>
               <Pressable
+                testID="home-infopicker-point"
                 style={{ flexDirection: 'row', alignItems: 'center' }}
                 onPress={() => {
                   setInfoTool('POINT_INFO');
@@ -170,6 +174,7 @@ export const HomeModalInfoPicker = React.memo((props: Props) => {
               >
                 <View style={{ marginVertical: 5, marginRight: 10 }}>
                   <Button
+                    testID="home-infopicker-point-button"
                     name={INFOTOOL.POINT_INFO}
                     backgroundColor={infoTool === 'POINT_INFO' ? COLOR.ALFARED : COLOR.ALFABLUE}
                     borderRadius={50}
@@ -183,6 +188,7 @@ export const HomeModalInfoPicker = React.memo((props: Props) => {
                 <Text>{`${t('common.selectPointInfo')}`}</Text>
               </Pressable>
               <Pressable
+                testID="home-infopicker-line"
                 style={{ flexDirection: 'row', alignItems: 'center' }}
                 onPress={() => {
                   setInfoTool('LINE_INFO');
@@ -192,6 +198,7 @@ export const HomeModalInfoPicker = React.memo((props: Props) => {
               >
                 <View style={{ marginVertical: 5, marginRight: 10 }}>
                   <Button
+                    testID="home-infopicker-line-button"
                     name={INFOTOOL.LINE_INFO}
                     backgroundColor={infoTool === 'LINE_INFO' ? COLOR.ALFARED : COLOR.ALFABLUE}
                     borderRadius={50}
@@ -205,6 +212,7 @@ export const HomeModalInfoPicker = React.memo((props: Props) => {
                 <Text>{`${t('common.selectLineInfo')}`}</Text>
               </Pressable>
               <Pressable
+                testID="home-infopicker-polygon"
                 style={{ flexDirection: 'row', alignItems: 'center' }}
                 onPress={() => {
                   setInfoTool('POLYGON_INFO');
@@ -214,6 +222,7 @@ export const HomeModalInfoPicker = React.memo((props: Props) => {
               >
                 <View style={{ marginVertical: 5, marginRight: 10 }}>
                   <Button
+                    testID="home-infopicker-polygon-button"
                     name={INFOTOOL.POLYGON_INFO}
                     backgroundColor={infoTool === 'POLYGON_INFO' ? COLOR.ALFARED : COLOR.ALFABLUE}
                     borderRadius={50}

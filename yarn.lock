@@ -6977,6 +6977,17 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@playwright/test@npm:1.61.1":
+  version: 1.61.1
+  resolution: "@playwright/test@npm:1.61.1"
+  dependencies:
+    playwright: 1.61.1
+  bin:
+    playwright: cli.js
+  checksum: cf664aa3f5ccc63061ec8a96cf957ad2160b0a300035b310b9fcf67da43f52681fb775755c6134230e0ace7b391a08d9cfe7ca9664546d1bb5d4cf02e1db170a
+  languageName: node
+  linkType: hard
+
 "@pnpm/config.env-replace@npm:^1.1.0":
   version: 1.1.0
   resolution: "@pnpm/config.env-replace@npm:1.1.0"
@@ -14507,6 +14518,7 @@ __metadata:
     "@mui/material": ^9.1.1
     "@mui/x-date-pickers": ^9.5.0
     "@noble/hashes": ^2.3.0
+    "@playwright/test": 1.61.1
     "@react-native-async-storage/async-storage": 2.2.0
     "@react-native-community/cli": 20.1.3
     "@react-native-community/cli-platform-android": 20.1.3
@@ -17125,6 +17137,16 @@ __metadata:
   languageName: node
   linkType: hard
 
+"fsevents@npm:2.3.2, fsevents@npm:~2.3.2":
+  version: 2.3.2
+  resolution: "fsevents@npm:2.3.2"
+  dependencies:
+    node-gyp: latest
+  checksum: 97ade64e75091afee5265e6956cb72ba34db7819b4c3e94c431d4be2b19b8bb7a2d4116da417950c3425f17c8fe693d25e20212cac583ac1521ad066b77ae31f
+  conditions: os=darwin
+  languageName: node
+  linkType: hard
+
 "fsevents@npm:^1.2.7":
   version: 1.2.13
   resolution: "fsevents@npm:1.2.13"
@@ -17146,12 +17168,11 @@ __metadata:
   languageName: node
   linkType: hard
 
-"fsevents@npm:~2.3.2":
+"fsevents@patch:fsevents@2.3.2#~builtin<compat/fsevents>, fsevents@patch:fsevents@~2.3.2#~builtin<compat/fsevents>":
   version: 2.3.2
-  resolution: "fsevents@npm:2.3.2"
+  resolution: "fsevents@patch:fsevents@npm%3A2.3.2#~builtin<compat/fsevents>::version=2.3.2&hash=df0bf1"
   dependencies:
     node-gyp: latest
-  checksum: 97ade64e75091afee5265e6956cb72ba34db7819b4c3e94c431d4be2b19b8bb7a2d4116da417950c3425f17c8fe693d25e20212cac583ac1521ad066b77ae31f
   conditions: os=darwin
   languageName: node
   linkType: hard
@@ -17169,15 +17190,6 @@ __metadata:
 "fsevents@patch:fsevents@^2.3.2#~builtin<compat/fsevents>":
   version: 2.3.3
   resolution: "fsevents@patch:fsevents@npm%3A2.3.3#~builtin<compat/fsevents>::version=2.3.3&hash=df0bf1"
-  dependencies:
-    node-gyp: latest
-  conditions: os=darwin
-  languageName: node
-  linkType: hard
-
-"fsevents@patch:fsevents@~2.3.2#~builtin<compat/fsevents>":
-  version: 2.3.2
-  resolution: "fsevents@patch:fsevents@npm%3A2.3.2#~builtin<compat/fsevents>::version=2.3.2&hash=df0bf1"
   dependencies:
     node-gyp: latest
   conditions: os=darwin
@@ -23566,6 +23578,30 @@ __metadata:
   dependencies:
     find-up: ^4.0.0
   checksum: 9863e3f35132bf99ae1636d31ff1e1e3501251d480336edb1c211133c8d58906bed80f154a1d723652df1fda91e01c7442c2eeaf9dc83157c7ae89087e43c8d6
+  languageName: node
+  linkType: hard
+
+"playwright-core@npm:1.61.1":
+  version: 1.61.1
+  resolution: "playwright-core@npm:1.61.1"
+  bin:
+    playwright-core: cli.js
+  checksum: 69bd5c4eb1884a16e92674c0399ad25120ce91faecadd25227cb07eaa0892cce07f908c6bad51256363bf17634953759c30d42d7c253128c28bc8b86087a1f62
+  languageName: node
+  linkType: hard
+
+"playwright@npm:1.61.1":
+  version: 1.61.1
+  resolution: "playwright@npm:1.61.1"
+  dependencies:
+    fsevents: 2.3.2
+    playwright-core: 1.61.1
+  dependenciesMeta:
+    fsevents:
+      optional: true
+  bin:
+    playwright: cli.js
+  checksum: 2d85be1b6a88dbeeb206c5800629182840f07bd0e5e74f154fa57de2f1df16631918df9139a1cb8ddde8f2f125c5c9e447686a0fdadb61552b668ba97ffcaaf1
   languageName: node
   linkType: hard
 

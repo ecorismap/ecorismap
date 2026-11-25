@@ -64,6 +64,8 @@ export const DataEditList = (props: Props) => {
     <View style={styles.tr}>
       <View style={styles.td}>
         <Picker
+          testID={`dataedit-input-${name}`}
+          optionTestIDPrefix={`dataedit-option-${name}`}
           label={name}
           selectedValue={selectedItem}
           onValueChange={onItemChange}
@@ -75,6 +77,7 @@ export const DataEditList = (props: Props) => {
       {otherSelected && (
         <View style={styles.td}>
           <TextInput
+            testID={`dataedit-input-${name}-other`}
             style={styles.input}
             label={t('common.value')}
             value={otherText}

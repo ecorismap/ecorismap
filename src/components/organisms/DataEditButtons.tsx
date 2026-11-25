@@ -31,6 +31,7 @@ export const DataEditButtons = () => {
   return (
     <View style={styles.buttonContainer}>
       <Button
+        testID="dataedit-jump"
         name={DATAEDIT_BTN.JUMP}
         onPress={pressJumpToData}
         backgroundColor={isBusy ? COLOR.LIGHTBLUE : COLOR.BLUE}
@@ -38,6 +39,7 @@ export const DataEditButtons = () => {
         labelText={t('DataEdit.label.jump')}
       />
       <Button
+        testID="dataedit-google-maps"
         name={DATAEDIT_BTN.GOOGLE}
         onPress={gotoGoogleMaps}
         backgroundColor={isEditingRecord ? COLOR.LIGHTBLUE : COLOR.BLUE}
@@ -46,6 +48,7 @@ export const DataEditButtons = () => {
       />
       {(layer.type === 'POINT' || layer.type === 'LINE' || layer.type === 'POLYGON') && (
         <Button
+          testID="dataedit-edit-position"
           name={DATAEDIT_BTN.EDIT}
           onPress={pressEditPosition}
           backgroundColor={isBusy || !canEditPosition ? COLOR.LIGHTBLUE : COLOR.BLUE}
@@ -54,6 +57,7 @@ export const DataEditButtons = () => {
         />
       )}
       <Button
+        testID="dataedit-copy"
         name={DATAEDIT_BTN.COPY}
         onPress={pressCopyData}
         backgroundColor={isBusy || !isEditable ? COLOR.LIGHTBLUE : COLOR.BLUE}

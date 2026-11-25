@@ -63,7 +63,7 @@ export const ExportDestinationModal = React.memo(() => {
           <Text style={styles.title}>{t('hooks.exportDestination.title')}</Text>
           <Text style={styles.message}>{t('hooks.exportDestination.message')}</Text>
 
-          <Pressable style={styles.optionButton} onPress={() => handleSelect('save')}>
+          <Pressable testID="export-save" style={styles.optionButton} onPress={() => handleSelect('save')}>
             <View style={styles.optionIconCircle}>
               <MaterialCommunityIcons name="folder-download-outline" size={24} color={COLOR.BLUE} />
             </View>
@@ -74,7 +74,7 @@ export const ExportDestinationModal = React.memo(() => {
             <MaterialCommunityIcons name="chevron-right" size={22} color={COLOR.GRAY2} />
           </Pressable>
 
-          <Pressable style={styles.optionButton} onPress={() => handleSelect('share')}>
+          <Pressable testID="export-share" style={styles.optionButton} onPress={() => handleSelect('share')}>
             <View style={styles.optionIconCircle}>
               <MaterialCommunityIcons name="share-variant-outline" size={24} color={COLOR.BLUE} />
             </View>
@@ -85,7 +85,7 @@ export const ExportDestinationModal = React.memo(() => {
             <MaterialCommunityIcons name="chevron-right" size={22} color={COLOR.GRAY2} />
           </Pressable>
 
-          <Pressable style={styles.cancelButton} onPress={() => handleSelect('cancel')}>
+          <Pressable testID="export-cancel" style={styles.cancelButton} onPress={() => handleSelect('cancel')}>
             <Text style={styles.cancelButtonText}>{t('common.cancel')}</Text>
           </Pressable>
         </Pressable>

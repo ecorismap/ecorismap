@@ -1,0 +1,114 @@
+# GPS-1・TRACK-1・TRACK-5: 疑似位置で軌跡を記録し、止めると保存されて軌跡サマリーが出る。
+# 保存された軌跡は最後に消す。画面OFF・バックグラウンド・長時間の記録は実機で確かめる（TRACK-2）。
+appId: jp.co.ecoris.ecorismap
+env:
+  LAYER_NAME: '軌跡.*'
+---
+- runFlow: ../common/launch.yaml
+# 前回このフローが途中で止まっていると、起動時に「軌跡の記録は中断されました」の確認が出る。テスト用の軌跡なので捨てる
+- extendedWaitUntil:
+    visible:
+      id: 'dialog-message'
+    timeout: 3000
+    optional: true
+- runFlow:
+    when:
+      visible:
+        id: 'dialog-message'
+    commands:
+      - assertVisible: '.*中断されました.*'
+      - tapOn: 'No'
+      - waitForAnimationToEnd:
+          timeout: 3000
+# いまある軌跡の数（＝これから保存される軌跡の行番号）を数えておく
+- runFlow: ../common/open-layer.yaml
+- runFlow: ../common/count-rows.yaml
+- tapOn:
+    id: 'sheet-close'
+- setLocation:
+    latitude: 38.2600
+    longitude: 140.8500
+# 開始の確認が出るまで押す
+- repeat:
+    while:
+      notVisible:
+        id: 'dialog-message'
+    times: 5
+    commands:
+      - tapOn:
+          id: 'home-track'
+          retryTapIfNoChange: false
+      - extendedWaitUntil:
+          visible:
+            id: 'dialog-message'
+          timeout: 3000
+          optional: true
+- tapOn: 'Yes'
+- waitForAnimationToEnd:
+    timeout: 5000
+- travel:
+    points:
+      - 38.2600,140.8500
+      - 38.2610,140.8510
+      - 38.2620,140.8520
+      - 38.2630,140.8530
+    speed: 20
+- takeScreenshot: 04-tracking
+# 停止の確認が出るまで押す。
+# iOSシミュレーターは「位置が分からない」（location error 0）を返すことがあり、開発ビルドでは
+# そのログが全画面のエラー表示になってボタンを隠す。出ていれば閉じてから押す
+- repeat:
+    while:
+      notVisible:
+        id: 'dialog-message'
+    times: 5
+    commands:
+      - runFlow:
+          when:
+            visible: 'Console Error'
+          commands:
+            - tapOn: 'Dismiss'
+            - waitForAnimationToEnd:
+                timeout: 2000
+      - tapOn:
+          id: 'home-track'
+          retryTapIfNoChange: false
+          optional: true
+      - extendedWaitUntil:
+          visible:
+            id: 'dialog-message'
+          timeout: 4000
+          optional: true
+# Yesと答えると、保存されて軌跡サマリーが開く
+- tapOn: 'Yes'
+- extendedWaitUntil:
+    visible:
+      id: 'tracksummary-stat-distance'
+    timeout: 20000
+- assertVisible:
+    id: 'tracksummary-chart'
+- assertVisible:
+    id: 'tracksummary-export'
+- takeScreenshot: 04-summary
+- tapOn:
+    id: 'sheet-close'
+# 軌跡レイヤに1本増えている。確かめてから消す
+- runFlow: ../common/open-layer.yaml
+- assertVisible:
+    id: data-row-${output.row}
+- tapOn:
+    id: data-row-${output.row}
+- extendedWaitUntil:
+    visible:
+      id: 'dataedit-delete'
+    timeout: 10000
+- waitForAnimationToEnd
+- tapOn:
+    id: 'dataedit-delete'
+- tapOn: 'Yes'
+- extendedWaitUntil:
+    visible:
+      id: 'data-export'
+    timeout: 10000
+- assertNotVisible:
+    id: data-row-${output.row}

@@ -41,7 +41,9 @@ export const MapTable = React.memo(() => {
 
   // 各行の描画
   const renderItem = useCallback(
-    ({ item, drag, isActive }: RenderItemParams<any>) => {
+    ({ item, drag, isActive, getIndex }: RenderItemParams<any>) => {
+      //表示順（0始まり）。E2E用のtestIDに使う
+      const index = getIndex();
       const isParent = item.isGroup;
       const backgroundColor = isActive
         ? COLOR.WHITE
@@ -59,6 +61,7 @@ export const MapTable = React.memo(() => {
             <View style={{ alignItems: 'center', height: 56, justifyContent: 'center', flex: 1 }}>
               {isParent ? (
                 <Button
+                  testID={`maps-expand-${index}`}
                   name={item.expanded ? 'chevron-down' : 'chevron-right'}
                   onPress={() => changeExpand(!item.expanded, item)}
                   color={parentFg}
@@ -67,6 +70,7 @@ export const MapTable = React.memo(() => {
                 />
               ) : (
                 <Button
+                  testID={`maps-visible-${index}`}
                   name={item.visible ? 'eye' : 'eye-off-outline'}
                   onPress={() => changeVisible(!item.visible, item)}
                   color={COLOR.GRAY4}
@@ -77,6 +81,7 @@ export const MapTable = React.memo(() => {
             </View>
           </View>
           <Pressable
+            testID={`maps-row-${index}`}
             style={[styles.td, { width: '43%' }]}
             onLongPress={item.isGroup && item.expanded ? undefined : drag}
             disabled={isActive}
@@ -113,6 +118,7 @@ export const MapTable = React.memo(() => {
               !item.isGroup &&
               isPdfTileMap(item) && (
                 <Button
+                  testID={`maps-download-${index}`}
                   name="download"
                   onPress={() => pressDownloadMap(item)}
                   borderRadius={5}
@@ -125,6 +131,7 @@ export const MapTable = React.memo(() => {
           <View style={[styles.td, { width: '11%' }]}>
             {item.id !== 'standard' && item.id !== 'hybrid' && (
               <Button
+                testID={`maps-edit-${index}`}
                 name="pencil"
                 onPress={() => gotoMapEdit(item)}
                 backgroundColor={COLOR.GRAY3}
@@ -138,12 +145,14 @@ export const MapTable = React.memo(() => {
             {item.id !== 'standard' && item.id !== 'hybrid' && (
               <>
                 <Button
+                  testID={`maps-up-${index}`}
                   name="chevron-up"
                   onPress={() => pressMapOrder(item, 'up')}
                   color={isParent ? parentFg : COLOR.GRAY2}
                   style={{ backgroundColor }}
                 />
                 <Button
+                  testID={`maps-down-${index}`}
                   name="chevron-down"
                   onPress={() => pressMapOrder(item, 'down')}
                   color={isParent ? parentFg : COLOR.GRAY2}

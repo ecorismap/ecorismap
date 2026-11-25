@@ -193,7 +193,7 @@ export default function Account() {
           zIndex: 5,
         }}
       >
-        <Button name="window-close" backgroundColor={COLOR.GRAY1} onPress={pressClose} />
+        <Button testID="account-close" name="window-close" backgroundColor={COLOR.GRAY1} onPress={pressClose} />
       </View>
 
       <ScrollView
@@ -204,7 +204,7 @@ export default function Account() {
         <View style={styles.modalFrameView}>
           <Image style={{ width: 60, height: 60 }} source={require('../../assets/icon.png')} />
           <Text style={styles.modalTitle}>{'EcorisMap'}</Text>
-          <Text style={styles.modalTitle}>
+          <Text testID="account-title" style={styles.modalTitle}>
             {accountFormState === 'selectLoginMethod'
               ? `${t('Account.title.selectLoginMethod')}`
               : accountFormState === 'loginUserAccount'
@@ -236,13 +236,13 @@ export default function Account() {
 
           {accountFormState === 'selectLoginMethod' && (
             <View style={{ alignItems: 'center' }}>
-              <Pressable style={styles.googleButton} onPress={pressConnectGoogle}>
+              <Pressable testID="account-connect-google" style={styles.googleButton} onPress={pressConnectGoogle}>
                 <MaterialCommunityIcons name="google" size={20} color={COLOR.BLACK} />
                 <Text style={styles.googleButtonText}>{`${t('Account.text.connectGoogle')}`}</Text>
               </Pressable>
               <Text style={styles.infoText}>{`${t('Account.text.connectGoogleInfo')}`}</Text>
               <View style={styles.divider} />
-              <Pressable onPress={changeLoginForm}>
+              <Pressable testID="account-org-login" onPress={changeLoginForm}>
                 <Text style={styles.underline}>{`${t('Account.text.orgAccountLogin')}`}</Text>
               </Pressable>
               <Text style={styles.infoText}>{`${t('Account.text.orgAccountLoginInfo')}`}</Text>
@@ -253,6 +253,7 @@ export default function Account() {
             accountFormState === 'loginUserAccount' ||
             accountFormState === 'resetUserPassword') && (
             <TextInput
+              testID="account-email"
               style={[styles.modalTextInput, { borderColor: message === '' ? COLOR.BLUE : COLOR.RED }]}
               placeholder="email"
               placeholderTextColor={COLOR.GRAY3}
@@ -269,6 +270,7 @@ export default function Account() {
           {(accountFormState === 'changeUserPassword' || accountFormState === 'changeEncryptPassword') && (
             <View style={styles.passwordContainer}>
               <TextInput
+                testID={accountFormState === 'changeEncryptPassword' ? 'account-old-pin' : 'account-old-password'}
                 style={[styles.modalTextInput, styles.passwordInput, { borderColor: message === '' ? COLOR.BLUE : COLOR.RED }]}
                 secureTextEntry={!showOldPassword}
                 autoComplete={'password'}
@@ -277,13 +279,14 @@ export default function Account() {
                 value={oldPassword}
                 onChangeText={(text) => setOldPassword(text)}
               />
-              <Pressable style={styles.eyeIcon} onPress={() => setShowOldPassword(!showOldPassword)}>
+              <Pressable testID="account-toggle-old-password" style={styles.eyeIcon} onPress={() => setShowOldPassword(!showOldPassword)}>
                 <MaterialCommunityIcons name={showOldPassword ? 'eye-off' : 'eye'} size={20} color={COLOR.GRAY3} />
               </Pressable>
             </View>
           )}
           {accountFormState === 'signupUserAccount' && (
             <TextInput
+              testID="account-password"
               style={[styles.modalTextInput, { borderColor: message === '' ? COLOR.BLUE : COLOR.RED }]}
               secureTextEntry={true}
               autoComplete={'new-password'}
@@ -309,6 +312,15 @@ export default function Account() {
             accountFormState === 'deleteAllProjects') && (
             <View style={styles.passwordContainer}>
               <TextInput
+                testID={
+                  accountFormState === 'loginUserAccount' ||
+                  accountFormState === 'changeUserPassword' ||
+                  accountFormState === 'deleteUserAccount' ||
+                  accountFormState === 'resetEncryptKey' ||
+                  accountFormState === 'deleteAllProjects'
+                    ? 'account-password'
+                    : 'account-pin'
+                }
                 style={[styles.modalTextInput, styles.passwordInput, { borderColor: message === '' ? COLOR.BLUE : COLOR.RED }]}
                 secureTextEntry={!showPassword}
                 autoComplete={'password'}
@@ -328,7 +340,7 @@ export default function Account() {
                 value={password}
                 onChangeText={(text) => setPassword(text)}
               />
-              <Pressable style={styles.eyeIcon} onPress={() => setShowPassword(!showPassword)}>
+              <Pressable testID="account-toggle-password" style={styles.eyeIcon} onPress={() => setShowPassword(!showPassword)}>
                 <MaterialCommunityIcons name={showPassword ? 'eye-off' : 'eye'} size={20} color={COLOR.GRAY3} />
               </Pressable>
             </View>
@@ -336,6 +348,7 @@ export default function Account() {
 
           {accountFormState === 'updateUserProfile' && (
             <TextInput
+              testID="account-display-name"
               style={[styles.modalTextInput, { borderColor: message === '' ? COLOR.BLUE : COLOR.RED }]}
               placeholder={t('Account.placeholder.displayName')}
               placeholderTextColor={COLOR.GRAY3}
@@ -346,6 +359,7 @@ export default function Account() {
           )}
           {accountFormState === 'updateUserProfile' && (
             <TextInput
+              testID="account-photo-url"
               style={[styles.modalTextInput, { borderColor: message === '' ? COLOR.BLUE : COLOR.RED }]}
               placeholder={t('Account.placeholder.iconURL')}
               placeholderTextColor={COLOR.GRAY3}
@@ -355,7 +369,7 @@ export default function Account() {
           )}
           {message !== '' && (
             <View style={styles.message}>
-              <Text style={styles.messageText}>{message}</Text>
+              <Text testID="account-message" style={styles.messageText}>{message}</Text>
             </View>
           )}
           {(accountFormState === 'loginUserAccount' ||
@@ -363,6 +377,7 @@ export default function Account() {
             // 鍵リセット後のバックアップ再開で前回のPINを思い出せないとき、リセットをやり直せるようにする
             accountFormState === 'backupEncryptPassword') && (
             <Pressable
+              testID={accountFormState === 'loginUserAccount' ? 'account-reset-password' : 'account-reset-encrypt-key'}
               style={styles.resetText}
               onPress={accountFormState === 'loginUserAccount' ? changeResetPasswordForm : changeResetEncryptForm}
             >
@@ -374,13 +389,20 @@ export default function Account() {
           {accountFormState !== 'selectLoginMethod' && (
           <View style={styles.modalButtonContainer}>
             {accountFormState === 'loginUserAccount' ? (
-              <Pressable style={styles.resetText} onPress={changeSignUpForm}>
+              <Pressable testID="account-goto-signup" style={styles.resetText} onPress={changeSignUpForm}>
                 <Text style={styles.underline}>{`${t('Account.text.createAccount')}`}</Text>
               </Pressable>
             ) : (
               <Text />
             )}
             <Pressable
+              testID={
+                accountFormState === 'loginUserAccount'
+                  ? 'account-login'
+                  : accountFormState === 'signupUserAccount'
+                  ? 'account-signup'
+                  : 'account-submit'
+              }
               style={[styles.modalOKCancelButton, { backgroundColor: COLOR.BLUE }]}
               onPress={() =>
                 accountFormState === 'loginUserAccount'
@@ -416,7 +438,7 @@ export default function Account() {
           )}
 
           {(accountFormState === 'loginUserAccount' || accountFormState === 'signupUserAccount') && (
-            <Pressable style={{ marginTop: 20 }} onPress={changeSelectLoginMethodForm}>
+            <Pressable testID="account-back-to-select" style={{ marginTop: 20 }} onPress={changeSelectLoginMethodForm}>
               <Text style={{ fontSize: 12, color: COLOR.BLUE }}>{`${t('Account.text.backToSelectLogin')}`}</Text>
             </Pressable>
           )}

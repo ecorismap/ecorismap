@@ -24,6 +24,7 @@ export const HomeAttributionText = React.memo((props: Props) => {
       }}
     >
       <Text
+        testID="home-attribution"
         style={{
           fontSize: 9,
           color: COLOR.BLACK,

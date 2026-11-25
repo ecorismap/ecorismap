@@ -50,6 +50,7 @@ export const DataEditListTable = (props: Props_DataEditListTable) => {
         </View>
         <View style={[styles.td3, { minWidth: 40, justifyContent: 'flex-end' }]}>
           <Button
+            testID={`dataedit-table-add-${name}`}
             style={{
               backgroundColor: COLOR.BLUE,
               padding: 0,
@@ -59,19 +60,20 @@ export const DataEditListTable = (props: Props_DataEditListTable) => {
           />
         </View>
       </View>
-      <ValueList data={data} listItems={listItems} onEndEditing={updateValue} />
+      <ValueList name={name} data={data} listItems={listItems} onEndEditing={updateValue} />
     </>
   );
 };
 
 interface Props_List {
+  name: string;
   data: string[][];
   listItems: { value: string; isOther: boolean }[];
   onEndEditing: (selectedItems: string[], values: string[]) => void;
 }
 
 const ValueList = (props: Props_List) => {
-  const { data, listItems, onEndEditing } = props;
+  const { name, data, listItems, onEndEditing } = props;
   const [values, setValues] = useState<string[]>([]);
 
   const selectedItems = useMemo(() => data.map((d) => d[0]), [data]);
@@ -120,6 +122,7 @@ const ValueList = (props: Props_List) => {
         <View key={index} style={styles.tr}>
           <View style={[styles.td, { flex: 100 }]}>
             <Picker
+              testID={`dataedit-table-select-${name}-${index}`}
               selectedValue={item}
               onValueChange={(value) => itemChange(index, value)}
               itemLabelArray={itemValueArray}
@@ -129,6 +132,7 @@ const ValueList = (props: Props_List) => {
           </View>
           <View style={[styles.td, { flex: 100 }]}>
             <TextInput
+              testID={`dataedit-table-input-${name}-${index}`}
               style={styles.input}
               value={values[index] ? values[index].toString() : ''}
               onChangeText={(value) => changeText(index, value)}
@@ -139,6 +143,7 @@ const ValueList = (props: Props_List) => {
 
           <View style={[styles.td, { minWidth: 40, justifyContent: 'flex-end' }]}>
             <Button
+              testID={`dataedit-table-delete-${name}-${index}`}
               style={{
                 backgroundColor: COLOR.DARKRED,
                 padding: 0,

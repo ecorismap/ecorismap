@@ -43,10 +43,11 @@ export const HomeZoomButton = React.memo((props: Props) => {
         //style={{ borderColor: COLOR.WHITE, borderWidth: 1 }}
         iconStyle={{ marginRight: 0 }}
         size={20}
+        testID="home-zoom-in"
         name={HOME_BTN.ZOOM_PLUS}
         onPress={zoomIn}
       />
-      <Text style={{ fontSize: 12, color: COLOR.WHITE }}>{zoom.toString()}</Text>
+      <Text testID="home-zoom-level" style={{ fontSize: 12, color: COLOR.WHITE }}>{zoom.toString()}</Text>
       <MaterialCommunityIcons.Button
         //@ts-ignore
         backgroundColor={'#007bff11'}
@@ -54,6 +55,7 @@ export const HomeZoomButton = React.memo((props: Props) => {
         //style={{ borderColor: COLOR.BLUE, borderWidth: 1 }}
         iconStyle={{ marginRight: 0 }}
         size={20}
+        testID="home-zoom-out"
         name={HOME_BTN.ZOOM_MINUS}
         onPress={zoomOut}
       />

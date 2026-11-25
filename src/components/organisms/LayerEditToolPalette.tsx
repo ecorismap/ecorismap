@@ -31,6 +31,7 @@ export const LayerEditToolPalette = () => {
     <View style={styles.tr}>
       <View style={styles.td}>
         <Picker
+          testID="layeredit-purpose"
           label={t('common.purpose')}
           selectedValue={layer.toolPalette ?? 'NONE'}
           onValueChange={(itemValue) =>

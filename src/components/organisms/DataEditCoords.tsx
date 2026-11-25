@@ -22,6 +22,7 @@ export const DataEditCoords = (props: Props) => {
       <View style={[styles.td, { flex: 9 }]}>
         {isDecimal ? (
           <TextInput
+            testID={`dataedit-coords-${latlonType}-decimal`}
             style={styles.input}
             label={label}
             value={latlon[latlonType].decimal}
@@ -33,6 +34,7 @@ export const DataEditCoords = (props: Props) => {
         ) : (
           <>
             <TextInput
+              testID={`dataedit-coords-${latlonType}-deg`}
               style={styles.input}
               label={label}
               value={latlon[latlonType].deg}
@@ -42,6 +44,7 @@ export const DataEditCoords = (props: Props) => {
               onChangeText={(val: string) => onChangeText(val, latlonType, 'deg')}
             />
             <TextInput
+              testID={`dataedit-coords-${latlonType}-min`}
               style={styles.input}
               label={t('common.minutes')}
               value={latlon[latlonType].min}
@@ -49,6 +52,7 @@ export const DataEditCoords = (props: Props) => {
               onChangeText={(val: string) => onChangeText(val, latlonType, 'min')}
             />
             <TextInput
+              testID={`dataedit-coords-${latlonType}-sec`}
               style={styles.input}
               label={t('common.second')}
               value={latlon[latlonType].sec}
@@ -60,6 +64,7 @@ export const DataEditCoords = (props: Props) => {
       </View>
       <View style={[styles.td, { flex: 1, justifyContent: 'flex-end' }]}>
         <Button
+          testID={`dataedit-coords-toggle-${latlonType}`}
           name="arrow-left-right"
           onPress={changeLatLonType}
           style={{ backgroundColor: COLOR.GRAY3 }}

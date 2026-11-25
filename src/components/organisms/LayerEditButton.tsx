@@ -14,6 +14,7 @@ export const LayerEditButton = () => {
   return (
     <View style={styles.buttonContainer}>
       <Button
+        testID="layeredit-export"
         name={LAYEREDIT_BTN.EXPORT}
         onPress={pressExportLayer}
         backgroundColor={!isEdited ? COLOR.BLUE : COLOR.LIGHTBLUE}
@@ -22,6 +23,7 @@ export const LayerEditButton = () => {
         labelFontSize={9}
       />
       <Button
+        testID="layeredit-delete"
         name={LAYEREDIT_BTN.DELETE}
         backgroundColor={isEdited || !editable ? COLOR.LIGHTBLUE : COLOR.DARKRED}
         disabled={isEdited || !editable}

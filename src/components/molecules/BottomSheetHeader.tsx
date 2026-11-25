@@ -26,7 +26,7 @@ export function BottomSheetHeader({
         {leftComponent ? (
           leftComponent
         ) : showBackButton && onBack ? (
-          <TouchableOpacity style={styles.backButton} onPress={onBack}>
+          <TouchableOpacity testID="sheet-back" style={styles.backButton} onPress={onBack}>
             <MaterialCommunityIcons name="chevron-left" size={28} color={COLOR.BLACK} />
           </TouchableOpacity>
         ) : null}

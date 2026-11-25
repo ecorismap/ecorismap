@@ -17,6 +17,8 @@ interface Props {
   style?: { [key: string]: string | number };
   radio?: boolean;
   numberOfLines?: number;
+  /** E2Eから要素を特定するためのID */
+  testID?: string;
 }
 
 export const CheckBox = React.memo((props: Props) => {
@@ -33,6 +35,7 @@ export const CheckBox = React.memo((props: Props) => {
     style,
     radio,
     numberOfLines,
+    testID,
   } = props;
 
   const checkedIcon = useMemo(() => (radio ? 'checkbox-marked-circle-outline' : 'checkbox-marked-outline'), [radio]);
@@ -54,6 +57,7 @@ export const CheckBox = React.memo((props: Props) => {
       {(labelAlign === undefined || labelAlign === 'row') && (
         <View style={{ width: 35 }}>
           <Button
+            testID={testID}
             color={disabled ? COLOR.GRAY2 : COLOR.GRAY4}
             style={[{ backgroundColor: COLOR.MAIN }, style]}
             borderRadius={0}
@@ -88,6 +92,7 @@ export const CheckBox = React.memo((props: Props) => {
       {labelAlign === 'column' && (
         <View style={{ flex: 2 }}>
           <Button
+            testID={testID}
             color={disabled ? COLOR.GRAY2 : COLOR.GRAY4}
             style={[{ backgroundColor: COLOR.MAIN }, style]}
             borderRadius={0}

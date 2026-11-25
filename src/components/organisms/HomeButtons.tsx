@@ -23,11 +23,12 @@ export const HomeButtons = React.memo(() => {
   return (
     <View style={[isLandscape ? styles.buttonContainerLandscape : styles.buttonContainer, { bottom: insets.bottom }]}>
       <View style={{ marginHorizontal: 9 }}>
-        <Button name={HOME_BTN.MAPS} onPress={gotoMaps} backgroundColor={COLOR.BLUE} labelText={t('Home.label.maps')} />
+        <Button testID="home-maps" name={HOME_BTN.MAPS} onPress={gotoMaps} backgroundColor={COLOR.BLUE} labelText={t('Home.label.maps')} />
       </View>
       {Platform.OS !== 'web' && (
         <View style={{ marginHorizontal: 9 }}>
           <Button
+            testID="home-track"
             name={HOME_BTN.TRACK}
             backgroundColor={trackingState === 'on' ? 'red' : COLOR.BLUE}
             onPress={pressTracking}
@@ -49,6 +50,7 @@ export const HomeButtons = React.memo(() => {
         <SelectionalButton selectedButton={featureButton} direction="bottomToUp">
           <Button
             id="POINT"
+            testID="home-feature-point"
             name={HOME_FEATURE_BTN.POINT}
             onPressCustom={() => pressFeatureButton('POINT')}
             backgroundColor={COLOR.BLUE}
@@ -57,6 +59,7 @@ export const HomeButtons = React.memo(() => {
           />
           <Button
             id="LINE"
+            testID="home-feature-line"
             name={HOME_FEATURE_BTN.LINE}
             onPressCustom={() => pressFeatureButton('LINE')}
             backgroundColor={COLOR.BLUE}
@@ -64,6 +67,7 @@ export const HomeButtons = React.memo(() => {
           />
           <Button
             id="POLYGON"
+            testID="home-feature-polygon"
             name={HOME_FEATURE_BTN.POLYGON}
             onPressCustom={() => pressFeatureButton('POLYGON')}
             backgroundColor={COLOR.BLUE}
@@ -72,6 +76,7 @@ export const HomeButtons = React.memo(() => {
           />
           <Button
             id="MEMO"
+            testID="home-feature-memo"
             name={HOME_FEATURE_BTN.MEMO}
             onPressCustom={() => pressFeatureButton('MEMO')}
             backgroundColor={COLOR.BLUE}
@@ -79,6 +84,7 @@ export const HomeButtons = React.memo(() => {
           />
           <Button
             id="NONE"
+            testID="home-feature-draw"
             name={HOME_FEATURE_BTN.NONE}
             onPressCustom={() => pressFeatureButton('NONE')}
             backgroundColor={COLOR.BLUE}
@@ -88,6 +94,7 @@ export const HomeButtons = React.memo(() => {
       </View>
       <View style={{ marginHorizontal: 9 }}>
         <Button
+          testID="home-settings"
           name={HOME_BTN.SETTINGS}
           backgroundColor={COLOR.BLUE}
           onPress={gotoSettings}

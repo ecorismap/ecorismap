@@ -13,7 +13,7 @@ Playwright MCPを使用してE2Eテストを実行します。
 1. Web版が起動していること
    ```bash
    yarn web
-   # http://localhost:19006 でアクセス可能
+   # http://localhost:8081 でアクセス可能
    ```
 
 2. Playwright MCPが有効であること

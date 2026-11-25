@@ -39,6 +39,7 @@ const MapTableTitle = () => (
 const SortableMapRow = React.memo(
   ({
     item,
+    index,
     changeVisible,
     pressDownloadMap,
     gotoMapEdit,
@@ -47,6 +48,8 @@ const SortableMapRow = React.memo(
     pressMapOrder,
   }: {
     item: any;
+    /** 表示順（0始まり）。E2E用のtestIDに使う */
+    index: number;
     changeVisible: (visible: boolean, item: any) => void;
     pressDownloadMap: (item: any) => void;
     gotoMapEdit: (item: any) => void;
@@ -85,6 +88,7 @@ const SortableMapRow = React.memo(
             <View style={{ alignItems: 'center', height: 56, justifyContent: 'center', flex: 1 }}>
               {isParent ? (
                 <Button
+                  testID={`maps-expand-${index}`}
                   name={item.expanded ? 'chevron-down' : 'chevron-right'}
                   onPress={() => changeExpand(!item.expanded, item)}
                   color={parentFg}
@@ -93,6 +97,7 @@ const SortableMapRow = React.memo(
                 />
               ) : (
                 <Button
+                  testID={`maps-visible-${index}`}
                   name={item.visible ? 'eye' : 'eye-off-outline'}
                   onPress={() => changeVisible(!item.visible, item)}
                   color={COLOR.GRAY4}
@@ -103,6 +108,7 @@ const SortableMapRow = React.memo(
             </View>
           </View>
           <Pressable
+            testID={`maps-row-${index}`}
             style={[styles.td, { flex: 4, cursor: 'grab' } as any]}
             onPress={() => {
               if (item.isGroup) {
@@ -134,6 +140,7 @@ const SortableMapRow = React.memo(
               !item.isGroup &&
               isPdfTileMap(item) && (
                 <Button
+                  testID={`maps-download-${index}`}
                   name="download"
                   onPress={() => pressDownloadMap(item)}
                   borderRadius={5}
@@ -146,6 +153,7 @@ const SortableMapRow = React.memo(
           <View style={[styles.td, { flex: 1, width: 80 }]}>
             {item.id !== 'standard' && item.id !== 'hybrid' && (
               <Button
+                testID={`maps-edit-${index}`}
                 name="pencil"
                 onPress={() => gotoMapEdit(item)}
                 backgroundColor={COLOR.GRAY3}
@@ -159,12 +167,14 @@ const SortableMapRow = React.memo(
             {item.id !== 'standard' && item.id !== 'hybrid' && (
               <>
                 <Button
+                  testID={`maps-up-${index}`}
                   name="chevron-up"
                   onPress={() => pressMapOrder(item, 'up')}
                   color={isParent ? parentFg : COLOR.GRAY2}
                   style={{ backgroundColor }}
                 />
                 <Button
+                  testID={`maps-down-${index}`}
                   name="chevron-down"
                   onPress={() => pressMapOrder(item, 'down')}
                   color={isParent ? parentFg : COLOR.GRAY2}
@@ -240,10 +250,11 @@ export const MapTable = React.memo(() => {
         >
           {/* @ts-ignore - dnd-kit is not compatible with React 19 types */}
           <SortableContext items={itemIds} strategy={verticalListSortingStrategy}>
-            {filterdMaps.map((item: any) => (
+            {filterdMaps.map((item: any, index: number) => (
               <SortableMapRow
                 key={item.id}
                 item={item}
+                index={index}
                 changeVisible={changeVisible}
                 pressDownloadMap={pressDownloadMap}
                 gotoMapEdit={gotoMapEdit}

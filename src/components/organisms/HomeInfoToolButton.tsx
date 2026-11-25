@@ -33,6 +33,7 @@ export const HomeInfoToolButton = React.memo(() => {
     <View style={styles.buttonContainer}>
       <View style={styles.selectionalButton}>
         <Button
+          testID="home-draw-info"
           name={INFOTOOL.ALL_INFO}
           backgroundColor={disabled ? COLOR.ALFAGRAY : isInfoToolActive ? COLOR.ALFARED : COLOR.ALFABLUE}
           borderRadius={10}

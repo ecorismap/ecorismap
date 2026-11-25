@@ -91,6 +91,7 @@ export const GpsSettingsModalNtrip = React.memo((props: Props) => {
           <ScrollView style={styles.scroll} keyboardShouldPersistTaps="handled">
             <Text style={styles.label}>{`${t('GpsSettings.externalGnss.ntrip.host')}`}</Text>
             <TextInput
+              testID="gpssettings-ntrip-host"
               style={styles.input}
               value={host}
               onChangeText={setHost}
@@ -99,9 +100,10 @@ export const GpsSettingsModalNtrip = React.memo((props: Props) => {
               keyboardType="url"
             />
             <Text style={styles.label}>{`${t('GpsSettings.externalGnss.ntrip.port')}`}</Text>
-            <TextInput style={styles.input} value={port} onChangeText={setPort} keyboardType="number-pad" />
+            <TextInput testID="gpssettings-ntrip-port" style={styles.input} value={port} onChangeText={setPort} keyboardType="number-pad" />
             <Text style={styles.label}>{`${t('GpsSettings.externalGnss.ntrip.username')}`}</Text>
             <TextInput
+              testID="gpssettings-ntrip-username"
               style={styles.input}
               value={username}
               onChangeText={setUsername}
@@ -110,6 +112,7 @@ export const GpsSettingsModalNtrip = React.memo((props: Props) => {
             />
             <Text style={styles.label}>{`${t('GpsSettings.externalGnss.ntrip.password')}`}</Text>
             <TextInput
+              testID="gpssettings-ntrip-password"
               style={styles.input}
               value={pass}
               onChangeText={setPass}
@@ -120,6 +123,7 @@ export const GpsSettingsModalNtrip = React.memo((props: Props) => {
             <Text style={styles.label}>{`${t('GpsSettings.externalGnss.ntrip.mountpoint')}`}</Text>
             <View style={styles.row}>
               <TextInput
+                testID="gpssettings-ntrip-mountpoint"
                 style={[styles.input, styles.flex]}
                 value={mountpoint}
                 onChangeText={setMountpoint}
@@ -127,6 +131,7 @@ export const GpsSettingsModalNtrip = React.memo((props: Props) => {
                 autoCorrect={false}
               />
               <Pressable
+                testID="gpssettings-ntrip-fetch-mountpoints"
                 style={[styles.smallButton, fetchDisabled && styles.smallButtonDisabled]}
                 onPress={pressFetch}
                 disabled={fetchDisabled}
@@ -146,8 +151,8 @@ export const GpsSettingsModalNtrip = React.memo((props: Props) => {
                 {mountpoints.length === 0 ? (
                   <Text style={styles.note}>{`${t('GpsSettings.externalGnss.ntrip.noMountpoints')}`}</Text>
                 ) : (
-                  mountpoints.map((m) => (
-                    <Pressable key={m.mountpoint} style={styles.mountItem} onPress={() => selectMountpoint(m)}>
+                  mountpoints.map((m, index) => (
+                    <Pressable testID={`gpssettings-ntrip-mountpoint-option-${index}`} key={m.mountpoint} style={styles.mountItem} onPress={() => selectMountpoint(m)}>
                       <Text style={styles.mountName}>{m.mountpoint}</Text>
                       <Text style={styles.note}>
                         {[m.identifier, m.format, m.navSystem, m.requiresGga ? 'GGA' : ''].filter(Boolean).join(' / ')}
@@ -161,6 +166,7 @@ export const GpsSettingsModalNtrip = React.memo((props: Props) => {
             <View style={styles.row}>
               {(['v1', 'v2'] as const).map((v) => (
                 <Pressable
+                  testID={`gpssettings-ntrip-version-${v}`}
                   key={v}
                   style={[styles.segment, version === v && styles.segmentSelected]}
                   onPress={() => setVersion(v)}
@@ -174,12 +180,13 @@ export const GpsSettingsModalNtrip = React.memo((props: Props) => {
                 <Text>{`${t('GpsSettings.externalGnss.ntrip.sendGga')}`}</Text>
                 <Text style={styles.note}>{`${t('GpsSettings.externalGnss.ntrip.sendGgaNote')}`}</Text>
               </View>
-              <Switch value={sendGga} onValueChange={setSendGga} />
+              <Switch testID="gpssettings-ntrip-send-gga" value={sendGga} onValueChange={setSendGga} />
             </View>
             {sendGga && (
               <>
                 <Text style={styles.label}>{`${t('GpsSettings.externalGnss.ntrip.ggaInterval')}`}</Text>
                 <TextInput
+                  testID="gpssettings-ntrip-gga-interval"
                   style={styles.input}
                   value={ggaInterval}
                   onChangeText={setGgaInterval}
@@ -189,10 +196,10 @@ export const GpsSettingsModalNtrip = React.memo((props: Props) => {
             )}
           </ScrollView>
           <View style={styles.buttons}>
-            <Pressable style={styles.button} onPress={() => pressOK(current(), pass)}>
+            <Pressable testID="gpssettings-ntrip-ok" style={styles.button} onPress={() => pressOK(current(), pass)}>
               <Text>{`${t('common.ok')}`}</Text>
             </Pressable>
-            <Pressable style={styles.button} onPress={pressCancel}>
+            <Pressable testID="gpssettings-ntrip-cancel" style={styles.button} onPress={pressCancel}>
               <Text>{`${t('common.cancel')}`}</Text>
             </Pressable>
           </View>

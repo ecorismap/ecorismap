@@ -72,6 +72,7 @@ export const HomeAccountButton = React.memo(() => {
     <View style={styles.button}>
       {!isLoggedIn && !isDriveConnected ? (
         <Button
+          testID="home-account"
           name={HOME_ACCOUNT_BTN.ACCOUNT}
           //color={COLOR.WHITE}
           backgroundColor={COLOR.ALFAORANGE}
@@ -84,12 +85,12 @@ export const HomeAccountButton = React.memo(() => {
           <SelectionalButton selectedButton={'ACCOUNT'} direction="topToDown">
             {isLoggedIn && user.photoURL !== null && valid ? (
               //@ts-ignore
-              <Pressable id="ACCOUNT" name={HOME_ACCOUNT_BTN.ACCOUNT} onPressCustom={() => {}}>
+              <Pressable testID="home-account" id="ACCOUNT" name={HOME_ACCOUNT_BTN.ACCOUNT} onPressCustom={() => {}}>
                 <Image onError={() => setValid(false)} style={styles.icon} source={{ uri: user.photoURL }} />
               </Pressable>
             ) : (
               //@ts-ignore
-              <Pressable id="ACCOUNT" name={HOME_ACCOUNT_BTN.ACCOUNT} onPressCustom={() => {}}>
+              <Pressable testID="home-account" id="ACCOUNT" name={HOME_ACCOUNT_BTN.ACCOUNT} onPressCustom={() => {}}>
                 <View
                   style={{
                     width: 40,
@@ -107,6 +108,7 @@ export const HomeAccountButton = React.memo(() => {
             )}
             {isLoggedIn && (
               <Button
+                testID="home-account-projects"
                 id="PROJECTS"
                 name={HOME_ACCOUNT_BTN.PROJECTS}
                 backgroundColor={COLOR.ORANGE}
@@ -117,6 +119,7 @@ export const HomeAccountButton = React.memo(() => {
             )}
             {isLoggedIn && (
               <Button
+                testID="home-account-setting"
                 id="SETTING"
                 name={HOME_ACCOUNT_BTN.SETTING}
                 backgroundColor={COLOR.ORANGE}
@@ -127,6 +130,7 @@ export const HomeAccountButton = React.memo(() => {
             {/* 組織ユーザー（Firebaseログイン中）のDrive導線はSettings側に統一しているため、個人利用（Drive接続のみ）のときだけ表示 */}
             {!isLoggedIn && (
               <Button
+                testID="home-account-drive"
                 id="DRIVE"
                 name={HOME_ACCOUNT_BTN.DRIVE}
                 backgroundColor={COLOR.ORANGE}
@@ -136,6 +140,7 @@ export const HomeAccountButton = React.memo(() => {
               />
             )}
             <Button
+              testID="home-account-logout"
               id="LOGOUT"
               name={HOME_ACCOUNT_BTN.LOGOUT}
               backgroundColor={COLOR.ORANGE}

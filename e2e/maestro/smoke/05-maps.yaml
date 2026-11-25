@@ -1,0 +1,42 @@
+# MAPS-1・MAPS-12: 地図一覧が開き、オフライン用のダウンロード画面を開いて戻れる。
+# （タイルの実ダウンロードとオフライン表示は通信量と時間がかかるので、手動で確かめる）
+appId: jp.co.ecoris.ecorismap
+---
+- runFlow: ../common/launch.yaml
+# 起動直後（地図の読み込み中）のタップは効かないことがあるので、開くまで押し直す
+- repeat:
+    while:
+      notVisible:
+        id: 'maps-add'
+    times: 5
+    commands:
+      - tapOn:
+          id: 'home-maps'
+          retryTapIfNoChange: false
+      - waitForAnimationToEnd:
+          timeout: 3000
+- assertVisible:
+    id: 'maps-row-0'
+- assertVisible:
+    id: 'maps-visible-0'
+- assertVisible:
+    id: 'maps-import'
+- assertVisible:
+    id: 'maps-toggle-online'
+- takeScreenshot: 05-maps
+# ダウンロード画面（範囲の指定）へ
+- tapOn:
+    id: 'maps-goto-download'
+- extendedWaitUntil:
+    visible:
+      id: 'home-download-start'
+    timeout: 10000
+- assertVisible:
+    id: 'home-download-map-select'
+- takeScreenshot: 05-download
+- tapOn:
+    id: 'home-download-back'
+- extendedWaitUntil:
+    visible:
+      id: 'home-layers'
+    timeout: 10000

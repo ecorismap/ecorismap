@@ -1,0 +1,15 @@
+# 地図画面から設定画面を開く。
+appId: jp.co.ecoris.ecorismap
+---
+# 起動直後（地図の読み込み中）のタップは効かないことがあるので、開くまで押し直す
+- repeat:
+    while:
+      notVisible:
+        id: 'settings-file-save'
+    times: 5
+    commands:
+      - tapOn:
+          id: 'home-settings'
+          retryTapIfNoChange: false
+      - waitForAnimationToEnd:
+          timeout: 3000

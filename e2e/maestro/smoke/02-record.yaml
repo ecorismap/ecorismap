@@ -1,0 +1,75 @@
+# DATA-1・DATA-2・DATA-8・BOOT-5: 記録を追加して保存し、アプリを起動し直しても残っていて、削除できる。
+# 既定の「ポイント」レイヤの末尾にテスト用の記録を1件作り、最後に消す。ほかの記録には触らない。
+# （端末の日本語入力が文字を変換してしまうので、入力した文言では記録を特定せず、一覧の行番号で特定する）
+appId: jp.co.ecoris.ecorismap
+env:
+  LAYER_NAME: 'ポイント.*'
+---
+- runFlow: ../common/launch.yaml
+- runFlow: ../common/open-point-layer.yaml
+# いまある記録の数（＝これから作る記録の行番号）を数える
+- runFlow: ../common/count-rows.yaml
+# 編集レイヤになっていないときは、切り替えの確認が出る（Yesで切り替わるだけなので、追加を押し直す）
+- repeat:
+    while:
+      notVisible:
+        id: 'dataedit-input-cmt'
+    times: 3
+    commands:
+      - tapOn:
+          id: 'data-add'
+          retryTapIfNoChange: false
+      # 確認は少し遅れて出るので待つ（出なければ先へ進む）
+      - extendedWaitUntil:
+          visible:
+            id: 'dialog-message'
+          timeout: 3000
+          optional: true
+      - runFlow:
+          when:
+            visible:
+              id: 'dialog-message'
+          commands:
+            # 本文の前後に空白が入ることがあるので、前後は問わない
+            - assertVisible: '.*編集モードに切り替えますか.*'
+            - tapOn: 'Yes'
+            - waitForAnimationToEnd:
+                timeout: 3000
+- extendedWaitUntil:
+    visible:
+      id: 'dataedit-input-cmt'
+    timeout: 10000
+# 編集画面を開いた直後のタップは取りこぼすことがある（シートの開くアニメーション中）
+- waitForAnimationToEnd
+- tapOn:
+    id: 'dataedit-input-cmt'
+- inputText: 'smoke'
+- hideKeyboard
+- tapOn:
+    id: 'dataedit-save'
+# 保存するとデータ一覧へ戻り、行が1つ増えている
+- extendedWaitUntil:
+    visible:
+      id: data-row-${output.row}
+    timeout: 10000
+# 起動し直しても残っている
+- runFlow: ../common/launch.yaml
+- runFlow: ../common/open-point-layer.yaml
+- assertVisible:
+    id: data-row-${output.row}
+- tapOn:
+    id: data-row-${output.row}
+- extendedWaitUntil:
+    visible:
+      id: 'dataedit-delete'
+    timeout: 10000
+- waitForAnimationToEnd
+- tapOn:
+    id: 'dataedit-delete'
+- tapOn: 'Yes'
+- extendedWaitUntil:
+    visible:
+      id: 'data-add'
+    timeout: 10000
+- assertNotVisible:
+    id: data-row-${output.row}

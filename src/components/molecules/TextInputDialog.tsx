@@ -39,6 +39,7 @@ export const TextInputDialog = React.memo((props: Props) => {
         <Pressable style={styles.modalCard} onPress={() => null} disablePressedAnimation accessible={false}>
           <Text style={styles.title}>{title}</Text>
           <TextInput
+            testID="textdialog-input"
             style={styles.textInput}
             value={text}
             placeholder={placeholder}
@@ -48,10 +49,11 @@ export const TextInputDialog = React.memo((props: Props) => {
             onSubmitEditing={submit}
           />
           <View style={styles.buttonRow}>
-            <Pressable style={[styles.buttonBase, styles.buttonCancel]} onPress={onCancel}>
+            <Pressable testID="textdialog-cancel" style={[styles.buttonBase, styles.buttonCancel]} onPress={onCancel}>
               <Text style={[styles.buttonTextBase, styles.buttonTextCancel]}>{t('common.cancel')}</Text>
             </Pressable>
             <Pressable
+              testID="textdialog-ok"
               style={[styles.buttonBase, styles.buttonPrimary, submitDisabled && styles.buttonDisabled]}
               disabled={submitDisabled}
               onPress={submit}

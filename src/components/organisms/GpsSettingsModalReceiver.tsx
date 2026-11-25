@@ -64,6 +64,7 @@ export const GpsSettingsModalReceiver = React.memo((props: Props) => {
           <Text style={styles.title}>{`${t('GpsSettings.externalGnss.receiverSettings')}`}</Text>
           <Text style={styles.label}>{`${t('GpsSettings.externalGnss.antennaHeight')}`}</Text>
           <TextInput
+            testID="gpssettings-receiver-antenna-height"
             style={styles.input}
             value={antennaHeight}
             onChangeText={setAntennaHeight}
@@ -74,6 +75,7 @@ export const GpsSettingsModalReceiver = React.memo((props: Props) => {
           <View style={styles.wrapRow}>
             {TRACK_MODES.map((mode) => (
               <Pressable
+                testID={`gpssettings-receiver-track-mode-${mode}`}
                 key={mode}
                 style={[styles.segment, trackMode === mode && styles.segmentSelected]}
                 onPress={() => setTrackMode(mode)}
@@ -88,6 +90,7 @@ export const GpsSettingsModalReceiver = React.memo((props: Props) => {
             <View style={styles.wrapRow}>
               {GNSS_TRACK_DISTANCES.map((d) => (
                 <Pressable
+                  testID={`gpssettings-receiver-track-distance-${d}`}
                   key={d}
                   style={[styles.segment, trackDistance === d && styles.segmentSelected]}
                   onPress={() => setTrackDistance(d)}
@@ -100,7 +103,7 @@ export const GpsSettingsModalReceiver = React.memo((props: Props) => {
           <Text style={styles.note}>{`${t(`GpsSettings.externalGnss.track.${trackMode}Note`)}`}</Text>
           {/* ボーレートはUSBシリアル変換を使う受信機だけに要る設定なので、ふだんは畳んでおく */}
           {isUsbSupported && (
-            <Pressable style={styles.advancedToggle} onPress={() => setShowAdvanced((v) => !v)}>
+            <Pressable testID="gpssettings-receiver-advanced" style={styles.advancedToggle} onPress={() => setShowAdvanced((v) => !v)}>
               <MaterialCommunityIcons
                 name={showAdvanced ? 'chevron-down' : 'chevron-right'}
                 size={18}
@@ -115,6 +118,7 @@ export const GpsSettingsModalReceiver = React.memo((props: Props) => {
               <View style={styles.wrapRow}>
                 {BAUD_RATES.map((rate) => (
                   <Pressable
+                    testID={`gpssettings-receiver-baud-rate-${rate}`}
                     key={rate}
                     style={[styles.segment, baudRate === rate && styles.segmentSelected]}
                     onPress={() => setBaudRate(rate)}
@@ -127,10 +131,10 @@ export const GpsSettingsModalReceiver = React.memo((props: Props) => {
             </>
           )}
           <View style={styles.buttons}>
-            <Pressable style={styles.button} onPress={pressSave}>
+            <Pressable testID="gpssettings-receiver-ok" style={styles.button} onPress={pressSave}>
               <Text>{`${t('common.ok')}`}</Text>
             </Pressable>
-            <Pressable style={styles.button} onPress={pressCancel}>
+            <Pressable testID="gpssettings-receiver-cancel" style={styles.button} onPress={pressCancel}>
               <Text>{`${t('common.cancel')}`}</Text>
             </Pressable>
           </View>

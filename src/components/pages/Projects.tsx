@@ -134,14 +134,14 @@ export default function Projects() {
   // テーブルヘッダー（カラム名）のレンダリング
   const renderTableHeader = useCallback(() => (
     <View style={{ flexDirection: 'row', height: 45 }}>
-      <Pressable style={[styles.th, { width: 40 }]} onPress={toggleShowOnlyFavorites}>
+      <Pressable testID="projects-filter-favorites" style={[styles.th, { width: 40 }]} onPress={toggleShowOnlyFavorites}>
         <MaterialCommunityIcons
           name={showOnlyFavorites ? 'star' : 'star-outline'}
           size={20}
           color={showOnlyFavorites ? COLOR.YELLOW : COLOR.GRAY4}
         />
       </Pressable>
-      <Pressable style={[styles.th, { flex: 3, width: 140 }]} onPress={() => changeProjectSort('name')}>
+      <Pressable testID="projects-sort-name" style={[styles.th, { flex: 3, width: 140 }]} onPress={() => changeProjectSort('name')}>
         <Text style={{ color: COLOR.TEXT_DARK }}>{`${t('common.projectName')}`}</Text>
         {sortField === 'name' && sortOrder === 'ASCENDING' && (
           <MaterialCommunityIcons name="sort-alphabetical-ascending" size={16} color={COLOR.TEXT_DARK} />
@@ -150,7 +150,7 @@ export default function Projects() {
           <MaterialCommunityIcons name="sort-alphabetical-descending" size={16} color={COLOR.TEXT_DARK} />
         )}
       </Pressable>
-      <Pressable style={[styles.th, { flex: 2, width: 120 }]} onPress={() => changeProjectSort('abstract')}>
+      <Pressable testID="projects-sort-abstract" style={[styles.th, { flex: 2, width: 120 }]} onPress={() => changeProjectSort('abstract')}>
         <Text style={{ color: COLOR.TEXT_DARK }}>{`${t('common.overview')}`}</Text>
         {sortField === 'abstract' && sortOrder === 'ASCENDING' && (
           <MaterialCommunityIcons name="sort-alphabetical-ascending" size={16} color={COLOR.TEXT_DARK} />
@@ -159,7 +159,7 @@ export default function Projects() {
           <MaterialCommunityIcons name="sort-alphabetical-descending" size={16} color={COLOR.TEXT_DARK} />
         )}
       </Pressable>
-      <Pressable style={[styles.th, { flex: 2, width: 120 }]} onPress={() => changeProjectSort('encryptedAt')}>
+      <Pressable testID="projects-sort-updated-at" style={[styles.th, { flex: 2, width: 120 }]} onPress={() => changeProjectSort('encryptedAt')}>
         <Text style={{ color: COLOR.TEXT_DARK }}>{`${t('common.updatedAt')}`}</Text>
         {sortField === 'encryptedAt' && sortOrder === 'ASCENDING' && (
           <MaterialCommunityIcons name="sort-calendar-ascending" size={16} color={COLOR.TEXT_DARK} />
@@ -168,7 +168,7 @@ export default function Projects() {
           <MaterialCommunityIcons name="sort-calendar-descending" size={16} color={COLOR.TEXT_DARK} />
         )}
       </Pressable>
-      <Pressable style={[styles.th, { flex: 2, width: 100 }]} onPress={() => changeProjectSort('owner')}>
+      <Pressable testID="projects-sort-owner" style={[styles.th, { flex: 2, width: 100 }]} onPress={() => changeProjectSort('owner')}>
         <Text style={{ color: COLOR.TEXT_DARK }}>{`${t('common.owner')}`}</Text>
         {sortField === 'owner' && sortOrder === 'ASCENDING' && (
           <MaterialCommunityIcons name="sort-bool-ascending" size={16} color={COLOR.TEXT_DARK} />
@@ -177,7 +177,7 @@ export default function Projects() {
           <MaterialCommunityIcons name="sort-bool-descending" size={16} color={COLOR.TEXT_DARK} />
         )}
       </Pressable>
-      <Pressable style={[styles.th, { flex: 2, width: 120 }]} onPress={() => changeProjectSort('storage')}>
+      <Pressable testID="projects-sort-storage" style={[styles.th, { flex: 2, width: 120 }]} onPress={() => changeProjectSort('storage')}>
         <Text style={{ color: COLOR.TEXT_DARK }}>{`${t('common.usage')}`}</Text>
         {sortField === 'storage' && sortOrder === 'ASCENDING' && (
           <MaterialCommunityIcons name="sort-numeric-ascending" size={16} color={COLOR.TEXT_DARK} />
@@ -187,7 +187,7 @@ export default function Projects() {
         )}
       </Pressable>
       {Platform.OS === 'web' && (
-        <Pressable style={[styles.th, { width: 90 }]} onPress={() => changeProjectSort('archived')}>
+        <Pressable testID="projects-sort-archived" style={[styles.th, { width: 90 }]} onPress={() => changeProjectSort('archived')}>
           <Text numberOfLines={1} style={{ color: COLOR.TEXT_DARK }}>{`${t('Projects.label.archive')}`}</Text>
           {sortField === 'archived' && sortOrder === 'ASCENDING' && (
             <MaterialCommunityIcons name="sort-bool-ascending" size={16} color={COLOR.TEXT_DARK} />
@@ -209,6 +209,7 @@ export default function Projects() {
       return (
       <Pressable
         key={index}
+        testID={`projects-row-${index}`}
         style={{
           flex: 1,
           height: 45,
@@ -217,6 +218,7 @@ export default function Projects() {
         onPress={() => gotoProject(item.id)}
       >
         <Pressable
+          testID={`projects-favorite-${index}`}
           style={[styles.td, { width: 40, alignItems: 'center' }]}
           onPress={() => toggleFavorite(item.id)}
         >
@@ -292,7 +294,7 @@ export default function Projects() {
     <View style={styles.container}>
       {/* Custom Header */}
       <View style={[styles.header, { height: 56 + insets.top, paddingTop: insets.top }]}>
-        <TouchableOpacity style={{ padding: 5 }} onPress={gotoBack}>
+        <TouchableOpacity testID="projects-back" style={{ padding: 5 }} onPress={gotoBack}>
           <MaterialCommunityIcons name="chevron-left" size={28} color={COLOR.BLACK} />
         </TouchableOpacity>
         <Text style={{ fontSize: 16, color: COLOR.TEXT_DARK }}>{t('Projects.navigation.title')}</Text>
@@ -338,7 +340,11 @@ export default function Projects() {
             </TouchableOpacity>
           </View>
         ) : isAnyAdmin ? (
-          <TouchableOpacity style={{ padding: 5, width: 40, alignItems: 'center' }} onPress={pressCheckStaleKeys}>
+          <TouchableOpacity
+            testID="check-stale-keys"
+            style={{ padding: 5, width: 40, alignItems: 'center' }}
+            onPress={pressCheckStaleKeys}
+          >
             <MaterialCommunityIcons name="key-change" size={24} color={COLOR.BLUE} />
           </TouchableOpacity>
         ) : (

@@ -20,6 +20,7 @@ export default function MapScreen() {
   const leftComponent =
     Platform.OS !== 'web' ? (
       <Button
+        testID="maps-toggle-online"
         name={isOffline ? MAPS_BTN.OFFLINE : MAPS_BTN.ONLINE}
         backgroundColor={isOffline ? 'red' : COLOR.LIGHTBLUE2}
         onPress={pressToggleOnline}
@@ -32,6 +33,7 @@ export default function MapScreen() {
   const rightComponent =
     Platform.OS !== 'web' ? (
       <Button
+        testID="maps-goto-download"
         name="arrow-right"
         backgroundColor={COLOR.MAIN}
         onPress={gotoDownload}
