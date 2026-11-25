@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useRef } from 'react';
 import MapEdit from '../components/pages/MapEdit';
 import { AlertAsync, ConfirmAsync } from '../components/molecules/AlertAsync';
 import { MapEditContext } from '../contexts/MapEdit';
@@ -15,6 +15,7 @@ import { db } from '../utils/db';
 import { TILE_FOLDER } from '../constants/AppConstants';
 import { isPeaksUrl } from '../utils/peaks/peak2dLabels';
 import { discardStaleTileSources } from '../utils/tileSourceCleanup';
+import { hasSharedStyle } from '../utils/mapExport';
 import { pmtilesHeaderZoom } from '../utils/pmtilesHeaderZoom';
 import { useStore } from 'react-redux';
 import { RootState } from '../store';
@@ -43,7 +44,9 @@ export default function MapEditContainer() {
     saveMap: saveMapToState,
   } = useMapEdit(params!.targetMap);
 
-  const { deleteMap, exportSingleMap, importStyleFile, getPmtilesBoundary } = useMaps();
+  const { deleteMap, exportSingleMap, readStyleFile, saveStyleFile, getPmtilesBoundary } = useMaps();
+  // 読み込んだがまだ保存していないスタイル。保存せずに戻れば捨てる
+  const pendingStyleRef = useRef<string | null>(null);
 
   const pressSaveMap = useCallback(async () => {
     const checkInputs = () => {
@@ -59,6 +62,19 @@ export default function MapEditContainer() {
     }
 
     const finalMap = { ...map };
+
+    // 読み込んだあとでスタイル欄を端末内のスタイル以外（URL・空・共有のスタイル）に変えていたら書かない。
+    // style:// の後ろの名前は描画に使わないので、名前だけ書き換えても読み込んだものを書く
+    const pendingStyle = pendingStyleRef.current;
+    if (pendingStyle !== null && map.styleURL?.startsWith('style://') && !hasSharedStyle(map)) {
+      const { isOK, message } = await saveStyleFile(map.id, pendingStyle);
+      if (!isOK) {
+        // 置けていないスタイルを指したまま保存しない
+        await AlertAsync(message);
+        return;
+      }
+    }
+    pendingStyleRef.current = null;
 
     // 取得内容（URL・flipY・tileSize・スタイル）が変わったら、旧ソースのタイル・保存範囲・3Dのテクスチャを
     // 確認なしで捨てる。プリセットの適用もここを通る。boundary.json を書く前に済ませる（M-H6）
@@ -87,7 +103,7 @@ export default function MapEditContainer() {
     }
 
     saveMapToState(finalMap);
-  }, [getPmtilesBoundary, map, saveMapToState, store]);
+  }, [getPmtilesBoundary, map, saveMapToState, saveStyleFile, store]);
 
   const pressDeleteMap = useCallback(async () => {
     const ret = await ConfirmAsync(t('Maps.confirm.deleteMap'));
@@ -116,18 +132,15 @@ export default function MapEditContainer() {
       await AlertAsync(t('hooks.message.wrongExtension'));
       return;
     }
-    const { isOK, message } = await importStyleFile(uri, name, map);
-    if (message !== '') await AlertAsync(message);
+    const result = await readStyleFile(uri);
     // 失敗時に style:// へ切り替えると、置かれていないスタイルを指したまま保存されてしまう
-    if (!isOK) return;
-
-    // スタイルファイルのインポート後、styleURLを更新
-    if (Platform.OS === 'web') {
-      changeStyleURL('style://' + name);
-    } else {
-      changeStyleURL('style://style.json');
+    if (!result.isOK) {
+      await AlertAsync(result.message);
+      return;
     }
-  }, [changeStyleURL, importStyleFile, map]);
+    pendingStyleRef.current = result.style;
+    changeStyleURL(Platform.OS === 'web' ? 'style://' + name : 'style://style.json');
+  }, [changeStyleURL, readStyleFile]);
 
   const gotoBack = useCallback(() => {
     if (isEdited) {

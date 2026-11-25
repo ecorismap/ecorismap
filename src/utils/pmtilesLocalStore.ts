@@ -10,9 +10,11 @@ import { isRefetchableTileCacheEntry, isTileCacheEntry } from './tileCacheCleanu
  * put はレコードを丸ごと置き換え、取り込んだ PMTiles 本体（blob）と boundary を消してしまうため update を使う。
  */
 export const saveStyleToPmtilesDb = async (mapId: string, style: string) => {
-  const updated = await db.pmtiles.update(mapId, { style });
-  if (updated === 0) {
+  // update の返り値では「行が無い」と「変わらなかった」を見分けられない（Dexie の文書上は、同じ値なら0になりうる）
+  if ((await db.pmtiles.get(mapId)) === undefined) {
     await db.pmtiles.put({ mapId, blob: undefined, boundary: '', style });
+  } else {
+    await db.pmtiles.update(mapId, { style });
   }
 };
 
