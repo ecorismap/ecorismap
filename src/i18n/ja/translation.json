@@ -1160,6 +1160,7 @@
       "tooManyMapList": "リストの数が多すぎます。50個以内にしてください。",
       "failInitializeUser": "セッションが切れました。ログインし直してください。",
       "receiveFile": "ファイルをインポートしました。",
+      "invalidStyleFile": "スタイルファイルを読み取れません。layersのあるJSONファイルを選んでください。",
       "failReceiveFile": "ファイルの読み込みに失敗しました。",
       "zipTooLarge": "ZIPを展開すると{{size}}MBになり、上限の{{limit}}MBを超えるため読み込めません。",
       "noImportableData": "取り込めるデータがありませんでした。何も追加していません。",

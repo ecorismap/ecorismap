@@ -22,6 +22,7 @@ import { withTileSignature } from '../utils/TileSignature';
 import { convertPDFToGeoTiff } from '../utils/PDF';
 import { db } from '../utils/db';
 import { saveStyleToPmtilesDb } from '../utils/pmtilesLocalStore';
+import { parseStyleLayers } from '../utils/vectorStyleFile';
 import { findPdfPageMaps } from '../utils/pdfTileMap';
 import { isSharedPdfMap, mapExportNotice, prepareMapsForExport } from '../utils/mapExport';
 import { clearRefetchableTileCache, clearWebTileCache, regionsAfterTileCacheClear } from '../utils/tileCacheCleanup';
@@ -637,9 +638,16 @@ export const useMaps = (): UseMapsReturnType => {
       // console.log('importStyleFile', uri, name, id);
       if (Platform.OS === 'web') {
         const jsonStrings = await decodeUri(uri);
+        if (parseStyleLayers(jsonStrings) === undefined) {
+          return { isOK: false, message: t('hooks.message.invalidStyleFile') };
+        }
         await saveStyleToPmtilesDb(tileMap.id, jsonStrings);
         setEditedMap({ ...tileMap, styleURL: 'style://' + name });
       } else {
+        // 置き換える前に確かめる（壊れたファイルで今のスタイルを上書きしない）
+        if (parseStyleLayers(await FileSystem.readAsStringAsync(uri)) === undefined) {
+          return { isOK: false, message: t('hooks.message.invalidStyleFile') };
+        }
         const styleUri = `${TILE_FOLDER}/${tileMap.id}/style.json`;
         await FileSystem.makeDirectoryAsync(`${TILE_FOLDER}/${tileMap.id}`, { intermediates: true });
         await FileSystem.copyAsync({ from: uri, to: styleUri });

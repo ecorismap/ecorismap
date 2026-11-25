@@ -856,6 +856,7 @@
       "tooManyMapList": "There are too many lists. \nPlease keep it within 50 pieces.",
       "failInitializeUser": "Your session has expired. \nPlease log in again.",
       "receiveFile": "The file has been imported.",
+      "invalidStyleFile": "The style file could not be read. Please choose a JSON file that contains layers.",
       "failReceiveFile": "Failed to load file.",
       "zipTooLarge": "This ZIP expands to {{size}} MB, which exceeds the {{limit}} MB limit, so it cannot be loaded.",
       "noImportableData": "No importable data was found. Nothing was added.",

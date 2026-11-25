@@ -12,6 +12,7 @@ import {
 import * as pmtiles from 'pmtiles';
 import { TileMapType } from '../types';
 import { db } from './db';
+import { parseStyleLayers } from './vectorStyleFile';
 import { TileSignaturesType, withTileSignature } from './TileSignature';
 
 //ラベルのフォント
@@ -98,8 +99,10 @@ const getDefaultStyle = async (tileMap: TileMapType, tileSignatures: TileSignatu
 const getStyleFromLocal = async (tileMap: TileMapType) => {
   const style = (await db.pmtiles.get(tileMap.id))?.style;
   if (style) {
-    const layerStyles = JSON.parse(style).layers as LineLayerSpecification[] | FillLayerSpecification[];
-    if (Array.isArray(layerStyles)) return layerStyles;
+    // 以前に取り込んだ壊れたスタイルは、地図ごと消さずに既定のスタイルへ落とす
+    const layerStyles = parseStyleLayers(style);
+    if (layerStyles !== undefined) return layerStyles as LineLayerSpecification[] | FillLayerSpecification[];
+    console.warn('保存済みのスタイルを読めません', tileMap.name);
   }
   return [];
 };
@@ -157,7 +160,8 @@ export const getVectorLayerStyles = async (tileMap: TileMapType, tileSignatures:
     (layerStyle: LineLayerSpecification | FillLayerSpecification | BackgroundLayerSpecification, index: number) => {
       const newLayerStyle = { ...layerStyle };
       newLayerStyle.id = `${tileMap.id}_${index}`;
-      if (newLayerStyle.type !== 'background' && newLayerStyle.source) {
+      // ネイティブは source を見ないので、source の無いスタイルも同じように描く（無いままだと maplibre が追加を拒み、何も出ない）
+      if (newLayerStyle.type !== 'background') {
         newLayerStyle.source = `${tileMap.id}`;
       }
 
