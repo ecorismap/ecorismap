@@ -109,7 +109,7 @@ jobs:
           # 置き場所はシステムの設定ファイルで決める。Xcodeはビルド中のコンパイラへ環境変数を渡さず、
           # React Nativeのラッパーは設定ファイルを自前のものへ差し替えるが、システムの設定は常に読まれる
           mkdir -p "$HOME/ccache-store"
-          printf 'cache_dir = %s\nmax_size = 3G\n' "$HOME/ccache-store" | sudo tee "$(brew --prefix)/etc/ccache.conf"
+          printf 'cache_dir = %s\nmax_size = 3G\nlog_file = %s\n' "$HOME/ccache-store" "$HOME/ccache.log" | sudo tee "$(brew --prefix)/etc/ccache.conf"
 
       # キャッシュは上書きできないので、キーに実行IDを入れて毎回保存し、直近のものを復元する
       - name: Restore ccache
@@ -145,6 +145,15 @@ jobs:
             sed -i '' "s|exec \$CCACHE_BINARY |exec $CCACHE_BIN |" "node_modules/react-native/scripts/xcode/$f"
             grep '^exec' "node_modules/react-native/scripts/xcode/$f"
           done
+          ccache --zero-stats
+          # 調査用: ラッパー経由で1ファイルを2回コンパイルし、ccacheが働くかを確かめる（Xcodeと同じ最小限の環境で）
+          mkdir -p "$RUNNER_TEMP/cctest" && cd "$RUNNER_TEMP/cctest"
+          printf 'int f(int a){return a+1;}\n' > t.c
+          WRAP="$GITHUB_WORKSPACE/node_modules/react-native/scripts/xcode/ccache-clang.sh"
+          for i in 1 2; do env -i PATH="$(dirname "$(xcrun -f clang)"):/usr/bin:/bin" "$WRAP" -x c -fmodules -gmodules -fmodules-cache-path="$RUNNER_TEMP/cctest/mc" -c t.c -o "t$i.o"; done
+          echo "=== self test stats"; ccache --show-stats --verbose | grep -E "Hits|Misses|Uncacheable|Unsupported|Errors|modules" || true
+          echo "=== self test log"; tail -40 "$HOME/ccache.log" || true
+          : > "$HOME/ccache.log"
           ccache --zero-stats
 
       - name: Set build number
@@ -197,6 +206,9 @@ jobs:
         if: always()
         run: |
           ccache --show-stats --verbose || true
+          echo "=== ccache log"; wc -l "$HOME/ccache.log" || true
+          grep -E "Result: " "$HOME/ccache.log" | sed 's/^.*Result: //' | sort | uniq -c | sort -rn | head -20 || true
+          echo "=== first entries"; head -60 "$HOME/ccache.log" || true
           du -sh "$HOME/ccache-store" || true
 
       - name: Export IPA
