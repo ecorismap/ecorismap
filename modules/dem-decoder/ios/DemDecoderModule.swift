@@ -37,48 +37,84 @@ private func decodeDemFile(fileUri: String, encoding: String) throws -> NativeAr
   let raw = UnsafeMutableRawBufferPointer.allocate(
     byteCount: (headerFloats + count) * 4, alignment: MemoryLayout<Float>.alignment)
   let out = raw.bindMemory(to: Float.self)
-  var minElev = Float.infinity
-  var maxElev = -Float.infinity
-  rgba.pixels.withUnsafeBufferPointer { px in
+  // 画素→標高の変換は、型を明示した関数に分けてある（1つの式にまとめると型チェックが重い）
+  let range: ElevRange = rgba.pixels.withUnsafeBufferPointer { (px: UnsafeBufferPointer<UInt8>) -> ElevRange in
     if encoding == "terrarium" {
-      for i in 0..<count {
-        let p = i * 4
-        let e = Float(px[p]) * 256 + Float(px[p + 1]) + Float(px[p + 2]) / 256 - 32768
-        out[headerFloats + i] = e
-        if e < minElev { minElev = e }
-        if e > maxElev { maxElev = e }
-      }
-    } else {
-      // 国土地理院方式: x = 2^16·R + 2^8·G + B、NoData=2^23、単位0.01m。
-      // 透明画素（産総研タイルの整備範囲外）もNoData
-      for i in 0..<count {
-        let p = i * 4
-        let x = Int32(px[p]) << 16 | Int32(px[p + 1]) << 8 | Int32(px[p + 2])
-        if x == 8_388_608 || px[p + 3] == 0 {
-          out[headerFloats + i] = .nan
-          continue
-        }
-        let e = Float(x < 8_388_608 ? x : x - 16_777_216) / 100
-        out[headerFloats + i] = e
-        if e < minElev { minElev = e }
-        if e > maxElev { maxElev = e }
-      }
+      return fillTerrarium(px: px, count: count, out: out)
     }
+    return fillGsi(px: px, count: count, out: out)
   }
+  let minElev: Float = range.min
+  let maxElev: Float = range.max
   let endNs = DispatchTime.now().uptimeNanoseconds
 
   out[0] = Float(rgba.width)
   out[1] = Float(rgba.height)
   out[2] = minElev.isFinite ? minElev : .nan
   out[3] = maxElev.isFinite ? maxElev : .nan
-  out[4] = Float(Double(readNs - startNs) / 1e6)
-  out[5] = Float(Double(decodedNs - readNs) / 1e6)
-  out[6] = Float(Double(endNs - decodedNs) / 1e6)
+  let readMs: Double = Double(readNs - startNs) / 1e6
+  let decodeMs: Double = Double(decodedNs - readNs) / 1e6
+  let convertMs: Double = Double(endNs - decodedNs) / 1e6
+  out[4] = Float(readMs)
+  out[5] = Float(decodeMs)
+  out[6] = Float(convertMs)
   out[7] = 0
   return try NativeArrayBuffer.wrap(dataWithoutCopy: raw) { raw.deallocate() }
 }
 
 private let headerFloats = 8
+
+private struct ElevRange {
+  var min: Float = Float.infinity
+  var max: Float = -Float.infinity
+}
+
+private func fillTerrarium(
+  px: UnsafeBufferPointer<UInt8>, count: Int, out: UnsafeMutableBufferPointer<Float>
+) -> ElevRange {
+  var range = ElevRange()
+  for i in 0..<count {
+    let p: Int = i * 4
+    let r: Float = Float(px[p])
+    let g: Float = Float(px[p + 1])
+    let b: Float = Float(px[p + 2])
+    let high: Float = r * 256
+    let low: Float = b / 256
+    let e: Float = high + g + low - 32768
+    out[headerFloats + i] = e
+    if e < range.min { range.min = e }
+    if e > range.max { range.max = e }
+  }
+  return range
+}
+
+// 国土地理院方式: x = 2^16·R + 2^8·G + B、NoData=2^23、単位0.01m。
+// 透明画素（産総研タイルの整備範囲外）もNoData
+private func fillGsi(
+  px: UnsafeBufferPointer<UInt8>, count: Int, out: UnsafeMutableBufferPointer<Float>
+) -> ElevRange {
+  var range = ElevRange()
+  let noData: Int32 = 8_388_608
+  let wrap: Int32 = 16_777_216
+  for i in 0..<count {
+    let p: Int = i * 4
+    let r: Int32 = Int32(px[p]) << 16
+    let g: Int32 = Int32(px[p + 1]) << 8
+    let b: Int32 = Int32(px[p + 2])
+    let x: Int32 = r | g | b
+    let alpha: UInt8 = px[p + 3]
+    if x == noData || alpha == 0 {
+      out[headerFloats + i] = Float.nan
+      continue
+    }
+    let signed: Int32 = x < noData ? x : x - wrap
+    let e: Float = Float(signed) / 100
+    out[headerFloats + i] = e
+    if e < range.min { range.min = e }
+    if e > range.max { range.max = e }
+  }
+  return range
+}
 
 private struct RgbaImage {
   let width: Int

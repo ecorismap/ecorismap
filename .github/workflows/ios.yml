@@ -106,14 +106,16 @@ jobs:
       - name: Install ccache
         run: |
           HOMEBREW_NO_AUTO_UPDATE=1 HOMEBREW_NO_INSTALL_CLEANUP=1 brew install ccache
+          # 置き場所はシステムの設定ファイルで決める。Xcodeはビルド中のコンパイラへ環境変数を渡さず、
+          # React Nativeのラッパーは設定ファイルを自前のものへ差し替えるが、システムの設定は常に読まれる
+          mkdir -p "$HOME/ccache-store"
+          printf 'cache_dir = %s\nmax_size = 3G\n' "$HOME/ccache-store" | sudo tee "$(brew --prefix)/etc/ccache.conf"
 
-      # キャッシュは上書きできないので、キーに実行IDを入れて毎回保存し、直近のものを復元する。
-      # 置き場所はccacheの既定のまま使う（Xcodeはビルド中のコンパイラへ環境変数を渡さないので、
-      # CCACHE_DIR で変えても効かない）
+      # キャッシュは上書きできないので、キーに実行IDを入れて毎回保存し、直近のものを復元する
       - name: Restore ccache
         uses: actions/cache@v4
         with:
-          path: ~/Library/Caches/ccache
+          path: ~/ccache-store
           key: ios-ccache-${{ github.run_id }}
           restore-keys: |
             ios-ccache-
@@ -182,13 +184,11 @@ jobs:
                                PROVISIONING_PROFILE_SPECIFIER="$(/usr/libexec/PlistBuddy -c 'Print Name' /dev/stdin <<< $(security cms -D -i ~/Library/MobileDevice/Provisioning\ Profiles/ecorismap.mobileprovision))"
           fi
 
-      # 保存する前に大きさを抑える（リポジトリのキャッシュ枠は10GB）
       - name: Show ccache stats
         if: always()
         run: |
           ccache --show-stats --verbose || true
-          ccache --max-size 3G || true
-          ccache --cleanup || true
+          du -sh "$HOME/ccache-store" || true
 
       - name: Export IPA
         if: github.event_name != 'workflow_dispatch' || inputs.upload
