@@ -17,59 +17,65 @@ public class DemDecoderModule: Module {
     // 戻り値は1本のArrayBuffer（コピーなしでJSへ渡せる）: 先頭8個のFloat32（headerFloats）が
     // [width, height, min, max, readMs, decodeMs, convertMs, 予備]、続いて標高[m]が行優先で並ぶ
     AsyncFunction("decodeFile") { (fileUri: String, encoding: String) throws -> NativeArrayBuffer in
-      let startNs = DispatchTime.now().uptimeNanoseconds
-      let url = fileUri.hasPrefix("file://") ? URL(string: fileUri)! : URL(fileURLWithPath: fileUri)
-      let data = try Data(contentsOf: url)
-      let readNs = DispatchTime.now().uptimeNanoseconds
-
-      let rgba = isWebp(data) ? try decodeWebp(data) : try decodePng(data)
-      let decodedNs = DispatchTime.now().uptimeNanoseconds
-
-      let count = rgba.width * rgba.height
-      let raw = UnsafeMutableRawBufferPointer.allocate(
-        byteCount: (headerFloats + count) * 4, alignment: MemoryLayout<Float>.alignment)
-      let out = raw.bindMemory(to: Float.self)
-      var minElev = Float.infinity
-      var maxElev = -Float.infinity
-      rgba.pixels.withUnsafeBufferPointer { px in
-        if encoding == "terrarium" {
-          for i in 0..<count {
-            let p = i * 4
-            let e = Float(px[p]) * 256 + Float(px[p + 1]) + Float(px[p + 2]) / 256 - 32768
-            out[headerFloats + i] = e
-            if e < minElev { minElev = e }
-            if e > maxElev { maxElev = e }
-          }
-        } else {
-          // 国土地理院方式: x = 2^16·R + 2^8·G + B、NoData=2^23、単位0.01m。
-          // 透明画素（産総研タイルの整備範囲外）もNoData
-          for i in 0..<count {
-            let p = i * 4
-            let x = Int32(px[p]) << 16 | Int32(px[p + 1]) << 8 | Int32(px[p + 2])
-            if x == 8_388_608 || px[p + 3] == 0 {
-              out[headerFloats + i] = .nan
-              continue
-            }
-            let e = Float(x < 8_388_608 ? x : x - 16_777_216) / 100
-            out[headerFloats + i] = e
-            if e < minElev { minElev = e }
-            if e > maxElev { maxElev = e }
-          }
-        }
-      }
-      let endNs = DispatchTime.now().uptimeNanoseconds
-
-      out[0] = Float(rgba.width)
-      out[1] = Float(rgba.height)
-      out[2] = minElev.isFinite ? minElev : .nan
-      out[3] = maxElev.isFinite ? maxElev : .nan
-      out[4] = Float(Double(readNs - startNs) / 1e6)
-      out[5] = Float(Double(decodedNs - readNs) / 1e6)
-      out[6] = Float(Double(endNs - decodedNs) / 1e6)
-      out[7] = 0
-      return try NativeArrayBuffer.wrap(dataWithoutCopy: raw) { raw.deallocate() }
+      try decodeDemFile(fileUri: fileUri, encoding: encoding)
     }
   }
+}
+
+// 本体はモジュール定義（結果ビルダー）の外に置く。定義の中に長い処理を書くと、定義全体が1つの式として
+// 型チェックされ、遅いマシン（CIのランナー）では「妥当な時間で型チェックできない」エラーになる
+private func decodeDemFile(fileUri: String, encoding: String) throws -> NativeArrayBuffer {
+  let startNs = DispatchTime.now().uptimeNanoseconds
+  let url = fileUri.hasPrefix("file://") ? URL(string: fileUri)! : URL(fileURLWithPath: fileUri)
+  let data = try Data(contentsOf: url)
+  let readNs = DispatchTime.now().uptimeNanoseconds
+
+  let rgba = isWebp(data) ? try decodeWebp(data) : try decodePng(data)
+  let decodedNs = DispatchTime.now().uptimeNanoseconds
+
+  let count = rgba.width * rgba.height
+  let raw = UnsafeMutableRawBufferPointer.allocate(
+    byteCount: (headerFloats + count) * 4, alignment: MemoryLayout<Float>.alignment)
+  let out = raw.bindMemory(to: Float.self)
+  var minElev = Float.infinity
+  var maxElev = -Float.infinity
+  rgba.pixels.withUnsafeBufferPointer { px in
+    if encoding == "terrarium" {
+      for i in 0..<count {
+        let p = i * 4
+        let e = Float(px[p]) * 256 + Float(px[p + 1]) + Float(px[p + 2]) / 256 - 32768
+        out[headerFloats + i] = e
+        if e < minElev { minElev = e }
+        if e > maxElev { maxElev = e }
+      }
+    } else {
+      // 国土地理院方式: x = 2^16·R + 2^8·G + B、NoData=2^23、単位0.01m。
+      // 透明画素（産総研タイルの整備範囲外）もNoData
+      for i in 0..<count {
+        let p = i * 4
+        let x = Int32(px[p]) << 16 | Int32(px[p + 1]) << 8 | Int32(px[p + 2])
+        if x == 8_388_608 || px[p + 3] == 0 {
+          out[headerFloats + i] = .nan
+          continue
+        }
+        let e = Float(x < 8_388_608 ? x : x - 16_777_216) / 100
+        out[headerFloats + i] = e
+        if e < minElev { minElev = e }
+        if e > maxElev { maxElev = e }
+      }
+    }
+  }
+  let endNs = DispatchTime.now().uptimeNanoseconds
+
+  out[0] = Float(rgba.width)
+  out[1] = Float(rgba.height)
+  out[2] = minElev.isFinite ? minElev : .nan
+  out[3] = maxElev.isFinite ? maxElev : .nan
+  out[4] = Float(Double(readNs - startNs) / 1e6)
+  out[5] = Float(Double(decodedNs - readNs) / 1e6)
+  out[6] = Float(Double(endNs - decodedNs) / 1e6)
+  out[7] = 0
+  return try NativeArrayBuffer.wrap(dataWithoutCopy: raw) { raw.deallocate() }
 }
 
 private let headerFloats = 8

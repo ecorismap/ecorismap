@@ -106,14 +106,14 @@ jobs:
       - name: Install ccache
         run: |
           HOMEBREW_NO_AUTO_UPDATE=1 HOMEBREW_NO_INSTALL_CLEANUP=1 brew install ccache
-          echo "CCACHE_DIR=$HOME/ccache" >> $GITHUB_ENV
-          echo "CCACHE_MAXSIZE=3G" >> $GITHUB_ENV
 
-      # キャッシュは上書きできないので、キーに実行IDを入れて毎回保存し、直近のものを復元する
+      # キャッシュは上書きできないので、キーに実行IDを入れて毎回保存し、直近のものを復元する。
+      # 置き場所はccacheの既定のまま使う（Xcodeはビルド中のコンパイラへ環境変数を渡さないので、
+      # CCACHE_DIR で変えても効かない）
       - name: Restore ccache
         uses: actions/cache@v4
         with:
-          path: ~/ccache
+          path: ~/Library/Caches/ccache
           key: ios-ccache-${{ github.run_id }}
           restore-keys: |
             ios-ccache-
@@ -182,9 +182,13 @@ jobs:
                                PROVISIONING_PROFILE_SPECIFIER="$(/usr/libexec/PlistBuddy -c 'Print Name' /dev/stdin <<< $(security cms -D -i ~/Library/MobileDevice/Provisioning\ Profiles/ecorismap.mobileprovision))"
           fi
 
+      # 保存する前に大きさを抑える（リポジトリのキャッシュ枠は10GB）
       - name: Show ccache stats
         if: always()
-        run: ccache --show-stats || true
+        run: |
+          ccache --show-stats --verbose || true
+          ccache --max-size 3G || true
+          ccache --cleanup || true
 
       - name: Export IPA
         if: github.event_name != 'workflow_dispatch' || inputs.upload
