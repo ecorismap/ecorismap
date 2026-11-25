@@ -152,22 +152,36 @@ jobs:
       - name: Archive Project
         env:
           NODE_BINARY: $(which node)
+          # 手動実行で upload を外したときは、署名せずにビルドだけ確かめる（証明書の期限に左右されない）
+          SKIP_SIGNING: ${{ github.event_name == 'workflow_dispatch' && !inputs.upload }}
         run: |
-          xcodebuild archive -workspace ios/ecorismap.xcworkspace \
-                             -scheme ecorismap \
-                             -sdk iphoneos \
-                             -configuration Release \
-                             -archivePath ecorismap.xcarchive \
-                             CURRENT_PROJECT_VERSION=${BUILD_NUMBER} \
-                             COMPILER_INDEX_STORE_ENABLE=NO \
-                             CODE_SIGN_STYLE=Manual \
-                             PROVISIONING_PROFILE_SPECIFIER="$(/usr/libexec/PlistBuddy -c 'Print Name' /dev/stdin <<< $(security cms -D -i ~/Library/MobileDevice/Provisioning\ Profiles/ecorismap.mobileprovision))"
+          if [ "$SKIP_SIGNING" = "true" ]; then
+            xcodebuild archive -workspace ios/ecorismap.xcworkspace \
+                               -scheme ecorismap \
+                               -sdk iphoneos \
+                               -configuration Release \
+                               -archivePath ecorismap.xcarchive \
+                               CURRENT_PROJECT_VERSION=${BUILD_NUMBER} \
+                               COMPILER_INDEX_STORE_ENABLE=NO \
+                               CODE_SIGNING_ALLOWED=NO
+          else
+            xcodebuild archive -workspace ios/ecorismap.xcworkspace \
+                               -scheme ecorismap \
+                               -sdk iphoneos \
+                               -configuration Release \
+                               -archivePath ecorismap.xcarchive \
+                               CURRENT_PROJECT_VERSION=${BUILD_NUMBER} \
+                               COMPILER_INDEX_STORE_ENABLE=NO \
+                               CODE_SIGN_STYLE=Manual \
+                               PROVISIONING_PROFILE_SPECIFIER="$(/usr/libexec/PlistBuddy -c 'Print Name' /dev/stdin <<< $(security cms -D -i ~/Library/MobileDevice/Provisioning\ Profiles/ecorismap.mobileprovision))"
+          fi
 
       - name: Show ccache stats
         if: always()
         run: ccache --show-stats || true
 
       - name: Export IPA
+        if: github.event_name != 'workflow_dispatch' || inputs.upload
         run: |
           xcodebuild -exportArchive \
                      -archivePath ecorismap.xcarchive \
