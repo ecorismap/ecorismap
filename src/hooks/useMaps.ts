@@ -47,6 +47,8 @@ const PDF_PROGRESS = {
 const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max);
 const formatProgress = (value: number) => Math.round(value).toString();
 
+type ReadStyleFileResult = { isOK: true; message: ''; style: string } | { isOK: false; message: string };
+
 export type UseMapsReturnType = {
   progress: string;
   mapListURL: string;
@@ -74,14 +76,8 @@ export type UseMapsReturnType = {
     message: string;
   }>;
   saveMapListURL: (url: string) => void;
-  importStyleFile: (
-    uri: string,
-    name: string,
-    tileMap: TileMapType
-  ) => Promise<{
-    isOK: boolean;
-    message: string;
-  }>;
+  readStyleFile: (uri: string) => Promise<ReadStyleFileResult>;
+  saveStyleFile: (mapId: string, style: string) => Promise<{ isOK: boolean; message: string }>;
   importMapFile: (
     uri: string,
     name: string,
@@ -633,31 +629,31 @@ export const useMaps = (): UseMapsReturnType => {
     [dispatch]
   );
 
-  const importStyleFile = useCallback(async (uri: string, name: string, tileMap: TileMapType) => {
+  // 読み取って確かめるだけで、端末には書かない。書くのは地図を保存したとき（saveStyleFile）。
+  // 読み込んだ時点で書くと、保存せずに戻っても前のスタイルに戻せない
+  const readStyleFile = useCallback(async (uri: string): Promise<ReadStyleFileResult> => {
     try {
-      // console.log('importStyleFile', uri, name, id);
-      if (Platform.OS === 'web') {
-        const jsonStrings = await decodeUri(uri);
-        if (parseStyleLayers(jsonStrings) === undefined) {
-          return { isOK: false, message: t('hooks.message.invalidStyleFile') };
-        }
-        await saveStyleToPmtilesDb(tileMap.id, jsonStrings);
-        setEditedMap({ ...tileMap, styleURL: 'style://' + name });
-      } else {
-        // 置き換える前に確かめる（壊れたファイルで今のスタイルを上書きしない）
-        if (parseStyleLayers(await FileSystem.readAsStringAsync(uri)) === undefined) {
-          return { isOK: false, message: t('hooks.message.invalidStyleFile') };
-        }
-        const styleUri = `${TILE_FOLDER}/${tileMap.id}/style.json`;
-        await FileSystem.makeDirectoryAsync(`${TILE_FOLDER}/${tileMap.id}`, { intermediates: true });
-        await FileSystem.copyAsync({ from: uri, to: styleUri });
-        setEditedMap({ ...tileMap, styleURL: 'style://style.json' });
-      }
-
-      return { isOK: true, message: '' };
-    } catch (e: any) {
+      const style = Platform.OS === 'web' ? await decodeUri(uri) : await FileSystem.readAsStringAsync(uri);
+      if (parseStyleLayers(style) === undefined) return { isOK: false, message: t('hooks.message.invalidStyleFile') };
+      return { isOK: true, message: '', style };
+    } catch (e) {
       console.log(e);
-      return { isOK: false, message: e.message + '\n' + t('hooks.message.failReceiveFile') };
+      return { isOK: false, message: t('hooks.message.failReceiveFile') };
+    }
+  }, []);
+
+  const saveStyleFile = useCallback(async (mapId: string, style: string) => {
+    try {
+      if (Platform.OS === 'web') {
+        await saveStyleToPmtilesDb(mapId, style);
+      } else {
+        await FileSystem.makeDirectoryAsync(`${TILE_FOLDER}/${mapId}`, { intermediates: true });
+        await FileSystem.writeAsStringAsync(`${TILE_FOLDER}/${mapId}/style.json`, style);
+      }
+      return { isOK: true, message: '' };
+    } catch (e) {
+      console.log(e);
+      return { isOK: false, message: t('hooks.message.failSaveFile') };
     }
   }, []);
 
@@ -1171,7 +1167,8 @@ export const useMaps = (): UseMapsReturnType => {
     importMapFile,
     importPdfFile,
     importPmtilesFile,
-    importStyleFile,
+    readStyleFile,
+    saveStyleFile,
     clearTileCache,
     clearTiles,
     updatePmtilesURL,

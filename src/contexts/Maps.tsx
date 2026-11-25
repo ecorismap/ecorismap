@@ -21,7 +21,6 @@ export interface MapsContextType {
   pressImportMaps: () => Promise<void>;
   pressExportMaps: () => Promise<void>;
   jumpToBoundary: (tileMap: TileMapType) => void;
-  pressImportStyle: (tileMap: TileMapType) => Promise<void>;
   changeExpand: (expanded: boolean, tileMap: TileMapType) => void;
   pressMapOrder: (tileMap: TileMapType, direction: 'up' | 'down') => void;
   updateMapOrder: (data: TileMapType[], from: number, to: number) => void;

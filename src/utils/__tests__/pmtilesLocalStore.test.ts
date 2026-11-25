@@ -6,6 +6,7 @@ import {
   isTileCacheEntry,
   saveStyleToPmtilesDb,
 } from '../pmtilesLocalStore';
+import { db } from '../db';
 import { TILE_FOLDER } from '../../constants/AppConstants';
 
 type PMTilesRecord = { mapId: string; blob: Blob | undefined; boundary: string; style: string | undefined };
@@ -55,6 +56,14 @@ describe('saveStyleToPmtilesDb', () => {
     mockStore.set('m1', { mapId: 'm1', blob, boundary: '{"b":1}', style: undefined });
     await saveStyleToPmtilesDb('m1', '{"version":8}');
     expect(mockStore.get('m1')).toEqual({ mapId: 'm1', blob, boundary: '{"b":1}', style: '{"version":8}' });
+  });
+
+  it('update が0を返しても（同じスタイルの書き直し）本体を消さない', async () => {
+    const record = { mapId: 'm1', blob, boundary: '{"b":1}', style: '{"version":8}' };
+    mockStore.set('m1', record);
+    (db.pmtiles.update as jest.Mock).mockResolvedValueOnce(0);
+    await saveStyleToPmtilesDb('m1', '{"version":8}');
+    expect(mockStore.get('m1')).toEqual(record);
   });
 
   it('レコードが無いときだけ新しく作る', async () => {

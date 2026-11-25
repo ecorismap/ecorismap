@@ -44,7 +44,6 @@ export default function MapContainer() {
     changeMapOrder,
     toggleOnline,
     importMapFile,
-    importStyleFile,
     changeExpand,
     getPmtilesBoundary,
     updateMapOrder,
@@ -261,23 +260,6 @@ export default function MapContainer() {
     }, 10);
   }, [importMapFile]);
 
-  const pressImportStyle = useCallback(
-    async (tileMap: TileMapType) => {
-      const file = await DocumentPicker.getDocumentAsync({});
-      if (file.assets === null) return;
-      const name = file.assets[0].name;
-      const uri = file.assets[0].uri;
-      const ext = getExt(name)?.toLowerCase();
-      if (!(ext === 'json')) {
-        await AlertAsync(t('hooks.message.wrongExtension'));
-        return;
-      }
-      const { message } = await importStyleFile(uri, name, tileMap);
-      if (message !== '') await AlertAsync(message);
-    },
-    [importStyleFile]
-  );
-
   const pressExportMaps = useCallback(async () => {
     // 共有の鍵とトークン付き URL を外部へ出さない（M-L14）
     const plan = prepareMapsForExport(maps);
@@ -419,7 +401,6 @@ export default function MapContainer() {
         pressImportMaps,
         pressExportMaps,
         jumpToBoundary,
-        pressImportStyle,
         changeExpand,
         pressMapOrder,
         updateMapOrder,
