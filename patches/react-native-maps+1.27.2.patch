@@ -7632,7 +7632,7 @@ new file mode 100644
 index 0000000..125488f
 --- /dev/null
 +++ b/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/VectorStyle/VectorTileStyleManager.java
-@@ -0,0 +1,287 @@
+@@ -0,0 +1,279 @@
 +package VectorTileStyleManager;
 +
 +import PMTiles.Metadata;
@@ -7641,11 +7641,9 @@ index 0000000..125488f
 +import android.util.Log;
 +import com.google.gson.Gson;
 +import com.google.gson.GsonBuilder;
-+import com.google.gson.reflect.TypeToken;
 +import java.io.BufferedReader;
 +import java.io.IOException;
 +import java.io.InputStreamReader;
-+import java.lang.reflect.Type;
 +import java.net.HttpURLConnection;
 +import java.net.URL;
 +import java.nio.file.FileAlreadyExistsException;
@@ -7702,16 +7700,10 @@ index 0000000..125488f
 +   * JSON 自体が壊れていれば例外（呼び出し側で既定スタイルへ）。
 +   */
 +  public static List<LayerStyle> parseLayers(String style) {
-+    Gson gson = new Gson();
-+    Type mapType = new TypeToken<Map<String, Object>>() {}.getType();
-+    Object parsed = gson.fromJson(style, mapType);
-+    if (!(parsed instanceof Map)) {
-+      // 既定スタイルは layers 配列だけを保存しているので、配列も受け付ける
-+      Type listType = new TypeToken<List<Object>>() {}.getType();
-+      parsed = gson.fromJson(style, listType);
-+      return LayerStyle.fromList(parsed);
-+    }
-+    return LayerStyle.fromList(((Map<?, ?>) parsed).get("layers"));
++    // 型を Map に決めて読むと、配列の JSON は例外になる（既定スタイルは layers 配列だけを保存している）
++    Object parsed = new Gson().fromJson(style, Object.class);
++    if (parsed instanceof Map) return LayerStyle.fromList(((Map<?, ?>) parsed).get("layers"));
++    return LayerStyle.fromList(parsed);
 +  }
 +
 +  public CompletableFuture<String> loadStyleAsync() {

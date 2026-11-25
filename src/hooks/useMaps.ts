@@ -23,6 +23,7 @@ import { convertPDFToGeoTiff } from '../utils/PDF';
 import { db } from '../utils/db';
 import { saveStyleToPmtilesDb } from '../utils/pmtilesLocalStore';
 import { parseStyleLayers } from '../utils/vectorStyleFile';
+import { withTimeout } from '../utils/promiseTimeout';
 import { findPdfPageMaps } from '../utils/pdfTileMap';
 import { isSharedPdfMap, mapExportNotice, prepareMapsForExport } from '../utils/mapExport';
 import { clearRefetchableTileCache, clearWebTileCache, regionsAfterTileCacheClear } from '../utils/tileCacheCleanup';
@@ -46,6 +47,8 @@ const PDF_PROGRESS = {
 
 const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max);
 const formatProgress = (value: number) => Math.round(value).toString();
+
+const PMTILES_HEADER_TIMEOUT_MS = 5000;
 
 type ReadStyleFileResult = { isOK: true; message: ''; style: string } | { isOK: false; message: string };
 
@@ -924,12 +927,15 @@ export const useMaps = (): UseMapsReturnType => {
   const getPmtilesBoundary = useCallback(
     async (url: string): Promise<{ header: pmtiles.Header | undefined; boundary: boundaryType | undefined }> => {
       try {
-        if (Platform.OS !== 'web') {
+        // 保護レイヤのヘッダー取得にも署名が要る（地図名タップでの範囲ジャンプ等）
+        const sourceUrl = withTileSignature(url, tileSignatures).replace('pmtiles://', '');
+        // ネイティブで読めるのは配信元から取れるものだけ。オフラインでは取りに行かない
+        if (Platform.OS !== 'web' && (isOffline || !/^https?:\/\//.test(sourceUrl))) {
           return { header: undefined, boundary: undefined };
         }
-        // 保護レイヤのヘッダー取得にも署名が要る（地図名タップでの範囲ジャンプ等）
-        const pmtile = new pmtiles.PMTiles(withTileSignature(url, tileSignatures).replace('pmtiles://', ''));
-        const header = await pmtile.getHeader();
+        const pmtile = new pmtiles.PMTiles(sourceUrl);
+        // 弱電波で応答が来なくても、地図の保存や範囲の移動を待たせ続けない
+        const header = await withTimeout(pmtile.getHeader(), PMTILES_HEADER_TIMEOUT_MS);
         return {
           header: header,
           boundary: {
@@ -950,7 +956,7 @@ export const useMaps = (): UseMapsReturnType => {
         return { header: undefined, boundary: undefined };
       }
     },
-    [tileSignatures]
+    [isOffline, tileSignatures]
   );
 
   const importPmtilesFile = useCallback(

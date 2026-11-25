@@ -1,4 +1,4 @@
-import React, { useCallback, useRef } from 'react';
+import React, { useCallback, useRef, useState } from 'react';
 import MapEdit from '../components/pages/MapEdit';
 import { AlertAsync, ConfirmAsync } from '../components/molecules/AlertAsync';
 import { MapEditContext } from '../contexts/MapEdit';
@@ -15,8 +15,14 @@ import { db } from '../utils/db';
 import { TILE_FOLDER } from '../constants/AppConstants';
 import { isPeaksUrl } from '../utils/peaks/peak2dLabels';
 import { discardStaleTileSources } from '../utils/tileSourceCleanup';
+import { nextNativeStyleURL } from '../utils/vectorStyleFile';
 import { hasSharedStyle } from '../utils/mapExport';
-import { pmtilesHeaderZoom } from '../utils/pmtilesHeaderZoom';
+import { pmtilesHeaderZoom, resetPreviousArchiveZoom } from '../utils/pmtilesHeaderZoom';
+import { getPmtileMaximumNativeZ } from '../utils/pmtileProps';
+import { isPmtilesSourceUrl } from '../utils/tileSourceChange';
+import { removeTerrainTextureCacheForMap } from '../utils/terrain3d/textureDiskCache';
+import { Loading } from '../components/molecules/Loading';
+import { boundaryType, TileMapType } from '../types';
 import { useStore } from 'react-redux';
 import { RootState } from '../store';
 
@@ -47,6 +53,8 @@ export default function MapEditContainer() {
   const { deleteMap, exportSingleMap, readStyleFile, saveStyleFile, getPmtilesBoundary } = useMaps();
   // 読み込んだがまだ保存していないスタイル。保存せずに戻れば捨てる
   const pendingStyleRef = useRef<string | null>(null);
+  const savingRef = useRef(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   const pressSaveMap = useCallback(async () => {
     const checkInputs = () => {
@@ -61,28 +69,50 @@ export default function MapEditContainer() {
       return;
     }
 
-    const finalMap = { ...map };
+    // ヘッダーの取得を待つ間にもう一度押すと、新規の地図が2つできる
+    if (savingRef.current) return;
+    savingRef.current = true;
+    try {
+      const previousMap = store.getState().tileMaps.find(({ id }) => id === map.id);
+      const finalMap: TileMapType = { ...map, ...resetPreviousArchiveZoom(previousMap, map) };
 
-    // 読み込んだあとでスタイル欄を端末内のスタイル以外（URL・空・共有のスタイル）に変えていたら書かない。
-    // style:// の後ろの名前は描画に使わないので、名前だけ書き換えても読み込んだものを書く
-    const pendingStyle = pendingStyleRef.current;
-    if (pendingStyle !== null && map.styleURL?.startsWith('style://') && !hasSharedStyle(map)) {
-      const { isOK, message } = await saveStyleFile(map.id, pendingStyle);
-      if (!isOK) {
-        // 置けていないスタイルを指したまま保存しない
-        await AlertAsync(message);
-        return;
+      // 通信はここで済ませる。この後の「スタイルを書く→古いタイルを捨てる→一覧を差し替える」の途中で待つと、
+      // まだ表示中の古い地図部品が、捨てたタイルや書いたスタイルを古い内容で書き戻す
+      let boundary: boundaryType | undefined;
+      if (map.url.includes('pmtiles')) {
+        setIsSaving(true);
+        const result = await getPmtilesBoundary(map.url).finally(() => setIsSaving(false));
+        boundary = result.boundary;
+        // ヘッダーが読めない（取得失敗・オフライン）ときは利用者の設定を残す
+        if (result.header) Object.assign(finalMap, pmtilesHeaderZoom(finalMap, result.header));
       }
-    }
-    pendingStyleRef.current = null;
 
-    // 取得内容（URL・flipY・tileSize・スタイル）が変わったら、旧ソースのタイル・保存範囲・3Dのテクスチャを
-    // 確認なしで捨てる。プリセットの適用もここを通る。boundary.json を書く前に済ませる（M-H6）
-    await discardStaleTileSources(store, [map]);
+      // 読み込んだあとでスタイル欄を端末内のスタイル以外（URL・空・共有のスタイル）に変えていたら書かない。
+      // style:// の後ろの名前は描画に使わないので、名前だけ書き換えても読み込んだものを書く
+      const pendingStyle = pendingStyleRef.current;
+      if (pendingStyle !== null && map.styleURL?.startsWith('style://') && !hasSharedStyle(map)) {
+        const { isOK, message } = await saveStyleFile(map.id, pendingStyle);
+        if (!isOK) {
+          // 置けていないスタイルを指したまま保存しない
+          await AlertAsync(message);
+          return;
+        }
+      }
+      pendingStyleRef.current = null;
 
-    // pmTilesの場合、boundaryを取得して保存する
-    if (map.url.includes('pmtiles')) {
-      const { header, boundary } = await getPmtilesBoundary(map.url);
+      // 取得内容（URL・flipY・tileSize・スタイル）が変わったら、旧ソースのタイル・保存範囲・3Dのテクスチャを
+      // 確認なしで捨てる。プリセットの適用もここを通る。boundary.json を書く前に済ませる（M-H6）
+      await discardStaleTileSources(store, [finalMap]);
+      // 3D は最大ズームより上の段に「タイルなし」の印を残すので、拡大を始めるズームが変わったら捨てる
+      if (
+        Platform.OS !== 'web' &&
+        previousMap !== undefined &&
+        isPmtilesSourceUrl(map.url) &&
+        getPmtileMaximumNativeZ(previousMap, false) !== getPmtileMaximumNativeZ(finalMap, false)
+      ) {
+        await removeTerrainTextureCacheForMap(map.id);
+      }
+
       // boundaryが取得できた場合のみ保存処理を行う
       if (boundary) {
         if (Platform.OS === 'web') {
@@ -98,11 +128,10 @@ export default function MapEditContainer() {
         }
       }
 
-      // ヘッダーが読めない（ネイティブ・取得失敗）ときは利用者の設定を残す
-      if (header) Object.assign(finalMap, pmtilesHeaderZoom(map, header));
+      saveMapToState(finalMap);
+    } finally {
+      savingRef.current = false;
     }
-
-    saveMapToState(finalMap);
   }, [getPmtilesBoundary, map, saveMapToState, saveStyleFile, store]);
 
   const pressDeleteMap = useCallback(async () => {
@@ -139,8 +168,9 @@ export default function MapEditContainer() {
       return;
     }
     pendingStyleRef.current = result.style;
-    changeStyleURL(Platform.OS === 'web' ? 'style://' + name : 'style://style.json');
-  }, [changeStyleURL, readStyleFile]);
+    const savedStyleURL = store.getState().tileMaps.find(({ id }) => id === map.id)?.styleURL;
+    changeStyleURL(Platform.OS === 'web' ? 'style://' + name : nextNativeStyleURL(savedStyleURL));
+  }, [changeStyleURL, map.id, readStyleFile, store]);
 
   const gotoBack = useCallback(() => {
     if (isEdited) {
@@ -178,6 +208,7 @@ export default function MapEditContainer() {
       }}
     >
       <MapEdit />
+      <Loading visible={isSaving} text={t('common.processing')} />
     </MapEditContext.Provider>
   );
 }
