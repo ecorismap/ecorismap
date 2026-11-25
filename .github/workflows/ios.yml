@@ -136,6 +136,15 @@ jobs:
           USE_CCACHE: '1'
         run: |
           cd ios && pod install
+          cd ..
+          # React Nativeのラッパーは `exec $CCACHE_BINARY clang` と書かれているが、Xcodeはビルド設定の
+          # CCACHE_BINARY をコンパイルの実行時には渡さない。そのままだとccacheを素通りして素のclangが動くので、
+          # ccacheの実体のパスを直接書き込む
+          CCACHE_BIN="$(command -v ccache)"
+          for f in ccache-clang.sh ccache-clang++.sh; do
+            sed -i '' "s|exec \$CCACHE_BINARY |exec $CCACHE_BIN |" "node_modules/react-native/scripts/xcode/$f"
+            grep '^exec' "node_modules/react-native/scripts/xcode/$f"
+          done
           ccache --zero-stats
 
       - name: Set build number
