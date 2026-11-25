@@ -39,12 +39,15 @@ export default function MapEditScreen() {
   const { windowWidth, isLandscape } = useWindow();
   const { mapPresets } = useFeatureFlags();
 
+  //以前の版で登録したPMTilesは、最大ズームが既定（22）のまま残っている。何も変えなくても保存し直せるようにする
+  const canSave = isEdited || (!isNewMap && /^pmtiles:\/\/https?:|^https?:.*\.pmtiles/.test(map.url) && map.maximumZ === 22);
+
   const rightComponent = (
     <Button
       name={MAPS_BTN.SAVE}
       onPress={pressSaveMap}
-      backgroundColor={isEdited ? COLOR.BLUE : COLOR.LIGHTBLUE}
-      disabled={!isEdited}
+      backgroundColor={canSave ? COLOR.BLUE : COLOR.LIGHTBLUE}
+      disabled={!canSave}
       labelText={t('MapEdit.label.save')}
     />
   );

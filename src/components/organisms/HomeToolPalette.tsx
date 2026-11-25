@@ -355,6 +355,9 @@ export const HomeToolPalette = React.memo(({ items, featureType }: Props) => {
         selectedSubTool={handwritingActive ? handwritingSubTool : undefined}
         select={(option: ToolPaletteItemType) => {
           setPickerOptions(undefined);
+          //描いている途中で今の道具を選び直しただけなら、解除（＝描きかけの破棄）とみなさない。
+          //地図移動へ持ち替えている間は、選び直しで元の道具へ戻す
+          if (currentDrawTool !== 'MOVE' && isItemActive(option) && (isEditingDraw || isEditingObject)) return;
           pressItem(option);
         }}
         close={() => setPickerOptions(undefined)}

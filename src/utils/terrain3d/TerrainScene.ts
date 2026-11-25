@@ -56,6 +56,7 @@ import {
   VISTA_PITCH_DEG,
   ZOOM_HYSTERESIS,
 } from './constants';
+import { settleOnDrawnTerrain } from './placeOnTerrain';
 import {
   distanceToZoom,
   elevationScale,
@@ -191,6 +192,8 @@ const PERF_LOG_INTERVAL_MS = 3000;
  */
 const TERRAIN_PLACE_ITERATIONS = 4;
 const TERRAIN_PLACE_EPSILON_M = 0.5;
+/** 上限まで寄せても最後の動きがこれより大きければ、収束していない（手前の尾根に隠れている）とみなす[m] */
+const TERRAIN_PLACE_MAX_LAST_STEP_M = 20;
 
 /**
  * ポイントの遮蔽判定（GPUが描いた地形までの距離との比較）。
@@ -1075,27 +1078,26 @@ export class TerrainScene {
       return { y: initialY };
     }
     const tanHalf = Math.tan((this.fovDeg * Math.PI) / 360);
-    let y = initialY;
-    for (let i = 0; i < TERRAIN_PLACE_ITERATIONS; i++) {
+    const heightAt = (y: number): number | null => {
       const w = m[3] * x + m[7] * y + m[11] * z + m[15];
-      if (w <= 0) break;
+      if (w <= 0) return null;
       const ndcX = (m[0] * x + m[4] * y + m[8] * z + m[12]) / w;
       const ndcY = (m[1] * x + m[5] * y + m[9] * z + m[13]) / w;
       const sx = ndcX * 0.5 + 0.5;
       const sy = 1 - (ndcY * 0.5 + 0.5);
-      if (sx < 0 || sx > 1 || sy < 0 || sy > 1) break;
+      if (sx < 0 || sx > 1 || sy < 0 || sy > 1) return null;
       const px = Math.min(map.width - 1, Math.floor(sx * map.width));
       const py = Math.min(map.height - 1, Math.floor(sy * map.height));
       const dist = map.distances[py * map.width + px];
-      if (!Number.isFinite(dist)) break; // 空。地形が無いので動かしようがない
+      if (!Number.isFinite(dist)) return null; // 空。地形が無いので動かしようがない
       // その画素で見えている地形の高さ。これを次の推定値にする
-      const nextY = pointAtAxisDepth(rayBasis.basis, ndcX, ndcY, tanHalf, rayBasis.aspect, dist)[1];
-      if (Math.abs(nextY - y) < TERRAIN_PLACE_EPSILON_M * this.elevScale) {
-        y = nextY;
-        break;
-      }
-      y = nextY;
-    }
+      return pointAtAxisDepth(rayBasis.basis, ndcX, ndcY, tanHalf, rayBasis.aspect, dist)[1];
+    };
+    const y = settleOnDrawnTerrain(initialY, heightAt, {
+      iterations: TERRAIN_PLACE_ITERATIONS,
+      epsilon: TERRAIN_PLACE_EPSILON_M * this.elevScale,
+      maxLastStep: TERRAIN_PLACE_MAX_LAST_STEP_M * this.elevScale,
+    });
     return { y };
   }
 
