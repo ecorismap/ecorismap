@@ -9,6 +9,11 @@ on:
       - 'hotfix/**'
       - 'release/**'
   workflow_dispatch:
+    inputs:
+      upload:
+        description: 'App Store Connect（TestFlight）へアップロードする'
+        type: boolean
+        default: true
 jobs:
   build-and-upload:
     name: Build and Upload to App Store
@@ -89,9 +94,41 @@ jobs:
       - name: Install dependencies
         run: yarn install
 
+      # ここから下はビルド時間の短縮用。React Native本体をソースからビルドしているため
+      # （Podfileの RCT_USE_PREBUILT_RNCORE=0）、C/C++/ObjCのコンパイルが時間の大半を占める。
+      # ccacheでコンパイル結果を持ち越し、変わっていないファイルは再コンパイルしない
+      - name: Install ccache
+        run: |
+          HOMEBREW_NO_AUTO_UPDATE=1 HOMEBREW_NO_INSTALL_CLEANUP=1 brew install ccache
+          echo "CCACHE_DIR=$HOME/ccache" >> $GITHUB_ENV
+          echo "CCACHE_MAXSIZE=3G" >> $GITHUB_ENV
+
+      # キャッシュは上書きできないので、キーに実行IDを入れて毎回保存し、直近のものを復元する
+      - name: Restore ccache
+        uses: actions/cache@v4
+        with:
+          path: ~/ccache
+          key: ios-ccache-${{ github.run_id }}
+          restore-keys: |
+            ios-ccache-
+
+      # Podsは依存が1つでも変わったら作り直す（キーが完全に一致したときだけ復元する）。
+      # patches/ はnode_modules内のネイティブコードを書き換えるのでキーに含める
+      - name: Restore Pods
+        uses: actions/cache@v4
+        with:
+          path: |
+            ios/Pods
+            ~/Library/Caches/CocoaPods
+          key: ios-pods-${{ hashFiles('ios/Podfile', 'ios/Podfile.lock', 'ios/Podfile.properties.json', 'yarn.lock', 'patches/**') }}
+
       - name: Install CocoaPods
+        env:
+          # React Nativeのpost installが、Pods・アプリ双方のコンパイラをccache経由に切り替える
+          USE_CCACHE: '1'
         run: |
           cd ios && pod install
+          ccache --zero-stats
 
       - name: Set build number
         run: |
@@ -122,8 +159,13 @@ jobs:
                              -configuration Release \
                              -archivePath ecorismap.xcarchive \
                              CURRENT_PROJECT_VERSION=${BUILD_NUMBER} \
+                             COMPILER_INDEX_STORE_ENABLE=NO \
                              CODE_SIGN_STYLE=Manual \
                              PROVISIONING_PROFILE_SPECIFIER="$(/usr/libexec/PlistBuddy -c 'Print Name' /dev/stdin <<< $(security cms -D -i ~/Library/MobileDevice/Provisioning\ Profiles/ecorismap.mobileprovision))"
+
+      - name: Show ccache stats
+        if: always()
+        run: ccache --show-stats || true
 
       - name: Export IPA
         run: |
@@ -133,6 +175,8 @@ jobs:
                      -exportPath app.ipa
 
       - name: Upload IPA to App Store Connect
+        # 手動実行で upload を外したときは、ビルドの確認だけして上げない
+        if: github.event_name != 'workflow_dispatch' || inputs.upload
         run: |
           xcrun altool --upload-app -f app.ipa/ecorismap.ipa \
                        -u ${{ secrets.APPLE_ID }} \
