@@ -1,6 +1,6 @@
 # 写真フィールドの「カメラ」で撮影して保存する（Android実機・エミュレーター用）。
 # 0.6.0〜0.6.7で保存されなくなった経路。カメラアプリの操作は機種で違うため、
-# シャッターと確定は位置で指定している（Pixelの標準カメラで確認）。
+# エミュレーターのカメラは要素で、Pixelの標準カメラは位置で、シャッターと確定を指定している。
 appId: jp.co.ecoris.ecorismap
 env:
   LAYER_NAME: 'ポイント.*'
@@ -22,14 +22,33 @@ env:
     id: 'dataedit-photo-camera'
 - waitForAnimationToEnd:
     timeout: 5000
-# シャッター
-- tapOn:
-    point: '50%,75%'
-- waitForAnimationToEnd:
-    timeout: 5000
-# 撮影結果の確定（チェックマーク）
-- tapOn:
-    point: '50%,75%'
+# エミュレーターのカメラ（com.android.camera2）: シャッターと「完了」を要素で指定する
+- runFlow:
+    when:
+      visible:
+        id: 'com.android.camera2:id/shutter_button'
+    commands:
+      - tapOn:
+          id: 'com.android.camera2:id/shutter_button'
+      - extendedWaitUntil:
+          visible:
+            id: 'com.android.camera2:id/done_button'
+          timeout: 15000
+      - tapOn:
+          id: 'com.android.camera2:id/done_button'
+# Pixelの標準カメラ: シャッターと確定（チェックマーク）を位置で指定する。
+# エミュレーターのカメラで撮り終えていれば、編集画面に戻っているので何もしない
+- runFlow:
+    when:
+      notVisible:
+        id: 'dataedit-photo-camera'
+    commands:
+      - tapOn:
+          point: '50%,75%'
+      - waitForAnimationToEnd:
+          timeout: 5000
+      - tapOn:
+          point: '50%,75%'
 - extendedWaitUntil:
     visible:
       id: 'dataedit-photo-thumb-0'
