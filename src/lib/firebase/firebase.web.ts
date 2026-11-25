@@ -42,6 +42,8 @@ export { ref, uploadBytes, uploadString, getDownloadURL, deleteObject, listAll, 
 import { initializeAppCheck, ReCaptchaV3Provider } from 'firebase/app-check';
 
 import { firebaseConfig, reCaptureSiteKey } from '../../constants/APIKeys';
+import { USE_FIREBASE_EMULATOR } from '../../constants/AppConstants';
+
 
 export let firestore: Firestore;
 export let functions: ReturnType<typeof getFunctions>;
@@ -52,7 +54,13 @@ export let auth: ReturnType<typeof getAuth>;
 export const firebaseReady: Promise<void> = Promise.resolve();
 
 const initialize = (isEmulating = false) => {
-  const firebaseApp = initializeApp(firebaseConfig);
+  // エミュレータ用の分岐は __DEV__ で囲む。__DEV__ はビルド時定数なので、本番のバンドルからは分岐ごと消える
+  let config = firebaseConfig;
+  if (__DEV__ && isEmulating) {
+    // demo- で始まるプロジェクトIDは実在のプロジェクトに届かない（scripts/e2e-web-emu.sh と同じ値）
+    config = { ...firebaseConfig, projectId: 'demo-ecorismap-e2e', storageBucket: 'demo-ecorismap-e2e.appspot.com' };
+  }
+  const firebaseApp = initializeApp(config);
   //userがキャッシュになってimmerでエラーになる?からNONEにした
   auth = getAuth(firebaseApp);
   auth.setPersistence(browserSessionPersistence);
@@ -70,9 +78,18 @@ const initialize = (isEmulating = false) => {
       .catch(() => undefined);
   }
 
+  if (__DEV__ && isEmulating) {
+    // エミュレータはApp Checkを見ない。初期化すると本番のトークン交換へ通信するので、初期化しない
+    connectAuthEmulator(auth, 'http://localhost:9099', { disableWarnings: true });
+    connectFunctionsEmulator(functions, 'localhost', 5001);
+    connectFirestoreEmulator(firestore, 'localhost', 8080);
+    connectStorageEmulator(storage, 'localhost', 9199);
+    return;
+  }
+
   // App Checkの初期化
   // デバッグモードの判定（開発環境またはlocalhost）
-  const isDebugMode = process.env.NODE_ENV === 'development' || window.location.hostname === 'localhost' || isEmulating;
+  const isDebugMode = process.env.NODE_ENV === 'development' || window.location.hostname === 'localhost';
 
   if (isDebugMode) {
     // 未設定の場合はtrueを設定し、コンソールに表示される新規トークンを登録する標準フロー。
@@ -94,14 +111,6 @@ const initialize = (isEmulating = false) => {
     provider: new ReCaptchaV3Provider(reCaptureSiteKey),
     isTokenAutoRefreshEnabled: true,
   });
-
-  if (isEmulating) {
-    connectAuthEmulator(getAuth(firebaseApp), 'http://localhost:9099');
-    connectFunctionsEmulator(functions, 'localhost', 5001);
-    connectFirestoreEmulator(firestore, 'localhost', 8080);
-    connectStorageEmulator(storage, 'localhost', 9199);
-  }
 };
 
-const isEmulating = false;
-initialize(isEmulating);
+initialize(USE_FIREBASE_EMULATOR);

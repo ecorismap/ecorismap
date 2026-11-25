@@ -271,6 +271,12 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     lastSheetIndexRef.current = index;
     //開いたら「こちらから閉じた」状態は終わり。取りこぼした場合もここで解除される
     if (index >= 0) isClosingBySelfRef.current = false;
+    //開いたのを確認できたら、開き直しの予約は役目を終えている。残しておくと、直後に閉じたときに
+    //予約が「まだ開いていない」と判断してシートを開き直す
+    if (index >= 0 && openSheetRetryRef.current !== null) {
+      clearTimeout(openSheetRetryRef.current);
+      openSheetRetryRef.current = null;
+    }
   }, []);
 
   useEffect(() => {

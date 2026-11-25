@@ -3,7 +3,12 @@ import { t } from '../i18n/config';
 
 export const AppID = 'jp.co.ecoris.ecorismap';
 export const VERSION = 'Version 0.7.0';
-export const FUNC_ENCRYPTION = true;
+// Firebaseエミュレータへつなぐか（E2E用: yarn e2e:web:emu）。
+// __DEV__ はビルド時定数で、リリースビルドではこの式ごと false に畳まれる。本番のバンドルにエミュレータへの経路は残らない。
+export const USE_FIREBASE_EMULATOR: boolean = __DEV__ && process.env.EXPO_PUBLIC_USE_FIREBASE_EMULATOR === '1';
+// 暗号化（Virgil）を使うか。エミュレータ接続時だけ切る（Virgilは外部サービスで、エミュレータだけでは完結しないため）。
+// 本番のFirebaseへ暗号化なしで書くことが無いよう、エミュレータ接続と必ず対にする。
+export const FUNC_ENCRYPTION: boolean = !USE_FIREBASE_EMULATOR;
 // 新規プロジェクトをエンベロープ暗号(DEK・管理者によるメンバー追加可)で作成するか。
 // false の間も DEK プロジェクトの「読み込み(復号)」は可能。安全なロールアウトのため、
 // 全クライアント(モバイル/Web)に読み込み対応版が行き渡ってから true にして展開する。

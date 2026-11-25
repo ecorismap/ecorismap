@@ -478,7 +478,7 @@ export const hasPrivateKeyBackup = async () => {
 export const hasRegisterdUser = async (userId: string | null) => {
   if (userId === null) return false;
   if (!FUNC_ENCRYPTION) {
-    return { isOK: true };
+    return true;
   } else {
     return eThree
       .findUsers(userId)

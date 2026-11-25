@@ -8,6 +8,7 @@ import { getFunctions, connectFunctionsEmulator } from '@react-native-firebase/f
 import { getStorage, connectStorageEmulator } from '@react-native-firebase/storage';
 
 //import { Alert } from 'react-native';
+import { USE_FIREBASE_EMULATOR } from '../../constants/AppConstants';
 
 export {
   //@ts-ignore
@@ -92,7 +93,8 @@ const initialize = async (isEmulating = false) => {
   functions = getFunctions(getApp(), 'asia-northeast1');
   storage = getStorage();
 
-  if (isEmulating) {
+  // __DEV__ はビルド時定数。リリースビルドではこの分岐ごと消える
+  if (__DEV__ && isEmulating) {
     connectAuthEmulator(auth, 'http://localhost:9099');
     connectFunctionsEmulator(functions, 'localhost', 5001);
     connectFirestoreEmulator(firestore, 'localhost', 8080);
@@ -102,7 +104,6 @@ const initialize = async (isEmulating = false) => {
   resolveFirebaseReady();
 };
 
-const isEmulating = false;
 (async () => {
-  await initialize(isEmulating);
+  await initialize(USE_FIREBASE_EMULATOR);
 })();
