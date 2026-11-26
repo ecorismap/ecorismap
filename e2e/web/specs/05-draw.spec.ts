@@ -1,5 +1,5 @@
 import { expect, Page, test } from '@playwright/test';
-import { dataRows, dialogButton, openApp, openLayerData, selectFeature, sheetBack } from '../support/app';
+import { dataRows, dialogButton, openApp, openLayerData, selectFeature, sheetBack, sheetClose } from '../support/app';
 
 /** 確定すると、できた記録の編集画面が開く。戻るとそのレイヤのデータ一覧になる */
 const saveAndBackToList = async (page: Page) => {
@@ -77,5 +77,68 @@ test.describe('5. 作図', () => {
     await expect(page.getByTestId('home-draw-save')).toBeVisible();
     await page.getByTestId('home-draw-undo').click();
     await expect(page.getByTestId('home-draw-save')).toBeHidden();
+  });
+
+  // 地図の上をなぞる（手書き）
+  const stroke = async (page: Page, points: [number, number][]) => {
+    await page.mouse.move(points[0][0], points[0][1]);
+    await page.mouse.down();
+    for (const [x, y] of points.slice(1)) await page.mouse.move(x, y, { steps: 8 });
+    await page.mouse.up();
+    await page.waitForTimeout(500);
+  };
+
+  test('DRAW-6 ラインを手書き（ペン）で描いて保存できる', async ({ page }) => {
+    await selectFeature(page, 'line');
+    await page.getByTestId('home-draw-handwriting-line').click();
+    await stroke(page, [
+      [200, 250],
+      [280, 320],
+      [360, 260],
+      [420, 330],
+    ]);
+    await saveAndBackToList(page);
+    await expect(dataRows(page)).toHaveCount(1);
+  });
+
+  test('DRAW-8 ポリゴンを手書きで描いて保存できる', async ({ page }) => {
+    await selectFeature(page, 'polygon');
+    await page.getByTestId('home-draw-handwriting-polygon').click();
+    await stroke(page, [
+      [200, 250],
+      [380, 250],
+      [380, 400],
+      [200, 400],
+      [200, 255],
+    ]);
+    await saveAndBackToList(page);
+    await expect(dataRows(page)).toHaveCount(1);
+  });
+
+  test('DRAW-12 情報ツールで図形をタップすると、その記録の編集画面が開く', async ({ page }) => {
+    await selectFeature(page, 'point');
+    await page.getByTestId('home-draw-plot-point').click();
+    await page.mouse.click(300, 300);
+    await page.getByTestId('home-draw-save').click();
+    await expect(page.getByTestId('dataedit-record-number')).toHaveText('1/1');
+    await sheetClose(page);
+
+    // ツールを選んでいない状態で図形を押すと、情報の表示になる
+    await page.mouse.click(300, 300);
+    await expect(page.getByTestId('dataedit-record-number')).toHaveText('1/1');
+    await expect(page.getByTestId('dataedit-layername')).toBeVisible();
+  });
+
+  test('DRAW-17 描きかけのまま地図を離れようとすると、破棄の確認が出る', async ({ page }) => {
+    await selectFeature(page, 'point');
+    await page.getByTestId('home-draw-plot-point').click();
+    await page.mouse.click(300, 300);
+    await expect(page.getByTestId('home-draw-save')).toBeVisible();
+    // 別の画面（ログイン・アカウント）へ移ろうとする
+    await page.getByTestId('home-account').click();
+    await expect(page.getByTestId('dialog-message')).toContainText('破棄');
+    // Noなら描きかけが残る
+    await dialogButton(page, 'No').click();
+    await expect(page.getByTestId('home-draw-save')).toBeVisible();
   });
 });
