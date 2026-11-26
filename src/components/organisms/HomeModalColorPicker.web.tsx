@@ -7,6 +7,22 @@ import { COLOR } from '../../constants/AppConstants';
 import { SketchPicker } from 'react-color';
 import { t } from '../../i18n/config';
 import { colorKit } from 'reanimated-color-picker';
+// ネイティブ版（HomeModalColorPicker.tsx）と同じ見本。透明度つきで定義しないと、見本を選んだ色が不透明になる
+const customSwatches = [
+  '#000000b3',
+  '#0000ffb3',
+  '#33ccffb3',
+  '#008000b3',
+  '#b8d200b3',
+  '#ffff00b3',
+  '#ffa500b3',
+  '#996633b3',
+  '#ffb6c1b3',
+  '#ff00ccb3',
+  '#ff0000b3',
+  '#ffffffb3',
+];
+
 interface Props {
   color?: string;
   modalVisible: boolean;
@@ -62,6 +78,7 @@ export const HomeModalColorPicker = React.memo((props: Props) => {
             <Text style={styles.modalTitle}>{`${t('common.selectColor')}`}</Text>
             <SketchPicker
               disableAlpha={!withAlpha}
+              presetColors={customSwatches}
               color={val}
               onChangeComplete={(color_: any) => {
                 //console.log(color);

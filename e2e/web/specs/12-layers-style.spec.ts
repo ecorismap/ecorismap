@@ -33,9 +33,9 @@ const isNear = (color: string, rgb: [number, number, number]) => {
   const m = color.match(/\d+/g)?.map(Number) ?? [];
   return m.length >= 3 && rgb.every((v, k) => Math.abs(v - m[k]) <= 2);
 };
-const RED: [number, number, number] = [208, 2, 27]; // #D0021B
-const BLUE: [number, number, number] = [74, 144, 226]; // #4A90E2
-const YELLOW: [number, number, number] = [248, 231, 28]; // #F8E71C
+const RED: [number, number, number] = [255, 0, 0]; // #ff0000b3
+const BLUE: [number, number, number] = [0, 0, 255]; // #0000ffb3
+const YELLOW: [number, number, number] = [255, 255, 0]; // #ffff00b3
 
 /** Picker を開いて、文言で選択肢を選ぶ */
 const pick = async (page: Page, testID: string, label: string) => {
@@ -146,9 +146,11 @@ test.describe('12. レイヤの表示・スタイル・ツールパレット', (
     // 単色: 色を変えて保存すると、どのポイントもその色になる
     await page.getByTestId(`layers-style-${i}`).click();
     await page.getByTestId('featurestyle-single-color').click();
-    await pickSwatch(page, '#D0021B');
+    await pickSwatch(page, '#ff0000b3');
     await page.getByTestId('featurestyle-save').click();
     await expect.poll(async () => (await markerColors(page)).map((c) => isNear(c, RED))).toEqual([true, true]);
+    // 見本の色は半透明（ネイティブ版と同じ透明度0.7）。不透明にはならない
+    expect((await markerColors(page)).every((c) => /^rgba\(.*,0\.7\d*\)$/.test(c))).toBe(true);
 
     // カテゴリ: cmt の値ごとに色を決めると、値の違うポイントが別の色になる
     await pick(page, 'featurestyle-color-type', 'カテゴリ');
@@ -160,9 +162,9 @@ test.describe('12. レイヤの表示・スタイル・ツールパレット', (
       .evaluateAll((els) => els.map((el) => (el as HTMLInputElement).value));
     expect([...values].sort()).toEqual(['スギ', 'ブナ']);
     await page.getByTestId(`featurestyle-color-${values.indexOf('ブナ')}`).click();
-    await pickSwatch(page, '#4A90E2');
+    await pickSwatch(page, '#0000ffb3');
     await page.getByTestId(`featurestyle-color-${values.indexOf('スギ')}`).click();
-    await pickSwatch(page, '#F8E71C');
+    await pickSwatch(page, '#ffff00b3');
     await page.getByTestId('featurestyle-save').click();
     // 左のポイントがブナ、右がスギ
     const byX = async () => {
@@ -236,9 +238,9 @@ test.describe('12. レイヤの表示・スタイル・ツールパレット', (
     await expect(page.getByTestId('featurestyle-value-0')).toHaveValue('ブナ林');
     await expect(page.getByTestId('featurestyle-value-1')).toHaveValue('スギ植林');
     await page.getByTestId('featurestyle-color-0').click();
-    await pickSwatch(page, '#D0021B');
+    await pickSwatch(page, '#ff0000b3');
     await page.getByTestId('featurestyle-color-1').click();
-    await pickSwatch(page, '#4A90E2');
+    await pickSwatch(page, '#0000ffb3');
     await page.getByTestId('featurestyle-save').click();
     await sheetClose(page);
 
