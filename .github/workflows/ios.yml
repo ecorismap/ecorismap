@@ -225,6 +225,19 @@ jobs:
       - name: Export IPA
         if: github.event_name != 'workflow_dispatch' || inputs.upload
         run: |
+          # 書き出しでも、アーカイブの署名に使ったプロファイルを名指しする。ExportOptions.plist（Secrets）側の
+          # プロファイル名が入れ直したプロファイルとずれていると「requires a provisioning profile with the
+          # App Attest and Push Notifications features」で失敗するので、入れたプロファイルから毎回書き込む
+          PROFILE_PLIST="$(security cms -D -i ~/Library/MobileDevice/Provisioning\ Profiles/ecorismap.mobileprovision)"
+          PROFILE_NAME="$(/usr/libexec/PlistBuddy -c 'Print Name' /dev/stdin <<< "$PROFILE_PLIST")"
+          APP_ID="$(/usr/libexec/PlistBuddy -c 'Print Entitlements:application-identifier' /dev/stdin <<< "$PROFILE_PLIST")"
+          BUNDLE_ID="${APP_ID#*.}"
+          /usr/libexec/PlistBuddy -c 'Delete :provisioningProfiles' ExportOptions.plist 2>/dev/null || true
+          /usr/libexec/PlistBuddy -c 'Add :provisioningProfiles dict' ExportOptions.plist
+          /usr/libexec/PlistBuddy -c "Add :provisioningProfiles:${BUNDLE_ID} string ${PROFILE_NAME}" ExportOptions.plist
+          /usr/libexec/PlistBuddy -c 'Delete :signingStyle' ExportOptions.plist 2>/dev/null || true
+          /usr/libexec/PlistBuddy -c 'Add :signingStyle string manual' ExportOptions.plist
+          echo "export: ${BUNDLE_ID} -> ${PROFILE_NAME}"
           xcodebuild -exportArchive \
                      -archivePath ecorismap.xcarchive \
                      -exportOptionsPlist ExportOptions.plist \
