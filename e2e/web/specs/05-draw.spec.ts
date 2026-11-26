@@ -44,6 +44,32 @@ test.describe('5. 作図', () => {
     await expect(dataRows(page)).toHaveCount(1);
   });
 
+  test('DRAW-2c 起動直後（地図を動かす前）に画面の端寄りへ置いたポイントも、地図に表示される', async ({ page }) => {
+    await selectFeature(page, 'point');
+    for (const x of [100, 250]) {
+      await page.getByTestId('home-draw-plot-point').click();
+      await page.mouse.click(x, 300);
+      await page.getByTestId('home-draw-save').click();
+      await expect(page.getByTestId('dataedit-record-number')).toBeVisible();
+      await sheetClose(page);
+    }
+    await expect(page.locator('.maplibregl-marker')).toHaveCount(2);
+  });
+
+  test('DRAW-2d 道具を持ったまま地図の拡大ボタンを押しても、ボタンの位置に点が描かれない', async ({ page }) => {
+    await selectFeature(page, 'point');
+    await page.getByTestId('home-draw-plot-point').click();
+    const zoom = page.getByTestId('home-zoom-level');
+    const before = await zoom.innerText();
+    await page.locator('.maplibregl-ctrl-zoom-in').click();
+    // 拡大はされ、描きかけはできない
+    await expect(zoom).not.toHaveText(before);
+    await expect(page.getByTestId('home-draw-save')).toBeHidden();
+    // 地図の上なら、これまでどおり点が置ける
+    await page.mouse.click(400, 300);
+    await expect(page.getByTestId('home-draw-save')).toBeVisible();
+  });
+
   test('DRAW-2b 描きかけをキャンセルすると、記録は増えない', async ({ page }) => {
     await selectFeature(page, 'point');
     await page.getByTestId('home-draw-plot-point').click();

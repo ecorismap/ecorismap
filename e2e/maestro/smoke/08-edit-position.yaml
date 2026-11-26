@@ -1,0 +1,121 @@
+# DRAW-16: データ編集の「位置」から、地図で位置を決められる。位置のあるポイントは「戻る」で破棄でき、
+# 終えたあと続けて「位置」を押しても作図のボタンが出る（終えた直後の押し直しでボタンが消えた不具合の再発防止）。
+# 既定の「ポイント」レイヤにテスト用の記録を1件作り、最後に消す。
+appId: jp.co.ecoris.ecorismap
+env:
+  LAYER_NAME: 'ポイント.*'
+---
+- runFlow: ../common/launch.yaml
+- runFlow: ../common/open-point-layer.yaml
+- runFlow: ../common/count-rows.yaml
+# データ一覧から追加した記録には位置が無い
+- runFlow: ../common/add-record.yaml
+- tapOn:
+    id: data-row-${output.row}
+- extendedWaitUntil:
+    visible:
+      id: 'dataedit-edit-position'
+    timeout: 10000
+- waitForAnimationToEnd
+# 位置の無い記録: 「位置」→地図を押して位置を決め、確定する
+- tapOn:
+    id: 'dataedit-edit-position'
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible:
+      id: 'home-draw-finish-edit-position'
+    timeout: 10000
+- waitForAnimationToEnd:
+    timeout: 3000
+- tapOn:
+    point: '50%,35%'
+- extendedWaitUntil:
+    visible:
+      id: 'home-draw-save'
+    timeout: 10000
+- takeScreenshot: 08-edit-position-plotted
+- tapOn:
+    id: 'home-draw-save'
+    retryTapIfNoChange: false
+# 位置編集が終わり、ふだんのボタンに戻る
+- extendedWaitUntil:
+    notVisible:
+      id: 'home-draw-finish-edit-position'
+    timeout: 10000
+- extendedWaitUntil:
+    visible:
+      id: 'home-layers'
+    timeout: 10000
+# レイヤのボタンは、開いていた記録の編集画面を開き直す。位置が入っている
+- repeat:
+    while:
+      notVisible:
+        id: 'dataedit-edit-position'
+    times: 3
+    commands:
+      - tapOn:
+          id: 'home-layers'
+          retryTapIfNoChange: false
+      - waitForAnimationToEnd:
+          timeout: 3000
+- assertVisible:
+    id: 'dataedit-coords-latitude-decimal'
+- takeScreenshot: 08-edit-position-saved
+# 位置のある記録: 「位置」→「戻る」→破棄の確認→Yes で編集画面に戻る
+- tapOn:
+    id: 'dataedit-edit-position'
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible:
+      id: 'home-draw-finish-edit-position'
+    timeout: 10000
+- assertVisible:
+    id: 'home-draw-move-point'
+- tapOn:
+    id: 'home-draw-finish-edit-position'
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible: '.*位置の変更を破棄しますか.*'
+    timeout: 10000
+- tapOn: 'Yes'
+- extendedWaitUntil:
+    visible:
+      id: 'dataedit-edit-position'
+    timeout: 10000
+# 続けてもう一度「位置」: 作図のボタンが出ている
+- tapOn:
+    id: 'dataedit-edit-position'
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible:
+      id: 'home-draw-finish-edit-position'
+    timeout: 10000
+- waitForAnimationToEnd:
+    timeout: 3000
+- assertVisible:
+    id: 'home-draw-move-point'
+- assertVisible:
+    id: 'home-draw-finish-edit-position'
+- takeScreenshot: 08-edit-position-again
+- tapOn:
+    id: 'home-draw-finish-edit-position'
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible: '.*位置の変更を破棄しますか.*'
+    timeout: 10000
+- tapOn: 'Yes'
+# 後片付け
+- extendedWaitUntil:
+    visible:
+      id: 'dataedit-delete'
+    timeout: 10000
+- waitForAnimationToEnd
+- tapOn:
+    id: 'dataedit-delete'
+- tapOn: 'Yes'
+- extendedWaitUntil:
+    visible:
+      id: 'data-add'
+    timeout: 10000
+- assertNotVisible:
+    id: data-row-${output.row}
