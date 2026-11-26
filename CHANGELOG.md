@@ -57,6 +57,12 @@
 - The app now warns when data cannot be saved because the device is low on storage. On the web, opening a new tab no longer deletes PDF maps and PMTiles imported in other tabs
 - Fixed the proximity alert voice not playing while the iPhone screen is locked
 - Fixed differences between the web and mobile versions, such as date and time values saved in a locale-specific format on mobile, arrowheads and brush symbols pointing the wrong way on a rotated map on the web, and the layer edit panel on the web shifting after choosing from a picker so that Save could not be pressed
+- Fixed the screen no longer responding to taps on iOS after downloading a photo from the photo viewer
+- Fixed PMTiles maps registered by URL disappearing when zoomed in beyond their maximum zoom. The maximum zoom is now read from the file when the map is saved
+- Fixed importing a broken style JSON making the map disappear without any message, and a loaded style replacing the current one even when you left the map edit screen without saving. A style that cannot be read is now rejected with a message, and the style is written only when the map is saved
+- Fixed saving project settings from an out-of-date project list overwriting member changes made on another device. The app now checks the cloud before saving and asks you to refresh the list
+- Fixed saving project settings failing right after the app was launched
+- Fixed the bottom sheet opening again by itself when it was closed right after being opened
 - Fixed many other issues found in code reviews
 - Fixed several security issues found in a security review
 
@@ -115,6 +121,12 @@
 - 端末の空き容量不足でデータを保存できていないときに知らせるようにしました。Web版で新しいタブを開くと、ほかのタブで取り込んだPDF地図やPMTilesが消える問題を修正しました
 - iPhoneの画面ロック中に接近通知の音声が出ない問題を修正しました
 - Web版とスマホ版の違いを修正しました（スマホで日時が端末の地域の書式で保存される、Web版で回転した地図の矢印やブラシ記号の向きがずれる、Web版でピッカーを選ぶとレイヤ編集パネルがずれて保存を押せなくなる など）
+- iOSで、写真の表示画面から写真をダウンロードすると画面のタップが効かなくなる問題を修正しました
+- URLで登録したPMTilesの地図が、最大ズームを超えて拡大すると消える問題を修正しました。地図を保存するときに、最大ズームをファイルから読み取ります
+- 壊れたスタイルJSONを取り込むと地図が何も知らせずに消える問題と、読み込んだスタイルが地図の編集画面を保存せずに戻っても反映される問題を修正しました。読めないスタイルは案内を出して取り込まず、スタイルは地図を保存したときにだけ書き込みます
+- 古いプロジェクト一覧から開いた画面でプロジェクト設定を保存すると、ほかの端末で行ったメンバーの変更を上書きする問題を修正しました。保存の前にクラウドと照合し、一覧の更新を案内します
+- アプリを起動した直後にプロジェクト設定を保存すると失敗する問題を修正しました
+- ボトムシートを開いてすぐ閉じると、勝手に開き直る問題を修正しました
 - コードレビューで見つかったそのほか多くの問題を修正しました
 - セキュリティレビューで見つかった複数の問題を修正しました
 
