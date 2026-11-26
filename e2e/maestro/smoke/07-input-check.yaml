@@ -1,0 +1,70 @@
+# ERR-4: 数値の欄に数値でない文字を入れて保存すると、欄の名前つきの確認が1回だけ出て、保存されない。直すと保存できる。
+# 既定の「ポイント」レイヤの連番の欄（name）で確かめる。テスト用の記録を1件作り、最後に消す。
+appId: jp.co.ecoris.ecorismap
+env:
+  LAYER_NAME: 'ポイント.*'
+---
+- runFlow: ../common/launch.yaml
+- runFlow: ../common/open-point-layer.yaml
+- runFlow: ../common/count-rows.yaml
+- runFlow: ../common/add-record.yaml
+- tapOn:
+    id: data-row-${output.row}
+- extendedWaitUntil:
+    visible:
+      id: 'dataedit-input-name'
+    timeout: 10000
+- waitForAnimationToEnd
+# 連番の末尾に文字を足す（端末の日本語入力が変換しても、数値でなくなることは変わらない）
+- tapOn:
+    id: 'dataedit-input-name'
+- inputText: 'x'
+# 欄にカーソルを置いたまま保存を押す（欄を離れたときの確認と、保存時の確認が重なる操作）
+- tapOn:
+    id: 'dataedit-save'
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible: '.*name\(SERIAL\):.*'
+    timeout: 10000
+- takeScreenshot: 07-input-check-alert
+- tapOn: 'OK'
+- waitForAnimationToEnd:
+    timeout: 3000
+# 確認は1回だけで、保存されていない（編集画面のまま）
+- assertNotVisible:
+    id: 'dialog-message'
+- assertVisible:
+    id: 'dataedit-save'
+- assertNotVisible:
+    id: 'data-add'
+# 数値に直すと保存できる（足した1文字を消す）。編集中の記録は削除できないので、後片付けも保存してから行う。
+# 確認を閉じると欄からカーソルが外れているので、欄を押し直してから消す
+- tapOn:
+    id: 'dataedit-input-name'
+- eraseText: 1
+- tapOn:
+    id: 'dataedit-save'
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible:
+      id: data-row-${output.row}
+    timeout: 10000
+- assertNotVisible:
+    id: 'dialog-message'
+# 後片付け
+- tapOn:
+    id: data-row-${output.row}
+- extendedWaitUntil:
+    visible:
+      id: 'dataedit-delete'
+    timeout: 10000
+- waitForAnimationToEnd
+- tapOn:
+    id: 'dataedit-delete'
+- tapOn: 'Yes'
+- extendedWaitUntil:
+    visible:
+      id: 'data-add'
+    timeout: 10000
+- assertNotVisible:
+    id: data-row-${output.row}

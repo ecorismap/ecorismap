@@ -1,6 +1,6 @@
 import fs from 'fs';
 import { expect, Page, test } from '@playwright/test';
-import { attribution, chooseFile, dialogButton, fixture, okIfShown, openApp, plainText, sheetBack, text } from '../support/app';
+import { attribution, chooseFile, dialogButton, fixture, okIfShown, openApp, plainText, sheetBack, sheetClose, text } from '../support/app';
 
 const openMaps = async (page: Page) => {
   await page.getByTestId('home-maps').click();
@@ -192,5 +192,26 @@ test.describe('9. 地図（背景地図）の管理', () => {
     await expect(page.getByTestId('dialog-message')).toBeVisible();
     await dialogButton(page, 'OK').click();
     await expect(page.getByTestId('mapedit-style-url')).toHaveValue(before);
+  });
+
+  test('MAPS-15 キャッシュをクリアしても、取り込んだ地図は残る', async ({ page }) => {
+    const name = await openVectorMapEdit(page);
+    await sheetBack(page);
+    await expect(page.getByTestId('maps-add')).toBeVisible();
+    await sheetClose(page);
+
+    await page.getByTestId('home-settings').click();
+    await page.getByTestId('settings-clear-cache').click();
+    await dialogButton(page, 'Yes').click();
+    await expect(page.getByTestId('dialog-message')).toHaveText('地図のキャッシュをクリアしました。', { timeout: 30_000 });
+    await dialogButton(page, 'OK').click();
+    await sheetClose(page);
+
+    await openMaps(page);
+    expect(await mapNames(page)).toContain(name);
+    // 編集画面も開ける（地図の設定が残っている）
+    const i = await mapIndex(page, name);
+    await page.getByTestId(`maps-edit-${i}`).click();
+    await expect(page.getByTestId('mapedit-name')).toHaveValue(name);
   });
 });

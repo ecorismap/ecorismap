@@ -35,4 +35,64 @@ test.describe('1. 起動・共通', () => {
     await expect(text(page, TERMS_TEXT)).toBeVisible();
     await acceptTerms(page);
   });
+
+  test('BOOT-2 更新情報が出て、OKで閉じる。次回は出ない', async ({ page }) => {
+    await openApp(page);
+    await waitForPersisted(page, /agreedTermsVersion\\+":\\+"[^\\]/);
+    // 端末内の保存を「前のバージョンまで見た」状態に書き換える。
+    // 起動直後の書き出しが続いている間に書き換えると上書きされるので、落ち着くまで待つ
+    const persisted = () =>
+      page.evaluate(async () => {
+        const tabId = sessionStorage.getItem('ecorismap-redux-tab-id');
+        return new Promise<string>((resolve) => {
+          const req = indexedDB.open('ecorismapReduxPersist-' + tabId);
+          req.onsuccess = () => {
+            const get = req.result.transaction('keyvalue').objectStore('keyvalue').get('persist:root');
+            get.onsuccess = () => {
+              resolve(get.result?.value ?? '');
+              req.result.close();
+            };
+          };
+        });
+      });
+    await expect(async () => {
+      const a = await persisted();
+      await page.waitForTimeout(3000);
+      expect(await persisted()).toBe(a);
+    }).toPass({ timeout: 60_000 });
+    await page.evaluate(async () => {
+      const tabId = sessionStorage.getItem('ecorismap-redux-tab-id');
+      await new Promise<void>((resolve, reject) => {
+        const req = indexedDB.open('ecorismapReduxPersist-' + tabId);
+        req.onsuccess = () => {
+          const store = req.result.transaction('keyvalue', 'readwrite').objectStore('keyvalue');
+          const get = store.get('persist:root');
+          get.onsuccess = () => {
+            const row = get.result;
+            const root = JSON.parse(row.value);
+            const settings = JSON.parse(root.settings);
+            settings.lastSeenVersion = '0.0.0';
+            root.settings = JSON.stringify(settings);
+            const put = store.put({ ...row, value: JSON.stringify(root) });
+            put.onsuccess = () => {
+              req.result.close();
+              resolve();
+            };
+            put.onerror = () => reject(put.error);
+          };
+        };
+      });
+    });
+
+    await reloadApp(page);
+    await expect(page.getByTestId('home-updateinfo-version')).toBeVisible({ timeout: 30_000 });
+    await page.getByTestId('home-updateinfo-close').click();
+    await expect(page.getByTestId('home-updateinfo-version')).toBeHidden();
+
+    // 次回は出ない
+    await waitForPersisted(page, /lastSeenVersion\\+":\\+"(?!0\.0\.0)[^\\]/);
+    await reloadApp(page);
+    await page.waitForTimeout(3000);
+    await expect(page.getByTestId('home-updateinfo-version')).toBeHidden();
+  });
 });

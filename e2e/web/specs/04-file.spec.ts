@@ -1,7 +1,17 @@
 import { execFileSync } from 'child_process';
 import fs from 'fs';
 import { expect, test } from '@playwright/test';
-import { dataRows, dialogButton, importLayerFile, layerNames, layerRowIndex, openApp, openLayers } from '../support/app';
+import {
+  dataRows,
+  dialogButton,
+  fixture,
+  importLayerFile,
+  layerNames,
+  layerRowIndex,
+  okIfShown,
+  openApp,
+  openLayers,
+} from '../support/app';
 
 test.describe('12. ファイルの入出力', () => {
   test.beforeEach(async ({ page }) => {
@@ -73,5 +83,24 @@ test.describe('12. ファイルの入出力', () => {
     await expect(page.getByTestId('dialog-message')).not.toHaveText('ファイルをインポートしました。');
     await page.getByTestId('dialog-button-0').click();
     expect(await layerNames(page)).toEqual(before);
+  });
+
+  test('FILE-5 地図へファイルをドラッグ＆ドロップして取り込める', async ({ page }) => {
+    // ファイルを持った DataTransfer を作り、地図の上に落とす
+    const content = fs.readFileSync(fixture('植物調査.geojson'), 'utf-8');
+    const dataTransfer = await page.evaluateHandle((text) => {
+      const dt = new DataTransfer();
+      dt.items.add(new File([text], '植物調査.geojson', { type: 'application/geo+json' }));
+      return dt;
+    }, content);
+    for (const type of ['dragenter', 'dragover', 'drop']) {
+      await page.dispatchEvent('.dropzone', type, { dataTransfer });
+    }
+    await okIfShown(page, 30_000);
+    await openLayers(page);
+    await expect.poll(() => layerNames(page)).toContain('植物調査.geojson');
+    const i = await layerRowIndex(page, '植物調査.geojson');
+    await page.getByTestId(`layers-row-${i}`).click();
+    await expect(dataRows(page)).toHaveCount(8);
   });
 });
