@@ -104,4 +104,37 @@ test.describe('13. 設定', () => {
     await page.getByTestId('settings-language-option-ja').click();
     await expect(page.getByTestId('home-layers')).toContainText('レイヤ', { timeout: 60_000 });
   });
+
+  test('SET-4 キャッシュをクリアできる', async ({ page }) => {
+    await page.getByTestId('home-settings').click();
+    await page.getByTestId('settings-clear-cache').click();
+    await expect(page.getByTestId('dialog-message')).toContainText('地図のキャッシュ');
+    await dialogButton(page, 'Yes').click();
+    await expect(page.getByTestId('dialog-message')).toHaveText('地図のキャッシュをクリアしました。', { timeout: 30_000 });
+    await dialogButton(page, 'OK').click();
+    // 地図とレイヤはそのまま使える
+    await expect(page.getByTestId('settings-clear-cache')).toBeVisible();
+  });
+
+  test('SET-6 マニュアル・ライセンス・バージョン（更新履歴）が開く', async ({ page }) => {
+    // 外部サイトは開かず、開こうとしたURLだけを確かめる
+    await page.evaluate(() => {
+      const opened: string[] = [];
+      (window as unknown as { __opened: string[] }).__opened = opened;
+      window.open = (url?: string | URL) => {
+        opened.push(String(url));
+        return null;
+      };
+    });
+    const opened = () => page.evaluate(() => (window as unknown as { __opened: string[] }).__opened);
+
+    await page.getByTestId('home-settings').click();
+    await page.getByTestId('settings-manual').click();
+    await expect.poll(opened).toEqual(['https://ecorismap.web.app/manual_ja.html']);
+    await page.getByTestId('settings-version').click();
+    await expect.poll(async () => (await opened())[1]).toMatch(/CHANGELOG\.md$/);
+
+    await page.getByTestId('settings-oss-license').click();
+    await expect(page.getByTestId('licenses-row-0')).toBeVisible();
+  });
 });

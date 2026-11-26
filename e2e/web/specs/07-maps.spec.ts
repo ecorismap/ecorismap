@@ -1,5 +1,5 @@
 import { expect, Page, test } from '@playwright/test';
-import { attribution, dialogButton, openApp, plainText, sheetBack } from '../support/app';
+import { attribution, chooseFile, dialogButton, fixture, okIfShown, openApp, plainText, sheetBack, text } from '../support/app';
 
 const openMaps = async (page: Page) => {
   await page.getByTestId('home-maps').click();
@@ -14,6 +14,9 @@ const mapIndex = async (page: Page, name: string) => {
   const id = await page.locator('[data-testid^="maps-row-"]').nth(i).getAttribute('data-testid');
   return Number((id ?? '').replace('maps-row-', ''));
 };
+
+// プリセットの▼は、押せる領域（選択肢を開く部品）が上に重なっているので、位置を指定して押す
+const openPresets = (page: Page) => page.getByTestId('mapedit-preset').click({ force: true });
 
 test.describe('9. 地図（背景地図）の管理', () => {
   test.beforeEach(async ({ page }) => {
@@ -69,5 +72,77 @@ test.describe('9. 地図（背景地図）の管理', () => {
     const before = await mapNames(page);
     await page.getByTestId('maps-down-0').click();
     await expect.poll(() => mapNames(page)).not.toEqual(before);
+  });
+
+  test('MAPS-5 プリセットから地図を追加できる', async ({ page }) => {
+    await page.getByTestId('maps-add').click();
+    await openPresets(page);
+    await text(page, '地理院写真(最新)').click();
+    // プリセットの内容が入力欄に入る
+    await expect(page.getByTestId('mapedit-name')).toHaveValue('地理院写真(最新)');
+    await expect(page.getByTestId('mapedit-url')).toHaveValue(/^https:\/\//);
+    await page.getByTestId('mapedit-save').click();
+    await sheetBack(page);
+    await expect.poll(() => mapNames(page)).toContain('地理院写真(最新)');
+  });
+
+  test('MAPS-6 陰影起伏・段彩（hillshade:// relief://）を追加して表示できる', async ({ page }) => {
+    const pageErrors: string[] = [];
+    page.on('pageerror', (e) => pageErrors.push(e.message));
+    for (const [preset, scheme] of [
+      ['陰影起伏図(全方位対応)', /^hillshade:\/\//],
+      ['GEBCO海底地形図(全球)', /^relief:\/\//],
+    ] as const) {
+      await page.getByTestId('maps-add').click();
+      await openPresets(page);
+      await text(page, preset).click();
+      await expect(page.getByTestId('mapedit-url')).toHaveValue(scheme);
+      await page.getByTestId('mapedit-save').click();
+      await sheetBack(page);
+      await expect(page.getByTestId('maps-add')).toBeVisible();
+    }
+    // 追加した地図は表示され、出典に出る（タイルの絵そのものは確かめない）
+    await expect(attribution(page)).toContainText('GEBCO');
+    await page.waitForTimeout(3000);
+    expect(pageErrors).toEqual([]);
+  });
+
+  test('MAPS-8 PMTilesファイルを取り込んで表示できる', async ({ page }) => {
+    const before = await mapNames(page);
+    await chooseFile(page, page.getByTestId('maps-import'), fixture('vegetation.pmtiles'));
+    await okIfShown(page, 15_000);
+    await expect.poll(() => mapNames(page), { timeout: 30_000 }).toHaveLength(before.length + 1);
+    const added = (await mapNames(page)).filter((name) => !before.includes(name));
+    expect(added[0]).toContain('vegetation');
+  });
+
+  test('MAPS-11 地図設定をエクスポートし、取り込み直せる', async ({ page }, testInfo) => {
+    await page.getByTestId('maps-add').click();
+    await page.getByTestId('mapedit-name').fill('書き出す地図');
+    await page.getByTestId('mapedit-url').fill('https://cyberjapandata.gsi.go.jp/xyz/pale/{z}/{x}/{y}.png');
+    await page.getByTestId('mapedit-attribution').fill('書き出し出典');
+    await page.getByTestId('mapedit-save').click();
+    await sheetBack(page);
+    await expect.poll(() => mapNames(page)).toContain('書き出す地図');
+
+    // エクスポート（Webはダウンロードになる）
+    let i = await mapIndex(page, '書き出す地図');
+    await page.getByTestId(`maps-edit-${i}`).click();
+    const downloadPromise = page.waitForEvent('download', { timeout: 30_000 });
+    await page.getByTestId('mapedit-export').click();
+    const download = await downloadPromise;
+    expect(download.suggestedFilename()).toMatch(/\.json$/);
+    const saved = testInfo.outputPath(download.suggestedFilename());
+    await download.saveAs(saved);
+    await okIfShown(page, 5000);
+
+    // 削除してから取り込み直す
+    await page.getByTestId('mapedit-delete').click();
+    await dialogButton(page, 'Yes').click();
+    await expect.poll(() => mapNames(page)).not.toContain('書き出す地図');
+    await chooseFile(page, page.getByTestId('maps-import'), saved);
+    await okIfShown(page, 10_000);
+    await expect.poll(() => mapNames(page)).toContain('書き出す地図');
+    await expect(attribution(page)).toContainText('書き出し出典');
   });
 });
