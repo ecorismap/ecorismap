@@ -243,7 +243,7 @@ export const useProximityAlert = (): UseProximityAlertReturnType => {
             speakAlert(pointName, currentStep);
           }
         } else if (dist > resetThreshold && notified) {
-          // 閾値の2倍以上離れたらリセット（再接近時に再通知可能）
+          // 閾値の外へ出たらリセット（再接近時に再通知可能）
           notifiedPointsRef.current.delete(record.id);
         }
       }

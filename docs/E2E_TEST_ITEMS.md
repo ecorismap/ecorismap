@@ -293,7 +293,7 @@ iOSとAndroidは同時に流さず、順番に実行する。
 | SET-2 | データをクリアすると、初期のレイヤに戻る | | 自 | 自 | 自 | `e2e/web/specs/10-settings.spec.ts`、`e2e/maestro/smoke/90-clear-restore.yaml` | ネイティブは `E2E_ALLOW_CLEAR=1` のときだけ流す |
 | SET-3 | クリア前のデータが自動バックアップに残り、復元できる | | — | 自 | 自 | `e2e/maestro/smoke/90-clear-restore.yaml`、`03-backup.yaml`（一覧が開くまで） | 端末のデータを消すので `E2E_ALLOW_CLEAR=1` のときだけ流す |
 | SET-4 | キャッシュをクリアできる | | 自 | シミュ | シミュ | `e2e/web/specs/10-settings.spec.ts` | |
-| SET-5 | 接近通知を有効にすると、対象に近づいたとき音声と振動で知らせる | | — | 手 | 手 | | 実機で移動。iOSはロック中も |
+| SET-5 | 接近通知を有効にすると、対象に近づいたとき音声と振動で知らせる | | — | 手 | 手 | `src/hooks/__tests__/useProximityAlert.test.ts`（判定のユニットテスト） | いつ・何を知らせるか（距離の段、繰り返さない、3秒の間隔、精度、対象の絞り込み）はユニットテストが見る。人が確かめるのは、実機で歩いて実際に音声が聞こえ振動すること。iOSはロック中も |
 | SET-6 | マニュアル・ライセンス・バージョン（更新履歴）が開く | | 自 | シミュ | シミュ | `e2e/web/specs/10-settings.spec.ts` | Webの自動は、開こうとしたURLとライセンス画面まで |
 
 ## 14. 外部GNSS受信機（RTK）
