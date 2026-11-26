@@ -5,7 +5,6 @@ import {
   importLayerFile,
   layerRowIndex,
   longPressMap,
-  okIfShown,
   openApp,
   openLayerData,
   openLayerSettings,
@@ -106,15 +105,15 @@ test.describe('11. データ編集（入力の検証・地図への移動）', (
     await expect(page.getByTestId('data-export')).toBeVisible();
     await expect(dataRows(page)).toHaveCount(1);
 
-    // 数値欄に文字を入れると、入力し直しを求められて保存されない（欄を離れた時点で確かめられる）
+    // 数値欄に文字を入れると、欄の名前つきで入力し直しを求められて、保存されない
     await page.getByTestId('data-row-0').click();
     await page.getByTestId('dataedit-input-個体数').fill('たくさん');
     await page.getByTestId('dataedit-save').click();
     await expect(page.getByTestId('dialog-message')).toContainText('以下の値を正しく入力してください');
-    await expect(page.getByTestId('dialog-message')).toContainText('たくさん');
+    await expect(page.getByTestId('dialog-message')).toContainText('個体数(INTEGER):たくさん');
     await dialogButton(page, 'OK').click();
-    // 欄を離れたときの確認と、保存時の確認が続けて出ることがある
-    await okIfShown(page, 2000);
+    // 確認は1回だけ（欄を離れたときと保存時とで重ねて出ない）
+    await page.waitForTimeout(1500);
     await expect(page.getByTestId('dialog-message')).toBeHidden();
     await expect(page.getByTestId('dataedit-save')).toBeVisible();
     await expect(page.getByTestId('data-export')).toHaveCount(0);

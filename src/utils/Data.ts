@@ -21,6 +21,7 @@ import { cloneDeep } from 'lodash';
 import { ulid } from 'ulid';
 import { boundingBoxFromCoords, latLonDMS } from './Coords';
 import { t } from '../i18n/config';
+import { fieldInputErrorMessage } from './fieldInputAlert';
 import { isLocationType } from './General';
 import {
   applyTakeoversToDataSet,
@@ -536,7 +537,7 @@ export const checkFieldInput = (layer: LayerType, record: RecordType) => {
     if (!isOK) {
       return {
         isOK: false,
-        message: `${t('Data.alert.checkFieldInput')} ${l.name}(${l.format}):${record.field[l.name]} `,
+        message: fieldInputErrorMessage(l.name, l.format, record.field[l.name]),
       };
     }
   }

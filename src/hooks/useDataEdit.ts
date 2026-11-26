@@ -16,6 +16,8 @@ import { LatLonDMSEmptyTemplate, LatLonDMSTemplate, PHOTO_FOLDER, SelectedPhotoT
 import { cloneDeep } from 'lodash';
 import { latLonDMS, toLatLonDMS } from '../utils/Coords';
 import { formattedInputs } from '../utils/Format';
+import { fieldInputErrorMessage, shouldShowFieldInputAlert } from '../utils/fieldInputAlert';
+import { Alert } from '../components/atoms/Alert';
 import { updateRecordCoords, updateReferenceFieldValue } from '../utils/Data';
 import { useRecord } from './useRecord';
 import { ulid } from 'ulid';
@@ -517,7 +519,12 @@ export const useDataEdit = (record: RecordType, layer: LayerType): UseDataEditRe
   const submitField = useCallback(
     (name: string, format: string) => {
       //console.log(targetRecord.field[name]);
-      const formatted = formattedInputs(targetRecord.field[name], format);
+      // 確認には欄の名前を入れる（形式と値だけでは、どの欄のことか分からない）
+      const formatted = formattedInputs(targetRecord.field[name], format, false);
+      if (!formatted.isOK) {
+        const message = fieldInputErrorMessage(name, format, targetRecord.field[name]);
+        if (shouldShowFieldInputAlert(message)) Alert.alert('', message);
+      }
       const m = { ...targetRecord, field: { ...targetRecord.field, [name]: formatted.result } };
       setTargetRecord(m);
     },
