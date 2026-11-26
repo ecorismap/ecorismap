@@ -1540,6 +1540,9 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     [hasUnsavedDrawing, selectFeatureButton]
   );
 
+  //位置編集を終えた直後にもう一度「位置」を押すと、遅らせている後始末が次の位置編集の最中に走り、
+  //作図ボタンが全部消えて抜けられなくなる。次の位置編集に入るときに取り消せるよう控えておく
+  const finishEditPositionTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const finishEditPosition = useCallback(
     async (skipConfirm = false) => {
       // 座標がある場合は確認メッセージを表示（skipConfirmがtrueの場合はスキップ）
@@ -1549,7 +1552,9 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       }
 
       openSheet(2);
-      setTimeout(() => {
+      if (finishEditPositionTimerRef.current !== undefined) clearTimeout(finishEditPositionTimerRef.current);
+      finishEditPositionTimerRef.current = setTimeout(() => {
+        finishEditPositionTimerRef.current = undefined;
         //onPressMapViewでInfoToolがアクティブになるのを防ぐためSetTimeoutで遅延させる
         selectFeatureButton('NONE');
       }, 500);
@@ -3563,6 +3568,10 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
 
         // UI準備
         closeSheetLater(300);
+        if (finishEditPositionTimerRef.current !== undefined) {
+          clearTimeout(finishEditPositionTimerRef.current);
+          finishEditPositionTimerRef.current = undefined;
+        }
         selectFeatureButton(featureType);
         setInfoToolActive(false);
 
