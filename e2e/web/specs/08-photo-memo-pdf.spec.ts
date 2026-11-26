@@ -43,6 +43,27 @@ test.describe('写真・マップメモ・PDF', () => {
     await expect(dataRows(page)).toHaveCount(1);
   });
 
+  test('MEMO-3 消しゴムで線を消せる', async ({ page }) => {
+    await page.getByTestId('home-feature-draw').click();
+    await page.getByTestId('home-feature-memo').click();
+    await page.getByTestId('home-memo-pen').click();
+    await page.mouse.move(200, 300);
+    await page.mouse.down();
+    await page.mouse.move(400, 300, { steps: 10 });
+    await page.mouse.up();
+    await page.waitForTimeout(500);
+    // 線を横切るようになぞって消す
+    await page.getByTestId('home-memo-eraser').click();
+    await page.mouse.move(300, 220);
+    await page.mouse.down();
+    await page.mouse.move(300, 380, { steps: 10 });
+    await page.mouse.up();
+    await page.waitForTimeout(800);
+    // 部分消去なので、線は消えた部分の両側に分かれる（1本のままではない）か、全部消える
+    await openLayerData(page, 'メモ');
+    await expect.poll(() => dataRows(page).count()).not.toBe(1);
+  });
+
   test('PDF-1 設定からPDF出力の画面を開き、用紙の設定を開いて閉じ、戻れる', async ({ page }) => {
     await page.getByTestId('home-settings').click();
     await page.getByTestId('settings-pdf').click();
