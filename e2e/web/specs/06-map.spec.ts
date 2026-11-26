@@ -51,6 +51,22 @@ test.describe('2. 地図表示・基本操作 / 7. 計測・3D', () => {
     await expect(page.getByTestId('home-measure-text')).toBeHidden();
   });
 
+  test('ANLY-1b 3D表示中も距離測定ができ、起伏に沿った距離と標高差が出る', async ({ page }) => {
+    await page.getByTestId('home-terrain').click();
+    await expect(attribution(page)).toContainText('Mapterhorn', { timeout: 30_000 });
+    await longPressMap(page, 300, 350);
+    await page.getByTestId('home-poi-measure').click();
+    await expect(page.getByTestId('home-measure-text')).toHaveText('地図をタップして地点を選択');
+    await page.mouse.click(450, 450);
+    // 3Dでは水平距離に加えて、起伏に沿った距離と標高差も出る
+    await expect(page.getByTestId('home-measure-text')).toHaveText(
+      /^水平 [\d.,]+ k?m ／ 沿面 [\d.,]+ k?m\n?標高差 [+-]?\d+ m（終点−起点）$/,
+      { timeout: 20_000 }
+    );
+    await page.getByTestId('home-measure-close').click();
+    await expect(page.getByTestId('home-measure-text')).toBeHidden();
+  });
+
   test('ANLY-3 3D表示に切り替えられ、2Dに戻せる', async ({ page }) => {
     const errors: string[] = [];
     page.on('pageerror', (e) => errors.push(String(e)));
