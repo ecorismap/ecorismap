@@ -25,6 +25,10 @@
 - [ ] `yarn testrules`（サーバー側の通し: 同期・権限・写真。Firebaseエミュレータ、Java 21）
 - [ ] `yarn e2e:ios`（iOSシミュレーター。Maestro）
 - [ ] `yarn e2e:android`（Androidエミュレーター。Maestro）
+- [ ] データをクリア→自動バックアップから復元（台帳の SET-2・SET-3）。端末のデータを消すので、上の2つでは流れない。
+  テスト専用の端末で `scripts/e2e-native.sh ios 90` / `scripts/e2e-native.sh android 90`
+  （全フローと一緒に流すときは `E2E_ALLOW_CLEAR=1 yarn e2e:ios`）。
+  復元で記録は戻るが、地図の設定は初期化され、自動バックアップは5世代までなので古い世代が1つ押し出される
 
 iOSとAndroidは同時に流さず、順番に実行する。ネイティブの前提:
 

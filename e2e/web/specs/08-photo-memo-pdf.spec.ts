@@ -57,4 +57,31 @@ test.describe('写真・マップメモ・PDF', () => {
     await expect(page.getByTestId('home-pdf-export')).toBeHidden();
     await expect(page.getByTestId('home-layers')).toBeVisible();
   });
+
+  test('PDF-2 出力すると、印刷用のウィンドウが開いて印刷が呼ばれる', async ({ page, context }) => {
+    // 印刷ダイアログは出さず、呼ばれたことだけを記録する（別ウィンドウにも効くよう、コンテキストに入れる）
+    await context.exposeBinding('__e2ePrinted', () => {
+      printed += 1;
+    });
+    let printed = 0;
+    await context.addInitScript(() => {
+      window.print = () => {
+        void (window as unknown as { __e2ePrinted: () => Promise<void> }).__e2ePrinted();
+        setTimeout(() => window.dispatchEvent(new Event('afterprint')), 100);
+      };
+    });
+    const errors: string[] = [];
+    page.on('pageerror', (e) => errors.push(String(e)));
+
+    await page.getByTestId('home-settings').click();
+    await page.getByTestId('settings-pdf').click();
+    await expect(page.getByTestId('home-pdf-export')).toBeVisible();
+    const popupPromise = context.waitForEvent('page', { timeout: 60_000 });
+    await page.getByTestId('home-pdf-export').click();
+    const popup = await popupPromise;
+    await expect.poll(() => printed, { timeout: 60_000 }).toBeGreaterThan(0);
+    // 印刷が終わると、印刷用のウィンドウは閉じる
+    await expect.poll(() => popup.isClosed(), { timeout: 30_000 }).toBe(true);
+    expect(errors).toEqual([]);
+  });
 });
