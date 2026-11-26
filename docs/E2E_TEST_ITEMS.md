@@ -144,13 +144,13 @@ iOSとAndroidは同時に流さず、順番に実行する。
 | MAPS-2 | 透過率を変えられる | | 予 | 手 | 手 | | |
 | MAPS-3 | 並べ替え・グループ作成・グループへの出し入れができる | | 自 | 手 | 手 | `e2e/web/specs/07-maps.spec.ts` | |
 | MAPS-4 | 地図をURLで追加・編集・削除できる | | 自 | 手 | 手 | `e2e/web/specs/07-maps.spec.ts` | |
-| MAPS-5 | プリセットから地図を追加できる | | 予 | 手 | 手 | | |
-| MAPS-6 | 陰影起伏・段彩（hillshade:// relief://）を追加して表示できる | | 予 | 手 | 手 | | |
+| MAPS-5 | プリセットから地図を追加できる | | 自 | 手 | 手 | `e2e/web/specs/07-maps.spec.ts` | |
+| MAPS-6 | 陰影起伏・段彩（hillshade:// relief://）を追加して表示できる | | 自 | 手 | 手 | `e2e/web/specs/07-maps.spec.ts` | 自動は追加と出典の表示まで。絵は手動で確かめる |
 | MAPS-7 | PMTiles（ラスタ／ベクタ）をURLで登録して表示できる | | 予 | 手 | 手 | | AndroidはR8ビルド |
-| MAPS-8 | PMTilesファイルを取り込んで表示できる | | 予 | — | — | | |
+| MAPS-8 | PMTilesファイルを取り込んで表示できる | | 自 | — | — | `e2e/web/specs/07-maps.spec.ts` | |
 | MAPS-9 | ベクタタイルにスタイルJSONを読み込むと、保存後に見た目が変わる | | 予 | 手 | 手 | | TILES-15 |
 | MAPS-10 | PDF地図を取り込んで表示できる | | 予 | 手 | 手 | | |
-| MAPS-11 | 地図設定をエクスポートし、取り込み直せる | | 予 | 手 | 手 | | |
+| MAPS-11 | 地図設定をエクスポートし、取り込み直せる | | 自 | 手 | 手 | `e2e/web/specs/07-maps.spec.ts` | |
 | MAPS-12 | オフライン用に範囲を指定してタイルをダウンロードできる（一時停止・再開・停止） | | — | 自 | 自 | `e2e/maestro/smoke/05-maps.yaml` | 自動は範囲画面を開くまで |
 | MAPS-13 | オフラインに切り替えると、ダウンロード済みの範囲が表示される | | — | 手 | 手 | | 機内モードでも確認 |
 | MAPS-14 | 標高データをダウンロードすると、オフラインで標高・可視領域・3Dが使える | | — | 手 | 手 | | |
@@ -216,9 +216,9 @@ iOSとAndroidは同時に流さず、順番に実行する。
 | SET-1 | 設定画面が開き、各項目が出る | | 自 | 自 | 自 | `e2e/web/specs/10-settings.spec.ts`, `e2e/maestro/smoke/01-launch.yaml` | |
 | SET-2 | データをクリアすると、初期のレイヤに戻る | | 自 | 自 | 自 | `e2e/web/specs/10-settings.spec.ts`、`e2e/maestro/smoke/90-clear-restore.yaml` | ネイティブは `E2E_ALLOW_CLEAR=1` のときだけ流す |
 | SET-3 | クリア前のデータが自動バックアップに残り、復元できる | | — | 自 | 自 | `e2e/maestro/smoke/90-clear-restore.yaml`、`03-backup.yaml`（一覧が開くまで） | 端末のデータを消すので `E2E_ALLOW_CLEAR=1` のときだけ流す |
-| SET-4 | キャッシュをクリアできる | | 予 | 手 | 手 | | |
+| SET-4 | キャッシュをクリアできる | | 自 | 手 | 手 | `e2e/web/specs/10-settings.spec.ts` | |
 | SET-5 | 接近通知を有効にすると、対象に近づいたとき音声と振動で知らせる | | — | 手 | 手 | | 実機で移動。iOSはロック中も |
-| SET-6 | マニュアル・ライセンス・バージョン（更新履歴）が開く | | 予 | 手 | 手 | | |
+| SET-6 | マニュアル・ライセンス・バージョン（更新履歴）が開く | | 自 | 手 | 手 | `e2e/web/specs/10-settings.spec.ts` | Webの自動は、開こうとしたURLとライセンス画面まで |
 
 ## 14. 外部GNSS受信機（RTK）
 
