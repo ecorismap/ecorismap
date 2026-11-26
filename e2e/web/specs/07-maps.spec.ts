@@ -1,3 +1,4 @@
+import fs from 'fs';
 import { expect, Page, test } from '@playwright/test';
 import { attribution, chooseFile, dialogButton, fixture, okIfShown, openApp, plainText, sheetBack, text } from '../support/app';
 
@@ -144,5 +145,52 @@ test.describe('9. 地図（背景地図）の管理', () => {
     await okIfShown(page, 10_000);
     await expect.poll(() => mapNames(page)).toContain('書き出す地図');
     await expect(attribution(page)).toContainText('書き出し出典');
+  });
+
+  // ベクタのPMTilesを取り込み、その地図の編集画面を開く
+  const openVectorMapEdit = async (page: Page) => {
+    const before = await mapNames(page);
+    await chooseFile(page, page.getByTestId('maps-import'), fixture('vegetation.pmtiles'));
+    await okIfShown(page, 15_000);
+    await expect.poll(() => mapNames(page), { timeout: 30_000 }).toHaveLength(before.length + 1);
+    const name = (await mapNames(page)).filter((n) => !before.includes(n))[0];
+    const i = await mapIndex(page, name);
+    await page.getByTestId(`maps-edit-${i}`).click();
+    await expect(page.getByTestId('mapedit-import-style')).toBeVisible();
+    return name;
+  };
+
+  test('MAPS-9 ベクタタイルにスタイルJSONを読み込むと、保存後もスタイルが設定されている', async ({ page }) => {
+    const name = await openVectorMapEdit(page);
+    const before = await page.getByTestId('mapedit-style-url').inputValue();
+    await chooseFile(page, page.getByTestId('mapedit-import-style'), fixture('vegetation-style.json'));
+    await expect(page.getByTestId('mapedit-style-url')).toHaveValue('style://vegetation-style.json');
+    expect(before).not.toBe('style://vegetation-style.json');
+    await page.getByTestId('mapedit-save').click();
+    await sheetBack(page);
+    await expect(page.getByTestId('maps-add')).toBeVisible();
+    // 開き直しても残っている
+    const i = await mapIndex(page, name);
+    await page.getByTestId(`maps-edit-${i}`).click();
+    await expect(page.getByTestId('mapedit-style-url')).toHaveValue('style://vegetation-style.json');
+  });
+
+  test('ERR-3 不正なスタイルJSONを読み込むと、エラーが出て前のスタイルのまま', async ({ page }, testInfo) => {
+    await openVectorMapEdit(page);
+    const before = await page.getByTestId('mapedit-style-url').inputValue();
+    // layers の無いJSON
+    const broken = testInfo.outputPath('broken-style.json');
+    fs.writeFileSync(broken, JSON.stringify({ version: 8, sources: {} }));
+    await chooseFile(page, page.getByTestId('mapedit-import-style'), broken);
+    await expect(page.getByTestId('dialog-message')).toContainText('スタイルファイルを読み取れません');
+    await dialogButton(page, 'OK').click();
+    await expect(page.getByTestId('mapedit-style-url')).toHaveValue(before);
+    // JSONとして読めないファイル
+    const notJson = testInfo.outputPath('not-json.json');
+    fs.writeFileSync(notJson, '{ "layers": [');
+    await chooseFile(page, page.getByTestId('mapedit-import-style'), notJson);
+    await expect(page.getByTestId('dialog-message')).toBeVisible();
+    await dialogButton(page, 'OK').click();
+    await expect(page.getByTestId('mapedit-style-url')).toHaveValue(before);
   });
 });
