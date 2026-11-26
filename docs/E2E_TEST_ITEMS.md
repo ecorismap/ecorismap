@@ -214,8 +214,8 @@ iOSとAndroidは同時に流さず、順番に実行する。
 | ID | 機能（正常系で確かめること） | ログイン | Web | iOS | Android | 自動テスト | 備考 |
 |---|---|---|---|---|---|---|---|
 | SET-1 | 設定画面が開き、各項目が出る | | 自 | 自 | 自 | `e2e/web/specs/10-settings.spec.ts`, `e2e/maestro/smoke/01-launch.yaml` | |
-| SET-2 | データをクリアすると、初期のレイヤに戻る | | 自 | 予 | 予 | `e2e/web/specs/10-settings.spec.ts` | |
-| SET-3 | クリア前のデータが自動バックアップに残り、復元できる | | — | 予 | 予 | `e2e/maestro/smoke/03-backup.yaml`（一覧が開くまで） | クリア→復元の通しは手動 |
+| SET-2 | データをクリアすると、初期のレイヤに戻る | | 自 | 自 | 自 | `e2e/web/specs/10-settings.spec.ts`、`e2e/maestro/smoke/90-clear-restore.yaml` | ネイティブは `E2E_ALLOW_CLEAR=1` のときだけ流す |
+| SET-3 | クリア前のデータが自動バックアップに残り、復元できる | | — | 自 | 自 | `e2e/maestro/smoke/90-clear-restore.yaml`、`03-backup.yaml`（一覧が開くまで） | 端末のデータを消すので `E2E_ALLOW_CLEAR=1` のときだけ流す |
 | SET-4 | キャッシュをクリアできる | | 予 | 手 | 手 | | |
 | SET-5 | 接近通知を有効にすると、対象に近づいたとき音声と振動で知らせる | | — | 手 | 手 | | 実機で移動。iOSはロック中も |
 | SET-6 | マニュアル・ライセンス・バージョン（更新履歴）が開く | | 予 | 手 | 手 | | |

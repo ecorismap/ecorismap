@@ -1,0 +1,83 @@
+# SET-2・SET-3: データをクリアすると記録が消え、クリア前の自動バックアップから復元すると戻る。
+# 端末のデータ・地図の設定を初期化するので、テスト専用の端末でだけ流す
+# （scripts/e2e-native.sh は、名前を指定したときか E2E_ALLOW_CLEAR=1 のときだけ90番台を流す）。
+# 既定の「ポイント」レイヤの末尾にテスト用の記録を1件作り、復元で戻ったことを確かめてから消す。
+appId: jp.co.ecoris.ecorismap
+env:
+  LAYER_NAME: 'ポイント.*'
+---
+# 記録を1件作る（記録が0件だと、クリア前の自動バックアップは作られない）
+- runFlow: ../common/launch.yaml
+- runFlow: ../common/open-point-layer.yaml
+- runFlow: ../common/count-rows.yaml
+- runFlow: ../common/add-record.yaml
+- evalScript: ${output.target = output.row}
+
+# データをクリアする
+- runFlow: ../common/launch.yaml
+- runFlow: ../common/open-settings.yaml
+- tapOn:
+    id: 'settings-clear-data'
+- assertVisible: '.*現在のデータをクリアしますか.*'
+- tapOn: 'Yes'
+# クリアが終わると地図画面へ戻る
+- extendedWaitUntil:
+    visible:
+      id: 'home-layers'
+    timeout: 30000
+- takeScreenshot: 90-cleared
+
+# 起動し直しても、作った記録は消えている
+- runFlow: ../common/launch.yaml
+- runFlow: ../common/open-point-layer.yaml
+- assertNotVisible:
+    id: data-row-${output.target}
+
+# クリア前の自動バックアップ（一覧の先頭が最新）から復元する
+- runFlow: ../common/launch.yaml
+- runFlow: ../common/open-settings.yaml
+- tapOn:
+    id: 'settings-backup-restore'
+- extendedWaitUntil:
+    visible:
+      id: 'settings-backup-row-0'
+    timeout: 10000
+- assertVisible: '.*データクリア前.*'
+- takeScreenshot: 90-backup-list
+- tapOn:
+    id: 'settings-backup-row-0'
+- extendedWaitUntil:
+    visible: '.*選択したバックアップを復元しますか.*'
+    timeout: 10000
+- tapOn: 'Yes'
+- extendedWaitUntil:
+    visible: '.*バックアップを復元しました.*'
+    timeout: 30000
+- tapOn: 'OK'
+- extendedWaitUntil:
+    visible:
+      id: 'home-layers'
+    timeout: 30000
+
+# 起動し直しても、復元した記録が残っている。確かめたら消す
+- runFlow: ../common/launch.yaml
+- runFlow: ../common/open-point-layer.yaml
+- assertVisible:
+    id: data-row-${output.target}
+- takeScreenshot: 90-restored
+- tapOn:
+    id: data-row-${output.target}
+- extendedWaitUntil:
+    visible:
+      id: 'dataedit-delete'
+    timeout: 10000
+- waitForAnimationToEnd
+- tapOn:
+    id: 'dataedit-delete'
+- tapOn: 'Yes'
+- extendedWaitUntil:
+    visible:
+      id: 'data-add'
+    timeout: 10000
+- assertNotVisible:
+    id: data-row-${output.target}
