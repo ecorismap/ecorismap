@@ -686,12 +686,25 @@ export default function HomeScreen() {
         map.setTerrain(null);
       }
 
+      // 保存されている表示範囲（緯度・経度の幅）は、初回起動の既定値や前回のウィンドウの大きさのもので、
+      // いまの画面の範囲と合っていないことがある。そのままだと地図を動かすまで、端寄りのデータが
+      // 表示範囲の外として間引かれて描かれない。読み込みが済んだら実際の範囲で更新する
+      const center = map.getCenter();
+      onRegionChangeMapView({
+        longitude: center.lng,
+        latitude: center.lat,
+        zoom: map.getZoom(),
+        bearing: map.getBearing(),
+        pitch: map.getPitch(),
+        padding: map.getPadding(),
+      });
+
       // 初回ロード時にレイヤーを追加（useEffectが実行される前に確実に追加）
       if (mapViewRef.current) {
         await addDynamicLayers();
       }
     },
-    [isTerrainActive, addDynamicLayers, mapViewRef]
+    [isTerrainActive, addDynamicLayers, mapViewRef, onRegionChangeMapView]
   );
 
   // 地図一覧の「山名」を表示したときだけ、同梱の山頂データを読み込む（初期バンドルを太らせない）

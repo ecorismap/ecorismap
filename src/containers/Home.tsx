@@ -180,6 +180,13 @@ import { nextHisyouPenState, PenSettingsType } from '../utils/hisyouPenRestore';
 const PINCH_INTENT_DURATION_MS = 300;
 
 // 内部コンポーネント - BottomSheetNavigationProvider の内側で使用
+//Web: 押された場所が、地図に載っているmaplibreの操作ボタン（.maplibregl-ctrl）の上かどうか
+const isOnMapControl = (event: GestureResponderEvent): boolean => {
+  if (Platform.OS !== 'web') return false;
+  const target = event.nativeEvent.target as unknown as { closest?: (selector: string) => unknown } | null;
+  return typeof target?.closest === 'function' && target.closest('.maplibregl-ctrl') != null;
+};
+
 function HomeContainersInner({ navigation, route }: Props_Home) {
   const [restored] = useState(true);
   const mapViewRef = useRef<MapView | MapRef | null>(null);
@@ -3439,14 +3446,16 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
         longPressTimerRef.current = null;
       }
     }
-    return true;
+    //Web: 地図の上に載っている操作ボタン（拡大・縮小・コンパス・現在地）は地図の一部として同じViewに入っている。
+    //ここで受け取ると、道具を持っているときにボタンの位置へ点や線が描かれてしまうので、ボタンに任せる
+    return !isOnMapControl(event);
   }, []);
 
   const panResponder: PanResponderInstance = useMemo(
     () =>
       PanResponder.create({
         onStartShouldSetPanResponder: recordMultiTouch,
-        onMoveShouldSetPanResponder: () => true,
+        onMoveShouldSetPanResponder: (event) => !isOnMapControl(event),
         onPanResponderStart: recordMultiTouch,
         onPanResponderGrant: handlePanResponderGrant,
         onPanResponderMove: handlePanResponderMove,
