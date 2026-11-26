@@ -200,6 +200,8 @@ jobs:
                                CURRENT_PROJECT_VERSION=${BUILD_NUMBER} \
                                COMPILER_INDEX_STORE_ENABLE=NO \
                                CODE_SIGN_STYLE=Manual \
+                               CODE_SIGN_IDENTITY="Apple Distribution" \
+                               "CODE_SIGN_IDENTITY[sdk=iphoneos*]=Apple Distribution" \
                                PROVISIONING_PROFILE_SPECIFIER="$(/usr/libexec/PlistBuddy -c 'Print Name' /dev/stdin <<< $(security cms -D -i ~/Library/MobileDevice/Provisioning\ Profiles/ecorismap.mobileprovision))"
           fi
 
