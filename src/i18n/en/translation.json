@@ -1153,7 +1153,10 @@
     },
     "measure": {
       "tapToSetPoint": "Tap the map to set a point",
-      "distance": "Distance {{distance}}"
+      "distance": "Distance {{distance}}",
+      "distance3d": "Horizontal {{distance}} / Surface {{surface}}",
+      "distance3dLoading": "Horizontal {{distance}} / calculating terrain…",
+      "elevationDiff": "Elevation diff {{diff}} m (end − start)"
     },
     "trackPoint": {
       "title": "Track Point",

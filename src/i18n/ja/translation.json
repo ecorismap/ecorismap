@@ -412,7 +412,10 @@
     },
     "measure": {
       "tapToSetPoint": "地図をタップして地点を選択",
-      "distance": "距離 {{distance}}"
+      "distance": "距離 {{distance}}",
+      "distance3d": "水平 {{distance}} ／ 沿面 {{surface}}",
+      "distance3dLoading": "水平 {{distance}} ／ 起伏を計算中…",
+      "elevationDiff": "標高差 {{diff}} m（終点−起点）"
     },
     "trackPoint": {
       "title": "軌跡ポイント",

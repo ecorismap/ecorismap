@@ -142,8 +142,10 @@ export const HomePoiPopup = React.memo(() => {
     if (success) setCopied(true);
   }, [coordinateText]);
 
-  // 3Dでは距離測定（2Dの地図操作が前提）を出さない。可視領域は3Dでも結果を描けるので出す
-  const menuItemCount = isPOI ? 0 : (canVista ? 1 : 0) + 1 + (isTerrainActive ? 0 : 1);
+  // ネイティブの3D（自作エンジン）は測定線を描けないので距離測定を出さない。
+  // Webの3Dはmaplibreの地形の上に2Dと同じ測定線を描けるので出す。可視領域は3Dでも結果を描けるので出す
+  const canMeasure = !isTerrainActive || Platform.OS === 'web';
+  const menuItemCount = isPOI ? 0 : (canVista ? 1 : 0) + 1 + (canMeasure ? 1 : 0);
   const HEIGHT =
     40 + (distanceText ? 20 : 0) + 20 + (coordinateText ? (isLongCoordinate ? 40 : 20) : 0) + menuItemCount * 30;
 
@@ -333,7 +335,7 @@ export const HomePoiPopup = React.memo(() => {
               </Text>
             </Pressable>
           )}
-          {!isPOI && !isTerrainActive && (
+          {!isPOI && canMeasure && (
             <Pressable
               testID="home-poi-measure"
               onPress={handleMeasureDistance}
