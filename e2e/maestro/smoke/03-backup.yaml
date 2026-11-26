@@ -1,6 +1,6 @@
 # SET-3（一部）: 設定の「バックアップから復元」で、自動バックアップの一覧が開く。データは変えない。
-# クリア→復元の通し（SET-2・SET-3）は端末のデータを消すので、ここでは流さない（手動で確かめる。
-# フローにするときは90番台の名前にする。scripts/e2e-native.sh は E2E_ALLOW_CLEAR=1 のときだけ90番台を流す）。
+# クリア→復元の通し（SET-2・SET-3）は端末のデータを消すので、90-clear-restore.yaml に分けてある
+# （scripts/e2e-native.sh は、名前を指定したときか E2E_ALLOW_CLEAR=1 のときだけ90番台を流す）。
 appId: jp.co.ecoris.ecorismap
 ---
 - runFlow: ../common/launch.yaml
