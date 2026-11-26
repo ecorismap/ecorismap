@@ -6,6 +6,7 @@ import { AlertAsync, ConfirmAsync } from '../components/molecules/AlertAsync';
 import { useDataEdit } from '../hooks/useDataEdit';
 import { useBottomSheetNavigation, useBottomSheetRoute } from '../contexts/BottomSheetNavigationContext';
 import { Alert } from '../components/atoms/Alert';
+import { shouldShowFieldInputAlert } from '../utils/fieldInputAlert';
 import { t } from '../i18n/config';
 import { useRecord } from '../hooks/useRecord';
 import { DataEditContext } from '../contexts/DataEdit';
@@ -97,7 +98,8 @@ export default function DataEditContainer() {
   const runSave = useCallback(async () => {
     const checkInputResult = checkFieldInput(targetLayer, targetRecord);
     if (!checkInputResult.isOK) {
-      Alert.alert('', checkInputResult.message);
+      // 欄を離れたときに同じ確認を出した直後なら、重ねて出さない
+      if (shouldShowFieldInputAlert(checkInputResult.message)) Alert.alert('', checkInputResult.message);
       return;
     }
     //座標欄がすべて空欄の場合は「位置なし」として扱い座標チェックをスキップ
