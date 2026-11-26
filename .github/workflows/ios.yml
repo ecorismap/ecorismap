@@ -192,17 +192,23 @@ jobs:
                                COMPILER_INDEX_STORE_ENABLE=NO \
                                CODE_SIGNING_ALLOWED=NO
           else
+            # 署名の設定はアプリのターゲットにだけ入れる。xcodebuild の引数で渡すと Pods の各ターゲットにも掛かり、
+            # 「does not support provisioning profiles」で失敗する
+            PROFILE_NAME="$(/usr/libexec/PlistBuddy -c 'Print Name' /dev/stdin <<< $(security cms -D -i ~/Library/MobileDevice/Provisioning\ Profiles/ecorismap.mobileprovision))"
+            sed -i '' \
+              -e 's/CODE_SIGN_STYLE = Automatic;/CODE_SIGN_STYLE = Manual;/' \
+              -e 's/CODE_SIGN_IDENTITY = "Apple Development";/CODE_SIGN_IDENTITY = "Apple Distribution";/' \
+              -e 's/"CODE_SIGN_IDENTITY\[sdk=iphoneos\*\]" = "iPhone Developer";/"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "Apple Distribution";/' \
+              -e "s/PROVISIONING_PROFILE_SPECIFIER = \"\";/PROVISIONING_PROFILE_SPECIFIER = \"$PROFILE_NAME\";/" \
+              ios/ecorismap.xcodeproj/project.pbxproj
+            grep -c 'CODE_SIGN_STYLE = Manual;' ios/ecorismap.xcodeproj/project.pbxproj
             xcodebuild archive -workspace ios/ecorismap.xcworkspace \
                                -scheme ecorismap \
                                -sdk iphoneos \
                                -configuration Release \
                                -archivePath ecorismap.xcarchive \
                                CURRENT_PROJECT_VERSION=${BUILD_NUMBER} \
-                               COMPILER_INDEX_STORE_ENABLE=NO \
-                               CODE_SIGN_STYLE=Manual \
-                               CODE_SIGN_IDENTITY="Apple Distribution" \
-                               "CODE_SIGN_IDENTITY[sdk=iphoneos*]=Apple Distribution" \
-                               PROVISIONING_PROFILE_SPECIFIER="$(/usr/libexec/PlistBuddy -c 'Print Name' /dev/stdin <<< $(security cms -D -i ~/Library/MobileDevice/Provisioning\ Profiles/ecorismap.mobileprovision))"
+                               COMPILER_INDEX_STORE_ENABLE=NO
           fi
 
       - name: Show ccache stats
