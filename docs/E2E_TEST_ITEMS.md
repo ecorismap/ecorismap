@@ -3,10 +3,10 @@
 EcorisMapが備えている機能を、正常系のテスト項目として一覧にしたもの。
 1行が1機能で、Web / iOS / Android のそれぞれでどう確かめるか（自動か手動か）を示す。
 リリース前にテストするものは、すべてこの台帳にまとめてある（「リリース前にやること」の順に通す）。
-人が確かめる必要があるのは「手」の行だけで、「シミュ」「機」は人の手を借りずに確かめられる。
+人が確かめる必要があるのは「手」の行だけ。
 
 - リリースごとの結果はここには書かない（チェック欄は手順の目印で、埋めてコミットしない）
-- 機能を足したら行を足し、消したら行を消す。自動テストを書いたら「シミュ」「機」を「自」に変えてパスを入れる
+- 機能を足したら行を足し、消したら行を消す。自動テストを書いたら「自」にしてパスを入れる。自動にできないものは「手」にして、備考に理由を書く
 - 監査で直した細かい不具合の再確認項目は `docs/DEVICE_CHECKLIST_2026-11.md` にある（備考にIDで参照）
 
 ## 記号
@@ -14,27 +14,22 @@ EcorisMapが備えている機能を、正常系のテスト項目として一�
 | 記号 | 意味 |
 |---|---|
 | 自 | 自動テストがある（「自動テスト」列のファイル） |
-| シミュ | 自動で確かめられる見込みだが、まだテストが無い。Webはブラウザ、iOS／Androidはシミュレーター／エミュレーターで足りる |
-| 機 | 実機をMacにつなげば自動で確かめられる見込みだが、まだテストが無い（カメラ・GPUなど、シミュレーター／エミュレーターでは確かめられないもの） |
+| 共 | Webの自動テストで確かめている。iOS／Androidも同じ画面とロジックを使うので、その端末では流さない。ネイティブ固有の入口（地図の操作・ファイル選択・共有・写真・位置情報・Firebaseへの接続）は、別の行の「自」のフローで確かめている |
 | 手 | 人が確かめる（持ち歩いての移動・センサー・外部の機器・本番のアカウントや外部サービス・複数人での操作が要る） |
 | — | その端末には機能が無い |
 
 「ログイン」列: 空欄＝不要、要＝組織アカウント、Drive＝Google連携。
 
-「シミュ」「機」の考え方:
+自動テストの考え方:
 
-- 人の手が要らないものを指す。自動テスト（Playwright・Maestro）にするか、Claudeが端末を操作し、
-  画面・スクリーンショット・ログを見て確かめる。地図の絵のように機械的に判定しにくいものは後者になる
-- 「シミュ」「機」は見込みで、実際に流して確かめたものではない。自動テストを書いたら「自」に変える
-- テストが無いあいだは、リリース前に端末を操作して確かめる
-- iOS／Androidの「要」の行は、開発ビルドをFirebaseエミュレータにつないで確かめる
-  （`EXPO_PUBLIC_USE_FIREBASE_EMULATOR=1`。Webの `yarn e2e:web:emu` と同じく暗号化は使わない）。
-  ネイティブではまだ試していない。本番のアカウント・暗号化（Virgil）・Google連携が要るものは「手」
-- 本番のパスワード・PINの入力と、Googleへのサインイン・許可は、Claudeは行わない（人が行う）。
-  人がログインや連携を済ませた実機なら、そのあとの操作は「機」で確かめられる
-- ファイルの取り込みは、テスト用のファイルを端末へ送り（`adb push`／`xcrun simctl`）、OSのファイル選択から選ぶ
-- 「機」のAndroidは `DEVICE=<シリアル> scripts/e2e-native.sh android` で実機へ流せる。
-  iOSの実機でMaestroが使えるかは未確認で、使えなければClaudeが実機を操作して確かめる
+- 機能を広く通すのはWeb（Playwright）。ネイティブ（Maestro）は、ネイティブ固有の経路と主要な流れを通す
+- ネイティブのフローは、判定しにくい地図の絵をスクリーンショットに残す（`~/.maestro/tests/<日時>/`）。
+  備考に「スクリーンショットを見る」とある行は、流したあとに絵を見る
+- ログインが要る範囲は、Firebaseエミュレータにつないで確かめる（Webは `yarn e2e:web:emu`、iOSは `scripts/e2e-native-emu.sh ios`）。
+  暗号化（Virgil）は使わない。本番のアカウント・暗号化・Google連携が要るものは「手」
+- 本番のパスワード・PINの入力と、Googleへのサインイン・許可は、Claudeは行わない（人が行う）
+- Androidのフローは、実データの入った端末でも流せるように、作ったものだけを消す（データのクリア・キャッシュのクリアはしない）
+- Androidは `DEVICE=<シリアル> scripts/e2e-native.sh android` で実機へも流せる
 
 ## リリース前にやること
 
@@ -58,6 +53,7 @@ Expo／React Nativeのメジャー更新を含むリリースでは、4 と 5 �
 | [ ] | サーバー側の通し（同期・権限・写真） | `yarn testrules` | Firebaseエミュレータ（Java 21） |
 | [ ] | iOSシミュレーター | `yarn e2e:ios` | 下の「ネイティブの前提」 |
 | [ ] | Androidエミュレーター | `yarn e2e:android` | 同上。エミュレーターは先に起動しておく |
+| [ ] | iOSシミュレーター（ログイン範囲） | `scripts/e2e-native-emu.sh ios` | Firebaseエミュレータ（Java 21）。別に `EXPO_PUBLIC_E2E=1 EXPO_PUBLIC_USE_FIREBASE_EMULATOR=1 npx expo start --dev-client --port 8083` を起動しておく。端末のデータは退避して最後に戻す |
 | [ ] | データをクリア→自動バックアップから復元（SET-2・SET-3） | `scripts/e2e-native.sh ios 90` ／ `scripts/e2e-native.sh android 90` | 端末のデータを消すので、上の2つでは流れない。テスト専用の端末で流す |
 
 iOSとAndroidは同時に流さず、順番に実行する。
@@ -77,10 +73,9 @@ iOSとAndroidは同時に流さず、順番に実行する。
   復元で記録は戻るが、地図の設定は初期化され、自動バックアップは5世代までなので古い世代が1つ押し出される
 - 画面要素は `testID` で特定している（一覧は `e2e/TESTIDS.md`）。消したり名前を変えたりしたらテストも直す
 
-### 3. まだテストが無い行（「シミュ」「機」の行）
+### 3. スクリーンショットを見る
 
-- [ ] 「シミュ」の行を、Web・iOSシミュレーター・Androidエミュレーターで通した（Claudeに任せられる）
-- [ ] 「機」の行を、Macにつないだ実機で通した（Claudeに任せられる。人は端末をつなぐ）
+- [ ] ネイティブのフローが残したスクリーンショットで、地図の絵（PMTiles・PDF地図・3D・眺望・可視領域・軌跡）が崩れていない
 
 ### 4. 人が確かめる行（「手」の行）
 
@@ -114,35 +109,35 @@ iOSとAndroidは同時に流さず、順番に実行する。
 
 | ID | 機能（正常系で確かめること） | ログイン | Web | iOS | Android | 自動テスト | 備考 |
 |---|---|---|---|---|---|---|---|
-| BOOT-1 | 初回起動で利用規約の確認が出て、OKで地図画面になる | | 自 | シミュ | シミュ | `e2e/web/specs/01-boot.spec.ts` | |
-| BOOT-2 | 更新情報が出て、OKで閉じる。次回は出ない | | 自 | シミュ | シミュ | `e2e/web/specs/01-boot.spec.ts` | Webの自動は、端末内の保存を前のバージョンに書き換えて確かめる |
+| BOOT-1 | 初回起動で利用規約の確認が出て、OKで地図画面になる | | 自 | 自 | 共 | `e2e/web/specs/01-boot.spec.ts`, `e2e/maestro/smoke/01-launch`, `e2e/maestro/smoke/91-first-launch` | ネイティブの自動はiOSシミュレーターだけ（データを脇へよけて初回起動の状態を作る） |
+| BOOT-2 | 更新情報が出て、OKで閉じる。次回は出ない | | 自 | 共 | 共 | `e2e/web/specs/01-boot.spec.ts`, `e2e/maestro/smoke/91-first-launch` | Webの自動は、端末内の保存を前のバージョンに書き換えて確かめる。ネイティブの自動（91）は、初回起動では出ないことまで。前のバージョンから更新した端末で出ることは、ネイティブでは確かめていない |
 | BOOT-3 | 地図画面のボタン群（レイヤ・地図・設定・ズーム・コンパス・GPS）が出る | | 自 | 自 | 自 | `e2e/web/specs/01-boot.spec.ts`, `e2e/maestro/smoke/01-launch.yaml` | |
-| BOOT-4 | 言語を英語に切り替えると表示が英語になり、日本語に戻せる | | 自 | シミュ | シミュ | `e2e/web/specs/10-settings.spec.ts` | |
+| BOOT-4 | 言語を英語に切り替えると表示が英語になり、日本語に戻せる | | 自 | 自 | 自 | `e2e/web/specs/10-settings.spec.ts`, `e2e/maestro/smoke/15-settings` | |
 | BOOT-5 | アプリを閉じて開き直しても、レイヤ・記録・地図設定が残っている | | — | 自 | 自 | `e2e/maestro/smoke/02-record.yaml` | Webはタブを閉じると消える設計 |
 | BOOT-6 | 再読み込みしても、レイヤ・記録・地図設定が残っている | | 自 | — | — | `e2e/web/specs/01-boot.spec.ts` | |
-| BOOT-7 | チュートリアルの吹き出しが出て、閉じられる | | — | シミュ | シミュ | | |
+| BOOT-7 | チュートリアルの吹き出しが出て、閉じられる | | — | 自 | 手 | `e2e/maestro/smoke/91-first-launch` | 出るのは初めてのインポートと初めてのオフライン切り替え（GPS・軌跡・作図の説明はいまは出ない）。iOSの自動はシミュレーターのデータを脇へよけて確かめる。Androidは初回起動の状態を作るのにデータを消す必要があるので人が確かめる |
 
 ## 2. 地図表示・基本操作
 
 | ID | 機能（正常系で確かめること） | ログイン | Web | iOS | Android | 自動テスト | 備考 |
 |---|---|---|---|---|---|---|---|
-| MAP-1 | 地図をドラッグで移動、＋／−ボタンで拡大縮小でき、ズームレベル表示が変わる | | 自 | シミュ | シミュ | `e2e/web/specs/06-map.spec.ts` | |
-| MAP-2 | 地図を回転でき、コンパスのタップで北が上に戻る | | 自 | シミュ | 手 | `e2e/web/specs/13-draw-edit.spec.ts` | Webは右ドラッグで回し、コンパスで北へ戻す。ネイティブは2本指で、iOSはシミュレーターの2本指操作で回せる。Androidは2本指の自動操作ができない |
+| MAP-1 | 地図をドラッグで移動、＋／−ボタンで拡大縮小でき、ズームレベル表示が変わる | | 自 | 自 | 自 | `e2e/web/specs/06-map.spec.ts`, `e2e/maestro/smoke/11-map` | |
+| MAP-2 | 地図を回転でき、コンパスのタップで北が上に戻る | | 自 | 手 | 手 | `e2e/web/specs/13-draw-edit.spec.ts` | 2本指の操作はMaestroから出せないので、ネイティブは人が確かめる |
 | MAP-3 | コンパスで端末の向きに合わせる（ヘディングアップ） | | — | 手 | 手 | | 磁気センサー |
-| MAP-4 | 長押しで標高・座標のポップアップが出て、座標をコピーできる | | 自 | シミュ | シミュ | `e2e/web/specs/06-map.spec.ts` | |
-| MAP-5 | 長押しメニューの「Google Mapsへ」で外部の地図が開く | | 自 | シミュ | シミュ | `e2e/web/specs/15-map-gps-pmtiles.spec.ts` | Webの自動は、開こうとしたURLに長押しした地点の経緯度が入り、ポップアップが閉じるところまで（外部の地図が実際に開くかは見ない） |
-| MAP-6 | 出典表示が、表示中の地図のものになっている | | 自 | シミュ | シミュ | `e2e/web/specs/06-map.spec.ts` | |
-| MAP-7 | 山名・海域名ラベルを表示できる | | 自 | シミュ | シミュ | `e2e/web/specs/13-draw-edit.spec.ts` | Webは山名のみ（海域名のラベルはiOS/Androidだけ）。山頂データの読み込みと出典で確かめる |
+| MAP-4 | 長押しで標高・座標のポップアップが出て、座標をコピーできる | | 自 | 自 | 自 | `e2e/web/specs/06-map.spec.ts`, `e2e/maestro/smoke/11-map` | |
+| MAP-5 | 長押しメニューの「Google Mapsへ」で外部の地図が開く | | 自 | 自 | 自 | `e2e/web/specs/15-map-gps-pmtiles.spec.ts`, `e2e/maestro/smoke/25-map-external` | Webの自動は、開こうとしたURLに長押しした地点の経緯度が入り、ポップアップが閉じるところまで（外部の地図が実際に開くかは見ない）。iOSの自動はSafariでgoogle.comが開くところまで。AndroidはGoogle Mapsアプリが開き、検索欄の座標が長押しした場所と合う |
+| MAP-6 | 出典表示が、表示中の地図のものになっている | | 自 | 自 | 自 | `e2e/web/specs/06-map.spec.ts`, `e2e/maestro/smoke/11-map` | |
+| MAP-7 | 山名・海域名ラベルを表示できる | | 自 | 共 | 共 | `e2e/web/specs/13-draw-edit.spec.ts` | Webは山名のみ（海域名のラベルはiOS/Androidだけ）。山頂データの読み込みと出典で確かめる |
 
 ## 3. 現在地・GPS
 
 | ID | 機能（正常系で確かめること） | ログイン | Web | iOS | Android | 自動テスト | 備考 |
 |---|---|---|---|---|---|---|---|
-| GPS-1 | GPSボタンで現在地マーカーが出て、地図が現在地へ移動する | | 自 | シミュ | シミュ | `e2e/web/specs/14-track-gps-file.spec.ts` | Webは疑似位置で、現在地の丸が出て地図の中心がその位置になる。疑似位置での測位そのものは TRACK-1 の自動で通る |
-| GPS-2 | 追従モードで、移動に合わせて地図が動く | | 自 | シミュ | シミュ | `e2e/web/specs/15-map-gps-pmtiles.spec.ts` | Webの自動は疑似位置で、位置が変わると地図が付いてくること、地図をドラッグすると追従が外れることまで |
-| GPS-3 | 位置情報の許可を求められ、拒否すると案内が出る | | 自 | シミュ | シミュ | `e2e/web/specs/15-map-gps-pmtiles.spec.ts` | Webの自動は、許可されないと現在地ボタンが無効になりGPSがオフのままであることまで。Webはアプリの案内は出ない（ブラウザ標準の表示だけ）。ネイティブの権限はコマンドで取り消せる（`xcrun simctl privacy`／`adb shell pm revoke`） |
-| GPS-4 | GPS設定で精度（高精度／バランス／省電力）を変えられる | | — | シミュ | シミュ | | |
-| GPS-5 | 現在地の長押しで、測位標高と細かい緯度経度が出る | | — | シミュ | シミュ | | |
+| GPS-1 | GPSボタンで現在地マーカーが出て、地図が現在地へ移動する | | 自 | 自 | 自 | `e2e/web/specs/14-track-gps-file.spec.ts`, `e2e/maestro/smoke/04-track`, `e2e/maestro/smoke/11-map` | Webは疑似位置で、現在地の丸が出て地図の中心がその位置になる。疑似位置での測位そのものは TRACK-1 の自動で通る |
+| GPS-2 | 追従モードで、移動に合わせて地図が動く | | 自 | 自 | 自 | `e2e/web/specs/15-map-gps-pmtiles.spec.ts`, `e2e/maestro/smoke/16-track` | Webの自動は疑似位置で、位置が変わると地図が付いてくること、地図をドラッグすると追従が外れることまで |
+| GPS-3 | 位置情報の許可を求められ、拒否すると案内が出る | | 自 | 自 | 自 | `e2e/web/specs/15-map-gps-pmtiles.spec.ts`, `e2e/maestro/smoke/18-permission` | Webの自動は、許可されないと現在地ボタンが無効になりGPSがオフのままであることまで。Webはアプリの案内は出ない（ブラウザ標準の表示だけ）。ネイティブの権限はコマンドで取り消せる（`xcrun simctl privacy`／`adb shell pm revoke`） |
+| GPS-4 | GPS設定で精度（高精度／バランス／省電力）を変えられる | | — | 自 | 自 | `e2e/maestro/smoke/15-settings` | |
+| GPS-5 | 現在地の長押しで、測位標高と細かい緯度経度が出る | | — | 自 | 自 | `e2e/maestro/smoke/11-map` | |
 
 ## 4. 軌跡
 
@@ -150,105 +145,105 @@ iOSとAndroidは同時に流さず、順番に実行する。
 |---|---|---|---|---|---|---|---|
 | TRACK-1 | 軌跡記録を開始・停止でき、止めると軌跡レイヤに保存される | | — | 自 | 自 | `e2e/maestro/smoke/04-track.yaml` | 疑似位置 |
 | TRACK-2 | 画面OFF・バックグラウンドでも記録が続く（15分以上、点の欠落・重複なし） | | — | 手 | 手 | | 実機で移動 |
-| TRACK-3 | 記録中に画面移動・プロジェクト切替・ログアウトをすると「先に停止・保存」の確認が出る | | — | シミュ | シミュ | | |
-| TRACK-4 | 軌跡をタップすると通過時刻のポップアップが出る | | 自 | シミュ | シミュ | `e2e/web/specs/14-track-gps-file.spec.ts` | Webは記録できないので、軌跡レイヤへ取り込んだ軌跡で確かめる |
+| TRACK-3 | 記録中に画面移動・プロジェクト切替・ログアウトをすると「先に停止・保存」の確認が出る | | — | 自 | 自 | `e2e/maestro/smoke/16-track` | |
+| TRACK-4 | 軌跡をタップすると通過時刻のポップアップが出る | | 自 | 自 | 自 | `e2e/web/specs/14-track-gps-file.spec.ts`, `e2e/maestro/smoke/16-track` | Webは記録できないので、軌跡レイヤへ取り込んだ軌跡で確かめる |
 | TRACK-5 | 軌跡サマリー（距離・時間・速度・累積標高・標高グラフ）が出る | | 自 | 自 | 自 | `e2e/web/specs/14-track-gps-file.spec.ts`、`e2e/maestro/smoke/04-track.yaml` | Webは取り込んだ軌跡で、距離・時間・速度・累積標高・標高グラフ |
-| TRACK-6 | 軌跡リプレイで、マーカーが軌跡に沿って動く | | 自 | シミュ | シミュ | `e2e/web/specs/14-track-gps-file.spec.ts` | 進行位置の丸が軌跡の線上を進み、一時停止で止まる |
-| TRACK-7 | 軌跡上に、記録中に撮った写真が表示され、タップで開ける | | — | 機 | シミュ | | iOSはLive Photoを含む。iOSシムは撮影できないので実機 |
-| TRACK-8 | 軌跡をエクスポートできる（GPX・KMZ・サマリー画像。確認・進捗・中止） | | 自 | シミュ | シミュ | `e2e/web/specs/14-track-gps-file.spec.ts` | ZIPにGPX・GeoJSON・KML・サマリーSVGが入る。Webは写真を同梱できずKMLになる |
+| TRACK-6 | 軌跡リプレイで、マーカーが軌跡に沿って動く | | 自 | 自 | 自 | `e2e/web/specs/14-track-gps-file.spec.ts`, `e2e/maestro/smoke/16-track` | 進行位置の丸が軌跡の線上を進み、一時停止で止まる |
+| TRACK-7 | 軌跡上に、記録中に撮った写真が表示され、タップで開ける | | — | 手 | 手 |  | 記録中に写真を撮る必要がある（シミュレーターは撮影できず、外から足した写真は消せない） |
+| TRACK-8 | 軌跡をエクスポートできる（GPX・KMZ・サマリー画像。確認・進捗・中止） | | 自 | 自 | 自 | `e2e/web/specs/14-track-gps-file.spec.ts`, `e2e/maestro/smoke/16-track` | ZIPにGPX・GeoJSON・KML・サマリーSVGが入る。Webは写真を同梱できずKMLになる |
 
 ## 5. 作図（ポイント・ライン・ポリゴン）
 
 | ID | 機能（正常系で確かめること） | ログイン | Web | iOS | Android | 自動テスト | 備考 |
 |---|---|---|---|---|---|---|---|
-| DRAW-1 | 編集レイヤを選べる（未選択なら選択を求められる） | | 自 | シミュ | シミュ | `e2e/web/specs/12-layers-style.spec.ts` | 未選択で道具を押すと選択が開く、Cancel、選ぶ、チップから切り替える |
-| DRAW-2 | ポイントを地図に追加でき、データ一覧に1件増える | | 自 | シミュ | シミュ | `e2e/web/specs/05-draw.spec.ts` | |
-| DRAW-3 | 現在地にポイントを追加できる | | 自 | シミュ | シミュ | `e2e/web/specs/14-track-gps-file.spec.ts` | Webは疑似位置。未取得なら警告、取得後は確認→その経緯度の記録ができる |
-| DRAW-4 | ポイントを移動・削除できる | | 自 | シミュ | シミュ | `e2e/web/specs/05-draw.spec.ts` | 編集選択でポイントを押す→動かして確定、削除 |
-| DRAW-5 | ラインをプロットで描いて保存できる | | 自 | シミュ | シミュ | `e2e/web/specs/05-draw.spec.ts` | |
-| DRAW-6 | ラインを手書き（ペン）で描いて保存できる | | 自 | シミュ | シミュ | `e2e/web/specs/05-draw.spec.ts` | |
-| DRAW-7 | ポリゴンをプロットで描いて保存できる | | 自 | シミュ | シミュ | `e2e/web/specs/05-draw.spec.ts` | |
-| DRAW-8 | ポリゴンを手書きで描いて保存できる | | 自 | シミュ | シミュ | `e2e/web/specs/05-draw.spec.ts` | |
-| DRAW-9 | 既存の線・面を選択して、頂点を動かして保存できる | | 自 | シミュ | シミュ | `e2e/web/specs/13-draw-edit.spec.ts` | プロットで描いた線・面の頂点を1つ動かして確定し、保存された座標で確かめる |
-| DRAW-10 | なげなわ選択で、複数の図形を移動・回転・削除できる | | 自 | シミュ | シミュ | `e2e/web/specs/13-draw-edit.spec.ts` | Webの自動はポイント2点の移動・90度回転・削除 |
-| DRAW-11 | 元に戻す／やり直すが効く | | 自 | シミュ | シミュ | `e2e/web/specs/05-draw.spec.ts` | |
-| DRAW-12 | 情報ツールで図形をタップすると、その記録の編集画面が開く | | 自 | シミュ | シミュ | `e2e/web/specs/05-draw.spec.ts` | 情報ツールのボタンは無く、ツールを選んでいない状態で図形を押すと開く |
-| DRAW-13 | 植生図パレットで区分を選んで面を描くと、区分が属性に入り色分けされる | | 自 | シミュ | シミュ | `e2e/web/specs/12-layers-style.spec.ts` | プロットで2面描き、区分・区分コードが属性に入り塗り分けられる |
-| DRAW-14 | 飛翔図パレットで飛翔線・行動記号を描くと、属性に行動が入る | 要 | 自 | シミュ | シミュ | `e2e/web/specs-emu/24-layers-login.spec.ts` | Webの自動は、種名・性別・齢の事前選択、飛翔線、行動位置・行動範囲が1件の記録の属性に入るところまで（記号の描画は見ない） |
-| DRAW-15 | 個別色のレイヤで、色と太さを選んで描ける | | 自 | シミュ | シミュ | `e2e/web/specs/12-layers-style.spec.ts` | ラインは個別色のレイヤを取り込んで、太さ・矢印・色が記録に入ることを確かめる（ログインなしでは画面からラインを個別にできない） |
+| DRAW-1 | 編集レイヤを選べる（未選択なら選択を求められる） | | 自 | 自 | 自 | `e2e/web/specs/12-layers-style.spec.ts`, `e2e/maestro/smoke/09b-draw-line` | 未選択で道具を押すと選択が開く、Cancel、選ぶ、チップから切り替える |
+| DRAW-2 | ポイントを地図に追加でき、データ一覧に1件増える | | 自 | 自 | 自 | `e2e/web/specs/05-draw.spec.ts`, `e2e/maestro/smoke/09a-draw-point` | |
+| DRAW-3 | 現在地にポイントを追加できる | | 自 | 共 | 共 | `e2e/web/specs/14-track-gps-file.spec.ts` | Webは疑似位置。未取得なら警告、取得後は確認→その経緯度の記録ができる |
+| DRAW-4 | ポイントを移動・削除できる | | 自 | 自 | 自 | `e2e/web/specs/05-draw.spec.ts`, `e2e/maestro/smoke/09a-draw-point` | 編集選択でポイントを押す→動かして確定、削除 |
+| DRAW-5 | ラインをプロットで描いて保存できる | | 自 | 自 | 自 | `e2e/web/specs/05-draw.spec.ts`, `e2e/maestro/smoke/09b-draw-line` | |
+| DRAW-6 | ラインを手書き（ペン）で描いて保存できる | | 自 | 自 | 自 | `e2e/web/specs/05-draw.spec.ts`, `e2e/maestro/smoke/09b-draw-line` | |
+| DRAW-7 | ポリゴンをプロットで描いて保存できる | | 自 | 自 | 自 | `e2e/web/specs/05-draw.spec.ts`, `e2e/maestro/smoke/09c-draw-polygon` | |
+| DRAW-8 | ポリゴンを手書きで描いて保存できる | | 自 | 自 | 自 | `e2e/web/specs/05-draw.spec.ts`, `e2e/maestro/smoke/09c-draw-polygon` | |
+| DRAW-9 | 既存の線・面を選択して、頂点を動かして保存できる | | 自 | 共 | 共 | `e2e/web/specs/13-draw-edit.spec.ts` | プロットで描いた線・面の頂点を1つ動かして確定し、保存された座標で確かめる |
+| DRAW-10 | なげなわ選択で、複数の図形を移動・回転・削除できる | | 自 | 共 | 共 | `e2e/web/specs/13-draw-edit.spec.ts` | Webの自動はポイント2点の移動・90度回転・削除 |
+| DRAW-11 | 元に戻す／やり直すが効く | | 自 | 自 | 自 | `e2e/web/specs/05-draw.spec.ts`, `e2e/maestro/smoke/09a-draw-point` | |
+| DRAW-12 | 情報ツールで図形をタップすると、その記録の編集画面が開く | | 自 | 自 | 自 | `e2e/web/specs/05-draw.spec.ts`, `e2e/maestro/smoke/09a-draw-point` | 情報ツールのボタンは無く、ツールを選んでいない状態で図形を押すと開く |
+| DRAW-13 | 植生図パレットで区分を選んで面を描くと、区分が属性に入り色分けされる | | 自 | 共 | 共 | `e2e/web/specs/12-layers-style.spec.ts` | プロットで2面描き、区分・区分コードが属性に入り塗り分けられる |
+| DRAW-14 | 飛翔図パレットで飛翔線・行動記号を描くと、属性に行動が入る | 要 | 自 | 共 | 共 | `e2e/web/specs-emu/24-layers-login.spec.ts` | Webの自動は、種名・性別・齢の事前選択、飛翔線、行動位置・行動範囲が1件の記録の属性に入るところまで（記号の描画は見ない） |
+| DRAW-15 | 個別色のレイヤで、色と太さを選んで描ける | | 自 | 共 | 共 | `e2e/web/specs/12-layers-style.spec.ts` | ラインは個別色のレイヤを取り込んで、太さ・矢印・色が記録に入ることを確かめる（ログインなしでは画面からラインを個別にできない） |
 | DRAW-16 | データ編集画面の「位置」から、地図で位置を修正できる | | 自 | 自 | 自 | `e2e/web/specs/05-draw.spec.ts`、`e2e/maestro/smoke/08-edit-position.yaml` | ポイントのみ。「戻る」で破棄→すぐ押し直して確定（終えた直後の押し直しでボタンが消えた不具合の再発防止） |
-| DRAW-17 | 描きかけのまま地図を離れようとすると、破棄の確認が出る | | 自 | シミュ | シミュ | `e2e/web/specs/05-draw.spec.ts` | Webの自動は、アカウントボタンで別の画面へ移ろうとしたときの確認 |
+| DRAW-17 | 描きかけのまま地図を離れようとすると、破棄の確認が出る | | 自 | 自 | 自 | `e2e/web/specs/05-draw.spec.ts`, `e2e/maestro/smoke/09a-draw-point` | Webの自動は、アカウントボタンで別の画面へ移ろうとしたときの確認 |
 
 ## 6. マップメモ
 
 | ID | 機能（正常系で確かめること） | ログイン | Web | iOS | Android | 自動テスト | 備考 |
 |---|---|---|---|---|---|---|---|
-| MEMO-1 | ペンで描いた線が残り、開き直しても残っている | | 自 | シミュ | シミュ | `e2e/web/specs/08-photo-memo-pdf.spec.ts` | |
-| MEMO-3 | 消しゴムで線を消せる（部分消去を含む） | | 自 | シミュ | シミュ | `e2e/web/specs/08-photo-memo-pdf.spec.ts` | Webの自動は、線を横切って消すと1本のままでなくなるところまで |
-| MEMO-4 | 色と太さを変えられる。太さをズームに連動させられる | | 自 | シミュ | シミュ | `e2e/web/specs/13-draw-edit.spec.ts` | 太さ・色が記録に入る。ズームは描いたときの値が自動で記録される（切り替えるUIは無い）。見た目の太さは未確認 |
-| MEMO-5 | 元に戻す／やり直すが効く | | 自 | シミュ | シミュ | `e2e/web/specs/08-photo-memo-pdf.spec.ts` | |
+| MEMO-1 | ペンで描いた線が残り、開き直しても残っている | | 自 | 自 | 自 | `e2e/web/specs/08-photo-memo-pdf.spec.ts`, `e2e/maestro/smoke/10-mapmemo` | |
+| MEMO-3 | 消しゴムで線を消せる（部分消去を含む） | | 自 | 自 | 自 | `e2e/web/specs/08-photo-memo-pdf.spec.ts`, `e2e/maestro/smoke/10-mapmemo` | Webの自動は、線を横切って消すと1本のままでなくなるところまで |
+| MEMO-4 | 色と太さを変えられる。太さをズームに連動させられる | | 自 | 共 | 共 | `e2e/web/specs/13-draw-edit.spec.ts` | 太さ・色が記録に入る。ズームは描いたときの値が自動で記録される（切り替えるUIは無い）。見た目の太さは未確認 |
+| MEMO-5 | 元に戻す／やり直すが効く | | 自 | 自 | 自 | `e2e/web/specs/08-photo-memo-pdf.spec.ts`, `e2e/maestro/smoke/10-mapmemo` | |
 | MEMO-6 | Apple Pencil専用モードで、指では描かれず地図が動く | | — | 手 | — | | iPadのみ |
 
 ## 7. 計測・可視領域・3D・眺望
 
 | ID | 機能（正常系で確かめること） | ログイン | Web | iOS | Android | 自動テスト | 備考 |
 |---|---|---|---|---|---|---|---|
-| ANLY-1 | 長押しメニューから距離測定を始め、2点目で距離が出る。ポイントにスナップする | | 自 | シミュ | シミュ | `e2e/web/specs/06-map.spec.ts` | |
+| ANLY-1 | 長押しメニューから距離測定を始め、2点目で距離が出る。ポイントにスナップする | | 自 | 自 | 自 | `e2e/web/specs/06-map.spec.ts`, `e2e/maestro/smoke/11-map` | |
 | ANLY-1b | 3D表示中も長押しメニューから距離測定ができ、起伏に沿った距離と標高差が出る | | 自 | — | — | `e2e/web/specs/06-map.spec.ts` | Webのみ（ネイティブの3Dは測定線を描けないためメニューに出さない） |
-| ANLY-2 | 可視領域を作成でき、範囲と見える場所が塗られる | | 自 | シミュ | シミュ | `e2e/web/specs/16-terrain-vista.spec.ts` | Webの自動は、標高タイルを合成地形に差し替え、見える場所だけが塗られること・範囲の円・観測点のマーカー・消去を確かめる |
+| ANLY-2 | 可視領域を作成でき、範囲と見える場所が塗られる | | 自 | 自 | 自 | `e2e/web/specs/16-terrain-vista.spec.ts`, `e2e/maestro/smoke/17-analysis` | Webの自動は、標高タイルを合成地形に差し替え、見える場所だけが塗られること・範囲の円・観測点のマーカー・消去を確かめる |
 | ANLY-3 | 3D表示に切り替えられ、2Dに戻せる | | 自 | 自 | 自 | `e2e/web/specs/06-map.spec.ts`, `e2e/maestro/smoke/06-terrain3d.yaml` | ネイティブの自動は「落ちない」まで |
-| ANLY-4 | 3Dで地形・レイヤのデータ・ベクタPMTilesが描かれ、タップで属性が出る | | 自 | シミュ | 機 | `e2e/web/specs/16-terrain-vista.spec.ts` | Webの自動は、傾けた3Dで、地形の標高・ベクタ区画のタップ属性・ポイントのタップで記録が開くことを確かめる（地形の絵は見ない）。Androidは実機必須（GPU） |
-| ANLY-5 | 3Dで現在地マーカー・記録中の軌跡・軌跡リプレイが出る | | — | シミュ | 機 | | Androidは実機（GPU） |
-| ANLY-6 | 「ここからの眺望」が開き、山名・望遠／広角・視点の高さ変更が動く | | 自 | シミュ | 機 | `e2e/web/specs/16-terrain-vista.spec.ts` | Webの自動は、合成地形の上で、視点（位置・高さ・向き）、山名の表示位置と詳細・表示切替、高さと画角の変更、見回し、解除を確かめる。Androidは実機（GPU） |
-| ANLY-7 | 「現在地からの眺望」が開き、移動に合わせて立ち位置が追従する | | 自 | シミュ | 機 | `e2e/web/specs/16-terrain-vista.spec.ts` | Webの自動は、現在地へのスナップと、現在地に立つ眺望が始まるところまで。Webは立ち位置が追従しない仕様で、追従はネイティブだけ。Androidは実機（GPU）。移動は疑似位置 |
+| ANLY-4 | 3Dで地形・レイヤのデータ・ベクタPMTilesが描かれ、タップで属性が出る | | 自 | 自 | 自 | `e2e/web/specs/16-terrain-vista.spec.ts`, `e2e/maestro/smoke/17-analysis` | Webの自動は、傾けた3Dで、地形の標高・ベクタ区画のタップ属性・ポイントのタップで記録が開くことを確かめる（地形の絵は見ない）。Androidは実機必須（GPU） |
+| ANLY-5 | 3Dで現在地マーカー・記録中の軌跡・軌跡リプレイが出る | | — | 自 | 自 | `e2e/maestro/smoke/23-terrain3d-more` | 落ちないことと、リプレイを始めて止められることまで。マーカー・線の絵はスクリーンショットを見る。Androidはエミュレーターで流す（実機での確認は「リリース前にやること」5） |
+| ANLY-6 | 「ここからの眺望」が開き、山名・望遠／広角・視点の高さ変更が動く | | 自 | 自 | 自 | `e2e/web/specs/16-terrain-vista.spec.ts`, `e2e/maestro/smoke/17-analysis` | Webの自動は、合成地形の上で、視点（位置・高さ・向き）、山名の表示位置と詳細・表示切替、高さと画角の変更、見回し、解除を確かめる。Androidは実機（GPU） |
+| ANLY-7 | 「現在地からの眺望」が開き、移動に合わせて立ち位置が追従する | | 自 | 自 | 自 | `e2e/web/specs/16-terrain-vista.spec.ts`, `e2e/maestro/smoke/23-terrain3d-more` | Webの自動は、現在地へのスナップと、現在地に立つ眺望が始まるところまで。Webは立ち位置が追従しない仕様で、追従はネイティブだけ。Androidは実機（GPU）。移動は疑似位置。ネイティブの自動は疑似位置で、位置を動かすと山までの距離が変わることを確かめる。Androidは、位置を動かしたあとGPSボタンで取り直したときに立ち位置が動くところまで |
 | ANLY-8 | 眺望でコンパスをタップすると、視線が端末の向きに追従する | | — | 手 | 手 | | センサー |
-| ANLY-9 | 3DでGoogle地図が地理院地図に置き換わる。GEBCO海底地形が立体になる | | 自 | シミュ | 機 | `e2e/web/specs/16-terrain-vista.spec.ts` | Webの自動は、GEBCOを追加して3Dにしても、3D表示中にGEBCOを追加しても、海が海底の深さで起伏することを地形の標高で確かめる。Google地図の置き換えはネイティブだけ（Webの標準地図はGoogleではない）。Androidは実機（GPU） |
-| ANLY-10 | 3Dでも可視領域が表示される | | 自 | シミュ | 機 | `e2e/web/specs/16-terrain-vista.spec.ts` | Webの自動は、2Dで作った可視領域が傾けた3Dでも塗られ、3Dのままでも追加で作れることを確かめる。Androidは実機（GPU） |
+| ANLY-9 | 3DでGoogle地図が地理院地図に置き換わる。GEBCO海底地形が立体になる | | 自 | 自 | 自 | `e2e/web/specs/16-terrain-vista.spec.ts`, `e2e/maestro/smoke/23-terrain3d-more` | Webの自動は、GEBCOを追加して3Dにしても、3D表示中にGEBCOを追加しても、海が海底の深さで起伏することを地形の標高で確かめる。Google地図の置き換えはネイティブだけ（Webの標準地図はGoogleではない）。Androidは実機（GPU）。ネイティブの自動は、GEBCOを追加して3Dにしても落ちず出典が出るところまで。Google地図の置き換えは画面から区別できないのでユニットテスト（`googleBasemapSubstitute.test.ts`） |
+| ANLY-10 | 3Dでも可視領域が表示される | | 自 | 自 | 自 | `e2e/web/specs/16-terrain-vista.spec.ts`, `e2e/maestro/smoke/17-analysis` | Webの自動は、2Dで作った可視領域が傾けた3Dでも塗られ、3Dのままでも追加で作れることを確かめる。Androidは実機（GPU） |
 
 ## 8. PDF出力
 
 | ID | 機能（正常系で確かめること） | ログイン | Web | iOS | Android | 自動テスト | 備考 |
 |---|---|---|---|---|---|---|---|
-| PDF-1 | 設定から範囲枠を出し、用紙・向き・縮尺を変えられる | | 自 | シミュ | シミュ | `e2e/web/specs/08-photo-memo-pdf.spec.ts` | |
-| PDF-2 | 出力すると、画面どおりの地図とデータが入ったPDFができる（進捗・中止） | | 自 | シミュ | シミュ | `e2e/web/specs/08-photo-memo-pdf.spec.ts` | Webは印刷ダイアログ。Webの自動は、印刷用のウィンドウが開いて印刷が呼ばれるところまで。中身は手動で確かめる |
-| PDF-3 | PMTilesの地図もPDFに入る | | 自 | シミュ | シミュ | `e2e/web/specs/15-map-gps-pmtiles.spec.ts` | Webの自動は、印刷用ウィンドウにラスタPMTilesのタイル画像とベクタPMTilesを描いた画像が入って印刷が呼ばれるところまで。位置・重なり・できたPDFは見ない |
+| PDF-1 | 設定から範囲枠を出し、用紙・向き・縮尺を変えられる | | 自 | 自 | 自 | `e2e/web/specs/08-photo-memo-pdf.spec.ts`, `e2e/maestro/smoke/14-pdf` | |
+| PDF-2 | 出力すると、画面どおりの地図とデータが入ったPDFができる（進捗・中止） | | 自 | 自 | 自 | `e2e/web/specs/08-photo-memo-pdf.spec.ts`, `e2e/maestro/smoke/14-pdf` | Webは印刷ダイアログ。Webの自動は、印刷用のウィンドウが開いて印刷が呼ばれるところまで。中身は手動で確かめる |
+| PDF-3 | PMTilesの地図もPDFに入る | | 自 | 共 | 共 | `e2e/web/specs/15-map-gps-pmtiles.spec.ts` | Webの自動は、印刷用ウィンドウにラスタPMTilesのタイル画像とベクタPMTilesを描いた画像が入って印刷が呼ばれるところまで。位置・重なり・できたPDFは見ない |
 
 ## 9. 地図（背景地図）の管理
 
 | ID | 機能（正常系で確かめること） | ログイン | Web | iOS | Android | 自動テスト | 備考 |
 |---|---|---|---|---|---|---|---|
-| MAPS-1 | 地図一覧で表示／非表示を切り替えると、地図に反映される | | 自 | シミュ | シミュ | `e2e/web/specs/07-maps.spec.ts` | |
-| MAPS-2 | 透過率を変えられる | | 自 | シミュ | シミュ | `e2e/web/specs/13-draw-edit.spec.ts` | 保存された透過率と、開き直したときの表示で確かめる。地図の濃さは未確認 |
-| MAPS-3 | 並べ替え・グループ作成・グループへの出し入れができる | | 自 | シミュ | シミュ | `e2e/web/specs/07-maps.spec.ts` | |
-| MAPS-4 | 地図をURLで追加・編集・削除できる | | 自 | シミュ | シミュ | `e2e/web/specs/07-maps.spec.ts` | |
-| MAPS-5 | プリセットから地図を追加できる | | 自 | シミュ | シミュ | `e2e/web/specs/07-maps.spec.ts` | |
-| MAPS-6 | 陰影起伏・段彩（hillshade:// relief://）を追加して表示できる | | 自 | シミュ | シミュ | `e2e/web/specs/07-maps.spec.ts` | 自動は追加と出典の表示まで。絵は手動で確かめる |
-| MAPS-7 | PMTiles（ラスタ／ベクタ）をURLで登録して表示できる | | 自 | シミュ | シミュ | `e2e/web/specs/15-map-gps-pmtiles.spec.ts` | Webの自動は、テスト内で配信するPMTilesをURLで登録し、ラスタはタイルの色が地図に出ること、ベクタは範囲へ移動して既定スタイルのポリゴンが出ること、表示／非表示まで。AndroidはR8ビルドをエミュレーターへ入れて確かめる |
+| MAPS-1 | 地図一覧で表示／非表示を切り替えると、地図に反映される | | 自 | 自 | 自 | `e2e/web/specs/07-maps.spec.ts`, `e2e/maestro/smoke/05-maps`, `e2e/maestro/smoke/12-maps-manage` | |
+| MAPS-2 | 透過率を変えられる | | 自 | 自 | 自 | `e2e/web/specs/13-draw-edit.spec.ts`, `e2e/maestro/smoke/12-maps-manage` | 保存された透過率と、開き直したときの表示で確かめる。地図の濃さは未確認 |
+| MAPS-3 | 並べ替え・グループ作成・グループへの出し入れができる | | 自 | 自 | 自 | `e2e/web/specs/07-maps.spec.ts`, `e2e/maestro/smoke/24-maps-more` | ネイティブの自動は、グループの作成・並べ替え・削除まで（グループへの出し入れはドラッグなので未確認） |
+| MAPS-4 | 地図をURLで追加・編集・削除できる | | 自 | 自 | 自 | `e2e/web/specs/07-maps.spec.ts`, `e2e/maestro/smoke/12-maps-manage` | |
+| MAPS-5 | プリセットから地図を追加できる | | 自 | 自 | 自 | `e2e/web/specs/07-maps.spec.ts`, `e2e/maestro/smoke/12-maps-manage` | |
+| MAPS-6 | 陰影起伏・段彩（hillshade:// relief://）を追加して表示できる | | 自 | 自 | 自 | `e2e/web/specs/07-maps.spec.ts`, `e2e/maestro/smoke/24-maps-more` | 自動は追加と出典の表示まで。絵は手動で確かめる |
+| MAPS-7 | PMTiles（ラスタ／ベクタ）をURLで登録して表示できる | | 自 | 自 | 自 | `e2e/web/specs/15-map-gps-pmtiles.spec.ts`, `e2e/maestro/smoke/20-maps-pmtiles` | Webの自動は、テスト内で配信するPMTilesをURLで登録し、ラスタはタイルの色が地図に出ること、ベクタは範囲へ移動して既定スタイルのポリゴンが出ること、表示／非表示まで。AndroidはR8ビルドをエミュレーターへ入れて確かめる |
 | MAPS-8 | PMTilesファイルを取り込んで表示できる | | 自 | — | — | `e2e/web/specs/07-maps.spec.ts` | |
-| MAPS-9 | ベクタタイルにスタイルJSONを読み込むと、保存後に見た目が変わる | | 自 | シミュ | シミュ | `e2e/web/specs/07-maps.spec.ts` | TILES-15。Webの自動は、スタイルが設定されて保存後も残るところまで。見た目は手動で確かめる |
-| MAPS-10 | PDF地図を取り込んで表示できる | | 自 | シミュ | シミュ | `e2e/web/specs/14-track-gps-file.spec.ts` | テスト内で作った1色のGeoPDFを取り込み、範囲の内側だけがその色になる |
-| MAPS-11 | 地図設定をエクスポートし、取り込み直せる | | 自 | シミュ | シミュ | `e2e/web/specs/07-maps.spec.ts` | |
-| MAPS-12 | オフライン用に範囲を指定してタイルをダウンロードできる（一時停止・再開・停止） | | — | 自 | 自 | `e2e/maestro/smoke/05-maps.yaml` | 自動は範囲画面を開くまで |
-| MAPS-13 | オフラインに切り替えると、ダウンロード済みの範囲が表示される | | — | シミュ | シミュ | | アプリ内のオフライン切替は自動。機内モードでの確認は人が行う |
-| MAPS-14 | 標高データをダウンロードすると、オフラインで標高・可視領域・3Dが使える | | — | シミュ | シミュ | | |
-| MAPS-15 | キャッシュをクリアしても、ダウンロード済みと取り込んだ地図は残る | | 自 | シミュ | シミュ | `e2e/web/specs/07-maps.spec.ts` | M-H2。Webの自動は、取り込んだ地図が残るところまで |
+| MAPS-9 | ベクタタイルにスタイルJSONを読み込むと、保存後に見た目が変わる | | 自 | 自 | 自 | `e2e/web/specs/07-maps.spec.ts`, `e2e/maestro/smoke/20-maps-pmtiles` | TILES-15。Webの自動は、スタイルが設定されて保存後も残るところまで。見た目は手動で確かめる |
+| MAPS-10 | PDF地図を取り込んで表示できる | | 自 | 自 | 自 | `e2e/web/specs/14-track-gps-file.spec.ts`, `e2e/maestro/smoke/24-maps-more` | テスト内で作った1色のGeoPDFを取り込み、範囲の内側だけがその色になる |
+| MAPS-11 | 地図設定をエクスポートし、取り込み直せる | | 自 | 自 | 自 | `e2e/web/specs/07-maps.spec.ts`, `e2e/maestro/smoke/24-maps-more` | |
+| MAPS-12 | オフライン用に範囲を指定してタイルをダウンロードできる（一時停止・再開・停止） | | — | 自 | 自 | `e2e/maestro/smoke/05-maps.yaml`, `e2e/maestro/smoke/21-maps-offline` | 自動は範囲画面を開くまで |
+| MAPS-13 | オフラインに切り替えると、ダウンロード済みの範囲が表示される | | — | 自 | 自 | `e2e/maestro/smoke/12-maps-manage`, `e2e/maestro/smoke/21-maps-offline` | アプリ内のオフライン切替は自動。機内モードでの確認は人が行う |
+| MAPS-14 | 標高データをダウンロードすると、オフラインで標高・可視領域・3Dが使える | | — | 自 | 自 | `e2e/maestro/smoke/21-maps-offline` | 自動は、標高タイルを取得して容量が増え、オフラインで長押しの標高が出るところまで。標高はアプリ内のオフライン切り替えに関係なく通信でも取れるので、保存済みから出たことの確認は機内モードで人が行う |
+| MAPS-15 | キャッシュをクリアすると、ダウンロードしたタイルは消え、地図の一覧と取り込んだ地図（PDF・スタイル）は残る | | 自 | 自 | 共 | `e2e/web/specs/07-maps.spec.ts`, `e2e/maestro/smoke/21-maps-offline`, `e2e/maestro/smoke/24-maps-more` | M-H2。Webの自動は、取り込んだ地図が残るところまで。iOSの自動は、ダウンロードしたタイルが消え、PDF地図が残ることまで。Androidは実データの入った端末で流すためキャッシュのクリアをしない |
 
 ## 10. レイヤ（調査フォーム）
 
 | ID | 機能（正常系で確かめること） | ログイン | Web | iOS | Android | 自動テスト | 備考 |
 |---|---|---|---|---|---|---|---|
-| LAYER-1 | レイヤ一覧で表示／非表示・ラベルを切り替えると、地図に反映される | | 自 | シミュ | シミュ | `e2e/web/specs/12-layers-style.spec.ts` | Webの自動はポイントの表示切替（マーカーの数）とラベル |
-| LAYER-2 | レイヤを追加できる（ポイント／ライン／ポリゴン／データのみ） | | 自 | シミュ | シミュ | `e2e/web/specs/02-layers.spec.ts` | |
-| LAYER-3 | 並べ替え・グループ作成・グループへの出し入れができる | | 自 | シミュ | シミュ | `e2e/web/specs/02-layers.spec.ts` | |
-| LAYER-4 | レイヤ名を変えて保存できる。削除できる | | 自 | シミュ | シミュ | `e2e/web/specs/02-layers.spec.ts` | |
-| LAYER-5 | フィールドを追加・並べ替え・削除できる。各データ形式を選べる | | 自 | シミュ | シミュ | `e2e/web/specs/02-layers.spec.ts` | |
-| LAYER-6 | 属性名を変えても値が残り、ラベル・色分けも追従する | | 自 | シミュ | シミュ | `e2e/web/specs/02-layers.spec.ts` | 自動は値が残るところまで。ラベル・色分けの追従は手動で確かめる |
-| LAYER-7 | リスト・ラジオ・チェックの選択肢と、値・コードの対応を設定できる | | 自 | シミュ | シミュ | `e2e/web/specs/02-layers.spec.ts` | 自動はリストの選択肢まで。ラジオ・チェックと値・コードの対応は手動で確かめる |
-| LAYER-8 | 辞書CSVを取り込める | | 自 | シミュ | シミュ | `e2e/web/specs/02-layers.spec.ts` | |
-| LAYER-9 | スタイルを単色・カテゴリ・個別に変えると、地図の色が変わる | | 自 | シミュ | シミュ | `e2e/web/specs/12-layers-style.spec.ts` | Webの自動はポイントの単色・カテゴリ（マーカーの色）と、植生図ポリゴンの個別。「個別」は用途のあるレイヤでだけ選べる |
-| LAYER-10 | ユーザー別・測位品質の色分けができる | 要 | 自 | シミュ | シミュ | `e2e/web/specs-emu/24-layers-login.spec.ts` | Webの自動は、測位品質つきの軌跡を取り込んでFIX・FLOATの区間の色を確かめ、プロジェクトの中でユーザー別の色でポイントが描かれることを確かめる |
-| LAYER-11 | ツールパレット（植生図・飛翔図）をレイヤに設定できる | | 自 | シミュ | シミュ | `e2e/web/specs/12-layers-style.spec.ts` | Webの自動は植生図（区分の欄とボタンが出る、区分を足す、用途を外す）。飛翔図は要ログイン |
-| LAYER-12 | 野帳レイヤのプリセットから追加できる | 要 | 自 | シミュ | シミュ | `e2e/web/specs-emu/24-layers-login.spec.ts` | Webの自動は、未ログインでは選べず、ログインすると鳥類野帳の項目でレイヤができ記録できるところまで（辞書の候補は見ない） |
+| LAYER-1 | レイヤ一覧で表示／非表示・ラベルを切り替えると、地図に反映される | | 自 | 共 | 共 | `e2e/web/specs/12-layers-style.spec.ts` | Webの自動はポイントの表示切替（マーカーの数）とラベル |
+| LAYER-2 | レイヤを追加できる（ポイント／ライン／ポリゴン／データのみ） | | 自 | 共 | 共 | `e2e/web/specs/02-layers.spec.ts` | |
+| LAYER-3 | 並べ替え・グループ作成・グループへの出し入れができる | | 自 | 共 | 共 | `e2e/web/specs/02-layers.spec.ts` | |
+| LAYER-4 | レイヤ名を変えて保存できる。削除できる | | 自 | 共 | 共 | `e2e/web/specs/02-layers.spec.ts` | |
+| LAYER-5 | フィールドを追加・並べ替え・削除できる。各データ形式を選べる | | 自 | 共 | 共 | `e2e/web/specs/02-layers.spec.ts` | |
+| LAYER-6 | 属性名を変えても値が残り、ラベル・色分けも追従する | | 自 | 共 | 共 | `e2e/web/specs/02-layers.spec.ts` | 自動は値が残るところまで。ラベル・色分けの追従は手動で確かめる |
+| LAYER-7 | リスト・ラジオ・チェックの選択肢と、値・コードの対応を設定できる | | 自 | 共 | 共 | `e2e/web/specs/02-layers.spec.ts` | 自動はリストの選択肢まで。ラジオ・チェックと値・コードの対応は手動で確かめる |
+| LAYER-8 | 辞書CSVを取り込める | | 自 | 共 | 共 | `e2e/web/specs/02-layers.spec.ts` | |
+| LAYER-9 | スタイルを単色・カテゴリ・個別に変えると、地図の色が変わる | | 自 | 共 | 共 | `e2e/web/specs/12-layers-style.spec.ts` | Webの自動はポイントの単色・カテゴリ（マーカーの色）と、植生図ポリゴンの個別。「個別」は用途のあるレイヤでだけ選べる |
+| LAYER-10 | ユーザー別・測位品質の色分けができる | 要 | 自 | 共 | 共 | `e2e/web/specs-emu/24-layers-login.spec.ts` | Webの自動は、測位品質つきの軌跡を取り込んでFIX・FLOATの区間の色を確かめ、プロジェクトの中でユーザー別の色でポイントが描かれることを確かめる |
+| LAYER-11 | ツールパレット（植生図・飛翔図）をレイヤに設定できる | | 自 | 共 | 共 | `e2e/web/specs/12-layers-style.spec.ts` | Webの自動は植生図（区分の欄とボタンが出る、区分を足す、用途を外す）。飛翔図は要ログイン |
+| LAYER-12 | 野帳レイヤのプリセットから追加できる | 要 | 自 | 共 | 共 | `e2e/web/specs-emu/24-layers-login.spec.ts` | Webの自動は、未ログインでは選べず、ログインすると鳥類野帳の項目でレイヤができ記録できるところまで（辞書の候補は見ない） |
 
 ## 11. データ一覧・データ編集
 
@@ -256,35 +251,35 @@ iOSとAndroidは同時に流さず、順番に実行する。
 |---|---|---|---|---|---|---|---|
 | DATA-1 | データ一覧から記録を追加でき（位置あり／なし）、編集画面が開く | | 自 | 自 | 自 | `e2e/web/specs/03-data.spec.ts`, `e2e/maestro/smoke/02-record.yaml` | |
 | DATA-2 | 文字列・数値・範囲・日時・リスト・ラジオ・チェックの各欄に入力して保存できる | | 自 | 自 | 自 | `e2e/web/specs/03-data.spec.ts`, `e2e/maestro/smoke/02-record.yaml` | 自動は文字列の欄のみ。ほかの形式は手動 |
-| DATA-3 | 連番が最大値＋1で入る | | 自 | シミュ | シミュ | `e2e/web/specs/03-data.spec.ts` | |
-| DATA-4 | 表（TABLE）と参照（子の記録）を入力できる | | 自 | シミュ | シミュ | `e2e/web/specs/12-layers-style.spec.ts` | TABLEに2行入れて保存し開き直す。参照の＋で子の記録を2件足す |
-| DATA-5 | 辞書入力で候補から選べる | | 自 | シミュ | シミュ | `e2e/web/specs/02-layers.spec.ts` | |
+| DATA-3 | 連番が最大値＋1で入る | | 自 | 共 | 共 | `e2e/web/specs/03-data.spec.ts` | |
+| DATA-4 | 表（TABLE）と参照（子の記録）を入力できる | | 自 | 共 | 共 | `e2e/web/specs/12-layers-style.spec.ts` | TABLEに2行入れて保存し開き直す。参照の＋で子の記録を2件足す |
+| DATA-5 | 辞書入力で候補から選べる | | 自 | 共 | 共 | `e2e/web/specs/02-layers.spec.ts` | |
 | DATA-6 | 辞書入力を音声でできる | | — | 手 | 手 | | マイク |
-| DATA-7 | 一覧の並べ替え・絞り込み（候補・空白）ができる | | 自 | シミュ | シミュ | `e2e/web/specs/09-data-list.spec.ts` | |
+| DATA-7 | 一覧の並べ替え・絞り込み（候補・空白）ができる | | 自 | 共 | 共 | `e2e/web/specs/09-data-list.spec.ts` | |
 | DATA-8 | 一覧でチェックした記録を削除できる | | 自 | 自 | 自 | `e2e/web/specs/03-data.spec.ts`, `e2e/maestro/smoke/02-record.yaml` | |
-| DATA-9 | 記録を複製できる。前後の記録へ移動できる | | 自 | シミュ | シミュ | `e2e/web/specs/03-data.spec.ts` | |
-| DATA-10 | 編集画面の「表示」で、その記録の位置へ地図が移動する | | 自 | シミュ | シミュ | `e2e/web/specs/03-data.spec.ts` | |
-| DATA-11 | 変更したまま閉じようとすると、破棄の確認が出る | | 自 | シミュ | シミュ | `e2e/web/specs/03-data.spec.ts` | |
-| PHOTO-A1 | 写真をライブラリ（Webはファイル）から追加して保存でき、開き直しても原画で開ける | | 自 | 自 | シミュ | `e2e/maestro/photo/01`, `03`, `e2e/web/specs/08-photo-memo-pdf.spec.ts` | |
-| PHOTO-A2 | カメラで撮影して保存でき、開き直しても原画で開ける | | — | 機 | 自 | `e2e/maestro/photo/02`, `03` | iOSシムは撮影不可。iOSは実機 |
-| PHOTO-A3 | 撮影した写真が端末のカメラロールにも入る | | — | 機 | シミュ | | Androidは `adb` で端末の写真一覧を調べる。iOSは実機 |
-| PHOTO-A4 | 「アクティビティを保持しない」で撮影しても、編集画面が開き直り写真が付く | | — | — | シミュ | | `adb shell settings put global always_finish_activities 1` で切り替えられる |
-| PHOTO-A5 | 写真を拡大表示し、スワイプで前後へ移れる。削除できる | | 自 | シミュ | シミュ | `e2e/web/specs/08-photo-memo-pdf.spec.ts` | |
-| PHOTO-A6 | HEICの写真を追加するとJPEGで保存される | | 自 | シミュ | シミュ | `e2e/web/specs/15-map-gps-pmtiles.spec.ts` | P-H1。Webの自動は、WebPがJPEGになって保存されることと、HEICはChromiumが読めず写真が付かない（案内も出ない）ことまで。HEIC→JPEGの変換そのものはネイティブで確かめる（テスト用のHEICを端末へ送って選ぶ） |
+| DATA-9 | 記録を複製できる。前後の記録へ移動できる | | 自 | 自 | 自 | `e2e/web/specs/03-data.spec.ts`, `e2e/maestro/smoke/19-data` | |
+| DATA-10 | 編集画面の「表示」で、その記録の位置へ地図が移動する | | 自 | 自 | 自 | `e2e/web/specs/03-data.spec.ts`, `e2e/maestro/smoke/19-data` | |
+| DATA-11 | 変更したまま閉じようとすると、破棄の確認が出る | | 自 | 自 | 自 | `e2e/web/specs/03-data.spec.ts`, `e2e/maestro/smoke/19-data` | |
+| PHOTO-A1 | 写真をライブラリ（Webはファイル）から追加して保存でき、開き直しても原画で開ける | | 自 | 自 | 自 | `e2e/maestro/photo/01`, `03`, `e2e/web/specs/08-photo-memo-pdf.spec.ts` | |
+| PHOTO-A2 | カメラで撮影して保存でき、開き直しても原画で開ける | | — | 手 | 自 | `e2e/maestro/photo/02`, `03` | iOSシミュレーターは撮影できないので、iOSは実機で人が確かめる（「リリース前にやること」5） |
+| PHOTO-A3 | 撮影した写真が端末のカメラロールにも入る | | — | 手 | 手 |  | 実機で人が確かめる（「リリース前にやること」5） |
+| PHOTO-A4 | 「アクティビティを保持しない」で撮影しても、編集画面が開き直り写真が付く | | — | — | 手 |  | 開発者オプションを切り替えて人が確かめる（「リリース前にやること」5） |
+| PHOTO-A5 | 写真を拡大表示し、スワイプで前後へ移れる。削除できる | | 自 | 自 | 自 | `e2e/web/specs/08-photo-memo-pdf.spec.ts`, `e2e/maestro/photo/04-view-swipe-delete` | |
+| PHOTO-A6 | HEICの写真を追加するとJPEGで保存される | | 自 | 自 | 自 | `e2e/web/specs/15-map-gps-pmtiles.spec.ts`, `e2e/maestro/photo/05-heic-to-jpeg` | P-H1。Webの自動は、WebPがJPEGになって保存されることと、HEICはChromiumが読めず写真が付かない（案内も出ない）ことまで。HEIC→JPEGの変換そのものはネイティブで確かめる（テスト用のHEICを端末へ送って選ぶ） |
 
 ## 12. ファイルの入出力
 
 | ID | 機能（正常系で確かめること） | ログイン | Web | iOS | Android | 自動テスト | 備考 |
 |---|---|---|---|---|---|---|---|
-| FILE-1 | GeoJSONを取り込むと、レイヤと記録ができる | | 自 | シミュ | シミュ | `e2e/web/specs/04-file.spec.ts` | |
-| FILE-2 | GPX・KML・KMZを取り込める | | 自 | シミュ | シミュ | `e2e/web/specs/09-data-list.spec.ts` | |
-| FILE-3 | CSVを取り込める（緯度経度列、Shift_JIS） | | 自 | シミュ | シミュ | `e2e/web/specs/09-data-list.spec.ts` | |
-| FILE-4 | エクスポートしたZIP（レイヤ設定＋データ＋写真）を取り込み直せる | | 自 | シミュ | シミュ | `e2e/web/specs/04-file.spec.ts` | |
+| FILE-1 | GeoJSONを取り込むと、レイヤと記録ができる | | 自 | 自 | 自 | `e2e/web/specs/04-file.spec.ts`, `e2e/maestro/smoke/13-file` | |
+| FILE-2 | GPX・KML・KMZを取り込める | | 自 | 自 | 自 | `e2e/web/specs/09-data-list.spec.ts`, `e2e/maestro/smoke/22-file-formats` | ネイティブの自動は、GPXのウェイポイント・KML・KMZの地点まで（軌跡・ライン・ポリゴン入りはWebの自動） |
+| FILE-3 | CSVを取り込める（緯度経度列、Shift_JIS） | | 自 | 自 | 自 | `e2e/web/specs/09-data-list.spec.ts`, `e2e/maestro/smoke/22-file-formats` | ネイティブの自動は緯度経度列のCSVまで（Shift_JISはWebの自動） |
+| FILE-4 | エクスポートしたZIP（レイヤ設定＋データ＋写真）を取り込み直せる | | 自 | 自 | 自 | `e2e/web/specs/04-file.spec.ts`, `e2e/maestro/smoke/22-file-formats` | ネイティブの自動は、エクスポート形式のZIPの取り込みまで（写真入りはWebの自動） |
 | FILE-5 | 地図へファイルをドラッグ＆ドロップして取り込める | | 自 | — | — | `e2e/web/specs/04-file.spec.ts` | |
-| FILE-6 | データ一覧からCSV・GeoJSON・GPX・KMLをエクスポートでき、内容が合っている | | 自 | シミュ | シミュ | `e2e/web/specs/04-file.spec.ts` | |
-| FILE-7 | 写真付きレイヤをエクスポートすると、写真が入る（ZIP・KMZ） | | 自 | シミュ | シミュ | `e2e/web/specs/14-track-gps-file.spec.ts` | Webの自動はZIP（JPEGが入り、GeoJSONがそのファイル名を指す）。Webのデータ一覧の書き出しにKMZは無い |
-| FILE-8 | 保存先の選択肢（この端末・共有・Google Drive）が出て押せる | | — | シミュ | シミュ | | |
-| FILE-9 | 設定の「保存」で全データを保存し、「開く」で元どおりに戻る | | 自 | シミュ | シミュ | `e2e/web/specs/10-settings.spec.ts` | ネイティブの自動はバックアップ復元で代用 |
+| FILE-6 | データ一覧からCSV・GeoJSON・GPX・KMLをエクスポートでき、内容が合っている | | 自 | 自 | 自 | `e2e/web/specs/04-file.spec.ts`, `e2e/maestro/smoke/13-file` | |
+| FILE-7 | 写真付きレイヤをエクスポートすると、写真が入る（ZIP・KMZ） | | 自 | 共 | 共 | `e2e/web/specs/14-track-gps-file.spec.ts` | Webの自動はZIP（JPEGが入り、GeoJSONがそのファイル名を指す）。Webのデータ一覧の書き出しにKMZは無い |
+| FILE-8 | 保存先の選択肢（この端末・共有・Google Drive）が出て押せる | | — | 自 | 自 | `e2e/maestro/smoke/13-file` | |
+| FILE-9 | 設定の「保存」で全データを保存し、「開く」で元どおりに戻る | | 自 | 自 | 自 | `e2e/web/specs/10-settings.spec.ts`, `e2e/maestro/smoke/13-file` | ネイティブの自動はバックアップ復元で代用 |
 
 ## 13. 設定
 
@@ -293,9 +288,9 @@ iOSとAndroidは同時に流さず、順番に実行する。
 | SET-1 | 設定画面が開き、各項目が出る | | 自 | 自 | 自 | `e2e/web/specs/10-settings.spec.ts`, `e2e/maestro/smoke/01-launch.yaml` | |
 | SET-2 | データをクリアすると、初期のレイヤに戻る | | 自 | 自 | 自 | `e2e/web/specs/10-settings.spec.ts`、`e2e/maestro/smoke/90-clear-restore.yaml` | ネイティブは `E2E_ALLOW_CLEAR=1` のときだけ流す |
 | SET-3 | クリア前のデータが自動バックアップに残り、復元できる | | — | 自 | 自 | `e2e/maestro/smoke/90-clear-restore.yaml`、`03-backup.yaml`（一覧が開くまで） | 端末のデータを消すので `E2E_ALLOW_CLEAR=1` のときだけ流す |
-| SET-4 | キャッシュをクリアできる | | 自 | シミュ | シミュ | `e2e/web/specs/10-settings.spec.ts` | |
+| SET-4 | キャッシュをクリアできる | | 自 | 自 | 自 | `e2e/web/specs/10-settings.spec.ts`, `e2e/maestro/smoke/15-settings` | |
 | SET-5 | 接近通知を有効にすると、対象に近づいたとき音声と振動で知らせる | | — | 手 | 手 | `src/hooks/__tests__/useProximityAlert.test.ts`（判定のユニットテスト） | いつ・何を知らせるか（距離の段、繰り返さない、3秒の間隔、精度、対象の絞り込み）はユニットテストが見る。人が確かめるのは、実機で歩いて実際に音声が聞こえ振動すること。iOSはロック中も |
-| SET-6 | マニュアル・ライセンス・バージョン（更新履歴）が開く | | 自 | シミュ | シミュ | `e2e/web/specs/10-settings.spec.ts` | Webの自動は、開こうとしたURLとライセンス画面まで |
+| SET-6 | マニュアル・ライセンス・バージョン（更新履歴）が開く | | 自 | 自 | 自 | `e2e/web/specs/10-settings.spec.ts`, `e2e/maestro/smoke/15-settings` | Webの自動は、開こうとしたURLとライセンス画面まで |
 
 ## 14. 外部GNSS受信機（RTK）
 
@@ -313,14 +308,14 @@ iOSとAndroidは同時に流さず、順番に実行する。
 
 | ID | 機能（正常系で確かめること） | ログイン | Web | iOS | Android | 自動テスト | 備考 |
 |---|---|---|---|---|---|---|---|
-| ACCT-1 | メールとパスワードでログインでき、アカウントボタンの表示が変わる | 要 | 自 | シミュ | シミュ | `e2e/web/specs-emu/20-account.spec.ts` | |
-| ACCT-2 | 新規登録できる（許可されたドメインのみ。確認メール） | 要 | 自 | シミュ | シミュ | `e2e/web/specs-emu/23-account-more.spec.ts` | 登録制限は functions（エミュレータでは確かめられない）。Webの自動は、登録・確認メール・確認前はログインできないこと・重複の拒否まで |
-| ACCT-3 | パスワードの再設定メールを送れる | 要 | 自 | シミュ | シミュ | `e2e/web/specs-emu/23-account-more.spec.ts` | Webの自動は、Authエミュレータに届いた再設定メールのコードで再設定し、新しいパスワードでログインできるところまで（メールのリンク先の画面は通さない） |
+| ACCT-1 | メールとパスワードでログインでき、アカウントボタンの表示が変わる | 要 | 自 | 自 | 共 | `e2e/web/specs-emu/20-account.spec.ts`, `e2e/maestro/smoke-emu/30-account` | |
+| ACCT-2 | 新規登録できる（許可されたドメインのみ。確認メール） | 要 | 自 | 共 | 共 | `e2e/web/specs-emu/23-account-more.spec.ts` | 登録制限は functions（エミュレータでは確かめられない）。Webの自動は、登録・確認メール・確認前はログインできないこと・重複の拒否まで |
+| ACCT-3 | パスワードの再設定メールを送れる | 要 | 自 | 共 | 共 | `e2e/web/specs-emu/23-account-more.spec.ts` | Webの自動は、Authエミュレータに届いた再設定メールのコードで再設定し、新しいパスワードでログインできるところまで（メールのリンク先の画面は通さない） |
 | ACCT-4 | 暗号化PINを登録できる。別の端末でPINを入れて鍵を復元できる | 要 | 手 | 手 | 手 | | Virgil。本番のPINは人が入力する |
 | ACCT-5 | PINを変更できる。リセット前に影響する件数が出る | 要 | 手 | 手 | 手 | | 本番のPINは人が入力する |
-| ACCT-6 | プロフィール（表示名）を変えられる。パスワードを変えられる | 要 | 自 | シミュ | シミュ | `e2e/web/specs-emu/20-account.spec.ts` | 自動は表示名のみ（パスワード変更は手動） |
-| ACCT-7 | ログアウトできる。端末内の鍵が消える | 要 | 自 | シミュ | シミュ | `e2e/web/specs-emu/20-account.spec.ts` | 鍵が消えることは手動（自動は暗号化なし） |
-| ACCT-8 | アカウントを削除できる | 要 | 自 | シミュ | シミュ | `e2e/web/specs-emu/23-account-more.spec.ts` | Webの自動は、パスワード違いでは消えないこと、削除後はログインできず所有プロジェクトも消えることまで（暗号化キーの削除は見ない） |
+| ACCT-6 | プロフィール（表示名）を変えられる。パスワードを変えられる | 要 | 自 | 自 | 共 | `e2e/web/specs-emu/20-account.spec.ts`, `e2e/maestro/smoke-emu/33-member` | 自動は表示名のみ（パスワード変更は手動） |
+| ACCT-7 | ログアウトできる。端末内の鍵が消える | 要 | 自 | 自 | 共 | `e2e/web/specs-emu/20-account.spec.ts`, `e2e/maestro/smoke-emu/30-account`, `e2e/maestro/smoke-emu/32-project-download` | 鍵が消えることは手動（自動は暗号化なし） |
+| ACCT-8 | アカウントを削除できる | 要 | 自 | 共 | 共 | `e2e/web/specs-emu/23-account-more.spec.ts` | Webの自動は、パスワード違いでは消えないこと、削除後はログインできず所有プロジェクトも消えることまで（暗号化キーの削除は見ない） |
 
 ## 16. 共有プロジェクト（組織アカウント）
 
@@ -329,34 +324,34 @@ iOSとAndroidは同時に流さず、順番に実行する。
 
 | ID | 機能（正常系で確かめること） | ログイン | Web | iOS | Android | 自動テスト | 備考 |
 |---|---|---|---|---|---|---|---|
-| PROJ-1 | プロジェクト一覧が出る。更新・並べ替え・お気に入りができる | 要 | 自 | シミュ | シミュ | `e2e/web/specs-emu/21-projects.spec.ts` | 自動は一覧と更新まで（並べ替え・お気に入りは手動） |
+| PROJ-1 | プロジェクト一覧が出る。更新・並べ替え・お気に入りができる | 要 | 自 | 自 | 共 | `e2e/web/specs-emu/21-projects.spec.ts`, `e2e/maestro/smoke-emu/31-project-upload` | 自動は一覧と更新まで（並べ替え・お気に入りは手動） |
 | PROJ-2 | プロジェクトを作成できる | 要 | 自 | — | — | `e2e/web/specs-emu/21-projects.spec.ts`、`e2e_project_flow`, `e2e_project_dek`（サーバー側） | |
-| PROJ-3 | プロジェクトを開くと、共有の地図・レイヤが入る | 要 | 自 | シミュ | シミュ | `e2e/web/specs-emu/21-projects.spec.ts`、`e2e_project_flow`（サーバー側） | |
+| PROJ-3 | プロジェクトを開くと、共有の地図・レイヤが入る | 要 | 自 | 自 | 共 | `e2e/web/specs-emu/21-projects.spec.ts`、`e2e_project_flow`（サーバー側）, `e2e/maestro/smoke-emu/31-project-upload` | |
 | PROJ-4 | 設定モードで地図・レイヤを変えて保存すると、開き直した端末に反映される | 要 | 自 | — | — | `e2e/web/specs-emu/21-projects.spec.ts`、`e2e_project_flow`（サーバー側） | |
-| PROJ-5 | 記録を送信でき、別のメンバーが取得できる | 要 | 自 | シミュ | シミュ | `e2e/web/specs-emu/22-sync.spec.ts`、`sync_flow`, `e2e_data_collab`（サーバー側） | 2アカウント |
-| PROJ-6 | 写真付きの記録を送信・取得でき、写真が開ける | 要 | 自 | シミュ | シミュ | `e2e/web/specs-emu/25-collab.spec.ts`、`e2e_photo_storage`（サーバー側） | Webの自動は、写真のサムネイルが別のメンバーに届くところまで。エミュレータ接続（暗号化なし）では写真本体をStorageへ送れないので、本体が開くことは実機で確かめる（テストは fixme） |
-| PROJ-7 | 同じ記録を2台で変えると、競合の解決画面が出て選べる | 要 | 自 | シミュ | シミュ | `e2e/web/specs-emu/25-collab.spec.ts`、`sync_flow`（サーバー側） | 解決画面が出るのは取得のとき。送信のときは「マージ／上書き」の確認で、マージは新しい方が残る。Webの自動は別のブラウザ2つで、どちらを選んでもその値が残り相手に届くことまで |
-| PROJ-8 | メンバーを追加・削除でき、ロールを変えられる。未登録のメンバーは保留で保存できる | 要 | 自 | シミュ | シミュ | `e2e/web/specs-emu/21-projects.spec.ts`、`e2e_project_flow`（サーバー側） | 自動は追加と保留まで（削除・ロール変更は手動） |
-| PROJ-9 | 一般メンバーは、他人の記録を編集できない。管理者はできる | 要 | 自 | シミュ | シミュ | `e2e/web/specs-emu/25-collab.spec.ts`、`attack_*`, `e2e_data_collab`（サーバー側） | Webの自動は、メンバーには理由が出て保存できないこと、管理者は書き換えて送信でき、メンバーに届くことまで（削除は見ない） |
-| PROJ-10 | 共通データのレイヤの記録は全員に見え、調査中は誰も変えられない。設定モードで変えると全員に届く | 要 | 自 | シミュ | シミュ | `e2e/web/specs-emu/25-collab.spec.ts`、`sync_flow`（サーバー側） | 設定モードで変えるのは管理者 |
-| PROJ-11 | 軌跡レイヤを共有すると、ユーザー別の色になり記録者名が出る | 要 | 自 | シミュ | シミュ | `e2e/web/specs-emu/25-collab.spec.ts` | 2アカウント。Webの自動は、共有にするとユーザー別の色になり、2人の軌跡が別の色で、タップで記録者名が出るところまで（軌跡は取り込みで入れる） |
-| PROJ-12 | プロジェクトを終了すると、端末内のデータに戻る | 要 | 自 | シミュ | シミュ | `e2e/web/specs-emu/21-projects.spec.ts` | |
-| PROJ-13 | 未送信の変更があるまま離れようとすると、警告が出る | 要 | 自 | シミュ | シミュ | `e2e/web/specs-emu/25-collab.spec.ts` | Webの自動は、記録を足すと離脱の確認が出て、送信すると出なくなり、送信後に編集するとまた出ることまで |
+| PROJ-5 | 記録を送信でき、別のメンバーが取得できる | 要 | 自 | 自 | 共 | `e2e/web/specs-emu/22-sync.spec.ts`、`sync_flow`, `e2e_data_collab`（サーバー側）, `e2e/maestro/smoke-emu/31-project-upload`, `e2e/maestro/smoke-emu/32-project-download` | 2アカウント |
+| PROJ-6 | 写真付きの記録を送信・取得でき、写真が開ける | 要 | 自 | 共 | 共 | `e2e/web/specs-emu/25-collab.spec.ts`、`e2e_photo_storage`（サーバー側） | Webの自動は、写真のサムネイルが別のメンバーに届くところまで。エミュレータ接続（暗号化なし）では写真本体をStorageへ送れないので、本体が開くことは実機で確かめる（テストは fixme） |
+| PROJ-7 | 同じ記録を2台で変えると、競合の解決画面が出て選べる | 要 | 自 | 共 | 共 | `e2e/web/specs-emu/25-collab.spec.ts`、`sync_flow`（サーバー側） | 解決画面が出るのは取得のとき。送信のときは「マージ／上書き」の確認で、マージは新しい方が残る。Webの自動は別のブラウザ2つで、どちらを選んでもその値が残り相手に届くことまで |
+| PROJ-8 | メンバーを追加・削除でき、ロールを変えられる。未登録のメンバーは保留で保存できる | 要 | 自 | 自 | 共 | `e2e/web/specs-emu/21-projects.spec.ts`、`e2e_project_flow`（サーバー側）, `e2e/maestro/smoke-emu/33-member` | 自動は追加と保留まで（削除・ロール変更は手動）。ネイティブの自動（iOS）は、メンバーの一覧にプロジェクトが出るところまで。メンバーの編集はWebだけの機能 |
+| PROJ-9 | 一般メンバーは、他人の記録を編集できない。管理者はできる | 要 | 自 | 共 | 共 | `e2e/web/specs-emu/25-collab.spec.ts`、`attack_*`, `e2e_data_collab`（サーバー側） | Webの自動は、メンバーには理由が出て保存できないこと、管理者は書き換えて送信でき、メンバーに届くことまで（削除は見ない） |
+| PROJ-10 | 共通データのレイヤの記録は全員に見え、調査中は誰も変えられない。設定モードで変えると全員に届く | 要 | 自 | 共 | 共 | `e2e/web/specs-emu/25-collab.spec.ts`、`sync_flow`（サーバー側） | 設定モードで変えるのは管理者 |
+| PROJ-11 | 軌跡レイヤを共有すると、ユーザー別の色になり記録者名が出る | 要 | 自 | 共 | 共 | `e2e/web/specs-emu/25-collab.spec.ts` | 2アカウント。Webの自動は、共有にするとユーザー別の色になり、2人の軌跡が別の色で、タップで記録者名が出るところまで（軌跡は取り込みで入れる） |
+| PROJ-12 | プロジェクトを終了すると、端末内のデータに戻る | 要 | 自 | 自 | 共 | `e2e/web/specs-emu/21-projects.spec.ts`, `e2e/maestro/smoke-emu/32-project-download` | |
+| PROJ-13 | 未送信の変更があるまま離れようとすると、警告が出る | 要 | 自 | 共 | 共 | `e2e/web/specs-emu/25-collab.spec.ts` | Webの自動は、記録を足すと離脱の確認が出て、送信すると出なくなり、送信後に編集するとまた出ることまで |
 | PROJ-14 | アーカイブ・復元ができる | 要 | 自 | — | — | `e2e/web/specs-emu/21-projects.spec.ts` | |
 | PROJ-15 | クラウドデータ管理で、ユーザー別のデータを一覧・削除できる | 要 | 自 | — | — | `e2e/web/specs-emu/21-projects.spec.ts` | |
 | PROJ-16 | プロジェクトのデータをエクスポートできる | 要 | 自 | — | — | `e2e/web/specs-emu/25-collab.spec.ts` | Webの自動は、ZIPにメンバー全員の記録とレイヤ設定が入るところまで（写真は見ない） |
 | PROJ-17 | プロジェクトを削除できる（オーナーのみ） | 要 | 自 | — | — | `e2e/web/specs-emu/21-projects.spec.ts`、`e2e_photo_storage`（サーバー側） | |
 | PROJ-18 | 暗号化キーの一括再共有ができる | 要 | 手 | — | — | | Virgil |
-| PROJ-19 | 共有のPDF地図・スタイルが、メンバーの端末で表示される | 要 | 自 | シミュ | シミュ | `e2e/web/specs-emu/25-collab.spec.ts` | Webの自動は、メンバーの地図一覧に2つとも入り、スタイルが端末に届くところまで。エミュレータ接続（暗号化なし）では共有PDFを取り込めないので、PDFの表示は実機で確かめる（テストは fixme） |
+| PROJ-19 | 共有のPDF地図・スタイルが、メンバーの端末で表示される | 要 | 自 | 共 | 共 | `e2e/web/specs-emu/25-collab.spec.ts` | Webの自動は、メンバーの地図一覧に2つとも入り、スタイルが端末に届くところまで。エミュレータ接続（暗号化なし）では共有PDFを取り込めないので、PDFの表示は実機で確かめる（テストは fixme） |
 
 ## 17. Google Drive の個人プロジェクト
 
 | ID | 機能（正常系で確かめること） | ログイン | Web | iOS | Android | 自動テスト | 備考 |
 |---|---|---|---|---|---|---|---|
 | DRIVE-1 | Googleと連携でき、解除できる | Drive | 手 | 手 | 手 | | 外部OAuth。Googleへのサインインと許可は人が行う |
-| DRIVE-2 | 全データをDriveに保存できる（同名は上書きの確認） | Drive | 手 | 機 | 機 | | 人が連携を済ませた実機で、テスト用の名前で保存する |
-| DRIVE-3 | Driveの一覧から読み込むと、保存したときの状態に戻る | Drive | 手 | 機 | 機 | | 同上。読み込むと端末のデータが置き換わるので、テスト専用の端末で |
-| DRIVE-4 | Driveのプロジェクトを削除できる | Drive | 手 | 機 | 機 | | 同上。DRIVE-2 で保存したテスト用のものだけを消す |
+| DRIVE-2 | 全データをDriveに保存できる（同名は上書きの確認） | Drive | 手 | 手 | 手 |  | 人がGoogleとの連携を済ませた端末で、テスト用の名前で保存する |
+| DRIVE-3 | Driveの一覧から読み込むと、保存したときの状態に戻る | Drive | 手 | 手 | 手 |  | 同上。読み込むと端末のデータが置き換わるので、テスト専用の端末で |
+| DRIVE-4 | Driveのプロジェクトを削除できる | Drive | 手 | 手 | 手 |  | 同上。DRIVE-2 で保存したテスト用のものだけを消す |
 
 ---
 
@@ -364,12 +359,12 @@ iOSとAndroidは同時に流さず、順番に実行する。
 
 | ID | 確かめること | ログイン | Web | iOS | Android | 自動テスト | 備考 |
 |---|---|---|---|---|---|---|---|
-| ERR-1 | 壊れたファイル・対応していない形式を取り込むと、エラーが出てデータは変わらない | | 自 | シミュ | シミュ | `e2e/web/specs/04-file.spec.ts` | |
-| ERR-2 | 5万頂点を超えるファイルを取り込むと、簡略化の確認が出る | | 自 | シミュ | シミュ | `e2e/web/specs/14-track-gps-file.spec.ts` | 6万頂点のポリゴンをテスト内で作って取り込み、「簡略化する」を選ぶ |
-| ERR-3 | 不正なスタイルJSONを読み込むと、エラーが出て前のスタイルのまま | | 自 | シミュ | シミュ | `e2e/web/specs/07-maps.spec.ts` | |
+| ERR-1 | 壊れたファイル・対応していない形式を取り込むと、エラーが出てデータは変わらない | | 自 | 自 | 自 | `e2e/web/specs/04-file.spec.ts`, `e2e/maestro/smoke/22-file-formats` | |
+| ERR-2 | 5万頂点を超えるファイルを取り込むと、簡略化の確認が出る | | 自 | 共 | 共 | `e2e/web/specs/14-track-gps-file.spec.ts` | 6万頂点のポリゴンをテスト内で作って取り込み、「簡略化する」を選ぶ |
+| ERR-3 | 不正なスタイルJSONを読み込むと、エラーが出て前のスタイルのまま | | 自 | 自 | 自 | `e2e/web/specs/07-maps.spec.ts`, `e2e/maestro/smoke/20-maps-pmtiles` | |
 | ERR-4 | 必須でない欄を空のまま保存できる。数値欄に文字を入れると保存できない | | 自 | 自 | 自 | `e2e/web/specs/03-data.spec.ts`、`e2e/maestro/smoke/07-input-check.yaml` | ネイティブの自動は、連番の欄に文字を入れたときの確認（欄の名前つきで1回だけ）と、直すと保存できるところまで |
-| ERR-5 | 通信できないとき、タイルのダウンロードは失敗を示し、再開できる | | — | 手 | シミュ | | Androidは `adb` で機内モードにできる。iOSは人が切り替える |
-| ERR-6 | 通信できないとき、プロジェクトを開く・送信は失敗を示し、端末内のデータは変わらない | 要 | 自 | 手 | シミュ | `e2e/web/specs-emu/25-collab.spec.ts` | S-H1。Webの自動は、送信・取得・プロジェクトを開く、のどれも「インターネットに接続していません」と出て、端末内の記録が残ることまで。Androidは `adb` で機内モード。iOSは人が切り替える |
-| ERR-7 | 誤ったパスワード・PINでは、ログイン・復元できずエラーが出る | 要 | 自 | シミュ | シミュ | `e2e/web/specs-emu/20-account.spec.ts` | 自動はパスワードのみ（テスト名 ACCT-1b）。PINは手動 |
-| ERR-8 | 権限の無い操作（一般メンバーの設定変更・削除）は、ボタンが出ないか拒否される | 要 | 自 | シミュ | シミュ | `e2e/web/specs-emu/21-projects.spec.ts`、`attack_*`（サーバー側） | 自動はボタンが出ないことまで（テスト名 PROJ-8） |
+| ERR-5 | 通信できないとき、タイルのダウンロードは失敗を示し、再開できる | | — | 手 | 手 |  | 機内モードに切り替えて人が確かめる |
+| ERR-6 | 通信できないとき、プロジェクトを開く・送信は失敗を示し、端末内のデータは変わらない | 要 | 自 | 手 | 手 | `e2e/web/specs-emu/25-collab.spec.ts` | S-H1。Webの自動は、送信・取得・プロジェクトを開く、のどれも「インターネットに接続していません」と出て、端末内の記録が残ることまで。Androidは `adb` で機内モード。iOSは人が切り替える |
+| ERR-7 | 誤ったパスワード・PINでは、ログイン・復元できずエラーが出る | 要 | 自 | 自 | 共 | `e2e/web/specs-emu/20-account.spec.ts`, `e2e/maestro/smoke-emu/30-account` | 自動はパスワードのみ（テスト名 ACCT-1b）。PINは手動 |
+| ERR-8 | 権限の無い操作（一般メンバーの設定変更・削除）は、ボタンが出ないか拒否される | 要 | 自 | 自 | 共 | `e2e/web/specs-emu/21-projects.spec.ts`、`attack_*`（サーバー側）, `e2e/maestro/smoke-emu/33-member` | 自動はボタンが出ないことまで（テスト名 PROJ-8）。ネイティブの自動（iOS）は、一般メンバーに保存ボタンが出ないことまで（設定・削除はネイティブに無い） |
 | ERR-9 | 端末の空き容量が少ないと、警告が出る | | — | 手 | 手 | | |
