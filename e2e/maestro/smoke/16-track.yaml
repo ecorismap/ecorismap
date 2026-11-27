@@ -1,0 +1,353 @@
+# GPS-2・TRACK-3・TRACK-6・TRACK-8・TRACK-4: 疑似位置で軌跡を記録し、記録中の動きと、保存した軌跡の見方・書き出しを確かめる。
+# - GPS-2: 記録中（追従モード）に約600mの道のりを移動すると、画面の同じ位置の座標が移動した分（始点から終点まで緯度・経度とも0.003度）だけ進む
+#   ＝地図が現在地に付いてくる（ドラッグで追従が外れることは、到着待ちの操作として使っているだけで検証はしていない）
+# - TRACK-3: 記録中にアカウントボタンでホームを離れようとすると「軌跡を記録中です。…保存してから移りますか？」と
+#   「止めて保存」が出る。キャンセルするとホームのまま記録が続く（続いていることは、軌跡ボタンの確認が「終了しますか」になることで確かめる）。
+#   「止めて保存」で保存されること、プロジェクト切替・ログアウト・データのクリアなどの経路は確かめていない
+# - TRACK-6: 軌跡サマリーの再生でボタンが一時停止に変わり、通過時刻のポップアップが隠れる。止めると通過時刻と座標が出て、
+#   続きを10秒再生して止めると、座標が軌跡の先へ進んでいる（地図上の丸の動きそのものは見ていない）
+# - TRACK-8: 書き出しを押すと点の数つきの確認が出て、OKでOSの共有シートに track_…（ZIPアーカイブ）と「“ファイル”に保存」が出る。
+#   閉じると失敗の表示なくサマリーに戻る（ZIPの中身・進捗の表示・中止は確かめていない）
+# - TRACK-4: 地図上の軌跡の線をタップすると、「軌跡ポイント」・通過時刻・軌跡の範囲内の座標のポップアップが出て、軌跡サマリーが開く。×で閉じる
+# 保存された軌跡は最後に消す。途中で止まったときに残る記録中の軌跡は、次の起動時の確認で捨てる。
+# 地図は仙台（北緯38.263度・東経140.853度付近）のズーム15へ移ったままになる。GPSは記録を止めるとオフに戻る。
+appId: jp.co.ecoris.ecorismap
+env:
+  LAYER_NAME: '軌跡.*'
+---
+- runFlow: ../common/launch.yaml
+- runFlow: ../common/discard-interrupted-track.yaml
+# いまある軌跡の数（＝これから保存される軌跡の行番号）を数えておく
+- runFlow: ../common/open-layer.yaml
+- runFlow: ../common/count-rows.yaml
+- runFlow: ../common/close-sheet.yaml
+# 軌跡（道のり約600m）が画面に収まる大きさにする
+- runFlow:
+    file: ../common/set-zoom.yaml
+    env:
+      ZOOM: 16
+- setLocation:
+    latitude: 38.2600
+    longitude: 140.8500
+# 開始の確認が出るまで押す
+- repeat:
+    while:
+      notVisible:
+        id: 'dialog-message'
+    times: 5
+    commands:
+      - tapOn:
+          id: 'home-track'
+          retryTapIfNoChange: false
+      - extendedWaitUntil:
+          visible:
+            id: 'dialog-message'
+          timeout: 3000
+          optional: true
+- assertVisible: '.*軌跡の記録を開始しますか.*'
+- tapOn: 'Yes'
+# 記録を始めると追従モードになり、地図が現在地へ移る
+- waitForAnimationToEnd:
+    timeout: 8000
+
+# GPS-2: 画面の同じ位置（現在地の上）の座標を、移動の前後で比べる。
+# iOSシミュレーターは、記録を始めてからしばらく前回の疑似位置（前回の記録の終点）を返すことがある。
+# 始めてから位置を与え直し、地図の中心が出発点（北緯38.260度・東経140.850度）になるまで待つ。
+# 遅れて届いた位置へ地図が飛んだとき、見た目は現在地へ移っているのに、長押しの座標が飛ぶ前の位置のまま出ることがある
+# （アプリ側の不具合として報告済み）。地図を少しドラッグして（追従が外れる）GPSボタンで追従に戻すと、座標が合う
+- evalScript: ${output.before = [99, 0]}
+- repeat:
+    while:
+      true: ${Math.abs(output.before[0] - 38.2614) > 0.0005 || Math.abs(output.before[1] - 140.85) > 0.0005}
+    times: 6
+    commands:
+      - setLocation:
+          latitude: 38.2600
+          longitude: 140.8500
+      - waitForAnimationToEnd:
+          timeout: 3000
+      - swipe:
+          start: '70%,60%'
+          end: '62%,52%'
+          duration: 600
+      - waitForAnimationToEnd:
+          timeout: 2000
+      - tapOn:
+          id: 'home-gps'
+          retryTapIfNoChange: false
+      - waitForAnimationToEnd:
+          timeout: 4000
+      - longPressOn:
+          point: '50%,30%'
+      - extendedWaitUntil:
+          visible:
+            id: 'home-poi-distance'
+            text: '現在地から [\d.,]+ m'
+          timeout: 15000
+      - copyTextFrom:
+          id: 'home-poi-coordinate'
+      - evalScript: ${output.before = maestro.copiedText.split(',').map(Number)}
+      - evalScript: ${console.log('GPS-2 probe ' + output.before)}
+- assertTrue: ${Math.abs(output.before[0] - 38.2614) < 0.0005 && Math.abs(output.before[1] - 140.85) < 0.0005}
+# 東→北→東と曲がる道（まっすぐな軌跡は保存時に始点と終点の2点にまとめられ、リプレイの途中の点が無くなる）。
+# 線を囲む枠の中心（北緯38.2615度・東経140.8515度）を軌跡が通る形にしてある（あとで枠の中心をタップする）
+- travel:
+    points:
+      - 38.2600,140.8500
+      - 38.2600,140.8515
+      - 38.2630,140.8515
+      - 38.2630,140.8530
+    speed: 20
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: 16-track-recording
+- longPressOn:
+    point: '50%,30%'
+- extendedWaitUntil:
+    visible:
+      id: 'home-poi-distance'
+      text: '現在地から [\d.,]+ m'
+    timeout: 15000
+- copyTextFrom:
+    id: 'home-poi-coordinate'
+- evalScript: ${output.after = maestro.copiedText.split(',').map(Number)}
+- evalScript: ${console.log('GPS-2 before ' + output.before + ' after ' + output.after)}
+# 地図が現在地に付いてきていれば、同じ画面位置の座標は移動した分（緯度・経度とも 0.003 度）だけ進んでいる
+- assertTrue: ${Math.abs(output.after[0] - output.before[0] - 0.003) < 0.0005}
+- assertTrue: ${Math.abs(output.after[1] - output.before[1] - 0.003) < 0.0005}
+
+# TRACK-3: 記録中にホームを離れようとする（アカウントボタン）と、止めて保存するかの確認が出る
+- tapOn:
+    id: 'home-account'
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible:
+      id: 'dialog-message'
+      text: '軌跡を記録中です。この画面を離れると記録が続けられないため、記録を止めて、ここまでの軌跡を端末内のデータの軌跡レイヤに保存してから移りますか？.*'
+    timeout: 10000
+- assertVisible: '止めて保存'
+- takeScreenshot: 16-track-leave-confirm
+# キャンセルすると、ホームのまま記録が続く
+# （押した位置の下に軌跡の線があるので、押し直しはさせない。押し直すと軌跡をタップしてしまう）
+- tapOn:
+    text: 'キャンセル'
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    notVisible:
+      id: 'dialog-message'
+    timeout: 10000
+- assertVisible:
+    id: 'home-track'
+- assertNotVisible:
+    id: 'account-close'
+
+# 記録を止める。確認が出るまで押す（下部のボタンに重なるトーストは閉じる）
+- repeat:
+    while:
+      notVisible:
+        id: 'dialog-message'
+    times: 5
+    commands:
+      - runFlow:
+          when:
+            visible: 'Console Error'
+          commands:
+            - tapOn: 'Dismiss'
+            - waitForAnimationToEnd:
+                timeout: 2000
+      - runFlow: ../common/dismiss-toast-by-point.yaml
+      - tapOn:
+          id: 'home-track'
+          retryTapIfNoChange: false
+          optional: true
+      - extendedWaitUntil:
+          visible:
+            id: 'dialog-message'
+          timeout: 4000
+          optional: true
+# 記録が続いていたので、開始ではなく終了の確認になる
+- assertVisible: '.*軌跡の記録を終了しますか.*'
+- tapOn: 'Yes'
+- extendedWaitUntil:
+    visible:
+      id: 'tracksummary-replay'
+    timeout: 20000
+- waitForAnimationToEnd:
+    timeout: 5000
+- assertVisible:
+    id: 'tracksummary-stat-distance'
+- takeScreenshot: 16-track-summary
+# 軌跡は地図の中心（終点）から左下へ伸びていて、大半が軌跡サマリーのシートに隠れている。
+# 1段階ズームアウトして地図を上へずらし、軌跡の全体をシートより上に出す（2Dのリプレイは地図を動かさない）
+- tapOn:
+    id: 'home-zoom-out'
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible:
+      id: 'home-zoom-level'
+      text: '15'
+    timeout: 10000
+- swipe:
+    start: '70%,42%'
+    end: '70%,9%'
+    duration: 1500
+- waitForAnimationToEnd:
+    timeout: 3000
+
+# TRACK-6: リプレイ（全体を30秒で走る）。再生するとボタンが一時停止に変わり、通過時刻のポップアップは隠れる
+- assertVisible:
+    id: 'tracksummary-replay'
+    text: '軌跡を再生'
+- assertNotVisible:
+    id: 'home-trackpoint-coordinate'
+- tapOn:
+    id: 'tracksummary-replay'
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible:
+      id: 'tracksummary-replay'
+      text: '再生を一時停止'
+    timeout: 10000
+- assertNotVisible:
+    id: 'home-trackpoint-coordinate'
+# 9秒待って（出ない要素を待つことで待ち時間にする）一時停止すると、止めた地点（直前に通過した軌跡の点）の通過時刻と座標が出る
+# （始点を出てすぐに止めると、まだ点を通過していないのでポップアップは出ない）
+- extendedWaitUntil:
+    visible:
+      id: 'e2e-wait-9s'
+    timeout: 9000
+    optional: true
+- tapOn:
+    id: 'tracksummary-replay'
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible:
+      id: 'tracksummary-replay'
+      text: '軌跡を再生'
+    timeout: 10000
+- extendedWaitUntil:
+    visible:
+      id: 'home-trackpoint-coordinate'
+    timeout: 10000
+- assertVisible: '\d{4}/\d{2}/\d{2} \d{2}:\d{2}:\d{2}'
+- copyTextFrom:
+    id: 'home-trackpoint-coordinate'
+- evalScript: ${output.replay1 = maestro.copiedText.split(',').map(Number)}
+- takeScreenshot: 16-track-replay-paused
+# 続きを再生し、10秒待って（出ない要素を待つことで待ち時間にする）止めると、進行位置は軌跡の先へ進んでいる
+- tapOn:
+    id: 'tracksummary-replay'
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible:
+      id: 'tracksummary-replay'
+      text: '再生を一時停止'
+    timeout: 10000
+- extendedWaitUntil:
+    visible:
+      id: 'e2e-wait-10s'
+    timeout: 10000
+    optional: true
+- tapOn:
+    id: 'tracksummary-replay'
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible:
+      id: 'home-trackpoint-coordinate'
+    timeout: 10000
+- copyTextFrom:
+    id: 'home-trackpoint-coordinate'
+- evalScript: ${output.replay2 = maestro.copiedText.split(',').map(Number)}
+- evalScript: ${console.log('TRACK-6 ' + output.replay1 + ' -> ' + output.replay2)}
+# どちらも記録した軌跡の範囲にあり、2回目のほうが先（北東）にある
+- assertTrue: ${output.replay1[0] > 38.2599 && output.replay1[0] < 38.2631 && output.replay1[1] > 140.8499 && output.replay1[1] < 140.8531}
+- assertTrue: ${output.replay2[0] > 38.2599 && output.replay2[0] < 38.2631 && output.replay2[1] > 140.8499 && output.replay2[1] < 140.8531}
+- assertTrue: ${output.replay2[0] + output.replay2[1] > output.replay1[0] + output.replay1[1] + 0.0005}
+
+# TRACK-8: 軌跡サマリーから書き出す。点の数を示した確認が出て、OKでOSの共有シートに track_…（ZIP）が出る
+- tapOn:
+    id: 'tracksummary-export'
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible:
+      id: 'dialog-message'
+      text: '軌跡（\d+点）をエクスポートします。.*'
+    timeout: 10000
+- copyTextFrom:
+    id: 'dialog-message'
+- evalScript: ${output.trackPoints = Number(maestro.copiedText.match(/軌跡（(\d+)点）/)[1])}
+- evalScript: ${console.log('TRACK-8 points ' + output.trackPoints)}
+# 曲がり角が2つある軌跡なので、少なくとも4点（始点・曲がり角・終点）ある
+- assertTrue: ${output.trackPoints >= 4}
+- tapOn: 'OK'
+- extendedWaitUntil:
+    visible: 'track_.+_\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}'
+    timeout: 60000
+- assertVisible: 'ZIPアーカイブ.*'
+- assertVisible: '“ファイル”に保存'
+- takeScreenshot: 16-track-export-share
+- tapOn: '閉じる'
+# 共有シートを閉じると、軌跡サマリーに戻る（失敗の表示は出ない）
+- extendedWaitUntil:
+    visible:
+      id: 'tracksummary-export'
+    timeout: 15000
+- assertNotVisible:
+    id: 'dialog-message'
+
+# TRACK-4: シートを閉じてから地図上の軌跡の線をタップすると、通過時刻のポップアップが出て、軌跡サマリーが開く
+# （iOSは地図上の線が AIRGMSPolyline_… という要素で見える。要素のタップは枠の中心を押すので、軌跡が枠の中心を通る形にしてある。
+#   ほかの線のレイヤの記録がこの場所にあると、そちらが押されることがある）
+- runFlow: ../common/close-sheet.yaml
+- extendedWaitUntil:
+    notVisible:
+      id: 'home-trackpoint-coordinate'
+    timeout: 10000
+- tapOn:
+    id: 'AIRGMSPolyline_.*'
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible:
+      id: 'home-trackpoint-coordinate'
+    timeout: 10000
+- assertVisible: '軌跡ポイント'
+- assertVisible: '\d{4}/\d{2}/\d{2} \d{2}:\d{2}:\d{2}'
+- copyTextFrom:
+    id: 'home-trackpoint-coordinate'
+- evalScript: ${output.tapped = maestro.copiedText.split(',').map(Number)}
+- assertTrue: ${output.tapped[0] > 38.2599 && output.tapped[0] < 38.2631 && output.tapped[1] > 140.8499 && output.tapped[1] < 140.8531}
+- assertVisible:
+    id: 'tracksummary-export'
+- takeScreenshot: 16-track-tap-popup
+# ×で閉じられる
+- tapOn:
+    id: 'home-trackpoint-close'
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    notVisible:
+      id: 'home-trackpoint-coordinate'
+    timeout: 10000
+
+# 後片付け: 軌跡レイヤに1本増えている。確かめてから消す
+- runFlow: ../common/close-sheet.yaml
+- runFlow: ../common/open-layer.yaml
+- assertVisible:
+    id: data-row-${output.row}
+- assertNotVisible:
+    id: data-row-${output.row + 1}
+- tapOn:
+    id: data-row-${output.row}
+- extendedWaitUntil:
+    visible:
+      id: 'dataedit-delete'
+    timeout: 10000
+- waitForAnimationToEnd
+- tapOn:
+    id: 'dataedit-delete'
+- tapOn: 'Yes'
+- extendedWaitUntil:
+    visible:
+      id: 'data-export'
+    timeout: 10000
+- assertNotVisible:
+    id: data-row-${output.row}

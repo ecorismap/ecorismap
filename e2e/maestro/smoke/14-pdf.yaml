@@ -1,0 +1,184 @@
+# PDF-1・PDF-2: PDFの出力（ネイティブはタイルを取得してPDFを作り、OSの共有シートへ渡す。Webは印刷ダイアログ）。
+# - PDF-1: 設定の「PDF出力」でPDFの画面（出力ボタン・設定の要約）になる。要約またはヘッダの「用紙」から設定を開き、
+#   用紙サイズ・向き・縮尺を変えてOKすると、要約がその内容になる（範囲枠の絵そのものは確かめていない）
+# - PDF-2: 出力を押すと「PDFを作成しています…」の進捗が出て、OSの共有シートに ecorismap_map_<日時>.pdf（PDF書類）と
+#   「“ファイル”に保存」が出る。閉じるとPDFの画面に戻り、失敗の表示は出ない（PDFの中身・中止は確かめていない）
+# データは作らない。用紙の設定は端末に保存されないので、起動し直すと元（A4 縦 1:10,000）に戻る。
+# 地図タイルは通信で取りに行く。
+appId: jp.co.ecoris.ecorismap
+---
+- runFlow: ../common/launch.yaml
+- runFlow: ../common/open-settings.yaml
+
+# PDF-1: 設定からPDFの画面へ
+- tapOn:
+    id: 'settings-pdf'
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible:
+      id: 'home-pdf-export'
+    timeout: 10000
+- waitForAnimationToEnd:
+    timeout: 3000
+# ふだんのボタンは出ていない
+- assertNotVisible:
+    id: 'home-layers'
+- assertVisible:
+    id: 'home-pdf-header-back'
+# 設定の要約（用紙 向き 縮尺 地図レベル）。起動直後は A4 縦 1:10,000
+- assertVisible:
+    id: 'home-pdf-settings'
+    text: 'A4 縦 1:10,000 \d+'
+# ヘッダの「用紙」でも設定が開く。変えずにOKすると要約は変わらない
+- tapOn:
+    id: 'home-pdf-header-settings'
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible:
+      id: 'home-pdfsettings-ok'
+    timeout: 10000
+- assertVisible:
+    id: 'home-pdfsettings-paper-size'
+    text: 'A4.*'
+- assertVisible:
+    id: 'home-pdfsettings-orientation'
+    text: '縦.*'
+- assertVisible:
+    id: 'home-pdfsettings-scale'
+    text: '1:10,000.*'
+- tapOn:
+    id: 'home-pdfsettings-ok'
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    notVisible:
+      id: 'home-pdfsettings-ok'
+    timeout: 10000
+- assertVisible:
+    id: 'home-pdf-settings'
+    text: 'A4 縦 1:10,000 \d+'
+# 要約を押して設定を開き、用紙サイズ・向き・縮尺を変える
+- tapOn:
+    id: 'home-pdf-settings'
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible:
+      id: 'home-pdfsettings-ok'
+    timeout: 10000
+- tapOn:
+    id: 'home-pdfsettings-paper-size'
+    retryTapIfNoChange: false
+- tapOn:
+    id: 'home-pdfsettings-paper-size-option-1'
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible:
+      id: 'home-pdfsettings-paper-size'
+      text: 'A3.*'
+    timeout: 10000
+- tapOn:
+    id: 'home-pdfsettings-orientation'
+    retryTapIfNoChange: false
+- tapOn:
+    id: 'home-pdfsettings-orientation-option-1'
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible:
+      id: 'home-pdfsettings-orientation'
+      text: '横.*'
+    timeout: 10000
+- tapOn:
+    id: 'home-pdfsettings-scale'
+    retryTapIfNoChange: false
+- tapOn:
+    id: 'home-pdfsettings-scale-option-6'
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible:
+      id: 'home-pdfsettings-scale'
+      text: '1:25,000.*'
+    timeout: 10000
+- takeScreenshot: 14-pdf-settings
+- tapOn:
+    id: 'home-pdfsettings-ok'
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    notVisible:
+      id: 'home-pdfsettings-ok'
+    timeout: 10000
+- assertVisible:
+    id: 'home-pdf-settings'
+    text: 'A3 横 1:25,000 \d+'
+- takeScreenshot: 14-pdf-frame
+
+# PDF-2: 出力する
+- tapOn:
+    id: 'home-pdf-export'
+    retryTapIfNoChange: false
+# タイルが多い・PDFに載らない地図が表示中、のときは先に確認が出る（端末に残っている地図しだい）。続ける。
+# 進捗は数秒で終わることがあるので、確認と進捗のどちらかが出るのを1回の待ちで受ける
+- evalScript: ${output.pdfProgressSeen = false}
+- repeat:
+    while:
+      true: ${output.pdfProgressSeen === false}
+    times: 3
+    commands:
+      - extendedWaitUntil:
+          visible: '.*(このまま作成しますか|このまま出力しますか).*|PDFを作成しています….*'
+          timeout: 10000
+      - runFlow:
+          when:
+            visible:
+              id: 'dialog-message'
+          commands:
+            - tapOn: 'Yes'
+      # 確認ではなかった＝進捗（「PDFを作成しています…」。タイルの取得中は「n / 全体」と中止ボタンが付く）が出た
+      - runFlow:
+          when:
+            notVisible:
+              id: 'dialog-message'
+          commands:
+            - evalScript: ${output.pdfProgressSeen = true}
+- assertTrue: ${output.pdfProgressSeen === true}
+# PDFができると進捗の文言が消え、処理中の表示（文言なし）のまま共有シートが開く。
+# このときの共有シートは、処理中の表示の後ろに隠れて Maestro から中身が見えない（ファイル名は確かめられない）。
+- extendedWaitUntil:
+    notVisible: 'PDFを作成しています….*'
+    timeout: 180000
+# 失敗していれば「PDFを作成できませんでした」が出ている
+- assertNotVisible:
+    id: 'dialog-message'
+- assertVisible: 'In progress'
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: 14-pdf-share
+# 閉じるボタン（シート右上の×。iPhone 16e で画面の 93%,49% の位置）を、PDFの画面に戻るまで押す
+- repeat:
+    while:
+      notVisible:
+        id: 'home-pdf-export'
+    times: 10
+    commands:
+      - assertNotVisible:
+          id: 'dialog-message'
+      - tapOn:
+          point: '93%,49%'
+          retryTapIfNoChange: false
+      - extendedWaitUntil:
+          visible:
+            id: 'home-pdf-export'
+          timeout: 5000
+          optional: true
+- assertVisible:
+    id: 'home-pdf-export'
+- assertNotVisible:
+    id: 'dialog-message'
+# 戻るでふだんの地図画面へ
+- tapOn:
+    id: 'home-pdf-header-back'
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible:
+      id: 'home-layers'
+    timeout: 10000
+- assertNotVisible:
+    id: 'home-pdf-export'

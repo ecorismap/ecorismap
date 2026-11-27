@@ -1,0 +1,128 @@
+# GPS-3: 位置情報の権限を拒否した状態でGPSボタンを押すと、許可を求める案内が出て、GPSは入らない。
+# - 権限を拒否して起動し、GPSボタンを押すと「GPSを使用するには位置情報のアクセス権限を許可してください。」と出る
+# - OK を押すとOSの設定アプリ（このアプリの設定）が開く。アプリへ戻ると、GPSはオフのまま（長押ししても現在地からの距離が出ない）
+# - 権限を許可して起動し直すと、GPSボタンで案内は出ず、GPSが入る（長押しで現在地からの距離が出る）。GPSはオフに戻す
+# 権限を初めて求められたときのOSのダイアログ（許可／許可しない）は確かめていない（起動時に拒否済みにしている）。
+# 権限は必ず許可へ戻して終える（途中で失敗しても、終了時の処理 onFlowComplete が許可で起動し直す）。データは作らない。
+appId: jp.co.ecoris.ecorismap
+onFlowComplete:
+  - stopApp
+  - launchApp:
+      permissions:
+        all: allow
+---
+- stopApp
+# iOSの位置情報は allow／deny ではなく always／inuse／never／unset で指定する（deny は受け付けない）。Androidは deny
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - launchApp:
+          permissions:
+            all: allow
+            location: never
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - launchApp:
+          permissions:
+            all: allow
+            location: deny
+- extendedWaitUntil:
+    visible:
+      id: 'home-layers'
+    timeout: 120000
+- runFlow: ../common/discard-interrupted-track.yaml
+- waitForAnimationToEnd:
+    timeout: 3000
+
+# 拒否した状態でGPSボタンを押す（起動直後のタップは効かないことがあるので、案内が出るまで押す）
+- repeat:
+    while:
+      notVisible:
+        id: 'dialog-message'
+    times: 4
+    commands:
+      - tapOn:
+          id: 'home-gps'
+          retryTapIfNoChange: false
+      - extendedWaitUntil:
+          visible:
+            id: 'dialog-message'
+          timeout: 5000
+          optional: true
+- assertVisible:
+    id: 'dialog-message'
+    text: 'GPSを使用するには位置情報のアクセス権限を許可してください。'
+- takeScreenshot: 18-permission-denied
+# OK でOSの設定アプリが開く
+- tapOn: 'OK'
+- extendedWaitUntil:
+    notVisible:
+      id: 'home-gps'
+    timeout: 15000
+# （iOSシミュレーターでは設定アプリの「アプリ」の一覧が開く。左上に、このアプリへ戻るボタンが出る）
+- extendedWaitUntil:
+    visible:
+      id: 'breadcrumb'
+      text: 'EcorisMapへ戻る'
+    timeout: 15000
+- takeScreenshot: 18-permission-os-settings
+# アプリへ戻る（止めずに前面へ出す）。GPSはオフのまま
+- launchApp:
+    stopApp: false
+- extendedWaitUntil:
+    visible:
+      id: 'home-gps'
+    timeout: 30000
+- waitForAnimationToEnd:
+    timeout: 3000
+- runFlow:
+    when:
+      visible:
+        id: 'dialog-message'
+    commands:
+      - tapOn: 'OK'
+- longPressOn:
+    point: '60%,55%'
+- extendedWaitUntil:
+    visible:
+      id: 'home-poi-coordinate'
+    timeout: 10000
+- assertNotVisible:
+    id: 'home-poi-distance'
+
+# 許可へ戻して起動し直すと、案内は出ずにGPSが入る
+- stopApp
+- launchApp:
+    permissions:
+      all: allow
+- extendedWaitUntil:
+    visible:
+      id: 'home-layers'
+    timeout: 120000
+- waitForAnimationToEnd:
+    timeout: 3000
+- setLocation:
+    latitude: 38.2400
+    longitude: 140.9500
+- tapOn:
+    id: 'home-gps'
+    retryTapIfNoChange: false
+- waitForAnimationToEnd:
+    timeout: 8000
+- assertNotVisible:
+    id: 'dialog-message'
+- longPressOn:
+    point: '60%,35%'
+- extendedWaitUntil:
+    visible:
+      id: 'home-poi-distance'
+    timeout: 15000
+# 後片付け: GPSをオフに戻す（追従中に押すとオフになる）
+- tapOn:
+    id: 'home-gps'
+    retryTapIfNoChange: false
+- waitForAnimationToEnd:
+    timeout: 3000

@@ -1,0 +1,32 @@
+# 地図画面で、＋／−のボタンを押してズームレベルを ${ZOOM} にする。
+# 長押しのポップアップが＋／−に重なっていると押せないので、ポップアップを出す前に使う。
+appId: jp.co.ecoris.ecorismap
+---
+- evalScript: ${output.zoomNow = -1}
+- repeat:
+    while:
+      true: ${output.zoomNow !== Number(ZOOM)}
+    times: 40
+    commands:
+      - copyTextFrom:
+          id: 'home-zoom-level'
+      - evalScript: ${output.zoomNow = Number(maestro.copiedText)}
+      - runFlow:
+          when:
+            true: ${output.zoomNow < Number(ZOOM)}
+          commands:
+            - tapOn:
+                id: 'home-zoom-in'
+                retryTapIfNoChange: false
+      - runFlow:
+          when:
+            true: ${output.zoomNow > Number(ZOOM)}
+          commands:
+            - tapOn:
+                id: 'home-zoom-out'
+                retryTapIfNoChange: false
+      - waitForAnimationToEnd:
+          timeout: 2000
+- assertVisible:
+    id: 'home-zoom-level'
+    text: ${String(ZOOM)}

@@ -1,0 +1,16 @@
+# 開発ビルドの警告・エラーのトースト（下部のボタンに重なる）を、出ていれば右端の×の位置を押して閉じる。
+# dismiss-warning-toast.yaml は「トーストの文言の右にある要素」を押すが、地図にマーカー（現在地・軌跡の端など）が
+# 出ていると、×ではなくマーカーが選ばれて押されてしまう（記録中は軌跡サマリーが開く）。地図にマーカーがある場面ではこちらを使う。
+# ×の位置は、トーストの枠（画面の下端近く・左右いっぱい）の右端。iPhone 16e で画面の 91%,93%（座標は整数の％だけ）
+appId: jp.co.ecoris.ecorismap
+---
+- repeat:
+    while:
+      visible: 'Open debugger to view warnings.|.*location error.*'
+    times: 6
+    commands:
+      - tapOn:
+          point: '91%,93%'
+          retryTapIfNoChange: false
+      - waitForAnimationToEnd:
+          timeout: 2000

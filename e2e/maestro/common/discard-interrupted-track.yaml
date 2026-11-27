@@ -1,0 +1,19 @@
+# 起動直後に「軌跡の記録は … で中断されました。… 保存しますか？」が出たら、No で捨てる（出なければ先へ進む）。
+# 軌跡を記録するフローが途中で止まると、次の起動時に出る。テスト用の軌跡なので保存しない。
+appId: jp.co.ecoris.ecorismap
+---
+- extendedWaitUntil:
+    visible:
+      id: 'dialog-message'
+      text: '.*中断されました.*'
+    timeout: 3000
+    optional: true
+- runFlow:
+    when:
+      visible:
+        id: 'dialog-message'
+        text: '.*中断されました.*'
+    commands:
+      - tapOn: 'No'
+      - waitForAnimationToEnd:
+          timeout: 3000

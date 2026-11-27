@@ -1,0 +1,112 @@
+# PHOTO-A6: HEIC の写真をライブラリから追加すると、写真が付いて保存でき、開き直しても原画で開ける（iOS）。
+# - 写真選択画面で HEIC の写真（iOSシミュレーターに最初から入っている 2018年3月31日 の写真＝IMG_0006.HEIC）を選ぶと、サムネイルが付く
+# - 保存して開き直すと写真が残っていて、拡大表示が開く（ダウンロードボタン＝原画が見つからない印は出ない）
+# 保存されたファイルが JPEG であることは、Maestro からは見えない。フローを流している途中か、後片付けを外して流したあとに、Mac 側で確かめる:
+#   A=$(xcrun simctl get_app_container booted jp.co.ecoris.ecorismap data)
+#   find "$A/Documents/projects" -name 'EMAP_*' -mmin -5 -exec file {} \;   → 「JPEG image data」と出る（拡張子も .jpg）
+# HEIC の写真が端末に無いとき（実機・Android など）は、sips -s format heic で作って xcrun simctl addmedia（Androidは adb push）で入れ、
+# 選ぶ写真の指定（下の「写真, 2018年3月31日」）を変える。
+# 既定の「ポイント」レイヤにテスト用の記録を1件作り、最後に消す。
+appId: jp.co.ecoris.ecorismap
+env:
+  LAYER_NAME: 'ポイント.*'
+---
+- runFlow: ../common/launch.yaml
+- runFlow: ../common/open-point-layer.yaml
+- runFlow: ../common/count-rows.yaml
+# 編集レイヤになっていないときは、切り替えの確認が出る（Yesで切り替わるだけなので、追加を押し直す）
+- repeat:
+    while:
+      notVisible:
+        id: 'dataedit-photo-library'
+    times: 3
+    commands:
+      - tapOn:
+          id: 'data-add'
+          retryTapIfNoChange: false
+      - extendedWaitUntil:
+          visible:
+            id: 'dialog-message'
+          timeout: 3000
+          optional: true
+      - runFlow:
+          when:
+            visible:
+              id: 'dialog-message'
+          commands:
+            - tapOn: 'Yes'
+            - waitForAnimationToEnd:
+                timeout: 3000
+- extendedWaitUntil:
+    visible:
+      id: 'dataedit-photo-library'
+    timeout: 10000
+- waitForAnimationToEnd
+- tapOn:
+    id: 'dataedit-photo-library'
+# OSの写真選択画面（新しい順に並ぶ。写真は「写真, 撮影日, 時刻」という読み上げ文言で見える）
+- extendedWaitUntil:
+    visible: '写真, 2018年3月31日.*'
+    timeout: 15000
+- takeScreenshot: photo-heic-picker
+- tapOn:
+    text: '写真, 2018年3月31日.*'
+    retryTapIfNoChange: false
+# HEIC を JPEG に変換してから付くので、少し時間がかかる
+- extendedWaitUntil:
+    visible:
+      id: 'dataedit-photo-thumb-0'
+    timeout: 30000
+- assertNotVisible:
+    id: 'dialog-message'
+- tapOn:
+    id: 'dataedit-save'
+- extendedWaitUntil:
+    visible:
+      id: data-row-${output.row}
+    timeout: 10000
+# 起動し直しても写真が残っていて、原画で開ける。
+# 保存の直後（1〜2秒）にアプリを止めると、端末内への書き出しが間に合わず、付けた写真が記録から消えていることがある
+# （書き出しは1秒おきにまとめて行われる。報告済み）。5秒待ってから止める（出ない要素を待つことで待ち時間にする）
+- extendedWaitUntil:
+    visible:
+      id: 'e2e-wait-5s'
+    timeout: 5000
+    optional: true
+- runFlow: ../common/launch.yaml
+- runFlow: ../common/open-point-layer.yaml
+- tapOn:
+    id: data-row-${output.row}
+- extendedWaitUntil:
+    visible:
+      id: 'dataedit-photo-thumb-0'
+    timeout: 10000
+- waitForAnimationToEnd
+- assertNotVisible:
+    id: 'dataedit-photo-thumb-1'
+- tapOn:
+    id: 'dataedit-photo-thumb-0'
+- extendedWaitUntil:
+    visible:
+      id: 'photo-view-close'
+    timeout: 10000
+# 1枚だけのときは「n / 枚数」の表示は出ない
+- assertNotVisible:
+    id: 'photo-view-counter'
+- assertNotVisible:
+    id: 'photo-view-download'
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: photo-heic-view
+- tapOn:
+    id: 'photo-view-close'
+# 後片付け
+- tapOn:
+    id: 'dataedit-delete'
+- tapOn: 'Yes'
+- extendedWaitUntil:
+    visible:
+      id: 'data-add'
+    timeout: 10000
+- assertNotVisible:
+    id: data-row-${output.row}
