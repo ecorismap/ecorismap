@@ -64,58 +64,11 @@ env:
 - tapOn:
     id: 'layers-import'
     retryTapIfNoChange: false
+# OSのファイル選択から選ぶ（テスト用のファイルが多いので、iOSは検索し、Androidは「ダウンロード」を下へ送って探す）
 - runFlow:
-    when:
-      platform: iOS
-    commands:
-      - extendedWaitUntil:
-          visible: 'ブラウズ'
-          timeout: 15000
-      - waitForAnimationToEnd:
-          timeout: 3000
-      # 別の場所が開いていたら、検索して探す
-      - runFlow:
-          when:
-            notVisible: 'e2e_plants.geojson, geojson.*'
-          commands:
-            - tapOn: '検索'
-            - inputText: 'e2e_plants'
-            - extendedWaitUntil:
-                visible: 'e2e_plants.geojson, geojson.*'
-                timeout: 15000
-            - hideKeyboard
-      - takeScreenshot: 13-file-picker
-      # ファイルの枠（名前・種類・日付・サイズをまとめた読み上げ文言）を押す
-      - tapOn:
-          text: 'e2e_plants.geojson, geojson.*'
-          retryTapIfNoChange: false
-# Androidのファイル選択は「最近使用したファイル」などが開く。左上のメニューから「ダウンロード」へ移って選ぶ
-# （検索は端末の日本語入力が文字を変換するので使わない。ダウンロードは新しい順に並び、置いたばかりのファイルが先頭に出る）
-- runFlow:
-    when:
-      platform: Android
-    commands:
-      - extendedWaitUntil:
-          visible:
-            id: 'com.google.android.documentsui:id/toolbar'
-          timeout: 15000
-      - waitForAnimationToEnd:
-          timeout: 3000
-      - runFlow:
-          when:
-            notVisible: 'e2e_plants.geojson'
-          commands:
-            - tapOn: 'ルートを表示する'
-            - tapOn:
-                id: 'android:id/title'
-                text: 'ダウンロード'
-            - extendedWaitUntil:
-                visible: 'e2e_plants.geojson'
-                timeout: 15000
-      - takeScreenshot: 13-file-picker
-      - tapOn:
-          text: 'e2e_plants.geojson'
-          retryTapIfNoChange: false
+    file: ../common/pick-file.yaml
+    env:
+      FILE: 'e2e_plants.geojson'
 - extendedWaitUntil:
     visible:
       id: 'dialog-message'

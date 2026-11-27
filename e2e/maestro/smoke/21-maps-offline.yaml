@@ -115,15 +115,23 @@ appId: jp.co.ecoris.ecorismap
 - tapOn:
     id: 'home-download-start'
     retryTapIfNoChange: false
-# ダウンロード中は、進捗と停止ボタンが出る
+# ダウンロード中は、進捗と停止ボタンが出る。
+# 枠に入るタイルの数は地図の縮尺の端数で変わり（ズームの表示は小数の切り捨て）、少ないと進捗を見る前に終わるので、
+# 進捗が見えたときだけ停止ボタンを確かめる。完了の通知は必ず確かめる
 - extendedWaitUntil:
     visible:
       id: 'home-download-progress'
       text: '\d+%'
     timeout: 10000
-- assertVisible:
-    id: 'home-download-stop'
-- takeScreenshot: 21-offline-downloading
+    optional: true
+- runFlow:
+    when:
+      visible:
+        id: 'home-download-progress'
+    commands:
+      - assertVisible:
+          id: 'home-download-stop'
+      - takeScreenshot: 21-offline-downloading
 - extendedWaitUntil:
     visible:
       id: 'dialog-message'

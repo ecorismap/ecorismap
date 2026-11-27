@@ -56,12 +56,14 @@ env:
 # GPS-2: 画面の同じ位置（現在地の上）の座標を、移動の前後で比べる。
 # iOSシミュレーターは、記録を始めてからしばらく前回の疑似位置（前回の記録の終点）を返すことがある。
 # 始めてから位置を与え直し、地図の中心が出発点（北緯38.260度・東経140.850度）になるまで待つ。
+# 読む座標は現在地の真北（画面の高さの2割ぶん上）。ズームの表示が16でも実際の縮尺には2倍の幅がある（表示は小数の切り捨て）ので、
+# 緯度の差は0.001〜0.0035度の幅で受ける
 # 遅れて届いた位置へ地図が飛んだとき、見た目は現在地へ移っているのに、長押しの座標が飛ぶ前の位置のまま出ることがある
 # （アプリ側の不具合として報告済み）。地図を少しドラッグして（追従が外れる）GPSボタンで追従に戻すと、座標が合う
 - evalScript: ${output.before = [99, 0]}
 - repeat:
     while:
-      true: ${Math.abs(output.before[0] - 38.2614) > 0.0005 || Math.abs(output.before[1] - 140.85) > 0.0005}
+      true: ${output.before[0] - 38.26 < 0.001 || output.before[0] - 38.26 > 0.0035 || Math.abs(output.before[1] - 140.85) > 0.0005}
     times: 6
     commands:
       - setLocation:
@@ -91,7 +93,7 @@ env:
           id: 'home-poi-coordinate'
       - evalScript: ${output.before = maestro.copiedText.split(',').map(Number)}
       - evalScript: ${console.log('GPS-2 probe ' + output.before)}
-- assertTrue: ${Math.abs(output.before[0] - 38.2614) < 0.0005 && Math.abs(output.before[1] - 140.85) < 0.0005}
+- assertTrue: ${output.before[0] - 38.26 > 0.001 && output.before[0] - 38.26 < 0.0035 && Math.abs(output.before[1] - 140.85) < 0.0005}
 # 東→北→東と曲がる道（まっすぐな軌跡は保存時に始点と終点の2点にまとめられ、リプレイの途中の点が無くなる）。
 # 線を囲む枠の中心（北緯38.2615度・東経140.8515度）を軌跡が通る形にしてある（あとで枠の中心をタップする）
 # Androidは、地図の長押し（上の座標の読み取り）で追従が外れる。GPSボタンで追従に戻してから移動する
