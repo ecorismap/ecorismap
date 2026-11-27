@@ -1,0 +1,102 @@
+# Android: 前回のフローが軌跡の記録中に止まっていたら、記録を止めて、保存された軌跡を消す（iOSでは何もしない）。
+# Androidは、アプリを止めても位置情報のサービスが記録を続け、起動し直すと記録中のまま戻る
+# （iOSのような「中断されました」の確認は出ない）。記録中かどうかは軌跡ボタンの確認の文言で見分ける
+# （「開始しますか」なら記録していないので No で閉じる）。
+# 消すのは、ここで止めて保存された軌跡の1本だけ（止める前に軌跡の数を数え、増えた行を消す）。
+# 位置情報の権限が許可されている地図画面で使う。
+appId: jp.co.ecoris.ecorismap
+env:
+  LAYER_NAME: '軌跡.*'
+---
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - repeat:
+          while:
+            notVisible:
+              id: 'dialog-message'
+          times: 5
+          commands:
+            - tapOn:
+                id: 'home-track'
+                retryTapIfNoChange: false
+            - extendedWaitUntil:
+                visible:
+                  id: 'dialog-message'
+                timeout: 3000
+                optional: true
+      - evalScript: ${output.leftoverTrack = false}
+      - runFlow:
+          when:
+            visible:
+              id: 'dialog-message'
+              text: '.*軌跡の記録を終了しますか.*'
+          commands:
+            - evalScript: ${output.leftoverTrack = true}
+      - assertVisible:
+          id: 'dialog-message'
+          text: '.*軌跡の記録を(開始|終了)しますか.*'
+      - tapOn: 'No'
+      - waitForAnimationToEnd:
+          timeout: 3000
+      - runFlow:
+          when:
+            true: ${output.leftoverTrack === true}
+          commands:
+            # いまある軌跡の数（＝止めて保存される軌跡の行番号）を数えておく
+            - runFlow: android-open-layer-list.yaml
+            - runFlow: open-layer.yaml
+            - runFlow: count-rows.yaml
+            - runFlow: close-sheet.yaml
+            - repeat:
+                while:
+                  notVisible:
+                    id: 'dialog-message'
+                times: 5
+                commands:
+                  - tapOn:
+                      id: 'home-track'
+                      retryTapIfNoChange: false
+                  - extendedWaitUntil:
+                      visible:
+                        id: 'dialog-message'
+                      timeout: 3000
+                      optional: true
+            - assertVisible: '.*軌跡の記録を終了しますか.*'
+            - tapOn: 'Yes'
+            - extendedWaitUntil:
+                visible:
+                  id: 'tracksummary-replay'
+                timeout: 20000
+            - runFlow: close-sheet.yaml
+            - runFlow: android-open-layer-list.yaml
+            - runFlow: open-layer.yaml
+            - assertVisible:
+                id: data-row-${output.row}
+            - assertNotVisible:
+                id: data-row-${output.row + 1}
+            - tapOn:
+                id: data-row-${output.row}
+            - extendedWaitUntil:
+                visible:
+                  id: 'dataedit-delete'
+                timeout: 10000
+            - waitForAnimationToEnd
+            - tapOn:
+                id: 'dataedit-delete'
+            - tapOn: 'Yes'
+            - extendedWaitUntil:
+                visible:
+                  id: 'data-export'
+                timeout: 10000
+            - assertNotVisible:
+                id: data-row-${output.row}
+            # レイヤ一覧まで戻ってから閉じる（データ一覧のまま閉じると、次にレイヤのボタンを押したときデータ一覧が開き直る）
+            - tapOn:
+                id: 'sheet-back'
+            - extendedWaitUntil:
+                visible:
+                  id: 'layers-import'
+                timeout: 10000
+            - runFlow: close-sheet.yaml

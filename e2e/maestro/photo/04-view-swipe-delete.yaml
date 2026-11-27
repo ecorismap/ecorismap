@@ -4,11 +4,13 @@
 # - 削除を押すと「写真を削除しますか？」と出て、Yes で拡大表示が閉じ、サムネイルが1枚になる。保存して開き直しても1枚のまま
 #   （どちらの写真が消えたか、写真のファイルが消えたかは確かめていない）
 # 既定の「ポイント」レイヤにテスト用の記録を1件作り、最後に消す。端末の写真ライブラリに2枚以上あること（iOSシミュレーターは最初から入っている）。
+# Androidは scripts/e2e-native.sh が端末の Pictures へテスト用の写真（e2e_photo.heic）を置くが、それとは別にもう1枚要る。
 appId: jp.co.ecoris.ecorismap
 env:
   LAYER_NAME: 'ポイント.*'
 ---
 - runFlow: ../common/launch.yaml
+- runFlow: ../common/android-open-layer-list.yaml
 - runFlow: ../common/open-point-layer.yaml
 - runFlow: ../common/count-rows.yaml
 # 編集レイヤになっていないときは、切り替えの確認が出る（Yesで切り替わるだけなので、追加を押し直す）
@@ -46,19 +48,40 @@ env:
     notVisible:
       id: 'dataedit-photo-library'
     timeout: 15000
-- repeat:
-    while:
-      notVisible:
-        id: 'dataedit-photo-thumb-0'
-    times: 4
+- runFlow:
+    when:
+      platform: iOS
     commands:
-      - waitForAnimationToEnd:
-          timeout: 3000
+      - repeat:
+          while:
+            notVisible:
+              id: 'dataedit-photo-thumb-0'
+          times: 4
+          commands:
+            - waitForAnimationToEnd:
+                timeout: 3000
+            - tapOn:
+                point: '17%,27%'
+                retryTapIfNoChange: false
+            - waitForAnimationToEnd:
+                timeout: 5000
+# Androidの写真選択画面は、写真が「<撮影日時>に撮影した写真」という読み上げ文言で見える。選んでから「完了」を押す
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - extendedWaitUntil:
+          visible: '.*に撮影した写真'
+          timeout: 15000
       - tapOn:
-          point: '17%,27%'
+          text: '.*に撮影した写真'
+          index: 0
           retryTapIfNoChange: false
-      - waitForAnimationToEnd:
-          timeout: 5000
+      - tapOn: '完了'
+      - extendedWaitUntil:
+          visible:
+            id: 'dataedit-photo-thumb-0'
+          timeout: 30000
 - assertVisible:
     id: 'dataedit-photo-thumb-0'
 # 2枚目: 隣の写真
@@ -68,19 +91,40 @@ env:
     notVisible:
       id: 'dataedit-photo-library'
     timeout: 15000
-- repeat:
-    while:
-      notVisible:
-        id: 'dataedit-photo-thumb-1'
-    times: 4
+- runFlow:
+    when:
+      platform: iOS
     commands:
-      - waitForAnimationToEnd:
-          timeout: 3000
+      - repeat:
+          while:
+            notVisible:
+              id: 'dataedit-photo-thumb-1'
+          times: 4
+          commands:
+            - waitForAnimationToEnd:
+                timeout: 3000
+            - tapOn:
+                point: '50%,27%'
+                retryTapIfNoChange: false
+            - waitForAnimationToEnd:
+                timeout: 5000
+# Androidの写真選択画面は、写真が「<撮影日時>に撮影した写真」という読み上げ文言で見える。選んでから「完了」を押す
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - extendedWaitUntil:
+          visible: '.*に撮影した写真'
+          timeout: 15000
       - tapOn:
-          point: '50%,27%'
+          text: '.*に撮影した写真'
+          index: 1
           retryTapIfNoChange: false
-      - waitForAnimationToEnd:
-          timeout: 5000
+      - tapOn: '完了'
+      - extendedWaitUntil:
+          visible:
+            id: 'dataedit-photo-thumb-1'
+          timeout: 30000
 - assertVisible:
     id: 'dataedit-photo-thumb-1'
 - tapOn:
@@ -148,9 +192,21 @@ env:
 - assertVisible:
     id: 'photo-view-counter'
     text: '1 / 2'
-- tapOn:
-    id: 'photo-view-delete'
-    retryTapIfNoChange: false
+# 確認を閉じた直後のタップは効かないことがあるので、確認が出るまで押し直す
+- repeat:
+    while:
+      notVisible:
+        id: 'dialog-message'
+    times: 3
+    commands:
+      - tapOn:
+          id: 'photo-view-delete'
+          retryTapIfNoChange: false
+      - extendedWaitUntil:
+          visible:
+            id: 'dialog-message'
+          timeout: 5000
+          optional: true
 - extendedWaitUntil:
     visible:
       id: 'dialog-message'

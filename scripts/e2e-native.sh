@@ -63,6 +63,18 @@ if [ "$PLATFORM" = android ]; then
   adb -s "$DEVICE" push "$ROOT/e2e/web/fixtures/植物調査.geojson" /sdcard/Download/e2e_plants.geojson >/dev/null
   adb -s "$DEVICE" shell am broadcast -a android.intent.action.MEDIA_SCANNER_SCAN_FILE \
     -d file:///sdcard/Download/e2e_plants.geojson >/dev/null 2>&1 || true
+  # 写真のフロー（photo/05-heic-to-jpeg）が選ぶ HEIC の写真を、端末の Pictures へ置く
+  # （iOSシミュレーターは最初から HEIC の写真が入っている）。写真選択画面で日時から選べるよう、更新日時を決め打ちにする
+  HEIC_TMP="$(mktemp -d)"
+  if sips -s format heic "$ROOT/e2e/web/fixtures/photo1.jpg" --out "$HEIC_TMP/e2e_photo.heic" >/dev/null 2>&1; then
+    adb -s "$DEVICE" push "$HEIC_TMP/e2e_photo.heic" /sdcard/Pictures/e2e_photo.heic >/dev/null
+    adb -s "$DEVICE" shell touch -t 202002020202 /sdcard/Pictures/e2e_photo.heic
+    adb -s "$DEVICE" shell am broadcast -a android.intent.action.MEDIA_SCANNER_SCAN_FILE \
+      -d file:///sdcard/Pictures/e2e_photo.heic >/dev/null 2>&1 || true
+  else
+    echo "HEIC の写真を作れませんでした（sips）。photo/05-heic-to-jpeg は通りません" >&2
+  fi
+  rm -rf "$HEIC_TMP"
 fi
 if [ "$PLATFORM" = ios ]; then
   for group in "$HOME/Library/Developer/CoreSimulator/Devices/$DEVICE/data/Containers/Shared/AppGroup"/*/; do
@@ -121,6 +133,14 @@ if [ "$#" -eq 0 ] && [ "${SKIP_PHOTO:-}" != "1" ]; then
       FAILED+=("photo/$f")
       break
     fi
+  done
+fi
+
+# Android: 位置情報の権限のフロー（18-permission）はOSのダイアログで「許可しない」を選ぶので、権限に「今後は尋ねない」の印が残る
+# （権限そのものはフローの最後に許可へ戻る）。印を外して元に戻す
+if [ "$PLATFORM" = android ]; then
+  for perm in ACCESS_FINE_LOCATION ACCESS_COARSE_LOCATION; do
+    adb -s "$DEVICE" shell pm clear-permission-flags jp.co.ecoris.ecorismap "android.permission.$perm" user-fixed >/dev/null 2>&1 || true
   done
 fi
 

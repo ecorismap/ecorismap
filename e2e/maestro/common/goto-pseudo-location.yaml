@@ -58,9 +58,33 @@ appId: jp.co.ecoris.ecorismap
             - evalScript: ${output.gotoNow = maestro.copiedText}
 - assertTrue: ${output.gotoNow === output.gotoTarget}
 # GPSをオフに戻す（追従中に押すとオフになる）
-- tapOn:
-    id: 'home-gps'
-    retryTapIfNoChange: false
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - tapOn:
+          id: 'home-gps'
+          retryTapIfNoChange: false
+# Androidは、地図の長押しで追従が外れる（現在地の表示だけになる）。そのまま押すと追従に戻るだけなので、
+# 地図を少しドラッグして確実に追従を外してから、2回押す（表示だけ→追従→オフ）
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - swipe:
+          start: '70%,60%'
+          end: '62%,52%'
+          duration: 600
+      - waitForAnimationToEnd:
+          timeout: 2000
+      - tapOn:
+          id: 'home-gps'
+          retryTapIfNoChange: false
+      - waitForAnimationToEnd:
+          timeout: 3000
+      - tapOn:
+          id: 'home-gps'
+          retryTapIfNoChange: false
 - waitForAnimationToEnd:
     timeout: 3000
 # 長押しのポップアップを閉じる（出たままだと、その位置のタップがポップアップに当たる）

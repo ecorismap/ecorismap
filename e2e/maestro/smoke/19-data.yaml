@@ -9,9 +9,11 @@
 # 項目のあるテスト用のレイヤ e2edata（日時 dt・リスト li・ラジオ ra・チェック ch・文字列 cmt）をレイヤ設定の画面で作り、最後に消す
 # （前回の途中で残っていれば最初に消す）。記録を追加するときに編集レイヤが e2edata に切り替わるので、最後に「ポイント」へ戻す。
 # 項目名・選択肢は半角英数字（端末の日本語入力が変換してしまうため）。
+# Androidは半角英数字でも端末の日本語入力が変換する（e2edata→え２えだた、dt→ｄｔ、li→ぃ、ra→ら、ch→ｃｈ、a1→あ１、r2→ｒ２ など）。
+# 項目名は入力欄の testID にもなるので、testID・文言の照合はどちらの形でも通す。
 appId: jp.co.ecoris.ecorismap
 env:
-  LAYER_NAME: 'e2edata.*'
+  LAYER_NAME: '(e2edata|え２えだた).*'
   EDIT_LAYER: 'ポイント'
 # 途中で失敗しても、編集レイヤは「ポイント」へ戻す（テスト用のレイヤは、次に流したときの最初に消す）
 onFlowComplete:
@@ -40,6 +42,17 @@ onFlowComplete:
           retryTapIfNoChange: false
       - waitForAnimationToEnd:
           timeout: 3000
+      # Androidのエミュレーターは、レイヤが多いと一覧が出るまで数秒かかる。出る前に押し直すと、同じ位置にある一覧の
+      # 「グループ」ボタンを押してしまうので、一覧が出るのを待つ
+      - runFlow:
+          when:
+            platform: Android
+          commands:
+            - extendedWaitUntil:
+                visible:
+                  id: 'layers-add'
+                timeout: 15000
+                optional: true
 # いまあるレイヤの数（＝作るレイヤの行番号）を数える。前回の残りが末尾にあれば消す
 - runFlow: ../common/count-layers.yaml
 - evalScript: ${output.layerIndex = output.layerCount - 1}
@@ -77,9 +90,21 @@ onFlowComplete:
     id: 'layeredit-name'
 - inputText: 'e2edata'
 - pressKey: Enter
-- assertVisible:
-    id: 'layeredit-type'
-    text: 'ポイント.*'
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - assertVisible:
+          id: 'layeredit-type'
+          containsDescendants:
+            - text: 'ポイント'
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - assertVisible:
+          id: 'layeredit-type'
+          text: 'ポイント.*'
 # 日時の項目
 - tapOn:
     id: 'layeredit-field-add'
@@ -96,11 +121,25 @@ onFlowComplete:
     id: 'layeredit-field-format-0'
     retryTapIfNoChange: false
 - tapOn: '日時'
-- extendedWaitUntil:
-    visible:
-      id: 'layeredit-field-format-0'
-      text: '日時.*'
-    timeout: 10000
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - extendedWaitUntil:
+          visible:
+            id: 'layeredit-field-format-0'
+            containsDescendants:
+              - text: '日時'
+          timeout: 10000
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - extendedWaitUntil:
+          visible:
+            id: 'layeredit-field-format-0'
+            text: '日時.*'
+          timeout: 10000
 # リスト・ラジオ・チェックの項目（選択肢を2つずつ）
 - runFlow:
     file: ../common/add-choice-field.yaml
@@ -175,7 +214,7 @@ onFlowComplete:
 - repeat:
     while:
       notVisible:
-        id: 'dataedit-input-dt'
+        id: 'dataedit-input-(dt|ｄｔ)'
     times: 3
     commands:
       - tapOn:
@@ -197,42 +236,68 @@ onFlowComplete:
                 timeout: 3000
 - extendedWaitUntil:
     visible:
-      id: 'dataedit-input-dt'
+      id: 'dataedit-input-(dt|ｄｔ)'
     timeout: 10000
 - waitForAnimationToEnd
 # 既定値: 日時はいま、リストは先頭、ラジオは先頭に印（印あり 󰄴・なし 󰄰）、チェックは空（空 󰄱・入り 󰄵）
 - assertVisible:
-    id: 'dataedit-input-dt'
-    text: 'dt, \d{4}/\d{2}/\d{2} \d{2}:\d{2}'
+    id: 'dataedit-input-(dt|ｄｔ)'
+    text: '(dt|ｄｔ), \d{4}/\d{2}/\d{2} \d{2}:\d{2}'
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - assertVisible:
+          id: 'dataedit-input-(li|ぃ)'
+          containsDescendants:
+            - text: '(a1|あ１)'
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - assertVisible:
+          id: 'dataedit-input-(li|ぃ)'
+          text: '(a1|あ１).*'
 - assertVisible:
-    id: 'dataedit-input-li'
-    text: 'a1.*'
-- assertVisible:
-    id: 'dataedit-option-ra-0'
+    id: 'dataedit-option-(ra|ら)-0'
     text: '󰄴'
 - assertVisible:
-    id: 'dataedit-option-ra-1'
+    id: 'dataedit-option-(ra|ら)-1'
     text: '󰄰'
 - assertVisible:
-    id: 'dataedit-option-ch-0'
+    id: 'dataedit-option-(ch|ｃｈ)-0'
     text: '󰄱'
 - copyTextFrom:
-    id: 'dataedit-input-dt'
+    id: 'dataedit-input-(dt|ｄｔ)'
 - evalScript: ${output.dt0 = maestro.copiedText}
 
 # DATA-2 日時: OSの日付ピッカー。ホイールを回して Cancel なら変わらない
 - tapOn:
-    id: 'dataedit-input-dt'
+    id: 'dataedit-input-(dt|ｄｔ)'
     retryTapIfNoChange: false
 - extendedWaitUntil:
     visible: 'Cancel'
     timeout: 10000
 - assertVisible: 'OK'
 - takeScreenshot: 19-data-datepicker
-- swipe:
-    start: '36%,68%'
-    end: '36%,76%'
-    duration: 800
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - swipe:
+          start: '36%,68%'
+          end: '36%,76%'
+          duration: 800
+# Androidの日付ピッカーは画面中央のダイアログ（日付・時・分のホイール）。日付の列は Pixel 8a で画面の 38%,49% の位置
+# （ダイアログの外を触ると閉じてしまう）
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - swipe:
+          start: '38%,49%'
+          end: '38%,57%'
+          duration: 800
 - waitForAnimationToEnd:
     timeout: 3000
 - tapOn: 'Cancel'
@@ -240,19 +305,33 @@ onFlowComplete:
     notVisible: 'Cancel'
     timeout: 10000
 - assertVisible:
-    id: 'dataedit-input-dt'
+    id: 'dataedit-input-(dt|ｄｔ)'
     text: ${output.dt0}
 # ホイール（日付の列）を回して OK すると、日付が変わる
 - tapOn:
-    id: 'dataedit-input-dt'
+    id: 'dataedit-input-(dt|ｄｔ)'
     retryTapIfNoChange: false
 - extendedWaitUntil:
     visible: 'Cancel'
     timeout: 10000
-- swipe:
-    start: '36%,68%'
-    end: '36%,76%'
-    duration: 800
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - swipe:
+          start: '36%,68%'
+          end: '36%,76%'
+          duration: 800
+# Androidの日付ピッカーは画面中央のダイアログ（日付・時・分のホイール）。日付の列は Pixel 8a で画面の 38%,49% の位置
+# （ダイアログの外を触ると閉じてしまう）
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - swipe:
+          start: '38%,49%'
+          end: '38%,57%'
+          duration: 800
 - waitForAnimationToEnd:
     timeout: 3000
 - tapOn: 'OK'
@@ -260,65 +339,79 @@ onFlowComplete:
     notVisible: 'Cancel'
     timeout: 10000
 - assertVisible:
-    id: 'dataedit-input-dt'
-    text: 'dt, \d{4}/\d{2}/\d{2} \d{2}:\d{2}'
+    id: 'dataedit-input-(dt|ｄｔ)'
+    text: '(dt|ｄｔ), \d{4}/\d{2}/\d{2} \d{2}:\d{2}'
 - copyTextFrom:
-    id: 'dataedit-input-dt'
+    id: 'dataedit-input-(dt|ｄｔ)'
 - evalScript: ${output.dt1 = maestro.copiedText}
 # 日付の部分（年月日）が変わっている
 - assertTrue: ${output.dt1.slice(0, 14) !== output.dt0.slice(0, 14)}
 
 # DATA-2 リスト: 押すと選択肢の一覧が開き、選ぶと欄に入る
 - tapOn:
-    id: 'dataedit-input-li'
+    id: 'dataedit-input-(li|ぃ)'
     retryTapIfNoChange: false
 - extendedWaitUntil:
     visible:
-      id: 'dataedit-option-li-1'
+      id: 'dataedit-option-(li|ぃ)-1'
     timeout: 10000
 - assertVisible:
-    id: 'dataedit-option-li-0'
+    id: 'dataedit-option-(li|ぃ)-0'
 - tapOn:
-    id: 'dataedit-option-li-1'
+    id: 'dataedit-option-(li|ぃ)-1'
     retryTapIfNoChange: false
-- extendedWaitUntil:
-    visible:
-      id: 'dataedit-input-li'
-      text: 'a2.*'
-    timeout: 10000
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - extendedWaitUntil:
+          visible:
+            id: 'dataedit-input-(li|ぃ)'
+            containsDescendants:
+              - text: '(a2|あ２)'
+          timeout: 10000
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - extendedWaitUntil:
+          visible:
+            id: 'dataedit-input-(li|ぃ)'
+            text: '(a2|あ２).*'
+          timeout: 10000
 # DATA-2 ラジオ: 2つ目を選ぶと、1つ目の印が外れる
 - tapOn:
-    id: 'dataedit-option-ra-1'
+    id: 'dataedit-option-(ra|ら)-1'
     retryTapIfNoChange: false
 - extendedWaitUntil:
     visible:
-      id: 'dataedit-option-ra-1'
+      id: 'dataedit-option-(ra|ら)-1'
       text: '󰄴'
     timeout: 10000
 - assertVisible:
-    id: 'dataedit-option-ra-0'
+    id: 'dataedit-option-(ra|ら)-0'
     text: '󰄰'
 # DATA-2 チェック: 両方に入れられ、押し直すと外れる
 - tapOn:
-    id: 'dataedit-option-ch-0'
+    id: 'dataedit-option-(ch|ｃｈ)-0'
     retryTapIfNoChange: false
 - tapOn:
-    id: 'dataedit-option-ch-1'
+    id: 'dataedit-option-(ch|ｃｈ)-1'
     retryTapIfNoChange: false
 - extendedWaitUntil:
     visible:
-      id: 'dataedit-option-ch-1'
+      id: 'dataedit-option-(ch|ｃｈ)-1'
       text: '󰄵'
     timeout: 10000
 - assertVisible:
-    id: 'dataedit-option-ch-0'
+    id: 'dataedit-option-(ch|ｃｈ)-0'
     text: '󰄵'
 - tapOn:
-    id: 'dataedit-option-ch-0'
+    id: 'dataedit-option-(ch|ｃｈ)-0'
     retryTapIfNoChange: false
 - extendedWaitUntil:
     visible:
-      id: 'dataedit-option-ch-0'
+      id: 'dataedit-option-(ch|ｃｈ)-0'
       text: '󰄱'
     timeout: 10000
 - takeScreenshot: 19-data-inputs
@@ -332,13 +425,13 @@ onFlowComplete:
     timeout: 10000
 - assertVisible:
     id: 'data-row-0'
-    text: ${output.dt1.replace('dt, ', '')}
+    text: ${output.dt1.replace(/^(dt|ｄｔ), /, '')}
 - assertVisible:
     id: 'data-cell-0-1'
-    text: 'a2'
+    text: 'a2|あ２'
 - assertVisible:
     id: 'data-cell-0-2'
-    text: 'r2'
+    text: 'r2|ｒ２'
 - assertNotVisible:
     id: 'data-row-1'
 # （チェックの列は右にはみ出していて描かれていないので、表を横にずらして確かめ、戻す）
@@ -350,7 +443,7 @@ onFlowComplete:
     timeout: 2000
 - assertVisible:
     id: 'data-cell-0-3'
-    text: 'c2'
+    text: 'c2|ｃ２'
 - swipe:
     start: '20%,25%'
     end: '80%,25%'
@@ -362,30 +455,42 @@ onFlowComplete:
     id: 'data-row-0'
 - extendedWaitUntil:
     visible:
-      id: 'dataedit-input-dt'
+      id: 'dataedit-input-(dt|ｄｔ)'
       text: ${output.dt1}
     timeout: 10000
 - waitForAnimationToEnd
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - assertVisible:
+          id: 'dataedit-input-(li|ぃ)'
+          containsDescendants:
+            - text: '(a2|あ２)'
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - assertVisible:
+          id: 'dataedit-input-(li|ぃ)'
+          text: '(a2|あ２).*'
 - assertVisible:
-    id: 'dataedit-input-li'
-    text: 'a2.*'
-- assertVisible:
-    id: 'dataedit-option-ra-1'
+    id: 'dataedit-option-(ra|ら)-1'
     text: '󰄴'
 - assertVisible:
-    id: 'dataedit-option-ch-0'
+    id: 'dataedit-option-(ch|ｃｈ)-0'
     text: '󰄱'
 - assertVisible:
-    id: 'dataedit-option-ch-1'
+    id: 'dataedit-option-(ch|ｃｈ)-1'
     text: '󰄵'
 
 # DATA-11: 変更したまま（ラジオを1つ目に変えて）戻ろうとすると、破棄の確認が出る
 - tapOn:
-    id: 'dataedit-option-ra-0'
+    id: 'dataedit-option-(ra|ら)-0'
     retryTapIfNoChange: false
 - extendedWaitUntil:
     visible:
-      id: 'dataedit-option-ra-0'
+      id: 'dataedit-option-(ra|ら)-0'
       text: '󰄴'
     timeout: 10000
 - tapOn:
@@ -401,7 +506,7 @@ onFlowComplete:
 - waitForAnimationToEnd:
     timeout: 3000
 - assertVisible:
-    id: 'dataedit-option-ra-0'
+    id: 'dataedit-option-(ra|ら)-0'
     text: '󰄴'
 - assertNotVisible:
     id: 'data-add'
@@ -421,7 +526,7 @@ onFlowComplete:
     timeout: 10000
 - assertVisible:
     id: 'data-cell-0-2'
-    text: 'r2'
+    text: 'r2|ｒ２'
 
 # DATA-9: 複製すると、同じ値の2件目が開く
 - tapOn:
@@ -454,14 +559,26 @@ onFlowComplete:
       id: 'dataedit-record-number'
       text: '2/2'
     timeout: 10000
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - assertVisible:
+          id: 'dataedit-input-(li|ぃ)'
+          containsDescendants:
+            - text: '(a2|あ２)'
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - assertVisible:
+          id: 'dataedit-input-(li|ぃ)'
+          text: '(a2|あ２).*'
 - assertVisible:
-    id: 'dataedit-input-li'
-    text: 'a2.*'
-- assertVisible:
-    id: 'dataedit-option-ra-1'
+    id: 'dataedit-option-(ra|ら)-1'
     text: '󰄴'
 - assertVisible:
-    id: 'dataedit-option-ch-1'
+    id: 'dataedit-option-(ch|ｃｈ)-1'
     text: '󰄵'
 # 前へ・次へ
 - tapOn:
@@ -612,6 +729,17 @@ onFlowComplete:
           retryTapIfNoChange: false
       - waitForAnimationToEnd:
           timeout: 3000
+      # Androidのエミュレーターは、レイヤが多いと一覧が出るまで数秒かかる。出る前に押し直すと、同じ位置にある一覧の
+      # 「グループ」ボタンを押してしまうので、一覧が出るのを待つ
+      - runFlow:
+          when:
+            platform: Android
+          commands:
+            - extendedWaitUntil:
+                visible:
+                  id: 'layers-add'
+                timeout: 15000
+                optional: true
 - runFlow: ../common/delete-layer-at.yaml
 - assertNotVisible:
     id: layers-row-${output.layerIndex}

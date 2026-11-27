@@ -37,15 +37,51 @@ appId: jp.co.ecoris.ecorismap
     visible:
       id: 'home-pdfsettings-ok'
     timeout: 10000
-- assertVisible:
-    id: 'home-pdfsettings-paper-size'
-    text: 'A4.*'
-- assertVisible:
-    id: 'home-pdfsettings-orientation'
-    text: '縦.*'
-- assertVisible:
-    id: 'home-pdfsettings-scale'
-    text: '1:10,000.*'
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - assertVisible:
+          id: 'home-pdfsettings-paper-size'
+          containsDescendants:
+            - text: 'A4'
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - assertVisible:
+          id: 'home-pdfsettings-paper-size'
+          text: 'A4.*'
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - assertVisible:
+          id: 'home-pdfsettings-orientation'
+          containsDescendants:
+            - text: '縦'
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - assertVisible:
+          id: 'home-pdfsettings-orientation'
+          text: '縦.*'
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - assertVisible:
+          id: 'home-pdfsettings-scale'
+          containsDescendants:
+            - text: '1:10,000'
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - assertVisible:
+          id: 'home-pdfsettings-scale'
+          text: '1:10,000.*'
 - tapOn:
     id: 'home-pdfsettings-ok'
     retryTapIfNoChange: false
@@ -70,33 +106,75 @@ appId: jp.co.ecoris.ecorismap
 - tapOn:
     id: 'home-pdfsettings-paper-size-option-1'
     retryTapIfNoChange: false
-- extendedWaitUntil:
-    visible:
-      id: 'home-pdfsettings-paper-size'
-      text: 'A3.*'
-    timeout: 10000
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - extendedWaitUntil:
+          visible:
+            id: 'home-pdfsettings-paper-size'
+            containsDescendants:
+              - text: 'A3'
+          timeout: 10000
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - extendedWaitUntil:
+          visible:
+            id: 'home-pdfsettings-paper-size'
+            text: 'A3.*'
+          timeout: 10000
 - tapOn:
     id: 'home-pdfsettings-orientation'
     retryTapIfNoChange: false
 - tapOn:
     id: 'home-pdfsettings-orientation-option-1'
     retryTapIfNoChange: false
-- extendedWaitUntil:
-    visible:
-      id: 'home-pdfsettings-orientation'
-      text: '横.*'
-    timeout: 10000
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - extendedWaitUntil:
+          visible:
+            id: 'home-pdfsettings-orientation'
+            containsDescendants:
+              - text: '横'
+          timeout: 10000
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - extendedWaitUntil:
+          visible:
+            id: 'home-pdfsettings-orientation'
+            text: '横.*'
+          timeout: 10000
 - tapOn:
     id: 'home-pdfsettings-scale'
     retryTapIfNoChange: false
 - tapOn:
     id: 'home-pdfsettings-scale-option-6'
     retryTapIfNoChange: false
-- extendedWaitUntil:
-    visible:
-      id: 'home-pdfsettings-scale'
-      text: '1:25,000.*'
-    timeout: 10000
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - extendedWaitUntil:
+          visible:
+            id: 'home-pdfsettings-scale'
+            containsDescendants:
+              - text: '1:25,000'
+          timeout: 10000
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - extendedWaitUntil:
+          visible:
+            id: 'home-pdfsettings-scale'
+            text: '1:25,000.*'
+          timeout: 10000
 - takeScreenshot: 14-pdf-settings
 - tapOn:
     id: 'home-pdfsettings-ok'
@@ -115,7 +193,9 @@ appId: jp.co.ecoris.ecorismap
     id: 'home-pdf-export'
     retryTapIfNoChange: false
 # タイルが多い・PDFに載らない地図が表示中、のときは先に確認が出る（端末に残っている地図しだい）。続ける。
-# 進捗は数秒で終わることがあるので、確認と進捗のどちらかが出るのを1回の待ちで受ける
+# 進捗は数秒で終わることがあるので、確認と進捗のどちらかが出るのを1回の待ちで受ける。
+# iOSでは、出力ボタンを押す操作が返るまでの数秒のうちにPDFができあがり、進捗の文言を見ないまま共有シートまで
+# 進んでいることがある。そのときは処理中の表示（In progress）が出ているので、それも進んだものとして受ける
 - evalScript: ${output.pdfProgressSeen = false}
 - repeat:
     while:
@@ -123,7 +203,7 @@ appId: jp.co.ecoris.ecorismap
     times: 3
     commands:
       - extendedWaitUntil:
-          visible: '.*(このまま作成しますか|このまま出力しますか).*|PDFを作成しています….*'
+          visible: '.*(このまま作成しますか|このまま出力しますか).*|PDFを作成しています….*|In progress'
           timeout: 10000
       - runFlow:
           when:
@@ -147,27 +227,59 @@ appId: jp.co.ecoris.ecorismap
 # 失敗していれば「PDFを作成できませんでした」が出ている
 - assertNotVisible:
     id: 'dialog-message'
-- assertVisible: 'In progress'
-- waitForAnimationToEnd:
-    timeout: 5000
-- takeScreenshot: 14-pdf-share
-# 閉じるボタン（シート右上の×。iPhone 16e で画面の 93%,49% の位置）を、PDFの画面に戻るまで押す
-- repeat:
-    while:
-      notVisible:
-        id: 'home-pdf-export'
-    times: 10
+- runFlow:
+    when:
+      platform: iOS
     commands:
-      - assertNotVisible:
-          id: 'dialog-message'
+      - assertVisible: 'In progress'
+      - waitForAnimationToEnd:
+          timeout: 5000
+      - takeScreenshot: 14-pdf-share
+      # 閉じるボタン（シート右上の×。iPhone 16e で画面の 93%,49% の位置）を、PDFの画面に戻るまで押す
+      - repeat:
+          while:
+            notVisible:
+              id: 'home-pdf-export'
+          times: 10
+          commands:
+            - assertNotVisible:
+                id: 'dialog-message'
+            - tapOn:
+                point: '93%,49%'
+                retryTapIfNoChange: false
+            - extendedWaitUntil:
+                visible:
+                  id: 'home-pdf-export'
+                timeout: 5000
+                optional: true
+# Androidは先に、保存先（デバイスに保存／他のアプリで共有）を選ぶ画面が出る。共有を選ぶ
+# （デバイスに保存は、端末の Download にファイルが残るので選ばない）。
+# Androidの共有シートは Maestro から中身が見える。PDFの名前（ecorismap_map_<日時>.pdf）を確かめ、戻るキーで閉じる
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - extendedWaitUntil:
+          visible:
+            id: 'export-share'
+          timeout: 60000
+      - assertVisible: 'エクスポート先の選択'
+      - assertVisible:
+          id: 'export-save'
       - tapOn:
-          point: '93%,49%'
+          id: 'export-share'
           retryTapIfNoChange: false
       - extendedWaitUntil:
           visible:
+            id: 'com.android.intentresolver:id/content_preview_filename'
+            text: 'ecorismap_map_\d{8}_\d{6}\.pdf'
+          timeout: 60000
+      - takeScreenshot: 14-pdf-share
+      - back
+      - extendedWaitUntil:
+          visible:
             id: 'home-pdf-export'
-          timeout: 5000
-          optional: true
+          timeout: 15000
 - assertVisible:
     id: 'home-pdf-export'
 - assertNotVisible:

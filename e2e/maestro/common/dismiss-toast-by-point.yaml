@@ -9,8 +9,24 @@ appId: jp.co.ecoris.ecorismap
       visible: 'Open debugger to view warnings.|.*location error.*'
     times: 6
     commands:
-      - tapOn:
-          point: '91%,93%'
-          retryTapIfNoChange: false
+      - runFlow:
+          when:
+            platform: iOS
+          commands:
+            - tapOn:
+                point: '91%,93%'
+                retryTapIfNoChange: false
+      # Androidは画面の比率が違うので座標は使わず、トーストの中の要素だけを押す（dismiss-warning-toast.yaml と同じ。
+      # トーストの外の要素は選ばれないので、マーカーを押してしまうことはない）
+      - runFlow:
+          when:
+            platform: Android
+          commands:
+            - tapOn:
+                rightOf: 'Open debugger to view warnings.'
+                childOf:
+                  text: '!, Open debugger to view warnings.'
+                retryTapIfNoChange: false
+                optional: true
       - waitForAnimationToEnd:
           timeout: 2000

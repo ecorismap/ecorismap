@@ -80,9 +80,23 @@ onFlowComplete:
 - tapOn:
     id: 'settings-manual'
     retryTapIfNoChange: false
-- extendedWaitUntil:
-    visible: 'EcorisMapの使い方'
-    timeout: 60000
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - extendedWaitUntil:
+          visible: 'EcorisMapの使い方'
+          timeout: 60000
+# Androidは Chrome が開く。エミュレーターの Chrome は初回の案内（ログイン・利用規約）で止まり、ページまで進まないので、
+# Chrome の画面が前面に出たことだけを確かめる（開いたアドレス・ページの中身は確かめていない）
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - extendedWaitUntil:
+          visible:
+            id: 'com\.android\.chrome:id/.*'
+          timeout: 60000
 - assertNotVisible:
     id: 'settings-manual'
 - takeScreenshot: 15-settings-manual
@@ -107,9 +121,23 @@ onFlowComplete:
 - tapOn:
     id: 'settings-version'
     retryTapIfNoChange: false
-- extendedWaitUntil:
-    visible: '.*CHANGELOG\.md at main.*GitHub'
-    timeout: 60000
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - extendedWaitUntil:
+          visible: '.*CHANGELOG\.md at main.*GitHub'
+          timeout: 60000
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - extendedWaitUntil:
+          visible:
+            id: 'com\.android\.chrome:id/.*'
+          timeout: 60000
+      - assertNotVisible:
+          id: 'settings-version'
 - takeScreenshot: 15-settings-changelog
 - launchApp:
     stopApp: false

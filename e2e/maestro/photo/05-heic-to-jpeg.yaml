@@ -4,6 +4,8 @@
 # 保存されたファイルが JPEG であることは、Maestro からは見えない。フローを流している途中か、後片付けを外して流したあとに、Mac 側で確かめる:
 #   A=$(xcrun simctl get_app_container booted jp.co.ecoris.ecorismap data)
 #   find "$A/Documents/projects" -name 'EMAP_*' -mmin -5 -exec file {} \;   → 「JPEG image data」と出る（拡張子も .jpg）
+# Androidは、アプリのデータの中を見る（デバッグビルドだけ）:
+#   adb shell run-as jp.co.ecoris.ecorismap find files -name 'EMAP_*' -mmin -5   → 拡張子が .jpg で、先頭3バイトが ff d8 ff
 # HEIC の写真が端末に無いとき（実機・Android など）は、sips -s format heic で作って xcrun simctl addmedia（Androidは adb push）で入れ、
 # 選ぶ写真の指定（下の「写真, 2018年3月31日」）を変える。
 # 既定の「ポイント」レイヤにテスト用の記録を1件作り、最後に消す。
@@ -12,6 +14,7 @@ env:
   LAYER_NAME: 'ポイント.*'
 ---
 - runFlow: ../common/launch.yaml
+- runFlow: ../common/android-open-layer-list.yaml
 - runFlow: ../common/open-point-layer.yaml
 - runFlow: ../common/count-rows.yaml
 # 編集レイヤになっていないときは、切り替えの確認が出る（Yesで切り替わるだけなので、追加を押し直す）
@@ -45,13 +48,36 @@ env:
 - tapOn:
     id: 'dataedit-photo-library'
 # OSの写真選択画面（新しい順に並ぶ。写真は「写真, 撮影日, 時刻」という読み上げ文言で見える）
-- extendedWaitUntil:
-    visible: '写真, 2018年3月31日.*'
-    timeout: 15000
-- takeScreenshot: photo-heic-picker
-- tapOn:
-    text: '写真, 2018年3月31日.*'
-    retryTapIfNoChange: false
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - extendedWaitUntil:
+          visible: '写真, 2018年3月31日.*'
+          timeout: 15000
+      - takeScreenshot: photo-heic-picker
+      - tapOn:
+          text: '写真, 2018年3月31日.*'
+          retryTapIfNoChange: false
+# Androidは scripts/e2e-native.sh が端末の Pictures へ置いた HEIC（e2e_photo.heic。更新日時を 2020/02/02 02:02 にしてある）を選ぶ。
+# 写真選択画面では「<日時>に撮影した写真」という読み上げ文言で見える（古い日付なので、写真が多い端末では下へ送って探す）。選んでから「完了」を押す
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - extendedWaitUntil:
+          visible: '.*に撮影した写真'
+          timeout: 15000
+      - scrollUntilVisible:
+          element:
+            text: '2020/02/02 2:02に撮影した写真'
+          direction: DOWN
+          timeout: 60000
+      - takeScreenshot: photo-heic-picker
+      - tapOn:
+          text: '2020/02/02 2:02に撮影した写真'
+          retryTapIfNoChange: false
+      - tapOn: '完了'
 # HEIC を JPEG に変換してから付くので、少し時間がかかる
 - extendedWaitUntil:
     visible:
@@ -74,6 +100,7 @@ env:
     timeout: 5000
     optional: true
 - runFlow: ../common/launch.yaml
+- runFlow: ../common/android-open-layer-list.yaml
 - runFlow: ../common/open-point-layer.yaml
 - tapOn:
     id: data-row-${output.row}

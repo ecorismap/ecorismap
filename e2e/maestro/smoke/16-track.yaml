@@ -17,7 +17,10 @@ env:
 ---
 - runFlow: ../common/launch.yaml
 - runFlow: ../common/discard-interrupted-track.yaml
+# Androidは、前回の途中で残った記録は記録中のまま戻る。止めて、保存された軌跡を消す
+- runFlow: ../common/android-stop-leftover-track.yaml
 # いまある軌跡の数（＝これから保存される軌跡の行番号）を数えておく
+- runFlow: ../common/android-open-layer-list.yaml
 - runFlow: ../common/open-layer.yaml
 - runFlow: ../common/count-rows.yaml
 - runFlow: ../common/close-sheet.yaml
@@ -91,13 +94,58 @@ env:
 - assertTrue: ${Math.abs(output.before[0] - 38.2614) < 0.0005 && Math.abs(output.before[1] - 140.85) < 0.0005}
 # 東→北→東と曲がる道（まっすぐな軌跡は保存時に始点と終点の2点にまとめられ、リプレイの途中の点が無くなる）。
 # 線を囲む枠の中心（北緯38.2615度・東経140.8515度）を軌跡が通る形にしてある（あとで枠の中心をタップする）
-- travel:
-    points:
-      - 38.2600,140.8500
-      - 38.2600,140.8515
-      - 38.2630,140.8515
-      - 38.2630,140.8530
-    speed: 20
+# Androidは、地図の長押し（上の座標の読み取り）で追従が外れる。GPSボタンで追従に戻してから移動する
+# （追従のまま押すと「軌跡記録中はGPSをオフにできません」の通知が出るので、出たら閉じる）
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - tapOn:
+          id: 'home-gps'
+          retryTapIfNoChange: false
+      - waitForAnimationToEnd:
+          timeout: 3000
+      - runFlow:
+          when:
+            visible:
+              id: 'dialog-message'
+          commands:
+            - tapOn: 'OK'
+            - waitForAnimationToEnd:
+                timeout: 2000
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - travel:
+          points:
+            - 38.2600,140.8500
+            - 38.2600,140.8515
+            - 38.2630,140.8515
+            - 38.2630,140.8530
+          speed: 20
+# Androidの travel は速さの指定が効かず、2〜3秒で終点へ着いてしまう（軌跡が始点と終点だけになる）。
+# 同じ道のりを、3秒おきに位置を与えて進む
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - evalScript: ${output.path = [[38.2600, 140.85075], [38.2600, 140.8515], [38.26075, 140.8515], [38.2615, 140.8515], [38.26225, 140.8515], [38.2630, 140.8515], [38.2630, 140.85225], [38.2630, 140.8530]]}
+      - evalScript: ${output.pathIndex = 0}
+      - repeat:
+          while:
+            true: ${output.pathIndex < output.path.length}
+          times: 8
+          commands:
+            - setLocation:
+                latitude: ${output.path[output.pathIndex][0]}
+                longitude: ${output.path[output.pathIndex][1]}
+            - extendedWaitUntil:
+                visible:
+                  id: 'e2e-wait-3s'
+                timeout: 3000
+                optional: true
+            - evalScript: ${output.pathIndex = output.pathIndex + 1}
 - waitForAnimationToEnd:
     timeout: 5000
 - takeScreenshot: 16-track-recording
@@ -117,9 +165,35 @@ env:
 - assertTrue: ${Math.abs(output.after[1] - output.before[1] - 0.003) < 0.0005}
 
 # TRACK-3: 記録中にホームを離れようとする（アカウントボタン）と、止めて保存するかの確認が出る
-- tapOn:
-    id: 'home-account'
-    retryTapIfNoChange: false
+# （長押しのポップアップが出た直後のタップは効かないことがあるので、確認が出るまで押し直す）
+# ログイン済みの端末では、アカウントボタンはメニューを開くだけ。メニューの「設定」（アカウント設定の画面）で地図を離れようとする
+- repeat:
+    while:
+      notVisible:
+        id: 'dialog-message'
+    times: 3
+    commands:
+      - runFlow:
+          when:
+            notVisible:
+              id: 'home-account-setting'
+          commands:
+            - tapOn:
+                id: 'home-account'
+                retryTapIfNoChange: false
+      - runFlow:
+          when:
+            visible:
+              id: 'home-account-setting'
+          commands:
+            - tapOn:
+                id: 'home-account-setting'
+                retryTapIfNoChange: false
+      - extendedWaitUntil:
+          visible:
+            id: 'dialog-message'
+          timeout: 5000
+          optional: true
 - extendedWaitUntil:
     visible:
       id: 'dialog-message'
@@ -136,6 +210,17 @@ env:
     notVisible:
       id: 'dialog-message'
     timeout: 10000
+# （ログイン済みの端末で開いたメニューは閉じておく）
+- runFlow:
+    when:
+      visible:
+        id: 'home-account-setting'
+    commands:
+      - tapOn:
+          id: 'home-account'
+          retryTapIfNoChange: false
+      - waitForAnimationToEnd:
+          timeout: 2000
 - assertVisible:
     id: 'home-track'
 - assertNotVisible:
@@ -212,14 +297,53 @@ env:
     id: 'home-trackpoint-coordinate'
 # 9秒待って（出ない要素を待つことで待ち時間にする）一時停止すると、止めた地点（直前に通過した軌跡の点）の通過時刻と座標が出る
 # （始点を出てすぐに止めると、まだ点を通過していないのでポップアップは出ない）
-- extendedWaitUntil:
-    visible:
-      id: 'e2e-wait-9s'
-    timeout: 9000
-    optional: true
-- tapOn:
-    id: 'tracksummary-replay'
-    retryTapIfNoChange: false
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - extendedWaitUntil:
+          visible:
+            id: 'e2e-wait-9s'
+          timeout: 9000
+          optional: true
+# Androidのエミュレーターは Maestro の1手順に数秒かかる（タップが3秒ほど）。同じだけ待つと全体30秒の再生が終わってしまうので、3秒だけ待つ
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - extendedWaitUntil:
+          visible:
+            id: 'e2e-wait-3s'
+          timeout: 3000
+          optional: true
+# Androidのエミュレーターは、再生中のボタンのタップを取りこぼすことがある。再生が止まるまで押し直す
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - repeat:
+          while:
+            notVisible:
+              id: 'tracksummary-replay'
+              text: '軌跡を再生'
+          times: 4
+          commands:
+            - tapOn:
+                id: 'tracksummary-replay'
+                retryTapIfNoChange: false
+            - extendedWaitUntil:
+                visible:
+                  id: 'tracksummary-replay'
+                  text: '軌跡を再生'
+                timeout: 4000
+                optional: true
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - tapOn:
+          id: 'tracksummary-replay'
+          retryTapIfNoChange: false
 - extendedWaitUntil:
     visible:
       id: 'tracksummary-replay'
@@ -243,14 +367,53 @@ env:
       id: 'tracksummary-replay'
       text: '再生を一時停止'
     timeout: 10000
-- extendedWaitUntil:
-    visible:
-      id: 'e2e-wait-10s'
-    timeout: 10000
-    optional: true
-- tapOn:
-    id: 'tracksummary-replay'
-    retryTapIfNoChange: false
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - extendedWaitUntil:
+          visible:
+            id: 'e2e-wait-10s'
+          timeout: 10000
+          optional: true
+# Androidのエミュレーターは Maestro の1手順に数秒かかる（タップが3秒ほど）。同じだけ待つと全体30秒の再生が終わってしまうので、3秒だけ待つ
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - extendedWaitUntil:
+          visible:
+            id: 'e2e-wait-3s'
+          timeout: 3000
+          optional: true
+# Androidのエミュレーターは、再生中のボタンのタップを取りこぼすことがある。再生が止まるまで押し直す
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - repeat:
+          while:
+            notVisible:
+              id: 'tracksummary-replay'
+              text: '軌跡を再生'
+          times: 4
+          commands:
+            - tapOn:
+                id: 'tracksummary-replay'
+                retryTapIfNoChange: false
+            - extendedWaitUntil:
+                visible:
+                  id: 'tracksummary-replay'
+                  text: '軌跡を再生'
+                timeout: 4000
+                optional: true
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - tapOn:
+          id: 'tracksummary-replay'
+          retryTapIfNoChange: false
 - extendedWaitUntil:
     visible:
       id: 'home-trackpoint-coordinate'
@@ -280,13 +443,38 @@ env:
 # 曲がり角が2つある軌跡なので、少なくとも4点（始点・曲がり角・終点）ある
 - assertTrue: ${output.trackPoints >= 4}
 - tapOn: 'OK'
-- extendedWaitUntil:
-    visible: 'track_.+_\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}'
-    timeout: 60000
-- assertVisible: 'ZIPアーカイブ.*'
-- assertVisible: '“ファイル”に保存'
-- takeScreenshot: 16-track-export-share
-- tapOn: '閉じる'
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - extendedWaitUntil:
+          visible: 'track_.+_\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}'
+          timeout: 60000
+      - assertVisible: 'ZIPアーカイブ.*'
+      - assertVisible: '“ファイル”に保存'
+      - takeScreenshot: 16-track-export-share
+      - tapOn: '閉じる'
+# Androidは先に保存先（デバイスに保存／他のアプリで共有）を選ぶ画面が出る。共有を選ぶと、共有シートに track_…zip の名前が出る。
+# 戻るキーで閉じる（デバイスに保存は、端末の Download にファイルが残るので選ばない）
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - extendedWaitUntil:
+          visible:
+            id: 'export-share'
+          timeout: 60000
+      - assertVisible: 'エクスポート先の選択'
+      - tapOn:
+          id: 'export-share'
+          retryTapIfNoChange: false
+      - extendedWaitUntil:
+          visible:
+            id: 'com.android.intentresolver:id/content_preview_filename'
+            text: 'track_.+_\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}\.zip'
+          timeout: 60000
+      - takeScreenshot: 16-track-export-share
+      - back
 # 共有シートを閉じると、軌跡サマリーに戻る（失敗の表示は出ない）
 - extendedWaitUntil:
     visible:
@@ -303,9 +491,23 @@ env:
     notVisible:
       id: 'home-trackpoint-coordinate'
     timeout: 10000
-- tapOn:
-    id: 'AIRGMSPolyline_.*'
-    retryTapIfNoChange: false
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - tapOn:
+          id: 'AIRGMSPolyline_.*'
+          retryTapIfNoChange: false
+# Androidは地図上の線が要素として見えないので、位置で押す。地図は終点が中心のズーム15から上へ33%ずらしてあり、
+# 南北の区間（東経140.8515度）の中ほどが Pixel 8a で画面の 33%,34% 付近に来る
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - takeScreenshot: 16-track-before-tap
+      - tapOn:
+          point: '33%,34%'
+          retryTapIfNoChange: false
 - extendedWaitUntil:
     visible:
       id: 'home-trackpoint-coordinate'
@@ -320,6 +522,14 @@ env:
     id: 'tracksummary-export'
 - takeScreenshot: 16-track-tap-popup
 # ×で閉じられる
+# （Androidは、開いた軌跡サマリーのシートがポップアップに重なり、×の位置のタップがシートに当たる。先にシートを閉じる）
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - runFlow: ../common/close-sheet.yaml
+      - assertVisible:
+          id: 'home-trackpoint-coordinate'
 - tapOn:
     id: 'home-trackpoint-close'
     retryTapIfNoChange: false
@@ -330,6 +540,7 @@ env:
 
 # 後片付け: 軌跡レイヤに1本増えている。確かめてから消す
 - runFlow: ../common/close-sheet.yaml
+- runFlow: ../common/android-open-layer-list.yaml
 - runFlow: ../common/open-layer.yaml
 - assertVisible:
     id: data-row-${output.row}

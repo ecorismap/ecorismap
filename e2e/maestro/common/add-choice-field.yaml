@@ -20,11 +20,26 @@ appId: jp.co.ecoris.ecorismap
     id: layeredit-field-format-${FIELD_INDEX}
     retryTapIfNoChange: false
 - tapOn: ${FIELD_FORMAT}
-- extendedWaitUntil:
-    visible:
-      id: layeredit-field-format-${FIELD_INDEX}
-      text: ${FIELD_FORMAT + '.*'}
-    timeout: 10000
+# （Androidは、選んだ値が欄の子要素の文字になる）
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - extendedWaitUntil:
+          visible:
+            id: layeredit-field-format-${FIELD_INDEX}
+            containsDescendants:
+              - text: ${FIELD_FORMAT}
+          timeout: 10000
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - extendedWaitUntil:
+          visible:
+            id: layeredit-field-format-${FIELD_INDEX}
+            text: ${FIELD_FORMAT + '.*'}
+          timeout: 10000
 # 「値の設定」の列は右にはみ出しているので、表を横にずらしてから押す
 - swipe:
     start: '80%,45%'
@@ -54,12 +69,27 @@ appId: jp.co.ecoris.ecorismap
     id: 'fieldedit-value-1'
 - inputText: ${VALUE_2}
 - pressKey: Enter
-- assertVisible:
-    id: 'fieldedit-value-0'
-    text: ${VALUE_1}
-- assertVisible:
-    id: 'fieldedit-value-1'
-    text: ${VALUE_2}
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - assertVisible:
+          id: 'fieldedit-value-0'
+          text: ${VALUE_1}
+      - assertVisible:
+          id: 'fieldedit-value-1'
+          text: ${VALUE_2}
+# Androidは端末の日本語入力が入力を変換する（a1→あ１ など）ので、何か入っていることだけを確かめる
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - assertVisible:
+          id: 'fieldedit-value-0'
+          text: '.+'
+      - assertVisible:
+          id: 'fieldedit-value-1'
+          text: '.+'
 - tapOn:
     id: 'sheet-back'
 - extendedWaitUntil:

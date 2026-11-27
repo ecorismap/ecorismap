@@ -38,20 +38,63 @@ onFlowComplete:
     timeout: 3000
 
 # 拒否した状態でGPSボタンを押す（起動直後のタップは効かないことがあるので、案内が出るまで押す）
-- repeat:
-    while:
-      notVisible:
-        id: 'dialog-message'
-    times: 4
+- runFlow:
+    when:
+      platform: iOS
     commands:
-      - tapOn:
-          id: 'home-gps'
-          retryTapIfNoChange: false
+      - repeat:
+          while:
+            notVisible:
+              id: 'dialog-message'
+          times: 4
+          commands:
+            - tapOn:
+                id: 'home-gps'
+                retryTapIfNoChange: false
+            - extendedWaitUntil:
+                visible:
+                  id: 'dialog-message'
+                timeout: 5000
+                optional: true
+# Androidは、拒否した状態（まだ尋ねられる）だと、先にOSの権限ダイアログ（アプリの使用時のみ／今回のみ／許可しない）が出る。
+# 「許可しない」を選ぶと、アプリの案内が出る。OSがもう尋ねない状態なら、OSのダイアログは出ずにアプリの案内だけが出る
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - evalScript: ${output.permAsked = false}
+      - repeat:
+          while:
+            true: ${output.permAsked === false}
+          times: 4
+          commands:
+            - tapOn:
+                id: 'home-gps'
+                retryTapIfNoChange: false
+            - extendedWaitUntil:
+                visible:
+                  id: 'com.android.permissioncontroller:id/permission_message|dialog-message'
+                timeout: 5000
+                optional: true
+            - runFlow:
+                when:
+                  visible:
+                    id: 'com.android.permissioncontroller:id/permission_message|dialog-message'
+                commands:
+                  - evalScript: ${output.permAsked = true}
+      - runFlow:
+          when:
+            visible:
+              id: 'com.android.permissioncontroller:id/permission_message'
+          commands:
+            - assertVisible: 'このデバイスの位置情報へのアクセスを「EcorisMap」に許可しますか？'
+            - takeScreenshot: 18-permission-os-dialog
+            - tapOn:
+                id: 'com.android.permissioncontroller:id/permission_deny_and_dont_ask_again_button'
       - extendedWaitUntil:
           visible:
             id: 'dialog-message'
-          timeout: 5000
-          optional: true
+          timeout: 10000
 - assertVisible:
     id: 'dialog-message'
     text: 'GPSを使用するには位置情報のアクセス権限を許可してください。'
@@ -63,11 +106,25 @@ onFlowComplete:
       id: 'home-gps'
     timeout: 15000
 # （iOSシミュレーターでは設定アプリの「アプリ」の一覧が開く。左上に、このアプリへ戻るボタンが出る）
-- extendedWaitUntil:
-    visible:
-      id: 'breadcrumb'
-      text: 'EcorisMapへ戻る'
-    timeout: 15000
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - extendedWaitUntil:
+          visible:
+            id: 'breadcrumb'
+            text: 'EcorisMapへ戻る'
+          timeout: 15000
+# （Androidは設定アプリの、このアプリの「アプリ情報」が開く）
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - extendedWaitUntil:
+          visible: 'アプリ情報'
+          timeout: 15000
+      - assertVisible: 'EcorisMap'
+      - assertVisible: '権限'
 - takeScreenshot: 18-permission-os-settings
 # アプリへ戻る（止めずに前面へ出す）。GPSはオフのまま
 - launchApp:
@@ -114,15 +171,64 @@ onFlowComplete:
     timeout: 8000
 - assertNotVisible:
     id: 'dialog-message'
-- longPressOn:
-    point: '60%,35%'
-- extendedWaitUntil:
-    visible:
-      id: 'home-poi-distance'
-    timeout: 15000
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - longPressOn:
+          point: '60%,35%'
+      - extendedWaitUntil:
+          visible:
+            id: 'home-poi-distance'
+          timeout: 15000
+# Androidは、起動し直した直後は位置が遅れて届き、追従で地図が動いて長押しのポップアップが消えることがある
+# （ポップアップは地図が動くと消える）。距離が出るまで長押しし直す
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - repeat:
+          while:
+            notVisible:
+              id: 'home-poi-distance'
+          times: 4
+          commands:
+            - longPressOn:
+                point: '60%,35%'
+            - extendedWaitUntil:
+                visible:
+                  id: 'home-poi-distance'
+                timeout: 8000
+                optional: true
+      - assertVisible:
+          id: 'home-poi-distance'
 # 後片付け: GPSをオフに戻す（追従中に押すとオフになる）
-- tapOn:
-    id: 'home-gps'
-    retryTapIfNoChange: false
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - tapOn:
+          id: 'home-gps'
+          retryTapIfNoChange: false
+# Androidは、地図の長押しで追従が外れる（現在地の表示だけになる）。そのまま押すと追従に戻るだけなので、
+# 地図を少しドラッグして確実に追従を外してから、2回押す（表示だけ→追従→オフ）
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - swipe:
+          start: '70%,60%'
+          end: '62%,52%'
+          duration: 600
+      - waitForAnimationToEnd:
+          timeout: 2000
+      - tapOn:
+          id: 'home-gps'
+          retryTapIfNoChange: false
+      - waitForAnimationToEnd:
+          timeout: 3000
+      - tapOn:
+          id: 'home-gps'
+          retryTapIfNoChange: false
 - waitForAnimationToEnd:
     timeout: 3000

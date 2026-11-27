@@ -13,9 +13,9 @@
 # 前提: テスト用のファイル e2e_plants.geojson（e2e/web/fixtures/植物調査.geojson の写し）が、端末の「ファイル」アプリの
 #   「このiPhone内」（Androidは端末の Download フォルダ）に置いてあること。scripts/e2e-native.sh が流す前に置く。ファイル選択は最後に開いた場所を開くので、
 #   別の場所が開いたときは検索して探す。
-# 既知の不具合（報告済み）: ファイル選択から取り込むと、同じファイルが次の起動時にもう一度取り込まれ、同名のレイヤが2つになることがある。
-#   次のフローの起動時に取り込みの通知が出て邪魔をしないよう、このフローの中で起動し直して2つ目を出し切り、最後に両方消す。
-#   不具合が直ったら、「起動し直しても通知が出ず、レイヤが増えない」ことの検証に変える。
+# iOSでは、取り込んだあとに起動し直しても取り込みの通知が出ず、レイヤが増えないことも確かめる
+#   （以前は、ファイル選択が受信箱に置いた写しが残り、次の起動時にもう一度取り込まれて同名のレイヤが2つになった。
+#   src/utils/File.ts の clearPickerInbox で修正済み。再発すると、ここで落ちる）。
 # 取り込んだレイヤは最後に消す（前回の途中で残っていれば最初に消す）。保存したファイルは端末に残さない（共有シートは閉じるだけ）。
 appId: jp.co.ecoris.ecorismap
 env:
@@ -124,7 +124,51 @@ env:
 - tapOn: 'OK'
 - waitForAnimationToEnd:
     timeout: 3000
-# 起動し直す（既知の不具合で2つ目が取り込まれるなら、ここで出し切る。通知が出たら閉じる）
+# iOS: 起動し直しても、同じファイルがもう一度取り込まれない（取り込みの通知が出ず、レイヤが増えない）
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - runFlow: ../common/launch.yaml
+      # 通知は起動の十数秒後に出ていた。15秒待って、出ないことを確かめる
+      - extendedWaitUntil:
+          visible:
+            id: 'dialog-message'
+            text: 'ファイルをインポートしました。'
+          timeout: 15000
+          optional: true
+      - assertNotVisible:
+          id: 'dialog-message'
+      - takeScreenshot: 13-file-relaunched
+      - repeat:
+          while:
+            notVisible:
+              id: 'layers-add'
+          times: 5
+          commands:
+            - tapOn:
+                id: 'home-layers'
+                retryTapIfNoChange: false
+            - waitForAnimationToEnd:
+                timeout: 3000
+      # 末尾まで送る。取り込んだレイヤが末尾の行で、その下に行がない（画面の外の行も「見えている」と判定されるので、あれば見つかる）
+      - repeat:
+          times: 6
+          commands:
+            - swipe:
+                start: '50%,75%'
+                end: '50%,25%'
+                duration: 400
+      - waitForAnimationToEnd:
+          timeout: 3000
+      - assertVisible:
+          id: layers-row-${output.layerIndex}
+          text: ${LAYER_NAME}
+      - evalScript: ${output.nextIndex = output.layerIndex + 1}
+      - assertNotVisible:
+          id: layers-row-${output.nextIndex}
+      - takeScreenshot: 13-file-relaunched-layers
+# 起動し直す（Androidはここで初めて起動し直す。通知が出たら閉じる）
 - runFlow: ../common/launch.yaml
 - runFlow: ../common/dismiss-received-file.yaml
 - repeat:
@@ -258,6 +302,13 @@ env:
           duration: 400
 - waitForAnimationToEnd:
     timeout: 3000
+# iOS: 2回目に起動し直したあとも、レイヤは増えていない（消すのは1つだけ）
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - assertNotVisible:
+          id: layers-row-${output.layerIndex}
 - runFlow:
     when:
       visible:

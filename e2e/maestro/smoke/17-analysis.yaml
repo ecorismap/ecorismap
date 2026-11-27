@@ -18,6 +18,8 @@ env:
 ---
 - runFlow: ../common/launch.yaml
 - runFlow: ../common/discard-interrupted-track.yaml
+# Androidは、前回の途中で残った記録は記録中のまま戻る。止めて、保存された軌跡を消す
+- runFlow: ../common/android-stop-leftover-track.yaml
 # 前提を整える: 3Dのまま残っていたら2Dへ戻す
 - runFlow:
     when:
@@ -42,6 +44,7 @@ env:
             id: 'home-terrain-rotate-cw'
           timeout: 15000
 # いまある記録の数（＝これから作る記録の行番号）を数える
+- runFlow: ../common/android-open-layer-list.yaml
 - runFlow: ../common/open-point-layer.yaml
 - runFlow: ../common/count-rows.yaml
 - runFlow: ../common/close-sheet.yaml
@@ -390,6 +393,7 @@ env:
 
 # 後片付け: テスト用のポイントを消す（起動し直して、データ一覧から開く）
 - runFlow: ../common/launch.yaml
+- runFlow: ../common/android-open-layer-list.yaml
 - runFlow: ../common/open-point-layer.yaml
 - assertVisible:
     id: data-row-${output.row}
