@@ -1,0 +1,280 @@
+# MAPS-7・MAPS-9・ERR-3: PMTiles の地図（URLで登録）と、ベクタタイルのスタイルJSON。
+# - MAPS-7: ラスタの PMTiles をURLで追加すると、一覧の先頭に入り、出典表示に出て、配信元へタイルの範囲（Range）の要求が届く。
+#   ベクタの PMTiles も同じ（「ベクタタイル」にチェック）。地図名を押すと PMTiles の範囲（ズーム12）へ移り、配信元へタイルの範囲の要求が届く。
+#   非表示にすると出典表示から消える（タイルの絵はスクリーンショットを人が見る。フローは色を判定していない）
+# - MAPS-9: ベクタの地図の編集画面でスタイルJSONを読み込むと、スタイルURLが style://style.json になり、保存して開き直しても残る
+#   （見た目が変わることは、スクリーンショットを人が見る）
+# - ERR-3: layers の無いJSONを読み込むと「スタイルファイルを読み取れません」が出て、スタイルURLは前のまま
+#
+# 前提:
+# - Mac で PMTiles の配信を起動しておく（別の端末で `node e2e/maestro/support/serve-fixtures.mjs`。8765番。Range に応え、
+#   受けた要求を /_requests で返す）。起動していないと、最初の要求の確認（/_reset）で落ちる。
+#   iOSシミュレーターは http://localhost:8765 がそのまま Mac に届く。Androidエミュレーターは先に `adb reverse tcp:8765 tcp:8765`
+# - スタイルのファイル e2e_style.json（e2e/web/fixtures/vegetation-style.json の写し）と e2e_badstyle.json
+#   （e2e/maestro/fixtures/）が、端末の「ファイル」アプリから選べる場所にあること。scripts/e2e-native.sh が流す前に置く
+# 追加した地図（e2epmr・e2epmv）は最後に消す（前回の途中で残っていれば最初に消す）。地図の位置は PMTiles の範囲（仙台）へ移ったままになる。
+appId: jp.co.ecoris.ecorismap
+---
+- runFlow: ../common/launch.yaml
+- runFlow: ../common/dismiss-received-file.yaml
+- runFlow: ../common/open-maps.yaml
+# 前提を整える: 前回の残りを消す
+- repeat:
+    while:
+      visible:
+        id: 'maps-row-0'
+        text: 'e2epm.*'
+    times: 4
+    commands:
+      - runFlow: ../common/delete-top-map.yaml
+- assertNotVisible:
+    id: 'home-attribution'
+    text: '.*e2e-pm.*'
+# 配信元が受けた要求の一覧を空にする（配信が起動していなければここで落ちる）
+- evalScript: ${output.served = http.get('http://localhost:8765/_reset').body}
+- assertTrue: ${output.served === '[]'}
+
+# MAPS-7: ラスタの PMTiles をURLで追加する
+- tapOn:
+    id: 'maps-add'
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible:
+      id: 'mapedit-name'
+    timeout: 10000
+- waitForAnimationToEnd
+- tapOn:
+    id: 'mapedit-name'
+- inputText: 'e2epmr'
+- tapOn:
+    id: 'mapedit-url'
+- inputText: 'http://localhost:8765/raster.pmtiles'
+- tapOn:
+    id: 'mapedit-attribution'
+- inputText: 'e2e-pmr'
+- hideKeyboard
+# URLが pmtiles のときだけ「ベクタタイル」のチェックが出る（ラスタはチェックしない）
+- assertVisible:
+    id: 'mapedit-vector'
+- tapOn:
+    id: 'mapedit-save'
+    retryTapIfNoChange: false
+- waitForAnimationToEnd:
+    timeout: 5000
+- assertNotVisible:
+    id: 'dialog-message'
+- tapOn:
+    id: 'sheet-back'
+- extendedWaitUntil:
+    visible:
+      id: 'maps-row-0'
+      text: 'e2epmr'
+    timeout: 10000
+- extendedWaitUntil:
+    visible:
+      id: 'home-attribution'
+      text: '.*e2e-pmr.*'
+    timeout: 10000
+# 地図を出して、タイルが読まれるのを待つ（全面がマゼンタになる。絵はスクリーンショットで見る）
+- runFlow: ../common/close-sheet.yaml
+- waitForAnimationToEnd:
+    timeout: 5000
+- assertNotVisible:
+    id: 'dialog-message'
+- takeScreenshot: 20-pmtiles-raster
+# 配信元に、タイルの範囲（139バイトより後ろ）の要求が届いている
+- evalScript: ${output.served = JSON.parse(http.get('http://localhost:8765/_requests').body)}
+- assertTrue: ${output.served.some((r) => r.path === '/raster.pmtiles' && r.status === 206 && r.start >= 139)}
+# 非表示にすると、出典表示から消える（ベクタの絵を見やすくするため、このあとは非表示のまま）
+- runFlow: ../common/open-maps.yaml
+- tapOn:
+    id: 'maps-visible-0'
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    notVisible:
+      id: 'home-attribution'
+      text: '.*e2e-pmr.*'
+    timeout: 10000
+
+# MAPS-7: ベクタの PMTiles をURLで追加する
+- tapOn:
+    id: 'maps-add'
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible:
+      id: 'mapedit-name'
+    timeout: 10000
+- waitForAnimationToEnd
+- tapOn:
+    id: 'mapedit-name'
+- inputText: 'e2epmv'
+- tapOn:
+    id: 'mapedit-url'
+- inputText: 'http://localhost:8765/vegetation.pmtiles'
+- tapOn:
+    id: 'mapedit-attribution'
+- inputText: 'e2e-pmv'
+- hideKeyboard
+# スタイルの欄は、ベクタタイルにチェックすると出る
+- assertNotVisible:
+    id: 'mapedit-import-style'
+- tapOn:
+    id: 'mapedit-vector'
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible:
+      id: 'mapedit-import-style'
+    timeout: 10000
+- tapOn:
+    id: 'mapedit-save'
+    retryTapIfNoChange: false
+- waitForAnimationToEnd:
+    timeout: 5000
+- assertNotVisible:
+    id: 'dialog-message'
+- tapOn:
+    id: 'sheet-back'
+- extendedWaitUntil:
+    visible:
+      id: 'maps-row-0'
+      text: 'e2epmv'
+    timeout: 10000
+- extendedWaitUntil:
+    visible:
+      id: 'home-attribution'
+      text: '.*e2e-pmv.*'
+    timeout: 10000
+# 地図名を押すと、PMTiles の範囲へ移る（ズーム12）
+- tapOn:
+    id: 'maps-row-0'
+    retryTapIfNoChange: false
+- waitForAnimationToEnd:
+    timeout: 5000
+- assertNotVisible:
+    id: 'dialog-message'
+- runFlow: ../common/close-sheet.yaml
+- extendedWaitUntil:
+    visible:
+      id: 'home-zoom-level'
+      text: '12'
+    timeout: 10000
+# ポリゴンは小さいので、寄せて撮る（ズームのボタンは地図の中心＝範囲の中心へ寄る）
+- runFlow:
+    file: ../common/set-zoom.yaml
+    env:
+      ZOOM: 15
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: 20-pmtiles-vector-default
+# 配信元に、ベクタのタイルの範囲（731バイトより後ろ）の要求が届いている
+- evalScript: ${output.served = JSON.parse(http.get('http://localhost:8765/_requests').body)}
+- assertTrue: ${output.served.some((r) => r.path === '/vegetation.pmtiles' && r.status === 206 && r.start > 0 && r.end >= 731)}
+
+# MAPS-9: スタイルJSONを読み込む
+- runFlow: ../common/open-maps.yaml
+- tapOn:
+    id: 'maps-edit-0'
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible:
+      id: 'mapedit-name'
+      text: 'e2epmv'
+    timeout: 10000
+- waitForAnimationToEnd
+- assertNotVisible:
+    id: 'mapedit-style-url'
+    text: 'style://.*'
+- tapOn:
+    id: 'mapedit-import-style'
+    retryTapIfNoChange: false
+- runFlow:
+    file: ../common/pick-file.yaml
+    env:
+      FILE: 'e2e_style.json'
+- extendedWaitUntil:
+    visible:
+      id: 'mapedit-style-url'
+      text: 'style://style\.json'
+    timeout: 15000
+- assertNotVisible:
+    id: 'dialog-message'
+- tapOn:
+    id: 'mapedit-save'
+    retryTapIfNoChange: false
+- waitForAnimationToEnd:
+    timeout: 5000
+- assertNotVisible:
+    id: 'dialog-message'
+- tapOn:
+    id: 'sheet-back'
+- extendedWaitUntil:
+    visible:
+      id: 'maps-row-0'
+      text: 'e2epmv'
+    timeout: 10000
+# 読み込んだスタイルで描き直される（植生ごとの色になる。絵はスクリーンショットで見る）
+- runFlow: ../common/close-sheet.yaml
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: 20-pmtiles-vector-styled
+# 開き直しても、スタイルが設定されたまま
+- runFlow: ../common/open-maps.yaml
+- tapOn:
+    id: 'maps-edit-0'
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible:
+      id: 'mapedit-name'
+      text: 'e2epmv'
+    timeout: 10000
+- waitForAnimationToEnd
+- assertVisible:
+    id: 'mapedit-style-url'
+    text: 'style://style\.json'
+
+# ERR-3: layers の無いJSONはエラーが出て、スタイルは前のまま
+- tapOn:
+    id: 'mapedit-import-style'
+    retryTapIfNoChange: false
+- runFlow:
+    file: ../common/pick-file.yaml
+    env:
+      FILE: 'e2e_badstyle.json'
+- extendedWaitUntil:
+    visible:
+      id: 'dialog-message'
+      text: 'スタイルファイルを読み取れません.*'
+    timeout: 15000
+- takeScreenshot: 20-pmtiles-badstyle
+- tapOn: 'OK'
+- waitForAnimationToEnd:
+    timeout: 3000
+- assertVisible:
+    id: 'mapedit-style-url'
+    text: 'style://style\.json'
+# 変更が無いので、確認なしで一覧へ戻れる
+- tapOn:
+    id: 'sheet-back'
+- extendedWaitUntil:
+    visible:
+      id: 'maps-row-0'
+      text: 'e2epmv'
+    timeout: 10000
+- assertNotVisible:
+    id: 'dialog-message'
+
+# 後片付け: 追加した2つの地図を消す
+- runFlow: ../common/delete-top-map.yaml
+- assertVisible:
+    id: 'maps-row-0'
+    text: 'e2epmr'
+- runFlow: ../common/delete-top-map.yaml
+- assertNotVisible:
+    id: 'maps-row-0'
+    text: 'e2epm.*'
+- extendedWaitUntil:
+    notVisible:
+      id: 'home-attribution'
+      text: '.*e2e-pm.*'
+    timeout: 10000
+- runFlow: ../common/close-sheet.yaml

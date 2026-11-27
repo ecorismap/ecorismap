@@ -1,0 +1,40 @@
+# MAP-5: 長押しメニューの「Google Maps」で外部の地図が開く。
+# - 地図を長押しするとメニューに「Google Maps」が出て、押すとアプリが背面へ回り、ブラウザ（Safari）で google.com の地図検索が開く
+#   （iOSシミュレーターには Google Maps アプリが無いので、ブラウザで開く経路になる。実機で Google Maps アプリが開く経路と、
+#   開いた先の地点が長押しした場所と合っているかは確かめていない）
+# - アプリへ戻ると、長押しのメニューは閉じている
+# 外部（google.com）へ通信する。開いた Safari のタブは残る。
+appId: jp.co.ecoris.ecorismap
+---
+- runFlow: ../common/launch.yaml
+- runFlow: ../common/dismiss-received-file.yaml
+- longPressOn:
+    point: '55%,45%'
+- extendedWaitUntil:
+    visible:
+      id: 'home-poi-google-maps'
+    timeout: 10000
+- assertVisible:
+    id: 'home-poi-coordinate'
+- takeScreenshot: 25-map-popup
+- tapOn:
+    id: 'home-poi-google-maps'
+    retryTapIfNoChange: false
+# アプリが背面へ回り、ブラウザが開く
+- extendedWaitUntil:
+    notVisible:
+      id: 'home-layers'
+    timeout: 20000
+- extendedWaitUntil:
+    visible: '.*google\.com.*'
+    timeout: 30000
+- takeScreenshot: 25-map-google
+# アプリへ戻る（起動し直さずに前面へ出す）。メニューは閉じている
+- launchApp:
+    stopApp: false
+- extendedWaitUntil:
+    visible:
+      id: 'home-layers'
+    timeout: 30000
+- assertNotVisible:
+    id: 'home-poi-google-maps'

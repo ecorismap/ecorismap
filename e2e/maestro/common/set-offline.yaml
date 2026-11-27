@@ -1,0 +1,32 @@
+# 開いている地図一覧で、オンライン／オフラインを ${MODE}（'offline' か 'online'）にする。すでにそうなら何もしない。
+# 初めてオフラインへ切り替えるときに出る説明は OK で閉じる。
+appId: jp.co.ecoris.ecorismap
+---
+- evalScript: ${output.onlineLabel = '.*' + ((MODE === 'offline' && 'ｵﾌﾗｲﾝ') || 'ｵﾝﾗｲﾝ')}
+- runFlow:
+    when:
+      notVisible:
+        id: 'maps-toggle-online'
+        text: ${output.onlineLabel}
+    commands:
+      - tapOn:
+          id: 'maps-toggle-online'
+          retryTapIfNoChange: false
+      - extendedWaitUntil:
+          visible:
+            id: 'dialog-message'
+          timeout: 3000
+          optional: true
+      - runFlow:
+          when:
+            visible:
+              id: 'dialog-message'
+          commands:
+            - tapOn: 'OK'
+            - waitForAnimationToEnd:
+                timeout: 3000
+- extendedWaitUntil:
+    visible:
+      id: 'maps-toggle-online'
+      text: ${output.onlineLabel}
+    timeout: 10000

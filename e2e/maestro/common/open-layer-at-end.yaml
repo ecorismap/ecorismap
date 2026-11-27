@@ -1,0 +1,17 @@
+# 開いているレイヤ一覧を末尾まで送り、行番号 ${output.layerIndex} のレイヤ（名前が ${NAME}（正規表現））のデータ一覧を開く。
+# 取り込んだレイヤは末尾に入るので、末尾の数行を確かめるときに使う。
+appId: jp.co.ecoris.ecorismap
+---
+- runFlow: scroll-layers-to-end.yaml
+- assertVisible:
+    id: layers-row-${output.layerIndex}
+    text: ${NAME}
+- tapOn:
+    id: layers-row-${output.layerIndex}
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible:
+      id: 'data-export'
+    timeout: 10000
+- waitForAnimationToEnd:
+    timeout: 3000

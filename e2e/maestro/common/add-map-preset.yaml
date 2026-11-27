@@ -1,0 +1,46 @@
+# 開いている地図一覧で、プリセット ${PRESET}（名前の正規表現）から地図を追加する。URLが ${URL}（正規表現）で入ることを確かめる。
+# 追加した地図が一覧の先頭に入ったところで終わる。
+appId: jp.co.ecoris.ecorismap
+---
+- tapOn:
+    id: 'maps-add'
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible:
+      id: 'mapedit-preset'
+    timeout: 10000
+- waitForAnimationToEnd
+- tapOn:
+    id: 'mapedit-preset'
+    retryTapIfNoChange: false
+- waitForAnimationToEnd:
+    timeout: 3000
+# 選択肢が画面の下に隠れていることがある（画面の外でも「見えている」と判定され、押しても選べない）。画面内に出してから押す
+- scrollUntilVisible:
+    element:
+      text: ${PRESET}
+    direction: DOWN
+    timeout: 30000
+- tapOn:
+    text: ${PRESET}
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible:
+      id: 'mapedit-name'
+      text: ${PRESET}
+    timeout: 10000
+- assertVisible:
+    id: 'mapedit-url'
+    text: ${URL}
+- tapOn:
+    id: 'mapedit-save'
+    retryTapIfNoChange: false
+- waitForAnimationToEnd:
+    timeout: 3000
+- tapOn:
+    id: 'sheet-back'
+- extendedWaitUntil:
+    visible:
+      id: 'maps-row-0'
+      text: ${PRESET}
+    timeout: 10000

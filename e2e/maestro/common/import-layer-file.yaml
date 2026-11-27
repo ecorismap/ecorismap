@@ -1,0 +1,12 @@
+# 開いているレイヤ一覧の「インポート」から、テスト用のファイル ${FILE} を取り込む。
+# 結果の通知（dialog-message）が出たところで終わる（文言の確認と OK は呼び出し側で行う）。
+appId: jp.co.ecoris.ecorismap
+---
+- tapOn:
+    id: 'layers-import'
+    retryTapIfNoChange: false
+- runFlow: pick-file.yaml
+- extendedWaitUntil:
+    visible:
+      id: 'dialog-message'
+    timeout: 30000

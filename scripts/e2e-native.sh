@@ -82,6 +82,9 @@ if [ "$PLATFORM" = ios ]; then
       grep -q '^group.com.apple.FileProvider.LocalStorage$'; then
       mkdir -p "${group}File Provider Storage"
       cp "$ROOT/e2e/web/fixtures/植物調査.geojson" "${group}File Provider Storage/e2e_plants.geojson"
+      # 20-maps-pmtiles・22-file-formats・24-maps-more が選ぶテスト用ファイル（スタイルJSON・各形式のデータ・PDF地図・地図設定）
+      cp "$ROOT/e2e/web/fixtures/vegetation-style.json" "${group}File Provider Storage/e2e_style.json"
+      cp "$ROOT"/e2e/maestro/fixtures/e2e_* "${group}File Provider Storage/"
     fi
   done
 fi
@@ -113,14 +116,48 @@ else
     for f in "$SMOKE"/9[0-9]*.yaml; do
       [ -e "$f" ] && FLOWS+=("$f")
     done
+  elif [ "$PLATFORM" = ios ]; then
+    # 初回起動のフロー（91）はデータをよけて戻すだけで消さないので、iOSシミュレーターではいつも流す
+    for f in "$SMOKE"/91-*.yaml; do
+      [ -e "$f" ] && FLOWS+=("$f")
+    done
   fi
+fi
+
+# 地図のフロー（20-maps-pmtiles・21-maps-offline・24-maps-more）は、Mac から配信するテスト用のタイルを読む。
+# 配信（8765番）が動いていなければ、このスクリプトが起動し、終わるときに止める
+SERVER_PID=""
+if ! curl -s -o /dev/null --max-time 2 http://localhost:8765/_requests; then
+  node "$ROOT/e2e/maestro/support/serve-fixtures.mjs" >/dev/null 2>&1 &
+  SERVER_PID=$!
+  trap '[ -n "$SERVER_PID" ] && kill "$SERVER_PID" 2>/dev/null || true' EXIT
+  sleep 1
+fi
+if [ "$PLATFORM" = android ]; then
+  adb -s "$DEVICE" reverse tcp:8765 tcp:8765 >/dev/null
 fi
 
 FAILED=()
 for f in "${FLOWS[@]}"; do
-  echo "■ $(basename "$f")"
+  base="$(basename "$f")"
+  echo "■ $base"
+  case "$base" in
+    91-*)
+      # 初回起動のフロー。iOSシミュレーターだけ: アプリのデータを脇へよけて流し、終わったら戻す（データは消えない）
+      if [ "$PLATFORM" != ios ]; then
+        echo "（iOSシミュレーター専用なので飛ばします）"
+        continue
+      fi
+      "$ROOT/e2e/maestro/support/ios-first-launch.sh" begin "$DEVICE"
+      if ! maestro --device "$DEVICE" test -e PLATFORM="$PLATFORM" "$f"; then
+        FAILED+=("$base")
+      fi
+      "$ROOT/e2e/maestro/support/ios-first-launch.sh" end "$DEVICE"
+      continue
+      ;;
+  esac
   if ! maestro --device "$DEVICE" test -e PLATFORM="$PLATFORM" "$f"; then
-    FAILED+=("$(basename "$f")")
+    FAILED+=("$base")
   fi
 done
 

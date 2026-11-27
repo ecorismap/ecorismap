@@ -155,7 +155,7 @@ export default function MapEditContainer() {
 
   const pressExportMap = useCallback(async () => {
     const result = await exportSingleMap(map);
-    await AlertAsync(result.message);
+    if (result.message !== '') await AlertAsync(result.message);
   }, [exportSingleMap, map]);
 
   const pressImportStyle = useCallback(async () => {

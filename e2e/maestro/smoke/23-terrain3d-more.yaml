@@ -1,0 +1,439 @@
+# ANLY-7・ANLY-5（一部）・ANLY-9（一部）: 3D・眺望のうち、17-analysis で見ていないもの（ネイティブの3Dは自作エンジン）。
+# - ANLY-7: GPSをオンにして現在地を長押しすると、メニューが「現在地からの眺望」になり、押すと眺望モードになる。
+#   疑似位置を西へ約4km動かすと、山名ラベルの詳細（その山までの距離）が変わる＝立ち位置が現在地に付いていく
+#   （景色が動くことは、スクリーンショット 23-vista-current・23-vista-moved を人が見比べる）
+# - ANLY-5: GPSをオンにしたまま3Dにしても、軌跡を記録しながら3Dにしても、保存した軌跡を3Dでリプレイしても、落ちない。
+#   リプレイは再生ボタンが一時停止に変わり、止めると通過時刻のポップアップが出る
+#   （現在地マーカー・記録中の線・リプレイの丸が描かれることは、スクリーンショット 23-3d-location・23-3d-recording・23-3d-replay を人が見る）
+# - ANLY-9: GEBCO海底地形図を追加して3Dにしても落ちず、出典表示に GEBCO が出たまま（海底が立体になることは、スクリーンショット 23-3d-gebco を人が見る）。
+#   3DでGoogle地図が地理院地図に置き換わることは確かめていない（この端末は地理院地図を常に表示していて、置き換わったかどうかを画面から区別できない。
+#   置き換えの中身は src/utils/terrain3d/__tests__/googleBasemapSubstitute.test.ts が見ている）
+# 絵（地形・山並み・マーカー・線）はスクリーンショットを人が見て確かめる。3Dに切り替えた直後の数秒は、まだ絵が出ておらず白く写ることがある。
+# 標高データ・地図タイル・山名は通信で取りに行く。地図は疑似位置で仙台の東の平野（北緯38.24度・東経140.95度）へ移す。
+# 記録した軌跡・追加した GEBCO は最後に消す。3Dは2Dへ、GPSはオフへ戻して終える。
+appId: jp.co.ecoris.ecorismap
+env:
+  LAYER_NAME: '軌跡.*'
+---
+- runFlow: ../common/launch.yaml
+- runFlow: ../common/discard-interrupted-track.yaml
+# 前提を整える: 眺望・3Dのまま残っていたら2Dへ戻す。前回の GEBCO が残っていたら消す
+- runFlow:
+    when:
+      visible:
+        id: 'home-vista-close'
+    commands:
+      - tapOn:
+          id: 'home-vista-close'
+          retryTapIfNoChange: false
+      - waitForAnimationToEnd:
+          timeout: 5000
+- runFlow:
+    when:
+      visible:
+        id: 'home-terrain-rotate-cw'
+    commands:
+      - tapOn:
+          id: 'home-terrain'
+          retryTapIfNoChange: false
+      - extendedWaitUntil:
+          notVisible:
+            id: 'home-terrain-rotate-cw'
+          timeout: 15000
+- runFlow: ../common/open-maps.yaml
+- repeat:
+    while:
+      visible:
+        id: 'maps-row-0'
+        text: 'GEBCO海底地形図\(全球\)'
+    times: 3
+    commands:
+      - runFlow: ../common/delete-top-map.yaml
+- runFlow: ../common/close-sheet.yaml
+# いまある軌跡の数（＝これから保存される軌跡の行番号）を数えておく
+- runFlow: ../common/open-layer.yaml
+- runFlow: ../common/count-rows.yaml
+- runFlow: ../common/close-sheet.yaml
+# 地図を仙台の東の平野へ移し（GPSはオフに戻る）、ズーム12にする
+- runFlow:
+    file: ../common/goto-pseudo-location.yaml
+    env:
+      LAT: 38.24
+      LON: 140.95
+- runFlow:
+    file: ../common/set-zoom.yaml
+    env:
+      ZOOM: 12
+
+# ANLY-7: GPSをオンにして（追従）、現在地を長押しする。現在地にスナップすると「現在地からの眺望」になる
+- tapOn:
+    id: 'home-gps'
+    retryTapIfNoChange: false
+- waitForAnimationToEnd:
+    timeout: 5000
+- evalScript: ${output.snapped = false}
+- repeat:
+    while:
+      true: ${!output.snapped}
+    times: 5
+    commands:
+      - longPressOn:
+          point: '50%,50%'
+      - extendedWaitUntil:
+          visible:
+            id: 'home-poi-vista'
+          timeout: 10000
+          optional: true
+      - runFlow:
+          when:
+            visible:
+              id: 'home-poi-vista'
+              text: '現在地からの眺望'
+          commands:
+            - evalScript: ${output.snapped = true}
+      # スナップしなかったら、ポップアップを閉じて（地図が動くと消える）追従に戻し、やり直す
+      - runFlow:
+          when:
+            true: ${!output.snapped}
+          commands:
+            - swipe:
+                start: '70%,60%'
+                end: '62%,52%'
+                duration: 600
+            - waitForAnimationToEnd:
+                timeout: 2000
+            - tapOn:
+                id: 'home-gps'
+                retryTapIfNoChange: false
+            - waitForAnimationToEnd:
+                timeout: 4000
+- assertVisible:
+    id: 'home-poi-vista'
+    text: '現在地からの眺望'
+- assertVisible:
+    id: 'home-poi-distance'
+    text: '現在地'
+- tapOn:
+    id: 'home-poi-vista'
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible:
+      id: 'home-vista-close'
+      text: '.*眺望モード.*'
+    timeout: 60000
+- assertVisible:
+    id: 'home-vista-height'
+    text: '1\.7m'
+# 山名のラベルが出るまで待ち、先頭のラベルの詳細（標高と、立ち位置からの距離）を読む
+- extendedWaitUntil:
+    visible:
+      id: 'home-vista-peak-label'
+    timeout: 60000
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: 23-vista-current
+- tapOn:
+    id: 'home-vista-peak-label'
+    index: 0
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible:
+      id: 'home-vista-peak-detail'
+    timeout: 10000
+# （詳細の枠そのものは文字を持たない。中の「標高 … m ・ … km」の行を読む）
+- copyTextFrom:
+    text: '標高 .+ m ・ .+ km'
+- evalScript: ${output.peakBefore = maestro.copiedText}
+- assertTrue: ${/標高 [\d,.]+ m ・ [\d,.]+ km/.test(output.peakBefore)}
+# 疑似位置を西へ約4km動かす（東は海で、海の上からは山名が出ない）。立ち位置が付いていくので、山までの距離が変わる。
+# iOSシミュレーターは新しい位置が届くまで時間がかかることがあるので、位置を与え直しながら、変わるまで読み直す
+- evalScript: ${output.peakAfter = output.peakBefore}
+- repeat:
+    while:
+      true: ${output.peakAfter === output.peakBefore}
+    times: 6
+    commands:
+      # 詳細を閉じる（山名を隠して出し直す）
+      - tapOn:
+          id: 'home-vista-peak-names'
+          retryTapIfNoChange: false
+      - extendedWaitUntil:
+          notVisible:
+            id: 'home-vista-peak-detail'
+          timeout: 10000
+      - tapOn:
+          id: 'home-vista-peak-names'
+          retryTapIfNoChange: false
+      - setLocation:
+          latitude: 38.24
+          longitude: 140.905
+      - extendedWaitUntil:
+          visible:
+            id: 'e2e-wait-8s'
+          timeout: 8000
+          optional: true
+      - extendedWaitUntil:
+          visible:
+            id: 'home-vista-peak-label'
+          timeout: 60000
+      - waitForAnimationToEnd:
+          timeout: 5000
+      - tapOn:
+          id: 'home-vista-peak-label'
+          index: 0
+          retryTapIfNoChange: false
+      - extendedWaitUntil:
+          visible:
+            id: 'home-vista-peak-detail'
+          timeout: 10000
+      - copyTextFrom:
+          text: '標高 .+ m ・ .+ km'
+      - evalScript: ${output.peakAfter = maestro.copiedText}
+- takeScreenshot: 23-vista-moved
+- evalScript: ${console.log('ANLY-7 ' + output.peakBefore + ' -> ' + output.peakAfter)}
+- assertTrue: ${/標高 [\d,.]+ m ・ [\d,.]+ km/.test(output.peakAfter)}
+- assertTrue: ${output.peakAfter !== output.peakBefore}
+# 眺望を終えると、ふつうの3Dになる
+- tapOn:
+    id: 'home-vista-close'
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    notVisible:
+      id: 'home-vista-close'
+    timeout: 15000
+
+# ANLY-5: GPSがオンのままの3D（現在地マーカーが出る。絵はスクリーンショットで見る）
+- extendedWaitUntil:
+    visible:
+      id: 'home-terrain-rotate-cw'
+    timeout: 30000
+- setLocation:
+    latitude: 38.24
+    longitude: 140.95
+- waitForAnimationToEnd:
+    timeout: 8000
+- takeScreenshot: 23-3d-location
+- assertVisible:
+    id: 'home-gps'
+- tapOn:
+    id: 'home-terrain'
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    notVisible:
+      id: 'home-terrain-rotate-cw'
+    timeout: 15000
+
+# ANLY-5: 軌跡を記録しながら3Dにする
+- runFlow:
+    file: ../common/set-zoom.yaml
+    env:
+      ZOOM: 15
+# 開始の確認が出るまで押す
+- repeat:
+    while:
+      notVisible:
+        id: 'dialog-message'
+    times: 5
+    commands:
+      - runFlow: ../common/dismiss-toast-by-point.yaml
+      - tapOn:
+          id: 'home-track'
+          retryTapIfNoChange: false
+      - extendedWaitUntil:
+          visible:
+            id: 'dialog-message'
+          timeout: 3000
+          optional: true
+- assertVisible: '.*軌跡の記録を開始しますか.*'
+- tapOn: 'Yes'
+- waitForAnimationToEnd:
+    timeout: 8000
+- setLocation:
+    latitude: 38.2400
+    longitude: 140.9500
+- waitForAnimationToEnd:
+    timeout: 3000
+# 東→北→東と曲がる道（まっすぐな軌跡は保存時に始点と終点の2点にまとめられる）
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - travel:
+          points:
+            - 38.2400,140.9500
+            - 38.2400,140.9515
+            - 38.2430,140.9515
+            - 38.2430,140.9530
+          speed: 20
+- waitForAnimationToEnd:
+    timeout: 5000
+- tapOn:
+    id: 'home-terrain'
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible:
+      id: 'home-terrain-rotate-cw'
+    timeout: 30000
+- waitForAnimationToEnd:
+    timeout: 8000
+# 3Dのまま少し進む（記録中の線が伸びる）
+- setLocation:
+    latitude: 38.2440
+    longitude: 140.9540
+- waitForAnimationToEnd:
+    timeout: 8000
+- takeScreenshot: 23-3d-recording
+- assertVisible:
+    id: 'home-track'
+# 3Dのまま記録を止める。確認が出るまで押す
+- repeat:
+    while:
+      notVisible:
+        id: 'dialog-message'
+    times: 5
+    commands:
+      - runFlow: ../common/dismiss-toast-by-point.yaml
+      - tapOn:
+          id: 'home-track'
+          retryTapIfNoChange: false
+          optional: true
+      - extendedWaitUntil:
+          visible:
+            id: 'dialog-message'
+          timeout: 4000
+          optional: true
+- assertVisible: '.*軌跡の記録を終了しますか.*'
+- tapOn: 'Yes'
+- extendedWaitUntil:
+    visible:
+      id: 'tracksummary-replay'
+    timeout: 20000
+- waitForAnimationToEnd:
+    timeout: 5000
+- assertVisible:
+    id: 'tracksummary-stat-distance'
+# 3Dのままリプレイする
+- assertVisible:
+    id: 'home-terrain-rotate-cw'
+- assertVisible:
+    id: 'tracksummary-replay'
+    text: '軌跡を再生'
+- tapOn:
+    id: 'tracksummary-replay'
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible:
+      id: 'tracksummary-replay'
+      text: '再生を一時停止'
+    timeout: 10000
+- extendedWaitUntil:
+    visible:
+      id: 'e2e-wait-9s'
+    timeout: 9000
+    optional: true
+- takeScreenshot: 23-3d-replay
+- tapOn:
+    id: 'tracksummary-replay'
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible:
+      id: 'tracksummary-replay'
+      text: '軌跡を再生'
+    timeout: 10000
+- assertVisible:
+    id: 'home-terrain-rotate-cw'
+- assertNotVisible:
+    id: 'dialog-message'
+# 2Dへ戻し、保存された軌跡を消す
+- runFlow: ../common/close-sheet.yaml
+- tapOn:
+    id: 'home-terrain'
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    notVisible:
+      id: 'home-terrain-rotate-cw'
+    timeout: 15000
+# 3Dでリプレイしたあと2Dへ戻すと、地図画面のボタン（レイヤ・ズームなど）が Maestro から見えなくなる
+# （画面には出ていて押せる。アクセシビリティの木から消える。アプリ側の不具合らしきものとして報告済み）。起動し直すと戻る
+- runFlow: ../common/launch.yaml
+- runFlow: ../common/discard-interrupted-track.yaml
+- runFlow: ../common/open-layer.yaml
+- assertVisible:
+    id: data-row-${output.row}
+- assertNotVisible:
+    id: data-row-${output.row + 1}
+- tapOn:
+    id: data-row-${output.row}
+- extendedWaitUntil:
+    visible:
+      id: 'dataedit-delete'
+    timeout: 10000
+- waitForAnimationToEnd
+- tapOn:
+    id: 'dataedit-delete'
+- tapOn: 'Yes'
+- extendedWaitUntil:
+    visible:
+      id: 'data-export'
+    timeout: 10000
+- assertNotVisible:
+    id: data-row-${output.row}
+- runFlow: ../common/close-sheet.yaml
+
+# ANLY-9: GEBCO海底地形図を追加して3Dにする
+- runFlow: ../common/open-maps.yaml
+- runFlow:
+    file: ../common/add-map-preset.yaml
+    env:
+      PRESET: 'GEBCO海底地形図\(全球\)'
+      URL: 'relief://.+'
+- runFlow: ../common/close-sheet.yaml
+# 海（仙台湾）が入るよう、引いてから3Dにする
+- runFlow:
+    file: ../common/set-zoom.yaml
+    env:
+      ZOOM: 9
+- tapOn:
+    id: 'home-terrain'
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible:
+      id: 'home-terrain-rotate-cw'
+    timeout: 30000
+- waitForAnimationToEnd:
+    timeout: 10000
+- tapOn:
+    id: 'home-terrain-pitch-cw'
+    retryTapIfNoChange: false
+- tapOn:
+    id: 'home-terrain-rotate-cw'
+    retryTapIfNoChange: false
+- waitForAnimationToEnd:
+    timeout: 8000
+- takeScreenshot: 23-3d-gebco
+- assertVisible:
+    id: 'home-terrain-rotate-cw'
+- assertVisible:
+    id: 'home-attribution'
+    text: '.*GEBCO.*'
+- assertNotVisible:
+    id: 'dialog-message'
+- tapOn:
+    id: 'home-terrain'
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    notVisible:
+      id: 'home-terrain-rotate-cw'
+    timeout: 15000
+# 後片付け: GEBCO を消す
+- runFlow: ../common/open-maps.yaml
+- assertVisible:
+    id: 'maps-row-0'
+    text: 'GEBCO海底地形図\(全球\)'
+- runFlow: ../common/delete-top-map.yaml
+- assertNotVisible:
+    id: 'maps-row-0'
+    text: 'GEBCO海底地形図\(全球\)'
+- runFlow: ../common/close-sheet.yaml
+- assertVisible:
+    id: 'home-layers'

@@ -1,0 +1,14 @@
+# 開いている地図一覧から、オフライン用のダウンロード画面を開く。
+appId: jp.co.ecoris.ecorismap
+---
+- repeat:
+    while:
+      notVisible:
+        id: 'home-download-start'
+    times: 4
+    commands:
+      - tapOn:
+          id: 'maps-goto-download'
+          retryTapIfNoChange: false
+      - waitForAnimationToEnd:
+          timeout: 4000

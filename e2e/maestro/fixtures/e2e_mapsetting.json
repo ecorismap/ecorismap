@@ -1,0 +1,14 @@
+{
+  "id": "01KE2EMAPSETTING0000000001",
+  "name": "e2eimp",
+  "url": "http://localhost:8765/tiles/{z}/{x}/{y}.png",
+  "attribution": "e2e-imp",
+  "maptype": "none",
+  "visible": true,
+  "transparency": 0,
+  "overzoomThreshold": 18,
+  "highResolutionEnabled": false,
+  "minimumZ": 0,
+  "maximumZ": 22,
+  "flipY": false
+}
