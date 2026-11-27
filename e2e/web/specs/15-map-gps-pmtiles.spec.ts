@@ -267,13 +267,8 @@ test.describe('地図の長押し・GPS・PMTiles・HEIC', () => {
   });
 
   test('GPS-2 追従中は位置が変わると地図が付いてくる。地図をドラッグすると追従が外れる', async ({ page, context }) => {
-    // 【アプリの不具合で、いまは通らない】Webでは、追従の移動が終わった直後に追従がひとりでに外れる。
-    // 地図（react-map-gl）へ表示範囲（mapRegion）を制御プロパティとして渡しているため、移動が終わった後の再描画で
-    // react-map-gl が jumpTo を呼び（Maplibre._updateViewState）、その movestart を現在地ボタン（GeolocateControl）が
-    // 「利用者が地図を動かした」と受け取って追従をやめる（Home.web.tsx の <Map {...mapRegion}>）。
-    // この jumpTo の movestart を追従由来として扱わせると、このテストは最後まで通る（2026-11-27 に確認）。
-    // 直ったら、この test.fail を外す（外さないと「失敗するはずが通った」で落ちる）
-    test.fail();
+    // Webは表示範囲をpropsで地図へ渡しているので、追従の移動の最後は react-map-gl の jumpTo で反映される。
+    // その jumpTo で追従が外れないこと（webGeolocateFollow.ts）も、ここで確かめている
     const accuracyCircleWidth = async () =>
       (await page.locator('.maplibregl-user-location-accuracy-circle').boundingBox())?.width ?? 0;
     const isTracking = () => geolocateButton(page).evaluate((el) => el.classList.contains('maplibregl-ctrl-geolocate-active'));

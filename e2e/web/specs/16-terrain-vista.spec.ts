@@ -730,4 +730,42 @@ test.describe('7. 計測・3D（可視領域・3D・眺望）', () => {
     await expect.poll(() => terrainElevation(page, EAST)).toBeCloseTo(-2000 * 3 * EXAGGERATION, 0);
     expect(gebco.count).toBeGreaterThan(0);
   });
+
+  test('ANLY-9b 3D表示中にGEBCO海底地形図を追加しても、海底が立体になる', async ({ page }) => {
+    // ANLY-9と同じ地形で、順序だけが逆（先に3Dにしてから追加する）。
+    // 読み込み済みの地形（0mの海）が、海底を埋めた標高に置き換わることを確かめる
+    const WEST = offsetFrom(HOME, -300, 0);
+    const EAST = offsetFrom(HOME, 300, 0);
+    await mockBaseTiles(page);
+    const dem = await mockDem(page, () => 0);
+    const gebco = await mockGebco(page, (lon) => (lon < HOME.lon ? -1000 : -2000));
+    await openApp(page);
+    await exposeMap(page);
+
+    // 先に3Dにする。この時点の地形は陸の標高（全面0m）
+    await page.getByTestId('home-terrain').click();
+    await expect.poll(async () => (await mapState(page)).terrain).toEqual({ source: 'rasterdem', exaggeration: EXAGGERATION });
+    await expect.poll(() => dem.count, { timeout: 30_000 }).toBeGreaterThan(0);
+    await expect.poll(() => terrainElevation(page, WEST), { timeout: 30_000 }).toBe(0);
+    await page.waitForTimeout(1000);
+    expect(await terrainElevation(page, EAST)).toBe(0);
+    expect(gebco.count).toBe(0);
+
+    // 3Dのまま、GEBCO海底地形図を追加する
+    await openMaps(page);
+    await page.getByTestId('maps-add').click();
+    await page.getByTestId('mapedit-preset').click({ force: true });
+    await text(page, 'GEBCO海底地形図(全球)').click();
+    await expect(page.getByTestId('mapedit-url')).toHaveValue(/^relief:\/\/.*gebco/);
+    await page.getByTestId('mapedit-save').click();
+    await expect.poll(async () => (await mapState(page)).demTiles[0]).toMatch(/^bathyterrain:\/\/.*gebco/);
+    await sheetBack(page);
+    await sheetClose(page);
+
+    // 地図を動かさなくても、海が海底の深さで起伏する（深さ×海底の強調3倍×地形の強調1.5倍）
+    expect((await mapState(page)).terrain).toEqual({ source: 'rasterdem', exaggeration: EXAGGERATION });
+    await expect.poll(() => terrainElevation(page, WEST), { timeout: 30_000 }).toBeCloseTo(-1000 * 3 * EXAGGERATION, 0);
+    await expect.poll(() => terrainElevation(page, EAST)).toBeCloseTo(-2000 * 3 * EXAGGERATION, 0);
+    expect(gebco.count).toBeGreaterThan(0);
+  });
 });
