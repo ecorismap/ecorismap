@@ -7,8 +7,23 @@ appId: jp.co.ecoris.ecorismap
       visible: 'Open debugger to view warnings.|.*location error.*'
     times: 6
     commands:
-      - tapOn:
-          rightOf: 'Open debugger to view warnings.|.*location error.*'
-          retryTapIfNoChange: false
+      # Androidは、トーストの中の要素だけを押す（launch.yaml と同じ理由。location error のトーストはiOSシミュレーターだけ）
+      - runFlow:
+          when:
+            platform: Android
+          commands:
+            - tapOn:
+                rightOf: 'Open debugger to view warnings.'
+                childOf:
+                  text: '!, Open debugger to view warnings.'
+                retryTapIfNoChange: false
+                optional: true
+      - runFlow:
+          when:
+            platform: iOS
+          commands:
+            - tapOn:
+                rightOf: 'Open debugger to view warnings.|.*location error.*'
+                retryTapIfNoChange: false
       - waitForAnimationToEnd:
           timeout: 2000

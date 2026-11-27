@@ -50,12 +50,30 @@ env:
 - tapOn:
     id: 'home-account'
     retryTapIfNoChange: false
+# ログイン済みの端末では、アカウントボタンはメニューを開くだけ。メニューの「設定」（アカウント設定の画面）で地図を離れようとする
+- runFlow:
+    when:
+      visible:
+        id: 'home-account-setting'
+    commands:
+      - tapOn:
+          id: 'home-account-setting'
+          retryTapIfNoChange: false
 - extendedWaitUntil:
     visible: '.*変更を破棄しますか.*'
     timeout: 10000
 - tapOn: 'No'
 - waitForAnimationToEnd:
     timeout: 3000
+# （開いたメニューは閉じておく）
+- runFlow:
+    when:
+      visible:
+        id: 'home-account-setting'
+    commands:
+      - tapOn:
+          id: 'home-account'
+          retryTapIfNoChange: false
 - assertVisible:
     id: 'home-draw-save'
 

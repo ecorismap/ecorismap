@@ -28,8 +28,24 @@ appId: jp.co.ecoris.ecorismap
       visible: 'Open debugger to view warnings.'
     times: 5
     commands:
-      - tapOn:
-          rightOf: 'Open debugger to view warnings.'
-          retryTapIfNoChange: false
+      # Androidは、トーストの×が見つからない瞬間に「右にある要素」が地図上のマーカーやシートの×になり、
+      # 記録の編集画面を開いてしまうことがある。トーストの中の要素だけを押す（見つからなければ押さない）
+      - runFlow:
+          when:
+            platform: Android
+          commands:
+            - tapOn:
+                rightOf: 'Open debugger to view warnings.'
+                childOf:
+                  text: '!, Open debugger to view warnings.'
+                retryTapIfNoChange: false
+                optional: true
+      - runFlow:
+          when:
+            platform: iOS
+          commands:
+            - tapOn:
+                rightOf: 'Open debugger to view warnings.'
+                retryTapIfNoChange: false
       - waitForAnimationToEnd:
           timeout: 2000

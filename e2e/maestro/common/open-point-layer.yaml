@@ -16,8 +16,23 @@ appId: jp.co.ecoris.ecorismap
     when:
       visible: 'Open debugger to view warnings.'
     commands:
-      - tapOn:
-          rightOf: 'Open debugger to view warnings.'
+      # Androidは、トーストの中の要素だけを押す（launch.yaml と同じ理由）
+      - runFlow:
+          when:
+            platform: Android
+          commands:
+            - tapOn:
+                rightOf: 'Open debugger to view warnings.'
+                childOf:
+                  text: '!, Open debugger to view warnings.'
+                retryTapIfNoChange: false
+                optional: true
+      - runFlow:
+          when:
+            platform: iOS
+          commands:
+            - tapOn:
+                rightOf: 'Open debugger to view warnings.'
 - extendedWaitUntil:
     visible:
       id: 'home-layers'

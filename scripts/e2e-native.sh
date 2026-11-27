@@ -56,7 +56,13 @@ case "$PLATFORM" in
 esac
 
 # ファイル取り込みのフロー（13-file）が選ぶテスト用ファイルを、端末の「ファイル」アプリから見える場所へ置く。
-# （iOSシミュレーターは「このiPhone内」の実体がMac側にあるので、そこへコピーする。Androidは未対応）
+# （iOSシミュレーターは「このiPhone内」の実体がMac側にあるので、そこへコピーする。
+#   Androidは端末の Download フォルダへ送る。ファイル選択の「ダウンロード」に出るよう、メディアの索引にも載せる）
+if [ "$PLATFORM" = android ]; then
+  adb -s "$DEVICE" push "$ROOT/e2e/web/fixtures/植物調査.geojson" /sdcard/Download/e2e_plants.geojson >/dev/null
+  adb -s "$DEVICE" shell am broadcast -a android.intent.action.MEDIA_SCANNER_SCAN_FILE \
+    -d file:///sdcard/Download/e2e_plants.geojson >/dev/null 2>&1 || true
+fi
 if [ "$PLATFORM" = ios ]; then
   for group in "$HOME/Library/Developer/CoreSimulator/Devices/$DEVICE/data/Containers/Shared/AppGroup"/*/; do
     if /usr/libexec/PlistBuddy -c "Print :MCMMetadataIdentifier" "$group.com.apple.mobile_container_manager.metadata.plist" 2>/dev/null |

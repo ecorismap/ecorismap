@@ -73,10 +73,28 @@ appId: jp.co.ecoris.ecorismap
 - evalScript: ${output.coord = maestro.copiedText}
 - takeScreenshot: 11-map-longpress
 # 座標を押すとコピーされ、表示が1.5秒だけ「コピーしました」に変わる
-- tapOn:
-    id: 'home-poi-coordinate'
-    retryTapIfNoChange: false
-- assertVisible: 'コピーしました'
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - tapOn:
+          id: 'home-poi-coordinate'
+          retryTapIfNoChange: false
+      - assertVisible: 'コピーしました'
+# Androidは、Maestro のタップが終わる（押したあとの画面を読み終える）までに1.5秒以上かかり、「コピーしました」の表示を
+# 捉えられないことが多い。押せることと、押したあとも座標の表示に戻っていることだけを確かめる
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - tapOn:
+          id: 'home-poi-coordinate'
+          retryTapIfNoChange: false
+      - extendedWaitUntil:
+          visible:
+            id: 'home-poi-coordinate'
+            text: '-?\d+\.\d{5}, -?\d+\.\d{5}'
+          timeout: 10000
 
 # MAP-1: ドラッグで地図が動く（同じ画面位置を長押しすると、座標が変わっている）
 - swipe:
@@ -142,6 +160,27 @@ appId: jp.co.ecoris.ecorismap
 # 地図が現在地へ移るのを待つ
 - waitForAnimationToEnd:
     timeout: 8000
+# Androidは、現在地が取れて地図が動き出すまでに数秒かかる（動いている最中の長押しはポップアップが出ない・すぐ消える）。
+# 現在地が取れた（＝離れた位置の長押しに現在地からの距離が出る）のを確かめ、地図が止まってから先へ進む
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - repeat:
+          while:
+            notVisible:
+              id: 'home-poi-distance'
+          times: 5
+          commands:
+            - longPressOn:
+                point: '25%,65%'
+            - extendedWaitUntil:
+                visible:
+                  id: 'home-poi-distance'
+                timeout: 4000
+                optional: true
+      - waitForAnimationToEnd:
+          timeout: 5000
 # GPS-5: 画面中央（＝現在地）の長押しは現在地にスナップし、「現在地」と疑似位置の座標が出る
 - longPressOn:
     point: '50%,50%'
@@ -168,6 +207,33 @@ appId: jp.co.ecoris.ecorismap
     retryTapIfNoChange: false
 - waitForAnimationToEnd:
     timeout: 3000
+# Androidは、長押しのポップアップを出すと追従が外れていて、1回目は追従に戻るだけ（オフにならない）。
+# 長押しにまだ距離が出るなら（この長押しでまた追従が外れるので）、続けて2回押す（追従→オフ）
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - longPressOn:
+          point: '30%,72%'
+      - extendedWaitUntil:
+          visible:
+            id: 'home-poi-coordinate'
+          timeout: 10000
+      - runFlow:
+          when:
+            visible:
+              id: 'home-poi-distance'
+          commands:
+            - tapOn:
+                id: 'home-gps'
+                retryTapIfNoChange: false
+            - waitForAnimationToEnd:
+                timeout: 3000
+            - tapOn:
+                id: 'home-gps'
+                retryTapIfNoChange: false
+            - waitForAnimationToEnd:
+                timeout: 3000
 # （直前のポップアップに重ならない位置を押す。重なると、ポップアップの項目を押してしまう）
 - longPressOn:
     point: '25%,65%'

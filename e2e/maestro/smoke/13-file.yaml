@@ -5,9 +5,13 @@
 # - FILE-8・FILE-9: 設定の「保存」で保存先の選択肢（共有・Google Drive）が出る。共有を選ぶと全データの書き出しが失敗の表示なく終わり、
 #   共有シートを閉じると設定画面に戻る（このときの共有シートは Maestro から中身が見えないので、ファイル名は確かめていない。
 #   「開く」で元どおりに戻ることは、端末のデータを置き換えるので確かめていない）
+# - Androidは経路が違う: ファイル選択は端末の「ダウンロード」から選ぶ。エクスポートは先にエクスポート先のモーダル
+#   （デバイスに保存／他のアプリで共有）が出て、共有を選ぶとOSの共有シートにZIPの名前が出る。設定の「保存」は保存先に
+#   「デバイスに保存」もあり、共有を選ぶと共有シートに ecorismap_<日時>.zip が出る（共有シートは戻るキーで閉じる。
+#   「デバイスに保存」は端末の Download にファイルが残るので確かめていない）
 #
 # 前提: テスト用のファイル e2e_plants.geojson（e2e/web/fixtures/植物調査.geojson の写し）が、端末の「ファイル」アプリの
-#   「このiPhone内」に置いてあること。scripts/e2e-native.sh が流す前に置く。ファイル選択は最後に開いた場所を開くので、
+#   「このiPhone内」（Androidは端末の Download フォルダ）に置いてあること。scripts/e2e-native.sh が流す前に置く。ファイル選択は最後に開いた場所を開くので、
 #   別の場所が開いたときは検索して探す。
 # 既知の不具合（報告済み）: ファイル選択から取り込むと、同じファイルが次の起動時にもう一度取り込まれ、同名のレイヤが2つになることがある。
 #   次のフローの起動時に取り込みの通知が出て邪魔をしないよう、このフローの中で起動し直して2つ目を出し切り、最後に両方消す。
@@ -60,27 +64,58 @@ env:
 - tapOn:
     id: 'layers-import'
     retryTapIfNoChange: false
-- extendedWaitUntil:
-    visible: 'ブラウズ'
-    timeout: 15000
-- waitForAnimationToEnd:
-    timeout: 3000
-# 別の場所が開いていたら、検索して探す
 - runFlow:
     when:
-      notVisible: 'e2e_plants.geojson, geojson.*'
+      platform: iOS
     commands:
-      - tapOn: '検索'
-      - inputText: 'e2e_plants'
       - extendedWaitUntil:
-          visible: 'e2e_plants.geojson, geojson.*'
+          visible: 'ブラウズ'
           timeout: 15000
-      - hideKeyboard
-- takeScreenshot: 13-file-picker
-# ファイルの枠（名前・種類・日付・サイズをまとめた読み上げ文言）を押す
-- tapOn:
-    text: 'e2e_plants.geojson, geojson.*'
-    retryTapIfNoChange: false
+      - waitForAnimationToEnd:
+          timeout: 3000
+      # 別の場所が開いていたら、検索して探す
+      - runFlow:
+          when:
+            notVisible: 'e2e_plants.geojson, geojson.*'
+          commands:
+            - tapOn: '検索'
+            - inputText: 'e2e_plants'
+            - extendedWaitUntil:
+                visible: 'e2e_plants.geojson, geojson.*'
+                timeout: 15000
+            - hideKeyboard
+      - takeScreenshot: 13-file-picker
+      # ファイルの枠（名前・種類・日付・サイズをまとめた読み上げ文言）を押す
+      - tapOn:
+          text: 'e2e_plants.geojson, geojson.*'
+          retryTapIfNoChange: false
+# Androidのファイル選択は「最近使用したファイル」などが開く。左上のメニューから「ダウンロード」へ移って選ぶ
+# （検索は端末の日本語入力が文字を変換するので使わない。ダウンロードは新しい順に並び、置いたばかりのファイルが先頭に出る）
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - extendedWaitUntil:
+          visible:
+            id: 'com.google.android.documentsui:id/toolbar'
+          timeout: 15000
+      - waitForAnimationToEnd:
+          timeout: 3000
+      - runFlow:
+          when:
+            notVisible: 'e2e_plants.geojson'
+          commands:
+            - tapOn: 'ルートを表示する'
+            - tapOn:
+                id: 'android:id/title'
+                text: 'ダウンロード'
+            - extendedWaitUntil:
+                visible: 'e2e_plants.geojson'
+                timeout: 15000
+      - takeScreenshot: 13-file-picker
+      - tapOn:
+          text: 'e2e_plants.geojson'
+          retryTapIfNoChange: false
 - extendedWaitUntil:
     visible:
       id: 'dialog-message'
@@ -160,13 +195,43 @@ env:
       text: '8件のデータをエクスポートします。'
     timeout: 10000
 - tapOn: 'OK'
-- extendedWaitUntil:
-    visible: 'data_e2e_plants\.geojson_\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}'
-    timeout: 60000
-- assertVisible: 'ZIPアーカイブ.*'
-- assertVisible: '“ファイル”に保存'
-- takeScreenshot: 13-file-export-share
-- tapOn: '閉じる'
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - extendedWaitUntil:
+          visible: 'data_e2e_plants\.geojson_\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}'
+          timeout: 60000
+      - assertVisible: 'ZIPアーカイブ.*'
+      - assertVisible: '“ファイル”に保存'
+      - takeScreenshot: 13-file-export-share
+      - tapOn: '閉じる'
+# Androidは、先にエクスポート先（デバイスに保存／他のアプリで共有）を選ぶ。共有を選ぶとOSの共有シートにZIPの名前が出る。
+# 共有シートは戻るキーで閉じる（デバイスに保存は、端末の Download にファイルが残るので選ばない）
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - extendedWaitUntil:
+          visible:
+            id: 'export-share'
+          timeout: 60000
+      - assertVisible: 'エクスポート先の選択'
+      - assertVisible:
+          id: 'export-save'
+      - assertVisible:
+          id: 'export-cancel'
+      - takeScreenshot: 13-file-export-destination
+      - tapOn:
+          id: 'export-share'
+          retryTapIfNoChange: false
+      - extendedWaitUntil:
+          visible:
+            id: 'com.android.intentresolver:id/content_preview_filename'
+            text: 'data_e2e_plants\.geojson_\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}\.zip'
+          timeout: 60000
+      - takeScreenshot: 13-file-export-share
+      - back
 # 共有シートを閉じると、データ一覧に戻る（失敗の表示は出ない）
 - extendedWaitUntil:
     visible:
@@ -220,6 +285,13 @@ env:
     id: 'settings-storage-option-drive'
 - assertVisible:
     id: 'settings-storage-cancel'
+# Androidは「デバイスに保存」（Download へ保存）もある
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - assertVisible:
+          id: 'settings-storage-option-device'
 - takeScreenshot: 13-file-save-destination
 # 共有を選ぶと、全データをZIPにまとめてから共有シートが開く（写真が多い端末では数分かかる）。
 # このときの共有シートは、処理中の表示の後ろに隠れて Maestro から中身が見えない。
@@ -231,23 +303,55 @@ env:
     notVisible:
       id: 'settings-storage-option-share'
     timeout: 10000
-- repeat:
-    while:
-      notVisible:
-        id: 'settings-file-save'
-    times: 60
+- runFlow:
+    when:
+      platform: iOS
     commands:
-      # 失敗の表示（「ファイルの保存に失敗しました」など）が出ていたら、そこで落とす
-      - assertNotVisible:
-          id: 'dialog-message'
-      - tapOn:
-          point: '93%,49%'
-          retryTapIfNoChange: false
+      - repeat:
+          while:
+            notVisible:
+              id: 'settings-file-save'
+          times: 60
+          commands:
+            # 失敗の表示（「ファイルの保存に失敗しました」など）が出ていたら、そこで落とす
+            - assertNotVisible:
+                id: 'dialog-message'
+            - tapOn:
+                point: '93%,49%'
+                retryTapIfNoChange: false
+            - extendedWaitUntil:
+                visible:
+                  id: 'settings-file-save'
+                timeout: 5000
+                optional: true
+# Androidの共有シートは Maestro から中身が見える。ZIPの名前（ecorismap_<日時>.zip）が出るのを待ち、戻るキーで閉じる
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - repeat:
+          while:
+            notVisible:
+              id: 'com.android.intentresolver:id/content_preview_filename'
+          times: 60
+          commands:
+            # 失敗の表示（「ファイルの保存に失敗しました」など）が出ていたら、そこで落とす
+            - assertNotVisible:
+                id: 'dialog-message'
+            - extendedWaitUntil:
+                visible:
+                  id: 'com.android.intentresolver:id/content_preview_filename'
+                timeout: 5000
+                optional: true
+      - assertVisible:
+          id: 'com.android.intentresolver:id/content_preview_filename'
+          text: 'ecorismap_\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}\.zip'
+      - takeScreenshot: 13-file-save-share
+      - back
       - extendedWaitUntil:
           visible:
             id: 'settings-file-save'
-          timeout: 5000
-          optional: true
+          timeout: 15000
 - assertVisible:
     id: 'settings-file-save'
 - assertNotVisible:
