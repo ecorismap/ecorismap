@@ -12,6 +12,8 @@
 #
 # 前提: Mac で配信を起動しておく（`node e2e/maestro/support/serve-fixtures.mjs`。8765番）。起動していないと最初の /_reset で落ちる。
 #   Androidエミュレーターは先に `adb reverse tcp:8765 tcp:8765`。標高タイル（51枚・4MBほど）だけは配信元（Mapterhorn）から取る。
+# Androidは端末の日本語入力が入力をかなに変換するので（e2edl→え２えｄｌ、e2e-dl→え２えーｄｌ）、名前と出典はどちらの形でも通す。
+# Androidは MAPS-15（キャッシュをクリア）をしない（ほかの地図のダウンロード済みタイルが入っている端末で流すため）。
 # 注意: 「キャッシュをクリア」は、この端末にあるほかの地図のダウンロード済みタイルも消す（取り直せるもの。テスト専用の端末で流す）。
 # 追加した地図（e2edl）・ダウンロードした標高タイルは最後に消し、対象の選択は「すべての地図」へ、表示はオンラインへ戻す。
 # 地図の位置は疑似位置（仙台駅の近く）へ移ったままになる。
@@ -25,7 +27,7 @@ appId: jp.co.ecoris.ecorismap
     while:
       visible:
         id: 'maps-row-0'
-        text: 'e2e(pm|dl).*'
+        text: 'e2e(pm|dl).*|え２え(ｐｍ|ｄｌ).*'
     times: 4
     commands:
       - runFlow: ../common/delete-top-map.yaml
@@ -78,7 +80,7 @@ appId: jp.co.ecoris.ecorismap
 - extendedWaitUntil:
     visible:
       id: 'maps-row-0'
-      text: 'e2edl'
+      text: 'e2edl|え２えｄｌ'
     timeout: 10000
 
 # MAPS-12: 対象をこの地図だけにして、ダウンロードする
@@ -104,7 +106,7 @@ appId: jp.co.ecoris.ecorismap
 - extendedWaitUntil:
     visible:
       id: 'home-download-map-select'
-      text: 'e2edl.*'
+      text: '(e2edl|え２えｄｌ).*'
     timeout: 10000
 - assertVisible:
     id: 'home-download-size'
@@ -186,67 +188,118 @@ appId: jp.co.ecoris.ecorismap
 - evalScript: ${output.served = JSON.parse(http.get('http://localhost:8765/_requests').body)}
 - assertTrue: ${output.served.length > 0}
 
-# MAPS-15: キャッシュをクリアする
-- runFlow: ../common/open-settings.yaml
-- scrollUntilVisible:
-    element:
-      id: 'settings-clear-cache'
-    direction: DOWN
-- tapOn:
-    id: 'settings-clear-cache'
-    retryTapIfNoChange: false
-- extendedWaitUntil:
-    visible:
-      id: 'dialog-message'
-      text: '地図のキャッシュ（ダウンロードしたタイルを含む）をクリアしますか.*'
-    timeout: 10000
-- tapOn: 'Yes'
-- extendedWaitUntil:
-    visible:
-      id: 'dialog-message'
-      text: '地図のキャッシュをクリアしました。'
-    timeout: 60000
-- tapOn: 'OK'
-- waitForAnimationToEnd:
-    timeout: 3000
-# 起動し直す（表示中の地図はメモリに残ったタイルを描き続けるので）。地図は一覧に残っている
-- runFlow: ../common/launch.yaml
-- runFlow: ../common/open-maps.yaml
-- assertVisible:
-    id: 'maps-row-0'
-    text: 'e2edl'
-- assertVisible:
-    id: 'home-attribution'
-    text: '.*e2e-dl.*'
-# ダウンロードしたタイルは消えている（保存済みの容量が 0）
-- runFlow: ../common/open-download-screen.yaml
-- tapOn:
-    id: 'home-download-map-select'
-    retryTapIfNoChange: false
-- extendedWaitUntil:
-    visible:
-      id: 'home-download-map-ok'
-    timeout: 10000
-- tapOn:
-    id: 'home-download-map-all'
-    retryTapIfNoChange: false
-- tapOn:
-    id: 'home-download-map-0'
-    retryTapIfNoChange: false
-- tapOn:
-    id: 'home-download-map-ok'
-    retryTapIfNoChange: false
-- extendedWaitUntil:
-    visible:
-      id: 'home-download-map-select'
-      text: 'e2edl.*'
-    timeout: 10000
-- extendedWaitUntil:
-    visible:
-      id: 'home-download-size'
-      text: '0(\.0)?MB'
-    timeout: 10000
-- takeScreenshot: 21-offline-cache-cleared
+# MAPS-15: キャッシュをクリアする（iOSだけ）
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - runFlow: ../common/open-settings.yaml
+      - scrollUntilVisible:
+          element:
+            id: 'settings-clear-cache'
+          direction: DOWN
+      - tapOn:
+          id: 'settings-clear-cache'
+          retryTapIfNoChange: false
+      - extendedWaitUntil:
+          visible:
+            id: 'dialog-message'
+            text: '地図のキャッシュ（ダウンロードしたタイルを含む）をクリアしますか.*'
+          timeout: 10000
+      - tapOn: 'Yes'
+      - extendedWaitUntil:
+          visible:
+            id: 'dialog-message'
+            text: '地図のキャッシュをクリアしました。'
+          timeout: 60000
+      - tapOn: 'OK'
+      - waitForAnimationToEnd:
+          timeout: 3000
+      # 起動し直す（表示中の地図はメモリに残ったタイルを描き続けるので）。地図は一覧に残っている
+      - runFlow: ../common/launch.yaml
+      - runFlow: ../common/open-maps.yaml
+      - assertVisible:
+          id: 'maps-row-0'
+          text: 'e2edl|え２えｄｌ'
+      - assertVisible:
+          id: 'home-attribution'
+          text: '.*(e2e-dl|え２えーｄｌ).*'
+      # ダウンロードしたタイルは消えている（保存済みの容量が 0）
+      - runFlow: ../common/open-download-screen.yaml
+      - tapOn:
+          id: 'home-download-map-select'
+          retryTapIfNoChange: false
+      - extendedWaitUntil:
+          visible:
+            id: 'home-download-map-ok'
+          timeout: 10000
+      - tapOn:
+          id: 'home-download-map-all'
+          retryTapIfNoChange: false
+      - tapOn:
+          id: 'home-download-map-0'
+          retryTapIfNoChange: false
+      - tapOn:
+          id: 'home-download-map-ok'
+          retryTapIfNoChange: false
+      - extendedWaitUntil:
+          visible:
+            id: 'home-download-map-select'
+            text: '(e2edl|え２えｄｌ).*'
+          timeout: 10000
+      - extendedWaitUntil:
+          visible:
+            id: 'home-download-size'
+            text: '0(\.0)?MB'
+          timeout: 10000
+      - takeScreenshot: 21-offline-cache-cleared
+# Androidのエミュレーターは、ほかの地図のダウンロード済みタイルが入っている端末で流すので、「キャッシュをクリア」はしない
+# （MAPS-15 は確かめていない）。代わりに、テスト用の地図のタイルだけをダウンロード画面の削除で消し、保存済みの容量が 0 に戻ることを確かめる
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - runFlow: ../common/open-maps.yaml
+      - assertVisible:
+          id: 'maps-row-0'
+          text: 'e2edl|え２えｄｌ'
+      - runFlow: ../common/open-download-screen.yaml
+      - tapOn:
+          id: 'home-download-map-select'
+          retryTapIfNoChange: false
+      - extendedWaitUntil:
+          visible:
+            id: 'home-download-map-ok'
+          timeout: 10000
+      - tapOn:
+          id: 'home-download-map-all'
+          retryTapIfNoChange: false
+      - tapOn:
+          id: 'home-download-map-0'
+          retryTapIfNoChange: false
+      - tapOn:
+          id: 'home-download-map-ok'
+          retryTapIfNoChange: false
+      # 消す対象がテスト用の地図だけになっていることを確かめてから消す
+      - extendedWaitUntil:
+          visible:
+            id: 'home-download-map-select'
+            text: '(e2edl|え２えｄｌ).*'
+          timeout: 10000
+      - tapOn:
+          id: 'home-download-delete'
+          retryTapIfNoChange: false
+      - extendedWaitUntil:
+          visible:
+            id: 'dialog-message'
+          timeout: 10000
+      - tapOn: 'Yes'
+      - extendedWaitUntil:
+          visible:
+            id: 'home-download-size'
+            text: '0(\.0)?MB'
+          timeout: 30000
+      - takeScreenshot: 21-offline-tiles-deleted
 
 # MAPS-14: 対象を標高タイルだけにして、ダウンロードする
 - tapOn:
@@ -387,8 +440,12 @@ appId: jp.co.ecoris.ecorismap
     visible:
       id: 'maps-add'
     timeout: 10000
+# （消すのがテスト用の地図であることを確かめてから消す）
+- assertVisible:
+    id: 'maps-row-0'
+    text: 'e2edl|え２えｄｌ'
 - runFlow: ../common/delete-top-map.yaml
 - assertNotVisible:
     id: 'maps-row-0'
-    text: 'e2edl'
+    text: 'e2edl|え２えｄｌ'
 - runFlow: ../common/close-sheet.yaml

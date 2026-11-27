@@ -2,7 +2,7 @@
 # ファイルは scripts/e2e-native.sh が流す前に、端末の「ファイル」アプリの「このiPhone内」（Androidは Download フォルダ）へ置く。
 # - iOS: ファイル選択は最後に開いた場所を開く。どこが開いても、検索して探す。
 #   ファイルの枠は、名前・種類・日付・サイズをまとめた読み上げ文言（「e2e_x.geojson, geojson, …」）で指定する
-# - Android: 「最近使用したファイル」などが開く。左上のメニューから「ダウンロード」へ移って選ぶ
+# - Android: 「最近使用したファイル」などが開く。そこに出ていなければ、左上のメニューから「ダウンロード」へ移り、下へ送って探して選ぶ
 #   （検索は端末の日本語入力が文字を変換するので使わない）
 appId: jp.co.ecoris.ecorismap
 ---
@@ -47,9 +47,17 @@ appId: jp.co.ecoris.ecorismap
             - tapOn:
                 id: 'android:id/title'
                 text: 'ダウンロード'
-            - extendedWaitUntil:
-                visible: ${FILE}
-                timeout: 15000
+            - waitForAnimationToEnd:
+                timeout: 3000
+            # ダウンロードはファイルが多く、画面の外のファイルは描かれていない。出るまで下へ送る
+            - scrollUntilVisible:
+                element:
+                  id: 'android:id/title'
+                  text: ${FILE}
+                direction: DOWN
+                timeout: 60000
+                visibilityPercentage: 100
       - tapOn:
+          id: 'android:id/title'
           text: ${FILE}
           retryTapIfNoChange: false

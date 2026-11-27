@@ -13,11 +13,13 @@
 #
 # 前提: テスト用のファイル e2e_geo.pdf・e2e_mapsetting.json（e2e/maestro/fixtures/）が、端末の「ファイル」アプリから選べる場所にあること。
 #   scripts/e2e-native.sh が流す前に置く。e2e_mapsetting.json の地図は Mac の配信（serve-fixtures.mjs）を指すが、起動していなくてもフローは通る。
+# Androidは端末の日本語入力が入力をかなに変換するので（e2egrp→え２えｇｒｐ）、グループ名はどちらの形でも通す。
+# Androidは MAPS-15（キャッシュをクリア）をしない。
 # 注意: 「キャッシュをクリア」は、この端末にあるダウンロード済みタイルも消す（取り直せるもの。テスト専用の端末で流す）。
 # 追加した地図・グループは最後に消す（前回の途中で残っていれば最初に消す）。地図は PDF の範囲（仙台駅の近く）へ移ったままになる。
 appId: jp.co.ecoris.ecorismap
 env:
-  LEFTOVER: '.*e2e.*|陰影起伏図\(全方位対応\)|GEBCO海底地形図\(全球\)'
+  LEFTOVER: '.*e2e.*|.*え２え.*|陰影起伏図\(全方位対応\)|GEBCO海底地形図\(全球\)'
 ---
 - runFlow: ../common/launch.yaml
 - runFlow: ../common/dismiss-received-file.yaml
@@ -49,7 +51,7 @@ env:
 - extendedWaitUntil:
     visible:
       id: 'maps-row-0'
-      text: '.*e2egrp'
+      text: '.*(e2egrp|え２えｇｒｐ)'
     timeout: 10000
 - takeScreenshot: 24-maps-group
 # 下へ／上へのボタンで並びが入れ替わる
@@ -59,23 +61,23 @@ env:
 - extendedWaitUntil:
     visible:
       id: 'maps-row-1'
-      text: '.*e2egrp'
+      text: '.*(e2egrp|え２えｇｒｐ)'
     timeout: 10000
 - assertNotVisible:
     id: 'maps-row-0'
-    text: '.*e2egrp'
+    text: '.*(e2egrp|え２えｇｒｐ)'
 - tapOn:
     id: 'maps-up-1'
     retryTapIfNoChange: false
 - extendedWaitUntil:
     visible:
       id: 'maps-row-0'
-      text: '.*e2egrp'
+      text: '.*(e2egrp|え２えｇｒｐ)'
     timeout: 10000
 - runFlow: ../common/delete-top-map.yaml
 - assertNotVisible:
     id: 'maps-row-0'
-    text: '.*e2egrp'
+    text: '.*(e2egrp|え２えｇｒｐ)'
 
 # MAPS-6: 陰影起伏・段彩
 - runFlow:
@@ -108,6 +110,13 @@ env:
     id: 'dialog-message'
 - takeScreenshot: 24-maps-hillshade-relief
 - runFlow: ../common/open-maps.yaml
+# （消すのが追加した2つの地図であることを確かめてから消す）
+- assertVisible:
+    id: 'maps-row-0'
+    text: 'GEBCO海底地形図\(全球\)'
+- assertVisible:
+    id: 'maps-row-1'
+    text: '陰影起伏図\(全方位対応\)'
 - runFlow: ../common/delete-top-map.yaml
 - runFlow: ../common/delete-top-map.yaml
 - assertNotVisible:
@@ -155,47 +164,56 @@ env:
     timeout: 5000
 - takeScreenshot: 24-maps-pdf
 
-# MAPS-15: キャッシュをクリアしても、取り込んだPDF地図は残る
-- runFlow: ../common/open-settings.yaml
-- scrollUntilVisible:
-    element:
-      id: 'settings-clear-cache'
-    direction: DOWN
-- tapOn:
-    id: 'settings-clear-cache'
-    retryTapIfNoChange: false
-- extendedWaitUntil:
-    visible:
-      id: 'dialog-message'
-      text: '.*取り込んだPDF地図・スタイル.*は削除されません.*'
-    timeout: 10000
-- tapOn: 'Yes'
-- extendedWaitUntil:
-    visible:
-      id: 'dialog-message'
-      text: '地図のキャッシュをクリアしました。'
-    timeout: 60000
-- tapOn: 'OK'
-- waitForAnimationToEnd:
-    timeout: 3000
-# 起動し直す（表示中の地図はメモリに残ったタイルを描き続けるので）
-- runFlow: ../common/launch.yaml
+# MAPS-15: キャッシュをクリアしても、取り込んだPDF地図は残る（iOSだけ。Androidのエミュレーターは、ほかの地図の
+# ダウンロード済みタイルが入っている端末で流すので「キャッシュをクリア」はせず、PDF地図を消すところへ進む）
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - runFlow: ../common/open-settings.yaml
+      - scrollUntilVisible:
+          element:
+            id: 'settings-clear-cache'
+          direction: DOWN
+      - tapOn:
+          id: 'settings-clear-cache'
+          retryTapIfNoChange: false
+      - extendedWaitUntil:
+          visible:
+            id: 'dialog-message'
+            text: '.*取り込んだPDF地図・スタイル.*は削除されません.*'
+          timeout: 10000
+      - tapOn: 'Yes'
+      - extendedWaitUntil:
+          visible:
+            id: 'dialog-message'
+            text: '地図のキャッシュをクリアしました。'
+          timeout: 60000
+      - tapOn: 'OK'
+      - waitForAnimationToEnd:
+          timeout: 3000
+      # 起動し直す（表示中の地図はメモリに残ったタイルを描き続けるので）
+      - runFlow: ../common/launch.yaml
+      - runFlow: ../common/open-maps.yaml
+      - assertVisible:
+          id: 'maps-row-0'
+          text: 'e2e_geo.*'
+      - tapOn:
+          id: 'maps-row-0'
+          retryTapIfNoChange: false
+      - waitForAnimationToEnd:
+          timeout: 5000
+      - assertNotVisible:
+          id: 'dialog-message'
+      - runFlow: ../common/close-sheet.yaml
+      - waitForAnimationToEnd:
+          timeout: 5000
+      - takeScreenshot: 24-maps-pdf-after-clear
 - runFlow: ../common/open-maps.yaml
+# （消すのが取り込んだPDF地図であることを確かめてから消す）
 - assertVisible:
     id: 'maps-row-0'
     text: 'e2e_geo.*'
-- tapOn:
-    id: 'maps-row-0'
-    retryTapIfNoChange: false
-- waitForAnimationToEnd:
-    timeout: 5000
-- assertNotVisible:
-    id: 'dialog-message'
-- runFlow: ../common/close-sheet.yaml
-- waitForAnimationToEnd:
-    timeout: 5000
-- takeScreenshot: 24-maps-pdf-after-clear
-- runFlow: ../common/open-maps.yaml
 - runFlow: ../common/delete-top-map.yaml
 - assertNotVisible:
     id: 'maps-row-0'

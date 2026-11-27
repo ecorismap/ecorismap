@@ -18,6 +18,8 @@ env:
 ---
 - runFlow: ../common/launch.yaml
 - runFlow: ../common/dismiss-received-file.yaml
+# （Androidは一覧が出るまで数秒かかり、押し直しが一覧の「グループ」ボタンに当たるので、先に一覧が出るのを待つ）
+- runFlow: ../common/android-open-layer-list.yaml
 # 起動直後（地図の読み込み中）のタップは効かないことがあるので、一覧が開くまで押し直す
 - repeat:
     while:

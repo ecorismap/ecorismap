@@ -17,6 +17,8 @@ env:
 ---
 - runFlow: ../common/launch.yaml
 - runFlow: ../common/discard-interrupted-track.yaml
+# Androidは、前回の途中で残った記録は記録中のまま戻る。止めて、保存された軌跡を消す
+- runFlow: ../common/android-stop-leftover-track.yaml
 # 前提を整える: 眺望・3Dのまま残っていたら2Dへ戻す。前回の GEBCO が残っていたら消す
 - runFlow:
     when:
@@ -51,6 +53,7 @@ env:
       - runFlow: ../common/delete-top-map.yaml
 - runFlow: ../common/close-sheet.yaml
 # いまある軌跡の数（＝これから保存される軌跡の行番号）を数えておく
+- runFlow: ../common/android-open-layer-list.yaml
 - runFlow: ../common/open-layer.yaml
 - runFlow: ../common/count-rows.yaml
 - runFlow: ../common/close-sheet.yaml
@@ -167,6 +170,16 @@ env:
       - setLocation:
           latitude: 38.24
           longitude: 140.905
+      # Androidのエミュレーターは、軌跡を記録していないあいだ、疑似位置を動かしても新しい位置がアプリへ届かない
+      # （GPSボタンで追従に入れ直したときの位置の取り直しでだけ届く）。長押しで追従が外れているので、GPSボタンを押して追従に戻す
+      # （＝位置を取り直す）。届かなかったときは次の周でオフ、その次の周でオンになって取り直す
+      - runFlow:
+          when:
+            platform: Android
+          commands:
+            - tapOn:
+                id: 'home-gps'
+                retryTapIfNoChange: false
       - extendedWaitUntil:
           visible:
             id: 'e2e-wait-8s'
@@ -265,6 +278,28 @@ env:
             - 38.2430,140.9515
             - 38.2430,140.9530
           speed: 20
+# Androidの travel は速さの指定が効かず、2〜3秒で終点へ着いてしまう（軌跡が始点と終点だけになる）。
+# 同じ道のりを、3秒おきに位置を与えて進む（16-track と同じ）
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - evalScript: ${output.path = [[38.2400, 140.95075], [38.2400, 140.9515], [38.24075, 140.9515], [38.2415, 140.9515], [38.24225, 140.9515], [38.2430, 140.9515], [38.2430, 140.95225], [38.2430, 140.9530]]}
+      - evalScript: ${output.pathIndex = 0}
+      - repeat:
+          while:
+            true: ${output.pathIndex < output.path.length}
+          times: 8
+          commands:
+            - setLocation:
+                latitude: ${output.path[output.pathIndex][0]}
+                longitude: ${output.path[output.pathIndex][1]}
+            - extendedWaitUntil:
+                visible:
+                  id: 'e2e-wait-3s'
+                timeout: 3000
+                optional: true
+            - evalScript: ${output.pathIndex = output.pathIndex + 1}
 - waitForAnimationToEnd:
     timeout: 5000
 - tapOn:
@@ -326,15 +361,47 @@ env:
       id: 'tracksummary-replay'
       text: '再生を一時停止'
     timeout: 10000
-- extendedWaitUntil:
-    visible:
-      id: 'e2e-wait-9s'
-    timeout: 9000
-    optional: true
-- takeScreenshot: 23-3d-replay
-- tapOn:
-    id: 'tracksummary-replay'
-    retryTapIfNoChange: false
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - extendedWaitUntil:
+          visible:
+            id: 'e2e-wait-9s'
+          timeout: 9000
+          optional: true
+      - takeScreenshot: 23-3d-replay
+      - tapOn:
+          id: 'tracksummary-replay'
+          retryTapIfNoChange: false
+# Androidのエミュレーターは Maestro の1手順に数秒かかるので、待ちは3秒にする。再生中のボタンのタップを取りこぼすことがあるので、
+# 再生が止まるまで押し直す（16-track と同じ）
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - extendedWaitUntil:
+          visible:
+            id: 'e2e-wait-3s'
+          timeout: 3000
+          optional: true
+      - takeScreenshot: 23-3d-replay
+      - repeat:
+          while:
+            notVisible:
+              id: 'tracksummary-replay'
+              text: '軌跡を再生'
+          times: 4
+          commands:
+            - tapOn:
+                id: 'tracksummary-replay'
+                retryTapIfNoChange: false
+            - extendedWaitUntil:
+                visible:
+                  id: 'tracksummary-replay'
+                  text: '軌跡を再生'
+                timeout: 4000
+                optional: true
 - extendedWaitUntil:
     visible:
       id: 'tracksummary-replay'
@@ -357,6 +424,7 @@ env:
 # （画面には出ていて押せる。アクセシビリティの木から消える。アプリ側の不具合らしきものとして報告済み）。起動し直すと戻る
 - runFlow: ../common/launch.yaml
 - runFlow: ../common/discard-interrupted-track.yaml
+- runFlow: ../common/android-open-layer-list.yaml
 - runFlow: ../common/open-layer.yaml
 - assertVisible:
     id: data-row-${output.row}

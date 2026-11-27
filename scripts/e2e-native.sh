@@ -63,6 +63,15 @@ if [ "$PLATFORM" = android ]; then
   adb -s "$DEVICE" push "$ROOT/e2e/web/fixtures/植物調査.geojson" /sdcard/Download/e2e_plants.geojson >/dev/null
   adb -s "$DEVICE" shell am broadcast -a android.intent.action.MEDIA_SCANNER_SCAN_FILE \
     -d file:///sdcard/Download/e2e_plants.geojson >/dev/null 2>&1 || true
+  # 20-maps-pmtiles・22-file-formats・24-maps-more が選ぶテスト用ファイル（スタイルJSON・各形式のデータ・PDF地図・地図設定）
+  adb -s "$DEVICE" push "$ROOT/e2e/web/fixtures/vegetation-style.json" /sdcard/Download/e2e_style.json >/dev/null
+  for fixture in "$ROOT"/e2e/maestro/fixtures/e2e_*; do
+    adb -s "$DEVICE" push "$fixture" "/sdcard/Download/$(basename "$fixture")" >/dev/null
+  done
+  for fixture in e2e_style.json $(cd "$ROOT/e2e/maestro/fixtures" && ls e2e_*); do
+    adb -s "$DEVICE" shell am broadcast -a android.intent.action.MEDIA_SCANNER_SCAN_FILE \
+      -d "file:///sdcard/Download/$fixture" >/dev/null 2>&1 || true
+  done
   # 写真のフロー（photo/05-heic-to-jpeg）が選ぶ HEIC の写真を、端末の Pictures へ置く
   # （iOSシミュレーターは最初から HEIC の写真が入っている）。写真選択画面で日時から選べるよう、更新日時を決め打ちにする
   HEIC_TMP="$(mktemp -d)"

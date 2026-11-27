@@ -13,6 +13,7 @@
 # - スタイルのファイル e2e_style.json（e2e/web/fixtures/vegetation-style.json の写し）と e2e_badstyle.json
 #   （e2e/maestro/fixtures/）が、端末の「ファイル」アプリから選べる場所にあること。scripts/e2e-native.sh が流す前に置く
 # 追加した地図（e2epmr・e2epmv）は最後に消す（前回の途中で残っていれば最初に消す）。地図の位置は PMTiles の範囲（仙台）へ移ったままになる。
+# Androidは端末の日本語入力が入力をかなに変換するので（e2epmr→え２えｐｍｒ、e2e-pmr→え２えーｐｍｒ）、名前と出典はどちらの形でも通す。
 appId: jp.co.ecoris.ecorismap
 ---
 - runFlow: ../common/launch.yaml
@@ -23,13 +24,13 @@ appId: jp.co.ecoris.ecorismap
     while:
       visible:
         id: 'maps-row-0'
-        text: 'e2epm.*'
+        text: 'e2epm.*|え２えｐｍ.*'
     times: 4
     commands:
       - runFlow: ../common/delete-top-map.yaml
 - assertNotVisible:
     id: 'home-attribution'
-    text: '.*e2e-pm.*'
+    text: '.*(e2e-pm|え２えーｐｍ).*'
 # 配信元が受けた要求の一覧を空にする（配信が起動していなければここで落ちる）
 - evalScript: ${output.served = http.get('http://localhost:8765/_reset').body}
 - assertTrue: ${output.served === '[]'}
@@ -68,12 +69,12 @@ appId: jp.co.ecoris.ecorismap
 - extendedWaitUntil:
     visible:
       id: 'maps-row-0'
-      text: 'e2epmr'
+      text: 'e2epmr|え２えｐｍｒ'
     timeout: 10000
 - extendedWaitUntil:
     visible:
       id: 'home-attribution'
-      text: '.*e2e-pmr.*'
+      text: '.*(e2e-pmr|え２えーｐｍｒ).*'
     timeout: 10000
 # 地図を出して、タイルが読まれるのを待つ（全面がマゼンタになる。絵はスクリーンショットで見る）
 - runFlow: ../common/close-sheet.yaml
@@ -93,7 +94,7 @@ appId: jp.co.ecoris.ecorismap
 - extendedWaitUntil:
     notVisible:
       id: 'home-attribution'
-      text: '.*e2e-pmr.*'
+      text: '.*(e2e-pmr|え２えーｐｍｒ).*'
     timeout: 10000
 
 # MAPS-7: ベクタの PMTiles をURLで追加する
@@ -137,12 +138,12 @@ appId: jp.co.ecoris.ecorismap
 - extendedWaitUntil:
     visible:
       id: 'maps-row-0'
-      text: 'e2epmv'
+      text: 'e2epmv|え２えｐｍｖ'
     timeout: 10000
 - extendedWaitUntil:
     visible:
       id: 'home-attribution'
-      text: '.*e2e-pmv.*'
+      text: '.*(e2e-pmv|え２えーｐｍｖ).*'
     timeout: 10000
 # 地図名を押すと、PMTiles の範囲へ移る（ズーム12）
 - tapOn:
@@ -178,7 +179,7 @@ appId: jp.co.ecoris.ecorismap
 - extendedWaitUntil:
     visible:
       id: 'mapedit-name'
-      text: 'e2epmv'
+      text: 'e2epmv|え２えｐｍｖ'
     timeout: 10000
 - waitForAnimationToEnd
 - assertNotVisible:
@@ -210,7 +211,7 @@ appId: jp.co.ecoris.ecorismap
 - extendedWaitUntil:
     visible:
       id: 'maps-row-0'
-      text: 'e2epmv'
+      text: 'e2epmv|え２えｐｍｖ'
     timeout: 10000
 # 読み込んだスタイルで描き直される（植生ごとの色になる。絵はスクリーンショットで見る）
 - runFlow: ../common/close-sheet.yaml
@@ -225,7 +226,7 @@ appId: jp.co.ecoris.ecorismap
 - extendedWaitUntil:
     visible:
       id: 'mapedit-name'
-      text: 'e2epmv'
+      text: 'e2epmv|え２えｐｍｖ'
     timeout: 10000
 - waitForAnimationToEnd
 - assertVisible:
@@ -258,7 +259,7 @@ appId: jp.co.ecoris.ecorismap
 - extendedWaitUntil:
     visible:
       id: 'maps-row-0'
-      text: 'e2epmv'
+      text: 'e2epmv|え２えｐｍｖ'
     timeout: 10000
 - assertNotVisible:
     id: 'dialog-message'
@@ -267,14 +268,14 @@ appId: jp.co.ecoris.ecorismap
 - runFlow: ../common/delete-top-map.yaml
 - assertVisible:
     id: 'maps-row-0'
-    text: 'e2epmr'
+    text: 'e2epmr|え２えｐｍｒ'
 - runFlow: ../common/delete-top-map.yaml
 - assertNotVisible:
     id: 'maps-row-0'
-    text: 'e2epm.*'
+    text: 'e2epm.*|え２えｐｍ.*'
 - extendedWaitUntil:
     notVisible:
       id: 'home-attribution'
-      text: '.*e2e-pm.*'
+      text: '.*(e2e-pm|え２えーｐｍ).*'
     timeout: 10000
 - runFlow: ../common/close-sheet.yaml
