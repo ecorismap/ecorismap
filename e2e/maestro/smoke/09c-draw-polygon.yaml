@@ -1,0 +1,55 @@
+# DRAW-7・DRAW-8: ポリゴンをプロットと手書きで描いて保存できる。
+# - DRAW-7: 地図を4回タップして確定すると、編集画面が開き、データ一覧が1件増える
+# - DRAW-8: 手書きで3辺をなぞって（前の線の終わりから続けて描くと1本につながる）確定すると、編集画面が開き、データ一覧が1件増える
+# 既定の「ポリゴン」レイヤを編集レイヤにして（非表示なら表示にする）、テスト用の記録を作っては消す。ほかの記録には触らない。
+appId: jp.co.ecoris.ecorismap
+env:
+  LAYER_NAME: 'ポリゴン.*'
+  EDIT_LAYER: 'ポリゴン'
+---
+- runFlow: ../common/launch.yaml
+- runFlow: ../common/open-layer.yaml
+- runFlow: ../common/count-rows.yaml
+- runFlow: ../common/close-sheet.yaml
+- runFlow:
+    file: ../common/select-feature.yaml
+    env:
+      FEATURE: polygon
+- runFlow: ../common/set-editing-layer.yaml
+
+# DRAW-7: プロット。地図を4回タップして確定する
+- tapOn:
+    id: 'home-draw-plot-polygon'
+    retryTapIfNoChange: false
+- runFlow: ../common/confirm-show-layer.yaml
+- tapOn:
+    point: '40%,35%'
+- tapOn:
+    point: '75%,35%'
+- tapOn:
+    point: '75%,55%'
+- tapOn:
+    point: '40%,55%'
+- takeScreenshot: 09c-polygon-plot
+- runFlow: ../common/save-drawing-and-delete.yaml
+- runFlow: ../common/close-sheet.yaml
+
+# DRAW-8: 手書き。Maestro のなぞりは直線だけなので、3辺を続けて描く
+- tapOn:
+    id: 'home-draw-handwriting-polygon'
+    retryTapIfNoChange: false
+- runFlow: ../common/confirm-show-layer.yaml
+- swipe:
+    start: '40%,35%'
+    end: '75%,35%'
+    duration: 1000
+- swipe:
+    start: '75%,35%'
+    end: '75%,55%'
+    duration: 1000
+- swipe:
+    start: '75%,55%'
+    end: '40%,55%'
+    duration: 1000
+- takeScreenshot: 09c-polygon-handwriting
+- runFlow: ../common/save-drawing-and-delete.yaml

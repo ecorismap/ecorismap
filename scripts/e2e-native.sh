@@ -55,6 +55,18 @@ case "$PLATFORM" in
     ;;
 esac
 
+# ファイル取り込みのフロー（13-file）が選ぶテスト用ファイルを、端末の「ファイル」アプリから見える場所へ置く。
+# （iOSシミュレーターは「このiPhone内」の実体がMac側にあるので、そこへコピーする。Androidは未対応）
+if [ "$PLATFORM" = ios ]; then
+  for group in "$HOME/Library/Developer/CoreSimulator/Devices/$DEVICE/data/Containers/Shared/AppGroup"/*/; do
+    if /usr/libexec/PlistBuddy -c "Print :MCMMetadataIdentifier" "$group.com.apple.mobile_container_manager.metadata.plist" 2>/dev/null |
+      grep -q '^group.com.apple.FileProvider.LocalStorage$'; then
+      mkdir -p "${group}File Provider Storage"
+      cp "$ROOT/e2e/web/fixtures/植物調査.geojson" "${group}File Provider Storage/e2e_plants.geojson"
+    fi
+  done
+fi
+
 # 利用統計の送信はしない
 export MAESTRO_CLI_NO_ANALYTICS=1
 # スクリーンショットはリポジトリの外へ出す（リポジトリ内に書くとMetroが変更として拾う）

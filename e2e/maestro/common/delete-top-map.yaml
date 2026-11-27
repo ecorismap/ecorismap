@@ -1,0 +1,25 @@
+# 開いている地図一覧の先頭の地図（追加した地図は先頭に入る）を、編集画面から削除する。地図一覧に戻って終わる。
+appId: jp.co.ecoris.ecorismap
+---
+- tapOn:
+    id: 'maps-edit-0'
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible:
+      id: 'mapedit-delete'
+    timeout: 10000
+- waitForAnimationToEnd
+- tapOn:
+    id: 'mapedit-delete'
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible:
+      id: 'dialog-message'
+    timeout: 10000
+- tapOn: 'Yes'
+- extendedWaitUntil:
+    visible:
+      id: 'maps-add'
+    timeout: 10000
+- waitForAnimationToEnd:
+    timeout: 3000

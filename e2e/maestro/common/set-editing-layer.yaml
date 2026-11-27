@@ -1,0 +1,29 @@
+# 作図の種類を選んだ状態で、編集レイヤのチップから ${EDIT_LAYER}（レイヤ名）を編集レイヤにする。
+# 選ぶとそのレイヤは表示にもなる。すでに編集レイヤのときも同じ操作でよい。
+appId: jp.co.ecoris.ecorismap
+---
+- repeat:
+    while:
+      notVisible:
+        id: 'home-layerselect-cancel'
+    times: 3
+    commands:
+      - tapOn:
+          id: 'home-editing-layer'
+          retryTapIfNoChange: false
+      - waitForAnimationToEnd:
+          timeout: 3000
+- assertVisible: '編集するレイヤを選択'
+# 編集レイヤの行は、名前のあとに印（アイコンの文字）が付く
+- tapOn:
+    id: 'home-layerselect-row-\d+'
+    text: ${EDIT_LAYER + '(, .*)?'}
+- extendedWaitUntil:
+    notVisible:
+      id: 'home-layerselect-cancel'
+    timeout: 10000
+- extendedWaitUntil:
+    visible:
+      id: 'home-editing-layer'
+      text: ${'.*, ' + EDIT_LAYER + ', .*'}
+    timeout: 10000

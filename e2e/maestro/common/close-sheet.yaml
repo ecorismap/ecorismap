@@ -1,0 +1,19 @@
+# 開いているシート（一覧・編集画面）を閉じて、地図だけの画面に戻す。
+# シートが開く・伸びるアニメーションの最中の×は効かないことがあるので、消えるまで押し直す。
+appId: jp.co.ecoris.ecorismap
+---
+- waitForAnimationToEnd:
+    timeout: 3000
+- repeat:
+    while:
+      visible:
+        id: 'sheet-close'
+    times: 5
+    commands:
+      - tapOn:
+          id: 'sheet-close'
+          retryTapIfNoChange: false
+      - waitForAnimationToEnd:
+          timeout: 3000
+- assertNotVisible:
+    id: 'sheet-close'

@@ -1,0 +1,30 @@
+# 地図画面で、作図の種類 ${FEATURE}（point / line / polygon / memo / draw=選択なし）を選ぶ。
+# 種類のボタンは、いま選んでいる種類だけが出ている。押すと5つの選択肢が開く。
+appId: jp.co.ecoris.ecorismap
+---
+# 開発ビルドのトーストがボタンに重なっていると押せない
+- runFlow: dismiss-warning-toast.yaml
+# 選択肢が開く（＝種類のボタンが2つ以上見える）まで押す
+- repeat:
+    while:
+      notVisible:
+        id: 'home-feature-.*'
+        index: 1
+    times: 5
+    commands:
+      - tapOn:
+          id: 'home-feature-.*'
+          retryTapIfNoChange: false
+      - waitForAnimationToEnd:
+          timeout: 2000
+- tapOn:
+    id: home-feature-${FEATURE}
+    retryTapIfNoChange: false
+# 選択肢が閉じて、選んだ種類のボタンだけになる
+- extendedWaitUntil:
+    notVisible:
+      id: 'home-feature-.*'
+      index: 1
+    timeout: 10000
+- assertVisible:
+    id: home-feature-${FEATURE}

@@ -1,0 +1,14 @@
+# 開発ビルドの警告・エラーのトースト（下部のボタンに重なる。起動後しばらくしてから出ることもある）を、出ていれば閉じる。
+# iOSシミュレーターは疑似位置を与えたあと「location error 0」のログを出すことがあり、これもトーストになる。
+appId: jp.co.ecoris.ecorismap
+---
+- repeat:
+    while:
+      visible: 'Open debugger to view warnings.|.*location error.*'
+    times: 6
+    commands:
+      - tapOn:
+          rightOf: 'Open debugger to view warnings.|.*location error.*'
+          retryTapIfNoChange: false
+      - waitForAnimationToEnd:
+          timeout: 2000

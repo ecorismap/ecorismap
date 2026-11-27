@@ -1,0 +1,121 @@
+# MEMO-1・MEMO-3・MEMO-5: マップメモのペン・消しゴム・元に戻す／やり直す。結果は「メモ」レイヤのデータ一覧の件数で確かめる。
+# - MEMO-1: ペンで2本なぞると、メモが2件増える。アプリを起動し直しても残っている
+# - MEMO-5: 元に戻すで1件減り、やり直すで戻る
+# - MEMO-3: 消しゴムで線を横切ると、件数が変わる（部分消去で2本に分かれるか、線ごと消える）
+#   消しゴムがなぞる位置（画面の右寄り・上から3〜5割）に前からのメモがあると、それも分かれて件数が合わなくなる
+# 描いたメモは最後に消す（描く前の件数に戻るまで、末尾から消す）。ほかのメモには触らない。
+appId: jp.co.ecoris.ecorismap
+env:
+  LAYER_NAME: 'メモ.*'
+---
+- runFlow: ../common/launch.yaml
+- runFlow: ../common/open-layer.yaml
+- runFlow: ../common/count-rows.yaml
+- evalScript: ${output.memoStart = output.row}
+- runFlow: ../common/close-sheet.yaml
+- runFlow:
+    file: ../common/select-feature.yaml
+    env:
+      FEATURE: memo
+
+# MEMO-1: ペンで2本描く
+- tapOn:
+    id: 'home-memo-pen'
+    retryTapIfNoChange: false
+- runFlow: ../common/confirm-show-layer.yaml
+- swipe:
+    start: '40%,40%'
+    end: '80%,40%'
+    duration: 1000
+- swipe:
+    start: '40%,60%'
+    end: '80%,60%'
+    duration: 1000
+- takeScreenshot: 10-mapmemo-drawn
+- runFlow: ../common/reopen-data-list.yaml
+- extendedWaitUntil:
+    visible:
+      id: data-row-${output.memoStart + 1}
+    timeout: 10000
+- assertVisible:
+    id: data-row-${output.memoStart}
+- assertNotVisible:
+    id: data-row-${output.memoStart + 2}
+- runFlow: ../common/close-sheet.yaml
+
+# MEMO-5: 元に戻すで1件減り、やり直すで戻る
+- tapOn:
+    id: 'home-draw-undo'
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible:
+      id: 'home-draw-redo'
+    timeout: 10000
+- runFlow: ../common/reopen-data-list.yaml
+- assertVisible:
+    id: data-row-${output.memoStart}
+- assertNotVisible:
+    id: data-row-${output.memoStart + 1}
+- runFlow: ../common/close-sheet.yaml
+- tapOn:
+    id: 'home-draw-redo'
+    retryTapIfNoChange: false
+- runFlow: ../common/reopen-data-list.yaml
+- extendedWaitUntil:
+    visible:
+      id: data-row-${output.memoStart + 1}
+    timeout: 10000
+
+# MEMO-1: 起動し直しても残っている
+- runFlow: ../common/launch.yaml
+- runFlow: ../common/open-layer.yaml
+- assertVisible:
+    id: data-row-${output.memoStart + 1}
+- assertNotVisible:
+    id: data-row-${output.memoStart + 2}
+- runFlow: ../common/close-sheet.yaml
+
+# MEMO-3: 消しゴムで1本目を横切る
+- runFlow:
+    file: ../common/select-feature.yaml
+    env:
+      FEATURE: memo
+- tapOn:
+    id: 'home-memo-eraser'
+    retryTapIfNoChange: false
+- runFlow: ../common/confirm-show-layer.yaml
+- swipe:
+    start: '60%,32%'
+    end: '60%,48%'
+    duration: 1000
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: 10-mapmemo-erased
+- runFlow: ../common/reopen-data-list.yaml
+- runFlow: ../common/count-rows.yaml
+# 2件のままではない（3件＝消した部分の両側に分かれた、または1件＝線ごと消えた）
+- assertTrue: ${output.row === output.memoStart + 3 || output.row === output.memoStart + 1}
+
+# 後片付け: 描く前の件数に戻るまで、増えた分を消す
+- repeat:
+    while:
+      visible:
+        id: data-row-${output.memoStart}
+    times: 8
+    commands:
+      - tapOn:
+          id: data-row-${output.memoStart}
+      - extendedWaitUntil:
+          visible:
+            id: 'dataedit-delete'
+          timeout: 10000
+      - waitForAnimationToEnd
+      - tapOn:
+          id: 'dataedit-delete'
+      - tapOn: 'Yes'
+      - extendedWaitUntil:
+          visible:
+            id: 'data-export'
+          timeout: 10000
+- assertNotVisible:
+    id: data-row-${output.memoStart}

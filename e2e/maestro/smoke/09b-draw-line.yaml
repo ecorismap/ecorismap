@@ -1,0 +1,72 @@
+# DRAW-1（一部）・DRAW-5・DRAW-6: ラインをプロットと手書き（ペン）で描いて保存できる。
+# - DRAW-1: 編集レイヤのチップを押すと選択が開き、Cancel なら変わらず、選ぶとそのレイヤが編集レイヤになる
+#   （未選択のときに道具を押すと選択を求められるところは、端末のレイヤ構成に左右されるので確かめていない）
+# - DRAW-5: 地図を3回タップして確定すると、編集画面が開き、データ一覧が1件増える
+# - DRAW-6: ペンで地図をなぞって確定すると、編集画面が開き、データ一覧が1件増える
+# 既定の「ライン」レイヤを編集レイヤにして（非表示なら表示にする）、テスト用の記録を作っては消す。ほかの記録には触らない。
+appId: jp.co.ecoris.ecorismap
+env:
+  LAYER_NAME: 'ライン.*'
+  EDIT_LAYER: 'ライン'
+---
+- runFlow: ../common/launch.yaml
+- runFlow: ../common/open-layer.yaml
+- runFlow: ../common/count-rows.yaml
+- runFlow: ../common/close-sheet.yaml
+- runFlow:
+    file: ../common/select-feature.yaml
+    env:
+      FEATURE: line
+
+# DRAW-1: チップを押すと選択が開く。Cancel なら閉じるだけ
+- repeat:
+    while:
+      notVisible:
+        id: 'home-layerselect-cancel'
+    times: 3
+    commands:
+      - tapOn:
+          id: 'home-editing-layer'
+          retryTapIfNoChange: false
+      - waitForAnimationToEnd:
+          timeout: 3000
+- assertVisible: '編集するレイヤを選択'
+- assertVisible:
+    id: 'home-layerselect-row-0'
+- assertVisible:
+    id: 'home-layerselect-create-new'
+- tapOn:
+    id: 'home-layerselect-cancel'
+- extendedWaitUntil:
+    notVisible:
+      id: 'home-layerselect-row-0'
+    timeout: 10000
+# 選ぶと、チップがそのレイヤ名になる
+- runFlow: ../common/set-editing-layer.yaml
+
+# DRAW-5: プロット。地図を3回タップして確定する
+- tapOn:
+    id: 'home-draw-plot-line'
+    retryTapIfNoChange: false
+- runFlow: ../common/confirm-show-layer.yaml
+- tapOn:
+    point: '40%,35%'
+- tapOn:
+    point: '60%,42%'
+- tapOn:
+    point: '80%,35%'
+- takeScreenshot: 09b-line-plot
+- runFlow: ../common/save-drawing-and-delete.yaml
+- runFlow: ../common/close-sheet.yaml
+
+# DRAW-6: 手書き（ペン）。地図をなぞって確定する
+- tapOn:
+    id: 'home-draw-handwriting-line'
+    retryTapIfNoChange: false
+- runFlow: ../common/confirm-show-layer.yaml
+- swipe:
+    start: '40%,40%'
+    end: '80%,50%'
+    duration: 1000
+- takeScreenshot: 09b-line-handwriting
+- runFlow: ../common/save-drawing-and-delete.yaml

@@ -1,0 +1,179 @@
+# MAP-1・MAP-4・MAP-6・ANLY-1・GPS-1・GPS-5（一部）: 地図の基本操作（タッチ操作はWebと実装が違う）。
+# - MAP-6: 出典表示が出ている（表示中の地図に合わせて変わることは 12-maps-manage.yaml で確かめる）
+# - MAP-1: ＋／−でズームレベル表示が1ずつ変わる。地図をドラッグすると、同じ画面位置の座標が変わる
+# - MAP-4: 長押しで標高・座標・メニューのポップアップが出る。座標を押すと「コピーしました」と出る
+# - ANLY-1: 長押しメニューの「距離を測定」で案内が出て、2点目をタップすると距離が出る。×で終わる
+# - GPS-1: 疑似位置を与えてGPSボタンを押すと、地図が現在地へ移る（画面中央の長押しが現在地にスナップし、座標が疑似位置になる）
+# - GPS-5: 現在地の近くの長押しは「現在地」と出る（測位標高と細かい緯度経度は外部GNSSの受信中だけなので確かめていない）
+# データは作らない。GPSは最後にオフへ戻す。地図の表示位置は疑似位置（仙台付近）へ移ったままになる。
+appId: jp.co.ecoris.ecorismap
+---
+- runFlow: ../common/launch.yaml
+
+# MAP-6
+- assertVisible:
+    id: 'home-attribution'
+    text: '出典: .+'
+
+# MAP-1: ＋／−（起動直後のタップは効かないことがあるので、表示が変わるまで押す）
+- copyTextFrom:
+    id: 'home-zoom-level'
+- evalScript: ${output.zoom = Number(maestro.copiedText)}
+- repeat:
+    while:
+      notVisible:
+        id: 'home-zoom-level'
+        text: ${String(output.zoom + 1)}
+    times: 3
+    commands:
+      - tapOn:
+          id: 'home-zoom-in'
+          retryTapIfNoChange: false
+      - extendedWaitUntil:
+          visible:
+            id: 'home-zoom-level'
+            text: ${String(output.zoom + 1)}
+          timeout: 5000
+          optional: true
+- assertVisible:
+    id: 'home-zoom-level'
+    text: ${String(output.zoom + 1)}
+- tapOn:
+    id: 'home-zoom-out'
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible:
+      id: 'home-zoom-level'
+      text: ${String(output.zoom)}
+    timeout: 10000
+
+# MAP-4: 長押しでポップアップ（長押しした位置の上に出る）
+- longPressOn:
+    point: '60%,55%'
+- extendedWaitUntil:
+    visible:
+      id: 'home-poi-coordinate'
+      text: '-?\d+\.\d{5}, -?\d+\.\d{5}'
+    timeout: 10000
+- extendedWaitUntil:
+    visible:
+      id: 'home-poi-elevation'
+      text: '標高 -?\d+(\.\d+)? m'
+    timeout: 30000
+- assertVisible:
+    id: 'home-poi-measure'
+- assertVisible:
+    id: 'home-poi-viewshed'
+- assertVisible:
+    id: 'home-poi-vista'
+- assertVisible:
+    id: 'home-poi-google-maps'
+- copyTextFrom:
+    id: 'home-poi-coordinate'
+- evalScript: ${output.coord = maestro.copiedText}
+- takeScreenshot: 11-map-longpress
+# 座標を押すとコピーされ、表示が1.5秒だけ「コピーしました」に変わる
+- tapOn:
+    id: 'home-poi-coordinate'
+    retryTapIfNoChange: false
+- assertVisible: 'コピーしました'
+
+# MAP-1: ドラッグで地図が動く（同じ画面位置を長押しすると、座標が変わっている）
+- swipe:
+    start: '70%,70%'
+    end: '40%,50%'
+    duration: 800
+- waitForAnimationToEnd:
+    timeout: 3000
+- longPressOn:
+    point: '60%,55%'
+- extendedWaitUntil:
+    visible:
+      id: 'home-poi-coordinate'
+      text: '-?\d+\.\d{5}, -?\d+\.\d{5}'
+    timeout: 10000
+- copyTextFrom:
+    id: 'home-poi-coordinate'
+- assertTrue: ${maestro.copiedText !== output.coord}
+
+# ANLY-1: 長押しメニューから距離測定
+- tapOn:
+    id: 'home-poi-measure'
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible:
+      id: 'home-measure-text'
+      text: '地図をタップして地点を選択'
+    timeout: 10000
+- assertNotVisible:
+    id: 'home-poi-coordinate'
+- tapOn:
+    point: '40%,70%'
+- extendedWaitUntil:
+    visible:
+      id: 'home-measure-text'
+      text: '距離 [\d.,]+ k?m'
+    timeout: 10000
+- takeScreenshot: 11-map-measure
+- tapOn:
+    id: 'home-measure-close'
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    notVisible:
+      id: 'home-measure-text'
+    timeout: 10000
+
+# GPS-1: 疑似位置を与えてGPSボタンを押すと、地図が現在地へ移る
+- setLocation:
+    latitude: 38.2600
+    longitude: 140.8500
+# GPSがオフのあいだは、長押ししても現在地からの距離は出ない
+- longPressOn:
+    point: '50%,50%'
+- extendedWaitUntil:
+    visible:
+      id: 'home-poi-coordinate'
+    timeout: 10000
+- assertNotVisible:
+    id: 'home-poi-distance'
+- tapOn:
+    id: 'home-gps'
+    retryTapIfNoChange: false
+# 地図が現在地へ移るのを待つ
+- waitForAnimationToEnd:
+    timeout: 8000
+# GPS-5: 画面中央（＝現在地）の長押しは現在地にスナップし、「現在地」と疑似位置の座標が出る
+- longPressOn:
+    point: '50%,50%'
+- extendedWaitUntil:
+    visible:
+      id: 'home-poi-distance'
+      text: '現在地'
+    timeout: 15000
+- assertVisible:
+    id: 'home-poi-coordinate'
+    text: '38\.26000, 140\.85000'
+- takeScreenshot: 11-map-gps
+# 現在地から離れた位置の長押しは、現在地からの距離になる
+- longPressOn:
+    point: '70%,75%'
+- extendedWaitUntil:
+    visible:
+      id: 'home-poi-distance'
+      text: '現在地から [\d.,]+ k?m'
+    timeout: 10000
+# 後片付け: GPSをオフに戻す（追従中にもう一度押すとオフになる）。オフなら長押ししても距離は出ない
+- tapOn:
+    id: 'home-gps'
+    retryTapIfNoChange: false
+- waitForAnimationToEnd:
+    timeout: 3000
+# （直前のポップアップに重ならない位置を押す。重なると、ポップアップの項目を押してしまう）
+- longPressOn:
+    point: '25%,65%'
+- extendedWaitUntil:
+    visible:
+      id: 'home-poi-coordinate'
+    timeout: 10000
+- assertNotVisible:
+    id: 'home-poi-distance'

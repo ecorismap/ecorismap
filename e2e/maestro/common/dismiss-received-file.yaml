@@ -1,0 +1,20 @@
+# 起動直後に「ファイルをインポートしました。」が出たら閉じる（15秒まで待つ。出なければ先へ進む）。
+# iOSでは、ファイル選択から取り込んだGeoJSON・GPXの写しがアプリの受信箱に残り、次に起動した（前面に戻った）ときに
+# もう一度取り込まれることがある（同じ名前のレイヤがもう1つできる。アプリ側の不具合として報告済み）。
+appId: jp.co.ecoris.ecorismap
+---
+- extendedWaitUntil:
+    visible:
+      id: 'dialog-message'
+      text: 'ファイルをインポートしました。'
+    timeout: 15000
+    optional: true
+- runFlow:
+    when:
+      visible:
+        id: 'dialog-message'
+        text: 'ファイルをインポートしました。'
+    commands:
+      - tapOn: 'OK'
+      - waitForAnimationToEnd:
+          timeout: 3000
