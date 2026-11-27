@@ -77,6 +77,45 @@ export async function login(page: Page, who: UserKey) {
   await expect(page.getByTestId('account-title')).toBeHidden({ timeout: 30_000 });
 }
 
+/** 起動して、指定したアカウント（USERS以外の、テストごとに作るアカウント）でログインを試みる。結果は呼び出し側で確かめる */
+export async function tryLogin(page: Page, email: string, password: string, opts: { open?: boolean } = {}) {
+  if (opts.open !== false) {
+    await stubFunctions(page);
+    await openApp(page);
+    await page.getByTestId('home-account').click();
+    await page.getByTestId('account-org-login').click();
+  }
+  await page.getByTestId('account-email').fill(email);
+  await page.getByTestId('account-password').fill(password);
+  await page.getByTestId('account-login').click();
+}
+
+/** 起動して、指定したアカウントでログインする（プロジェクト一覧が出る） */
+export async function loginAs(page: Page, email: string, password: string) {
+  await tryLogin(page, email, password);
+  await expect(page.getByTestId('account-title')).toBeHidden({ timeout: 30_000 });
+}
+
+export type OobCode = { email: string; requestType: string; oobCode: string; oobLink: string };
+
+/** Authエミュレータが「送った」メール（確認メール・パスワード再設定メール）。実際には送られず、ここに溜まる */
+export async function oobCodes(email: string, requestType: 'VERIFY_EMAIL' | 'PASSWORD_RESET'): Promise<OobCode[]> {
+  const res = await fetch(`${AUTH}/emulator/v1/projects/${PROJECT_ID}/oobCodes`);
+  if (!res.ok) throw new Error(`メールの一覧を取れません: ${res.status}`);
+  const json = (await res.json()) as { oobCodes?: OobCode[] };
+  return (json.oobCodes ?? []).filter((c) => c.email === email && c.requestType === requestType);
+}
+
+/** パスワード再設定メールのコードで、新しいパスワードを設定する（メールのリンク先でユーザーが行う操作の代わり） */
+export async function resetPasswordByCode(oobCode: string, newPassword: string) {
+  const res = await fetch(`${AUTH}/identitytoolkit.googleapis.com/v1/accounts:resetPassword?key=fake-api-key`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ oobCode, newPassword }),
+  });
+  if (!res.ok) throw new Error(`パスワードを再設定できません: ${res.status} ${await res.text()}`);
+}
+
 /** 確認ダイアログの文言を確かめて、ボタンを押す */
 export async function answerDialog(page: Page, message: string | RegExp, button: string) {
   await expect(page.getByTestId('dialog-message')).toHaveText(message, { timeout: 30_000 });

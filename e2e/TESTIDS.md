@@ -80,6 +80,8 @@ react-native-web では `testID` が `data-testid` になる。
 | `home-viewshedsettings-ok` / `-cancel` | OK / Cancel | organisms/HomeModalViewshedSettings.tsx |
 | `home-vista-close` | 眺望バナー（押すと解除） | organisms/HomeTerrain3DVistaBanner.tsx |
 | `home-vista-peak-names` | 山名表示の切替 | organisms/HomeTerrain3DVistaBanner.tsx |
+| `home-vista-peak-label` | 眺望の山名ラベル（山ごとに1つ。同じIDが複数並ぶ。文字は縦書きで1文字ごとに改行。タップで詳細） | organisms/HomeVistaPeakLabels.tsx |
+| `home-vista-peak-detail` | 山名をタップしたときの詳細（山名・標高・距離） | organisms/HomeVistaPeakLabels.tsx |
 | `home-vista-height-up` / `home-vista-height-down` / `home-vista-height` | 視点高さの上下 / 表示 | organisms/HomeTerrain3DButtons.tsx |
 | `home-vista-zoom-in` / `home-vista-zoom-out` / `home-vista-zoom` | 画角（望遠・広角）/ 倍率表示 | organisms/HomeTerrain3DButtons.tsx |
 
