@@ -764,10 +764,7 @@ test.describe('16. 共有プロジェクト（共同作業）', () => {
     expect(await wouldWarnOnLeave(page)).toBe(false);
   });
 
-  // TODO(tmizu23): エミュレータ接続では通らない。通信を切って「開く」を押すと、失敗は出ずにプロジェクトが開き、
-  // 端末内の記録が消える（Firestore への通信は net::ERR_INTERNET_DISCONNECTED で失敗している）。
-  // 本番は暗号化の鍵の読み込みが先に失敗するので同じにはならない見込みだが、未確認。直ったら fixme を外す
-  test.fixme('ERR-6b 通信できないとき、プロジェクトを開くと失敗を示し、端末内のデータは変わらない', async ({ page, browser }) => {
+  test('ERR-6b 通信できないとき、プロジェクトを開くと失敗を示し、端末内のデータは変わらない', async ({ page, browser }) => {
     await setupProject(page, '通信断で開く確認');
     // 別の端末でログインし、端末内（プロジェクトの外）に記録を1件作っておく
     const { context, page: device } = await anotherDevice(browser, 'owner');
@@ -778,10 +775,8 @@ test.describe('16. 共有プロジェクト（共同作業）', () => {
     await openProjectEdit(device, '通信断で開く確認');
     await setOffline(context, device, true);
     await device.getByTestId('projectedit-open').click();
-    await answerDialog(device, /^端末内のデータはプロジェクトのデータに置き換わります。/, 'Yes');
-    await answerDialog(device, /^管理者として他のメンバーの非公開データも取得して/, 'No');
-    // 失敗が出て、プロジェクトは開かない
-    await expect(device.getByTestId('dialog-message')).toBeVisible({ timeout: 60_000 });
+    // 置き換えの確認より先に、つながっていないことを知らせる。プロジェクトは開かない
+    await expect(device.getByTestId('dialog-message')).toContainText('インターネットに接続していません', { timeout: 60_000 });
     await device.locator('[data-testid^="dialog-button-"]').first().click();
     await expect(device.getByTestId('projectedit-open')).toBeVisible();
     await device.getByTestId('projectedit-back').click();

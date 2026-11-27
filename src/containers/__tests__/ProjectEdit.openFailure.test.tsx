@@ -60,7 +60,8 @@ jest.mock('../../i18n/dayjs', () => jest.fn());
 jest.mock('../../utils/trackingLeaveGuard', () => ({
   leaveWithTrackingGuard: jest.fn(async (_kind: string, confirm: () => Promise<boolean>) => confirm()),
 }));
-jest.mock('@react-native-community/netinfo', () => ({ fetch: jest.fn(async () => ({ type: 'wifi' })) }));
+const mockNetInfoFetch = jest.fn(async (): Promise<{ type: string; isConnected?: boolean }> => ({ type: 'wifi' }));
+jest.mock('@react-native-community/netinfo', () => ({ fetch: () => mockNetInfoFetch() }));
 jest.mock('../../utils/File', () => ({ exportGeoFile: jest.fn() }));
 jest.mock('../../lib/crypto/migration', () => ({ getKeyMigrationState: jest.fn(async () => 'none') }));
 jest.mock('../../hooks/useProjects', () => ({ resolveKeyRestoreMessage: jest.fn(() => 'restore') }));
@@ -152,6 +153,31 @@ beforeEach(() => {
   mockCaptured.ctx = undefined;
   mockConfirmAsync.mockImplementation(async () => true);
   mockLoadE3kitGroup.mockResolvedValue({ isOK: true, message: '' });
+  mockNetInfoFetch.mockImplementation(async () => ({ type: 'wifi' }));
+});
+
+describe('通信できないときに開く', () => {
+  // Firestore はオフラインだと失敗せずキャッシュを返すので、開く処理に入ると古い（または空の）データで手元を置き換える
+  it('確認も出さず、手元にも触れずに、つながっていないことを知らせる', async () => {
+    mockNetInfoFetch.mockImplementation(async () => ({ type: 'none', isConnected: false }));
+    mockDataSet = [localRecord];
+    await renderContainer();
+    expect(await pressOpen()).toBe(false);
+    expect(mockAlertAsync).toHaveBeenCalledWith('Home.alert.noInternet');
+    expect(mockConfirmAsync).not.toHaveBeenCalled();
+    expect(mockLoadE3kitGroup).not.toHaveBeenCalled();
+    expect(mockDiscardSyncBaselines).not.toHaveBeenCalled();
+    expect(mockDownloadProjectSettings).not.toHaveBeenCalled();
+    expect(mockClearProject).not.toHaveBeenCalled();
+  });
+
+  it('接続の状態が分からない（null）ときは止めない', async () => {
+    mockNetInfoFetch.mockImplementation(async () => ({ type: 'unknown' }));
+    mockDownloadProjectSettings.mockResolvedValue({ isOK: false, message: 'network' });
+    await renderContainer();
+    await pressOpen();
+    expect(mockLoadE3kitGroup).toHaveBeenCalledTimes(1);
+  });
 });
 
 describe('A-H2: 開く途中の失敗', () => {
