@@ -17,7 +17,7 @@ import { TILE_FOLDER } from '../constants/AppConstants';
 import { readAsStringAsync } from 'expo-file-system/legacy';
 import { db } from '../utils/db';
 import * as FileSystem from 'expo-file-system/legacy';
-import { exportFileFromData } from '../utils/File';
+import { exportFileFromData, clearPickerInbox } from '../utils/File';
 import { isPdfTileMap } from '../utils/pdfTileMap';
 import { mapExportNotice, prepareMapsForExport } from '../utils/mapExport';
 
@@ -221,6 +221,7 @@ export default function MapContainer() {
     const file = await DocumentPicker.getDocumentAsync({
       type: ['application/json', 'application/pdf', 'application/octet-stream', '*/*'],
     });
+    await clearPickerInbox();
     if (file.assets === null) return;
     const name = file.assets[0].name;
     const uri = file.assets[0].uri;

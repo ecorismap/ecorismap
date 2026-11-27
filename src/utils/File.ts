@@ -442,6 +442,22 @@ export async function getReceivedFiles() {
   }
 }
 
+/**
+ * iOSのファイル選択が受信箱（tmp/<アプリID>-Inbox/）に残す写しを消す。ファイルを選んだ直後に呼ぶ。
+ * 受信箱は、他のアプリから渡されたファイルを起動時・前面復帰時に取り込むための場所（getReceivedFiles）。
+ * ファイル選択の写しも同じ場所に残るので、消さないと、選んで取り込んだGeoJSON・GPXなどが次の起動でもう一度取り込まれる。
+ * 選んだファイルの本体は、ファイル選択がキャッシュへ写したもの（assets[].uri）を使うので、消しても読める
+ */
+export async function clearPickerInbox() {
+  if (Platform.OS !== 'ios') return;
+  try {
+    await FileSystem.deleteAsync(FileSystem.documentDirectory + `../tmp/${AppID}-Inbox/`, { idempotent: true });
+  } catch (e) {
+    // 消せなくても、選んだファイルの処理は続ける
+    console.log(e);
+  }
+}
+
 export async function deleteReceivedFiles(
   files: {
     name: string;

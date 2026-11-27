@@ -68,7 +68,8 @@ iOSとAndroidは同時に流さず、順番に実行する。
 - 端末はログインしておらずプロジェクトを開いていない状態で、言語は日本語であること。
   既定の「ポイント」レイヤにテスト用の記録を作って最後に消す（すでに記録があっても動く）。途中で失敗して残ったときは
   `maestro test e2e/maestro/photo/99-delete-all-test-records.yaml`（レイヤの全記録を消すのでテスト専用の端末でのみ）
-- デバッグビルドで回すときはMetro（`yarn start`）を起動しておく
+- デバッグビルドで回すときはMetroを `EXPO_PUBLIC_E2E=1 yarn start` で起動しておく
+  （開発ビルドの警告トーストを出さない。トーストは下部のボタンに重なり、押すとMac側でReact Native DevToolsが開く）
 - Androidは、実機がつながっていても `DEVICE` を指定しない限りエミュレーターにだけ流す
 - 写真の経路だけ流すときは `yarn smoke:photo ios <ビルドした ecorismap.app のパス>` ／ `yarn smoke:photo android`
   （iOSは .app を渡すと入れ直しを挟み、データコンテナが変わっても原画で開けることを確かめる）

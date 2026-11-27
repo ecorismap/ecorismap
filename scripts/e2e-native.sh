@@ -13,7 +13,8 @@
 # - Maestroが入っていること（brew install mobile-dev-inc/tap/maestro）
 # - アプリがインストール済みで、ログインしておらずプロジェクトを開いていない端末
 #   （既定の「ポイント」レイヤにテスト用レコードを作り、最後に削除する。テスト専用の端末で流すこと）
-# - デバッグビルドのときはMetro（yarn start）が起動していること
+# - デバッグビルドのときはMetroが起動していること。`EXPO_PUBLIC_E2E=1 yarn start` で起動すると、開発ビルドの
+#   警告トースト（下部のボタンに重なり、押すとMac側でReact Native DevToolsが開く）が出なくなる
 # - 端末の言語は日本語
 # - Androidはエミュレーターを先に起動しておく（emulator @Pixel_8a）。実機には流さない
 #   （DEVICE=<シリアル> を明示したときだけ、その端末に流す）
@@ -114,7 +115,7 @@ done
 # 写真のフロー（全フローを流すときだけ）。iOSシミュレーターはカメラで撮影できないのでライブラリ選択、Androidはカメラ
 if [ "$#" -eq 0 ] && [ "${SKIP_PHOTO:-}" != "1" ]; then
   if [ "$PLATFORM" = ios ]; then PHOTO_ADD="01-add-from-library.yaml"; else PHOTO_ADD="02-add-from-camera.yaml"; fi
-  for f in "$PHOTO_ADD" "03-verify-and-cleanup.yaml"; do
+  for f in "$PHOTO_ADD" "03-verify-and-cleanup.yaml" "04-view-swipe-delete.yaml" "05-heic-to-jpeg.yaml"; do
     echo "■ photo/$f"
     if ! maestro --device "$DEVICE" test "$PHOTO/$f"; then
       FAILED+=("photo/$f")
