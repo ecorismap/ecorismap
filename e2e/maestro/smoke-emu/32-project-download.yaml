@@ -1,0 +1,77 @@
+# PROJ-5（取得）・PROJ-12・ACCT-7: ほかのメンバーが送信した記録を「取得」で受け取れる。プロジェクトを終了すると、
+# 共有のレイヤが消えて端末内のレイヤに戻る。最後にログアウトする。
+# 31-project-upload.yaml の続き（プロジェクトを開いたまま、記録を1件送信した状態）から始める。
+# メンバーの記録は、フローの前に e2e/maestro/support/emu-seed.mjs member-add が1件増やして2件にしてある。
+appId: jp.co.ecoris.ecorismap
+---
+- runFlow: ../common/launch.yaml
+# 起動し直しても、プロジェクトは開いたまま
+- assertVisible:
+    id: 'home-project-label'
+    text: 'E2E共有プロジェクト'
+
+# PROJ-5: 取得
+- tapOn:
+    id: 'home-project-label'
+    retryTapIfNoChange: false
+- waitForAnimationToEnd:
+    timeout: 3000
+- tapOn:
+    id: 'home-project-download'
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible: '.*更新されたデータを取得しますか？.*'
+    timeout: 10000
+- tapOn: 'Yes'
+# 管理者は、他のメンバーの非公開データも取るかを聞かれる
+- extendedWaitUntil:
+    visible: '.*管理者として他のメンバーの非公開データもダウンロードしますか？.*'
+    timeout: 10000
+- tapOn: 'No'
+- extendedWaitUntil:
+    visible: '.*データを取得しました。.*'
+    timeout: 60000
+- tapOn: 'OK'
+- waitForAnimationToEnd:
+    timeout: 3000
+# メンバーの2件＋自分が送信した1件
+- runFlow:
+    file: ../common/open-point-layer.yaml
+    env:
+      LAYER_NAME: 'E2E共有ポイント.*'
+- assertVisible:
+    id: 'data-row-2'
+- assertNotVisible:
+    id: 'data-row-3'
+- takeScreenshot: 32-downloaded
+- runFlow: ../common/close-sheet.yaml
+
+# PROJ-12: 終了すると、端末内のデータに戻る
+- runFlow: close-project.yaml
+- assertNotVisible:
+    id: 'home-project-label'
+- runFlow:
+    file: ../common/open-point-layer.yaml
+    env:
+      LAYER_NAME: 'ポイント.*'
+# レイヤ一覧へ戻って確かめる
+- tapOn:
+    id: 'sheet-back'
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible: 'ポイント.*'
+    timeout: 10000
+- assertNotVisible: 'E2E共有ポイント.*'
+- takeScreenshot: 32-closed
+- runFlow: ../common/close-sheet.yaml
+
+# ACCT-7: ログアウトして、未ログインに戻す
+- runFlow: logout-if-needed.yaml
+- tapOn:
+    id: 'home-account'
+    retryTapIfNoChange: false
+- assertVisible:
+    id: 'account-org-login'
+- tapOn:
+    id: 'account-close'
+    retryTapIfNoChange: false

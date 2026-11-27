@@ -1,0 +1,27 @@
+# 開いているプロジェクトの記録を送信する（地図画面で）。
+appId: jp.co.ecoris.ecorismap
+---
+# 送信のボタンは、プロジェクト名のラベルを押すと出る
+- runFlow:
+    when:
+      notVisible:
+        id: 'home-project-upload'
+    commands:
+      - tapOn:
+          id: 'home-project-label'
+          retryTapIfNoChange: false
+      - waitForAnimationToEnd:
+          timeout: 3000
+- tapOn:
+    id: 'home-project-upload'
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible: '.*データを送信しますか？.*'
+    timeout: 10000
+- tapOn: 'Yes'
+- extendedWaitUntil:
+    visible: '.*データをアップロードしました。.*'
+    timeout: 60000
+- tapOn: 'OK'
+- waitForAnimationToEnd:
+    timeout: 3000

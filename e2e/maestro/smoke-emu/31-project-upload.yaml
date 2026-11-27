@@ -1,0 +1,83 @@
+# PROJ-1・PROJ-3・PROJ-5（送信）: プロジェクト一覧が出て更新しても残る。プロジェクトを開くと共有のレイヤと、
+# ほかのメンバーの記録が入る。記録を足して送信できる。
+# 前提のプロジェクトは e2e/maestro/support/emu-seed.mjs reset が用意する（ネイティブにはプロジェクトの作成が無い）。
+# 送信した記録がサーバーに届いたことは、フローのあと emu-seed.mjs check-upload が確かめる。
+# プロジェクトは開いたまま終わる（続きは 32-project-download.yaml）。
+appId: jp.co.ecoris.ecorismap
+env:
+  LAYER_NAME: 'E2E共有ポイント.*'
+---
+- runFlow: ../common/launch.yaml
+- runFlow: logout-if-needed.yaml
+- runFlow:
+    file: login.yaml
+    env:
+      EMAIL: 'owner@e2e.test'
+      PASSWORD: 'e2e-owner-pass'
+
+# PROJ-1: 一覧に出る。更新しても残る（サーバーから読んでいる）
+- assertVisible:
+    id: 'project-0'
+    text: 'E2E共有プロジェクト'
+- tapOn:
+    id: 'projects-reload'
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible:
+      id: 'project-0'
+      text: 'E2E共有プロジェクト'
+    timeout: 30000
+- assertNotVisible:
+    id: 'project-1'
+# ネイティブには、プロジェクトの作成が無い
+- assertNotVisible:
+    id: 'projects-add'
+- takeScreenshot: 31-projects
+
+# PROJ-3: 開くと、共有のレイヤが入る
+- tapOn:
+    id: 'project-0'
+- extendedWaitUntil:
+    visible:
+      id: 'projectedit-open'
+    timeout: 10000
+# オーナーには、保存のボタンが出る（一般メンバーには出ない: 33-member.yaml）
+- assertVisible:
+    id: 'projectedit-save'
+- tapOn:
+    id: 'projectedit-open'
+    retryTapIfNoChange: false
+# 端末内に記録があるときだけ、置き換えてよいかを聞かれる（Webと違い、管理者でも他のメンバーの非公開データを取るかは聞かれない）
+- extendedWaitUntil:
+    visible:
+      id: 'dialog-message'
+    timeout: 5000
+    optional: true
+- runFlow:
+    when:
+      visible:
+        id: 'dialog-message'
+    commands:
+      - tapOn: 'Yes'
+- extendedWaitUntil:
+    visible:
+      id: 'home-project-label'
+      text: 'E2E共有プロジェクト'
+    timeout: 60000
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: 31-opened
+- runFlow: ../common/open-point-layer.yaml
+# ほかのメンバーが送信した記録が1件入っている
+- assertVisible:
+    id: 'data-row-0'
+- assertNotVisible:
+    id: 'data-row-1'
+
+# PROJ-5: 記録を1件足して送信する
+- runFlow: ../common/count-rows.yaml
+- runFlow: ../common/add-record.yaml
+- takeScreenshot: 31-added
+- runFlow: ../common/close-sheet.yaml
+- runFlow: upload.yaml
+- takeScreenshot: 31-uploaded

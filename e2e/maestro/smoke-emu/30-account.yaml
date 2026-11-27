@@ -1,0 +1,89 @@
+# ACCT-1・ERR-7・ACCT-7: 誤ったパスワードではログインできず理由が出る。正しいパスワードでログインでき、
+# アカウントボタンの表示が変わる。ログアウトすると、ログイン方法の選択に戻る。
+# Firebaseエミュレータにつないだ開発ビルドで流す（scripts/e2e-native-emu.sh）。
+appId: jp.co.ecoris.ecorismap
+---
+- runFlow: ../common/launch.yaml
+- runFlow: logout-if-needed.yaml
+
+# ERR-7: 誤ったパスワード
+- tapOn:
+    id: 'home-account'
+    retryTapIfNoChange: false
+- tapOn:
+    id: 'account-org-login'
+- tapOn:
+    id: 'account-email'
+- inputText: 'owner@e2e.test'
+- tapOn:
+    id: 'account-password'
+- inputText: 'wrong-password'
+- hideKeyboard
+- tapOn:
+    id: 'account-login'
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible:
+      id: 'account-message'
+    timeout: 30000
+- assertVisible:
+    id: 'account-message'
+    text: 'emailまたはpasswordが間違っています。'
+- assertVisible:
+    id: 'account-title'
+    text: 'ログイン'
+- takeScreenshot: 30-wrong-password
+
+# ACCT-1: 正しいパスワード（入力欄を空に戻すため、起動し直す）
+- runFlow: ../common/launch.yaml
+- runFlow:
+    file: login.yaml
+    env:
+      EMAIL: 'owner@e2e.test'
+      PASSWORD: 'e2e-owner-pass'
+- assertVisible: 'プロジェクト一覧'
+- tapOn:
+    id: 'projects-back'
+- extendedWaitUntil:
+    visible:
+      id: 'home-layers'
+    timeout: 10000
+# アカウントボタンが、表示名（オーナー）の頭文字になる
+- assertVisible:
+    id: 'home-account'
+    text: 'オ'
+- takeScreenshot: 30-logged-in
+- tapOn:
+    id: 'home-account'
+    retryTapIfNoChange: false
+- assertVisible:
+    id: 'home-account-projects'
+- assertVisible:
+    id: 'home-account-setting'
+
+# ACCT-7: ログアウト
+- tapOn:
+    id: 'home-account-logout'
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible: '.*ログアウトしますか？現在のデータは破棄されます。.*'
+    timeout: 10000
+- tapOn: 'Yes'
+- extendedWaitUntil:
+    notVisible:
+      id: 'dialog-message'
+    timeout: 20000
+- waitForAnimationToEnd:
+    timeout: 3000
+- tapOn:
+    id: 'home-account'
+    retryTapIfNoChange: false
+- assertVisible:
+    id: 'account-org-login'
+- assertNotVisible:
+    id: 'home-account-logout'
+- tapOn:
+    id: 'account-close'
+    retryTapIfNoChange: false
+- assertVisible:
+    id: 'home-layers'

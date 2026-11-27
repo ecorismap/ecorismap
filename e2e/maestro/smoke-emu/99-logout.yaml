@@ -1,0 +1,18 @@
+# 後片付け: ログインしたまま・プロジェクトを開いたままなら終了・ログアウトして、未ログインに戻っていることを確かめる。
+# ログインの状態は端末のキーチェーンに残り、アプリのデータを戻しても消えないので、8081番（本番接続）へ戻す前に必ず流す。
+appId: jp.co.ecoris.ecorismap
+---
+- runFlow: ../common/launch.yaml
+- runFlow: logout-if-needed.yaml
+- assertNotVisible:
+    id: 'home-project-label'
+- tapOn:
+    id: 'home-account'
+    retryTapIfNoChange: false
+- assertVisible:
+    id: 'account-org-login'
+- assertNotVisible:
+    id: 'home-account-logout'
+- tapOn:
+    id: 'account-close'
+    retryTapIfNoChange: false

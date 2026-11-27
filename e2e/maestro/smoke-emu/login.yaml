@@ -1,0 +1,23 @@
+# 地図画面（未ログイン）から、組織アカウントでログインする。通ればプロジェクト一覧が出る。
+# EMAIL / PASSWORD はエミュレータの中にだけあるテスト用アカウント（e2e/maestro/support/emu-seed.mjs）。
+appId: jp.co.ecoris.ecorismap
+---
+- tapOn:
+    id: 'home-account'
+    retryTapIfNoChange: false
+- tapOn:
+    id: 'account-org-login'
+- tapOn:
+    id: 'account-email'
+- inputText: ${EMAIL}
+- tapOn:
+    id: 'account-password'
+- inputText: ${PASSWORD}
+- hideKeyboard
+- tapOn:
+    id: 'account-login'
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible:
+      id: 'projects-reload'
+    timeout: 30000

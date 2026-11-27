@@ -1,0 +1,62 @@
+# PROJ-8（一部）・ERR-8・ACCT-6: メンバーに入っているプロジェクトが、そのメンバーの一覧に出る。一般メンバーには
+# 保存・設定・削除のボタンが出ない。表示名を変えると、アカウントボタンの頭文字が変わる。
+# （設定・削除のボタンは、ネイティブではオーナーにも出ない。保存のボタンはオーナーには出る: 31-project-upload.yaml）
+appId: jp.co.ecoris.ecorismap
+---
+- runFlow: ../common/launch.yaml
+- runFlow: logout-if-needed.yaml
+- runFlow:
+    file: login.yaml
+    env:
+      EMAIL: 'member@e2e.test'
+      PASSWORD: 'e2e-member-pass'
+
+# PROJ-8: メンバーの一覧に出る
+- assertVisible:
+    id: 'project-0'
+    text: 'E2E共有プロジェクト'
+# ERR-8: 一般メンバーには、保存・設定・削除のボタンが出ない
+- tapOn:
+    id: 'project-0'
+- extendedWaitUntil:
+    visible:
+      id: 'projectedit-open'
+    timeout: 10000
+- assertNotVisible:
+    id: 'projectedit-save'
+- assertNotVisible:
+    id: 'projectedit-setting'
+- assertNotVisible:
+    id: 'projectedit-delete'
+- takeScreenshot: 33-member-project
+- tapOn:
+    id: 'projectedit-back'
+- tapOn:
+    id: 'projects-back'
+- extendedWaitUntil:
+    visible:
+      id: 'home-layers'
+    timeout: 10000
+- assertVisible:
+    id: 'home-account'
+    text: 'メ'
+
+# ACCT-6: 表示名を変える
+- runFlow:
+    file: set-display-name.yaml
+    env:
+      NAME: '変更後'
+- assertVisible:
+    id: 'home-account'
+    text: '変'
+- takeScreenshot: 33-renamed
+# 元に戻す
+- runFlow:
+    file: set-display-name.yaml
+    env:
+      NAME: 'メンバー'
+- assertVisible:
+    id: 'home-account'
+    text: 'メ'
+
+- runFlow: logout-if-needed.yaml
