@@ -42,6 +42,7 @@ import { enableWebDistanceFog, enableWebTerrainFarView } from '../../utils/terra
 import { enableWebLowCameraGuard } from '../../utils/terrain3d/webLowCameraGuard';
 import { setWebTerrainDemTiles } from '../../utils/terrain3d/webTerrainDemTiles';
 import { FollowViewState, keepGeolocateFollowOnViewStateSync } from '../../utils/webGeolocateFollow';
+import { keepTerrainElevationOnJumpTo } from '../../utils/terrain3d/webTerrainJumpTo';
 import { HomeTerrain3DVistaBanner } from '../organisms/HomeTerrain3DVistaBanner';
 import { HomeTerrain3DButtons } from '../organisms/HomeTerrain3DButtons';
 import { HomeVistaPeakLabels } from '../organisms/HomeVistaPeakLabels';
@@ -688,6 +689,8 @@ export default function HomeScreen() {
     async (evt: any) => {
       const map = evt.target;
 
+      // jumpToを包む順番に意味がある。標高の補正を先に（内側に）かけ、追従の判定は元の指定のままで行う
+      keepTerrainElevationOnJumpTo(map);
       keepGeolocateFollowOnViewStateSync(map, () => followViewStateRef.current);
 
       // 地形データソースの追加
