@@ -14,6 +14,10 @@
 - Added position averaging (5–60 epochs, optionally RTK FIX only) when adding a point at the current location or updating a point's position with "Edit position"
 - Points recorded with an external receiver keep the fix type, accuracy, measured elevation (antenna height subtracted) and ellipsoidal height. They are shown in the data edit screen and exported as extra columns in CSV/GeoJSON
 - Tracks recorded with an external receiver can be thinned by accuracy or by distance and keep the fix type and ellipsoidal height (exported as geoidheight in GPX). The new track layer color type "GNSS quality" colors them by fix type (FIX green / FLOAT orange) in 2D and 3D, and is switched on automatically the first time such a track is saved. Tapping a track point shows the fix type and accuracy
+- Added connection to external GNSS receivers over classic Bluetooth (SPP) on Android, for receivers that do not offer Bluetooth LE. Pair the receiver in the Android Bluetooth settings and choose it under "Bluetooth (paired)" in the GPS settings
+- Added recording of the raw output of an external GNSS receiver and the NTRIP corrections to files, for post-processing (PPK) with tools such as RTKLIB. Recording is started and stopped in the GPS settings, where the recorded files can be shared as a zip or deleted
+- Added distance measurement to the 3D view on the web. It also shows the distance along the terrain and the elevation difference
+- On the web, maps with "High resolution" turned on are now drawn sharper on high-DPI screens
 - Added PMTiles maps (vector, raster and pbf) to PDF export
 - Added the recorder's name and line color to the track popup and the track summary, so you can tell whose track it is in a shared project
 - Added bulk resharing of encryption keys: administrators can find the members who reset their key in all the projects they manage and reshare the key with them at once from the key button in the project list
@@ -64,6 +68,10 @@
 - Fixed saving project settings failing right after the app was launched
 - Fixed the bottom sheet opening again by itself when it was closed right after being opened
 - Fixed points near the edge of the screen not being drawn on the web until the map was moved after launch, and a point or stroke being drawn under the map's zoom buttons when they were pressed while a drawing tool was active
+- Fixed opening a project without a connection replacing the records on the device with old or empty data instead of failing. The app now checks the connection before opening
+- Fixed points on the screen flickering constantly on iOS while the current location marker was turning with the device's heading
+- Fixed GeoJSON and GPX files imported with the file picker on iOS being imported again at the next launch
+- Fixed the current location follow mode turning off by itself on the web, and choosing a color swatch on the web making the color opaque
 - Fixed many other issues found in code reviews
 - Fixed several security issues found in a security review
 
@@ -79,6 +87,10 @@
 - 現在地ポイントの追加と「位置を編集」での位置の更新に、平均化測位（5〜60エポック、RTK FIXのみの採用も可）を追加しました
 - 外部GNSS受信機で記録したポイントに、Fix種別・精度・測位標高（アンテナ高を差し引いた値）・楕円体高を残すようにしました。データ編集画面に表示し、CSV/GeoJSONのエクスポートでは列として出力します
 - 外部GNSS受信機での軌跡は、精度または距離で間引いて記録できるようにし、Fix種別と楕円体高も残すようにしました（GPXではgeoidheightとして出力）。軌跡レイヤのカラータイプに「測位品質」を追加し、2D・3DでFix種別ごとに色分け（FIXは緑、FLOATは橙）できます。外部GNSSの軌跡を初めて保存したときに自動でこのカラータイプに切り替わります。軌跡の点をタップするとFix種別と精度を表示します
+- Androidで、Bluetooth LEを持たない外部GNSS受信機にBluetooth（SPP）で接続できるようにしました。AndroidのBluetooth設定で受信機とペアリングし、GPSの設定の「Bluetooth（ペアリング済み）」から選びます
+- 外部GNSS受信機のRAWデータとNTRIPの補正データをファイルに記録できるようにしました。RTKLIBなどでの後処理（PPK）に使えます。GPSの設定で記録を開始・停止し、記録したファイルをzipで共有・削除できます
+- Web版の3D表示で距離を測定できるようにしました。起伏に沿った距離と標高差も表示します
+- Web版で、「高解像度」をオンにした地図を高解像度の画面でよりくっきり表示するようにしました
 - PDF出力にPMTiles（ベクタ・ラスタ・pbf）の地図を含めるようにしました
 - 軌跡のポップアップと軌跡サマリーに、記録者の名前と線の色を表示するようにしました。共有プロジェクトで誰の軌跡か分かります
 - 暗号化キーの一括再共有を追加しました。管理者は、プロジェクト一覧の鍵ボタンから、管理している全プロジェクトで鍵をリセットしたメンバーを探し、まとめて再共有できます
@@ -129,6 +141,10 @@
 - アプリを起動した直後にプロジェクト設定を保存すると失敗する問題を修正しました
 - ボトムシートを開いてすぐ閉じると、勝手に開き直る問題を修正しました
 - Webで、起動してから地図を動かすまで画面の端寄りのポイントが表示されない問題と、作図の道具を持ったまま地図の拡大・縮小ボタンを押すとボタンの位置に点や線が描かれる問題を修正しました
+- 通信できないときにプロジェクトを開くと、失敗にならず、端末の記録が古いデータや空のデータに置き換わる問題を修正しました。開く前に接続を確かめます
+- iOSで、現在地マーカーが端末の向きに合わせて回っている間、画面内のポイントが絶えずちらつく問題を修正しました
+- iOSで、ファイル選択から取り込んだGeoJSON・GPXが次の起動でもう一度取り込まれる問題を修正しました
+- Web版で、現在地の追従がひとりでに外れる問題と、色の見本を選ぶと不透明になる問題を修正しました
 - コードレビューで見つかったそのほか多くの問題を修正しました
 - セキュリティレビューで見つかった複数の問題を修正しました
 

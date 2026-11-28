@@ -1055,7 +1055,7 @@
       "feature2": "Added \"View from here\": see the 3D view from a point chosen in the long-press menu or from your current location, with peak names, telephoto/wide angle and following the direction your device faces",
       "feature3": "Peak names can now be shown on the 2D and 3D maps, and the GEBCO bathymetry map can be shown in 3D",
       "feature4": "The 2D map can now be rotated with two fingers. While rotated, the compass points to the map's north; tap it to return to north up",
-      "feature5": "External GNSS receivers (USB or Bluetooth LE) can now be used for RTK positioning with NTRIP corrections (Android), with position averaging and recording of the fix type and ellipsoidal height",
+      "feature5": "External GNSS receivers (USB or Bluetooth) can now be used for RTK positioning with NTRIP corrections (Android), with position averaging and recording of the fix type and ellipsoidal height",
       "feature6": "Downloaded tiles of maps with \"Y-axis inversion (TMS)\" turned on and of hillshade/color relief maps that used the old elevation source are deleted once after this update (iOS/Android) because of changes in tile storage and the elevation source. Please download the areas you use offline again",
       "feature7": "Fixed many issues that could lose photos or data in shared project sync, import/export and track recording. Only the project owner can now delete a project",
       "feature8": "Many other improvements and bug fixes",
