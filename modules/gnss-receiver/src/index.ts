@@ -46,6 +46,12 @@ export type BleDeviceInfo = {
   hasNus: boolean;
 };
 
+/** ペアリング済みのBluetoothクラシック機器（Androidのみ） */
+export type SppDeviceInfo = {
+  address: string;
+  name: string;
+};
+
 /** BLEの権限の状態（iOS）。確かめるだけでダイアログは出さない */
 export type BleAuthorization = 'allowed' | 'denied' | 'notDetermined';
 
@@ -64,6 +70,10 @@ declare class GnssReceiverNative extends NativeModule<GnssReceiverEvents> {
   startBleScan(): void | Promise<void>;
   stopBleScan(): void;
   connectBle(address: string): Promise<GnssReceiverStatus>;
+  /** Androidのみ */
+  listSppDevices(): SppDeviceInfo[];
+  /** Androidのみ */
+  connectSpp(address: string): Promise<GnssReceiverStatus>;
   disconnect(): Promise<void>;
   startNtrip(config: NtripConnectionConfig): Promise<void>;
   stopNtrip(): Promise<void>;
@@ -88,6 +98,8 @@ export const connectUsb = (deviceId: number, baudRate: number) => requireNative(
 export const startBleScan = async () => requireNative().startBleScan();
 export const stopBleScan = () => requireNative().stopBleScan();
 export const connectBle = (address: string) => requireNative().connectBle(address);
+export const listSppDevices = (): SppDeviceInfo[] => requireNative().listSppDevices();
+export const connectSpp = (address: string) => requireNative().connectSpp(address);
 export const disconnect = () => requireNative().disconnect();
 export const startNtrip = (config: NtripConnectionConfig) => requireNative().startNtrip(config);
 export const stopNtrip = () => requireNative().stopNtrip();

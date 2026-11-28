@@ -1,4 +1,5 @@
 import React, { useCallback } from 'react';
+import { Linking } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import GpsSettings from '../components/pages/GpsSettings';
 import { GpsSettingsContext } from '../contexts/GpsSettings';
@@ -15,7 +16,7 @@ export default function GpsSettingsContainers() {
   const dispatch = useDispatch();
   const gpsAccuracy = useSelector((state: RootState) => state.settings.gpsAccuracy);
   const externalGnss = useExternalGnss();
-  const { connectUsb, connectBle, scanBle, disconnect } = externalGnss;
+  const { connectUsb, connectBle, scanBle, refreshSppDevices, connectSpp, disconnect } = externalGnss;
 
   const selectGpsAccuracy = useCallback(
     (value: GpsAccuracyType) => {
@@ -60,6 +61,38 @@ export default function GpsSettingsContainers() {
     [connectBle]
   );
 
+  const pressRefreshSpp = useCallback(async () => {
+    try {
+      await refreshSppDevices();
+    } catch (e) {
+      await AlertAsync(
+        t('GpsSettings.externalGnss.connectFailed', { message: e instanceof Error ? e.message : String(e) })
+      );
+    }
+  }, [refreshSppDevices]);
+
+  const pressConnectSpp = useCallback(
+    async (address: string) => {
+      try {
+        await connectSpp(address);
+      } catch (e) {
+        await AlertAsync(
+          t('GpsSettings.externalGnss.connectFailed', { message: e instanceof Error ? e.message : String(e) })
+        );
+      }
+    },
+    [connectSpp]
+  );
+
+  // ペアリングはアプリからはできないので、AndroidのBluetooth設定を開く
+  const pressPairSpp = useCallback(async () => {
+    try {
+      await Linking.sendIntent('android.settings.BLUETOOTH_SETTINGS');
+    } catch (e) {
+      console.log('[gnss] open bluetooth settings failed', e);
+    }
+  }, []);
+
   const pressDisconnect = useCallback(async () => {
     try {
       await disconnect();
@@ -82,6 +115,9 @@ export default function GpsSettingsContainers() {
         pressConnectUsb,
         pressScanBle,
         pressConnectBle,
+        pressRefreshSpp,
+        pressConnectSpp,
+        pressPairSpp,
         pressDisconnect,
       }}
     >

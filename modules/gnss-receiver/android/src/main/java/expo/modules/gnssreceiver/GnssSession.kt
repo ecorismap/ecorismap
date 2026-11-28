@@ -62,10 +62,22 @@ object GnssSession {
     }
     emitStatus()
     var created: GnssLink? = null
+    // factory が戻って link に入る前（接続した直後）に読み取りが失敗すると、onLinkError が
+    // 「古いリンクからの通知」として無視してしまい、切れたのに「接続済み」のまま残る。
+    // それまでのエラーは受け止めておき、link に入れてから流す
+    val earlyLock = Any()
+    var ready = false
+    var earlyError: Exception? = null
     try {
       created = factory(
         { data -> synchronized(assembler) { assembler.feed(data) } },
-        { e -> onLinkError(created, e) },
+        { e ->
+          val deliver = synchronized(earlyLock) {
+            if (!ready) earlyError = e
+            ready
+          }
+          if (deliver) onLinkError(created, e)
+        },
       )
       synchronized(lock) {
         link = created
@@ -80,6 +92,11 @@ object GnssSession {
       throw e
     }
     emitStatus()
+    val pendingError = synchronized(earlyLock) {
+      ready = true
+      earlyError
+    }
+    if (pendingError != null) onLinkError(created, pendingError)
   }
 
   private fun onLinkError(source: GnssLink?, e: Exception) {

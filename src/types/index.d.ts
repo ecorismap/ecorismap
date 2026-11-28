@@ -516,7 +516,9 @@ export interface ExternalGnssSettingsType {
 
 export type ExternalGnssDeviceType =
   | { type: 'usb'; vendorId: number; productId: number; name: string }
-  | { type: 'ble'; address: string; name: string };
+  | { type: 'ble'; address: string; name: string }
+  // Bluetoothクラシック（SPP）。Androidのみ
+  | { type: 'spp'; address: string; name: string };
 
 export interface NtripSettingsType {
   enabled: boolean;

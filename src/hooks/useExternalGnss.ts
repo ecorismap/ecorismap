@@ -4,8 +4,14 @@ import * as GnssReceiver from '../../modules/gnss-receiver/src';
 import { getExternalGnssSnapshot, subscribeExternalGnss, ExternalGnssSnapshot } from '../lib/gnss/externalGnssStore';
 import { DEFAULT_EXTERNAL_GNSS_SETTINGS, loadNtripPassword, saveNtripPassword } from '../lib/gnss/settings';
 import { NtripMountpoint, parseSourceTable } from '../lib/gnss/sourceTable';
-import { requestBlePermissions } from '../lib/gnss/blePermissions';
-import { isUsbSupported, startNtripIfEnabled, toConnectionConfig, usbDeviceToRemember } from '../lib/gnss/connection';
+import { hasBlePermissions, requestBlePermissions } from '../lib/gnss/blePermissions';
+import {
+  isSppSupported,
+  isUsbSupported,
+  startNtripIfEnabled,
+  toConnectionConfig,
+  usbDeviceToRemember,
+} from '../lib/gnss/connection';
 import { editSettingsAction } from '../modules/settings';
 import { RootState } from '../store';
 import { ExternalGnssSettingsType, NtripSettingsType } from '../types';
@@ -22,6 +28,9 @@ export type UseExternalGnssReturnType = {
   isBleScanning: boolean;
   scanBle: () => Promise<void>;
   connectBle: (address: string) => Promise<void>;
+  sppDevices: GnssReceiver.SppDeviceInfo[];
+  refreshSppDevices: () => Promise<void>;
+  connectSpp: (address: string) => Promise<void>;
   disconnect: () => Promise<void>;
   updateReceiverSettings: (
     values: Pick<ExternalGnssSettingsType, 'antennaHeight' | 'baudRate' | 'trackMode' | 'trackDistance'>
@@ -43,6 +52,7 @@ export const useExternalGnss = (): UseExternalGnssReturnType => {
   const [usbDevices, setUsbDevices] = useState<GnssReceiver.UsbDeviceInfo[]>([]);
   const [bleDevices, setBleDevices] = useState<GnssReceiver.BleDeviceInfo[]>([]);
   const [isBleScanning, setIsBleScanning] = useState(false);
+  const [sppDevices, setSppDevices] = useState<GnssReceiver.SppDeviceInfo[]>([]);
 
   const refreshUsbDevices = useCallback(() => {
     if (!isAvailable || !isUsbSupported) return;
@@ -113,6 +123,38 @@ export const useExternalGnss = (): UseExternalGnssReturnType => {
     [bleDevices, ntripPassword, saveSettings, settings]
   );
 
+  // ペアリング済みの機器を読む。BLUETOOTH_CONNECTが要るので、画面を開いただけでは読まず「更新」で読む
+  const refreshSppDevices = useCallback(async () => {
+    if (!isAvailable || !isSppSupported) return;
+    if (!(await requestBlePermissions())) throw new Error('Bluetooth permission denied');
+    setSppDevices(GnssReceiver.listSppDevices());
+  }, [isAvailable]);
+
+  // 権限が既にあれば、画面を開いたときに一覧を出しておく
+  useEffect(() => {
+    if (!isAvailable || !isSppSupported) return;
+    hasBlePermissions().then((granted) => {
+      if (!granted) return;
+      try {
+        setSppDevices(GnssReceiver.listSppDevices());
+      } catch (e) {
+        // Bluetoothがオフ等。「更新」を押したときに知らせる
+        console.log('[gnss] list spp devices failed', e);
+      }
+    });
+  }, [isAvailable]);
+
+  const connectSpp = useCallback(
+    async (address: string) => {
+      setIsBleScanning(false);
+      await GnssReceiver.connectSpp(address);
+      const name = sppDevices.find((d) => d.address === address)?.name ?? address;
+      saveSettings({ ...settings, lastDevice: { type: 'spp', address, name }, autoConnect: true });
+      await startNtripIfEnabled(settings.ntrip, ntripPassword);
+    },
+    [ntripPassword, saveSettings, settings, sppDevices]
+  );
+
   // 自分で切断したら、次に挿したり起動したりしても自動では接続し直さない
   const disconnect = useCallback(async () => {
     saveSettings({ ...settings, autoConnect: false });
@@ -164,6 +206,9 @@ export const useExternalGnss = (): UseExternalGnssReturnType => {
     isBleScanning,
     scanBle,
     connectBle,
+    sppDevices,
+    refreshSppDevices,
+    connectSpp,
     disconnect,
     updateReceiverSettings,
     saveNtripSettings,

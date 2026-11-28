@@ -18,6 +18,7 @@ const LOST: GnssReceiverStatus = { ...DISCONNECTED, linkError: 'BLE disconnected
 let mockStatusListener: ((status: GnssReceiverStatus) => void) | null = null;
 const mockConnectBle = jest.fn();
 const mockConnectUsb = jest.fn();
+const mockConnectSpp = jest.fn();
 const mockDisconnect = jest.fn();
 const mockStopNtrip = jest.fn();
 const mockStartNtrip = jest.fn();
@@ -42,9 +43,16 @@ jest.mock('../../../modules/gnss-receiver/src', () => ({
   listUsbDevices: () => [],
   connectBle: (...args: unknown[]) => mockConnectBle(...args),
   connectUsb: (...args: unknown[]) => mockConnectUsb(...args),
+  connectSpp: (...args: unknown[]) => mockConnectSpp(...args),
   disconnect: () => mockDisconnect(),
   stopNtrip: () => mockStopNtrip(),
   startNtrip: (...args: unknown[]) => mockStartNtrip(...args),
+}));
+
+// SPPはAndroidだけ。テストの既定（iOS）ではfalseになるので、Androidとして扱う
+jest.mock('../../lib/gnss/connection', () => ({
+  ...jest.requireActual('../../lib/gnss/connection'),
+  isSppSupported: true,
 }));
 
 jest.mock('../../lib/gnss/blePermissions', () => ({ hasBlePermissions: async () => true }));
@@ -394,6 +402,23 @@ describe('useExternalGnssAutoConnect', () => {
       resetExternalGnssForTest(DISCONNECTED);
       (AppState as unknown as { currentState: AppStateStatus }).currentState = 'background';
       await render(false);
+      expect(mockConnectBle).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('Bluetoothクラシック（SPP）の受信機', () => {
+    beforeEach(() => {
+      mockSettings = { ...mockSettings, lastDevice: { type: 'spp', address: 'CC:DD', name: 'DROGGER' } };
+      mockConnectSpp.mockImplementation(async () => {
+        mockStatusListener?.(CONNECTED);
+        return CONNECTED;
+      });
+    });
+
+    it('起動時に前回のSPP受信機へ connectSpp でつなぐ', async () => {
+      resetExternalGnssForTest(DISCONNECTED);
+      await render(false);
+      expect(mockConnectSpp).toHaveBeenCalledWith('CC:DD');
       expect(mockConnectBle).not.toHaveBeenCalled();
     });
   });

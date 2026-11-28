@@ -10,6 +10,9 @@ interface GpsSettingsContextType {
   pressConnectUsb: (deviceId: number) => void;
   pressScanBle: () => void;
   pressConnectBle: (address: string) => void;
+  pressRefreshSpp: () => void;
+  pressConnectSpp: (address: string) => void;
+  pressPairSpp: () => void;
   pressDisconnect: () => void;
 }
 

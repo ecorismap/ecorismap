@@ -20,6 +20,9 @@ export const toConnectionConfig = (ntrip: NtripSettingsType, password: string): 
 /** iOSはMFi以外のUSB機器を扱えないので、受信機はBLEでだけつなぐ */
 export const isUsbSupported = Platform.OS === 'android';
 
+/** Bluetoothクラシック（SPP）はiOSではMFi認証の機器しか扱えないので、Androidだけでつなぐ */
+export const isSppSupported = Platform.OS === 'android';
+
 export const canStartNtrip = (ntrip: NtripSettingsType) => ntrip.enabled && ntrip.host !== '' && ntrip.mountpoint !== '';
 
 /** NTRIPがONで設定がそろっていれば接続し、そうでなければ止める */
