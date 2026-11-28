@@ -61,6 +61,20 @@ jobs:
         run: |
           echo "${{ secrets.GOOGLE_SERVICE_INFO_PLIST }}" | base64 --decode > ios/ecorismap/GoogleService-Info.plist
 
+      # 位置情報ライブラリ（react-native-background-geolocation）のiOS用ライセンス。
+      # Xcodeのビルドフェーズ「[TS] Inject Background Geolocation License」が、このファイルの中身を
+      # Info.plist の TSLocationManagerLicense へ入れる。無いままでもビルドは通ってしまい、
+      # 起動時に「TSLocationManager LICENSE VALIDATION FAILURE」が出る版が配信されるので、無ければ止める
+      - name: Create TSLicense.txt
+        env:
+          TS_LICENSE_IOS: ${{ secrets.TRANSISTORSOFT_LICENSE_KEY_IOS }}
+        run: |
+          if [ -z "$TS_LICENSE_IOS" ]; then
+            echo "::error::TRANSISTORSOFT_LICENSE_KEY_IOS secret is not set (keys/transistorsoft-license-key-ios)"
+            exit 1
+          fi
+          printf '%s\n' "$TS_LICENSE_IOS" > ios/ecorismap/Supporting/TSLicense.txt
+
       - name: Create APIKeys.ts
         env:
           APIKEYS_TS_BASE64: ${{ secrets.APIKEYS_TS_BASE64 }}
