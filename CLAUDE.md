@@ -46,6 +46,8 @@ yarn keys:apply    # keys/ディレクトリのAPIキー類を一括反映
 
 8. **ログイン**: 単一ビルド（旧`FUNC_LOGIN`フラグは廃止）。Google連携（Google Drive個人プロジェクト）と組織アカウント（Firebaseメール認証、blocking functionで登録制限）の2系統。
 
+9. **修正が収束しないときは設計を疑う**: 同じ問題に3回修正を重ねても収まらない（直すたびに別の不具合やエッジケースが出る）ときは、4回目のパッチを当てずに作業を止め、前提や設計の見直し案をユーザーに提案する。修正が修正を呼ぶ状態は実装方針そのものが合っていないことが多く、放置すると往復が膨らむ。
+
 ## Firebase Functions
 
 別リポジトリ [ecorismap/functions](https://github.com/ecorismap/functions) で管理（ローカルでは`../functions`）:
