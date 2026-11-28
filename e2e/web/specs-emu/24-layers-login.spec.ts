@@ -16,6 +16,7 @@ import {
   plainText,
   selectFeature,
   sheetBack,
+  sheetSettled,
   sheetClose,
   text,
 } from '../support/app';
@@ -93,10 +94,22 @@ const switchEditingLayer = async (page: Page, layerName: string) => {
 };
 
 /** レイヤ一覧の「追加」から、プリセットを選んでレイヤを作る（レイヤ設定を保存して、シートを閉じる） */
+/**
+ * プロジェクト一覧から地図画面へ戻る。戻ると地図画面（ボトムシートを含む）が作り直される。
+ * 作り直しの最中にシートを開く操作を重ねると、シートが途中の高さで止まり、×を押しても閉じなくなることがある。
+ * 人が続けて押せる速さではないので、落ち着くまで待ってから先へ進む
+ */
+const backFromProjects = async (page: Page) => {
+  await page.getByTestId('projects-back').click();
+  await expect(page.getByTestId('home-layers')).toBeVisible();
+  await page.waitForTimeout(1000);
+};
+
 const addLayerFromPreset = async (page: Page, presetName: string) => {
   await openLayers(page);
   await page.getByTestId('layers-add').click();
   await expect(page.getByTestId('layeredit-name')).toBeVisible();
+  await sheetSettled(page);
   // ModalSelector の外側のタッチ領域が重なっているので、位置で押す
   await page.getByTestId('layeredit-preset').click({ force: true });
   await text(page, presetName).click();
@@ -129,7 +142,9 @@ const lonLatAt = async (page: Page, x: number, y: number): Promise<[number, numb
   const previous = await coordinate.innerText({ timeout: 500 }).catch(() => '');
   await longPressMap(page, x, y);
   await expect(coordinate).toHaveText(/^-?\d+\.\d+, -?\d+\.\d+$/);
-  await expect(coordinate).not.toHaveText(previous, { timeout: 1500 }).catch(() => undefined);
+  await expect(coordinate)
+    .not.toHaveText(previous, { timeout: 1500 })
+    .catch(() => undefined);
   const [lat, lon] = (await coordinate.innerText()).split(',').map((s) => Number(s.trim()));
   return [lon, lat];
 };
@@ -227,7 +242,9 @@ const FIX_GREEN: [number, number, number] = [0x2e, 0x9e, 0x44];
 const FLOAT_ORANGE: [number, number, number] = [0xf2, 0x9c, 0x00];
 
 test.describe('13. レイヤ・作図（ログインで開く機能）', () => {
-  test('LAYER-12 野帳レイヤのプリセットは、ログインすると選べて、選んだ野帳の項目でレイヤができる', async ({ page }) => {
+  test('LAYER-12 野帳レイヤのプリセットは、ログインすると選べて、選んだ野帳の項目でレイヤができる', async ({
+    page,
+  }) => {
     // ログインしていないと、プリセットの選択は出ない
     await openApp(page);
     await openLayers(page);
@@ -236,7 +253,7 @@ test.describe('13. レイヤ・作図（ログインで開く機能）', () => {
     await expect(page.getByTestId('layeredit-preset')).toHaveCount(0);
 
     await login(page, 'owner');
-    await page.getByTestId('projects-back').click();
+    await backFromProjects(page);
     await addLayerFromPreset(page, '鳥類野帳');
     expect(await fieldNames(page)).toEqual([
       '確認No',
@@ -275,7 +292,7 @@ test.describe('13. レイヤ・作図（ログインで開く機能）', () => {
   test('DRAW-14 飛翔図パレットで飛翔線・行動記号を描くと、属性に種名と行動が入る', async ({ page }) => {
     test.setTimeout(150_000);
     await login(page, 'owner');
-    await page.getByTestId('projects-back').click();
+    await backFromProjects(page);
     await addLayerFromPreset(page, '猛禽類野帳（飛翔）');
     const names = await fieldNames(page);
     await page.getByTestId('layeredit-save').click();
@@ -343,7 +360,7 @@ test.describe('13. レイヤ・作図（ログインで開く機能）', () => {
 
   test('LAYER-10 軌跡を測位品質で色分けできる（FIX・FLOATの区間だけ品質の色になる）', async ({ page }) => {
     await login(page, 'owner');
-    await page.getByTestId('projects-back').click();
+    await backFromProjects(page);
     await importGnssTrack(page);
     // 軌跡は地図の左側にあり、右側のシート（レイヤ一覧）を開いたままでも見える。取り込んだ直後は単色（青）
     await expect.poll(async () => isNear((await trackColor(page, 0.15)).join(','), BLUE, 40)).toBe(true);
@@ -373,7 +390,7 @@ test.describe('13. レイヤ・作図（ログインで開く機能）', () => {
   test('LAYER-10b プロジェクトの中では、ユーザー別の色分けができる', async ({ page }) => {
     await login(page, 'owner');
     // プロジェクトの外では、ユーザー別は選べない
-    await page.getByTestId('projects-back').click();
+    await backFromProjects(page);
     await openLayers(page);
     let i = await layerRowIndex(page, 'ポイント');
     await page.getByTestId(`layers-style-${i}`).click();

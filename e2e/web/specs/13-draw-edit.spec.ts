@@ -1,5 +1,5 @@
 import { expect, Page, test } from '@playwright/test';
-import { attribution, dialogButton, openApp, plainText, selectFeature, sheetBack, sheetClose, text } from '../support/app';
+import { attribution, dialogButton, openApp, plainText, selectFeature, sheetBack, sheetClose, sheetSettled, text } from '../support/app';
 
 type Coord = { longitude: number; latitude: number };
 type PersistedRecord = { id: string; coords: Coord | Coord[]; field: { [key: string]: string | number } };
@@ -361,6 +361,8 @@ test.describe('13. 作図の編集・マップメモ・地図の回転ほか', (
     await page.getByTestId(`maps-edit-${i}`).click();
     const slider = page.getByTestId('mapedit-transparency');
     await expect(slider).toBeVisible();
+    // シートが広がりきる前に位置を測ると、押す位置がずれる
+    await sheetSettled(page);
     // スライダーの左から3割の位置を押す（0.1刻みなので0.3になる）。右の数字も変わる
     const box = (await slider.boundingBox())!;
     await page.mouse.click(box.x + box.width * 0.3, box.y + box.height / 2);

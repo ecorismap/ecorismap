@@ -105,6 +105,26 @@ export async function openLayers(page: Page) {
   await expect(page.getByTestId('layers-add').or(page.getByTestId('layers-row-0')).first()).toBeVisible();
 }
 
+/**
+ * ボトムシートの開閉のアニメーションが止まるまで待つ（動いている最中に位置を測ると、押す位置がずれる）
+ */
+export async function sheetSettled(page: Page) {
+  const handle = page.getByRole('slider', { name: 'Bottom Sheet' }).first();
+  let prev = NaN;
+  let same = 0;
+  await expect
+    .poll(
+      async () => {
+        const y = (await handle.boundingBox())?.y ?? -1;
+        same = y === prev ? same + 1 : 0;
+        prev = y;
+        return same;
+      },
+      { intervals: [100], timeout: 10_000 }
+    )
+    .toBeGreaterThanOrEqual(3);
+}
+
 /** レイヤ一覧の行番号（レイヤ名で探す） */
 export async function layerRowIndex(page: Page, layerName: string): Promise<number> {
   const rows = page.locator('[data-testid^="layers-row-"]');
