@@ -2,6 +2,7 @@ package expo.modules.gnssreceiver
 
 import android.os.Handler
 import android.os.HandlerThread
+import java.io.File
 
 interface GnssSessionListener {
   fun onSentences(sentences: List<String>, receivedAt: Long)
@@ -30,6 +31,9 @@ object GnssSession {
   @Volatile private var lastCorrectionAt = 0L
   @Volatile private var lastGga: String? = null
   @Volatile private var lastCorrectionStatusAt = 0L
+  // RAW記録（後処理用）。書き込みは受信スレッドから、開始・停止はモジュールのキューから
+  @Volatile private var rawLogger: RawLogger? = null
+  private var rawLogError: String? = null
 
   private val pending = mutableListOf<String>()
   private val flushThread = HandlerThread("GnssSessionFlush").apply { start() }
@@ -47,7 +51,66 @@ object GnssSession {
       "ntripError" to ntripError,
       "rtcmBytes" to rtcmBytes.toDouble(),
       "lastCorrectionAt" to lastCorrectionAt.toDouble(),
+      "rawLog" to rawLogStatusLocked(),
     )
+  }
+
+  private fun rawLogStatusLocked(): Map<String, Any?> {
+    val logger = rawLogger
+    return mapOf(
+      "state" to (if (logger != null) "recording" else if (rawLogError != null) "error" else "off"),
+      "error" to rawLogError,
+      "baseName" to logger?.baseName,
+      "startedAt" to (logger?.startedAt?.toDouble() ?: 0.0),
+      "roverBytes" to (logger?.roverBytes?.toDouble() ?: 0.0),
+      "correctionBytes" to (logger?.correctionBytes?.toDouble() ?: 0.0),
+      "sawUbx" to (logger?.sawUbx ?: false),
+    )
+  }
+
+  /**
+   * RAW記録を始める。リンクが切れても止めず、つなぎ直したら同じファイルに書き足す。
+   * 記録中に呼んだら失敗させる（JS側で止めてから始める）
+   */
+  fun startRawLog(dirPath: String, baseName: String, logCorrections: Boolean) {
+    synchronized(lock) {
+      if (rawLogger != null) throw IllegalStateException("Raw logging is already running")
+      var created: RawLogger? = null
+      created = RawLogger(
+        File(dirPath),
+        baseName,
+        logCorrections,
+        onError = { message ->
+          val failed = synchronized(lock) {
+            if (rawLogger !== created) return@synchronized null
+            rawLogger = null
+            rawLogError = message
+            created
+          }
+          if (failed != null) {
+            failed.stop()
+            emitStatus()
+          }
+        },
+        onFlushed = { emitStatus() },
+      )
+      rawLogger = created
+      rawLogError = null
+    }
+    emitStatus()
+  }
+
+  /** RAW記録を止めて、残ったファイルの情報を返す（記録していなければ null） */
+  fun stopRawLog(): Map<String, Any?>? {
+    val logger = synchronized(lock) {
+      val l = rawLogger
+      rawLogger = null
+      rawLogError = null
+      l
+    }
+    val result = logger?.stop()
+    emitStatus()
+    return result
   }
 
   private fun emitStatus() {
@@ -70,7 +133,10 @@ object GnssSession {
     var earlyError: Exception? = null
     try {
       created = factory(
-        { data -> synchronized(assembler) { assembler.feed(data) } },
+        { data ->
+          synchronized(assembler) { assembler.feed(data) }
+          rawLogger?.writeRover(data)
+        },
         { e ->
           val deliver = synchronized(earlyLock) {
             if (!ready) earlyError = e
@@ -156,6 +222,7 @@ object GnssSession {
         val now = System.currentTimeMillis()
         rtcmBytes += length
         lastCorrectionAt = now
+        rawLogger?.writeCorrection(bytes, length)
         // 受信量の表示を更新する（補正は秒間数回届くので、通知は1秒に1回に間引く）
         if (now - lastCorrectionStatusAt >= CORRECTION_STATUS_INTERVAL_MS) {
           lastCorrectionStatusAt = now

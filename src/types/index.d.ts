@@ -511,6 +511,8 @@ export interface ExternalGnssSettingsType {
   // 最後に接続した受信機と、次回から自動で接続し直すか（「切断」を押すとfalse）
   lastDevice?: ExternalGnssDeviceType;
   autoConnect?: boolean;
+  // RAW記録でNTRIPの補正（RTCM）もファイルに残すか（追加前の設定にはキーがない。未定義はtrue）
+  rawLogCorrections?: boolean;
   ntrip: NtripSettingsType;
 }
 

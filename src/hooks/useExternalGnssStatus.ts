@@ -19,3 +19,8 @@ export const useExternalGnssStatus = (): { snapshot: ExternalGnssSnapshot; activ
   }, [isConnected]);
   return { snapshot, active: isExternalFixActive(Date.now(), snapshot) };
 };
+
+const isRawLoggingNow = () => getExternalGnssSnapshot().status.rawLog?.state === 'recording';
+
+/** 受信機のRAW記録中か。値が変わったときだけ描き直す（記録中は状態が1秒ごとに届くため） */
+export const useExternalGnssRawLogging = (): boolean => useSyncExternalStore(subscribeExternalGnss, isRawLoggingNow);

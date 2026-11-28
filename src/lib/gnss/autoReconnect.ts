@@ -37,9 +37,15 @@ export const shouldGiveUpReconnect = (lostAt: number, now: number): boolean => n
 export const isLinkLostByError = (prev: GnssReceiverStatus, next: GnssReceiverStatus): boolean =>
   prev.link === 'connected' && next.link === 'disconnected' && next.linkError !== null;
 
-/** 位置を使っているか（GPSがONか記録中）。このときは受信機を切り離さず、切れたら再接続する */
-export const isLocationInUse = (gpsState: 'follow' | 'show' | 'off', trackingState: 'on' | 'off'): boolean =>
-  gpsState !== 'off' || trackingState === 'on';
+/**
+ * 位置を使っているか（GPSがONか軌跡の記録中か、受信機のRAW記録中）。
+ * このときは受信機を切り離さず、切れたら再接続する
+ */
+export const isLocationInUse = (
+  gpsState: 'follow' | 'show' | 'off',
+  trackingState: 'on' | 'off',
+  rawLogging = false
+): boolean => gpsState !== 'off' || trackingState === 'on' || rawLogging;
 
 /**
  * バックグラウンドで受信機とNTRIPを切り離すか（T-M6）。

@@ -14,7 +14,9 @@ import {
 } from '../lib/gnss/connection';
 import { editSettingsAction } from '../modules/settings';
 import { RootState } from '../store';
-import { ExternalGnssSettingsType, NtripSettingsType } from '../types';
+import { ExportResultType, ExternalGnssSettingsType, NtripSettingsType } from '../types';
+import * as RawLog from '../lib/gnss/rawLog';
+import { RawLogEntry } from '../lib/gnss/rawLog';
 
 export type UseExternalGnssReturnType = {
   isAvailable: boolean;
@@ -32,6 +34,13 @@ export type UseExternalGnssReturnType = {
   refreshSppDevices: () => Promise<void>;
   connectSpp: (address: string) => Promise<void>;
   disconnect: () => Promise<void>;
+  rawLogs: RawLogEntry[];
+  refreshRawLogs: () => Promise<void>;
+  startRawLog: () => Promise<void>;
+  stopRawLog: () => Promise<void>;
+  deleteRawLog: (entry: RawLogEntry) => Promise<void>;
+  shareRawLog: (entry: RawLogEntry) => Promise<ExportResultType>;
+  setRawLogCorrections: (enabled: boolean) => void;
   updateReceiverSettings: (
     values: Pick<ExternalGnssSettingsType, 'antennaHeight' | 'baudRate' | 'trackMode' | 'trackDistance'>
   ) => void;
@@ -53,6 +62,7 @@ export const useExternalGnss = (): UseExternalGnssReturnType => {
   const [bleDevices, setBleDevices] = useState<GnssReceiver.BleDeviceInfo[]>([]);
   const [isBleScanning, setIsBleScanning] = useState(false);
   const [sppDevices, setSppDevices] = useState<GnssReceiver.SppDeviceInfo[]>([]);
+  const [rawLogs, setRawLogs] = useState<RawLogEntry[]>([]);
 
   const refreshUsbDevices = useCallback(() => {
     if (!isAvailable || !isUsbSupported) return;
@@ -155,12 +165,78 @@ export const useExternalGnss = (): UseExternalGnssReturnType => {
     [ntripPassword, saveSettings, settings, sppDevices]
   );
 
-  // 自分で切断したら、次に挿したり起動したりしても自動では接続し直さない
+  const refreshRawLogs = useCallback(async () => {
+    if (!isAvailable) return;
+    try {
+      setRawLogs(await RawLog.listRawLogs());
+    } catch (e) {
+      console.log('[gnss] list raw logs failed', e);
+    }
+  }, [isAvailable]);
+
+  useEffect(() => {
+    refreshRawLogs();
+  }, [refreshRawLogs]);
+
+  // 記録が終わった（停止・書き込みエラー）ら一覧を読み直す
+  const rawLogState = snapshot.status.rawLog?.state ?? 'off';
+  useEffect(() => {
+    if (rawLogState !== 'recording') refreshRawLogs();
+  }, [rawLogState, refreshRawLogs]);
+
+  const startRawLog = useCallback(async () => {
+    const baseName = RawLog.makeRawLogBaseName(new Date(), snapshot.status.linkName);
+    const logCorrections = settings.rawLogCorrections ?? true;
+    // 記録の情報は先に書く（記録中にアプリが落ちても、アンテナ高などが残るように）
+    await RawLog.writeRawLogMeta(baseName, {
+      startedAt: Date.now(),
+      endedAt: null,
+      receiver: snapshot.status.linkName,
+      connection: settings.lastDevice?.type ?? null,
+      antennaHeight: settings.antennaHeight,
+      ntrip:
+        logCorrections && settings.ntrip.enabled && settings.ntrip.host !== ''
+          ? { host: settings.ntrip.host, mountpoint: settings.ntrip.mountpoint }
+          : null,
+    });
+    await GnssReceiver.startRawLog(RawLog.RAW_LOG_DIR, baseName, logCorrections);
+  }, [settings, snapshot.status.linkName]);
+
+  const stopRawLog = useCallback(async () => {
+    const result = await GnssReceiver.stopRawLog();
+    if (result !== null) {
+      await RawLog.finishRawLogMeta(result.baseName, {
+        endedAt: result.endedAt,
+        roverBytes: result.roverBytes,
+        correctionBytes: result.correctionBytes,
+        sawUbx: result.sawUbx,
+      });
+    }
+    await refreshRawLogs();
+  }, [refreshRawLogs]);
+
+  const deleteRawLog = useCallback(
+    async (entry: RawLogEntry) => {
+      await RawLog.deleteRawLog(entry);
+      await refreshRawLogs();
+    },
+    [refreshRawLogs]
+  );
+
+  const shareRawLog = useCallback((entry: RawLogEntry) => RawLog.shareRawLog(entry), []);
+
+  const setRawLogCorrections = useCallback(
+    (enabled: boolean) => saveSettings({ ...settings, rawLogCorrections: enabled }),
+    [saveSettings, settings]
+  );
+
+  // 自分で切断したら、次に挿したり起動したりしても自動では接続し直さない。RAW記録もここで終える
   const disconnect = useCallback(async () => {
+    if (snapshot.status.rawLog?.state === 'recording') await stopRawLog();
     saveSettings({ ...settings, autoConnect: false });
     await GnssReceiver.stopNtrip();
     await GnssReceiver.disconnect();
-  }, [saveSettings, settings]);
+  }, [saveSettings, settings, snapshot.status.rawLog?.state, stopRawLog]);
 
   const updateReceiverSettings = useCallback(
     (values: Pick<ExternalGnssSettingsType, 'antennaHeight' | 'baudRate' | 'trackMode' | 'trackDistance'>) =>
@@ -210,6 +286,13 @@ export const useExternalGnss = (): UseExternalGnssReturnType => {
     refreshSppDevices,
     connectSpp,
     disconnect,
+    rawLogs,
+    refreshRawLogs,
+    startRawLog,
+    stopRawLog,
+    deleteRawLog,
+    shareRawLog,
+    setRawLogCorrections,
     updateReceiverSettings,
     saveNtripSettings,
     setNtripEnabled,

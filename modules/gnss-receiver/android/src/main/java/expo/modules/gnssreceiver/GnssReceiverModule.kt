@@ -160,6 +160,20 @@ class GnssReceiverModule : Module() {
       GnssSession.status()
     }
 
+    // RAW記録（後処理用）。dirPath はJS側で決めたアプリ内のフォルダ（file:// なしの絶対パス）
+    AsyncFunction("startRawLog") { dirPath: String, baseName: String, logCorrections: Boolean ->
+      try {
+        GnssSession.startRawLog(dirPath, baseName, logCorrections)
+      } catch (e: Exception) {
+        throw GnssReceiverException(e.message ?: "Could not start the raw log")
+      }
+      GnssSession.status()
+    }
+
+    AsyncFunction("stopRawLog") {
+      GnssSession.stopRawLog()
+    }
+
     AsyncFunction("disconnect") {
       GnssSession.detachLink()
     }

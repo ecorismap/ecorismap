@@ -17,6 +17,7 @@ import { DEFAULT_EXTERNAL_GNSS_SETTINGS } from '../../lib/gnss/settings';
 import { isSppSupported, isUsbSupported } from '../../lib/gnss/connection';
 import { GpsSettingsModalNtrip } from './GpsSettingsModalNtrip';
 import { GpsSettingsModalReceiver } from './GpsSettingsModalReceiver';
+import { GpsSettingsRawLog } from './GpsSettingsRawLog';
 
 const formatBytes = (bytes: number) =>
   bytes < 1024 * 1024 ? `${(bytes / 1024).toFixed(1)}KB` : `${(bytes / 1024 / 1024).toFixed(2)}MB`;
@@ -317,6 +318,8 @@ export const GpsSettingsExternalGnss = React.memo(() => {
         )}
         {settings.ntrip.enabled && status.ntripError !== null && <Text style={styles.error}>{status.ntripError}</Text>}
       </View>
+
+      <GpsSettingsRawLog />
 
       <GpsSettingsModalReceiver
         visible={receiverModalVisible}

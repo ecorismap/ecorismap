@@ -50,6 +50,9 @@ final class GnssSession {
   private var lastCorrectionAt: Double = 0
   private var lastGga: String?
   private var lastCorrectionStatusAt: Double = 0
+  // RAW記録（後処理用）。lock の中で読み書きする
+  private var rawLogger: RawLogger?
+  private var rawLogError: String?
 
   private let flushQueue = DispatchQueue(label: "GnssReceiver.flush")
   private var pending: [String] = [] // flushQueueでのみ触る
@@ -84,7 +87,71 @@ final class GnssSession {
       "ntripError": ntripError ?? NSNull(),
       "rtcmBytes": rtcmBytes,
       "lastCorrectionAt": lastCorrectionAt,
+      "rawLog": rawLogStatusLocked(),
     ]
+  }
+
+  private func rawLogStatusLocked() -> [String: Any] {
+    let s = rawLogger?.status
+    return [
+      "state": rawLogger != nil ? "recording" : (rawLogError != nil ? "error" : "off"),
+      "error": rawLogError ?? NSNull(),
+      "baseName": rawLogger?.baseName ?? NSNull(),
+      "startedAt": rawLogger?.startedAt ?? 0,
+      "roverBytes": s?.roverBytes ?? 0,
+      "correctionBytes": s?.correctionBytes ?? 0,
+      "sawUbx": s?.sawUbx ?? false,
+    ]
+  }
+
+  /** RAW記録を始める。リンクが切れても止めず、つなぎ直したら同じファイルに書き足す */
+  func startRawLog(dirPath: String, baseName: String, logCorrections: Bool) throws {
+    if locked({ rawLogger != nil }) { throw GnssError("Raw logging is already running") }
+    var created: RawLogger?
+    let logger = try RawLogger(
+      dir: URL(fileURLWithPath: dirPath, isDirectory: true),
+      baseName: baseName,
+      logCorrections: logCorrections,
+      onError: { [weak self] message in
+        guard let self else { return }
+        let failed: RawLogger? = self.locked {
+          guard let c = created, self.rawLogger === c else { return nil }
+          self.rawLogger = nil
+          self.rawLogError = message
+          return c
+        }
+        if let failed {
+          _ = failed.stop()
+          self.emitStatus()
+        }
+      },
+      onFlushed: { [weak self] in self?.emitStatus() }
+    )
+    created = logger
+    let started: Bool = locked {
+      if rawLogger != nil { return false }
+      rawLogger = logger
+      rawLogError = nil
+      return true
+    }
+    if !started {
+      _ = logger.stop()
+      throw GnssError("Raw logging is already running")
+    }
+    emitStatus()
+  }
+
+  /** RAW記録を止めて、残ったファイルの情報を返す（記録していなければ nil） */
+  func stopRawLog() -> [String: Any]? {
+    let logger: RawLogger? = locked {
+      let l = rawLogger
+      rawLogger = nil
+      rawLogError = nil
+      return l
+    }
+    let result = logger?.stop()
+    emitStatus()
+    return result
   }
 
   private func emitStatus() {
@@ -102,10 +169,21 @@ final class GnssSession {
     }
     emitStatus()
     var created: GnssLink?
+    // factory が戻って link に入る前（接続した直後）に切れると、onLinkError が「古いリンクからの通知」として
+    // 無視してしまい、切れたのに「接続済み」のまま残る。それまでのエラーは受け止めておき、link に入れてから流す
+    let earlyLock = NSLock()
+    var ready = false
+    var earlyError: String?
     do {
       let made = try factory(
         { [weak self] data in self?.feed(data) },
-        { [weak self] message in self?.onLinkError(source: created, message: message) }
+        { [weak self] message in
+          earlyLock.lock()
+          let deliver = ready
+          if !ready { earlyError = message }
+          earlyLock.unlock()
+          if deliver { self?.onLinkError(source: created, message: message) }
+        }
       )
       created = made
       locked {
@@ -121,12 +199,18 @@ final class GnssSession {
       throw error
     }
     emitStatus()
+    earlyLock.lock()
+    ready = true
+    let pendingError = earlyError
+    earlyLock.unlock()
+    if let pendingError { onLinkError(source: created, message: pendingError) }
   }
 
   private func feed(_ data: Data) {
     assemblerLock.lock()
-    defer { assemblerLock.unlock() }
     assembler.feed(data)
+    assemblerLock.unlock()
+    locked { rawLogger }?.writeRover(data)
   }
 
   private func onLinkError(source: GnssLink?, message: String) {
@@ -200,6 +284,7 @@ final class GnssSession {
       // 受信量の表示を更新する（補正は秒間数回届くので、通知は1秒に1回に間引く）
       let emit = now - lastCorrectionStatusAt >= Self.correctionStatusIntervalMs
       if emit { lastCorrectionStatusAt = now }
+      rawLogger?.writeCorrection(data)
       return (true, link, emit)
     }
     if !current { return }

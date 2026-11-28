@@ -3,6 +3,33 @@ import { NativeModule, requireOptionalNativeModule, type EventSubscription } fro
 export type GnssLinkState = 'disconnected' | 'connecting' | 'connected';
 export type NtripState = 'off' | 'connecting' | 'connected' | 'error';
 
+export type RawLogState = 'off' | 'recording' | 'error';
+
+/** RAW記録（後処理用）の状態。記録中はネイティブが1秒ごとに状態を通知する */
+export type RawLogStatus = {
+  state: RawLogState;
+  error: string | null;
+  baseName: string | null;
+  /** 記録を始めた時刻（epoch ms。記録していなければ0） */
+  startedAt: number;
+  roverBytes: number;
+  correctionBytes: number;
+  /** UBXの同期バイトを見た（u-bloxのRAWが届いている見込みが高い） */
+  sawUbx: boolean;
+};
+
+/** RAW記録を止めたときに残ったファイル */
+export type RawLogResult = {
+  baseName: string;
+  roverPath: string;
+  correctionPath: string | null;
+  roverBytes: number;
+  correctionBytes: number;
+  sawUbx: boolean;
+  startedAt: number;
+  endedAt: number;
+};
+
 export type GnssReceiverStatus = {
   link: GnssLinkState;
   linkName: string | null;
@@ -13,6 +40,8 @@ export type GnssReceiverStatus = {
   rtcmBytes: number;
   /** 最後に補正を受け取った時刻（epoch ms。未受信は0） */
   lastCorrectionAt: number;
+  /** ネイティブは常に送る。テストや旧版のネイティブでは無いことがあるので省略可能にしておく */
+  rawLog?: RawLogStatus;
 };
 
 export type UsbDeviceInfo = {
@@ -75,6 +104,8 @@ declare class GnssReceiverNative extends NativeModule<GnssReceiverEvents> {
   /** Androidのみ */
   connectSpp(address: string): Promise<GnssReceiverStatus>;
   disconnect(): Promise<void>;
+  startRawLog(dirPath: string, baseName: string, logCorrections: boolean): Promise<GnssReceiverStatus>;
+  stopRawLog(): Promise<RawLogResult | null>;
   startNtrip(config: NtripConnectionConfig): Promise<void>;
   stopNtrip(): Promise<void>;
   getSourceTable(config: Omit<NtripConnectionConfig, 'mountpoint'> & { mountpoint?: string }): Promise<string>;
@@ -100,6 +131,9 @@ export const stopBleScan = () => requireNative().stopBleScan();
 export const connectBle = (address: string) => requireNative().connectBle(address);
 export const listSppDevices = (): SppDeviceInfo[] => requireNative().listSppDevices();
 export const connectSpp = (address: string) => requireNative().connectSpp(address);
+export const startRawLog = (dirPath: string, baseName: string, logCorrections: boolean) =>
+  requireNative().startRawLog(dirPath, baseName, logCorrections);
+export const stopRawLog = () => requireNative().stopRawLog();
 export const disconnect = () => requireNative().disconnect();
 export const startNtrip = (config: NtripConnectionConfig) => requireNative().startNtrip(config);
 export const stopNtrip = () => requireNative().stopNtrip();
