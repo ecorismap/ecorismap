@@ -310,3 +310,6 @@ export function saveAs(fileBytes: Uint8Array | Blob, fileName: string): void {
 export async function exportFileFromUri(): Promise<ExportResultType> {
   return 'saved';
 }
+
+/** iOSのファイル選択が残す写しを消す（File.ts）。Webには無いので何もしない */
+export async function clearPickerInbox() {}

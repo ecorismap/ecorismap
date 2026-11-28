@@ -1,0 +1,19 @@
+# Android: 地図画面でレイヤのボタンを1回押し、レイヤ一覧が出るまで待つ（iOSでは何もしない）。
+# open-layer.yaml・open-point-layer.yaml の直前に使う。
+# Androidのエミュレーターは、レイヤが多いと一覧が出るまで数秒かかる。open-layer などは3秒待って出ていなければレイヤのボタンを
+# 押し直すが、Androidはシートの裏のボタンも「見えている」と判定されるので、押し直しが同じ位置にある一覧の「グループ」ボタンに
+# 当たり、グループ作成の入力が開いて先へ進めなくなる。先にここで一覧が出るのを待っておけば、押し直しは起きない。
+appId: jp.co.ecoris.ecorismap
+---
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - tapOn:
+          id: 'home-layers'
+          retryTapIfNoChange: false
+      - extendedWaitUntil:
+          visible:
+            id: 'layers-add'
+          timeout: 20000
+          optional: true

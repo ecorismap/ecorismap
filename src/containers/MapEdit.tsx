@@ -10,6 +10,7 @@ import { Platform } from 'react-native';
 import { formattedInputs } from '../utils/Format';
 import * as DocumentPicker from 'expo-document-picker';
 import { getExt } from '../utils/General';
+import { clearPickerInbox } from '../utils/File';
 import * as FileSystem from 'expo-file-system/legacy';
 import { db } from '../utils/db';
 import { TILE_FOLDER } from '../constants/AppConstants';
@@ -154,11 +155,12 @@ export default function MapEditContainer() {
 
   const pressExportMap = useCallback(async () => {
     const result = await exportSingleMap(map);
-    await AlertAsync(result.message);
+    if (result.message !== '') await AlertAsync(result.message);
   }, [exportSingleMap, map]);
 
   const pressImportStyle = useCallback(async () => {
     const file = await DocumentPicker.getDocumentAsync({});
+    await clearPickerInbox();
     if (file.assets === null) return;
     const name = file.assets[0].name;
     const uri = file.assets[0].uri;

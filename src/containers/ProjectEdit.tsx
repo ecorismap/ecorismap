@@ -175,6 +175,12 @@ export default function ProjectEditContainer({ navigation, route }: Props_Projec
       // 開く先の構成）を残さず閉じる。残すと送信や設定の保存で今のプロジェクトのクラウドを上書きしうる（A-H2）
       let hasTouchedLocal = false;
       try {
+        // 通信できないときは、確認を出す前に止める。Firestore はオフラインだと失敗せずキャッシュの内容を返すので、
+        // 開く処理がそのまま進み、古い（または空の）データで手元の記録を置き換えてしまう
+        if ((await NetInfo.fetch()).isConnected === false) {
+          await AlertAsync(t('Home.alert.noInternet'));
+          return false;
+        }
         //通常はユーザーとして自分のデータのみ取得する。管理者は取得時に全てのデータを取得できる。
         //ただしWeb版は集計・確認作業が中心のため、管理者には開く時点で他メンバーのプライベートデータも取得するか確認する。
         let isAdmin = false;

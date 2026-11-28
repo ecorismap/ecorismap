@@ -1,0 +1,418 @@
+# ANLY-2・ANLY-10・ANLY-4（一部）・ANLY-6: 可視領域・3D・眺望（ネイティブの3Dは自作エンジンで、Webとは実装が違う）。
+# - ANLY-2: 長押しメニューの「可視領域を作成」で距離・観測点の高さの設定が出て、OKで「可視領域 1件」のバナーが出る。
+#   もう1か所作ると2件になる。消去の確認に Yes でバナーが消える（塗り・範囲の円の絵は、Maestro からは確かめていない）
+# - ANLY-10: 可視領域を出したまま3Dにしても、3Dの回転・傾きの操作をしても、眺望に入っても、件数のバナーが出たままで落ちない
+# - ANLY-4: 2Dで作ったポイントが、3Dではラベル（連番）つきで出て、タップするとその記録の編集画面が開く
+#   （地形の絵・ライン・ポリゴン・ベクタPMTilesは確かめていない）
+# - ANLY-6: 長押しメニューの「ここからの眺望」で眺望モードになり、視点の高さ（1.7m）と倍率（×1.0）が出る。
+#   山名のラベルが出て、押すと詳細が出る。山名ボタンで隠す／出すが切り替わる。視点の高さの上下・望遠／広角で表示の数値が変わり、戻せる。
+#   バナーを押すと眺望が終わり、ふつうの3Dになる（立ち位置・向き・山名の位置が正しいかは確かめていない）
+# 絵（地形・可視領域の塗り・山並み）はスクリーンショット（17-terrain3d-data・17-vista など）を人が見て確かめる。
+# 3Dに切り替えた直後の数秒は、まだ絵が出ておらず白く写ることがある。
+# 標高データ・地図タイル・山名は通信で取りに行く。地図は疑似位置で仙台の東の平野（北緯38.24度・東経140.95度）へ移し、ズーム12にする
+# （GPSはオフに戻す。地図はその付近に移ったままになる）。
+# 既定の「ポイント」レイヤにテスト用の記録を1件作り、最後に消す。可視領域は一時表示で、最後に消去する。3Dは2Dへ戻して終える。
+appId: jp.co.ecoris.ecorismap
+env:
+  LAYER_NAME: 'ポイント.*'
+---
+- runFlow: ../common/launch.yaml
+- runFlow: ../common/discard-interrupted-track.yaml
+# Androidは、前回の途中で残った記録は記録中のまま戻る。止めて、保存された軌跡を消す
+- runFlow: ../common/android-stop-leftover-track.yaml
+# 前提を整える: 3Dのまま残っていたら2Dへ戻す
+- runFlow:
+    when:
+      visible:
+        id: 'home-vista-close'
+    commands:
+      - tapOn:
+          id: 'home-vista-close'
+          retryTapIfNoChange: false
+      - waitForAnimationToEnd:
+          timeout: 5000
+- runFlow:
+    when:
+      visible:
+        id: 'home-terrain-rotate-cw'
+    commands:
+      - tapOn:
+          id: 'home-terrain'
+          retryTapIfNoChange: false
+      - extendedWaitUntil:
+          notVisible:
+            id: 'home-terrain-rotate-cw'
+          timeout: 15000
+# いまある記録の数（＝これから作る記録の行番号）を数える
+- runFlow: ../common/android-open-layer-list.yaml
+- runFlow: ../common/open-point-layer.yaml
+- runFlow: ../common/count-rows.yaml
+- runFlow: ../common/close-sheet.yaml
+# 地図を仙台の東の平野（北緯38.24度・東経140.95度。北に山並みが見える開けた場所）へ移し、ズーム12にする
+- runFlow:
+    file: ../common/goto-pseudo-location.yaml
+    env:
+      LAT: 38.24
+      LON: 140.95
+- runFlow:
+    file: ../common/set-zoom.yaml
+    env:
+      ZOOM: 12
+# 疑似位置を与えたあとのトーストが下部のボタンに重なっていたら閉じる
+- runFlow: ../common/dismiss-toast-by-point.yaml
+# ANLY-4 の準備: 画面の中央付近にポイントを1つ作る（3Dでは、地図の中心だった地点が画面の中央に来る）
+- runFlow:
+    file: ../common/select-feature.yaml
+    env:
+      FEATURE: point
+- tapOn:
+    id: 'home-draw-plot-point'
+    retryTapIfNoChange: false
+- runFlow: ../common/confirm-show-layer.yaml
+- tapOn:
+    point: '50%,45%'
+- extendedWaitUntil:
+    visible:
+      id: 'home-draw-save'
+    timeout: 10000
+- tapOn:
+    id: 'home-draw-save'
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible:
+      id: 'dataedit-record-number'
+      text: ${(output.row + 1) + '/' + (output.row + 1)}
+    timeout: 15000
+- waitForAnimationToEnd
+# 連番（name）が3Dでのラベルになる
+- copyTextFrom:
+    id: 'dataedit-input-name'
+- evalScript: ${output.pointName = maestro.copiedText}
+- assertTrue: ${/^\d+$/.test(output.pointName)}
+- runFlow: ../common/close-sheet.yaml
+- runFlow: ../common/dismiss-toast-by-point.yaml
+- runFlow:
+    file: ../common/select-feature.yaml
+    env:
+      FEATURE: draw
+- runFlow: ../common/dismiss-toast-by-point.yaml
+# 2Dでは、ポイントのラベルは Maestro から文字として見えない（3Dで出たことの対照）
+- assertNotVisible:
+    text: ${output.pointName}
+
+# 前提を整える: 前回の途中で可視領域が残っていたら消す
+- runFlow:
+    when:
+      visible:
+        id: 'home-viewshed-clear'
+    commands:
+      - tapOn:
+          id: 'home-viewshed-clear'
+          retryTapIfNoChange: false
+      - tapOn: 'Yes'
+      - waitForAnimationToEnd:
+          timeout: 3000
+- assertNotVisible:
+    id: 'home-viewshed-text'
+
+# ANLY-2: 長押しメニューから可視領域を作成する
+- longPressOn:
+    point: '60%,55%'
+- extendedWaitUntil:
+    visible:
+      id: 'home-poi-viewshed'
+    timeout: 10000
+- tapOn:
+    id: 'home-poi-viewshed'
+    retryTapIfNoChange: false
+# 距離と観測点の高さの設定が出る（既定は3km・2m）
+- extendedWaitUntil:
+    visible:
+      id: 'home-viewshedsettings-ok'
+    timeout: 10000
+- assertVisible: '可視領域の作成'
+- assertVisible:
+    id: 'home-viewshedsettings-distance'
+    text: '\d+(\.\d+)?'
+- assertVisible:
+    id: 'home-viewshedsettings-observer-height'
+    text: '\d+(\.\d+)?'
+- tapOn:
+    id: 'home-viewshedsettings-ok'
+    retryTapIfNoChange: false
+# 標高データを取得して計算し、件数のバナーが出る
+- extendedWaitUntil:
+    visible:
+      id: 'home-viewshed-text'
+      text: '可視領域 1件'
+    timeout: 120000
+- assertNotVisible:
+    id: 'dialog-message'
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: 17-viewshed-2d
+# 別の地点でもう1つ作ると、2件になる（直前のポップアップに重ならない位置を押す）
+- longPressOn:
+    point: '35%,35%'
+- extendedWaitUntil:
+    visible:
+      id: 'home-poi-viewshed'
+    timeout: 10000
+- tapOn:
+    id: 'home-poi-viewshed'
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible:
+      id: 'home-viewshedsettings-ok'
+    timeout: 10000
+- tapOn:
+    id: 'home-viewshedsettings-ok'
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible:
+      id: 'home-viewshed-text'
+      text: '可視領域 2件'
+    timeout: 120000
+
+# ANLY-10・ANLY-4: 可視領域を出したまま3Dへ
+- tapOn:
+    id: 'home-terrain'
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible:
+      id: 'home-terrain-rotate-cw'
+    timeout: 30000
+- waitForAnimationToEnd:
+    timeout: 8000
+- assertVisible:
+    id: 'home-viewshed-text'
+    text: '可視領域 2件'
+# ANLY-4: ポイントがラベルつきで出ていて、タップするとその記録が開く
+- extendedWaitUntil:
+    visible:
+      text: ${output.pointName}
+    timeout: 20000
+- takeScreenshot: 17-terrain3d-data
+- tapOn:
+    text: ${output.pointName}
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible:
+      id: 'dataedit-record-number'
+      text: ${(output.row + 1) + '/' + (output.row + 1)}
+    timeout: 10000
+- assertVisible:
+    id: 'dataedit-input-name'
+    text: ${output.pointName}
+- runFlow: ../common/close-sheet.yaml
+# 回転・傾きの操作をしても落ちない
+- tapOn:
+    id: 'home-terrain-rotate-cw'
+- tapOn:
+    id: 'home-terrain-pitch-cw'
+- tapOn:
+    id: 'home-terrain-rotate-ccw'
+- tapOn:
+    id: 'home-terrain-pitch-ccw'
+- waitForAnimationToEnd:
+    timeout: 5000
+- assertVisible:
+    id: 'home-terrain-rotate-cw'
+- assertVisible:
+    id: 'home-viewshed-text'
+    text: '可視領域 2件'
+# 2Dへ戻す
+- tapOn:
+    id: 'home-terrain'
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    notVisible:
+      id: 'home-terrain-rotate-cw'
+    timeout: 15000
+- assertVisible:
+    id: 'home-zoom-in'
+
+# ANLY-6: 2Dの長押しメニューから「ここからの眺望」
+- longPressOn:
+    point: '55%,60%'
+- extendedWaitUntil:
+    visible:
+      id: 'home-poi-vista'
+      text: 'ここからの眺望'
+    timeout: 10000
+- tapOn:
+    id: 'home-poi-vista'
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible:
+      id: 'home-vista-close'
+      text: '.*眺望モード.*'
+    timeout: 60000
+# 目の高さ 1.7m・等倍で始まる。眺望中は地図のズームボタンと3Dの回転ボタンが消える
+- assertVisible:
+    id: 'home-vista-height'
+    text: '1\.7m'
+- assertVisible:
+    id: 'home-vista-zoom'
+    text: '×1\.0'
+- assertNotVisible:
+    id: 'home-zoom-in'
+- assertNotVisible:
+    id: 'home-terrain-rotate-cw'
+# ANLY-10: 眺望でも可視領域のバナーは出たまま
+- assertVisible:
+    id: 'home-viewshed-text'
+    text: '可視領域 2件'
+# 山名: ラベルが出て（山名のデータを取得するまで待つ）、出典が付く。押すと詳細が出る
+- assertVisible:
+    id: 'home-vista-peak-names'
+    text: '山名を隠す'
+- extendedWaitUntil:
+    visible:
+      id: 'home-vista-peak-label'
+    timeout: 60000
+- assertVisible: '山名: 国土地理院'
+- takeScreenshot: 17-vista
+- tapOn:
+    id: 'home-vista-peak-label'
+    index: 0
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible:
+      id: 'home-vista-peak-detail'
+    timeout: 10000
+# 山名ボタンで隠すと、ラベルも詳細も消える。もう一度押すと出る
+- tapOn:
+    id: 'home-vista-peak-names'
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible:
+      id: 'home-vista-peak-names'
+      text: '山名を表示'
+    timeout: 10000
+- assertNotVisible:
+    id: 'home-vista-peak-label'
+- assertNotVisible:
+    id: 'home-vista-peak-detail'
+- tapOn:
+    id: 'home-vista-peak-names'
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible:
+      id: 'home-vista-peak-label'
+    timeout: 30000
+# 視点の高さ: 上げると 1.7m でなくなり、下げると 1.7m に戻る
+- tapOn:
+    id: 'home-vista-height-up'
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible:
+      id: 'home-vista-height'
+      text: '\d+m'
+    timeout: 10000
+- copyTextFrom:
+    id: 'home-vista-height'
+- assertTrue: ${parseFloat(maestro.copiedText) > 1.7}
+- tapOn:
+    id: 'home-vista-height-down'
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible:
+      id: 'home-vista-height'
+      text: '1\.7m'
+    timeout: 10000
+# 画角: 望遠にすると倍率が1より大きくなり、広角で等倍に戻る
+- tapOn:
+    id: 'home-vista-zoom-in'
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    notVisible:
+      id: 'home-vista-zoom'
+      text: '×1\.0'
+    timeout: 10000
+- copyTextFrom:
+    id: 'home-vista-zoom'
+- assertTrue: ${parseFloat(maestro.copiedText.replace('×', '')) > 1}
+- takeScreenshot: 17-vista-zoomed
+- tapOn:
+    id: 'home-vista-zoom-out'
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible:
+      id: 'home-vista-zoom'
+      text: '×1\.0'
+    timeout: 10000
+# バナーを押すと眺望が終わり、ふつうの3D（回転ボタンとズームボタン）になる
+- tapOn:
+    id: 'home-vista-close'
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    notVisible:
+      id: 'home-vista-close'
+    timeout: 15000
+- assertVisible:
+    id: 'home-terrain-rotate-cw'
+- assertNotVisible:
+    id: 'home-vista-height'
+- tapOn:
+    id: 'home-terrain'
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    notVisible:
+      id: 'home-terrain-rotate-cw'
+    timeout: 15000
+
+# ANLY-2: 可視領域を消去する。No なら残り、Yes で消える
+- tapOn:
+    id: 'home-viewshed-clear'
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible:
+      id: 'dialog-message'
+      text: '表示中の可視領域をすべて消去しますか？'
+    timeout: 10000
+- tapOn: 'No'
+- waitForAnimationToEnd:
+    timeout: 3000
+- assertVisible:
+    id: 'home-viewshed-text'
+    text: '可視領域 2件'
+- tapOn:
+    id: 'home-viewshed-clear'
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible:
+      id: 'dialog-message'
+    timeout: 10000
+- tapOn: 'Yes'
+- extendedWaitUntil:
+    notVisible:
+      id: 'home-viewshed-text'
+    timeout: 10000
+- takeScreenshot: 17-viewshed-cleared
+
+# 後片付け: テスト用のポイントを消す（起動し直して、データ一覧から開く）
+- runFlow: ../common/launch.yaml
+- runFlow: ../common/android-open-layer-list.yaml
+- runFlow: ../common/open-point-layer.yaml
+- assertVisible:
+    id: data-row-${output.row}
+- tapOn:
+    id: data-row-${output.row}
+- extendedWaitUntil:
+    visible:
+      id: 'dataedit-delete'
+    timeout: 10000
+- waitForAnimationToEnd
+- assertVisible:
+    id: 'dataedit-input-name'
+    text: ${output.pointName}
+- tapOn:
+    id: 'dataedit-delete'
+- tapOn: 'Yes'
+- extendedWaitUntil:
+    visible:
+      id: 'data-add'
+    timeout: 10000
+- assertNotVisible:
+    id: data-row-${output.row}

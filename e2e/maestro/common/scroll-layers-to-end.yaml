@@ -1,0 +1,12 @@
+# 開いているレイヤ一覧を末尾まで送る（レイヤが多いと画面の外の行は描かれていないので、末尾の行を確かめる前に使う）。
+appId: jp.co.ecoris.ecorismap
+---
+- repeat:
+    times: 6
+    commands:
+      - swipe:
+          start: '50%,75%'
+          end: '50%,25%'
+          duration: 400
+- waitForAnimationToEnd:
+    timeout: 3000

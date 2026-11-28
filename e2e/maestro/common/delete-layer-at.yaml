@@ -1,0 +1,65 @@
+# 開いているレイヤ一覧で、行番号 ${output.layerIndex} のレイヤを設定画面から削除する。
+# その行が画面の下にあれば下へ送って探す（上へは戻らない）。取り違えないよう、その行のレイヤ名が ${LAYER_NAME}（正規表現）であることを先に確かめる。レイヤ一覧に戻って終わる。
+# - 画面の外にある行も「見えている」と判定されるので、画面内かどうかは「追加ボタンより上にある」で確かめる
+# - 設定（歯車）の列は右にはみ出しているので、表を横にずらしてから押す
+appId: jp.co.ecoris.ecorismap
+---
+- waitForAnimationToEnd:
+    timeout: 3000
+- repeat:
+    while:
+      notVisible:
+        id: layers-row-${output.layerIndex}
+        above:
+          id: 'layers-add'
+    times: 10
+    commands:
+      - swipe:
+          start: '50%,75%'
+          end: '50%,25%'
+          duration: 400
+      - waitForAnimationToEnd:
+          timeout: 2000
+# 「上にある」の判定は甘く、行がボタンの帯に隠れていても通る。隠れていると押せないので、さらに送る
+# （取り込んだレイヤは末尾に入るので、末尾まで送ればボタンの帯のすぐ上に出る。末尾まで来ていれば動かない）
+- repeat:
+    times: 2
+    commands:
+      - swipe:
+          start: '50%,70%'
+          end: '50%,40%'
+          duration: 500
+      - waitForAnimationToEnd:
+          timeout: 2000
+- assertVisible:
+    id: layers-row-${output.layerIndex}
+    text: ${LAYER_NAME}
+- swipe:
+    start: '80%,40%'
+    end: '20%,40%'
+    duration: 600
+- waitForAnimationToEnd:
+    timeout: 3000
+- tapOn:
+    id: layers-settings-${output.layerIndex}
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible:
+      id: 'layeredit-name'
+      text: ${LAYER_NAME}
+    timeout: 10000
+- waitForAnimationToEnd
+- tapOn:
+    id: 'layeredit-delete'
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible:
+      id: 'dialog-message'
+    timeout: 10000
+- tapOn: 'Yes'
+- extendedWaitUntil:
+    visible:
+      id: 'layers-add'
+    timeout: 10000
+- waitForAnimationToEnd:
+    timeout: 3000

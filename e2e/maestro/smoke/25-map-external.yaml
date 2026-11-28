@@ -1,0 +1,67 @@
+# MAP-5: 長押しメニューの「Google Maps」で外部の地図が開く。
+# - 地図を長押しするとメニューに「Google Maps」が出て、押すとアプリが背面へ回り、ブラウザ（Safari）で google.com の地図検索が開く
+#   （iOSシミュレーターには Google Maps アプリが無いので、ブラウザで開く経路になる。実機で Google Maps アプリが開く経路と、
+#   開いた先の地点が長押しした場所と合っているかは確かめていない）
+#   Androidエミュレーターは Google Maps アプリが開く。検索欄の座標が長押しした場所の座標（小数4桁まで）と合うことまで確かめる
+# - アプリへ戻ると、長押しのメニューは閉じている
+# 外部（google.com）へ通信する。開いた Safari のタブ（Androidは Google Maps アプリ）は残る。
+appId: jp.co.ecoris.ecorismap
+---
+- runFlow: ../common/launch.yaml
+- runFlow: ../common/dismiss-received-file.yaml
+- longPressOn:
+    point: '55%,45%'
+- extendedWaitUntil:
+    visible:
+      id: 'home-poi-google-maps'
+    timeout: 10000
+- assertVisible:
+    id: 'home-poi-coordinate'
+- takeScreenshot: 25-map-popup
+# （Android: あとで Google Maps の検索欄と比べるので、長押しした場所の座標を読んでおく）
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - copyTextFrom:
+          id: 'home-poi-coordinate'
+      - evalScript: ${output.poi = maestro.copiedText.split(',')}
+- tapOn:
+    id: 'home-poi-google-maps'
+    retryTapIfNoChange: false
+# アプリが背面へ回り、ブラウザが開く
+- extendedWaitUntil:
+    notVisible:
+      id: 'home-layers'
+    timeout: 20000
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - extendedWaitUntil:
+          visible: '.*google\.com.*'
+          timeout: 30000
+# Androidのエミュレーターには Google Maps アプリがあり、そちらが開く。検索欄に入った座標が、長押しした場所と合っている
+# （何も押さない。Google Maps が初回の案内やログインを出す端末では、ここで落ちる）
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - extendedWaitUntil:
+          visible:
+            id: 'com.google.android.apps.maps:id/search_omnibox_text_box'
+          timeout: 30000
+      - copyTextFrom:
+          text: '-?\d+\.\d+,-?\d+\.\d+'
+      - evalScript: ${output.opened = maestro.copiedText.split(',')}
+      - assertTrue: ${Math.abs(Number(output.opened[0]) - Number(output.poi[0])) < 0.0001 && Math.abs(Number(output.opened[1]) - Number(output.poi[1])) < 0.0001}
+- takeScreenshot: 25-map-google
+# アプリへ戻る（起動し直さずに前面へ出す）。メニューは閉じている
+- launchApp:
+    stopApp: false
+- extendedWaitUntil:
+    visible:
+      id: 'home-layers'
+    timeout: 30000
+- assertNotVisible:
+    id: 'home-poi-google-maps'

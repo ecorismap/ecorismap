@@ -1,0 +1,283 @@
+# MAPS-1・MAPS-4・MAPS-2・MAPS-5・MAPS-13（一部）: 地図（背景地図）の管理。
+# - MAPS-4: URL・出典を入力して地図を追加すると、一覧の先頭に入り、出典表示にその出典が加わる。名前を変えて保存できる。削除すると一覧と出典表示から消える
+# - MAPS-1: 追加した地図の表示／非表示を切り替えると、出典表示からその出典が消え、戻すと出る
+# - MAPS-2: 透過率のスライダーを動かして保存すると、開き直しても同じ値が出る（地図の濃さは確かめていない）
+# - MAPS-5: プリセットを選ぶと名前とURLが入り、保存すると一覧に入る
+# - MAPS-13: オンライン／オフラインのボタンで表示が切り替わり、戻せる（オフラインでダウンロード済みの範囲が描かれることは確かめていない）
+# 追加した地図（e2emap…・プリセットの「地理院写真(最新)」）は最後に消し、オフラインはオンラインへ戻す。
+# 前回の途中で残った地図（先頭の e2emap…）があれば、最初に消す。
+# Androidは端末の日本語入力が入力をかなに変換するので（e2emap→え２えまｐ、e2e-attr→え２えーあっｔｒ）、名前と出典はどちらの形でも通す。
+appId: jp.co.ecoris.ecorismap
+---
+- runFlow: ../common/launch.yaml
+# 起動直後（地図の読み込み中）のタップは効かないことがあるので、開くまで押し直す
+- repeat:
+    while:
+      notVisible:
+        id: 'maps-add'
+    times: 5
+    commands:
+      - tapOn:
+          id: 'home-maps'
+          retryTapIfNoChange: false
+      - waitForAnimationToEnd:
+          timeout: 3000
+# 前提を整える: 前回の残りを消す。オフラインのままならオンラインへ戻す
+- repeat:
+    while:
+      visible:
+        id: 'maps-row-0'
+        text: '(e2emap|え２えまｐ).*'
+    times: 3
+    commands:
+      - runFlow: ../common/delete-top-map.yaml
+- runFlow:
+    when:
+      visible:
+        id: 'maps-toggle-online'
+        text: '.*ｵﾌﾗｲﾝ'
+    commands:
+      - tapOn:
+          id: 'maps-toggle-online'
+          retryTapIfNoChange: false
+      - waitForAnimationToEnd:
+          timeout: 3000
+- assertNotVisible:
+    id: 'home-attribution'
+    text: '.*(e2e-attr|え２えーあっｔｒ).*'
+
+# MAPS-4: URLで追加する
+- tapOn:
+    id: 'maps-add'
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible:
+      id: 'mapedit-name'
+    timeout: 10000
+- waitForAnimationToEnd
+- tapOn:
+    id: 'mapedit-name'
+- inputText: 'e2emap'
+- tapOn:
+    id: 'mapedit-url'
+- inputText: 'https://cyberjapandata.gsi.go.jp/xyz/pale/{z}/{x}/{y}.png'
+- tapOn:
+    id: 'mapedit-attribution'
+- inputText: 'e2e-attr'
+- hideKeyboard
+- tapOn:
+    id: 'mapedit-save'
+    retryTapIfNoChange: false
+- waitForAnimationToEnd:
+    timeout: 3000
+# 保存しても編集画面のまま。戻ると一覧の先頭に入っていて、出典表示に出典が加わっている
+- tapOn:
+    id: 'sheet-back'
+- extendedWaitUntil:
+    visible:
+      id: 'maps-row-0'
+      text: 'e2emap|え２えまｐ'
+    timeout: 10000
+- extendedWaitUntil:
+    visible:
+      id: 'home-attribution'
+      text: '.*(e2e-attr|え２えーあっｔｒ).*'
+    timeout: 10000
+- takeScreenshot: 12-maps-added
+
+# MAPS-1: 非表示にすると出典表示から消え、表示に戻すと出る
+- tapOn:
+    id: 'maps-visible-0'
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    notVisible:
+      id: 'home-attribution'
+      text: '.*(e2e-attr|え２えーあっｔｒ).*'
+    timeout: 10000
+- assertVisible:
+    id: 'home-attribution'
+    text: '出典: .+'
+- tapOn:
+    id: 'maps-visible-0'
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible:
+      id: 'home-attribution'
+      text: '.*(e2e-attr|え２えーあっｔｒ).*'
+    timeout: 10000
+
+# MAPS-4: 編集（名前の末尾に1文字足す）。MAPS-2: 透過率を変える
+- tapOn:
+    id: 'maps-edit-0'
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible:
+      id: 'mapedit-name'
+      text: 'e2emap|え２えまｐ'
+    timeout: 10000
+- waitForAnimationToEnd
+- assertVisible:
+    id: 'mapedit-attribution'
+    text: 'e2e-attr|え２えーあっｔｒ'
+- tapOn:
+    id: 'mapedit-name'
+- inputText: '2'
+- hideKeyboard
+# 透過率は最初 0.0。スライダーのつまみ（左端）を右へ引く
+- assertVisible:
+    text: '0\.0'
+    rightOf:
+      id: 'mapedit-transparency'
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - swipe:
+          start: '30%,46%'
+          end: '50%,46%'
+          duration: 1000
+# Androidはスライダーの位置が違う。スライダーは押した位置へつまみが移るので、中央を押す（0.5 になる）
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - tapOn:
+          id: 'mapedit-transparency'
+          retryTapIfNoChange: false
+- waitForAnimationToEnd:
+    timeout: 2000
+- copyTextFrom:
+    text: '0\.\d'
+    rightOf:
+      id: 'mapedit-transparency'
+- evalScript: ${output.transparency = maestro.copiedText}
+- assertTrue: ${Number(output.transparency) > 0 && Number(output.transparency) < 1}
+- tapOn:
+    id: 'mapedit-save'
+    retryTapIfNoChange: false
+- waitForAnimationToEnd:
+    timeout: 3000
+- tapOn:
+    id: 'sheet-back'
+- extendedWaitUntil:
+    visible:
+      id: 'maps-row-0'
+      text: 'e2emap2|え２えまｐ２'
+    timeout: 10000
+# 開き直しても、変えた透過率のまま
+- tapOn:
+    id: 'maps-edit-0'
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible:
+      id: 'mapedit-name'
+      text: 'e2emap2|え２えまｐ２'
+    timeout: 10000
+- waitForAnimationToEnd
+- assertVisible:
+    text: ${output.transparency.replace('.', '\\.')}
+    rightOf:
+      id: 'mapedit-transparency'
+- takeScreenshot: 12-maps-edited
+# MAPS-4: 削除すると、一覧と出典表示から消える
+- tapOn:
+    id: 'mapedit-delete'
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible:
+      id: 'dialog-message'
+    timeout: 10000
+- tapOn: 'Yes'
+- extendedWaitUntil:
+    visible:
+      id: 'maps-add'
+    timeout: 10000
+- assertNotVisible:
+    id: 'maps-row-\d+'
+    text: '(e2emap|え２えまｐ).*'
+- extendedWaitUntil:
+    notVisible:
+      id: 'home-attribution'
+      text: '.*(e2e-attr|え２えーあっｔｒ).*'
+    timeout: 10000
+
+# MAPS-5: プリセットから追加する
+- tapOn:
+    id: 'maps-add'
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible:
+      id: 'mapedit-preset'
+    timeout: 10000
+- waitForAnimationToEnd
+- tapOn:
+    id: 'mapedit-preset'
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible: '地理院写真\(最新\)'
+    timeout: 10000
+- tapOn: '地理院写真\(最新\)'
+# プリセットの内容が入力欄に入る
+- extendedWaitUntil:
+    visible:
+      id: 'mapedit-name'
+      text: '地理院写真\(最新\)'
+    timeout: 10000
+- assertVisible:
+    id: 'mapedit-url'
+    text: 'https://.+'
+- tapOn:
+    id: 'mapedit-save'
+    retryTapIfNoChange: false
+- waitForAnimationToEnd:
+    timeout: 3000
+- tapOn:
+    id: 'sheet-back'
+- extendedWaitUntil:
+    visible:
+      id: 'maps-row-0'
+      text: '地理院写真\(最新\)'
+    timeout: 10000
+- takeScreenshot: 12-maps-preset
+# 後片付け
+- runFlow: ../common/delete-top-map.yaml
+- assertNotVisible:
+    id: 'maps-row-0'
+    text: '地理院写真\(最新\)'
+
+# MAPS-13: オフラインへ切り替えて、オンラインへ戻す
+- assertVisible:
+    id: 'maps-toggle-online'
+    text: '.*ｵﾝﾗｲﾝ'
+- tapOn:
+    id: 'maps-toggle-online'
+    retryTapIfNoChange: false
+# 初めて切り替えるときは説明が出る
+- extendedWaitUntil:
+    visible:
+      id: 'dialog-message'
+    timeout: 3000
+    optional: true
+- runFlow:
+    when:
+      visible:
+        id: 'dialog-message'
+    commands:
+      - assertVisible: '.*オフラインモードに切り替えます.*'
+      - tapOn: 'OK'
+      - waitForAnimationToEnd:
+          timeout: 3000
+- extendedWaitUntil:
+    visible:
+      id: 'maps-toggle-online'
+      text: '.*ｵﾌﾗｲﾝ'
+    timeout: 10000
+- takeScreenshot: 12-maps-offline
+- tapOn:
+    id: 'maps-toggle-online'
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible:
+      id: 'maps-toggle-online'
+      text: '.*ｵﾝﾗｲﾝ'
+    timeout: 10000

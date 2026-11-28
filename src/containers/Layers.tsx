@@ -9,6 +9,7 @@ import { useTutrial } from '../hooks/useTutrial';
 import { t } from '../i18n/config';
 import { LayersContext } from '../contexts/Layers';
 import { usePermission } from '../hooks/usePermission';
+import { clearPickerInbox } from '../utils/File';
 import * as DocumentPicker from 'expo-document-picker';
 import { useGeoFile } from '../hooks/useGeoFile';
 import { getExt } from '../utils/General';
@@ -55,6 +56,7 @@ export default function LayerContainer() {
     await runTutrial('LAYERS_BTN_IMPORT');
 
     const file = await DocumentPicker.getDocumentAsync({});
+    await clearPickerInbox();
     if (file.assets === null) return;
     const ext = getExt(file.assets[0].name)?.toLowerCase();
     if (

@@ -1,0 +1,18 @@
+# 編集レイヤが非表示のときに道具を選ぶと出る「非表示です。表示して続けますか？」に、出ていれば Yes と答える。
+# （端末に残っている状態しだいで出る。Yes でレイヤが表示に変わり、道具が選ばれる）
+appId: jp.co.ecoris.ecorismap
+---
+- extendedWaitUntil:
+    visible:
+      id: 'dialog-message'
+    timeout: 2000
+    optional: true
+- runFlow:
+    when:
+      visible:
+        id: 'dialog-message'
+    commands:
+      - assertVisible: '.*非表示です。表示して続けますか.*'
+      - tapOn: 'Yes'
+      - waitForAnimationToEnd:
+          timeout: 3000

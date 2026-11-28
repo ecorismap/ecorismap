@@ -1,0 +1,252 @@
+# PHOTO-A5: 写真を拡大表示し、スワイプで前後へ移れる。拡大表示から削除できる。
+# - ライブラリから2枚付けて保存し、開き直してサムネイルを押すと拡大表示が開き、「1 / 2」と出る
+# - 左へスワイプすると「2 / 2」、右へスワイプすると「1 / 2」に戻る
+# - 削除を押すと「写真を削除しますか？」と出て、Yes で拡大表示が閉じ、サムネイルが1枚になる。保存して開き直しても1枚のまま
+#   （どちらの写真が消えたか、写真のファイルが消えたかは確かめていない）
+# 既定の「ポイント」レイヤにテスト用の記録を1件作り、最後に消す。端末の写真ライブラリに2枚以上あること（iOSシミュレーターは最初から入っている）。
+# Androidは scripts/e2e-native.sh が端末の Pictures へテスト用の写真（e2e_photo.heic）を置くが、それとは別にもう1枚要る。
+appId: jp.co.ecoris.ecorismap
+env:
+  LAYER_NAME: 'ポイント.*'
+---
+- runFlow: ../common/launch.yaml
+- runFlow: ../common/android-open-layer-list.yaml
+- runFlow: ../common/open-point-layer.yaml
+- runFlow: ../common/count-rows.yaml
+# 編集レイヤになっていないときは、切り替えの確認が出る（Yesで切り替わるだけなので、追加を押し直す）
+- repeat:
+    while:
+      notVisible:
+        id: 'dataedit-photo-library'
+    times: 3
+    commands:
+      - tapOn:
+          id: 'data-add'
+          retryTapIfNoChange: false
+      - extendedWaitUntil:
+          visible:
+            id: 'dialog-message'
+          timeout: 3000
+          optional: true
+      - runFlow:
+          when:
+            visible:
+              id: 'dialog-message'
+          commands:
+            - tapOn: 'Yes'
+            - waitForAnimationToEnd:
+                timeout: 3000
+- extendedWaitUntil:
+    visible:
+      id: 'dataedit-photo-library'
+    timeout: 10000
+- waitForAnimationToEnd
+# 1枚目: 写真選択画面の先頭の写真（要素名はOS・言語で変わるため位置で指定。サムネイルが付くまで押し直す）
+- tapOn:
+    id: 'dataedit-photo-library'
+- extendedWaitUntil:
+    notVisible:
+      id: 'dataedit-photo-library'
+    timeout: 15000
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - repeat:
+          while:
+            notVisible:
+              id: 'dataedit-photo-thumb-0'
+          times: 4
+          commands:
+            - waitForAnimationToEnd:
+                timeout: 3000
+            - tapOn:
+                point: '17%,27%'
+                retryTapIfNoChange: false
+            - waitForAnimationToEnd:
+                timeout: 5000
+# Androidの写真選択画面は、写真が「<撮影日時>に撮影した写真」という読み上げ文言で見える。選んでから「完了」を押す
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - extendedWaitUntil:
+          visible: '.*に撮影した写真'
+          timeout: 15000
+      - tapOn:
+          text: '.*に撮影した写真'
+          index: 0
+          retryTapIfNoChange: false
+      - tapOn: '完了'
+      - extendedWaitUntil:
+          visible:
+            id: 'dataedit-photo-thumb-0'
+          timeout: 30000
+- assertVisible:
+    id: 'dataedit-photo-thumb-0'
+# 2枚目: 隣の写真
+- tapOn:
+    id: 'dataedit-photo-library'
+- extendedWaitUntil:
+    notVisible:
+      id: 'dataedit-photo-library'
+    timeout: 15000
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - repeat:
+          while:
+            notVisible:
+              id: 'dataedit-photo-thumb-1'
+          times: 4
+          commands:
+            - waitForAnimationToEnd:
+                timeout: 3000
+            - tapOn:
+                point: '50%,27%'
+                retryTapIfNoChange: false
+            - waitForAnimationToEnd:
+                timeout: 5000
+# Androidの写真選択画面は、写真が「<撮影日時>に撮影した写真」という読み上げ文言で見える。選んでから「完了」を押す
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - extendedWaitUntil:
+          visible: '.*に撮影した写真'
+          timeout: 15000
+      - tapOn:
+          text: '.*に撮影した写真'
+          index: 1
+          retryTapIfNoChange: false
+      - tapOn: '完了'
+      - extendedWaitUntil:
+          visible:
+            id: 'dataedit-photo-thumb-1'
+          timeout: 30000
+- assertVisible:
+    id: 'dataedit-photo-thumb-1'
+- tapOn:
+    id: 'dataedit-save'
+- extendedWaitUntil:
+    visible:
+      id: data-row-${output.row}
+    timeout: 10000
+
+# 開き直して拡大表示する
+- tapOn:
+    id: data-row-${output.row}
+- extendedWaitUntil:
+    visible:
+      id: 'dataedit-photo-thumb-1'
+    timeout: 10000
+- waitForAnimationToEnd
+- tapOn:
+    id: 'dataedit-photo-thumb-0'
+- extendedWaitUntil:
+    visible:
+      id: 'photo-view-counter'
+      text: '1 / 2'
+    timeout: 10000
+- assertVisible:
+    id: 'photo-view-close'
+- assertVisible:
+    id: 'photo-view-delete'
+# 実ファイルが見つからないとき（サムネイル代用）だけ出るダウンロードボタンは、出ていない
+- assertNotVisible:
+    id: 'photo-view-download'
+- takeScreenshot: photo-view-1of2
+# 左へスワイプで次、右へスワイプで前
+- swipe:
+    start: '85%,50%'
+    end: '15%,50%'
+    duration: 400
+- extendedWaitUntil:
+    visible:
+      id: 'photo-view-counter'
+      text: '2 / 2'
+    timeout: 10000
+- takeScreenshot: photo-view-2of2
+- swipe:
+    start: '15%,50%'
+    end: '85%,50%'
+    duration: 400
+- extendedWaitUntil:
+    visible:
+      id: 'photo-view-counter'
+      text: '1 / 2'
+    timeout: 10000
+# 拡大表示から削除する。No なら残る
+- tapOn:
+    id: 'photo-view-delete'
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible:
+      id: 'dialog-message'
+      text: '写真を削除しますか？'
+    timeout: 10000
+- tapOn: 'No'
+- waitForAnimationToEnd:
+    timeout: 3000
+- assertVisible:
+    id: 'photo-view-counter'
+    text: '1 / 2'
+# 確認を閉じた直後のタップは効かないことがあるので、確認が出るまで押し直す
+- repeat:
+    while:
+      notVisible:
+        id: 'dialog-message'
+    times: 3
+    commands:
+      - tapOn:
+          id: 'photo-view-delete'
+          retryTapIfNoChange: false
+      - extendedWaitUntil:
+          visible:
+            id: 'dialog-message'
+          timeout: 5000
+          optional: true
+- extendedWaitUntil:
+    visible:
+      id: 'dialog-message'
+      text: '写真を削除しますか？'
+    timeout: 10000
+- tapOn: 'Yes'
+# 拡大表示が閉じ、サムネイルが1枚になる
+- extendedWaitUntil:
+    notVisible:
+      id: 'photo-view-counter'
+    timeout: 10000
+- extendedWaitUntil:
+    visible:
+      id: 'dataedit-photo-thumb-0'
+    timeout: 10000
+- assertNotVisible:
+    id: 'dataedit-photo-thumb-1'
+# 保存して開き直しても1枚のまま
+- tapOn:
+    id: 'dataedit-save'
+- extendedWaitUntil:
+    visible:
+      id: data-row-${output.row}
+    timeout: 10000
+- tapOn:
+    id: data-row-${output.row}
+- extendedWaitUntil:
+    visible:
+      id: 'dataedit-photo-thumb-0'
+    timeout: 10000
+- waitForAnimationToEnd
+- assertNotVisible:
+    id: 'dataedit-photo-thumb-1'
+# 後片付け
+- tapOn:
+    id: 'dataedit-delete'
+- tapOn: 'Yes'
+- extendedWaitUntil:
+    visible:
+      id: 'data-add'
+    timeout: 10000
+- assertNotVisible:
+    id: data-row-${output.row}

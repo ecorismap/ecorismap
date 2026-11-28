@@ -6,6 +6,7 @@ import { useBottomSheetNavigation, useBottomSheetRoute } from '../contexts/Botto
 import { getExt } from '../utils/General';
 import { AlertAsync } from '../components/molecules/AlertAsync';
 import { t } from '../i18n/config';
+import { clearPickerInbox } from '../utils/File';
 import * as DocumentPicker from 'expo-document-picker';
 
 export default function LayerEditFieldItemContainer() {
@@ -55,6 +56,7 @@ export default function LayerEditFieldItemContainer() {
 
   const pressImportDictionary = useCallback(async () => {
     const file = await DocumentPicker.getDocumentAsync({});
+    await clearPickerInbox();
     if (file.assets === null) return;
     const ext = getExt(file.assets[0].name)?.toLowerCase();
     if (!(ext === 'csv')) {

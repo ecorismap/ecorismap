@@ -1,0 +1,278 @@
+# FILE-2・FILE-3・FILE-4（一部）・ERR-1: いろいろな形式のファイルの取り込み（レイヤ一覧の「インポート」→OSのファイル選択）。
+# - FILE-2: GPX（ウェイポイント2点）・KML（地点2つ）・KMZ（地点3つ）を取り込むと、それぞれファイル名のレイヤが一覧の末尾にでき、
+#   データ一覧にその件数の記録と名前（P1・K1・Z1 など）が出る（軌跡・ライン・ポリゴンを含むファイルは確かめていない）
+# - FILE-3: 緯度経度の列（lat・lon）がある CSV を取り込むと、3件の記録ができ、列と値が出て、
+#   先頭の記録の編集画面の緯度・経度が 38.25・140.84 になっている（＝列から位置ができている）（Shift_JIS のCSVは確かめていない）
+# - FILE-4: エクスポート形式のZIP（レイヤ設定のJSON＋データのGeoJSON）を取り込むと、JSONに書かれたレイヤ名のレイヤができ、
+#   記録が8件・属性の列（種名）・値（ブナ）が出る（この端末でエクスポートしたZIPそのものの取り込み直しと、写真入りのZIPは確かめていない）
+# - ERR-1: 途中で切れた GeoJSON は「ファイルの読み込みに失敗しました。」、対応していない拡張子（.txt）は
+#   「ファイルの種類が正しくありません。」が出て、どちらもレイヤが増えない
+#
+# 前提: テスト用のファイル（e2e/maestro/fixtures/ の e2e_way.gpx・e2e_place.kml・e2e_zipped.kmz・e2e_latlon.csv・
+#   e2e_exported.zip・e2e_broken.geojson・e2e_unsupported.txt）が、端末の「ファイル」アプリから選べる場所にあること。
+#   scripts/e2e-native.sh が流す前に置く。
+# 取り込んだレイヤは最後に消す（前回の途中で残っていれば最初に消す。一覧の末尾に並ぶ e2e_ で始まるレイヤだけを消す）。
+appId: jp.co.ecoris.ecorismap
+env:
+  LAYER_NAME: 'e2e_(way|place|zipped|latlon|zip).*'
+---
+- runFlow: ../common/launch.yaml
+- runFlow: ../common/dismiss-received-file.yaml
+# （Androidは一覧が出るまで数秒かかり、押し直しが一覧の「グループ」ボタンに当たるので、先に一覧が出るのを待つ）
+- runFlow: ../common/android-open-layer-list.yaml
+# 起動直後（地図の読み込み中）のタップは効かないことがあるので、一覧が開くまで押し直す
+- repeat:
+    while:
+      notVisible:
+        id: 'layers-add'
+    times: 5
+    commands:
+      - tapOn:
+          id: 'home-layers'
+          retryTapIfNoChange: false
+      - waitForAnimationToEnd:
+          timeout: 3000
+# いまあるレイヤの数を数える。前回の残りが末尾にあれば消す
+- runFlow: ../common/count-layers.yaml
+- evalScript: ${output.layerIndex = output.layerCount - 1}
+- repeat:
+    while:
+      visible:
+        id: layers-row-${output.layerIndex}
+        text: ${LAYER_NAME}
+    times: 8
+    commands:
+      - runFlow: ../common/delete-layer-at.yaml
+      - evalScript: ${output.layerCount = output.layerCount - 1}
+      - evalScript: ${output.layerIndex = output.layerCount - 1}
+      # 消したあとの一覧は先頭に戻ることがある。末尾の行が描かれるよう、末尾まで送ってから次を確かめる
+      - runFlow: ../common/scroll-layers-to-end.yaml
+# 取り込む前のレイヤの数（＝最初に取り込むレイヤの行番号）
+- evalScript: ${output.baseCount = output.layerCount}
+
+# FILE-2: GPX
+- runFlow:
+    file: ../common/import-layer-file.yaml
+    env:
+      FILE: 'e2e_way.gpx'
+- assertVisible:
+    id: 'dialog-message'
+    text: 'ファイルをインポートしました。'
+- tapOn: 'OK'
+- evalScript: ${output.layerIndex = output.baseCount}
+- runFlow:
+    file: ../common/open-layer-at-end.yaml
+    env:
+      NAME: 'e2e_way\.gpx.*'
+- assertVisible:
+    id: 'data-row-1'
+- assertNotVisible:
+    id: 'data-row-2'
+- assertVisible: 'P1'
+- assertVisible: 'P2'
+- takeScreenshot: 22-file-gpx
+- tapOn:
+    id: 'sheet-back'
+- extendedWaitUntil:
+    visible:
+      id: 'layers-add'
+    timeout: 10000
+
+# FILE-2: KML
+- runFlow:
+    file: ../common/import-layer-file.yaml
+    env:
+      FILE: 'e2e_place.kml'
+- assertVisible:
+    id: 'dialog-message'
+    text: 'ファイルをインポートしました。'
+- tapOn: 'OK'
+- evalScript: ${output.layerIndex = output.baseCount + 1}
+- runFlow:
+    file: ../common/open-layer-at-end.yaml
+    env:
+      NAME: 'e2e_place\.kml.*'
+- assertVisible:
+    id: 'data-row-1'
+- assertNotVisible:
+    id: 'data-row-2'
+- assertVisible: 'K1'
+- assertVisible: 'K2'
+- takeScreenshot: 22-file-kml
+- tapOn:
+    id: 'sheet-back'
+- extendedWaitUntil:
+    visible:
+      id: 'layers-add'
+    timeout: 10000
+
+# FILE-2: KMZ
+- runFlow:
+    file: ../common/import-layer-file.yaml
+    env:
+      FILE: 'e2e_zipped.kmz'
+- assertVisible:
+    id: 'dialog-message'
+    text: 'ファイルをインポートしました。'
+- tapOn: 'OK'
+- evalScript: ${output.layerIndex = output.baseCount + 2}
+- runFlow:
+    file: ../common/open-layer-at-end.yaml
+    env:
+      NAME: 'e2e_zipped\.kmz.*'
+- assertVisible:
+    id: 'data-row-2'
+- assertNotVisible:
+    id: 'data-row-3'
+- assertVisible: 'Z1'
+- assertVisible: 'Z3'
+- takeScreenshot: 22-file-kmz
+- tapOn:
+    id: 'sheet-back'
+- extendedWaitUntil:
+    visible:
+      id: 'layers-add'
+    timeout: 10000
+
+# FILE-3: CSV（緯度経度の列）
+- runFlow:
+    file: ../common/import-layer-file.yaml
+    env:
+      FILE: 'e2e_latlon.csv'
+- assertVisible:
+    id: 'dialog-message'
+    text: 'ファイルをインポートしました。'
+- tapOn: 'OK'
+- evalScript: ${output.layerIndex = output.baseCount + 3}
+- runFlow:
+    file: ../common/open-layer-at-end.yaml
+    env:
+      NAME: 'e2e_latlon\.csv.*'
+- assertVisible:
+    id: 'data-row-2'
+- assertNotVisible:
+    id: 'data-row-3'
+# 列（lat・lon）と値が出る（4列目の memo は画面の右の外で、描かれていない）
+- assertVisible:
+    id: 'data-sort-lat'
+- assertVisible:
+    id: 'data-row-0'
+    text: 'A'
+- assertVisible:
+    id: 'data-cell-0-1'
+    text: '38\.25'
+- assertVisible:
+    id: 'data-cell-2-2'
+    text: '140\.86'
+- takeScreenshot: 22-file-csv
+# 緯度経度の列から位置ができている（先頭の記録の編集画面の緯度）
+- tapOn:
+    id: 'data-row-0'
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible:
+      id: 'dataedit-delete'
+    timeout: 10000
+- scrollUntilVisible:
+    element:
+      id: 'dataedit-coords-latitude-decimal'
+    direction: DOWN
+- assertVisible:
+    id: 'dataedit-coords-latitude-decimal'
+    text: '38\.25.*'
+- assertVisible:
+    id: 'dataedit-coords-longitude-decimal'
+    text: '140\.84.*'
+- takeScreenshot: 22-file-csv-record
+- tapOn:
+    id: 'sheet-back'
+- extendedWaitUntil:
+    visible:
+      id: 'data-export'
+    timeout: 10000
+- tapOn:
+    id: 'sheet-back'
+- extendedWaitUntil:
+    visible:
+      id: 'layers-add'
+    timeout: 10000
+
+# FILE-4: エクスポート形式のZIP
+- runFlow:
+    file: ../common/import-layer-file.yaml
+    env:
+      FILE: 'e2e_exported.zip'
+- assertVisible:
+    id: 'dialog-message'
+    text: 'ファイルをインポートしました。'
+- tapOn: 'OK'
+- evalScript: ${output.layerIndex = output.baseCount + 4}
+- runFlow:
+    file: ../common/open-layer-at-end.yaml
+    env:
+      NAME: 'e2e_zip,.*'
+- assertVisible:
+    id: 'data-row-7'
+- assertNotVisible:
+    id: 'data-row-8'
+- assertVisible:
+    id: 'data-sort-種名'
+- assertVisible: 'ブナ'
+- takeScreenshot: 22-file-zip
+- tapOn:
+    id: 'sheet-back'
+- extendedWaitUntil:
+    visible:
+      id: 'layers-add'
+    timeout: 10000
+
+# ERR-1: 途中で切れた GeoJSON
+- runFlow:
+    file: ../common/import-layer-file.yaml
+    env:
+      FILE: 'e2e_broken.geojson'
+- assertVisible:
+    id: 'dialog-message'
+    text: '.*ファイルの読み込みに失敗しました。'
+- takeScreenshot: 22-file-broken
+- tapOn: 'OK'
+- waitForAnimationToEnd:
+    timeout: 3000
+# ERR-1: 対応していない拡張子
+- runFlow:
+    file: ../common/import-layer-file.yaml
+    env:
+      FILE: 'e2e_unsupported.txt'
+- assertVisible:
+    id: 'dialog-message'
+    text: 'ファイルの種類が正しくありません。'
+- tapOn: 'OK'
+- waitForAnimationToEnd:
+    timeout: 3000
+# どちらもレイヤは増えていない（末尾は直前に取り込んだZIPのレイヤで、その下に行がない）
+- runFlow: ../common/scroll-layers-to-end.yaml
+- assertVisible:
+    id: layers-row-${output.layerIndex}
+    text: 'e2e_zip,.*'
+- evalScript: ${output.nextIndex = output.layerIndex + 1}
+- assertNotVisible:
+    id: layers-row-${output.nextIndex}
+- takeScreenshot: 22-file-layers
+
+# 後片付け: 取り込んだ5つのレイヤを、末尾から消す
+- repeat:
+    times: 5
+    commands:
+      - runFlow: ../common/delete-layer-at.yaml
+      - evalScript: ${output.layerIndex = output.layerIndex - 1}
+      - runFlow: ../common/scroll-layers-to-end.yaml
+- evalScript: ${output.nextIndex = output.baseCount}
+- assertNotVisible:
+    id: layers-row-${output.nextIndex}
+- evalScript: ${output.lastIndex = output.baseCount - 1}
+- assertVisible:
+    id: layers-row-${output.lastIndex}
+- assertNotVisible:
+    id: layers-row-${output.lastIndex}
+    text: ${LAYER_NAME}
+- runFlow: ../common/close-sheet.yaml

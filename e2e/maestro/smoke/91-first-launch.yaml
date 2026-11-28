@@ -1,0 +1,185 @@
+# BOOT-1・BOOT-2（一部）・BOOT-7: 初回起動（iOSシミュレーター専用）。
+# - BOOT-1: 初回起動で利用規約の確認が出て、OKで地図画面になる。起動し直しても、もう出ない
+# - BOOT-2: 初回起動では、規約に同意しても更新情報は出ず（同意と同時に今のバージョンを既読にする仕様）、起動し直しても出ない。
+#   「前のバージョンから更新した端末で更新情報が出て、OKで閉じ、次回は出ない」は確かめていない（端末に保存された既読のバージョンを
+#   外から書き換える手段が無い。Web は e2e/web/specs/01-boot.spec.ts が保存を書き換えて確かめている）
+# - BOOT-7: 初めてレイヤ一覧の「インポート」を押すと説明（チュートリアル）が出て、OKのあとにファイル選択が開く。もう一度押すと説明なしで開く。
+#   初めてオフラインへ切り替えるときも説明が出て、2回目は出ない。起動し直しても、インポートの説明はもう出ない
+#   （いま説明が出るのはこの2つとペン入力の切り替えだけ。GPS・軌跡・作図ツールの説明は、呼び出しがコメントアウトされていて出ない。
+#   ペン入力の説明は確かめていない）
+#
+# 前提: 流す前に `e2e/maestro/support/ios-first-launch.sh begin` でアプリのデータを脇へよけ、流したあとに
+#   `e2e/maestro/support/ios-first-launch.sh end` で戻す（規約の同意などは「データをクリア」では消えないので、データごとよける。
+#   このフロー自体は端末のデータを消さない）。よけていない端末で流すと、最初の「利用規約の確認が出る」で落ちる（何も変えない）。
+# アプリのデータは消さない（脇へよけて戻す）。scripts/e2e-native.sh が前後の begin・end を行い、iOSシミュレーターではいつも流れる。
+appId: jp.co.ecoris.ecorismap
+---
+# common/launch.yaml は利用規約を自動で閉じるので使わない
+- stopApp
+- launchApp:
+    permissions:
+      all: allow
+# BOOT-1: 利用規約の確認
+- extendedWaitUntil:
+    visible:
+      id: 'home-terms-agree'
+    timeout: 120000
+- assertVisible: '利用規約に同意して開始しますか？'
+- assertVisible:
+    id: 'home-terms-link'
+- takeScreenshot: 91-first-terms
+- tapOn:
+    id: 'home-terms-agree'
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    notVisible:
+      id: 'home-terms-agree'
+    timeout: 10000
+- assertVisible:
+    id: 'home-layers'
+# BOOT-2: 初回起動では更新情報は出ない
+- waitForAnimationToEnd:
+    timeout: 5000
+- assertNotVisible:
+    id: 'home-updateinfo-close'
+- takeScreenshot: 91-first-home
+
+# BOOT-7: 初めてレイヤ一覧の「インポート」を押すと説明が出て、OKのあとにファイル選択が開く
+- runFlow: ../common/dismiss-warning-toast.yaml
+- repeat:
+    while:
+      notVisible:
+        id: 'layers-add'
+    times: 5
+    commands:
+      - tapOn:
+          id: 'home-layers'
+          retryTapIfNoChange: false
+      - waitForAnimationToEnd:
+          timeout: 3000
+- tapOn:
+    id: 'layers-import'
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible:
+      id: 'dialog-message'
+      text: 'GeoJSON、GPX、KML、KMZファイルをインポートします。'
+    timeout: 10000
+- takeScreenshot: 91-first-tutorial-import
+- tapOn: 'OK'
+- extendedWaitUntil:
+    visible: 'ブラウズ'
+    timeout: 15000
+- waitForAnimationToEnd:
+    timeout: 3000
+- tapOn: 'Cancel'
+- extendedWaitUntil:
+    visible:
+      id: 'layers-add'
+    timeout: 10000
+- waitForAnimationToEnd:
+    timeout: 3000
+# もう一度押すと、説明なしでファイル選択が開く
+- tapOn:
+    id: 'layers-import'
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible: 'ブラウズ'
+    timeout: 15000
+- assertNotVisible: 'GeoJSON、GPX、KML、KMZファイルをインポートします。'
+- waitForAnimationToEnd:
+    timeout: 3000
+- tapOn: 'Cancel'
+- extendedWaitUntil:
+    visible:
+      id: 'layers-add'
+    timeout: 10000
+- runFlow: ../common/close-sheet.yaml
+# 初めてオフラインへ切り替えるときも説明が出る。2回目は出ない
+- runFlow: ../common/open-maps.yaml
+- assertVisible:
+    id: 'maps-toggle-online'
+    text: '.*ｵﾝﾗｲﾝ'
+- tapOn:
+    id: 'maps-toggle-online'
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible:
+      id: 'dialog-message'
+      text: 'オフラインモードに切り替えます。.*'
+    timeout: 10000
+- tapOn: 'OK'
+- extendedWaitUntil:
+    visible:
+      id: 'maps-toggle-online'
+      text: '.*ｵﾌﾗｲﾝ'
+    timeout: 10000
+- tapOn:
+    id: 'maps-toggle-online'
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible:
+      id: 'maps-toggle-online'
+      text: '.*ｵﾝﾗｲﾝ'
+    timeout: 10000
+- tapOn:
+    id: 'maps-toggle-online'
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible:
+      id: 'maps-toggle-online'
+      text: '.*ｵﾌﾗｲﾝ'
+    timeout: 10000
+- assertNotVisible:
+    id: 'dialog-message'
+- tapOn:
+    id: 'maps-toggle-online'
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible:
+      id: 'maps-toggle-online'
+      text: '.*ｵﾝﾗｲﾝ'
+    timeout: 10000
+- runFlow: ../common/close-sheet.yaml
+
+# 起動し直しても、利用規約・更新情報・インポートの説明は出ない
+- stopApp
+- launchApp
+- extendedWaitUntil:
+    visible:
+      id: 'home-layers'
+    timeout: 120000
+- waitForAnimationToEnd:
+    timeout: 8000
+- assertNotVisible:
+    id: 'home-terms-agree'
+- assertNotVisible:
+    id: 'home-updateinfo-close'
+- runFlow: ../common/dismiss-warning-toast.yaml
+- repeat:
+    while:
+      notVisible:
+        id: 'layers-add'
+    times: 5
+    commands:
+      - tapOn:
+          id: 'home-layers'
+          retryTapIfNoChange: false
+      - waitForAnimationToEnd:
+          timeout: 3000
+- tapOn:
+    id: 'layers-import'
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible: 'ブラウズ'
+    timeout: 15000
+- assertNotVisible: 'GeoJSON、GPX、KML、KMZファイルをインポートします。'
+- takeScreenshot: 91-first-relaunched
+- waitForAnimationToEnd:
+    timeout: 3000
+- tapOn: 'Cancel'
+- extendedWaitUntil:
+    visible:
+      id: 'layers-add'
+    timeout: 10000
+- runFlow: ../common/close-sheet.yaml

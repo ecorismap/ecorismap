@@ -1,0 +1,50 @@
+# 地図画面で、ログインしていれば（プロジェクトを開いていれば終了してから）ログアウトする。していなければ何もしない。
+# 前のフローが途中で落ちても、次のフローが未ログインから始められるようにする。
+appId: jp.co.ecoris.ecorismap
+---
+# プロジェクトを開いたままなら終了する（プロジェクト名のラベルを押すと、取得・送信・終了のボタンが出る）
+- runFlow:
+    when:
+      visible:
+        id: 'home-project-label'
+    commands:
+      - runFlow: close-project.yaml
+- tapOn:
+    id: 'home-account'
+    retryTapIfNoChange: false
+- waitForAnimationToEnd:
+    timeout: 3000
+- runFlow:
+    when:
+      visible:
+        id: 'home-account-logout'
+    commands:
+      - tapOn:
+          id: 'home-account-logout'
+          retryTapIfNoChange: false
+      - extendedWaitUntil:
+          visible:
+            id: 'dialog-message'
+          timeout: 10000
+      - tapOn: 'Yes'
+      - extendedWaitUntil:
+          notVisible:
+            id: 'dialog-message'
+          timeout: 20000
+      - waitForAnimationToEnd:
+          timeout: 3000
+      - tapOn:
+          id: 'home-account'
+          retryTapIfNoChange: false
+# ここではログイン方法の選択が出ている。閉じて地図へ戻る
+- extendedWaitUntil:
+    visible:
+      id: 'account-org-login'
+    timeout: 10000
+- tapOn:
+    id: 'account-close'
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible:
+      id: 'home-layers'
+    timeout: 10000

@@ -1,0 +1,18 @@
+# 地図画面から、さっきまで開いていたデータ一覧を開き直す
+# （「レイヤ」ボタンは、データ一覧を開いたあとに×で閉じていた場合、レイヤ一覧ではなくそのデータ一覧を開く）。
+appId: jp.co.ecoris.ecorismap
+---
+- runFlow: dismiss-warning-toast.yaml
+- repeat:
+    while:
+      notVisible:
+        id: 'data-export'
+    times: 3
+    commands:
+      - tapOn:
+          id: 'home-layers'
+          retryTapIfNoChange: false
+      - waitForAnimationToEnd:
+          timeout: 3000
+- assertVisible:
+    id: 'data-export'

@@ -1,0 +1,332 @@
+# SET-4・SET-6・GPS-4・BOOT-4: 設定画面の項目（ネイティブは言語の反映に再起動が要り、マニュアル・バージョンは外部のブラウザで開く）。
+# - SET-4: 「キャッシュをクリア」で確認が出て、Yes で「地図のキャッシュをクリアしました。」と出る。設定画面はそのまま使える
+#   （キャッシュのファイルが消えたことは確かめていない）
+# - SET-6: 「OSSライセンス」でライセンスの一覧が開き、戻れる。「マニュアル」「バージョン」は Safari が開き、
+#   アドレス欄がそれぞれ ecorismap.web.app・github.com になる（ページの中身は確かめていない）
+# - GPS-4: 「GPS設定」で精度の3つの選択肢が出る。選んだ精度に印が付き、設定を開き直しても、アプリを起動し直しても残る
+#   （測位の間隔が実際に変わることは確かめていない）。最後に元の精度へ戻す
+# - BOOT-4: 言語を English にすると再起動を求める通知が出て、起動し直すとボタンと設定画面が英語になる。
+#   システム設定（日本語）へ戻して起動し直すと日本語に戻る
+# 言語は必ず日本語へ戻して終える（途中で失敗しても、終了時の処理 onFlowComplete が戻す。最初にも確かめる）。データは作らない。
+appId: jp.co.ecoris.ecorismap
+onFlowComplete:
+  - runFlow: ../common/restore-japanese.yaml
+---
+# 前提を整える: 前回の途中で英語のまま残っていたら、日本語へ戻す（起動も兼ねる）
+- runFlow: ../common/restore-japanese.yaml
+- runFlow: ../common/launch.yaml
+- runFlow: ../common/discard-interrupted-track.yaml
+- runFlow: ../common/open-settings.yaml
+
+# SET-4: キャッシュをクリア（地図のキャッシュだけが消える。記録・写真・レイヤは消えない）
+- tapOn:
+    id: 'settings-clear-cache'
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible:
+      id: 'dialog-message'
+      text: '地図のキャッシュ（ダウンロードしたタイルを含む）をクリアしますか？.*'
+    timeout: 10000
+# No なら何も起きない
+- tapOn: 'No'
+- waitForAnimationToEnd:
+    timeout: 3000
+- assertNotVisible:
+    id: 'dialog-message'
+- tapOn:
+    id: 'settings-clear-cache'
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible:
+      id: 'dialog-message'
+    timeout: 10000
+- tapOn: 'Yes'
+- extendedWaitUntil:
+    visible:
+      id: 'dialog-message'
+      text: '地図のキャッシュをクリアしました。'
+    timeout: 60000
+- takeScreenshot: 15-settings-cache-cleared
+- tapOn: 'OK'
+- waitForAnimationToEnd:
+    timeout: 3000
+# 設定画面はそのまま使える
+- assertNotVisible:
+    id: 'dialog-message'
+- assertVisible:
+    id: 'settings-clear-cache'
+
+# SET-6: ライセンスの一覧が開き、戻れる
+- tapOn:
+    id: 'settings-oss-license'
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible:
+      id: 'licenses-row-0'
+    timeout: 10000
+- assertVisible:
+    id: 'licenses-row-1'
+- takeScreenshot: 15-settings-licenses
+- tapOn:
+    id: 'sheet-back'
+- extendedWaitUntil:
+    visible:
+      id: 'settings-oss-license'
+    timeout: 10000
+# SET-6: マニュアルは Safari で開く（ページの見出しが出るまで待つ。通信が要る）
+- assertVisible:
+    id: 'settings-manual'
+    text: 'EcorisMapの使い方、利用規約.*'
+- tapOn:
+    id: 'settings-manual'
+    retryTapIfNoChange: false
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - extendedWaitUntil:
+          visible: 'EcorisMapの使い方'
+          timeout: 60000
+# Androidは Chrome が開く。エミュレーターの Chrome は初回の案内（ログイン・利用規約）で止まり、ページまで進まないので、
+# Chrome の画面が前面に出たことだけを確かめる（開いたアドレス・ページの中身は確かめていない）
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - extendedWaitUntil:
+          visible:
+            id: 'com\.android\.chrome:id/.*'
+          timeout: 60000
+- assertNotVisible:
+    id: 'settings-manual'
+- takeScreenshot: 15-settings-manual
+# アプリへ戻る（止めずに前面へ出す）。設定画面のまま
+- launchApp:
+    stopApp: false
+- extendedWaitUntil:
+    visible:
+      id: 'settings-version'
+    timeout: 30000
+# SET-6: バージョンの行にバージョン番号が出ていて、押すと更新履歴（GitHub の CHANGELOG.md）が Safari で開く
+- assertVisible:
+    id: 'settings-version'
+    text: 'Version \d+\.\d+\.\d+.*'
+# （行が画面の下端にかかっているので、少し送ってから押す）
+- swipe:
+    start: '50%,80%'
+    end: '50%,50%'
+    duration: 500
+- waitForAnimationToEnd:
+    timeout: 2000
+- tapOn:
+    id: 'settings-version'
+    retryTapIfNoChange: false
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - extendedWaitUntil:
+          visible: '.*CHANGELOG\.md at main.*GitHub'
+          timeout: 60000
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - extendedWaitUntil:
+          visible:
+            id: 'com\.android\.chrome:id/.*'
+          timeout: 60000
+      - assertNotVisible:
+          id: 'settings-version'
+- takeScreenshot: 15-settings-changelog
+- launchApp:
+    stopApp: false
+- extendedWaitUntil:
+    visible:
+      id: 'settings-gps'
+    timeout: 30000
+
+# GPS-4: GPS設定で精度を変える。いま選ばれている精度（印 󰗠 が付いている）を覚えておき、最後に戻す
+- tapOn:
+    id: 'settings-gps'
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible:
+      id: 'gpssettings-accuracy-high'
+    timeout: 10000
+- assertVisible:
+    id: 'gpssettings-accuracy-high'
+    text: '.*高精度.*'
+- assertVisible:
+    id: 'gpssettings-accuracy-medium'
+    text: '.*バランス.*'
+- assertVisible:
+    id: 'gpssettings-accuracy-low'
+    text: '.*省電力.*'
+- evalScript: ${output.gpsOrig = ''}
+- runFlow:
+    when:
+      visible:
+        id: 'gpssettings-accuracy-high'
+        text: '.*󰗠'
+    commands:
+      - evalScript: ${output.gpsOrig = 'high'}
+- runFlow:
+    when:
+      visible:
+        id: 'gpssettings-accuracy-medium'
+        text: '.*󰗠'
+    commands:
+      - evalScript: ${output.gpsOrig = 'medium'}
+- runFlow:
+    when:
+      visible:
+        id: 'gpssettings-accuracy-low'
+        text: '.*󰗠'
+    commands:
+      - evalScript: ${output.gpsOrig = 'low'}
+- assertTrue: ${output.gpsOrig !== ''}
+# 元と違う精度を選ぶ（元がバランスなら省電力、それ以外ならバランス）
+- evalScript: ${output.gpsNew = (output.gpsOrig === 'medium' && 'low') || 'medium'}
+- tapOn:
+    id: gpssettings-accuracy-${output.gpsNew}
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible:
+      id: gpssettings-accuracy-${output.gpsNew}
+      text: '.*󰗠'
+    timeout: 10000
+# 元の精度からは印が外れる（印なしは 󰝦）
+- assertVisible:
+    id: gpssettings-accuracy-${output.gpsOrig}
+    text: '.*󰝦'
+- takeScreenshot: 15-settings-gps
+# 設定を開き直しても、起動し直しても、選んだ精度のまま
+- tapOn:
+    id: 'sheet-back'
+- extendedWaitUntil:
+    visible:
+      id: 'settings-gps'
+    timeout: 10000
+- tapOn:
+    id: 'settings-gps'
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible:
+      id: gpssettings-accuracy-${output.gpsNew}
+      text: '.*󰗠'
+    timeout: 10000
+- runFlow: ../common/launch.yaml
+- runFlow: ../common/open-settings.yaml
+- tapOn:
+    id: 'settings-gps'
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible:
+      id: gpssettings-accuracy-${output.gpsNew}
+      text: '.*󰗠'
+    timeout: 10000
+# 後片付け: 元の精度へ戻す
+- tapOn:
+    id: gpssettings-accuracy-${output.gpsOrig}
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible:
+      id: gpssettings-accuracy-${output.gpsOrig}
+      text: '.*󰗠'
+    timeout: 10000
+- assertVisible:
+    id: gpssettings-accuracy-${output.gpsNew}
+    text: '.*󰝦'
+- tapOn:
+    id: 'sheet-back'
+- extendedWaitUntil:
+    visible:
+      id: 'settings-language'
+    timeout: 10000
+
+# BOOT-4: 言語を English にする。いまは「システム設定に従う」（端末は日本語）が選ばれている（印 󰐾）
+- assertVisible:
+    id: 'settings-language'
+    text: '言語'
+- tapOn:
+    id: 'settings-language'
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible:
+      id: 'settings-language-option-en'
+    timeout: 10000
+- assertVisible: '言語を選択'
+- assertVisible:
+    id: 'settings-language-option-system'
+    text: '󰐾, システム設定に従う'
+- tapOn:
+    id: 'settings-language-option-en'
+    retryTapIfNoChange: false
+# ネイティブは再起動で反映される
+- extendedWaitUntil:
+    visible:
+      id: 'dialog-message'
+      text: '言語設定を保存しました。\s*アプリを再起動すると反映されます。'
+    timeout: 10000
+- tapOn: 'OK'
+- waitForAnimationToEnd:
+    timeout: 3000
+# 起動し直すと、ボタンも設定画面も英語になる
+- runFlow: ../common/launch.yaml
+- assertVisible:
+    id: 'home-layers'
+    text: '.*layers'
+- assertVisible:
+    id: 'home-settings'
+    text: '.*set'
+- runFlow: ../common/open-settings.yaml
+- assertVisible:
+    id: 'settings-language'
+    text: 'Language'
+- assertVisible:
+    id: 'settings-gps'
+    text: 'GPS settings'
+- takeScreenshot: 15-settings-english
+# システム設定（日本語）へ戻す
+- tapOn:
+    id: 'settings-language'
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible:
+      id: 'settings-language-option-system'
+    timeout: 10000
+- assertVisible: 'Select language'
+- assertVisible:
+    id: 'settings-language-option-en'
+    text: '󰐾, English'
+- tapOn:
+    id: 'settings-language-option-system'
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible:
+      id: 'dialog-message'
+      text: 'Language setting saved\.\s*Restart the app to apply the change\.'
+    timeout: 10000
+- tapOn: 'OK'
+- waitForAnimationToEnd:
+    timeout: 3000
+- runFlow: ../common/launch.yaml
+- assertVisible:
+    id: 'home-layers'
+    text: '.*レイヤ'
+- runFlow: ../common/open-settings.yaml
+- assertVisible:
+    id: 'settings-language'
+    text: '言語'
+- tapOn:
+    id: 'settings-language'
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible:
+      id: 'settings-language-option-system'
+      text: '󰐾, システム設定に従う'
+    timeout: 10000
+- tapOn:
+    id: 'settings-language-cancel'
+    retryTapIfNoChange: false

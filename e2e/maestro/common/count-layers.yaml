@@ -1,0 +1,32 @@
+# 開いているレイヤ一覧（先頭が見えている状態）の行数を output.layerCount に入れる（＝次に取り込む・追加するレイヤの行番号）。
+# レイヤが多いと画面の外の行は描かれていないので、下へ送りながら数える。一覧を末尾まで送った状態で終わる。
+appId: jp.co.ecoris.ecorismap
+---
+- waitForAnimationToEnd:
+    timeout: 3000
+- evalScript: ${output.layerCount = 0}
+- evalScript: ${output.layerMiss = 0}
+# 次の行が見つからなければ下へ送る。送っても2回続けて見つからなければ、そこが末尾
+- repeat:
+    while:
+      true: ${output.layerMiss < 2}
+    times: 300
+    commands:
+      - runFlow:
+          when:
+            visible:
+              id: layers-row-${output.layerCount}
+          commands:
+            - evalScript: ${output.layerCount = output.layerCount + 1}
+            - evalScript: ${output.layerMiss = -1}
+      - runFlow:
+          when:
+            true: ${output.layerMiss >= 0}
+          commands:
+            - swipe:
+                start: '50%,75%'
+                end: '50%,25%'
+                duration: 400
+            - waitForAnimationToEnd:
+                timeout: 2000
+      - evalScript: ${output.layerMiss = output.layerMiss + 1}

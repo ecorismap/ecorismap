@@ -1,0 +1,44 @@
+# 地図に描きかけの図形（確定ボタンが出ている状態）を確定し、データ一覧に1件だけ増えたことを確かめてから、その記録を消す。
+# 先に count-rows.yaml で、描く前の件数（output.row）を数えておくこと。データ一覧を開いたままで終わる。
+appId: jp.co.ecoris.ecorismap
+---
+- extendedWaitUntil:
+    visible:
+      id: 'home-draw-save'
+    timeout: 10000
+- tapOn:
+    id: 'home-draw-save'
+    retryTapIfNoChange: false
+# 確定すると、できた記録（末尾）の編集画面が開く
+- extendedWaitUntil:
+    visible:
+      id: 'dataedit-record-number'
+      text: ${(output.row + 1) + '/' + (output.row + 1)}
+    timeout: 15000
+- waitForAnimationToEnd
+# 戻るとそのレイヤのデータ一覧。1件だけ増えている
+- tapOn:
+    id: 'sheet-back'
+- extendedWaitUntil:
+    visible:
+      id: data-row-${output.row}
+    timeout: 10000
+- assertNotVisible:
+    id: data-row-${output.row + 1}
+# 後片付け
+- tapOn:
+    id: data-row-${output.row}
+- extendedWaitUntil:
+    visible:
+      id: 'dataedit-delete'
+    timeout: 10000
+- waitForAnimationToEnd
+- tapOn:
+    id: 'dataedit-delete'
+- tapOn: 'Yes'
+- extendedWaitUntil:
+    visible:
+      id: 'data-export'
+    timeout: 10000
+- assertNotVisible:
+    id: data-row-${output.row}

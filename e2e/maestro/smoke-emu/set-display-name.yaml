@@ -1,0 +1,39 @@
+# 地図画面（ログイン済み）から、アカウント設定で表示名を NAME に変えて、地図画面へ戻る。
+appId: jp.co.ecoris.ecorismap
+---
+- tapOn:
+    id: 'home-account'
+    retryTapIfNoChange: false
+- tapOn:
+    id: 'home-account-setting'
+    retryTapIfNoChange: false
+- tapOn:
+    id: 'accountsettings-account-edit'
+- extendedWaitUntil:
+    visible:
+      id: 'account-display-name'
+    timeout: 10000
+- assertVisible:
+    id: 'account-title'
+    text: 'プロフィール更新'
+# 今の表示名を消してから入れる
+- tapOn:
+    id: 'account-display-name'
+- eraseText: 20
+- inputText: ${NAME}
+- hideKeyboard
+- tapOn:
+    id: 'account-submit'
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible: '.*プロフィールを更新しました。.*'
+    timeout: 30000
+- tapOn: 'OK'
+- waitForAnimationToEnd:
+    timeout: 3000
+- tapOn:
+    id: 'accountsettings-back'
+- extendedWaitUntil:
+    visible:
+      id: 'home-layers'
+    timeout: 10000

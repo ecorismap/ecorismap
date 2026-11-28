@@ -1,0 +1,102 @@
+# GPSがオフの地図画面から、疑似位置 ${LAT},${LON}（小数5桁まで）へ地図を移し、GPSをオフに戻す。
+# 地図の位置を決めてから始めたいフローが使う（前のフローが地図をどこに残したかに左右されないようにする）。
+# - 画面中央の長押しが現在地にスナップして「現在地」とその座標が出ることで、地図が疑似位置へ移ったことを確かめる
+# - iOSシミュレーターは、GPSを入れてからしばらく前回の疑似位置を返すことがある。位置を与え直して待つ
+# - 遅れて届いた位置へ地図が飛んだとき、見た目は現在地へ移っているのに、長押しの座標が飛ぶ前の位置で計算されることがある
+#   （アプリ側の不具合として報告済み）。地図を少しドラッグして（追従が外れる）GPSボタンで追従に戻すと合うので、毎回そうする
+# 最後にズームを1段階動かして戻し、長押しのポップアップを閉じる（ポップアップは地図が動くと消える）。
+# 疑似位置を与えたあとは、開発ビルドのトースト（location error 0）が下部のボタンに重なることがある。
+appId: jp.co.ecoris.ecorismap
+---
+- setLocation:
+    latitude: ${LAT}
+    longitude: ${LON}
+- tapOn:
+    id: 'home-gps'
+    retryTapIfNoChange: false
+- waitForAnimationToEnd:
+    timeout: 5000
+- evalScript: ${output.gotoTarget = Number(LAT).toFixed(5) + ', ' + Number(LON).toFixed(5)}
+- evalScript: ${output.gotoNow = ''}
+- repeat:
+    while:
+      true: ${output.gotoNow !== output.gotoTarget}
+    times: 8
+    commands:
+      - setLocation:
+          latitude: ${LAT}
+          longitude: ${LON}
+      - waitForAnimationToEnd:
+          timeout: 3000
+      - swipe:
+          start: '70%,60%'
+          end: '62%,52%'
+          duration: 600
+      - waitForAnimationToEnd:
+          timeout: 2000
+      - tapOn:
+          id: 'home-gps'
+          retryTapIfNoChange: false
+      - waitForAnimationToEnd:
+          timeout: 4000
+      - longPressOn:
+          point: '50%,50%'
+      - extendedWaitUntil:
+          visible:
+            id: 'home-poi-coordinate'
+          timeout: 10000
+          optional: true
+      # 現在地にスナップしたとき（「現在地」と出る）だけ、座標を読む
+      - runFlow:
+          when:
+            visible:
+              id: 'home-poi-distance'
+              text: '現在地'
+          commands:
+            - copyTextFrom:
+                id: 'home-poi-coordinate'
+            - evalScript: ${output.gotoNow = maestro.copiedText}
+- assertTrue: ${output.gotoNow === output.gotoTarget}
+# GPSをオフに戻す（追従中に押すとオフになる）
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - tapOn:
+          id: 'home-gps'
+          retryTapIfNoChange: false
+# Androidは、地図の長押しで追従が外れる（現在地の表示だけになる）。そのまま押すと追従に戻るだけなので、
+# 地図を少しドラッグして確実に追従を外してから、2回押す（表示だけ→追従→オフ）
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - swipe:
+          start: '70%,60%'
+          end: '62%,52%'
+          duration: 600
+      - waitForAnimationToEnd:
+          timeout: 2000
+      - tapOn:
+          id: 'home-gps'
+          retryTapIfNoChange: false
+      - waitForAnimationToEnd:
+          timeout: 3000
+      - tapOn:
+          id: 'home-gps'
+          retryTapIfNoChange: false
+- waitForAnimationToEnd:
+    timeout: 3000
+# 長押しのポップアップを閉じる（出たままだと、その位置のタップがポップアップに当たる）
+- tapOn:
+    id: 'home-zoom-in'
+    retryTapIfNoChange: false
+- waitForAnimationToEnd:
+    timeout: 2000
+- tapOn:
+    id: 'home-zoom-out'
+    retryTapIfNoChange: false
+- waitForAnimationToEnd:
+    timeout: 2000
+- assertNotVisible:
+    id: 'home-poi-coordinate'

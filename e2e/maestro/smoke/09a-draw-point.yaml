@@ -1,0 +1,207 @@
+# DRAW-2・DRAW-11・DRAW-17・DRAW-12・DRAW-4: 地図をタップしてポイントを作り、タップで開き、動かして、消す。
+# - DRAW-11: 置いた点を「元に戻す」と、描きかけ（確定ボタン）が消える
+# - DRAW-17: 描きかけのままアカウントボタンで地図を離れようとすると破棄の確認が出て、No なら描きかけが残る
+# - DRAW-2: 確定すると経緯度の入った編集画面が開き、データ一覧が1件増える
+# - DRAW-12: 道具を選んでいない状態でそのポイントを押すと、編集画面が開く
+# - DRAW-4: 編集選択でポイントを押すと移動・削除が出る。右へ動かして確定すると経度が増え、削除するとデータ一覧から消える
+# 既定の「ポイント」レイヤの末尾にテスト用の記録を1件作り、最後に消す。ほかの記録には触らない。
+appId: jp.co.ecoris.ecorismap
+env:
+  LAYER_NAME: 'ポイント.*'
+---
+- runFlow: ../common/launch.yaml
+- runFlow: ../common/open-point-layer.yaml
+- runFlow: ../common/count-rows.yaml
+- runFlow: ../common/close-sheet.yaml
+- runFlow:
+    file: ../common/select-feature.yaml
+    env:
+      FEATURE: point
+- assertVisible:
+    id: 'home-editing-layer'
+    text: '.*ポイント.*'
+
+# DRAW-11: 点を置くと確定ボタンが出て、元に戻すと消える
+- tapOn:
+    id: 'home-draw-plot-point'
+    retryTapIfNoChange: false
+- runFlow: ../common/confirm-show-layer.yaml
+- tapOn:
+    point: '60%,45%'
+- extendedWaitUntil:
+    visible:
+      id: 'home-draw-save'
+    timeout: 10000
+- tapOn:
+    id: 'home-draw-undo'
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    notVisible:
+      id: 'home-draw-save'
+    timeout: 10000
+
+# DRAW-17: 置き直して、描きかけのまま別の画面（アカウント）へ移ろうとする
+- tapOn:
+    point: '60%,45%'
+- extendedWaitUntil:
+    visible:
+      id: 'home-draw-save'
+    timeout: 10000
+- tapOn:
+    id: 'home-account'
+    retryTapIfNoChange: false
+# ログイン済みの端末では、アカウントボタンはメニューを開くだけ。メニューの「設定」（アカウント設定の画面）で地図を離れようとする
+- runFlow:
+    when:
+      visible:
+        id: 'home-account-setting'
+    commands:
+      - tapOn:
+          id: 'home-account-setting'
+          retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible: '.*変更を破棄しますか.*'
+    timeout: 10000
+- tapOn: 'No'
+- waitForAnimationToEnd:
+    timeout: 3000
+# （開いたメニューは閉じておく）
+- runFlow:
+    when:
+      visible:
+        id: 'home-account-setting'
+    commands:
+      - tapOn:
+          id: 'home-account'
+          retryTapIfNoChange: false
+- assertVisible:
+    id: 'home-draw-save'
+
+# DRAW-2: 確定すると、できた記録の編集画面が開く。経緯度が入っている
+- tapOn:
+    id: 'home-draw-save'
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible:
+      id: 'dataedit-coords-longitude-decimal'
+    timeout: 10000
+- waitForAnimationToEnd
+- copyTextFrom:
+    id: 'dataedit-coords-longitude-decimal'
+- evalScript: ${output.lon = Number(maestro.copiedText)}
+- assertTrue: ${output.lon > 100 && output.lon < 180}
+- takeScreenshot: 09a-point-saved
+# データ一覧に1件増えている（増えたのは1件だけ）
+- tapOn:
+    id: 'sheet-back'
+- extendedWaitUntil:
+    visible:
+      id: data-row-${output.row}
+    timeout: 10000
+- assertNotVisible:
+    id: data-row-${output.row + 1}
+- runFlow: ../common/close-sheet.yaml
+
+# DRAW-12: 道具を選んでいない状態でポイントを押すと、その記録（末尾の記録）の編集画面が開く
+- tapOn:
+    point: '60%,45%'
+- extendedWaitUntil:
+    visible:
+      id: 'dataedit-record-number'
+    timeout: 10000
+- waitForAnimationToEnd
+- assertVisible:
+    id: 'dataedit-record-number'
+    text: ${(output.row + 1) + '/' + (output.row + 1)}
+- assertVisible:
+    id: 'dataedit-layername'
+- runFlow: ../common/close-sheet.yaml
+
+# DRAW-4: 編集選択でポイントを押すと、移動と削除のボタンが出る
+- tapOn:
+    id: 'home-draw-select'
+    retryTapIfNoChange: false
+- tapOn:
+    point: '60%,45%'
+- extendedWaitUntil:
+    visible:
+      id: 'home-draw-move-point'
+    timeout: 10000
+- assertVisible:
+    id: 'home-draw-delete'
+# 右へ動かして確定する
+- swipe:
+    start: '60%,45%'
+    end: '80%,50%'
+    duration: 1500
+- extendedWaitUntil:
+    visible:
+      id: 'home-draw-save'
+    timeout: 10000
+- tapOn:
+    id: 'home-draw-save'
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    notVisible:
+      id: 'home-draw-save'
+    timeout: 10000
+# レイヤのボタンは、開いていた記録の編集画面を開き直す。経度が増えている
+- repeat:
+    while:
+      notVisible:
+        id: 'dataedit-record-number'
+    times: 3
+    commands:
+      - tapOn:
+          id: 'home-layers'
+          retryTapIfNoChange: false
+      - waitForAnimationToEnd:
+          timeout: 3000
+- assertVisible:
+    id: 'dataedit-record-number'
+    text: ${(output.row + 1) + '/' + (output.row + 1)}
+- scrollUntilVisible:
+    element:
+      id: 'dataedit-coords-longitude-decimal'
+    direction: DOWN
+- copyTextFrom:
+    id: 'dataedit-coords-longitude-decimal'
+- assertTrue: ${Number(maestro.copiedText) > output.lon + 0.0001}
+- takeScreenshot: 09a-point-moved
+- runFlow: ../common/close-sheet.yaml
+# 動かした先で選んで削除する（後片付けを兼ねる）
+- tapOn:
+    id: 'home-draw-select'
+    retryTapIfNoChange: false
+- tapOn:
+    point: '80%,50%'
+- extendedWaitUntil:
+    visible:
+      id: 'home-draw-delete'
+    timeout: 10000
+- tapOn:
+    id: 'home-draw-delete'
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible:
+      id: 'dialog-message'
+    timeout: 10000
+- tapOn: 'Yes'
+- extendedWaitUntil:
+    notVisible:
+      id: 'home-draw-delete'
+    timeout: 10000
+# レイヤのボタンで、消した記録の代わりにデータ一覧が開く。増えた1件が無くなっている
+- repeat:
+    while:
+      notVisible:
+        id: 'data-add'
+    times: 3
+    commands:
+      - tapOn:
+          id: 'home-layers'
+          retryTapIfNoChange: false
+      - waitForAnimationToEnd:
+          timeout: 3000
+- assertNotVisible:
+    id: data-row-${output.row}

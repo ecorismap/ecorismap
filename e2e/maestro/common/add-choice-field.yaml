@@ -1,0 +1,100 @@
+# 開いているレイヤ設定に、選択肢のある項目（リスト・ラジオボタン・チェックボタン）を1つ足し、選択肢を2つ入れる。
+# ${FIELD_INDEX}=足す項目の行番号（いまある項目の数）、${FIELD_NAME}=項目名、${FIELD_FORMAT}=データ形式の表示名、
+# ${VALUE_1}・${VALUE_2}=選択肢。レイヤ設定の画面に戻って終わる（保存はしない）。
+# 項目名・選択肢は半角英数字にする（端末の日本語入力が変換してしまうため）。
+# キーボードは改行キーで閉じる（iOSでは hideKeyboard が閉じられずに失敗することがある）。
+appId: jp.co.ecoris.ecorismap
+---
+- tapOn:
+    id: 'layeredit-field-add'
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible:
+      id: layeredit-field-name-${FIELD_INDEX}
+    timeout: 10000
+- tapOn:
+    id: layeredit-field-name-${FIELD_INDEX}
+- inputText: ${FIELD_NAME}
+- pressKey: Enter
+- tapOn:
+    id: layeredit-field-format-${FIELD_INDEX}
+    retryTapIfNoChange: false
+- tapOn: ${FIELD_FORMAT}
+# （Androidは、選んだ値が欄の子要素の文字になる）
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - extendedWaitUntil:
+          visible:
+            id: layeredit-field-format-${FIELD_INDEX}
+            containsDescendants:
+              - text: ${FIELD_FORMAT}
+          timeout: 10000
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - extendedWaitUntil:
+          visible:
+            id: layeredit-field-format-${FIELD_INDEX}
+            text: ${FIELD_FORMAT + '.*'}
+          timeout: 10000
+# 「値の設定」の列は右にはみ出しているので、表を横にずらしてから押す
+- swipe:
+    start: '80%,45%'
+    end: '20%,45%'
+    duration: 600
+- waitForAnimationToEnd:
+    timeout: 2000
+- tapOn:
+    id: layeredit-field-value-${FIELD_INDEX}
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible:
+      id: 'fieldedit-add'
+    timeout: 10000
+- waitForAnimationToEnd
+- tapOn:
+    id: 'fieldedit-add'
+    retryTapIfNoChange: false
+- tapOn:
+    id: 'fieldedit-value-0'
+- inputText: ${VALUE_1}
+- pressKey: Enter
+- tapOn:
+    id: 'fieldedit-add'
+    retryTapIfNoChange: false
+- tapOn:
+    id: 'fieldedit-value-1'
+- inputText: ${VALUE_2}
+- pressKey: Enter
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - assertVisible:
+          id: 'fieldedit-value-0'
+          text: ${VALUE_1}
+      - assertVisible:
+          id: 'fieldedit-value-1'
+          text: ${VALUE_2}
+# Androidは端末の日本語入力が入力を変換する（a1→あ１ など）ので、何か入っていることだけを確かめる
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - assertVisible:
+          id: 'fieldedit-value-0'
+          text: '.+'
+      - assertVisible:
+          id: 'fieldedit-value-1'
+          text: '.+'
+- tapOn:
+    id: 'sheet-back'
+- extendedWaitUntil:
+    visible:
+      id: 'layeredit-field-add'
+    timeout: 10000
+- waitForAnimationToEnd:
+    timeout: 3000

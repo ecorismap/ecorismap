@@ -1,0 +1,27 @@
+# 開いているプロジェクトを終了する（地図画面で）。
+appId: jp.co.ecoris.ecorismap
+---
+# 終了のボタンは、プロジェクト名のラベルを押すと出る
+- runFlow:
+    when:
+      notVisible:
+        id: 'home-project-close'
+    commands:
+      - tapOn:
+          id: 'home-project-label'
+          retryTapIfNoChange: false
+      - waitForAnimationToEnd:
+          timeout: 3000
+- tapOn:
+    id: 'home-project-close'
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible: '.*プロジェクトを終了しますか.*'
+    timeout: 10000
+- tapOn: 'Yes'
+- extendedWaitUntil:
+    notVisible:
+      id: 'home-project-label'
+    timeout: 30000
+- waitForAnimationToEnd:
+    timeout: 3000

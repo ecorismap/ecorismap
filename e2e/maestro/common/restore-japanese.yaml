@@ -1,0 +1,55 @@
+# アプリの表示言語が英語になっていたら、日本語（システム設定に従う）へ戻して起動し直す。日本語なら何もしない。
+# 言語を切り替えるフロー（15-settings.yaml）が、最初と、終了時（失敗したときも含む。onFlowComplete）に使う。
+# 文言ではなく testID だけで操作するので、どちらの言語でも動く。
+appId: jp.co.ecoris.ecorismap
+---
+- stopApp
+- launchApp:
+    permissions:
+      all: allow
+- extendedWaitUntil:
+    visible:
+      id: 'home-layers'
+    timeout: 120000
+- waitForAnimationToEnd:
+    timeout: 3000
+- runFlow:
+    when:
+      visible:
+        id: 'home-layers'
+        text: '.*layers'
+    commands:
+      # 開発ビルドの警告トーストが下部のボタンに重なっていたら閉じる
+      - repeat:
+          while:
+            visible: 'Open debugger to view warnings.'
+          times: 5
+          commands:
+            - tapOn:
+                rightOf: 'Open debugger to view warnings.'
+                retryTapIfNoChange: false
+            - waitForAnimationToEnd:
+                timeout: 2000
+      - runFlow: open-settings.yaml
+      - tapOn:
+          id: 'settings-language'
+          retryTapIfNoChange: false
+      - tapOn:
+          id: 'settings-language-option-system'
+          retryTapIfNoChange: false
+      # 「Language setting saved. Restart the app to apply the change.」
+      - extendedWaitUntil:
+          visible:
+            id: 'dialog-message'
+          timeout: 10000
+      - tapOn:
+          id: 'dialog-button-0'
+      - stopApp
+      - launchApp
+      - extendedWaitUntil:
+          visible:
+            id: 'home-layers'
+          timeout: 120000
+- assertVisible:
+    id: 'home-layers'
+    text: '.*レイヤ'

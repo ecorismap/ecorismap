@@ -15,7 +15,7 @@ import { useProjectBackup } from '../hooks/useProjectBackup';
 import { SettingsModalBackupSelect } from '../components/organisms/SettingsModalBackupSelect';
 import { useEcorisMapFile } from '../hooks/useEcorismapFile';
 import { getExt } from '../utils/General';
-import { exportGeoFile } from '../utils/File';
+import { clearPickerInbox, exportGeoFile } from '../utils/File';
 import { usePermission } from '../hooks/usePermission';
 import { SettingsModalMapListURL } from '../components/organisms/SettingsModalMapListURL';
 import { SettingsModalProximityAlert } from '../components/organisms/SettingsModalProximityAlert';
@@ -117,6 +117,7 @@ export default function SettingsContainers() {
         //確認ダイアログのdismiss完了前だとピッカーの表示に失敗する
         await waitForModalTransition();
         const file = await DocumentPicker.getDocumentAsync({});
+        await clearPickerInbox();
         if (file.assets === null) return undefined;
 
         const ext = getExt(file.assets[0].name);

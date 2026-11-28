@@ -1,0 +1,362 @@
+# FILE-1・FILE-6（一部）・FILE-8・FILE-9（一部）: ファイルの取り込みと書き出し（OSのファイル選択・共有シートを通る経路）。
+# - FILE-1: レイヤ一覧の「インポート」→OSのファイル選択で GeoJSON を選ぶと、ファイル名のレイヤができ、記録が8件・属性の列（種名）・値（ブナ）が出る
+# - FILE-6・FILE-8: データ一覧で全件を選んでエクスポートすると件数の確認が出て、OKでOSの共有シートに
+#   data_<レイヤ名>_<日時> のZIPと「“ファイル”に保存」が出る（iOSの保存先の選択肢は共有シート。ZIPの中身は確かめていない）
+# - FILE-8・FILE-9: 設定の「保存」で保存先の選択肢（共有・Google Drive）が出る。共有を選ぶと全データの書き出しが失敗の表示なく終わり、
+#   共有シートを閉じると設定画面に戻る（このときの共有シートは Maestro から中身が見えないので、ファイル名は確かめていない。
+#   「開く」で元どおりに戻ることは、端末のデータを置き換えるので確かめていない）
+# - Androidは経路が違う: ファイル選択は端末の「ダウンロード」から選ぶ。エクスポートは先にエクスポート先のモーダル
+#   （デバイスに保存／他のアプリで共有）が出て、共有を選ぶとOSの共有シートにZIPの名前が出る。設定の「保存」は保存先に
+#   「デバイスに保存」もあり、共有を選ぶと共有シートに ecorismap_<日時>.zip が出る（共有シートは戻るキーで閉じる。
+#   「デバイスに保存」は端末の Download にファイルが残るので確かめていない）
+#
+# 前提: テスト用のファイル e2e_plants.geojson（e2e/web/fixtures/植物調査.geojson の写し）が、端末の「ファイル」アプリの
+#   「このiPhone内」（Androidは端末の Download フォルダ）に置いてあること。scripts/e2e-native.sh が流す前に置く。ファイル選択は最後に開いた場所を開くので、
+#   別の場所が開いたときは検索して探す。
+# iOSでは、取り込んだあとに起動し直しても取り込みの通知が出ず、レイヤが増えないことも確かめる
+#   （以前は、ファイル選択が受信箱に置いた写しが残り、次の起動時にもう一度取り込まれて同名のレイヤが2つになった。
+#   src/utils/File.ts の clearPickerInbox で修正済み。再発すると、ここで落ちる）。
+# 取り込んだレイヤは最後に消す（前回の途中で残っていれば最初に消す）。保存したファイルは端末に残さない（共有シートは閉じるだけ）。
+appId: jp.co.ecoris.ecorismap
+env:
+  LAYER_NAME: 'e2e_plants\.geojson.*'
+---
+- runFlow: ../common/launch.yaml
+- runFlow: ../common/dismiss-received-file.yaml
+# 起動直後（地図の読み込み中）のタップは効かないことがあるので、一覧が開くまで押し直す
+- repeat:
+    while:
+      notVisible:
+        id: 'layers-add'
+    times: 5
+    commands:
+      - tapOn:
+          id: 'home-layers'
+          retryTapIfNoChange: false
+      - waitForAnimationToEnd:
+          timeout: 3000
+# いまあるレイヤの数（＝取り込むレイヤの行番号）を数える。前回の残りが末尾にあれば消す
+- runFlow: ../common/count-layers.yaml
+- evalScript: ${output.layerIndex = output.layerCount - 1}
+- repeat:
+    while:
+      visible:
+        id: layers-row-${output.layerIndex}
+        text: ${LAYER_NAME}
+    times: 4
+    commands:
+      - runFlow: ../common/delete-layer-at.yaml
+      - evalScript: ${output.layerCount = output.layerCount - 1}
+      - evalScript: ${output.layerIndex = output.layerCount - 1}
+      # 消したあとの一覧は先頭に戻ることがある。末尾の行が描かれるよう、末尾まで送ってから次を確かめる
+      - repeat:
+          times: 6
+          commands:
+            - swipe:
+                start: '50%,75%'
+                end: '50%,25%'
+                duration: 400
+      - waitForAnimationToEnd:
+          timeout: 3000
+- evalScript: ${output.layerIndex = output.layerCount}
+
+# FILE-1: インポート→OSのファイル選択
+- tapOn:
+    id: 'layers-import'
+    retryTapIfNoChange: false
+# OSのファイル選択から選ぶ（テスト用のファイルが多いので、iOSは検索し、Androidは「ダウンロード」を下へ送って探す）
+- runFlow:
+    file: ../common/pick-file.yaml
+    env:
+      FILE: 'e2e_plants.geojson'
+- extendedWaitUntil:
+    visible:
+      id: 'dialog-message'
+      text: 'ファイルをインポートしました。'
+    timeout: 30000
+- tapOn: 'OK'
+- waitForAnimationToEnd:
+    timeout: 3000
+# iOS: 起動し直しても、同じファイルがもう一度取り込まれない（取り込みの通知が出ず、レイヤが増えない）
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - runFlow: ../common/launch.yaml
+      # 通知は起動の十数秒後に出ていた。15秒待って、出ないことを確かめる
+      - extendedWaitUntil:
+          visible:
+            id: 'dialog-message'
+            text: 'ファイルをインポートしました。'
+          timeout: 15000
+          optional: true
+      - assertNotVisible:
+          id: 'dialog-message'
+      - takeScreenshot: 13-file-relaunched
+      - repeat:
+          while:
+            notVisible:
+              id: 'layers-add'
+          times: 5
+          commands:
+            - tapOn:
+                id: 'home-layers'
+                retryTapIfNoChange: false
+            - waitForAnimationToEnd:
+                timeout: 3000
+      # 末尾まで送る。取り込んだレイヤが末尾の行で、その下に行がない（画面の外の行も「見えている」と判定されるので、あれば見つかる）
+      - repeat:
+          times: 6
+          commands:
+            - swipe:
+                start: '50%,75%'
+                end: '50%,25%'
+                duration: 400
+      - waitForAnimationToEnd:
+          timeout: 3000
+      - assertVisible:
+          id: layers-row-${output.layerIndex}
+          text: ${LAYER_NAME}
+      - evalScript: ${output.nextIndex = output.layerIndex + 1}
+      - assertNotVisible:
+          id: layers-row-${output.nextIndex}
+      - takeScreenshot: 13-file-relaunched-layers
+# 起動し直す（Androidはここで初めて起動し直す。通知が出たら閉じる）
+- runFlow: ../common/launch.yaml
+- runFlow: ../common/dismiss-received-file.yaml
+- repeat:
+    while:
+      notVisible:
+        id: 'layers-add'
+    times: 5
+    commands:
+      - tapOn:
+          id: 'home-layers'
+          retryTapIfNoChange: false
+      - waitForAnimationToEnd:
+          timeout: 3000
+# 一覧の末尾に、ファイル名のレイヤができている（画面の下にあれば下へ送る）
+- repeat:
+    while:
+      notVisible:
+        id: layers-row-${output.layerIndex}
+        above:
+          id: 'layers-add'
+    times: 10
+    commands:
+      - swipe:
+          start: '50%,75%'
+          end: '50%,25%'
+          duration: 400
+      - waitForAnimationToEnd:
+          timeout: 2000
+# 「上にある」の判定は甘く、行がボタンの帯に隠れていても通る。隠れていると押せないので、さらに送る
+# （取り込んだレイヤは末尾に入るので、末尾まで送ればボタンの帯のすぐ上に出る。末尾まで来ていれば動かない）
+- repeat:
+    times: 2
+    commands:
+      - swipe:
+          start: '50%,70%'
+          end: '50%,40%'
+          duration: 500
+      - waitForAnimationToEnd:
+          timeout: 2000
+- assertVisible:
+    id: layers-row-${output.layerIndex}
+    text: ${LAYER_NAME}
+- tapOn:
+    id: layers-row-${output.layerIndex}
+- extendedWaitUntil:
+    visible:
+      id: 'data-export'
+    timeout: 10000
+# 記録が8件で、属性が列になっている
+- assertVisible:
+    id: 'data-row-7'
+- assertNotVisible:
+    id: 'data-row-8'
+- assertVisible:
+    id: 'data-sort-種名'
+- assertVisible: 'ブナ'
+- takeScreenshot: 13-file-imported
+
+# FILE-6・FILE-8: 全件を選んでエクスポート→件数の確認→OSの共有シート
+- tapOn:
+    id: 'data-check-all'
+- tapOn:
+    id: 'data-export'
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible:
+      id: 'dialog-message'
+      text: '8件のデータをエクスポートします。'
+    timeout: 10000
+- tapOn: 'OK'
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - extendedWaitUntil:
+          visible: 'data_e2e_plants\.geojson_\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}'
+          timeout: 60000
+      - assertVisible: 'ZIPアーカイブ.*'
+      - assertVisible: '“ファイル”に保存'
+      - takeScreenshot: 13-file-export-share
+      - tapOn: '閉じる'
+# Androidは、先にエクスポート先（デバイスに保存／他のアプリで共有）を選ぶ。共有を選ぶとOSの共有シートにZIPの名前が出る。
+# 共有シートは戻るキーで閉じる（デバイスに保存は、端末の Download にファイルが残るので選ばない）
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - extendedWaitUntil:
+          visible:
+            id: 'export-share'
+          timeout: 60000
+      - assertVisible: 'エクスポート先の選択'
+      - assertVisible:
+          id: 'export-save'
+      - assertVisible:
+          id: 'export-cancel'
+      - takeScreenshot: 13-file-export-destination
+      - tapOn:
+          id: 'export-share'
+          retryTapIfNoChange: false
+      - extendedWaitUntil:
+          visible:
+            id: 'com.android.intentresolver:id/content_preview_filename'
+            text: 'data_e2e_plants\.geojson_\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}\.zip'
+          timeout: 60000
+      - takeScreenshot: 13-file-export-share
+      - back
+# 共有シートを閉じると、データ一覧に戻る（失敗の表示は出ない）
+- extendedWaitUntil:
+    visible:
+      id: 'data-export'
+    timeout: 15000
+- assertNotVisible:
+    id: 'dialog-message'
+
+# 後片付け: 取り込んだレイヤを消す
+- tapOn:
+    id: 'sheet-back'
+- extendedWaitUntil:
+    visible:
+      id: 'layers-add'
+    timeout: 10000
+# （既知の不具合で2つ目ができていれば、それも消す。2つ目は末尾＝1つ下の行）
+- evalScript: ${output.layerIndex = output.layerIndex + 1}
+- repeat:
+    times: 3
+    commands:
+      - swipe:
+          start: '50%,75%'
+          end: '50%,25%'
+          duration: 400
+- waitForAnimationToEnd:
+    timeout: 3000
+# iOS: 2回目に起動し直したあとも、レイヤは増えていない（消すのは1つだけ）
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - assertNotVisible:
+          id: layers-row-${output.layerIndex}
+- runFlow:
+    when:
+      visible:
+        id: layers-row-${output.layerIndex}
+        text: ${LAYER_NAME}
+    commands:
+      - runFlow: ../common/delete-layer-at.yaml
+- evalScript: ${output.layerIndex = output.layerIndex - 1}
+- runFlow: ../common/delete-layer-at.yaml
+- assertNotVisible:
+    id: layers-row-${output.layerIndex}
+- runFlow: ../common/close-sheet.yaml
+
+# FILE-8・FILE-9: 設定の「保存」→保存先の選択肢
+- runFlow: ../common/open-settings.yaml
+- tapOn:
+    id: 'settings-file-save'
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible:
+      id: 'settings-storage-option-share'
+    timeout: 10000
+- assertVisible: '.*保存先を選択.*'
+- assertVisible:
+    id: 'settings-storage-option-drive'
+- assertVisible:
+    id: 'settings-storage-cancel'
+# Androidは「デバイスに保存」（Download へ保存）もある
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - assertVisible:
+          id: 'settings-storage-option-device'
+- takeScreenshot: 13-file-save-destination
+# 共有を選ぶと、全データをZIPにまとめてから共有シートが開く（写真が多い端末では数分かかる）。
+# このときの共有シートは、処理中の表示の後ろに隠れて Maestro から中身が見えない。
+# 閉じるボタン（シート右上の×。iPhone 16e で画面の 93%,49% の位置）を、設定画面に戻るまで押す
+- tapOn:
+    id: 'settings-storage-option-share'
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    notVisible:
+      id: 'settings-storage-option-share'
+    timeout: 10000
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - repeat:
+          while:
+            notVisible:
+              id: 'settings-file-save'
+          times: 60
+          commands:
+            # 失敗の表示（「ファイルの保存に失敗しました」など）が出ていたら、そこで落とす
+            - assertNotVisible:
+                id: 'dialog-message'
+            - tapOn:
+                point: '93%,49%'
+                retryTapIfNoChange: false
+            - extendedWaitUntil:
+                visible:
+                  id: 'settings-file-save'
+                timeout: 5000
+                optional: true
+# Androidの共有シートは Maestro から中身が見える。ZIPの名前（ecorismap_<日時>.zip）が出るのを待ち、戻るキーで閉じる
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - repeat:
+          while:
+            notVisible:
+              id: 'com.android.intentresolver:id/content_preview_filename'
+          times: 60
+          commands:
+            # 失敗の表示（「ファイルの保存に失敗しました」など）が出ていたら、そこで落とす
+            - assertNotVisible:
+                id: 'dialog-message'
+            - extendedWaitUntil:
+                visible:
+                  id: 'com.android.intentresolver:id/content_preview_filename'
+                timeout: 5000
+                optional: true
+      - assertVisible:
+          id: 'com.android.intentresolver:id/content_preview_filename'
+          text: 'ecorismap_\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}\.zip'
+      - takeScreenshot: 13-file-save-share
+      - back
+      - extendedWaitUntil:
+          visible:
+            id: 'settings-file-save'
+          timeout: 15000
+- assertVisible:
+    id: 'settings-file-save'
+- assertNotVisible:
+    id: 'dialog-message'

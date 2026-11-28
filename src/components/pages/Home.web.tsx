@@ -13,8 +13,9 @@ import Map, {
   MapRef,
   NavigationControl,
   ScaleControl,
+  ViewStateChangeEvent,
 } from 'react-map-gl/maplibre';
-import maplibregl, { LayerSpecification, RasterDEMTileSource, RequestParameters } from 'maplibre-gl';
+import maplibregl, { LayerSpecification, RequestParameters } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { Point } from '../organisms/HomePoint';
 import { Polygon } from '../organisms/HomePolygon.web';
@@ -39,6 +40,8 @@ import {
 import { VISTA_MAX_PITCH_DEG } from '../../utils/terrain3d/constants';
 import { enableWebDistanceFog, enableWebTerrainFarView } from '../../utils/terrain3d/webTerrainView';
 import { enableWebLowCameraGuard } from '../../utils/terrain3d/webLowCameraGuard';
+import { setWebTerrainDemTiles } from '../../utils/terrain3d/webTerrainDemTiles';
+import { FollowViewState, keepGeolocateFollowOnViewStateSync } from '../../utils/webGeolocateFollow';
 import { HomeTerrain3DVistaBanner } from '../organisms/HomeTerrain3DVistaBanner';
 import { HomeTerrain3DButtons } from '../organisms/HomeTerrain3DButtons';
 import { HomeVistaPeakLabels } from '../organisms/HomeVistaPeakLabels';
@@ -292,6 +295,20 @@ export default function HomeScreen() {
       });
     },
     [updateLocationFromWebGeolocate]
+  );
+
+  // 直近のカメラ移動が現在地の追従（GeolocateControl）によるものなら、その移動が求めた表示範囲。
+  // 表示範囲をpropsで渡している都合で、追従の移動の最後はreact-map-glのjumpToで反映され、そのままだと
+  // 追従が外れる（webGeolocateFollow.ts）。反映のjumpToを見分けるために覚えておく
+  const followViewStateRef = useRef<FollowViewState | null>(null);
+  const handleMove = useCallback(
+    (e: ViewStateChangeEvent) => {
+      // geolocateSourceはGeolocateControlが自分の移動に付ける印（型定義に出ていない）
+      const fromGeolocate = (e as { geolocateSource?: boolean }).geolocateSource === true;
+      followViewStateRef.current = fromGeolocate ? e.viewState : null;
+      onRegionChangeMapView(e.viewState);
+    },
+    [onRegionChangeMapView]
   );
 
   const handleGeolocateError = useCallback(() => {
@@ -624,10 +641,7 @@ export default function HomeScreen() {
     const terrainTileUrl = gebcoMap
       ? buildBathymetryTerrainTileUrl(withTileSignature(toDemUrl(gebcoMap.url), tileSignatures))
       : MAPTERHORN_URL;
-    const demSource = map.getSource('rasterdem') as RasterDEMTileSource | undefined;
-    if (demSource && demSource.tiles?.[0] !== terrainTileUrl) {
-      demSource.setTiles([terrainTileUrl]);
-    }
+    setWebTerrainDemTiles(map, 'rasterdem', terrainTileUrl);
 
     // isTerrainActiveの状態に基づいて地形設定を復元
     if (isTerrainActive) {
@@ -673,6 +687,8 @@ export default function HomeScreen() {
   const onMapLoad = useCallback(
     async (evt: any) => {
       const map = evt.target;
+
+      keepGeolocateFollowOnViewStateSync(map, () => followViewStateRef.current);
 
       // 地形データソースの追加
       if (!map.getSource('rasterdem')) {
@@ -918,7 +934,7 @@ export default function HomeScreen() {
                 //@ts-ignore
                 mapStyle={mapStyle}
                 maxPitch={vistaActive ? VISTA_MAX_PITCH_DEG : WEB_NORMAL_MAX_PITCH_DEG}
-                onMove={(e) => onRegionChangeMapView(e.viewState)}
+                onMove={handleMove}
                 onLoad={onMapLoad}
                 cursor={currentDrawTool === 'PLOT_POINT' ? 'crosshair' : 'auto'}
                 //interactiveLayerIds={interactiveLayerIds} //ラインだけに限定する場合

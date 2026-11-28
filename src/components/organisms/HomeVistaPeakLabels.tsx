@@ -239,7 +239,7 @@ const PeakLabel = React.memo(
       <>
         <View style={stemStyle} pointerEvents="none" />
         <View style={dotStyle} pointerEvents="none" />
-        <Pressable style={columnStyle} onPress={handlePress} hitSlop={4}>
+        <Pressable testID="home-vista-peak-label" style={columnStyle} onPress={handlePress} hitSlop={4}>
           <Text style={[styles.name, label.rank <= 2 && styles.major]}>{vertical}</Text>
         </Pressable>
       </>
@@ -250,6 +250,7 @@ const PeakLabel = React.memo(
 /** タップした山の標高と距離 */
 const PeakDetail = ({ label, width }: { label: PlacedPeakLabel; width: number }) => (
   <View
+    testID="home-vista-peak-detail"
     style={[
       styles.detail,
       // 右端の山は画面からはみ出さないよう列の左側に出す

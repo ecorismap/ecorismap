@@ -1,0 +1,349 @@
+# MAPS-3（一部）・MAPS-6・MAPS-10・MAPS-11（一部）・MAPS-15: 地図（背景地図）の管理のうち、12-maps-manage で見ていないもの。
+# - MAPS-3: 「グループ」で名前を入れるとグループが一覧の先頭にでき、下へ／上へのボタンで並びが入れ替わる。削除できる
+#   （グループへの出し入れ＝ドラッグは確かめていない）
+# - MAPS-6: プリセットの「陰影起伏図(全方位対応)」（hillshade://）と「GEBCO海底地形図(全球)」（relief://）を追加すると、
+#   一覧に入り、出典表示に GEBCO が出て、エラーが出ない（陰影・段彩の絵はスクリーンショットを人が見る）
+# - MAPS-10: 位置情報つきの PDF（1色で塗った GeoPDF）を取り込むと、変換の表示のあと一覧の先頭に入る。
+#   地図名を押すとその範囲へ移る（PDFが正しい位置に描かれることは、スクリーンショットを人が見る）
+# - MAPS-15: 設定の「キャッシュをクリア」をして起動し直しても、取り込んだPDF地図は一覧に残り、範囲へ移れる
+#   （描かれることはスクリーンショットを人が見る。ダウンロードしたタイルが消えることは 21-maps-offline で確かめる）
+# - MAPS-11: 地図設定のJSON（地図1つ）を取り込むと「地図を追加しました。」と出て一覧と出典表示に入る。編集画面の
+#   「エクスポート」でOSの共有シートに map_<地図名>_<日時> が出る。同じJSONをもう一度取り込むと「地図の設定を更新しました。」と出て、
+#   地図は増えない（共有シートのファイルの中身と、書き出したファイルそのものの取り込み直しは確かめていない）
+#
+# 前提: テスト用のファイル e2e_geo.pdf・e2e_mapsetting.json（e2e/maestro/fixtures/）が、端末の「ファイル」アプリから選べる場所にあること。
+#   scripts/e2e-native.sh が流す前に置く。e2e_mapsetting.json の地図は Mac の配信（serve-fixtures.mjs）を指すが、起動していなくてもフローは通る。
+# Androidは端末の日本語入力が入力をかなに変換するので（e2egrp→え２えｇｒｐ）、グループ名はどちらの形でも通す。
+# Androidは MAPS-15（キャッシュをクリア）をしない。
+# 注意: 「キャッシュをクリア」は、この端末にあるダウンロード済みタイルも消す（取り直せるもの。テスト専用の端末で流す）。
+# 追加した地図・グループは最後に消す（前回の途中で残っていれば最初に消す）。地図は PDF の範囲（仙台駅の近く）へ移ったままになる。
+appId: jp.co.ecoris.ecorismap
+env:
+  LEFTOVER: '.*e2e.*|.*え２え.*|陰影起伏図\(全方位対応\)|GEBCO海底地形図\(全球\)'
+---
+- runFlow: ../common/launch.yaml
+- runFlow: ../common/dismiss-received-file.yaml
+- runFlow: ../common/open-maps.yaml
+# 前提を整える: 前回の残り（一覧の先頭に並ぶテスト用の地図・グループ）を消す
+- repeat:
+    while:
+      visible:
+        id: 'maps-row-0'
+        text: ${LEFTOVER}
+    times: 8
+    commands:
+      - runFlow: ../common/delete-top-map.yaml
+
+# MAPS-3: グループを作る
+- tapOn:
+    id: 'maps-add-group'
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible:
+      id: 'textdialog-input'
+    timeout: 10000
+- tapOn:
+    id: 'textdialog-input'
+- inputText: 'e2egrp'
+- tapOn:
+    id: 'textdialog-ok'
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible:
+      id: 'maps-row-0'
+      text: '.*(e2egrp|え２えｇｒｐ)'
+    timeout: 10000
+- takeScreenshot: 24-maps-group
+# 下へ／上へのボタンで並びが入れ替わる
+- tapOn:
+    id: 'maps-down-0'
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible:
+      id: 'maps-row-1'
+      text: '.*(e2egrp|え２えｇｒｐ)'
+    timeout: 10000
+- assertNotVisible:
+    id: 'maps-row-0'
+    text: '.*(e2egrp|え２えｇｒｐ)'
+- tapOn:
+    id: 'maps-up-1'
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible:
+      id: 'maps-row-0'
+      text: '.*(e2egrp|え２えｇｒｐ)'
+    timeout: 10000
+- runFlow: ../common/delete-top-map.yaml
+- assertNotVisible:
+    id: 'maps-row-0'
+    text: '.*(e2egrp|え２えｇｒｐ)'
+
+# MAPS-6: 陰影起伏・段彩
+- runFlow:
+    file: ../common/add-map-preset.yaml
+    env:
+      PRESET: '陰影起伏図\(全方位対応\)'
+      URL: 'hillshade://.+'
+- runFlow:
+    file: ../common/add-map-preset.yaml
+    env:
+      PRESET: 'GEBCO海底地形図\(全球\)'
+      URL: 'relief://.+'
+- assertVisible:
+    id: 'maps-row-1'
+    text: '陰影起伏図\(全方位対応\)'
+- extendedWaitUntil:
+    visible:
+      id: 'home-attribution'
+      text: '.*GEBCO.*'
+    timeout: 10000
+# 海と陸の両方が入るよう、引いて撮る（絵はスクリーンショットで見る）
+- runFlow: ../common/close-sheet.yaml
+- runFlow:
+    file: ../common/set-zoom.yaml
+    env:
+      ZOOM: 9
+- waitForAnimationToEnd:
+    timeout: 8000
+- assertNotVisible:
+    id: 'dialog-message'
+- takeScreenshot: 24-maps-hillshade-relief
+- runFlow: ../common/open-maps.yaml
+# （消すのが追加した2つの地図であることを確かめてから消す）
+- assertVisible:
+    id: 'maps-row-0'
+    text: 'GEBCO海底地形図\(全球\)'
+- assertVisible:
+    id: 'maps-row-1'
+    text: '陰影起伏図\(全方位対応\)'
+- runFlow: ../common/delete-top-map.yaml
+- runFlow: ../common/delete-top-map.yaml
+- assertNotVisible:
+    id: 'maps-row-0'
+    text: ${LEFTOVER}
+- extendedWaitUntil:
+    notVisible:
+      id: 'home-attribution'
+      text: '.*GEBCO.*'
+    timeout: 10000
+
+# MAPS-10: PDF地図を取り込む
+- tapOn:
+    id: 'maps-import'
+    retryTapIfNoChange: false
+- runFlow:
+    file: ../common/pick-file.yaml
+    env:
+      FILE: 'e2e_geo.pdf'
+# 変換が終わると結果の通知が出る
+- extendedWaitUntil:
+    visible:
+      id: 'dialog-message'
+    timeout: 120000
+- takeScreenshot: 24-maps-pdf-imported
+- assertVisible:
+    id: 'dialog-message'
+    text: 'ファイルをインポートしました。'
+- tapOn: 'OK'
+- extendedWaitUntil:
+    visible:
+      id: 'maps-row-0'
+      text: 'e2e_geo.*'
+    timeout: 30000
+# 地図名を押すと、PDFの範囲へ移る
+- tapOn:
+    id: 'maps-row-0'
+    retryTapIfNoChange: false
+- waitForAnimationToEnd:
+    timeout: 5000
+- assertNotVisible:
+    id: 'dialog-message'
+- runFlow: ../common/close-sheet.yaml
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: 24-maps-pdf
+
+# MAPS-15: キャッシュをクリアしても、取り込んだPDF地図は残る（iOSだけ。Androidのエミュレーターは、ほかの地図の
+# ダウンロード済みタイルが入っている端末で流すので「キャッシュをクリア」はせず、PDF地図を消すところへ進む）
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - runFlow: ../common/open-settings.yaml
+      - scrollUntilVisible:
+          element:
+            id: 'settings-clear-cache'
+          direction: DOWN
+      - tapOn:
+          id: 'settings-clear-cache'
+          retryTapIfNoChange: false
+      - extendedWaitUntil:
+          visible:
+            id: 'dialog-message'
+            text: '.*取り込んだPDF地図・スタイル.*は削除されません.*'
+          timeout: 10000
+      - tapOn: 'Yes'
+      - extendedWaitUntil:
+          visible:
+            id: 'dialog-message'
+            text: '地図のキャッシュをクリアしました。'
+          timeout: 60000
+      - tapOn: 'OK'
+      - waitForAnimationToEnd:
+          timeout: 3000
+      # 起動し直す（表示中の地図はメモリに残ったタイルを描き続けるので）
+      - runFlow: ../common/launch.yaml
+      - runFlow: ../common/open-maps.yaml
+      - assertVisible:
+          id: 'maps-row-0'
+          text: 'e2e_geo.*'
+      - tapOn:
+          id: 'maps-row-0'
+          retryTapIfNoChange: false
+      - waitForAnimationToEnd:
+          timeout: 5000
+      - assertNotVisible:
+          id: 'dialog-message'
+      - runFlow: ../common/close-sheet.yaml
+      - waitForAnimationToEnd:
+          timeout: 5000
+      - takeScreenshot: 24-maps-pdf-after-clear
+- runFlow: ../common/open-maps.yaml
+# （消すのが取り込んだPDF地図であることを確かめてから消す）
+- assertVisible:
+    id: 'maps-row-0'
+    text: 'e2e_geo.*'
+- runFlow: ../common/delete-top-map.yaml
+- assertNotVisible:
+    id: 'maps-row-0'
+    text: 'e2e_geo.*'
+
+# MAPS-11: 地図設定のJSONを取り込む
+- tapOn:
+    id: 'maps-import'
+    retryTapIfNoChange: false
+- runFlow:
+    file: ../common/pick-file.yaml
+    env:
+      FILE: 'e2e_mapsetting.json'
+- extendedWaitUntil:
+    visible:
+      id: 'dialog-message'
+      text: '地図を追加しました。'
+    timeout: 30000
+- tapOn: 'OK'
+- extendedWaitUntil:
+    visible:
+      id: 'maps-row-0'
+      text: 'e2eimp'
+    timeout: 10000
+- extendedWaitUntil:
+    visible:
+      id: 'home-attribution'
+      text: '.*e2e-imp.*'
+    timeout: 10000
+# エクスポート→OSの共有シート
+- tapOn:
+    id: 'maps-edit-0'
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible:
+      id: 'mapedit-export'
+    timeout: 10000
+- waitForAnimationToEnd
+- assertVisible:
+    id: 'mapedit-url'
+    text: 'http://localhost:8765/tiles/\{z\}/\{x\}/\{y\}\.png'
+- tapOn:
+    id: 'mapedit-export'
+    retryTapIfNoChange: false
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - extendedWaitUntil:
+          visible: 'map_e2eimp_\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}.*'
+          timeout: 30000
+      - assertVisible: '“ファイル”に保存'
+      - takeScreenshot: 24-maps-export-share
+      - tapOn: '閉じる'
+# Androidは、先にエクスポート先（デバイスに保存／他のアプリで共有）を選ぶ（13-file と同じ。未確認）
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - extendedWaitUntil:
+          visible:
+            id: 'export-share'
+          timeout: 30000
+      - tapOn:
+          id: 'export-share'
+          retryTapIfNoChange: false
+      - extendedWaitUntil:
+          visible:
+            id: 'com.android.intentresolver:id/content_preview_filename'
+            text: 'map_e2eimp_\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}\.json'
+          timeout: 30000
+      - takeScreenshot: 24-maps-export-share
+      - back
+# 共有シートを閉じると、文言の無いダイアログ（OKだけ）が出る（アプリ側の不具合として報告済み。
+# src/containers/MapEdit.tsx の pressExportMap が、空のメッセージでも通知を出している）。出ていたら閉じる。失敗の表示ではないことは確かめる
+- waitForAnimationToEnd:
+    timeout: 3000
+- assertNotVisible: '.*失敗.*'
+- runFlow:
+    when:
+      visible:
+        id: 'dialog-button-0'
+    commands:
+      - tapOn:
+          id: 'dialog-button-0'
+          retryTapIfNoChange: false
+      - waitForAnimationToEnd:
+          timeout: 3000
+- extendedWaitUntil:
+    visible:
+      id: 'mapedit-export'
+    timeout: 15000
+- assertNotVisible:
+    id: 'dialog-button-0'
+- tapOn:
+    id: 'sheet-back'
+- extendedWaitUntil:
+    visible:
+      id: 'maps-add'
+    timeout: 10000
+# 同じJSONをもう一度取り込むと、追加ではなく更新になる（地図は増えない）
+- tapOn:
+    id: 'maps-import'
+    retryTapIfNoChange: false
+- runFlow:
+    file: ../common/pick-file.yaml
+    env:
+      FILE: 'e2e_mapsetting.json'
+- extendedWaitUntil:
+    visible:
+      id: 'dialog-message'
+      text: '地図の設定を更新しました。'
+    timeout: 30000
+- tapOn: 'OK'
+- waitForAnimationToEnd:
+    timeout: 3000
+- assertVisible:
+    id: 'maps-row-0'
+    text: 'e2eimp'
+- assertNotVisible:
+    id: 'maps-row-1'
+    text: 'e2eimp'
+# 後片付け
+- runFlow: ../common/delete-top-map.yaml
+- assertNotVisible:
+    id: 'maps-row-0'
+    text: ${LEFTOVER}
+- extendedWaitUntil:
+    notVisible:
+      id: 'home-attribution'
+      text: '.*e2e-imp.*'
+    timeout: 10000
+- runFlow: ../common/close-sheet.yaml
