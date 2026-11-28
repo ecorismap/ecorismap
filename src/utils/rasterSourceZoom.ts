@@ -13,3 +13,15 @@ export const rasterSourceMaxzoom = (tileMap: Pick<TileMapType, 'maximumZ' | 'ove
   if (!Number.isFinite(maximumZ)) return overzoomThreshold;
   return Math.min(overzoomThreshold, maximumZ);
 };
+
+/**
+ * Web（maplibre）のラスタXYZソースのtileSize。
+ * 256のままだと高解像度の画面（devicePixelRatio 1.5以上）ではタイルを2倍に引き伸ばしてぼやける。
+ * 「高解像度」がオンの地図は128にして1段上のズームのタイルを取り、タイルの1画素を画面の1画素に
+ * 合わせる（Leafletの detectRetina と同じ。ネイティブの doubleTileSize に相当）。
+ * 文字・記号は半分の大きさになり、タイル数は約4倍になる。等倍の画面では得がないので256のまま。
+ */
+export const rasterSourceTileSize = (
+  tileMap: Pick<TileMapType, 'highResolutionEnabled'>,
+  devicePixelRatio: number
+): number => (tileMap.highResolutionEnabled && devicePixelRatio >= 1.5 ? 128 : 256);

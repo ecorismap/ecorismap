@@ -49,7 +49,7 @@ import { HomeUserLocationBehindGuard } from '../organisms/HomeUserLocationBehind
 import { loadPeakIndex } from '../../utils/peaks/peakData';
 import { isPeaksUrl } from '../../utils/peaks/peak2dLabels';
 import { EMPTY_PEAKS, getPeakLayers, PeakFeatureCollection, toPeakGeoJSON } from '../../utils/peaks/peakLayers.web';
-import { rasterSourceMaxzoom } from '../../utils/rasterSourceZoom';
+import { rasterSourceMaxzoom, rasterSourceTileSize } from '../../utils/rasterSourceZoom';
 
 // 3D表示用の標高タイル（Mapterhorn、terrarium形式をmaplibreが内蔵デコード）。
 // 日本は基盤地図情報DEM(1m/5m/10m)、国外はCopernicus GLO-30ほか。詳細はdocs/DEM_SOURCES.md
@@ -831,7 +831,7 @@ export default function HomeScreen() {
                 minzoom: tileMap.minimumZ,
                 maxzoom: rasterSourceMaxzoom(tileMap),
                 scheme: tileMap.flipY ? 'tms' : 'xyz',
-                tileSize: 256,
+                tileSize: rasterSourceTileSize(tileMap, window.devicePixelRatio),
                 attribution: tileMap.attribution,
               },
             };
