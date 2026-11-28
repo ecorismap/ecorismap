@@ -102,8 +102,12 @@ export const enableWebTerrainFarView = (map: MaplibreMap): (() => void) => {
   };
 };
 
-/** フォグが掛かり始める距離[m]。これより手前は掛からない */
-const FOG_START_M = 5000;
+/**
+ * フォグが掛かり始める距離[m]。これより手前は掛からない。
+ * 濃さは (1−開始距離/距離)² なので、開始距離の2倍で25%、3倍で44%、5倍で64%になる。
+ * 5kmにしていたときは、10〜20km先の近くの尾根まで濃い青に沈んだ。30kmなら60kmで25%、100kmで49%、150kmで64%
+ */
+const FOG_START_M = 30000;
 
 /** フォグの計算に使うmaplibreの内部の値（型定義に出ていない） */
 interface FogTransform {
