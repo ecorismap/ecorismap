@@ -14,7 +14,14 @@ import { decodeDemFile, DemDecodeEncoding } from '../../modules/dem-decoder/src'
 const CACHE_DIR = `${FileSystem.cacheDirectory}dem_tiles`;
 let dirEnsured = false;
 
-const cacheFileUri = (key: string) => `${CACHE_DIR}/${encodeURIComponent(key)}`;
+/**
+ * キャッシュのキー（URLテンプレートとタイル番号）からファイル名を作る。
+ * 英数字と . _ - 以外は _ に置き換える。encodeURIComponentで作った名前（%2F など）は、Androidでは
+ * ファイルのURIを解釈するときに / へ戻されて存在しないフォルダ扱いになり、ダウンロードが毎回失敗する
+ */
+export const demTileCacheFileName = (key: string): string => key.replace(/[^A-Za-z0-9._-]/g, '_');
+
+const cacheFileUri = (key: string) => `${CACHE_DIR}/${demTileCacheFileName(key)}`;
 
 /** デコード済み標高（行優先・一辺size）。GSI形式のNoData・透明画素はNaN */
 export type DecodedDemTile = { size: number; elev: Float32Array };
