@@ -27,7 +27,6 @@ jest.mock('react-native-image-zoom-viewer', () => {
     mockOnChange = props.onChange;
     ReactActual.useEffect(() => {
       mockMounts.push(props.index);
-      // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
     return null;
   };
