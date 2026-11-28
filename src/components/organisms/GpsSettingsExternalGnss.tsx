@@ -14,9 +14,10 @@ import {
 import { Pressable } from '../atoms/Pressable';
 import { DEFAULT_GNSS_TRACK_DISTANCE, DEFAULT_GNSS_TRACK_MODE } from '../../lib/gnss/trackThinning';
 import { DEFAULT_EXTERNAL_GNSS_SETTINGS } from '../../lib/gnss/settings';
-import { isUsbSupported } from '../../lib/gnss/connection';
+import { isSppSupported, isUsbSupported } from '../../lib/gnss/connection';
 import { GpsSettingsModalNtrip } from './GpsSettingsModalNtrip';
 import { GpsSettingsModalReceiver } from './GpsSettingsModalReceiver';
+import { GpsSettingsRawLog } from './GpsSettingsRawLog';
 
 const formatBytes = (bytes: number) =>
   bytes < 1024 * 1024 ? `${(bytes / 1024).toFixed(1)}KB` : `${(bytes / 1024 / 1024).toFixed(2)}MB`;
@@ -31,6 +32,7 @@ export const GpsSettingsExternalGnss = React.memo(() => {
       refreshUsbDevices,
       bleDevices,
       isBleScanning,
+      sppDevices,
       updateReceiverSettings,
       saveNtripSettings,
       setNtripEnabled,
@@ -39,6 +41,9 @@ export const GpsSettingsExternalGnss = React.memo(() => {
     pressConnectUsb,
     pressScanBle,
     pressConnectBle,
+    pressRefreshSpp,
+    pressConnectSpp,
+    pressPairSpp,
     pressDisconnect,
   } = useContext(GpsSettingsContext);
   const [receiverModalVisible, setReceiverModalVisible] = useState(false);
@@ -157,7 +162,55 @@ export const GpsSettingsExternalGnss = React.memo(() => {
                 )}
               </>
             )}
-            <View style={[styles.row, isUsbSupported && styles.bleHeader]}>
+            {isSppSupported && (
+              <>
+                <View style={[styles.row, isUsbSupported && styles.bleHeader]}>
+                  <Text style={[styles.subTitle, styles.flex]}>{`${t('GpsSettings.externalGnss.sppDevices')}`}</Text>
+                  <Pressable testID="gpssettings-gnss-spp-pair" style={styles.smallButton} onPress={pressPairSpp}>
+                    <Text style={styles.smallButtonText}>{`${t('GpsSettings.externalGnss.pair')}`}</Text>
+                  </Pressable>
+                  <Pressable
+                    testID="gpssettings-gnss-spp-refresh"
+                    style={[styles.smallButton, styles.buttonGap]}
+                    onPress={pressRefreshSpp}
+                  >
+                    <Text style={styles.smallButtonText}>{`${t('GpsSettings.externalGnss.refresh')}`}</Text>
+                  </Pressable>
+                </View>
+                {sppDevices.length === 0 ? (
+                  <Text style={styles.note}>{`${t('GpsSettings.externalGnss.noSppDevices')}`}</Text>
+                ) : (
+                  sppDevices.map((device, index) => (
+                    <View key={device.address} style={[styles.row, styles.deviceRow]}>
+                      <Text style={[styles.flex, styles.deviceName]} numberOfLines={1}>
+                        {device.name}
+                      </Text>
+                      <Pressable
+                        testID={`gpssettings-gnss-spp-connect-${index}`}
+                        style={[
+                          styles.smallButton,
+                          styles.primaryButton,
+                          status.link === 'connecting' && styles.smallButtonDisabled,
+                        ]}
+                        disabled={status.link === 'connecting'}
+                        onPress={() => pressConnectSpp(device.address)}
+                      >
+                        <Text
+                          style={[
+                            styles.smallButtonText,
+                            styles.primaryButtonText,
+                            status.link === 'connecting' && styles.smallButtonTextDisabled,
+                          ]}
+                        >
+                          {`${t('GpsSettings.externalGnss.connect')}`}
+                        </Text>
+                      </Pressable>
+                    </View>
+                  ))
+                )}
+              </>
+            )}
+            <View style={[styles.row, (isUsbSupported || isSppSupported) && styles.bleHeader]}>
               <Text style={[styles.subTitle, styles.flex]}>{`${t('GpsSettings.externalGnss.bleDevices')}`}</Text>
               <Pressable
                 testID="gpssettings-gnss-ble-scan"
@@ -266,6 +319,8 @@ export const GpsSettingsExternalGnss = React.memo(() => {
         {settings.ntrip.enabled && status.ntripError !== null && <Text style={styles.error}>{status.ntripError}</Text>}
       </View>
 
+      <GpsSettingsRawLog />
+
       <GpsSettingsModalReceiver
         visible={receiverModalVisible}
         values={receiverValues}
@@ -304,6 +359,9 @@ const styles = StyleSheet.create({
   },
   bleHeader: {
     marginTop: 14,
+  },
+  buttonGap: {
+    marginLeft: 8,
   },
   card: {
     backgroundColor: COLOR.WHITE,

@@ -4,7 +4,7 @@ import { useSelector } from 'react-redux';
 import * as GnssReceiver from '../../modules/gnss-receiver/src';
 import { getExternalGnssSnapshot, subscribeExternalGnss } from '../lib/gnss/externalGnssStore';
 import { hasBlePermissions } from '../lib/gnss/blePermissions';
-import { canStartNtrip, findRememberedUsbDevice, startNtripIfEnabled } from '../lib/gnss/connection';
+import { canStartNtrip, findRememberedUsbDevice, isSppSupported, startNtripIfEnabled } from '../lib/gnss/connection';
 import {
   getReconnectDelayMs,
   isLinkLostByError,
@@ -106,9 +106,14 @@ export const useExternalGnssAutoConnect = (isLocationInUse: boolean) => {
         }
         await GnssReceiver.connectUsb(usb.deviceId, current.baudRate);
       } else {
-        // 権限ダイアログは設定画面で手動接続したときだけ出す
+        // 権限ダイアログは設定画面で手動接続したときだけ出す（SPPもBLUETOOTH_CONNECTが要る）
         if (!(await hasBlePermissions())) return 'unavailable';
-        await GnssReceiver.connectBle(device.address);
+        if (device.type === 'spp') {
+          if (!isSppSupported) return 'unavailable';
+          await GnssReceiver.connectSpp(device.address);
+        } else {
+          await GnssReceiver.connectBle(device.address);
+        }
       }
       // NTRIP はリンクが切れても動き続けている（T-L10）。動いていれば張り直さず、キャスターへの再ログインを避ける
       if (shouldApplyNtripOnConnect(getExternalGnssSnapshot().status.ntrip, canStartNtrip(current.ntrip))) {

@@ -95,6 +95,21 @@ public class GnssReceiverModule: Module {
       return GnssSession.shared.status()
     }.runOnQueue(workQueue)
 
+    // RAW記録（後処理用）。dirPath はJS側で決めたアプリ内のフォルダ（file:// なしの絶対パス）
+    AsyncFunction("startRawLog") { (dirPath: String, baseName: String, logCorrections: Bool) throws -> [String: Any] in
+      do {
+        try GnssSession.shared.startRawLog(dirPath: dirPath, baseName: baseName, logCorrections: logCorrections)
+      } catch {
+        throw GnssReceiverException(errorMessage(error))
+      }
+      return GnssSession.shared.status()
+    }.runOnQueue(workQueue)
+
+    // 残りを書き出すまで待つ
+    AsyncFunction("stopRawLog") { () -> [String: Any]? in
+      GnssSession.shared.stopRawLog()
+    }.runOnQueue(workQueue)
+
     AsyncFunction("disconnect") {
       GnssSession.shared.detachLink()
     }

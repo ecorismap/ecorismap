@@ -9,6 +9,7 @@ import { t } from 'i18next';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../store';
 import { useExternalGnssStatus } from '../../hooks/useExternalGnssStatus';
+import { formatDuration, formatRawBytes } from '../../lib/gnss/rawLogNames';
 import { isGnssReceiverAvailable } from '../../../modules/gnss-receiver/src';
 import {
   ellipsoidHeightOf,
@@ -72,7 +73,11 @@ export const HomeGPSButton = React.memo((props: Props) => {
         />
       </View>
       {detailVisible && (
-        <Pressable testID="home-gps-detail" style={[styles.panel, { left: 9 + insets.left + 52, top }]} onPress={() => setDetailVisible(false)}>
+        <Pressable
+          testID="home-gps-detail"
+          style={[styles.panel, { left: 9 + insets.left + 52, top }]}
+          onPress={() => setDetailVisible(false)}
+        >
           {!isConnected ? (
             <>
               <Text style={styles.row}>{`${t('GpsSettings.externalGnss.notConnected')}`}</Text>
@@ -134,6 +139,13 @@ export const HomeGPSButton = React.memo((props: Props) => {
               {`NTRIP ${t(`GpsSettings.externalGnss.ntrip.state.${status.ntrip}`)}  ${formatBytes(status.rtcmBytes)}`}
             </Text>
           )}
+          {status.rawLog?.state === 'recording' && (
+            <Text style={[styles.row, styles.rawLog]}>
+              {`${t('GpsSettings.externalGnss.rawLog.recording')} ${formatDuration(
+                Date.now() - status.rawLog.startedAt
+              )}  ${formatRawBytes(status.rawLog.roverBytes)}`}
+            </Text>
+          )}
         </Pressable>
       )}
     </>
@@ -141,6 +153,10 @@ export const HomeGPSButton = React.memo((props: Props) => {
 });
 
 const styles = StyleSheet.create({
+  rawLog: {
+    color: COLOR.RED,
+    fontWeight: '600',
+  },
   badge: {
     borderRadius: 4,
     paddingHorizontal: 6,

@@ -49,6 +49,7 @@ import {
 } from '../utils/trackingLeaveGuard';
 import { requestGnssAveragingAsync } from '../hooks/useGnssAveraging';
 import { useExternalGnssAutoConnect } from '../hooks/useExternalGnssAutoConnect';
+import { useExternalGnssRawLogging } from '../hooks/useExternalGnssStatus';
 import { isLocationInUse } from '../lib/gnss/autoReconnect';
 import { shallowEqual, useSelector, useDispatch, useStore } from 'react-redux';
 import { backupBeforeReplace } from '../utils/backupBeforeReplace';
@@ -2558,8 +2559,9 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     openSheet(2);
   }, [openSheet, navigateToSplit]);
 
-  // 前回の外部GNSS受信機へ自動で接続し直す。GPSがOFFで記録もしていなければ、バックグラウンドでは切り離す
-  useExternalGnssAutoConnect(isLocationInUse(gpsState, trackingState));
+  // 前回の外部GNSS受信機へ自動で接続し直す。GPSがOFFで軌跡もRAWも記録していなければ、バックグラウンドでは切り離す
+  const isGnssRawLogging = useExternalGnssRawLogging();
+  useExternalGnssAutoConnect(isLocationInUse(gpsState, trackingState, isGnssRawLogging));
 
   const pressDisconnectDrive = useCallback(async () => {
     const ret = await ConfirmAsync(t('GoogleDriveProjects.confirm.disconnect'));

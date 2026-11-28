@@ -2,6 +2,7 @@ package expo.modules.gnssreceiver
 
 import android.annotation.SuppressLint
 import android.app.PendingIntent
+import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothManager
 import android.bluetooth.le.ScanCallback
 import android.bluetooth.le.ScanResult
@@ -40,7 +41,7 @@ private const val ACTION_USB_PERMISSION = "expo.modules.gnssreceiver.USB_PERMISS
 private const val BLE_SCAN_DURATION_MS = 15_000L
 
 /**
- * 外部GNSS受信機（USBシリアル）との接続と、NTRIPキャスターからの補正の中継。
+ * 外部GNSS受信機（USBシリアル・BLE・Bluetoothクラシック）との接続と、NTRIPキャスターからの補正の中継。
  * 受信機の出すNMEA文は onNmea イベント、接続状態は onStatus イベントでJSへ渡す。
  */
 class GnssReceiverModule : Module() {
@@ -140,6 +141,39 @@ class GnssReceiverModule : Module() {
       GnssSession.status()
     }
 
+    // ペアリング済みのBluetooth機器（SPP用）。権限（BLUETOOTH_CONNECT）はJS側で取得済みであること
+    Function("listSppDevices") {
+      listBondedSppDevices()
+    }
+
+    // RFCOMMの接続は終わるまでブロックするので、モジュールのキューで実行させる
+    AsyncFunction("connectSpp") { address: String ->
+      stopBleScan()
+      val adapter = bluetoothManager.adapter ?: throw GnssReceiverException("Bluetooth is not available")
+      if (!adapter.isEnabled) throw GnssReceiverException("Bluetooth is turned off")
+      val device = adapter.getRemoteDevice(address)
+      try {
+        GnssSession.attachLink { onData, onError -> SppLink(adapter, device, onData, onError) }
+      } catch (e: Exception) {
+        throw GnssReceiverException(e.message ?: "Bluetooth connection failed")
+      }
+      GnssSession.status()
+    }
+
+    // RAW記録（後処理用）。dirPath はJS側で決めたアプリ内のフォルダ（file:// なしの絶対パス）
+    AsyncFunction("startRawLog") { dirPath: String, baseName: String, logCorrections: Boolean ->
+      try {
+        GnssSession.startRawLog(dirPath, baseName, logCorrections)
+      } catch (e: Exception) {
+        throw GnssReceiverException(e.message ?: "Could not start the raw log")
+      }
+      GnssSession.status()
+    }
+
+    AsyncFunction("stopRawLog") {
+      GnssSession.stopRawLog()
+    }
+
     AsyncFunction("disconnect") {
       GnssSession.detachLink()
     }
@@ -162,6 +196,17 @@ class GnssReceiverModule : Module() {
 
   private val bluetoothManager: BluetoothManager
     get() = context.getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
+
+  @SuppressLint("MissingPermission")
+  private fun listBondedSppDevices(): List<Map<String, String>> {
+    val adapter = bluetoothManager.adapter ?: throw GnssReceiverException("Bluetooth is not available")
+    if (!adapter.isEnabled) throw GnssReceiverException("Bluetooth is turned off")
+    return adapter.bondedDevices.orEmpty()
+      // BLE専用の機器はRFCOMMでつながらない
+      .filter { it.type != BluetoothDevice.DEVICE_TYPE_LE }
+      .map { device -> mapOf("address" to device.address, "name" to (device.name?.takeIf { it.isNotBlank() } ?: device.address)) }
+      .sortedBy { it.getValue("name").lowercase() }
+  }
 
   private var scanCallback: ScanCallback? = null
   private val scanStopHandler = Handler(Looper.getMainLooper())

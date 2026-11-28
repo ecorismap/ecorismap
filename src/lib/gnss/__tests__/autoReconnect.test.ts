@@ -58,6 +58,11 @@ describe('isLocationInUse', () => {
     expect(isLocationInUse('follow', 'off')).toBe(true);
     expect(isLocationInUse('off', 'on')).toBe(true);
   });
+
+  it('GPSがOFFで記録もしていなくても、受信機のRAW記録中なら使っている', () => {
+    expect(isLocationInUse('off', 'off', true)).toBe(true);
+    expect(isLocationInUse('off', 'off', false)).toBe(false);
+  });
 });
 
 describe('shouldReleaseInBackground', () => {
