@@ -7629,7 +7629,7 @@ index 0000000..8bd6caa
 +}
 diff --git a/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/VectorStyle/VectorTileStyleManager.java b/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/VectorStyle/VectorTileStyleManager.java
 new file mode 100644
-index 0000000..125488f
+index 0000000..554c491
 --- /dev/null
 +++ b/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/VectorStyle/VectorTileStyleManager.java
 @@ -0,0 +1,279 @@
@@ -13201,18 +13201,20 @@ index 0000000..1ff3306
 +
 +#endif
 diff --git a/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapMarker.m b/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapMarker.m
-index b3f8da6..9b66f13 100644
+index b3f8da6..fe507ab 100644
 --- a/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapMarker.m
 +++ b/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapMarker.m
-@@ -38,6 +38,7 @@ @implementation AIRGoogleMapMarker {
+@@ -38,6 +38,9 @@ @implementation AIRGoogleMapMarker {
      CLLocationDegrees _rotation;
      BOOL _tracksInfoWindowChanges;
      BOOL _tracksViewChanges;
 +    BOOL _staticIconRefreshScheduled;
++    BOOL _staticIconRefreshForced;
++    NSString *_staticIconSignature;
      BOOL _draggable;
      BOOL _tappable;
      BOOL _flat;
-@@ -73,6 +74,43 @@ - (void)layoutSubviews {
+@@ -73,6 +76,73 @@ - (void)layoutSubviews {
      }
  
      [_iconView setFrame:CGRectMake(0, 0, width, height)];
@@ -13238,8 +13240,38 @@ index b3f8da6..9b66f13 100644
 +    if (!CGSizeEqualToSize(_iconView.frame.size, CGSizeMake(width, height))) {
 +        [_iconView setFrame:CGRectMake(0, 0, width, height)];
 +    }
++    // EcorisMap: 撮り直しは iconView を一度外すので、その瞬間マーカーが消える。
++    // 別のマーカー（回転中の現在地など）の再描画でレイアウトが毎フレーム走ると、中身が変わっていなくても
++    // 撮り直しが続き、画面内の全マーカーがちらつく。前回撮ったときと枠の並びが同じなら撮り直さない
++    NSString *signature = [self staticIconSignature];
++    BOOL forced = _staticIconRefreshForced;
++    _staticIconRefreshForced = NO;
++    if (!forced && _staticIconSignature != nil && [_staticIconSignature isEqualToString:signature]) return;
++    _staticIconSignature = signature;
 +    _realMarker.iconView = nil;
 +    _realMarker.iconView = _iconView;
++}
++
++// EcorisMap: iconView の中身の枠（位置と大きさ）を並べた文字列。レイアウトが変わったかの判定に使う
++- (NSString *)staticIconSignature {
++    NSMutableString *signature = [NSMutableString string];
++    [self appendFramesOf:_iconView depth:0 to:signature];
++    return signature;
++}
++
++- (void)appendFramesOf:(UIView *)view depth:(NSInteger)depth to:(NSMutableString *)signature {
++    CGRect f = view.frame;
++    [signature appendFormat:@"%ld:%.1f,%.1f,%.1f,%.1f;", (long)depth, f.origin.x, f.origin.y, f.size.width, f.size.height];
++    if (depth >= 4) return;
++    for (UIView *child in [view subviews]) {
++        [self appendFramesOf:child depth:depth + 1 to:signature];
++    }
++}
++
++// EcorisMap: 中身そのものが変わった（子の追加・地図への挿入・追跡の停止）ときは、枠が同じでも撮り直す
++- (void)scheduleForcedStaticIconRefresh {
++    _staticIconRefreshForced = YES;
++    [self scheduleStaticIconRefresh];
 +}
 +
 +// 同じ実行ループ内の複数の変更（挿入・子の追加・レイアウト）をまとめ、すべて適用された後に1回撮る
@@ -13256,7 +13288,7 @@ index b3f8da6..9b66f13 100644
  }
  
  
-@@ -85,7 +123,9 @@ - (void) didUpdateReactSubviews
+@@ -85,7 +155,9 @@ - (void) didUpdateReactSubviews
  {
      [super didUpdateReactSubviews];
      if (_iconView){
@@ -13267,24 +13299,24 @@ index b3f8da6..9b66f13 100644
      }
  }
  
-@@ -100,6 +140,8 @@ - (void) didInsertInMap:(AIRGoogleMap *) map
+@@ -100,6 +172,8 @@ - (void) didInsertInMap:(AIRGoogleMap *) map
      if (_iconView){
          [_realMarker setIconView:_iconView];
      }
 +    // EcorisMap: 挿入時点では子のレイアウトが未確定なことがあるので、後で撮り直す
-+    [self scheduleStaticIconRefresh];
++    [self scheduleForcedStaticIconRefresh];
      if (_rotation != 0){
          [_realMarker setRotation:_rotation];
      }
-@@ -154,6 +196,7 @@ - (void)iconViewInsertSubview:(UIView*)subview atIndex:(NSInteger)atIndex {
+@@ -154,6 +228,7 @@ - (void)iconViewInsertSubview:(UIView*)subview atIndex:(NSInteger)atIndex {
          _realMarker.iconView = _iconView;
      }
      [_iconView insertSubview:subview atIndex:atIndex];
-+    [self scheduleStaticIconRefresh];
++    [self scheduleForcedStaticIconRefresh];
  }
  
  - (void)insertReactSubview:(id<RCTComponent>)subview atIndex:(NSInteger)atIndex {
-@@ -517,11 +560,19 @@ - (BOOL)flat {
+@@ -517,11 +592,19 @@ - (BOOL)flat {
  }
  
  - (void)setTracksViewChanges:(BOOL)tracksViewChanges {
@@ -13296,7 +13328,7 @@ index b3f8da6..9b66f13 100644
 +    _tracksViewChanges = tracksViewChanges;
      _realMarker.tracksViewChanges = tracksViewChanges;
 +    // EcorisMap: YES→NO の切り替え時点の撮影もレイアウト前になり得るので撮り直す
-+    if (!tracksViewChanges) [self scheduleStaticIconRefresh];
++    if (!tracksViewChanges) [self scheduleForcedStaticIconRefresh];
  }
  
  - (BOOL)tracksViewChanges {
